@@ -99,6 +99,7 @@ test('preview experiment keeps frozen checkers and tenant auth reachable', () =>
     /\$\{SKILLS_REPO_HOST_PATH\}:\$\{SKILLS_REPO_HOST_PATH\}:ro/,
   );
   assert.match(experiment, /~\/\.uipath:\/\.uipath:rw/);
+  assert.match(experiment, /^\s+- PREVIEW_SKILLS_PLUGIN_PATH$/m);
   assert.doesNotMatch(experiment, /\$\{SKILLS_REPO_HOST_PATH\}:\/skills-repo/);
   assert.match(workflow, /SKILLS_REPO_PATH:\s+\$\{\{ github\.workspace \}\}/);
 });

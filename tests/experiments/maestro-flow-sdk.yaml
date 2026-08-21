@@ -14,6 +14,9 @@ defaults:
       image: skills-image:maestro-flow-sdk
       env_passthrough_extra:
         - SKILLS_REPO_PATH
+        # coder-eval resolves agent.plugins inside the sandbox, so the staged
+        # host path must remain visible there as well as in the runner process.
+        - PREVIEW_SKILLS_PLUGIN_PATH
         - BEDROCK_MODEL
         - TASK_PARALLELISM
         - UIPATH_CLI_ENABLE_ENV_AUTH
