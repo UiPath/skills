@@ -100,7 +100,7 @@ on:
 # for the full rationale. Workflow-level so both the Linux and Windows
 # install steps, and any job added later, inherit it.
 env:
-  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   partition:

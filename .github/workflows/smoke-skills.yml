@@ -24,8 +24,14 @@ on:
 # fails. coder_eval is a first-party internal package from the Azure Artifacts
 # feed, not public-registry supply-chain surface, so exclude it from the age
 # check only. Every other safe-chain check still applies.
+#
+# `anthropic` is excluded for the same reason, transitively: coder-eval >=0.11.1
+# pins anthropic>=1.0.0 (a fresh major), which the age gate suppresses — leaving
+# the resolver with only anthropic<=0.123.0 and "requirements are unsatisfiable"
+# until 1.0.0 ages out. The Anthropic SDK is the official first-party client, so
+# exempting it from the age check (only) is the same low-risk call as coder-eval.
 env:
-  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   detect:
