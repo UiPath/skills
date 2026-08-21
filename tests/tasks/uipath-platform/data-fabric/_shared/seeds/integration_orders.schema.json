@@ -3,7 +3,7 @@
   "description": "Seed entity for integration_query_filters brownfield test. Demonstrates the full per-field config surface accepted by `uip df entities create --body`.",
   "fields": [
     {
-      "fieldName": "Code",
+      "name": "Code",
       "displayName": "Order Code",
       "description": "Unique order identifier, e.g. ORD-001.",
       "type": "STRING",
@@ -12,7 +12,7 @@
       "lengthLimit": 50
     },
     {
-      "fieldName": "Value",
+      "name": "Value",
       "displayName": "Order Value",
       "description": "Order amount in tenant base currency.",
       "type": "DECIMAL",
@@ -22,7 +22,7 @@
       "decimalPrecision": 2
     },
     {
-      "fieldName": "Status",
+      "name": "Status",
       "displayName": "Order Status",
       "description": "One of: Pending | Active | Closed.",
       "type": "STRING",
