@@ -9,13 +9,20 @@ outcomes.
 
 from __future__ import annotations
 
-import glob
 import json
 import sys
 from pathlib import Path
 
+SHARED_DIR = Path(__file__).resolve().parents[1] / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+try:
+    from flow_check import find_flow_file  # noqa: E402
+except ModuleNotFoundError as exc:
+    if exc.name != "flow_check":
+        raise
+    from _shared.flow_check import find_flow_file  # noqa: E402
 
-FLOW_GLOB = "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+FLOW_GLOB = "ExpenseApproval*.flow"
 
 
 def fail(message: str) -> None:
@@ -23,10 +30,7 @@ def fail(message: str) -> None:
 
 
 def load_flow() -> dict:
-    matches = glob.glob(FLOW_GLOB)
-    if not matches:
-        fail(f"No flow file matching {FLOW_GLOB}")
-    path = Path(matches[0])
+    path = Path(find_flow_file(flow_glob=FLOW_GLOB))
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as exc:
