@@ -1,0 +1,52 @@
+task_id: skill-agent-coded-datafabric-sdk-tool
+description: >
+  Coded-agent Data Fabric integration via direct SDK. Verifies the agent
+  wraps `sdk.entities.list_records_async` (or `retrieve_records_async`) in
+  a @tool-decorated function with `UiPath()` instantiated inside the
+  function body (not module-level), uses the correct import path, and
+  emits the `datafabricentityset` binding for the targeted entity.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:datafabric-sdk]
+
+run_limits:
+  expected_turns: 55
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `order-lookup` that
+  answers questions about customer orders stored in a Data Fabric
+  entity named `Orders` in folder `Shared`.
+
+  The agent must expose a deterministic tool (not NL-to-SQL) that:
+  - accepts a customer name as input
+  - queries the `Orders` entity using `sdk.entities` with an OData
+    filter for that customer
+  - returns matching order records
+
+  Use the UiPath Python SDK (`from uipath.platform import UiPath`) to
+  query records directly — do NOT use `create_datafabric_tool`.
+  Instantiate `UiPath()` inside the tool function body, never at
+  module level.
+
+  Use the platform LLM gateway via `UiPathChat` for the outer agent.
+
+  Take the agent through scaffold → init — make sure bindings are
+  in sync before running init. Do NOT run, publish, upload, or
+  deploy. Do NOT pause between planning and implementation.
+  Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "SDK import, lazy init, entity filter, binding shape"
+    command: "python3 $TASK_DIR/check_datafabric_sdk_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
