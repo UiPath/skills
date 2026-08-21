@@ -5,10 +5,12 @@ description: >
   `Unknown activityType 'While'` — the authorable set is narrower than the runtime, so a
   workflow that runs locally can still be unshippable.
 
-  Covers the allowlist entry this PR adds to references/troubleshooting.md. The graded
-  substitution is the documented one: `DoWhile` tests its condition AFTER each iteration,
-  so a faithful conversion needs the body wrapped in an `If` whose `#Else` exits via
-  `Break`.
+  Covers the allowlist entry this PR adds to references/troubleshooting.md. The documented
+  substitution is `DoWhile`, which tests its condition AFTER each iteration, so a faithful
+  conversion needs the body wrapped in an `If` whose `#Else` exits via `Break`. Grading does
+  not mandate that exact shape — it requires a loop (`DoWhile` or `ForEach`) to survive, so an
+  equivalent iterative conversion also scores. Deleting the loop and returning the input
+  directly is what the loop criterion exists to catch: it otherwise passes everything else.
 
   `count: 0` is the discriminating input and is graded at the highest weight. A naive
   rename of `while` to `doWhile` validates and passes the non-zero cases, but returns
@@ -27,7 +29,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/unsupported_activity_type/seed_broken.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py unsupported_activity_type"
     timeout: 30
 
 run_limits:
@@ -79,6 +81,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "A real loop survives the fix — the count is computed by iterating, not echoed
+      straight from the input (a workflow with the loop deleted passes every other criterion)"
+    command: >-
+      python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
+      sys.exit(0 if ('\"activityType\": \"DoWhile\"' in t or '\"activityType\": \"ForEach\"' in t)
+      else 'no loop activity left in the workflow')"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "No unsupported activityType remains in the workflow"
     command: >-
       python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
@@ -87,7 +101,6 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
-
 
   - type: run_command
     description: "Behavioral: count 3 performs three iterations"

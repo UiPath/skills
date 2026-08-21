@@ -10,14 +10,16 @@ description: >
   charged against the script budget, and a busy-wait loop inside a script never belongs
   there. The second criterion checks the spin loop is actually gone rather than merely
   shortened — reducing 15s to 5s makes the symptom disappear while leaving the
-  anti-pattern in place.
+  anti-pattern in place. It asserts no `Date.now` survives in any script, so
+  rewriting the same busy-wait as `for (;;)` — or shortening it — does not pass. Deliberately
+  form-independent: matching loop syntax let `for (;;) { if (Date.now() >= t) break; }` through.
 tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:
   python: {}
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/script_budget/seed_broken.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py script_budget"
     timeout: 30
 
 run_limits:
@@ -58,15 +60,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The busy-wait spin loop is gone, not merely shortened"
+    description: "The busy-wait is gone, not merely shortened — no wall-clock stalling left
+      in any script (the taught fix removes the settle logic; a Wait activity is not charged
+      against the script budget)"
     command: >-
-      python3 -c "import json,sys,re; t=json.dumps(json.load(open('Workflow.json')));
-      sys.exit('busy-wait still present' if re.search(r'while\\s*\\(\\s*Date\\.now', t) else 0)"
+      python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
+      sys.exit('script still stalls on wall-clock time' if 'Date.now' in t else 0)"
     timeout: 20
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-
 
   - type: run_command
     description: "Behavioral: repaired workflow returns the correct sum"

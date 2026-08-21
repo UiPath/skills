@@ -162,6 +162,10 @@ First distinguish bridge rejection from background failure:
 - **Cause:** The deployed workflow egresses from UiPath infrastructure, not from any address the endpoint owner is likely to have allowlisted, and **which** addresses depends on how the call is made.
 <!--skill-flavor:outbound-ip-cause-open:end-->
 
+<!--skill-flavor:script-budget-symptom:start-->
+- **Symptom:** A Script activity that works on small inputs fails on larger ones with a script timeout reported by the `RunProject` host operation. The workflow validates; only execution fails.
+<!--skill-flavor:script-budget-symptom:end-->
+
 <!--skill-flavor:script-budget-cause:start-->
 - **Cause:** the Script activity exceeded the host's execution budget. UiPath documents the cap as *"JavaScript code execution has a timeout of 30 seconds"* — [Script activity, Known limitations](https://docs.uipath.com/studio-web/automation-cloud/latest/user-guide/script). Treat 30s as the ceiling for a single Script activity, and remember a script that finishes quickly on sample data can exceed it on production volumes.
 <!--skill-flavor:script-budget-cause:end-->

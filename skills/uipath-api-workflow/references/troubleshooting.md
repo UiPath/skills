@@ -607,7 +607,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `"Script execution failed timed out"`
 
+<!--skill-flavor:script-budget-symptom:start-->
 - **Symptom:** A JavaScript activity that works on small inputs fails on larger ones with `Execution error: Script execution failed timed out: Script execution failed timed out`. The workflow validates; only the run fails.
+<!--skill-flavor:script-budget-symptom:end-->
 <!--skill-flavor:script-budget-cause:start-->
 - **Cause:** The activity exceeded the runner's per-script budget. In the executor the CLI actually ships — `@uipath/api-workflow-executor` **12.10.2**, exact-pinned by `packages/api-workflow-tool/package.json` on `uipcli` main — the budget is a **flat 10 seconds**, passed as a bare literal:
 
@@ -616,9 +618,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   await this.expressionHandler.evaluateScript(code, taskName, 10000);
   ```
 
-  Confirmed by measurement against that build: an 8-second script passes, a 12-second script fails.
+  Measured against that build: an 8-second script passes, a 12-second script fails.
 
-  **Check the pinned executor before trusting any number here.** It is a literal, not a documented contract, and it has already changed: executor 12.23.2 (newer, NOT pinned by the CLI as of 2026-08-20) replaces it with `SCRIPT_TIMEOUT_MS = 10000` plus a second budget of ~100s for scripts whose source contains `$helpers`, selected by a literal `code.includes('$helpers')` substring test. If your CLI pins 12.23.x or later, the 10s figure applies only to scripts with no `$helpers` call.
+  **Check the pinned executor before trusting any number here** — it is a literal, not a documented contract, and it has already changed: executor 12.23.2 (newer, NOT pinned by the CLI as of 2026-08-20) replaces it with `SCRIPT_TIMEOUT_MS = 10000` plus a second budget of ~100s for scripts whose source contains `$helpers`, selected by a literal `code.includes('$helpers')` substring test. If your CLI pins 12.23.x or later, the 10s figure applies only to scripts with no `$helpers` call.
 
   All of the above are **local** figures. The **cloud** cap is different and is documented: *"JavaScript code execution has a timeout of 30 seconds"* — [Script activity, Known limitations](https://docs.uipath.com/studio-web/automation-cloud/latest/user-guide/script).
 
@@ -633,7 +635,6 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Never busy-wait inside a script (`while (Date.now() < end) {}`) — use a `Wait` activity, which is not charged against the script budget.
   - If the work genuinely cannot be split, it does not belong in an API workflow; a connector call or a Coded Function is the right home.
 
-
 <!--skill-flavor:cloud-run-diagnostics:start-->
 ### Failed cloud run after publish (job faulted in Orchestrator)
 
@@ -643,16 +644,16 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```bash
   uip or jobs get <jobId> --output json   # THE diagnostic: Data.State + Data.Info
   ```
-  `Data.State` reads `Faulted` and `Data.Info` carries the runtime message — for an API workflow that is usually the whole answer. Verified end-to-end against a deliberately-faulting deployed workflow (alpha, uip 1.200.0).
+  `Data.State` reads `Faulted` and `Data.Info` carries the runtime message — for an API workflow that is usually the whole answer.
 
   **Two surfaces that look useful and are not, for API-workflow jobs:**
 
   | Command | What it actually returns |
   |---------|--------------------------|
   | `uip or jobs logs <jobId>` | Lifecycle lines only — `"Workflow started"` / `"Workflow completed"`, both at level `Info`. It reports **`Workflow completed` even for a Faulted job** and never carries the error. Never read "completed" here as success. |
-  | `uip traces spans get --job-key <jobKey>` | Fails with `"Error retrieving trace ID for job"`. API-workflow jobs have no span/trace surface. |
+  | `uip traces spans get --job-key <jobKey>` | Returned `"Error retrieving trace ID for job"` on every API-workflow job probed. The CLI emits that same message for any trace-ID lookup failure (a malformed GUID included), so read it as "no trace resolved for this job", not as proof the surface is absent. Either way it yields no fault detail — use `jobs get`. |
 
-  **Diagnose before you tear down:** uninstalling the deployment destroys its job records, after which `uip or jobs get` returns `Result: Failure` with an empty `State`.
+  **Diagnose before you tear down:** after uninstalling the deployment, `uip or jobs get` on its jobs returns `Result: Failure` with an empty `State`. Jobs themselves are immutable audit records (`uip or jobs --help`: they "cannot be deleted -- they age out per the binding process's retention period"), so the likely cause is that the folder/process context needed to resolve the job is gone, not the records. Either way, read the fault before you uninstall.
 
   (Folder scoping differs: `uip or jobs list` accepts `--folder-path`/`--folder-key`/`--all-folders`; `uip or triggers list` accepts only `--folder-path`/`--folder-key`; `uip or jobs start <process-key>` infers the folder.)
   Map the surfaced error back to a fix with the category order below (Structure > Expression > Activity Config > Logic). If the fault is a 401 / `ConnectionNotEnabled`, `uip is connections ping <uuid>` the bound connection first. Full operate + diagnose command map: [operating-published-workflows.md](operating-published-workflows.md). For deep, multi-signal root-cause (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
@@ -674,9 +675,8 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   The two are not interchangeable, and the reason is structural. Per [Configuring the firewall for Automation Cloud](https://docs.uipath.com/automation-cloud/automation-cloud/latest/admin-guide/configuring-the-firewall-for-cloud), most services now share one **unified** set of outbound ranges per region — *"a single set of IP ranges covers Automation Cloud Portal, Orchestrator, Integration Service, Apps, Automation Ops, Test Manager, AI Trust Layer, and Notification Service simultaneously"* — but four services are carved out: *"Document Understanding, Insights, IXP, and Automation Cloud Robots - Serverless"* keep their own service-specific ranges.
 
   So **Integration Service sits in the unified regional set and serverless robots do not.** A customer who allowlisted the unified ranges has covered your connector activities and *not* your manual-auth HTTP calls. Always read the current ranges off those pages before asking anyone to change firewall rules — they are per-region and they change.
-- **Fix:** Establish which path the call takes (connector activity → Integration Service; `UiPath.Http` with manual auth → serverless robot), then have the endpoint owner allowlist that service's published outbound ranges. This is a network-configuration fix, not a workflow fix — no edit to `Workflow.json` will resolve it, so stop editing and escalate once the symptom matches.
+- **Fix:** Establish which path the call takes (connector activity → Integration Service; `UiPath.Http` with *connector-based* authentication → also Integration Service; `UiPath.Http` with *manual* authentication → serverless robot), then have the endpoint owner allowlist that service's published outbound ranges. This is a network-configuration fix, not a workflow fix — no edit to `Workflow.json` will resolve it, so stop editing and escalate once the symptom matches.
 - **Distinguishing it from an auth fault:** a 401/403 with a response body is an auth or connection problem (`uip is connections ping <uuid>` first). A refused connection or a timeout with no HTTP response at all points at the network path.
-
 
 ---
 
@@ -756,7 +756,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:allowlist-run-proof:start-->
   Both execute under `run` (verified on executor 12.10.2), so **a passing local run is not proof a workflow can ship.** `validate` is the gate.
 <!--skill-flavor:allowlist-run-proof:end-->
-- **Error-count tell:** ~2 errors naming the activityType → unknown **name**, caught by the allowlist. A large avalanche starting `Missing required property 'call'` → the schema could not match the task **shape**, which has two causes and you must check both:
+- **Error-count tell:** a small count naming the activityType — one error per offending task — → unknown **name**, caught by the allowlist. A large avalanche starting `Missing required property 'call'` → the schema could not match the task **shape**, which has two causes and you must check both:
   1. **Unknown task key** — the schema models no such task (e.g. `raise`). Nothing about the fields will help.
   2. **An unexpected field on a KNOWN task** — one stray key makes the whole task unmatchable, and the error text still says `Missing required property 'call'`. `set` on a `Break` is the documented instance: it produced **7797 errors** in this skill's own `nested-control-flow-example.json`, and deleting that one key made it Valid.
 
