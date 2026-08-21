@@ -1,0 +1,104 @@
+task_id: skill-admin-apms-troubleshoot-ip-lockout-smoke
+description: >
+  Diagnose smoke (outcome-graded): agent investigates a suspected IP-restriction
+  lockout by gathering the three facts the diagnosis needs — the caller's public
+  IP, the allowlist, and the enforcement state — and concluding from them.
+  Graded on the three tenant read-backs plus an llm_judge on the conclusion, not
+  on the command chain.
+
+  pre_run seeds an allowlist entry for a documentation range that deliberately
+  does NOT cover any real caller, so the allowlist is non-empty and the
+  "is my IP covered?" question has a real answer to reach.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, apms, troubleshoot]
+
+pre_run:
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-troubleshoot-office" APMS_RANGE_COUNT="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-troubleshoot-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Our team in a new office cannot reach the UiPath platform and we suspect IP
+  restriction. Work out whether IP restriction is actually the cause. Save the
+  raw JSON output of each command you use verbatim, one file each:
+
+  - the caller's public IP as the platform sees it  -> ./myip.json
+  - the organization's IP allowlist                 -> ./ranges.json
+  - the enforcement state                           -> ./enforcement.json
+
+  Then tell me whether IP restriction can be blocking them, based on what you
+  retrieved.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "All three diagnostic facts were retrieved from the platform (public IP, allowlist incl. the seeded entry, enforcement state)"
+    command: |
+      python3 -c "
+      import ipaddress, json
+      def load(p):
+          return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      myip = load('myip.json')
+      ip = next((x.get('IpAddress') or x.get('ipAddress') for x in dicts(myip) if x.get('IpAddress') or x.get('ipAddress')), None)
+      assert ip, 'myip.json has no IpAddress'
+      ipaddress.ip_address(ip)
+      seeded_name = json.load(open('seed.json'))['range']['name']
+      ranges = load('ranges.json')
+      rows = [x for x in dicts(ranges) if x.get('Name') and (x.get('IpNetwork') or x.get('ipNetwork'))]
+      assert any(r.get('Name') == seeded_name for r in rows), 'ranges.json does not contain the seeded allowlist entry: ' + str([r.get('Name') for r in rows])
+      enf = load('enforcement.json')
+      rec = next((x for x in dicts(enf) if x.get('Status') or x.get('status')), None)
+      assert rec, 'enforcement.json has no Status'
+      status = str(rec.get('Status') or rec.get('status'))
+      assert status in ('Enabled', 'Disabled'), f'unexpected enforcement Status {status!r}'
+      print(f'OK: public IP {ip}, {len(rows)} allowlist entries, enforcement {status}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's conclusion is grounded in the retrieved enforcement state and allowlist coverage"
+    include_agent_output: true
+    prompt: |
+      The agent investigated a suspected IP-restriction lockout. It retrieved
+      three facts from the live organization: the caller's public IP, the IP
+      allowlist, and the enforcement state (Enabled or Disabled).
+
+      A correct conclusion is grounded in those facts:
+        - If enforcement is Disabled, IP restriction cannot be blocking anyone —
+          the agent should say so and point elsewhere for the cause.
+        - If enforcement is Enabled, the agent should say whether the caller's
+          public IP falls inside one of the listed allowlist ranges, and name
+          adding the office range as the fix when it does not.
+
+      Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response states the enforcement state it found AND draws
+        the matching conclusion (not blocking / blocking because the IP is
+        outside the allowlist) from the data it retrieved.
+      Score 0.5 if it reports the retrieved facts but does not commit to a
+        conclusion, or concludes without referencing the enforcement state.
+      Score 0.0 if the conclusion contradicts the retrieved data, or the agent
+        asserts a lockout cause it never checked.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Diagnosis must stay read-only — no allowlist or enforcement mutations"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+(?:enforcement\s+(?:enable|disable)|ip-ranges\s+(?:create|update|delete)|bypass-rules\s+(?:create|update|delete))\b'
+    weight: 2.0

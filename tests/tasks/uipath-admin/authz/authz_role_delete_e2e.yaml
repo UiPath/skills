@@ -1,0 +1,34 @@
+task_id: skill-admin-authz-role-delete-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — delete an obsolete custom
+  role. The role is seeded in pre_run and its service-assigned id recorded, so the
+  check reads that exact id back from the organization: a do-nothing agent cannot
+  make a seeded id disappear, and a missing seed is treated as an error rather
+  than a pass.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, authz, role]
+
+pre_run:
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-delete-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Obsolete role scheduled for removal" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-delete-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  The custom role named in `seed.json` (the `role.name` field) is obsolete —
+  remove it from my UiPath organization.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The seeded role is gone from the organization"
+    command: 'AUTHZ_SEED_KEY="role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_deleted.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

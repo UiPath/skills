@@ -24,7 +24,7 @@ For *effective* access on a principal (PDP — includes server-side rules not vi
 
 **`Folder` is not a valid `--scope` for `roles create/update`.** Folder-level scoping is expressed on the *assignment* (see [role-assignment-management.md](role-assignment-management.md)).
 
-> `--service` infers the scope from the service registry when `--scope` is omitted. Example: `roles create --service studio --name "..."` resolves to `Tenant`. Combine `--service` with `--scope` only to override the registry default (e.g., `--service documentunderstanding --scope Project`).
+> `--service` infers the scope from the service registry when `--scope` is omitted. Example: `roles create --service studio --name "..."` resolves to `Tenant`. Combine `--service` with `--scope` only to override the registry default (e.g., `--service documentunderstanding --scope Project`). **Unsure which `serviceName` to pass, or the CLI rejected the one you tried?** Never guess — the valid values and the command that re-derives them live in [permission-catalog.md — `--service` serviceNames](permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
 
 ### Centralized Access — the "no --service" tenant role
 
@@ -63,6 +63,8 @@ If the role wraps **one** service's permissions, do not ask the user about org v
 ```bash
 uip admin authorization permissions list --service <SERVICE> --output json
 ```
+
+`<SERVICE>` must be a real `serviceName` — look it up in [permission-catalog.md — `--service` serviceNames](permission-catalog.md#--service-servicenames-and-how-to-re-derive-them) rather than guessing from the service's display name.
 
 The catalog response includes `scopeType` per record. Use it to pick the mode for Step 4:
 

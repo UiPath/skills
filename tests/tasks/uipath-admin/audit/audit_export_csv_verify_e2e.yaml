@@ -1,0 +1,62 @@
+task_id: skill-admin-audit-export-csv-verify-e2e
+description: >
+  End-to-end test (artifact verification tier): agent drives
+  `uip admin audit tenant export --file-format csv` to produce a real single CSV,
+  then the harness verifies the artifact — one CLI-generated `.csv` under the
+  requested base directory, a header carrying the LTS-schema columns, every data
+  row matching the header width, and tenant-scope records.
+
+  Fully outcome-graded: the leading `command_executed` regex is gone. The CSV
+  serialization is what is asserted (single merged file, shared header, aligned
+  rows); per-day file structure is covered by the json counterpart
+  (audit_export_verify_e2e.yaml) and is not duplicated here.
+
+  Also asserts a security property on the real artifact: the exporter must
+  neutralize any cell beginning with `= + - @` (or TAB/CR) by prefixing a single
+  quote, so a regression that stops guarding against spreadsheet formula
+  injection fails here rather than only in a unit test. The failure message
+  reports the row index and column NAME only — audit cells carry actor emails and
+  client IPs and must not reach CI logs.
+
+  Whole-day granularity note: `uip admin audit ... export` issues one HTTP call
+  per UTC day inside [--from-date, --to-date]. For CSV those per-day events are
+  merged into one file, so the row count is the sum across the window's days.
+
+  The requested "past week" is graded from the CLI-generated output name, which
+  carries the window bounds — so a single-day export cannot satisfy it even when
+  the long-term store returns no rows for the window.
+
+  LTS lag note: the export reads from the long-term store, which lags the live
+  `events` endpoint by up to ~48h. The "past week" prompt therefore includes
+  trailing days that may come back empty; the assertions are structural and a
+  header-only CSV passes.
+
+  Blocker: this task requires the base-directory + generated-name export
+  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
+  publish, on top of #2438 (--file-format) + #1372 (adds `uip admin
+  audit`)). Until then `--output-path` is the exact file path (no generated
+  `.csv` inside it) and the verifier reports no generated CSV found.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:discover, audit, export, real-artifact]
+
+initial_prompt: |
+  Can you export the past week's tenant audit events as a single CSV I
+  can open in Excel? Save it in a folder called audit-window.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
+success_criteria:
+  - type: run_command
+    description: "./audit-window holds one CLI-generated .csv with LTS columns, aligned rows, neutralized formula cells, and tenant-scope records"
+    command: 'AUDIT_BASE_DIR=audit-window AUDIT_FORMAT=csv AUDIT_DEEP=1 AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600
