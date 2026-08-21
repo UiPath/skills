@@ -1,0 +1,343 @@
+task_id: skill-bpmn-interactive-customer-escalation-triage
+description: >
+  Path-to-GA interactive BPMN evaluation based on a real customer-escalation
+  scenario. The agent must progressively elicit and reconfirm a changing
+  contract, then author a registry-derived executable process with a
+  normalization script, an embedded assessment subprocess, an error
+  end/boundary path, visible decision gateways, a sequential multi-instance
+  attachment subprocess with explicit post-loop reduction, and a
+  three-workstream parallel fan-out that performs real Jira, Google Drive, and
+  Slack work. Independent graders validate, pack, and run hidden scenarios
+  against the exact submitted artifact in live Alpha, verify typed business
+  outputs, traces, and external side effects, then delete every created issue,
+  file, message, and ephemeral Alpha solution whose identifier the harness
+  recovers.
+tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:setup, shape:multi-node, node:decision, node:subflow, node:loop, connector, feature:connections, feature:activities, feature:registry, feature:transform, feature:escalation, feature:conversational, feature:approval-gate, path-to-ga]
+
+run_limits:
+  expected_turns: 100
+  max_turns: 180
+  turn_timeout: 2400
+  task_timeout: 18000
+
+agent:
+  # allowed_tools uses replace semantics. Preserve normal authoring tools and
+  # add structured questions for the simulated requirements interview.
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+  system_prompt: |
+    You are a coding agent. Work only inside the current task workspace. Its
+    root SKILL.md, references/, scripts/, and validator/ are the complete
+    supplied skill template; do not search the wider filesystem for skills,
+    task fixtures, reference solutions, prior eval runs, or prior artifacts.
+    You may invoke installed executables such as uip and python3 and use the
+    Skill tool, but do not read files outside this workspace. Do not access
+    sibling runs/* directories.
+  # Keep the complex authoring turn action-oriented. Without a cap, the model
+  # can spend an entire response enumerating the graph instead of writing it.
+  # Interview turns naturally use much less than this.
+  sdk_options:
+    max_thinking_tokens: 6000
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+# Pure simulation mode: the simulator creates the opening request and reveals
+# the contract progressively. Nothing below is present in the coding agent's
+# initial prompt.
+simulation:
+  enabled: true
+  persona: |
+    You are a support-operations process architect. You understand escalation
+    policy, auditability, human handoffs, and BPMN concepts such as subprocesses,
+    boundary errors, and parallel work, but you do not know UiPath XML,
+    expression syntax, registry payloads, or CLI details. Speak in business and
+    process-design language. Require the coding agent to discover the technical
+    implementation from the UiPath Maestro BPMN skill and live registry.
+  goal: |
+    Obtain one local, package-complete UiPath Maestro BPMN Process Orchestration
+    project named CustomerEscalationTriage. It represents an inbound customer
+    escalation spanning customer resolution, classification, real Jira issue
+    creation/update, per-attachment Google Drive copies, a real Slack
+    notification, and acknowledgement policy. It will be graded only in the
+    Alpha codereval organization and DefaultTenant, using the enabled
+    connections in Shared/uipath-maestro-flow.
+
+    The process inputs are customerTier:string, crmMatchCount:integer,
+    serviceState:string, workaroundAvailable:boolean,
+    duplicateIssueKey:string, attachments:array, agentOutputValid:boolean,
+    jiraAvailable:boolean, autoSendEnabled:boolean, businessImpact:string, and
+    correlationId:string, plus jiraProjectKey:string, jiraIssueTypeId:string,
+    jiraReporterAccountId:string, slackChannelId:string, and
+    driveDestinationFolderId:string. Each attachment is an object with required
+    name:string and driveFileId:string. Its named outputs are route:string,
+    severity:string, engineeringNeeded:boolean, jiraAction:string,
+    attachmentAction:string, slackAction:string, responseMode:string,
+    caseKey:string, lastAttachmentName:string, and failureReason:string.
+
+    Before business routing, one explicit normalization/contract step must:
+    compare customerTier and serviceState case-insensitively, trim
+    duplicateIssueKey, and preserve correlationId exactly as caseKey. This step
+    may transform data but must not decide route, severity, failureReason, or
+    downstream actions. Its structured result must declare a typed schema for
+    every property later dereferenced by an expression and use semantically
+    explicit property names, including duplicateIssueKey rather than a generic
+    key alias. The decision policy must remain visible in gateways.
+
+    Apply validation in this precedence order. Zero CRM matches routes to
+    ManualReview with severity Unclassified and failureReason CrmNotFound.
+    More than one CRM match routes to ManualReview/Unclassified with
+    CrmAmbiguous. A single match followed by invalid agent output routes to
+    ManualReview/Unclassified with InvalidAgentOutput. Otherwise classify
+    severity: Sev1 is an Enterprise customer whose service is Unavailable with
+    no workaround; Sev2 is any other Unavailable or Degraded service; Available
+    is Sev3. Engineering is needed for Sev1/Sev2.
+
+    With no validation failure, a non-empty trimmed duplicateIssueKey routes to
+    ExistingIssue; otherwise Sev1/Sev2 routes to NewEscalation and Sev3 to
+    Informational. A Sev1/Sev2 that needs a new or updated Jira action while
+    Jira is unavailable is a technical JiraUnavailable failure: route to
+    ManualReview, retain classified severity and engineeringNeeded, and surface
+    it through an error end inside the assessment phase and a matching
+    interrupting boundary error path. It must not be modeled as an ordinary
+    successful business branch.
+
+    The validation, classification, and success routing decisions form one
+    visibly bounded embedded assessment subprocess. Its internal decisions must
+    remain visible through at least six diverging exclusive gateways. In
+    particular, keep the Sev1 eligibility decision separate from the remaining
+    service-state classification so Degraded and Unavailable both appear in
+    explicit conditions rather than hiding Sev2 in a default branch. Outside
+    that phase, every outcome fans into exactly three parallel workstreams and
+    rejoins once: Jira intent, attachment intent, and one communication intent
+    branch owning both Slack and acknowledgement.
+
+    CRM and agent validation failures are ordinary ManualReview business
+    outcomes: they complete the assessment normally and still enter those same
+    three workstreams. JiraUnavailable is the only BPMN error end. Its matching
+    typed boundary must visibly restore either the prior Sev1 or Sev2
+    classification plus engineeringNeeded before assigning the technical
+    ManualReview route, because error termination does not perform normal
+    subprocess output mapping. It also converges before the fan-out. There is
+    exactly one root end after the parallel join; no ManualReview path may
+    terminate early.
+
+    jiraAction is UpdateExisting for ExistingIssue, CreateIssue for a new
+    Sev1/Sev2, otherwise NoAction. UpdateExisting must update the issue named by
+    duplicateIssueKey; CreateIssue must create one Task in the supplied Jira
+    project. Its fields object must contain exactly project.key, issuetype.id,
+    reporter.id, summary, and description, using the supplied project key,
+    issue-type id, and reporter account id; summary must identify the customer
+    escalation and contain correlationId. Both Jira request bodies must write
+    the exact correlationId into fields.description on the remote issue so the
+    grader can prove the business side effect and clean it up. An empty Jira
+    update body is never acceptable, even if its dynamic schema was not
+    hydrated during registry discovery.
+    attachmentAction is HoldForReview on manual review, SaveToDrive for a
+    non-manual case with attachments, otherwise NoAttachments. Non-manual
+    attachments must be processed one at a time in input order through a
+    sequential multi-instance subprocess. Inside that subprocess, one
+    data-only ScriptTask must receive iterator[0].item through a typed named
+    argument whose object schema explicitly requires string name and
+    driveFileId properties, and read that argument. Then one Google Drive
+    connector activity must copy that item's driveFileId into the supplied
+    destination with a name containing correlationId and the attachment name.
+    The per-item ScriptTask result must declare a typed schema for every
+    property consumed by the Drive activity and explicitly require string
+    itemName, copyName, and driveFileId properties. The subprocess must also
+    expose each typed itemName as a custom string marker output aggregated
+    into a scoped Collection{string}; this makes completion and order
+    observable.
+    Because a per-iteration result is not itself a scalar process output, a
+    separate post-loop ScriptTask must reduce that completed ordered marker
+    collection to lastAttachmentName. Otherwise lastAttachmentName is the
+    empty string.
+    slackAction is PostAlert for non-manual Sev1/Sev2 and NoAlert otherwise.
+    PostAlert must send exactly one bot message to slackChannelId containing
+    correlationId, route, and severity. NoAction, HoldForReview, NoAttachments,
+    and NoAlert paths must perform no connector call.
+    responseMode is Send only for Informational when autoSendEnabled is true;
+    every other acknowledgement is Draft. failureReason is empty on success.
+    businessImpact is contextual only and must not affect a decision.
+
+    The agent must discover the enabled Jira
+    is-sandboxes-test@uipath.com-uipath-sandbox-380, Google Drive
+    is.sandboxes.test@gmail.com, and Slack is-sandboxes connections across all
+    tenant folders. It must retrieve and save the exact live registry responses
+    for BPMN.ScriptTask, BPMN.Variables, and each enriched
+    Intsvc.ActivityExecution object used for Jira create/update, Drive copy,
+    and Slack send under
+    CustomerEscalationTriageSolution/CustomerEscalationTriage/registry-evidence/.
+    The BPMN must include registry-derived connector activities, element-scoped
+    connection/folder bindings, and three matching Connection resources in
+    bindings_v2.json. Include full BPMN DI and project metadata, pass the CLI
+    validator, and pack successfully. The agent must not upload, publish, run,
+    or debug the process; exact-artifact Alpha execution, side-effect
+    verification, and cleanup belong to the grader.
+
+    Before DESIGN APPROVED, connector discovery must remain read-only and
+    stdout-only: do not create the project directory or registry-evidence
+    files. After approval, rerun the exact successful registry commands and
+    save their responses. A successful registry envelope without a populated
+    Data.IsEnrichment object is an unenriched fallback, not valid connector
+    evidence.
+  constraints:
+    - "Open naturally with the project name and the broad email-to-resolution/classification/Jira/attachments/Slack/acknowledgement problem. Say that policy, data, and failure semantics are incomplete and ask the agent to interview you before building. Reveal no variable names or detailed rules in the opening."
+    - "Progressive disclosure is mandatory. In one reply, answer at most two coherent requirement areas even if the agent asks a long questionnaire. Explicitly say which asked areas still need a follow-up, without revealing their answers."
+    - "Do not accept implementation after a single agent question turn. Require at least three substantive question-and-answer rounds covering data, policy, process structure, and execution boundaries."
+    - "Reveal the typed input/output contract only after the agent explicitly asks for names, directions, and primitive/container types."
+    - "When asked about normalization early, reveal only case-insensitive customerTier/serviceState comparisons and exact correlation pass-through. Say the duplicate-key convention is still awaiting stakeholder confirmation."
+    - "When asked about validation, reveal the ordered CRM/agent precedence and exact failure tokens. When asked about classification and routing, reveal the severity and successful route policies plus the Jira eligibility nuance."
+    - "When asked how the process should communicate its design, require one visible assessment phase with at least six diverging exclusive gateways rather than an opaque calculation. Require the Sev1 eligibility decision to be separate from the remaining service-state classification so Degraded and Unavailable are explicit, a technical Jira error leaving that phase through a matching error boundary, and exactly three downstream parallel workstreams."
+    - "State explicitly that CRM/agent validation failures are normal ManualReview business outcomes, not BPMN errors. JiraUnavailable is the only error end and must have a boundary with the same explicit error reference; reject an untyped catch-all boundary. Because the error terminates the subprocess without applying its normal output mapping, require the parent boundary path to visibly distinguish and restore both Sev1 and Sev2 outcomes plus engineeringNeeded before it continues."
+    - "Every outcome—including each validation failure and the JiraUnavailable boundary path—must converge before the same three-way fan-out and finish at exactly one root end after the join. Reject any separate or early ManualReview terminal."
+    - "Reject any design playback that proposes other than exactly three ScriptTasks: one normalization-only script, one per-attachment data script inside a sequential multi-instance subprocess, and one post-loop final-attachment reducer. The scripts may map caseKey and lastAttachmentName as specified, but may not initialize or decide route, severity, engineeringNeeded, failureReason, Jira/attachment/Slack action, or response mode. All business policy and action assignments must remain visible through exclusive gateways and Variables tasks."
+    - "Before approving a playback, audit the JiraUnavailable guard explicitly. Reject route-only proxies such as ExistingIssue-or-NewEscalation because ExistingIssue can be Sev3. The technical error must require jiraAvailable=false AND classified severity Sev1 or Sev2. Also reject reliance on the subprocess's normal output mapping after its error end: the boundary flow must visibly re-establish the prior Sev1-or-Sev2 classification and engineeringNeeded in parent scope."
+    - "When asked about attachments or collection behavior, reveal that attachments is an array of objects with required name and driveFileId strings; non-manual items are handled sequentially in input order inside a multi-instance subprocess containing the per-item data script followed by the real Drive copy, and lastAttachmentName records the final processed item."
+    - "When asked about integrations or lifecycle boundaries, reveal the exact Alpha organization, tenant, folder, connection account names, external destinations, correlation requirements, no-call paths, and the five environment input fields. Require exact enriched registry responses for all four connector operations plus ScriptTask and Variables. State that the agent may perform read-only, stdout-only discovery and connection health checks before approval, but creating the project directory or registry-evidence files counts as authoring and must wait for DESIGN APPROVED. After approval it must rerun the successful commands and persist the exact responses. A success envelope without a populated Data.IsEnrichment object is an unenriched fallback and must not be retained as connector evidence. The grader alone owns BPMN run/debug, remote side-effect verification, and cleanup."
+    - "During design review, require every connector context to preserve the static registry route and carry non-empty operation plus the exact enriched objectName, then express each dynamic path, query, and body value through the exact enriched parameter target and request-field casing. Reject paths that embed expressions or query strings and bodies that use display names instead of registry request names. Clarify that dotted enrichment leaf names such as fields.project.key must be reconstructed as nested request JSON, not emitted as literal dotted top-level keys."
+    - "During the connector playback, require Jira create fields to be exactly project.key, issuetype.id, reporter.id, summary, and description, with correlationId in both summary and description. Require Jira update to write correlationId through fields.description. Reject reporter.accountId, an omitted summary, an empty update body, or a claim that the issue key alone proves the side effect."
+    - "During attachment review, require the sequential marker subprocess to map iterator[0].item into a typed named ScriptTask arg, expose the prepared itemName through a custom string marker output aggregated into a scoped Collection{string}, and make the post-loop reducer consume that completed ordered collection. Reject the nested ScriptTask pattern that passes iterator as =iterator because live Alpha binds it as null."
+    - "Before authoring, require the agent to summarize the complete contract and intended topology for confirmation. On its first otherwise-complete summary, introduce the stakeholder correction that whitespace-only duplicateIssueKey counts as empty and must therefore follow the no-duplicate route. Ask the agent to update its plan."
+    - "Treat the playback as a design review, not a courtesy. Compare every stated guard, assignment, token, and path to the goal and reject any omission or contradiction before approval; identify only the concrete discrepancies and ask for a corrected playback."
+    - "Audit precedence-bearing exclusive gateways for overlapping true guards. In particular, ExistingIssue must outrank NewEscalation when duplicateIssueKey is non-empty; require mutually exclusive predicates or cascaded gateways rather than relying on first-match engine order."
+    - "Only after the agent incorporates the whitespace correction, uses exactly three data-only ScriptTasks (normalization, per-item preparation inside the sequential attachment subprocess, and post-loop final-item reduction), places real Jira/Drive/Slack activities only on their eligible workstream paths, preserves every routing and action decision in visible gateways and Variables tasks, shows at least six diverging exclusive gateways inside the assessment phase with explicit Degraded and Unavailable conditions, keeps validation outcomes normal, uses JiraUnavailable as the sole typed error, visibly restores both possible classified severities and engineeringNeeded on the parent boundary path, converges all outcomes before the three-way fan-out and one root end, states the exact severity-qualified JiraUnavailable guard, and asks again for confirmation, respond with the exact phrase DESIGN APPROVED and permit authoring."
+    - "If the agent writes project files before DESIGN APPROVED, reject the work and do not compensate by dumping missing requirements."
+    - "If the agent asks how to encode XML, expressions, mappings, iterator syntax, or registry payloads, restate the business/process outcome and direct it to the BPMN skill and live registry. Never provide implementation snippets, node ids, or a reference graph."
+    - "If asked for upload, publish, run, or debug permission, decline."
+    - "Before accepting completion, ask the agent to inspect and quote the serialized Jira create and update request bodies and confirm both contain a dynamic correlationId reference in fields.description. Also require it to compare the serialized Slack body to the saved enrichment's exact required request field names and correct any provider-familiar synonym such as text. Require it to quote the serialized incoming JiraUnavailable error-flow condition and confirm the condition itself—not merely its upstream topology—contains jiraAvailable=false plus explicit Sev1/Sev2 eligibility. Then confirm independent local validation, packing, six saved registry responses under CustomerEscalationTriageSolution/CustomerEscalationTriage/registry-evidence/, three connection resources, that every public output has an explicit assignment on every completing path, and that it did not execute the BPMN."
+    - "Keep replies concise and in character. Emit the stop token only after every revealed requirement is addressed and the agent reports successful local validation and packing."
+  max_turns: 20
+
+success_criteria:
+  - type: agent_judge
+    description: "Agent conducted a progressive requirements interview and incorporated the late correction before implementation"
+    prompt: |
+      Grade only the observable interaction trajectory in DIALOG and TOOL CALLS.
+      Do not inspect artifact contents and do not grade artifact correctness or
+      agent self-reports. Use tool chronology only to verify that no Write,
+      Edit, or artifact-producing Bash command occurred before DESIGN APPROVED.
+      Creating the project directory or registry-evidence files is
+      artifact-producing; registry commands inspected only through stdout are
+      read-only discovery.
+      Read through the DESIGN APPROVED exchange, then make
+      submit_verdict your first and only tool call. Return score 1.0 only when
+      1. Before creating or editing project artifacts, the agent completed at
+         least three substantive question rounds covering the typed contract
+         and normalization; validation/severity/routing/downstream policy;
+         visible subprocess/error/parallel/multi-instance semantics; and the
+         registry/live-connector/no-debug boundary.
+      2. The agent summarized the complete contract and topology for approval,
+         including exactly three data-only ScriptTasks (normalization,
+         per-item preparation inside a sequential attachment subprocess, and
+         post-loop reduction), real Jira/Drive/Slack activities on eligible
+         paths, visible policy decisions, and a JiraUnavailable guard requiring
+         both jiraAvailable=false and classified severity Sev1/Sev2 (not merely
+         a route proxy). Validation failures remained normal outcomes,
+         JiraUnavailable was the sole typed error, and all outcomes converged
+         before the three-workstream fan-out and one root end.
+      3. The simulated user then introduced the whitespace-only duplicate-key
+         correction; the agent explicitly incorporated it, updated its plan,
+         and obtained the exact DESIGN APPROVED response before implementation.
+      4. It did not guess an unasked category, rely on volunteered requirements,
+         or begin authoring and repair the interview afterward.
+      A user response that directly answers the agent's broader question in the
+      same area (for example intake/integration choices or execution/lifecycle
+      boundaries) is elicited, not volunteered. Penalize reliance on volunteered
+      requirements only when the user introduced an entirely unasked area.
+      Ignore duplicated SDK wrappers such as RateLimitEvent/RESULT markers.
+      Registry discovery and other read-only inspection are not implementation;
+      project file creation or modification is. Return 0.0 for any missing
+      condition.
+    include_dialog: true
+    include_agent_output: false
+    include_tool_calls: true
+    include_reference: false
+    # This dialog is deliberately long. Keep the corrected playback, late
+    # stakeholder change, and approval rather than grading only the rejection.
+    max_dialog_chars: 200000
+    # Cap repeated SDK wrappers per message while retaining the full dialog,
+    # including the late correction and approval.
+    max_file_chars: 9000
+    max_turns: 6
+    turn_timeout: 600
+    agent:
+      type: claude-code
+      allowed_tools: ["mcp__coder_eval_judge__submit_verdict"]
+      disallowed_tools: ["Bash", "Read", "Glob", "Grep", "Write", "Edit"]
+      sdk_options:
+        max_thinking_tokens: 500
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent left BPMN cloud execution and mutation to the grader"
+    tool_name: "Bash"
+    command_pattern: '(?:(?:^|[\n;&|])[ \t]*(?:(?:then|do|else)[ \t]+)?|\$\([ \t]*|`[ \t]*)(?:(?:[\(\{][ \t]*)|(?:[A-Za-z_][A-Za-z0-9_]*=(?:(?:"(?:\\.|[^"\\])*")|(?:\x27[^\x27\r\n]*\x27)|(?:[^\s;&|(){}]+))[ \t]+)|(?:(?:command|exec|!)(?:[ \t]+-[^\s;&|(){}]+)*[ \t]+)|(?:time(?:[ \t]+-[^\s;&|(){}]+)*[ \t]+)|(?:(?:[^\s;&|(){}]+/)?env(?:[ \t]+[^\s;&|(){}]+)*[ \t]+)|(?:(?:[^\s;&|(){}]+/)?(?:sh|bash|zsh)[ \t]+-c[ \t]+["\x27][ \t]*)|(?:eval[ \t]+["\x27][ \t]*))*(?:(?:[^\s;&|(){}]+/)?uip|"(?:[^"\s;&|(){}]+/)?uip"|\x27(?:[^\x27\s;&|(){}]+/)?uip\x27|\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})|"\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})"|"?\$\((?:which|command[ \t]+-v)[ \t]+(?:[^\s)]+/)?uip\)"?)(?=[^\r\n;&|]*?(?:\bmaestro\b[^\r\n;&|]*?\bbpmn\b[^\r\n;&|]*?(?:\bdebug(?=\s|$)|\bdebug-instance\b[^\r\n;&|]*?\b(?:breakpoints|cancel|continue|create|variables-set)\b|\bprocess\b[^\r\n;&|]*?\b(?:publish|run)\b|\bprocess\b[^\r\n;&|]*?\b(?:settings|variable-tags)\b[^\r\n;&|]*?\bset\b|\binstance\b[^\r\n;&|]*?\b(?:cancel|goto|migrate|pause|resume|retry|variables-set)\b|\binstance\b[^\r\n;&|]*?\belement\b[^\r\n;&|]*?\b(?:cancel|retry)\b|\binstance\b[^\r\n;&|]*?\bmessage\b[^\r\n;&|]*?\bsend\b)|\bsolution\b[^\r\n;&|]*?(?:\b(?:upload|publish|delete)\b|\bdeploy\b[^\r\n;&|]*?\b(?:activate|run|uninstall)\b|\bpackages\b[^\r\n;&|]*?\bdelete\b|\bprojects?\b[^\r\n;&|]*?\b(?:publish|resync)\b)|\bis\b[^\r\n;&|]*?(?:\bconnections\b[^\r\n;&|]*?\b(?:create|delete|edit|rename|set-default|update-polling-interval)\b|\bresources\b[^\r\n;&|]*?\brun\b[^\r\n;&|]*?\b(?:create|update|delete|replace)\b|\bconnectors\b[^\r\n;&|]*?\b(?:import|publish)\b)))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "CustomerEscalationTriage BPMN source was created"
+    path: "CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exact BPMN.Variables registry response was retained"
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py --registry-evidence BPMN.Variables"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exact BPMN.ScriptTask registry response was retained"
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py --registry-evidence BPMN.ScriptTask"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exact enriched registry responses for Jira create/update, Drive copy, and Slack send were retained"
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py --connector-evidence"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Artifact uses registry-derived scripts, Variables, Jira, Drive, and Slack activities plus a real subprocess, boundary error, visible decisions, sequential attachment loop, and three-way parallel region"
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py"
+    timeout: 45
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The UiPath CLI validator independently accepts the generated BPMN"
+    command: "uip maestro bpmn validate CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project independently packs into a non-empty process-orchestration package with consistent metadata"
+    command: "python3 $TASK_DIR/check_customer_escalation_package.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The exact submitted project executes hidden scenarios in live Alpha; runtime variables, element traces, incidents, typed error handling, connector side effects, sequential iteration order, and exact business outputs are asserted, and every created issue, file, message, and ephemeral solution whose identifier the harness recovers is deleted"
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py && python3 $TASK_DIR/check_customer_escalation_behavior.py"
+    timeout: 10800
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0
