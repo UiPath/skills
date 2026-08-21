@@ -12,13 +12,20 @@ The real two-solution artifact from that run is reproduced by
 
 import json
 import os
+import subprocess
 import sys
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flow_check import _find_project  # noqa: E402
+from flow_check import (  # noqa: E402
+    _find_project,
+    find_flow_file,
+    find_flow_files,
+    find_project_dir,
+)
+import validate_flow  # noqa: E402
 
 PATTERN = "**/project.uiproj"
 
@@ -143,3 +150,92 @@ def test_single_husk_project_is_still_selected(tmp_path, monkeypatch):
     _make_flow_project(tmp_path, "OnlySolution", "OnlyBuild", 1)
 
     assert _find_project(PATTERN) == os.path.join("OnlySolution", "OnlyBuild")
+
+
+def test_structure_discovery_falls_back_to_one_root_flow(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "BareEmit.flow").write_text(json.dumps({"nodes": []}))
+
+    assert find_flow_files() == ["BareEmit.flow"]
+    assert find_flow_file() == "BareEmit.flow"
+
+
+def test_structure_discovery_ignores_non_flow_sidecar_project(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "AgentSidecar", "Agent", 0)
+    manifest = tmp_path / "AgentSidecar" / "Agent" / "project.uiproj"
+    manifest.write_text(json.dumps({"ProjectType": "Agent"}))
+    (tmp_path / "BareEmit.flow").write_text(json.dumps({"nodes": []}))
+
+    assert find_flow_file() == "BareEmit.flow"
+
+
+def test_solution_flow_beats_root_scratch_emit(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    project = _make_flow_project(tmp_path, "Solution", "Build", 4)
+    (tmp_path / "Build.flow").write_text(json.dumps({"nodes": [{"id": "scratch"}]}))
+
+    assert find_flow_files() == [os.path.join("Solution", "Build", "Build.flow")]
+    assert find_flow_file() == os.path.join("Solution", "Build", "Build.flow")
+    assert project.name == "Build"
+
+
+def test_root_fallback_refuses_distinct_candidates_and_lists_them(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "A.flow").write_text(json.dumps({"nodes": [{"id": "a"}]}))
+    (tmp_path / "B.flow").write_text(json.dumps({"nodes": [{"id": "b"}]}))
+
+    with pytest.raises(SystemExit) as excinfo:
+        find_flow_files()
+
+    message = str(excinfo.value)
+    assert "Multiple distinct root-level .flow files" in message
+    assert "A.flow" in message
+    assert "B.flow" in message
+
+
+def test_root_fallback_collapses_byte_identical_copies(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    body = json.dumps({"nodes": [{"id": "same"}]})
+    (tmp_path / "A.flow").write_text(body)
+    (tmp_path / "B.flow").write_text(body)
+
+    assert find_flow_files() == ["A.flow"]
+
+
+def test_debug_discovery_stays_project_scoped(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "BareEmit.flow").write_text(json.dumps({"nodes": []}))
+
+    with pytest.raises(SystemExit, match="No project.uiproj found"):
+        find_project_dir()
+
+
+def test_validate_flow_uses_root_fallback(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "BareEmit.flow").write_text(json.dumps({"nodes": []}))
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 0, stdout="valid\n", stderr="")
+
+    monkeypatch.setattr(validate_flow.subprocess, "run", fake_run)
+
+    assert validate_flow.main() == 0
+    assert calls == [
+        (
+            [
+                "uip",
+                "maestro",
+                "flow",
+                "validate",
+                "BareEmit.flow",
+                "--output",
+                "json",
+            ],
+            {"capture_output": True, "text": True},
+        )
+    ]
