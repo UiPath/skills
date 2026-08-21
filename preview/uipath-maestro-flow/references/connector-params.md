@@ -4,6 +4,11 @@
 
 Call a curated or generic Integration Service operation.
 
+**Data Service is an Integration Service connector, not Data Fabric.** For a
+task that names a Data Service entity, use connector key
+`uipath-uipath-dataservice` (for example, action `query-entity-records`) and
+never replace it with `dataFabricRead()` / `core.datafabric.read`.
+
 Signatures:
 
 - `connector(descriptor, inputs, opts?)`
