@@ -20,6 +20,8 @@ initial_prompt: |
   Do not build the flow; report what you find.
 
 success_criteria:
+  # This task deliberately produces no artifact. Under ratified ruling D-2,
+  # v1-only registry telemetry remains report-only rather than gating the SDK arm.
   - type: command_executed
     description: "Advisory: live-v1 agent refreshed registry data"
     tool_name: "Bash"

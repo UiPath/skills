@@ -29,7 +29,7 @@ initial_prompt: |
     - `inputs.timerType` must be `"timeCycle"`.
     - `inputs.timerPreset` must be `"R/PT1H"` (every hour — an ISO 8601
       repeating interval). Do NOT use `"custom"` for this smoke test.
-  - Set the node `typeVersion` from its authoritative node definition.
+    - Set the node `typeVersion` from its authoritative node definition.
     - Remove the `core.trigger.manual` node AND its `definitions[]` entry, and
     include the authoritative `core.trigger.scheduled` definition
       (it carries `model.type: "bpmn:StartEvent"` and

@@ -36,7 +36,7 @@ initial_prompt: |
       `display` object with a `label` — validate rejects a node without it.
     - Wire these FIVE edges. Every edge needs both `sourcePort` and
       `targetPort` (validate rejects an edge missing either). Use the correct
-    port ids from the authoritative node definitions:
+      port ids from the authoritative node definitions:
         - trigger `output` → branchA `input`
         - trigger `output` → branchB `input`   (this fork = trigger has 2 outgoing edges)
         - branchA `success` → merge `input`
