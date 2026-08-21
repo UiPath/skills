@@ -1,6 +1,6 @@
 # SDD Authoring — Worked Examples by Use Case
 
-Companion to [`case-sdd-template.md`](case-sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`. **Examples only** — the normative variable and output rules live in [`references/case/variables.md`](../../references/case/variables.md) and are linked, never redefined, here.
+Companion to [`case-sdd-template.md`](case-sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`. **Examples only** — the normative variable and output rules live in [`case-design-layers-guide.md § Layer 3`](../../references/case-design-layers-guide.md#layer-3--data-variables--expressions) and are linked, never redefined, here.
 
 Fourteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
 
@@ -95,7 +95,7 @@ In Case Variables — one row with CSV + keyed format:
 - T03 (Slack) fires → engine extracts `response.initiator` → writes to `vars.caseStarter`
 - Only one trigger fires per case lifecycle in practice, so last-writer-wins is moot.
 
-**Notation** (rules: [variables.md § Categories](../../references/case/variables.md)): keyed `sourceFields` entries per listed T-number; T-number order irrelevant; one Type + Default across all listed triggers; CSV is `Variable`-only (an `In`-arg binds exactly ONE trigger — Use Case 3b).
+**Notation** (rules: [layers § Category semantics](../../references/case-design-layers-guide.md#category-semantics)): keyed `sourceFields` entries per listed T-number; T-number order irrelevant; one Type + Default across all listed triggers; CSV is `Variable`-only (an `In`-arg binds exactly ONE trigger — Use Case 3b).
 
 **When to use Use Case 2b vs declaring per-trigger Variables:**
 - **Use Case 2b** when the value is *semantically the same thing* across triggers (e.g., "the initiator", "the customer ID"). One variable, one downstream reference.
@@ -187,7 +187,7 @@ In Case Variables:
 | approverId | In       | string | T03            |              | "unassigned" | Bound to the T03 event trigger; events have no caller, so it initializes from Default at trigger fire |
 ```
 
-**Rules** ([variables.md § Categories](../../references/case/variables.md)): single T-number (never CSV), empty `sourceFields` (an In-arg selects a trigger, extracts nothing — extraction is Use Case 2), blank = primary trigger (T02).
+**Rules** ([layers § Category semantics](../../references/case-design-layers-guide.md#category-semantics)): single T-number (never CSV), empty `sourceFields` (an In-arg selects a trigger, extracts nothing — extraction is Use Case 2), blank = primary trigger (T02).
 
 **Runtime behavior:** `caseId` is supplied by the API caller at case start via the primary manual trigger (T02). `approverId` is bound to the T03 event trigger, which has no API caller — so it initializes from its `Default` (`"unassigned"`) when that trigger fires. Downstream tasks read each via `=vars.caseId` / `=vars.approverId`.
 
@@ -229,7 +229,7 @@ In the producing task (e.g., "Approve Decision" action task):
 
 **Scenario:** Some task (any task type) produces a useful value in its response, and MULTIPLE downstream consumers (or a condition) need it — or it needs a rename or custom Default.
 
-> **Declare vs reference directly:** a Case Variables row is justified only by a rename, a custom `Default`/`Type`/`Description`, or ≥ 2 consumers / a condition read. One output feeding ONE downstream input is referenced directly with no row — see the task-local section at the end and [`variables.md`](../../references/case/variables.md).
+> **Declare vs reference directly:** a Case Variables row is justified only by a rename, a custom `Default`/`Type`/`Description`, or ≥ 2 consumers / a condition read. One output feeding ONE downstream input is referenced directly with no row — see the task-local section at the end and [layers § Layer 3](../../references/case-design-layers-guide.md#layer-3--data-variables--expressions).
 
 **SDD authoring** — declare the case variable in Case Variables, then bind in the producing task's Outputs:
 
@@ -288,7 +288,7 @@ In a task's Outputs table (e.g., "Mark In Review" — any task type works):
 - `vars.reviewCount = previous + 1` (computed)
 - `vars.enteredAt = "2026-05-17T15:30:00Z"` (computed)
 
-**Notes** (rules: [variables.md § Outputs grammar](../../references/case/variables.md)): `Field` is `—` on `=` rows; target pre-declared; one row per target per task, no `->`/`=` mixing on one target; a task may carry both operators on different targets.
+**Notes** (rules: [layers § Outputs rows](../../references/case-design-layers-guide.md#outputs-rows)): `Field` is `—` on `=` rows; target pre-declared; one row per target per task, no `->`/`=` mixing on one target; a task may carry both operators on different targets.
 
 ---
 
@@ -496,7 +496,7 @@ Plus a task with:
 Every `=vars.X` must resolve to a Case Variables row OR an auto-emitted field of a task's response schema
 (exposed by the field's natural name, e.g., `=vars.score` for a task returning `{score: number}`). Task
 outputs self-declare — rely on them directly; add a Case Variables row only per the declare test in
-[variables.md](../../references/case/variables.md) (rename, custom Default / Type / Description, or
+[layers § When to declare](../../references/case-design-layers-guide.md#when-to-declare-a-case-variables-row) (rename, custom Default / Type / Description, or
 case-level state read in ≥ 2 places).
 
 **In an expression — `vars.$xref(...)`.** When the upstream output is one term *inside* a larger `=js:` expression (a composite payload, an `IF`, an SLA expression) rather than the whole input value, embed the in-expression marker `vars.$xref('Stage Name','Task Name','output_name')` (single quotes only). It resolves to the source output's runtime reference ID at build time (Step 11.5) — no Case Variables row, no "middle variable". Use whole-value `<- "Stage"."Task".out` when the output IS the entire input.
@@ -514,5 +514,18 @@ Full marker semantics: the build skill's `bindings-and-expressions.md` § In-exp
 ## Checks
 
 No checklist lives here. Variable and output row consistency is normative in
-[`variables.md`](../../references/case/variables.md); the pre-confirmation gate is
-[`review.md § Finalization`](../../references/case/review.md).
+[layers § Layer 3](../../references/case-design-layers-guide.md#layer-3--data-variables--expressions); the pre-confirmation gate is
+[layers § Layer closure](../../references/case-design-layers-guide.md#layer-closure--the-design-checklist).
+
+## Decision-routed return lane (divert + inverse guards)
+
+AP Review exits to an SLA Escalation lane on `requiresEscalation`, else completes ([layers § Secondary-lane entry shapes](../../references/case-design-layers-guide.md#secondary-lane-entry-shapes)):
+
+| Stage | Condition | WHEN | IF | Exit Type | Marks Complete |
+|---|---|---|---|---|---|
+| AP Review | exit (complete) | `required-tasks-completed` | `=js:(vars.requiresEscalation !== true)` | `exit-only` | Yes |
+| AP Review | exit (divert) | `selected-tasks-completed("AP ownership review")` | `=js:(vars.requiresEscalation === true)` | `exit-only` (exit target → SLA Escalation) | No |
+| SLA Escalation | entry (`Interrupting: Yes`) | `selected-stage-exited("AP Review")` | `=js:(vars.requiresEscalation === true)` | — | — |
+| SLA Escalation | exit | `required-tasks-completed` | — | `return-to-origin` | Yes |
+
+On escalate the divert fires (completion's inverse `IF` is false), the lane runs, `return-to-origin` re-activates AP Review; on non-escalate the completion fires and the next stage enters via its own `selected-stage-completed("AP Review")`. The decision is read directly from the producing action's output — never relayed through a §1.5 variable.
