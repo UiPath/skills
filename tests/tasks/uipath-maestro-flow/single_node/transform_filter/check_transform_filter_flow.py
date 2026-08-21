@@ -23,10 +23,13 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      NOT pin a specific version).
 """
 
-import glob
 import json
 import sys
+from pathlib import Path
 from typing import NoReturn
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "core.action.transform.filter"
 EXPECTED_OUTPUT_SOURCE = "=result.response"
@@ -55,10 +58,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/TransformFilterDemo*.flow", recursive=True)
-    if not flows:
-        _fail("no TransformFilterDemo*.flow found under cwd")
-    with open(flows[0]) as f:
+    with open(find_flow_file(flow_glob="TransformFilterDemo*.flow")) as f:
         return json.load(f)
 
 

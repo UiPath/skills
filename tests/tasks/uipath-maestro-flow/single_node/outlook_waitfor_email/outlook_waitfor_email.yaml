@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-outlook-waitfor-email
 description: >
   Build-and-validate: a Flow with a manual start trigger, a mid-flow
@@ -39,7 +43,7 @@ initial_prompt: |
   is received in the **Inbox** folder whose SUBJECT CONTAINS the string
   "TestWaitFor". Then End the flow.
 
-  Validate the flow. Do not debug the flow.
+  Validate the flow.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single

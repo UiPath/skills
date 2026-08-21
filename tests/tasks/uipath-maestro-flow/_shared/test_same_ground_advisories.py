@@ -222,6 +222,35 @@ def test_inline_agent_ignores_staging_trees(tmp_path: Path) -> None:
     assert "Solution" in result.stdout
 
 
+def test_inline_agent_scoped_checks_preserve_artifact_outcomes(tmp_path: Path) -> None:
+    agent = tmp_path / "agent-id" / "agent.json"
+    agent.parent.mkdir()
+    agent.write_text(json.dumps({"settings": {"model": "gpt-4.1"}}))
+
+    exists = run_script(
+        "check_inline_agent.py", "--check", "exists", "**/agent.json", cwd=tmp_path
+    )
+    model = run_script(
+        "check_inline_agent.py", "--check", "model", "**/agent.json", cwd=tmp_path
+    )
+
+    assert exists.returncode == 0, exists.stdout + exists.stderr
+    assert model.returncode == 0, model.stdout + model.stderr
+
+
+def test_inline_agent_model_scope_rejects_scaffold_default(tmp_path: Path) -> None:
+    agent = tmp_path / "agent-id" / "agent.json"
+    agent.parent.mkdir()
+    agent.write_text(json.dumps({"settings": {"model": "gpt-4o-2024-11-20"}}))
+
+    result = run_script(
+        "check_inline_agent.py", "--check", "model", "**/agent.json", cwd=tmp_path
+    )
+
+    assert result.returncode != 0
+    assert "not overridden" in result.stdout
+
+
 def test_reachability_excludes_the_loop_back_edge() -> None:
     """A loop body must not reach the End nodes that follow the loop.
 
