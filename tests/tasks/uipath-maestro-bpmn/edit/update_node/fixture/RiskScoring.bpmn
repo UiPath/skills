@@ -20,7 +20,7 @@
     <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SS</bpmn:outgoing></bpmn:startEvent>
     <bpmn:scriptTask id="Task_Score" name="Score Risk" scriptFormat="JavaScript">
       <bpmn:extensionElements>
-        <uipath:scriptVersion value="v3" />
+        <uipath:scriptVersion value="v2" />
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.ScriptTask" version="v1" />
           <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>

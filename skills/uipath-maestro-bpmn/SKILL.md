@@ -55,6 +55,15 @@ do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 
+For an existing ScriptTask, preserve its mapping discriminator and
+`uipath:scriptVersion`. Preserve its arguments and outputs except where the
+requested edit requires a surgical change; make that change using the node's
+existing contract. Migration to a different contract requires explicit
+confirmation. If runtime diagnosis establishes that the node itself is
+incompatible, present that evidence and obtain confirmation before migrating
+it. Do not normalize a working brownfield node merely because the new-node
+authoring contract differs.
+
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
 `uipath-maestro-case`.
@@ -132,6 +141,21 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+   `BPMN.ScriptTask` is the registry lookup key. Retain the live `registry get`
+   result as evidence and use it when it exposes the supported new-node shape.
+   If it contains the known older
+   `<uipath:type value="BPMN.ScriptTask">` mapping, use the bundled
+   `extensionTypes["BPMN.ScriptTask"].xmlTemplate` in
+   `validator/bpmn-spec.json` for that new node. The compatibility template
+   supplies the supported `BPMN.Variables` mapping, `vars` / `metadata`
+   arguments, and standard `scriptResponse` / `Error` outputs. Apply this
+   fallback only to that recognized older registry shape: do not override an
+   unfamiliar newer template, use it as evidence for a live resource, or use
+   it to rewrite an existing ScriptTask. When applying the fallback, its
+   serialized discriminator must remain
+   `<uipath:type value="BPMN.Variables" version="v1" />`; do not replace it
+   with the registry lookup key. The local validator can accept the older
+   discriminator, so validation alone does not detect that substitution.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
