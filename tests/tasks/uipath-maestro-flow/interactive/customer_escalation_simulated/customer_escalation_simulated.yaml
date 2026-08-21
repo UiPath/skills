@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-customer-escalation-simulated
 description: >
   Multi-branch Outlook→classify→decision escalation flow, but driven by a
@@ -67,12 +71,11 @@ simulation:
   n_trials: 1
 
 success_criteria:
-  # Name-agnostic: any .flow the agent built must validate. The exact project
-  # name is scored separately below so a working-but-misnamed flow still earns
-  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  # Name-agnostic: any unambiguous generated .flow must validate. The exact
+  # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0
@@ -86,7 +89,7 @@ success_criteria:
   # provide. See check_escalation_behavior.py for the rationale.
   - type: run_command
     description: "Flow performs the triage: trigger, urgency+VIP routing, Slack notify, email reply, ticket creation"
-    command: "python3 $TASK_DIR/check_escalation_behavior.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_simulated/check_escalation_behavior.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0
@@ -99,7 +102,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named CustomerEscalation (elicited from the user)"
-    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/CustomerEscalation.flow',recursive=True) else 'expected a flow named CustomerEscalation.flow')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name CustomerEscalation"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
