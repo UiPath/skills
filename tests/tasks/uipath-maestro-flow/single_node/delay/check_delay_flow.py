@@ -19,10 +19,13 @@ live engine). Verifies:
      `sourceNodeId` is the delay node id (outgoing).
 """
 
-import glob
 import json
 import sys
+from pathlib import Path
 from typing import NoReturn
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "core.logic.delay"
 VALID_TIMER_TYPES = {"timeDuration", "timeDate"}
@@ -33,10 +36,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/DelayDemo*.flow", recursive=True)
-    if not flows:
-        _fail("no DelayDemo*.flow found under cwd")
-    with open(flows[0]) as f:
+    with open(find_flow_file(flow_glob="DelayDemo*.flow")) as f:
         return json.load(f)
 
 

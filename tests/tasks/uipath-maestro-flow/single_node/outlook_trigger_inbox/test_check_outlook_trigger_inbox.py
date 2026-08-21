@@ -132,6 +132,32 @@ def test_handles_pascalcase_item_id(monkeypatch) -> None:
     checker.check_folder_id_fresh()  # must NOT raise (id resolves on the connection)
 
 
+def test_folder_binding_requires_connection_and_reference(monkeypatch) -> None:
+    checker = _load_checker()
+    monkeypatch.setattr(
+        checker,
+        "_read_flow",
+        lambda: (
+            {
+                "nodes": [
+                    {
+                        "type": checker.TRIGGER_TYPE_MARKER,
+                        "inputs": {
+                            "detail": {
+                                "connectionId": "connection-1",
+                                "eventParameters": {"parentFolderId": "mail-folder-1"},
+                            }
+                        },
+                    }
+                ]
+            },
+            "OutlookTriggerInbox.flow",
+        ),
+    )
+
+    checker.check_folder_binding()
+
+
 def test_folder_id_mismatch_fails_with_pr348_signature(monkeypatch) -> None:
     """If the flow's parentFolderId is not in the live ID set, the checker
     fails with the PR #348 regression marker (independent of the verb)."""
