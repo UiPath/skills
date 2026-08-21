@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from bpmn_assertions import assert_generated_project_scaffold
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.bpmn_assertions import assert_generated_project_scaffold  # noqa: E402
 
 
 class GeneratedProjectScaffoldTests(unittest.TestCase):
