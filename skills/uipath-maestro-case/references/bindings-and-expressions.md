@@ -74,7 +74,7 @@ SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == 
 
 ### Null-safe task-output references
 
-In a `conditionExpression` or SLA `expression`, null-guard every task-output dereference — guard the object, not the property:
+In any `=js:` sink (conditions, SLA, task inputs, connector bodies), null-guard every task-output dereference — guard the object, not the property:
 
 ```
 =js:JSON.parse((vars.response4 || {}).RequestBody || '{}').outcome === 'Signed'
@@ -155,7 +155,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 - Three args = the same name-triple as whole-value `<-`: source stage `data.label`, source task `displayName`, source output `name`.
 - Single quotes ONLY — double quotes break the enclosing JSON string. Names containing a literal `'` are unsupported (re-author the name).
 - Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<outputReferenceId>` (NOT `=vars.` — it is already inside `=js:`).
-- In a `conditionExpression`, null-guard any dotted access off the resolved reference ([§ Null-safe task-output references](#null-safe-task-output-references)).
+- Null-guard any dotted access off the resolved reference ([§ Null-safe task-output references](#null-safe-task-output-references)).
 
 **Example** — composite input payload, no middle variables:
 
