@@ -1,0 +1,50 @@
+task_id: skill-admin-apms-get-enforcement-smoke
+description: >
+  Smoke test (outcome-graded): agent checks whether IP-restriction enforcement is
+  active on the organization. Graded on the enforcement record read back from the
+  live organization (Status plus the organization it belongs to), not the command
+  string. Read-only — the toggle itself is never exercised.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, apms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  Is IP-restriction enforcement currently enabled on my UiPath organization?
+  Save the raw JSON output of the command you use verbatim to ./enforcement.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "enforcement.json holds the organization's real enforcement record (Status + OrganizationId)"
+    command: |
+      python3 -c "
+      import json, re
+      d = json.load(open('enforcement.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'enforcement lookup not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rec = next((x for x in dicts(d) if 'Status' in x or 'status' in x), None)
+      assert rec, 'no enforcement Status in the saved output'
+      status = str(rec.get('Status') or rec.get('status'))
+      assert status in ('Enabled', 'Disabled'), f'unexpected enforcement Status: {status!r}'
+      org = str(rec.get('OrganizationId') or rec.get('organizationId') or '')
+      assert re.fullmatch(r'[0-9a-fA-F-]{36}', org), f'record carries no organization id: {org!r}'
+      print(f'OK: enforcement Status={status} for organization {org}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Reading the state must not toggle it — enforcement enable/disable is out of scope here"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+enforcement\s+(?:enable|disable)\b'
+    weight: 2.0
