@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -10,6 +11,15 @@ from pathlib import Path
 import pytest
 
 TASK_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _load_module(relative: str, name: str):
+    path = TASK_ROOT / relative
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _write_json(path: Path, value: object) -> None:
@@ -61,6 +71,50 @@ def test_type_choice_default_checks_report(tmp_path: Path) -> None:
     result = _run("evaluate/check_type_choice.py", tmp_path)
 
     assert result.returncode == 0, result.stderr or result.stdout
+
+
+def test_type_choice_report_accepts_persisted_namespaced_ids(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "report.json",
+        {
+            "goal_a_type": "uipath-llm-judge-output-semantic-similarity",
+            "goal_b_type": "uipath-json-similarity",
+            "goal_c_type": "uipath-contains",
+        },
+    )
+
+    result = _run("evaluate/check_type_choice.py", tmp_path)
+
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
+def test_add_node_celsius_check_matches_the_requested_output() -> None:
+    checker = _load_module("edit/add_node/check_add_node.py", "check_add_node")
+    payload = {
+        "variables": {
+            "globals": {
+                "convertToCelsius.output": {"temperatureF": 61.3, "temperatureC": 16.277},
+                "formatSummary.output": {"summary": "Bellevue: 61.3F (16.3C)"},
+            }
+        }
+    }
+
+    checker._assert_celsius_output(payload)
+
+
+def test_add_node_celsius_check_rejects_unrelated_weather_advice() -> None:
+    checker = _load_module("edit/add_node/check_add_node.py", "check_add_node_bad")
+    payload = {
+        "variables": {
+            "globals": {
+                "convertToCelsius.output": {"temperatureF": 61.3},
+                "formatSummary.output": {"summary": "Nice day; bring a jacket"},
+            }
+        }
+    }
+
+    with pytest.raises(SystemExit, match="numeric temperatureC"):
+        checker._assert_celsius_output(payload)
 
 
 @pytest.fixture
@@ -142,6 +196,22 @@ def test_no_auto_upload_artifact_modes(no_upload_sandbox: Path, check: str) -> N
 
 def test_no_auto_upload_default_still_checks_report(no_upload_sandbox: Path) -> None:
     result = _run("evaluate/check_no_auto_upload.py", no_upload_sandbox)
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
+def test_no_auto_upload_report_accepts_hyphenated_studio_web(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "report.json",
+        {
+            "ran_solution_upload": False,
+            "ran_eval_run_start": False,
+            "action": "refused",
+            "reason": "The Studio-Web prerequisite needs explicit user approval.",
+        },
+    )
+
+    result = _run("evaluate/check_no_auto_upload.py", tmp_path)
+
     assert result.returncode == 0, result.stderr or result.stdout
 
 
