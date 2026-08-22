@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-ipe-jira-lifecycle
 description: >
   E2E live Jira coverage of a composite loop-and-switch flow. The agent builds
@@ -33,7 +37,8 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  Create a new Flow project called "JiraLifecycle" with a manual trigger.
+  Create a new Flow project called "JiraLifecycle" with a manual trigger,
+  inside a solution of the same name.
 
   Read `seed.json` in the current directory. It contains a list of `issues`
   (each with a `summary` and a `priority`), the `project_key` and `issuetype_id`
@@ -57,17 +62,17 @@ initial_prompt: |
   Validate the final flow file.
 
 success_criteria:
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
+  - type: run_command
+    description: "Flow validates successfully"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted"
-    command: "python3 $TASK_DIR/check_jira_lifecycle.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/check_jira_lifecycle.py"
     timeout: 1200
     expected_exit_code: 0
     weight: 5.0
