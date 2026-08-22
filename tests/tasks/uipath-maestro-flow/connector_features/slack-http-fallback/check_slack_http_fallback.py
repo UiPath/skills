@@ -23,7 +23,6 @@ JSON envelope (hand-authored). Both shapes are normalised before inspection.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import sys
@@ -37,7 +36,7 @@ for _ in range(6):
         break
     _ROOT = os.path.dirname(_ROOT)
 sys.path.insert(0, _ROOT)
-from _shared.flow_check import run_debug  # noqa: E402
+from _shared.flow_check import find_flow_file, run_debug  # noqa: E402
 
 FLOW_GLOB = "**/SlackEmojiListTest*.flow"
 SLACK_KEY = "uipath-salesforce-slack"
@@ -53,16 +52,12 @@ def _fail(message: str) -> NoReturn:
 
 
 def _read_flow() -> dict[str, Any]:
-    flows = sorted(glob.glob(FLOW_GLOB, recursive=True))
-    if not flows:
-        _fail(f"No flow file matching {FLOW_GLOB}")
-    if len(flows) > 1:
-        _fail(f"Multiple flows match {FLOW_GLOB}: {flows}")
-    with open(flows[0], encoding="utf-8") as f:
+    path = find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
+    with open(path, encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError as e:
-            _fail(f"{flows[0]} is not valid JSON: {e}")
+            _fail(f"{path} is not valid JSON: {e}")
 
 
 def _normalise_detail(raw: Any) -> dict[str, Any]:
@@ -90,7 +85,6 @@ def _is_slack_http_fallback(node: dict[str, Any]) -> bool:
     HTTP fallback and must not satisfy this check.
     """
     node_type = str(node.get("type") or "").lower()
-    blob = json.dumps(node).lower()
 
     # Shape 2: connector-scoped Slack HTTP request activity.
     if "http-request" in node_type and SLACK_KEY in node_type:
