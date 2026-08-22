@@ -62,13 +62,14 @@ def check_schema(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     candidates = hitl_nodes(nodes)
     if not candidates:
         fail("need a HITL quickform node")
-    fields = (candidates[0].get("inputs") or {}).get("schema", {}).get("fields", [])
+    schema = (candidates[0].get("inputs") or {}).get("schema", {})
+    fields = schema.get("fields", [])
     directions = {field.get("direction") for field in fields}
     if "input" not in directions:
         fail("need an input-direction (read-only) field")
     if not directions.intersection({"output", "inOut"}):
         fail("need an output/inOut (fill-in) field")
-    rendered = json.dumps(flow).lower()
+    rendered = json.dumps(schema).lower()
     if "approve" not in rendered or "reject" not in rendered:
         fail("need Approve and Reject outcomes")
     print("OK: HITL schema has input/output fields and Approve/Reject outcomes")
