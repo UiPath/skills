@@ -69,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "Execution produced the seeded create/get round-trip result"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/testmanager_crud_grounded/check.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/testmanager_crud_grounded/check.py --execution-evidence"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

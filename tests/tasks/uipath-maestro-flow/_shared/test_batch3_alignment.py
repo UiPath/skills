@@ -88,3 +88,25 @@ def test_enum_checker_prefers_solution_flow_over_root_scratch(tmp_path: Path) ->
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "EnumTest/EnumTest.flow" in result.stdout
+
+
+def test_testmanager_execution_evidence_is_distinct_from_round_trip(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "seed.json").write_text('{"name": "expected"}')
+    (tmp_path / "result.json").write_text(
+        '{"created_name": "different", "retrieved_name": "different", "id": "123"}'
+    )
+
+    evidence = _run(
+        "connector_features/testmanager_crud_grounded/check.py",
+        "--execution-evidence",
+        cwd=tmp_path,
+    )
+    semantic = _run(
+        "connector_features/testmanager_crud_grounded/check.py",
+        cwd=tmp_path,
+    )
+
+    assert evidence.returncode == 0, evidence.stderr or evidence.stdout
+    assert semantic.returncode == 1
