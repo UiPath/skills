@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 # Tenant-gated. Requires the Databricks-backed Database Hub (JDBC)
 # connection in the runner tenant, reaching the sandbox.globalmart schema whose
 # `employees` table is seeded with the fixture rows this task asserts on (Alice
@@ -38,7 +42,8 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  Create a new Flow project called "DatabricksQuery" with a manual trigger.
+  Create a new Flow project called "DatabricksQuery" inside a solution of the
+  same name, with a manual trigger.
 
   It should run a SQL query against a Databricks database using the Database Hub
   (JDBC) connector, and expose the query result as a flow output. Run an aggregate
@@ -56,25 +61,25 @@ initial_prompt: |
   Do NOT pause between planning and implementation.
 
 success_criteria:
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
-    min_count: 1
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "uip maestro flow debug was called"
+    description: "Advisory: live-v1 agent ran flow debug"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "DatabricksQuery checks: valid flow wires the JDBC Execute-Query node with a bound connection, not the native Databricks connector or an HTTP fallback"
-    command: "python3 $TASK_DIR/check_databricks_query.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/jdbc_databricks_query/check_databricks_query.py"
     timeout: 600
     expected_exit_code: 0
     weight: 3.0
