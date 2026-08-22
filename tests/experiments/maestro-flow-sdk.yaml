@@ -29,7 +29,6 @@ defaults:
         - CODEX_BASE_URL
       extra_mounts:
         - ${SKILLS_REPO_HOST_PATH}:/skills-repo:ro
-        - ${SKILLS_REPO_HOST_PATH}:${SKILLS_REPO_HOST_PATH}:ro
         - ~/.uipath:/.uipath:rw
 
   agent:
