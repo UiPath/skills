@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Pre-flight gate for a docker-driver run of the Maestro builder-SDK skills.
+# Pre-flight gate for a docker-driver run of the Flow v2 (Maestro builder-SDK)
+# preview skills. Pairs with tests/experiments/flow-v2-preview.yaml.
 #
 # Runs ONE container that reproduces the harness environment and asserts the
 # preconditions a 250-row run depends on. Every check here stands for a failure
@@ -16,7 +17,13 @@
 # as the runner does. A manual `docker run` WITHOUT it authenticates fine
 # against the image's /root and reproduces nothing.
 #
-# Usage: tests/docker/preflight.sh [image] [uipath-home]
+# The login mount is `:/.uipath:rw`, byte-for-byte what nightly.yaml uses. That
+# destination is the empirical one, not a derived one: it is the arrangement with
+# a 500-task/night track record, and the "uip reports a live login" check below
+# is what confirms it still holds for this image. Do not "fix" it to
+# $HOME/.uipath without re-running this gate.
+#
+# Usage: tests/docker/flow-v2-preflight.sh [image] [uipath-home]
 #   image        default skills-codex:latest
 #   uipath-home  host dir holding .uipath login state, default $HOME/.uipath
 #
@@ -36,7 +43,7 @@ docker run --rm \
   --env HOME="$HOME" \
   --env NODE_AUTH_TOKEN \
   --env UIPATH_CLI_DISABLE_VERSION_SYNC=1 \
-  -v "$UIPATH_HOME:$HOME/.uipath:rw" \
+  -v "$UIPATH_HOME:/.uipath:rw" \
   -v "$SKILLS_REPO:$SKILLS_REPO:ro" \
   --entrypoint bash "$IMG" -c '
     echo "HOME=$HOME"; node -v; echo "uip $(uip --version 2>&1 | tail -1)"
