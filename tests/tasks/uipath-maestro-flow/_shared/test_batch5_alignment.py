@@ -93,7 +93,10 @@ def test_add_node_celsius_check_matches_the_requested_output() -> None:
     payload = {
         "variables": {
             "globals": {
-                "convertToCelsius.output": {"temperatureF": 61.3, "temperatureC": 16.277},
+                "convertToCelsius.output": {
+                    "temperatureF": 61.3,
+                    "temperatureC": 16.277,
+                },
                 "formatSummary.output": {"summary": "Bellevue: 61.3F (16.3C)"},
             }
         }
