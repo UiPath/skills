@@ -43,7 +43,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains inline HITL node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py quick-form"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
