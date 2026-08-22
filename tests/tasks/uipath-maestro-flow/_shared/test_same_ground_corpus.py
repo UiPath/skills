@@ -20,33 +20,14 @@ V1_AUTHORING_ALLOWLIST = {
     "evaluate/local_crud.yaml",
     "evaluate/no_auto_upload.yaml",
     "evaluate/simulation/simulation_crud.yaml",
-    "ixp/e2e_02_project_selection.yaml",
-    "ixp/integration_handle_routing.yaml",
-    "ixp/routing.yaml",
-    "ixp/routing_listing.yaml",
-    "ixp/scaffold_minimal.yaml",
-    "ixp/scaffold_multinode.yaml",
 }
 
-SKILL_TELEMETRY_ALLOWLIST = {
-    "ixp/e2e_02_project_selection.yaml",
-    "ixp/integration_handle_routing.yaml",
-    "ixp/scaffold_minimal.yaml",
-    "ixp/scaffold_multinode.yaml",
-}
+SKILL_TELEMETRY_ALLOWLIST = set()
 
 FORBIDDEN_PROMPT_ALLOWLIST = {
-    "context-grounding/batch_transform/batch_transform.yaml",
-    "context-grounding/summarize/summarize.yaml",
     "evaluate/inline_agent_eval/inline_agent_eval.yaml",
     "evaluate/local_crud.yaml",
     "evaluate/simulation/simulation_crud.yaml",
-    "ixp/e2e_02_project_selection.yaml",
-    "ixp/integration_handle_routing.yaml",
-    "ixp/routing.yaml",
-    "ixp/routing_negative.yaml",
-    "ixp/scaffold_minimal.yaml",
-    "ixp/scaffold_multinode.yaml",
 }
 
 # These born-neutral escalation tasks are outside the recipe-edit sweep. Their
