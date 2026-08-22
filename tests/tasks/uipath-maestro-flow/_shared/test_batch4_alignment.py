@@ -44,6 +44,18 @@ def test_no_flow_assertion_rejects_nested_flow(tmp_path: Path, monkeypatch) -> N
         assert_no_flow_files()
 
 
+def test_flow_contains_expect_none_cli(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [sys.executable, str(Path(__file__).parent / "flow_contains.py"), "--expect-none"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
 def test_ixp_project_selection_accepts_root_sdk_emit(tmp_path: Path) -> None:
     row = tmp_path / "skill-flow-ixp-e2e-project-selection" / "aviation"
     row.mkdir(parents=True)
