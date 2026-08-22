@@ -49,7 +49,7 @@ def _load_verify(module_name, responder, state, tmp_path, monkeypatch):
     helpers.poll = lambda fn, max_attempts=1, delay=0: fn()
     sys.modules["admin_helpers"] = helpers
 
-    target = ADMIN_DIR / f"{module_name}.py"
+    target = ADMIN_DIR / "identity" / f"{module_name}.py"
     src = target.read_text(encoding="utf-8")
 
     # Point the module's STATE_FILE at the synthetic one.

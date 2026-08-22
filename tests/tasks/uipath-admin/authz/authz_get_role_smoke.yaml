@@ -1,0 +1,61 @@
+task_id: skill-admin-authz-get-role-smoke
+description: >
+  Smoke test (outcome-graded): a marker custom role is seeded in pre_run; the
+  agent resolves it by name and fetches its details. Graded on the role record
+  read back from the live tenant — the seeded description and granted action can
+  only come from the tenant, so the check proves a real retrieval rather than
+  matching the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, role]
+
+pre_run:
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-get-smoke" AUTHZ_ROLE_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_ROLE_SCOPE="Tenant" AUTHZ_ROLE_DESCRIPTION="Seeded read-only role for the get-role scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-get-smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  There is a custom role in my UiPath organization whose name is in `seed.json`
+  (the `role.name` field). Show me exactly what it grants, and save the complete
+  JSON of the role's details to ./role.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "role.json holds the seeded role as the tenant stores it (description + granted action)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('role.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      seed = json.load(open('seed.json'))['role']
+      role = next((x for x in dicts(d) if (x.get('Name') or x.get('name')) == seed['name']), None)
+      assert role, 'saved JSON does not contain this run\'s role record (' + seed['name'] + ')'
+      assert (role.get('Type') or role.get('type')) == 'Custom', f'role Type is {role.get(\"Type\")!r}, expected Custom'
+      assert (role.get('Description') or '').strip() == seed['description'], f'description not read back from the tenant: {role.get(\"Description\")!r}'
+      actions = [a.get('Name') for a in (role.get('ActionDetails') or role.get('actionDetails') or [])]
+      assert seed['permission'] in actions, f'granted actions not retrieved: {actions}'
+      print('OK: seeded role retrieved with its description and granted action')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT pass the role id as a flag (--id / --role-id) — roles get takes it positionally"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+.*--(?:id|role-id)\b'
+    weight: 2.0
