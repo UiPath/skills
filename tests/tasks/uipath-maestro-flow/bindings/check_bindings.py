@@ -105,7 +105,7 @@ def _dedupe_aliases(paths: list[str]) -> list[str]:
     for p in by_realpath.values():
         try:
             with open(p, "rb") as fh:
-                key = hashlib.sha1(fh.read()).hexdigest()
+                key = hashlib.sha256(fh.read()).hexdigest()
         except OSError:
             key = p  # unreadable — don't collapse with anything else
         by_hash.setdefault(key, p)
