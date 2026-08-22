@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ ddf9da1. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ fd0070d. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -124,18 +124,34 @@ uip maestro bpmn validate <Name>.bpmn --output json
 | `.parallelGateway(id, { name? })` | `bpmn:parallelGateway` |
 | `.inclusiveGateway(id, { name?, default? })` | `bpmn:inclusiveGateway` |
 | `.eventBasedGateway(id, { name? })` | `bpmn:eventBasedGateway` |
-| `.scriptTask(id, { script, inputs?, outputs?, name? })` | `bpmn:scriptTask` (Jint JS + `BPMN.ScriptTask` mapping) |
-| `.task(id, { set?, name? })` | `bpmn:task` (`BPMN.Variables` variable assignment) |
-| `.connector(id, key, action, inputs, { connection?, folder?, name? })` | `bpmn:sendTask` (`uipath:activity` / `Intsvc.ActivityExecution`) — an IS connector op. See **Connector service task** below. |
-| `.subProcess(id, sp => …, { name?, triggeredByEvent?, loop? })` | `bpmn:subProcess` (nested graph) |
+| `.scriptTask(id, { script, inputs?, outputs?, name?, retry?, loop? })` | `bpmn:scriptTask` (Jint JS + `BPMN.ScriptTask` mapping) |
+| `.task(id, { set?, name?, retry?, loop? })` | `bpmn:task` (`BPMN.Variables` variable assignment) |
+| `.connector(id, key, action, inputs, { connection?, folder?, name?, outputVar?, skipCondition?, retry?, loop? })` | `bpmn:sendTask` (`uipath:activity` / `Intsvc.ActivityExecution`) — an IS connector op. See **Connector service task** below. |
+| `.subProcess(id, sp => …, { name?, triggeredByEvent?, loop?, retry? })` | `bpmn:subProcess` (nested graph) |
+| `.binding(id, { name?, value?, resource?, propertyAttribute? })` | `uipath:binding` (top level only) — an identifier supplied per environment, read as `=bindings.<id>` |
 | `.sequenceFlow(source, target, { id?, name?, condition? })` | `bpmn:sequenceFlow` |
 
 - **Timers** accept an ISO-8601 string shorthand (`timer: 'PT15M'`) or a full
   `{ duration | date | cycle }`.
 - **Errors** accept a name string or `{ name, code }`. A boundary error event
   needs a `code`.
-- **Multi-instance** loops: `loop: { collection: '=vars.X', itemVar: 'item', sequential?, completion? }`;
-  read the current item in the body as `iterator.item`.
+- **Multi-instance** loops: `loop: { collection: '=vars.X', itemVar: 'item', sequential?, completion? }`
+  on **any activity**, not just a sub-process; read the current item as
+  `iterator.item` (or `iterator.<itemVar>`). `completion` is emitted for the
+  platform but is not evaluated by the local engine, so a local run always
+  iterates the whole collection.
+- **Retry**: `retry: { maxRetries, backoff?: 'PT30S', backoffType?: 'static'|'exponential', exponentialBase?, allErrors?, maxDuration? }`
+  on any activity. `maxRetries` counts retries AFTER the first attempt (`3` = four
+  runs). Add **`allErrors: true`** unless you mean only platform-retryable
+  failures — without it an ordinary activity failure is not retried at all.
+  Durations are days/hours/minutes/seconds only: `PT30S`, `P1DT12H`. Not `P1W`.
+- **Skip**: `skipCondition: '=js:vars.X'` skips an activity when it is truthy (the
+  step records as not executed; the rest of the path still runs). Available on
+  `.connector()` only — a script or variable task emits a `uipath:mapping`, which
+  cannot carry it.
+- **Bindings**: `.binding('apiBase', { value: 'https://api.example.com' })` declares
+  an identifier configured per environment; read it as `=bindings.apiBase`. A
+  connector's `connection`/`folder` already declare their own.
 
 ## Connector service task
 
@@ -175,13 +191,23 @@ export default bpmn('notify')
 
 ## Rules the static check enforces (mirrors `uip maestro bpmn validate`)
 
-- Every non-default outgoing flow of an exclusive/inclusive gateway needs a
-  `condition`; the `default` flow has none.
-- No **fake joins** — an activity/event must not have more than one incoming
-  flow; merge with a gateway.
-- No **superfluous gateway** (exactly one in and one out).
-- Sequence-flow endpoints and gateway `default`/boundary `attachedTo` must
-  resolve; ids are unique; each scope has a start event; timers have a value.
+- An exclusive gateway with **more than one** outgoing flow needs a `condition`
+  on each non-`default` one. A gateway with a single outgoing flow is a JOIN and
+  needs none. (An unconditioned inclusive-gateway branch is a warning — the
+  platform's rule does not cover it.)
+- **Every id in the document must be unique** — across elements, flows, variables,
+  bindings, and message/error declarations. Not a style rule: the XML parser drops
+  the second element that reuses an id, so it vanishes from the process while both
+  validators still report the file valid.
+- A boundary event attaches to an **activity** (including a connector), and its
+  `attachedTo` must resolve; so must a gateway `default` and every sequence-flow
+  endpoint. Each scope has a start event; timers have a value; a variable's
+  `elementId` names a real element.
+- `retry.maxRetries` is a positive integer, and `backoff`/`maxDuration` are
+  durations the runtime can parse.
+- Warnings, not errors: a **superfluous gateway** (one in, one out) and an
+  **implicit join** (an activity/event with more than one incoming flow) — the
+  platform accepts both, but a gateway is clearer.
 
 ## Notes
 

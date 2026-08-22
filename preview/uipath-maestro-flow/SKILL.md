@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ ddf9da1. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ fd0070d. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -97,7 +97,7 @@ under `examples/` resolve inside this skill folder.
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
-| Integration Service action | `uipath.connector.<key>.<action>` | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Service: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [Subflow](#subflow) | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
 | Human task | `uipath.human-in-the-loop` | `hitl(...)` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
 | Human quick form | `uipath.human-in-the-loop.quick-form` | `hitl({ variant: 'quick-form', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
@@ -455,8 +455,9 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 
 ## Data Fabric
 
-Read and update Data Fabric entity records (`core.datafabric.read` / `.update`).
-
+Use native Data Fabric nodes only when the scenario names Data Fabric
+(`core.datafabric.read` / `.update`). “Data Service” instead names the
+`uipath-uipath-dataservice` connector; route it to `connector(...)`.
 Signatures: `dataFabricRead({ entity, filters? })` and
 `dataFabricUpdate({ entity, record, set })` — `record` is exactly one of
 `{ byId }` or `{ fromRead: '<read step name>' }`.
@@ -698,7 +699,8 @@ Signatures: `connector(descriptor, inputs, opts?)`;
   { connection: 'jira', folder: 'shared' }))
 ```
 
-Discover tenant-specific fields and ids rather than guessing; preserve every scenario-named input.
+Data Service uses connector key `uipath-uipath-dataservice`; never substitute
+`dataFabricRead`. Discover tenant-specific fields and ids; preserve every scenario-named input.
 
 **Reference: [`references/connector-params.md`](references/connector-params.md)**
 
