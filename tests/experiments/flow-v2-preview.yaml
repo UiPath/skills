@@ -1,0 +1,75 @@
+experiment_id: flow-v2-preview
+description: >-
+  Flow v2: the three preview Maestro builder-SDK skills
+  (uipath-maestro-{flow,case,bpmn}) as the ONLY skill catalog, under the docker
+  driver. Shadows the shipped v1 skills of the same name by pointing the catalog
+  at preview/ alone, so a run measures the SDK authoring path rather than a mix
+  of both generations.
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-codex:latest
+      network: bridge
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        # GitHub Packages auth for `npm install @uipath/flow-sdk`.
+        - NODE_AUTH_TOKEN
+        - UIPATH_CLI_DISABLE_VERSION_SYNC
+        # Parity with nightly.yaml. Inert unless a Delegate runtime sets them.
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - E2E_PROCESS_KEY
+        - E2E_LONG_PROCESS_KEY
+      extra_mounts:
+        # uip login state. Same destination nightly.yaml uses; do not "fix" it.
+        - ~/.uipath:/.uipath:rw
+        # Repo root. Narrowing plugins.path to preview/ drops the automatic
+        # repo-root mount, and criteria shell out to
+        # $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py. Destination must be the
+        # host path, so this line needs UiPath/coder_eval#128.
+        - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
+
+  agent:
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    plugins:
+      # PREVIEW ONLY. Also the source of the automatic repo-path bind mount.
+      - type: "local"
+        path: "$SKILLS_REPO_PATH/preview"
+    ignore_patterns: []
+
+  pre_run:
+    # Runtime npm auth for the @uipath scope. The shared image ships none: its
+    # build-time npmrc carries a literal token and is deleted in the same layer.
+    # @uipath/flow-sdk is published only to GitHub Packages, so without this
+    # every in-sandbox `npm install @uipath/flow-sdk` 404s against the public
+    # registry and each compile fails with it. Kept here rather than in
+    # tests/docker/Dockerfile so npm resolution is unchanged for every other
+    # suite. Written to $HOME, which is where npm resolves userconfig, so it
+    # holds whatever HOME the runner forwards. ${NODE_AUTH_TOKEN} stays literal:
+    # npm expands it at read time, so no token is written to disk.
+    - command: |-
+        mkdir -p "$HOME" && printf '%s\n' \
+          '@uipath:registry=https://npm.pkg.github.com/' \
+          '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' \
+          > "$HOME/.npmrc"
+      timeout: 30
+
+  post_run:
+    # Unpruned node_modules costs gigabytes across a full Maestro run.
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default
