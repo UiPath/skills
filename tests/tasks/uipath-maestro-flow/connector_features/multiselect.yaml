@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-ipe-multiselect
 description: >
   Tests the multiselect IS feature — configures a Slack group direct message
@@ -20,7 +24,7 @@ success_criteria:
   # Name-agnostic: the prompt doesn't fix a project name.
   - type: run_command
     description: "A .flow file exists and is valid JSON with nodes and edges"
-    command: "python3 -c \"import json,glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow found') if not flows else None; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; print('OK: %d nodes, %d edges'%(len(f['nodes']),len(f['edges'])))\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -30,17 +34,16 @@ success_criteria:
   # field has exactly 3 entries (the three group-DM recipients).
   - type: run_command
     description: "Slack group-DM node present with 3 entries in the users multiselect"
-    command: "python3 $TASK_DIR/check_multiselect_flow.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_multiselect_flow.py"
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-

@@ -28,11 +28,15 @@ JSON envelope (hand-authored). Both shapes are normalised before inspection.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import sys
+from pathlib import Path
 from typing import Any, NoReturn
+
+SHARED_DIR = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+from flow_check import find_flow_file  # noqa: E402
 
 FLOW_GLOB = "**/SpotifyProfileTest*.flow"
 # The generic HTTP connector — the only managed path to a service with no
@@ -48,16 +52,12 @@ def _fail(message: str) -> NoReturn:
 
 
 def _read_flow() -> dict[str, Any]:
-    flows = sorted(glob.glob(FLOW_GLOB, recursive=True))
-    if not flows:
-        _fail(f"No flow file matching {FLOW_GLOB}")
-    if len(flows) > 1:
-        _fail(f"Multiple flows match {FLOW_GLOB}: {flows}")
-    with open(flows[0], encoding="utf-8") as f:
+    path = find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
+    with open(path, encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError as e:
-            _fail(f"{flows[0]} is not valid JSON: {e}")
+            _fail(f"{path} is not valid JSON: {e}")
 
 
 def _normalise_detail(raw: Any) -> dict[str, Any]:

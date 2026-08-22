@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-ipe-complex-array
 description: >
   Tests the complex array IS feature — configures the Slack
@@ -21,7 +25,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ComplexArrayTest '\"nodes\"' '\"edges\"'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -29,7 +33,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has the Slack Create Group Direct Message node with its users complex array populated"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); nodes=[n for n in f['nodes'] if n.get('type','')=='uipath.connector.uipath-salesforce-slack.create-group-direct-message']; assert nodes, 'No create-group-direct-message node'; d=json.dumps(nodes[0].get('inputs',{})); assert 'users' in d, 'users complex array not populated'; print('OK: group DM node with users array present')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_multiselect_flow.py populated"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -37,18 +41,16 @@ success_criteria:
 
   - type: run_command
     description: "Advisory: group DM participants referenced in the project (names may resolve to Slack user IDs on a live connection)"
-    command: "python3 -c \"import glob,os,sys; files=[p for p in glob.glob('**/ComplexArrayTest*/**',recursive=True)+glob.glob('**/ComplexArrayTest*.*',recursive=True) if os.path.isfile(p) and not p.endswith('.uipx')]; blob=''.join(open(p,errors='ignore').read() for p in files); missing=[u for u in ('coder evals','e2e-testing') if u not in blob]; sys.exit(1 if missing else 0)\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ComplexArrayTest 'coder evals' 'e2e-testing'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
 
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
-    require_success: true
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-

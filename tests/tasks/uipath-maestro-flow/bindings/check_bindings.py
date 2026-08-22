@@ -158,6 +158,23 @@ def cmd_structure(pattern: str) -> None:
     print(f"OK: {path} valid JSON with nodes + bindings")
 
 
+def cmd_connector_node_count(pattern: str, minimum: str) -> None:
+    path, flow = _load_one(pattern)
+    nodes = flow.get("nodes") or []
+    connector_nodes = [
+        node
+        for node in nodes
+        if "uipath.connector." in str(node.get("type") or "").lower()
+    ]
+    required = int(minimum)
+    if len(connector_nodes) < required:
+        _fail(
+            f"{path}: expected at least {required} connector node(s), "
+            f"found {len(connector_nodes)}"
+        )
+    print(f"OK: {path} has {len(connector_nodes)} connector node(s)")
+
+
 def cmd_no_empty_stubs(pattern: str) -> None:
     path, bindings = _load_flow_bindings(pattern)
     empty = [b for b in _connection_rows(bindings) if not b.get("resourceKey")]
@@ -329,6 +346,7 @@ def cmd_both_ids_present_from_json(pattern: str, json_path: str) -> None:
 
 _COMMANDS = {
     "structure": cmd_structure,
+    "connector_node_count": cmd_connector_node_count,
     "no_empty_stubs": cmd_no_empty_stubs,
     "no_duplicates": cmd_no_duplicates,
     "matched_default": cmd_matched_default,
