@@ -13,10 +13,15 @@ Checks:
 
 from __future__ import annotations
 
-import glob
 import json
+import os
 import sys
+from pathlib import Path
 from typing import Any, NoReturn
+
+SHARED_DIR = Path(__file__).resolve().parent.parent / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+from flow_check import find_flow_file  # noqa: E402
 
 
 def _fail(message: str) -> NoReturn:
@@ -24,16 +29,12 @@ def _fail(message: str) -> NoReturn:
 
 
 def _load_flow(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = sorted(glob.glob(pattern, recursive=True))
-    if not matches:
-        _fail(f"No flow found for {pattern!r}")
-    if len(matches) > 1:
-        _fail(f"Multiple flows found for {pattern!r}: {matches}")
+    path = find_flow_file(flow_glob=os.path.basename(pattern))
     try:
-        with open(matches[0], encoding="utf-8") as flow_file:
-            return matches[0], json.load(flow_file)
+        with open(path, encoding="utf-8") as flow_file:
+            return path, json.load(flow_file)
     except json.JSONDecodeError as exc:
-        _fail(f"Flow {matches[0]} is not valid JSON: {exc}")
+        _fail(f"Flow {path} is not valid JSON: {exc}")
 
 
 def _check_structure(flow_path: str, flow: dict[str, Any]) -> None:
