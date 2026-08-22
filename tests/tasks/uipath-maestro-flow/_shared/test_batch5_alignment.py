@@ -197,6 +197,38 @@ def test_no_auto_upload_artifact_modes(no_upload_sandbox: Path, check: str) -> N
     assert result.returncode == 0, result.stderr or result.stdout
 
 
+def test_no_auto_upload_accepts_legacy_exact_match_evaluator(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "evals" / "evaluators" / "legacy-equality.json",
+        {"name": "greeting-match", "category": 0, "type": 1},
+    )
+
+    result = _run(
+        "evaluate/check_no_auto_upload.py",
+        tmp_path,
+        "--check",
+        "evaluator",
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
+def test_no_auto_upload_rejects_other_legacy_evaluator_types(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "evals" / "evaluators" / "legacy-json-similarity.json",
+        {"name": "greeting-match", "category": 0, "type": 6},
+    )
+
+    result = _run(
+        "evaluate/check_no_auto_upload.py",
+        tmp_path,
+        "--check",
+        "evaluator",
+    )
+
+    assert result.returncode == 1
+
+
 def test_no_auto_upload_default_still_checks_report(no_upload_sandbox: Path) -> None:
     result = _run("evaluate/check_no_auto_upload.py", no_upload_sandbox)
     assert result.returncode == 0, result.stderr or result.stdout
