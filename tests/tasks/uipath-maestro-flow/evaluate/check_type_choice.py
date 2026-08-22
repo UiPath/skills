@@ -20,9 +20,12 @@ from pathlib import Path
 
 REPORT = Path("report.json")
 EXPECTED = {
-    "goal_a_type": "llm-judge-output",
-    "goal_b_type": "json-similarity",
-    "goal_c_type": "contains",
+    "goal_a_type": {
+        "llm-judge-output",
+        "uipath-llm-judge-output-semantic-similarity",
+    },
+    "goal_b_type": {"json-similarity", "uipath-json-similarity"},
+    "goal_c_type": {"contains", "uipath-contains"},
 }
 ARTIFACT_EXPECTED = {
     "goal-a": ("goal-a-evaluator", "uipath-llm-judge-output-semantic-similarity"),
@@ -67,16 +70,16 @@ def _check_report() -> None:
         sys.exit(f"FAIL: {REPORT} is not valid JSON: {e}")
 
     failures: list[str] = []
-    for key, want in EXPECTED.items():
+    for key, accepted in EXPECTED.items():
         got = doc.get(key)
-        if got != want:
-            failures.append(f"{key}: got {got!r}, expected {want!r}")
+        if got not in accepted:
+            failures.append(
+                f"{key}: got {got!r}, expected one of {sorted(accepted)!r}"
+            )
 
     if failures:
         sys.exit("FAIL: " + " | ".join(failures))
-    print(
-        f"OK: all 3 evaluator-type choices match expected ({list(EXPECTED.values())})"
-    )
+    print("OK: all 3 evaluator-type choices match their persisted evaluator kinds")
 
 
 def main() -> None:
