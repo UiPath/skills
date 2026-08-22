@@ -23,7 +23,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from _shared.flow_check import assert_flow_has_node_type  # noqa: E402
+from _shared.flow_check import assert_flow_has_node_type, find_flow_file  # noqa: E402
 
 CONNECTOR_KEY = "uipath-microsoft-azureactivedirectory"
 FLOW_GLOB = "**/CeqlWhereTest*.flow"
@@ -134,10 +134,7 @@ def _check_where_detail() -> None:
 
 
 def _find_flow() -> str:
-    flows = glob.glob(FLOW_GLOB, recursive=True)
-    if not flows:
-        sys.exit(f"FAIL: No flow file matching {FLOW_GLOB}")
-    return flows[0]
+    return find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
 
 
 def _check_flow_structure() -> None:

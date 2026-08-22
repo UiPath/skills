@@ -11,13 +11,17 @@ The 'users' value counts whether it is a native JSON array
 multiselect field in a .flow.
 
 Name-agnostic: the prompt does not fix a project name, so every .flow file
-is checked ('**' glob skips dot-dirs, so .uipath/.skills flows are ignored).
+selected by the shared same-ground discovery helper is checked.
 """
 import ast
-import glob
 import json
 import re
 import sys
+from pathlib import Path
+
+SHARED_DIR = Path(__file__).resolve().parent.parent / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+from flow_check import find_flow_files  # noqa: E402
 
 
 def parse_users(value):
@@ -73,7 +77,7 @@ def find_users(obj):
     return None
 
 
-def check_flow(path):
+def check_flow(path, expected_count):
     """Return None on pass, else a failure reason."""
     try:
         flow = json.load(open(path))
@@ -91,21 +95,27 @@ def check_flow(path):
         users = find_users(node.get("inputs", {}))
         if users is None:
             continue
-        if len(users) == 3:
+        if expected_count == "populated" and users:
             print(f"OK: {path} — node '{node['id']}' users={users}")
             return None
-        return f"users field has {len(users)} entries, expected 3: {users}"
+        if isinstance(expected_count, int) and len(users) == expected_count:
+            print(f"OK: {path} — node '{node['id']}' users={users}")
+            return None
+        return f"users field has {len(users)} entries, expected {expected_count}: {users}"
     return "Slack node has no 'users' multiselect field"
 
 
 def main():
-    flows = glob.glob("**/*.flow", recursive=True)
-    if not flows:
-        sys.exit("no .flow file found")
+    expected_count = (
+        "populated"
+        if len(sys.argv) > 1 and sys.argv[1] == "populated"
+        else int(sys.argv[1]) if len(sys.argv) > 1 else 3
+    )
+    flows = find_flow_files()
 
     reasons = []
     for path in flows:
-        reason = check_flow(path)
+        reason = check_flow(path, expected_count)
         if reason is None:
             sys.exit(0)
         reasons.append(f"{path}: {reason}")
