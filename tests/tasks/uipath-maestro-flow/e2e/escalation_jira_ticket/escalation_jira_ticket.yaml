@@ -32,7 +32,8 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  Create a UiPath Maestro Flow named "EscalationJiraTicket" with a MANUAL trigger.
+  Create a UiPath Maestro Flow named "EscalationJiraTicket" with a MANUAL trigger
+  inside a solution of the same name.
   It triages a customer escalation and creates a Jira ticket for it.
 
   Read `seed.json` in the current directory. Declare flow inputs matching the keys
