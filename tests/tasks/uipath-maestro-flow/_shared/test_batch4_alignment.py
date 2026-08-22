@@ -16,7 +16,9 @@ TASK_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _write_flow(path: Path, nodes: list[dict], **extra) -> None:
-    path.write_text(json.dumps({"nodes": nodes, "edges": [], **extra}), encoding="utf-8")
+    path.write_text(
+        json.dumps({"nodes": nodes, "edges": [], **extra}), encoding="utf-8"
+    )
 
 
 def _run(relative: str, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -46,7 +48,11 @@ def test_no_flow_assertion_rejects_nested_flow(tmp_path: Path, monkeypatch) -> N
 
 def test_flow_contains_expect_none_cli(tmp_path: Path) -> None:
     result = subprocess.run(
-        [sys.executable, str(Path(__file__).parent / "flow_contains.py"), "--expect-none"],
+        [
+            sys.executable,
+            str(Path(__file__).parent / "flow_contains.py"),
+            "--expect-none",
+        ],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -214,12 +220,8 @@ def test_summarize_checker_accepts_equivalent_expression_shapes(
                 "id": "end",
                 "type": "core.control.end",
                 "outputs": {
-                    "summary": {
-                        "source": output_mapping("Text")
-                    },
-                    "citations": {
-                        "source": output_mapping("Citations")
-                    },
+                    "summary": {"source": output_mapping("Text")},
+                    "citations": {"source": output_mapping("Citations")},
                 },
             },
         ],
