@@ -57,7 +57,10 @@ def _check_artifact(check: str) -> None:
                 path
                 for path, doc in docs
                 if doc.get("name") == "greeting-match"
-                and doc.get("evaluatorTypeId") == "uipath-exact-match"
+                and (
+                    doc.get("evaluatorTypeId") == "uipath-exact-match"
+                    or (doc.get("category"), doc.get("type")) == (0, 1)
+                )
             ),
             None,
         )
