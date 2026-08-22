@@ -337,7 +337,9 @@ jobs:
           done
           cp tests/experiments/nightly.yaml "$experiment"
           sed -i "s|path: \"\\\$SKILLS_REPO_PATH\"|path: \"$stage\"|" "$experiment"
+          sed -i "/~\\/.uipath:\/.uipath:rw/a\\        - $GITHUB_WORKSPACE:/skills-repo:ro" "$experiment"
           grep -F "path: \"$stage\"" "$experiment"
+          grep -F "$GITHUB_WORKSPACE:/skills-repo:ro" "$experiment"
           echo "EVAL_EXPERIMENT=$experiment" >> "$GITHUB_ENV"
 
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
@@ -362,7 +364,7 @@ jobs:
       # globs). Word-splitting is intentional — do not quote.
       - name: Run coder-eval
         env:
-          SKILLS_REPO_PATH:         ${{ github.workspace }}
+          SKILLS_REPO_PATH:         /skills-repo
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
