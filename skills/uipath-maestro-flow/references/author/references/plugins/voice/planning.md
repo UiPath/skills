@@ -15,6 +15,21 @@ For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, 
 
 All four are fixed OOTB node types. They ship in the CLI's bundled registry, so `registry get` resolves them offline on any tenant — a clean `registry get` confirms the *node shapes*, not that the tenant can place calls. Conversational voice enablement and SIP trunk provisioning are only observable at deploy/debug time; if the user hasn't confirmed them, flag it as an Open Question. Commands: [impl.md § Registry Validation](impl.md#registry-validation).
 
+## Phone Numbers and SIP Trunks
+
+Both topologies need a SIP trunk on the tenant, and **direction is a separate flag from existence** — a number that exists may still be unusable for your topology:
+
+```bash
+uip conversational trunks list --direction outbound --output json   # outbound `from`
+uip conversational trunks list --direction inbound  --output json   # inbound binding
+```
+
+- **Outbound** — `createOutgoingCall1.inputs.from` must be a number with `outboundEnabled: true`. A number that is only inbound-enabled fails at dial time, not at validate.
+- **Inbound** — the number you bind must have `inboundEnabled: true`. A tenant can easily have several trunks where only one qualifies.
+- A trunk already showing a non-null `processKey` is bound to another process; re-pointing it needs `--yes` and **silently takes the number away from that process**. Confirm with the user before reusing one.
+
+Numbers referenced in older examples go stale — always re-list rather than copying a number out of a doc or an existing flow. Binding an inbound number is a deploy-time step, not a `.flow` edit: [impl.md § Bind an Inbound Phone Number](impl.md#bind-an-inbound-phone-number).
+
 ## When to Use
 
 Use voice nodes when the flow's job is a phone conversation — answering an inbound support line, placing an outbound notification/collection call — and an AI agent should hold that conversation.
@@ -89,3 +104,14 @@ In the architectural plan:
 - `voice-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow --conversational` runs
 - Outbound only: `voice-from: <SIP trunk E.164 number>` and `voice-to: <destination E.164 number>` — `from` must be a number provisioned on the tenant; flag unknowns as Open Questions
 - Tools/contexts/escalations on the voice agent reuse the [inline-agent](../inline-agent/planning.md) annotations
+
+## Tool Choice — Prefer Context Grounding over IS Connectors
+
+A voice agent takes the same tool/context/escalation resources as any inline agent, but the two kinds do **not** ship equally today:
+
+| Resource kind | Status |
+| --- | --- |
+| Context grounding (index) | Works end to end — validate, pack, debug, `solution publish`, `solution deploy`, live call |
+| Integration Service connector tool (e.g. Web Search) | **Blocked at ship time.** `solution publish` rejects the package, and even a clean package cannot be deployed |
+
+Plan voice agents around context-grounding indexes and built-in tools. If the user asks for a connector-backed tool on a voice agent, raise it as a **Risk** in the plan rather than designing around it — the two failure modes and the current absence of a workaround are in [impl.md § Connector Tools Are Blocked at Ship Time](impl.md#connector-tools-are-blocked-at-ship-time).

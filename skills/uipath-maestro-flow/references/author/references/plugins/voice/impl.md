@@ -174,6 +174,61 @@ Packing (`uip maestro flow pack`, or `uip solution pack` — see the operate cap
 
 Debugging (`uip maestro flow debug`) needs a tenant with conversational voice and a live call — always get user consent first, and for outbound flows confirm the `to` number: the flow **places a real phone call**.
 
+## Bind an Inbound Phone Number
+
+An inbound flow does nothing until a trunk points at its deployed process. Nothing in the `.flow` carries the number — the binding is made against the **release key** after deploy.
+
+```bash
+# 1. ship the solution (the flow project alone is not deployable)
+uip solution pack "<SolutionDir>" "<OutDir>" --output json
+uip solution publish "<OutDir>/<SolutionName>_<version>.zip" --output json
+uip solution deploy run --name <n> --folder-name <n> \
+  --package-name <SolutionName> --package-version <version> \
+  --parent-folder-path Shared --output json
+
+# 2. read the release key + folder key back
+uip or processes list --folder-path "Shared/<n>" --output json   # Key, FolderKey
+
+# 3. point the trunk at it
+uip conversational trunks assign <E164-number> \
+  --process-key <Key> --folder-key <FolderKey> --yes --output json
+```
+
+- `--process-key` is the **release `Key`** from `or processes list` (a GUID), not the package name and not the process id.
+- `--entry-point` is optional and resolves automatically when the flow has exactly one incoming-call entry point — the normal case. Pass it explicitly only for a multi-entry-point package.
+- `--yes` is required when the trunk already has a non-null `processKey`; it re-points the number and the previous process stops receiving calls.
+- Verify with `uip conversational trunks list --direction inbound` — `processName` should show your process and `entryPoint` should match the `core.trigger.voice` node's `inputs.entryPointId`. A mismatch there means the trunk is bound to a different build.
+
+Outbound flows need no binding step — `inputs.from` names the trunk directly.
+
+## Connector Tools Are Blocked at Ship Time
+
+A voice agent with an **Integration Service connector tool** (the `uipath.agent.resource.tool.connector.*` node kind) authors, validates, and runs under `flow debug` — then fails to ship. Two independent blockers, neither with a workaround today:
+
+1. **`solution publish` rejects the package.** Packing emits two `bindings_v2.json` entries for the same connection that differ only in the case of `resource` (`connection` vs `Connection`), and the feed refuses it:
+
+   ```text
+   HTTP 400: Corrupted solution package: Duplicate binding key '<connection-guid>'
+   for resource type 'Connection' in project <project-guid>.   (errorCode 1206)
+   ```
+
+2. **Even a clean package will not deploy.** Once the connection is declared as a solution resource, deploy demands it be authenticated first, while the solution folder that would hold it does not exist yet:
+
+   ```text
+   [CNS1072] connection <name>: You will need to authenticate this connection
+   before proceeding further
+   ```
+
+   `deploy config link` returns `5025 Resource linking is not allowed`; every `conflictFixingAction` value returns `4020 Selected action is not valid for the resource` (there is no *conflict* — the connection is merely unauthenticated); `--skip-activate` still fails at deploy validation; `--personal-workspace` needs the package published to that feed.
+
+**What to do:** build voice agents on context-grounding indexes and built-in tools, which ship cleanly. If a connector tool is already on the node and the user needs to deploy, removing it is currently the only way through:
+
+```bash
+uip maestro flow node delete <FlowName>.flow <connectorToolNodeId> --output json
+```
+
+That drops the node, its `tool` edge, and its `bindings[]` entries together; also delete the matching `<projectId>/resources/<resourceId>/` directory so the agent stops advertising the tool. Re-pack after removing — `solution pack` re-derives the connection resource from whatever bindings remain.
+
 ## Debug
 
 | Error | Cause | Fix |
@@ -188,7 +243,12 @@ Debugging (`uip maestro flow debug`) needs a tenant with conversational voice an
 | `registry get` reports the voice type not found | The installed CLI predates voice support (the types ship in its bundled registry, so this is a CLI-version problem, not a tenant one) | `uip tools update`; re-run `registry get` |
 | Call never connects on a tenant that packs and deploys fine | Conversational voice not enabled on the tenant, or no SIP trunk provisioned — neither is detectable from the CLI | Confirm with the user / tenant admin; raise as an Open Question rather than re-authoring the flow |
 | Call connects but the agent is silent / call drops immediately | Package built without the embedded `agentDefinition` (hand-rolled pack pipeline), or `settings.voice` removed after pack | Re-pack with the CLI; verify the staged `.bpmn` has `name="agentDefinition"` on the voice serviceTask |
-| Outbound call never dials | `from` is not a SIP trunk number on the tenant, or `to` is malformed | Use a provisioned E.164 trunk number for `from`; `to` must be E.164 in a literal binding |
+| Outbound call never dials | `from` is not a SIP trunk number on the tenant, or `to` is malformed, or the trunk exists but is not outbound-enabled | `uip conversational trunks list --direction outbound`; use a number with `outboundEnabled: true` for `from`; `to` must be E.164 in a literal binding |
+| Inbound number rings but nothing runs | Trunk not bound, bound to a different process, or bound to an older build | `uip conversational trunks list --direction inbound` — check `processName` and that `entryPoint` matches the trigger's `inputs.entryPointId`; re-run `trunks assign` (§ Bind an Inbound Phone Number) |
+| `solution publish`: `Duplicate binding key … for resource type 'Connection'` (errorCode 1206) | The voice agent has an IS connector tool | No workaround — remove the connector tool (§ Connector Tools Are Blocked at Ship Time) |
+| `solution deploy run`: `[CNS1072] … authenticate this connection before proceeding further` | Same — the connector tool's connection is declared as a solution resource | No workaround — remove the connector tool (§ Connector Tools Are Blocked at Ship Time) |
+| `solution deploy run`: `DraftDeploymentHasDifferentPackageVersion` | An earlier failed deploy left a draft under that deployment name, pinned to the version it first tried | Deploy under a new `--name`/`--folder-name`, or clear the stale draft |
+| `solution upload`: `Studio Web already has a solution with SolutionId … Refusing to overwrite without --force` | `flow debug` stamped its staging `SolutionId` into the local `.uipx`, so upload now targets that cloud solution | Re-run with `--force` to update that project in place (this discards its Studio Web version history), or remove `SolutionId` from the `.uipx` to upload as a new solution |
 
 ## What NOT to Do
 
