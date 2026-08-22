@@ -196,9 +196,13 @@ the same name, so a run measures the Flow v2 authoring path rather than a mix of
 both generations. Narrowing `plugins.path` to `preview/` drops the automatic
 repo-root bind mount, so the root is remounted explicitly; the image also needs
 runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
-identical to `nightly.yaml`. Run `tests/docker/flow-v2-preflight.sh` first: it
-asserts those preconditions in one container, each standing for a failure that
-otherwise scores as a capability problem rather than a config one.
+identical to `nightly.yaml`. Confirm that mount resolves before a full run, or
+every tenant call fails as a capability problem rather than a config one:
+
+```bash
+docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
+  --entrypoint bash skills-codex:latest -c 'uip login status'
+```
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 

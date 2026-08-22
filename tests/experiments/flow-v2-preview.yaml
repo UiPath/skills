@@ -4,8 +4,7 @@ description: >-
   (uipath-maestro-{flow,case,bpmn}) as the ONLY skill catalog, under the docker
   driver. Shadows the shipped v1 skills of the same name by pointing the catalog
   at preview/ alone, so a run measures the SDK authoring path rather than a mix
-  of both generations. Pair with `tests/docker/flow-v2-preflight.sh`, which
-  asserts the preconditions this file depends on before a full run is launched.
+  of both generations.
 
 defaults:
   run_limits:
