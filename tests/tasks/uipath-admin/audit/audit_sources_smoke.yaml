@@ -1,0 +1,38 @@
+task_id: skill-admin-audit-sources-smoke
+description: >
+  Smoke test (outcome-graded): agent retrieves the audit event-source catalog at
+  BOTH org and tenant scope. Graded by corroborating each saved catalog against
+  the same catalog read back from the live tenant by the harness — a fabricated
+  or wrong-scope save cannot pass — rather than by matching the command string.
+
+  Scope discipline is graded without hardcoding an assumption about the two
+  catalogs: when the live org and tenant catalogs genuinely differ, the org save
+  must resemble the live org catalog and the tenant save the live tenant one.
+  If this tenant exposes identical catalogs at both scopes, that discriminating
+  assertion is skipped instead of failing on an environment fact the agent does
+  not control.
+
+  This is also the read-access probe for the audit suite: the verify step fails
+  loudly if the run's principal cannot read the catalog itself, so a missing
+  Audit.Read scope surfaces as an explicit message rather than a silent pass.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  I'm new here — in UiPath Admin, what kinds of audit events can I see at the
+  organization level, and what can I see at the tenant level? Save the complete
+  JSON result for the organization-level catalog to ./sources-org.json and the
+  tenant-level catalog to ./sources-tenant.json so I can compare the two.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Both saved catalogs hold real audit sources whose ids are corroborated against the live tenant, each matching its own scope"
+    command: 'AUDIT_SOURCES_ORG_FILE=sources-org.json AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_sources.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
