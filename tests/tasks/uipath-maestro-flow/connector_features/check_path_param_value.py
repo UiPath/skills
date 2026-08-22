@@ -16,10 +16,15 @@ rather than a stack trace.
 
 from __future__ import annotations
 
-import glob
 import json
+import os
 import sys
+from pathlib import Path
 from typing import Any, NoReturn
+
+SHARED_DIR = Path(__file__).resolve().parent.parent / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+from flow_check import find_flow_file  # noqa: E402
 
 
 _JSONSTRING_PREFIX = "=jsonString:"
@@ -30,13 +35,9 @@ def _fail(message: str) -> NoReturn:
 
 
 def _load_flow(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = sorted(glob.glob(pattern, recursive=True))
-    if not matches:
-        _fail(f"No flow found for {pattern!r}")
-    if len(matches) > 1:
-        _fail(f"Multiple flows found for {pattern!r}: {matches}")
-    with open(matches[0], encoding="utf-8") as flow_file:
-        return matches[0], json.load(flow_file)
+    path = find_flow_file(flow_glob=os.path.basename(pattern))
+    with open(path, encoding="utf-8") as flow_file:
+        return path, json.load(flow_file)
 
 
 def _normalise_detail(raw: Any, node_id: str) -> dict[str, Any] | None:
