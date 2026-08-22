@@ -15,14 +15,15 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-interface) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TypeDesc](#typedesc-type) · [BuiltCase](#builtcase-interface) · [BuiltStage](#builtstage-interface) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-interface) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TypeDesc](#typedesc-type) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [BuiltStage](#builtstage-interface) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
 
 ## rule (function)
 
 ````ts
 /**
- * Declare a condition rule. Combine rules into AND-groups by passing an array to
- * `entryWhen`/`exitWhen`/etc.; call those methods multiple times for OR-groups.
+ * Declare a condition rule. Pass one rule, an array for an AND-group, or an
+ * array of arrays for the complete OR-of-AND grid to
+ * `entryWhen`/`exitWhen`/etc.
  */
 export declare function rule(type: CaseRuleType, opts?: RuleOpts): CaseRule;
 ````
@@ -67,7 +68,7 @@ export declare function timerTrigger(opts: TimerTriggerOpts): BuiltTrigger;
 ````ts
 /**
  * An Integration Service **event** trigger — an external event (a new row, an
- * email, a webhook) starts the case. Emits `data.uipath.serviceType:
+ * email, a webhook) starts the case. Emits `data.inputs.serviceType:
  * "Intsvc.EventTrigger"`; payload fields map onto its `outputs[]`.
  */
 export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
@@ -139,10 +140,10 @@ declare class CaseBuilder {
     trigger(t: BuiltTrigger): this;
     /** Add a primary stage. `fn` receives a stage sub-builder. */
     stage(label: string, fn: (s: StageBuilder) => void): this;
-    /** Add a secondary/exception stage (`case-management:ExceptionStage`). */
+    /** Add a secondary/exception stage (`case-management:Stage` with `data.stageType: "secondary"`). */
     exceptionStage(label: string, fn: (s: StageBuilder) => void): this;
     /** Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default). */
-    completeWhen(rules: CaseRule | CaseRule[], opts?: {
+    completeWhen(rules: CaseRuleGrid, opts?: {
             displayName?: string;
             marksCaseComplete?: boolean;
         }): this;
@@ -169,10 +170,10 @@ declare class StageBuilder {
     task(displayName: string, fn: (t: TaskBuilder) => void, opts?: {
             lane?: number;
         }): this;
-    /** Add a stage-entry condition (OR-group). Pass an array of rules for an AND-group. */
-    entryWhen(rules: CaseRule | CaseRule[], opts?: EntryOpts): this;
-    /** Add a stage-exit condition (OR-group). Pass an array of rules for an AND-group. */
-    exitWhen(rules: CaseRule | CaseRule[], opts?: ExitOpts): this;
+    /** Add a stage-entry condition. Pass a nested array for the complete OR-of-AND grid. */
+    entryWhen(rules: CaseRuleGrid, opts?: EntryOpts): this;
+    /** Add a stage-exit condition. Pass a nested array for the complete OR-of-AND grid. */
+    exitWhen(rules: CaseRuleGrid, opts?: ExitOpts): this;
     /**
      * Set an SLA (deadline + escalations) on this stage. Call more than once for
      * conditional SLAs (each with a `when` gate); the default SLA (no `when`) must
@@ -276,8 +277,8 @@ declare class TaskBuilder {
             source: string;
             type?: TypeDesc;
         }>): this;
-    /** Add a task-entry condition (OR-group). Pass an array of rules for an AND-group. */
-    entryWhen(rules: CaseRule | CaseRule[], opts?: {
+    /** Add a task-entry condition. Pass a nested array for the complete OR-of-AND grid. */
+    entryWhen(rules: CaseRuleGrid, opts?: {
             displayName?: string;
         }): this;
 }
@@ -545,6 +546,12 @@ export interface TaskOutputBinding {
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
+````
+
+## CaseRuleGrid (type)
+
+````ts
+export type CaseRuleGrid = CaseRule | CaseRule[] | CaseRule[][];
 ````
 
 ## BuiltCase (interface)
