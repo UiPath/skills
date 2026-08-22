@@ -24,6 +24,8 @@ Arguments:
                          expected_exit_code: 0) instead of inverting a
                          positive check — a bare exit 1 cannot distinguish
                          "pattern absent" from "no flow found"
+    --expect-none        require that no ``.flow`` file exists anywhere in the
+                         sandbox (for read-only tasks)
 
 With no arguments this asserts only that a ``.flow`` file exists. All positive
 assertions (substrings + ``--regex``) must be satisfied by a single file;
@@ -46,7 +48,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import find_flow_files  # noqa: E402
+from flow_check import assert_no_flow_files, find_flow_files  # noqa: E402
 
 
 def _parse(argv: list[str]):
@@ -54,6 +56,7 @@ def _parse(argv: list[str]):
     regexes: list[str] = []
     absent: list[str] = []
     flow_name: str | None = None
+    expect_none = False
     it = iter(argv)
     for arg in it:
         try:
@@ -63,16 +66,33 @@ def _parse(argv: list[str]):
                 absent.append(next(it))
             elif arg == "--flow-name":
                 flow_name = next(it)
+            elif arg == "--expect-none":
+                expect_none = True
             else:
                 substrings.append(arg)
         except StopIteration:
             print(f"FAIL: {arg} requires a value", file=sys.stderr)
             sys.exit(2)
-    return substrings, regexes, absent, flow_name
+    return substrings, regexes, absent, flow_name, expect_none
 
 
 def main(argv: list[str]) -> int:
-    substrings, regexes, absent, flow_name = _parse(argv)
+    substrings, regexes, absent, flow_name, expect_none = _parse(argv)
+
+    if expect_none:
+        if substrings or regexes or absent or flow_name is not None:
+            print(
+                "FAIL: --expect-none cannot be combined with other assertions",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            assert_no_flow_files()
+        except SystemExit as exc:
+            print(str(exc), file=sys.stderr)
+            return exc.code if isinstance(exc.code, int) else 1
+        print("OK: no .flow files found")
+        return 0
 
     try:
         flows = find_flow_files()
