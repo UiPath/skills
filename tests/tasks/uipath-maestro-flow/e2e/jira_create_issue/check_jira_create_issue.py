@@ -16,7 +16,6 @@ it even if a later step fails.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import re
@@ -26,7 +25,12 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # local jira_is
 sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro-flow (for _shared)
-from _shared.flow_check import collect_outputs, get_last_debug_raw, run_debug  # noqa: E402
+from _shared.flow_check import (  # noqa: E402
+    collect_outputs,
+    find_flow_file,
+    get_last_debug_raw,
+    run_debug,
+)
 import jira_is  # noqa: E402
 
 JIRA_KEY = "uipath-atlassian-jira"
@@ -40,11 +44,10 @@ def _fail(msg: str) -> None:
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text())
 
-    flows = glob.glob("**/*.flow", recursive=True)
-    raw = next((r for p in flows for r in [open(p, encoding="utf-8").read()]
-                if JIRA_KEY in r and '"nodes"' in r), None)
-    if raw is None:
-        _fail(f"no .flow references the {JIRA_KEY} connector (found {flows})")
+    flow_path = find_flow_file()
+    raw = Path(flow_path).read_text(encoding="utf-8")
+    if JIRA_KEY not in raw or '"nodes"' not in raw:
+        _fail(f"{flow_path} does not reference the {JIRA_KEY} connector")
     print(f"OK: flow references {JIRA_KEY}")
 
     payload = run_debug(timeout=480)
