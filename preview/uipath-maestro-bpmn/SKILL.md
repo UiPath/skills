@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ fd0070d. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ c0cf591. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -129,6 +129,8 @@ uip maestro bpmn validate <Name>.bpmn --output json
 | `.connector(id, key, action, inputs, { connection?, folder?, name?, outputVar?, skipCondition?, retry?, loop? })` | `bpmn:sendTask` (`uipath:activity` / `Intsvc.ActivityExecution`) — an IS connector op. See **Connector service task** below. |
 | `.subProcess(id, sp => …, { name?, triggeredByEvent?, loop?, retry? })` | `bpmn:subProcess` (nested graph) |
 | `.binding(id, { name?, value?, resource?, propertyAttribute? })` | `uipath:binding` (top level only) — an identifier supplied per environment, read as `=bindings.<id>` |
+| `.http(id, { url, method?, headers?, parameters?, body?, name?, outputVar?, skipCondition?, retry?, loop? })` | `bpmn:sendTask` (`uipath:activity` / `Intsvc.UnifiedHttpRequest`) — an HTTP request. See **HTTP request** below. |
+| `.humanTask(id, { app, title?, actions?, input?, outputs?, appVersion?, key?, … })` | `bpmn:userTask` (`uipath:activity` / `Actions.HITL`) — a task a person completes. See **Human task** below. |
 | `.sequenceFlow(source, target, { id?, name?, condition? })` | `bpmn:sequenceFlow` |
 
 - **Timers** accept an ISO-8601 string shorthand (`timer: 'PT15M'`) or a full
@@ -152,6 +154,132 @@ uip maestro bpmn validate <Name>.bpmn --output json
 - **Bindings**: `.binding('apiBase', { value: 'https://api.example.com' })` declares
   an identifier configured per environment; read it as `=bindings.apiBase`. A
   connector's `connection`/`folder` already declare their own.
+
+## HTTP request
+
+`.http(id, opts)` emits an `Intsvc.UnifiedHttpRequest` node — the platform's HTTP
+activity, and the first **registry-backed** typed node. Its wire shape comes from
+the committed registry snapshot, so it cannot drift from what
+`uip maestro bpmn validate` accepts. No connector library and no tenant needed.
+
+```ts
+export default bpmn('sync')
+  .binding('apiBase', { name: 'API base URL', value: 'https://api.example.com' })
+  .var('orders', 'object')
+  .startEvent('start')
+  .http('fetch', {
+    method: 'GET',
+    url: '=js:bindings.apiBase + "/v1/orders"',
+    headers: { accept: 'application/json' },
+    parameters: { limit: 50 },
+    retry: { maxRetries: 2, backoff: 'PT5S', allErrors: true },
+  })
+  .task('keep', { set: { orders: '=js:vars.fetch_response' } })
+  .endEvent('done')
+  .sequenceFlow('start', 'fetch')
+  .sequenceFlow('fetch', 'keep')
+  .sequenceFlow('keep', 'done')
+  .build();
+```
+
+- The response lands in **`<id>_response`** (`fetch_response` above) unless
+  `outputVar` says otherwise, and it is readable downstream with no `.var()`.
+- `url` takes an `=`-expression, so `=bindings.<id>` works — which is how the same
+  process points at different environments.
+- `method` defaults to `GET`. `headers` / `parameters` / `body` are plain objects;
+  the SDK serializes them the way the platform reads them.
+- Accepts the shared activity options (`retry`, `loop`, `skipCondition`) and takes
+  a `boundaryEvent` like any other activity.
+
+## Human task (approval gates)
+
+`.humanTask(id, opts)` emits an `Actions.HITL` Action App task — work a person
+completes. `app` is the Action App id and comes from the tenant.
+
+**Always set `outputs` if anything branches on the decision.** The type's own
+output is a typed one the designer resolves but a local run leaves empty, so
+without a mapped field a gateway cannot read the outcome offline.
+
+```ts
+export default bpmn('invoice')
+  .var('outcome', 'string', { default: 'none' })
+  .startEvent('start')
+  .humanTask('approve', {
+    app: 'app-123',
+    title: 'Approve the invoice',
+    actions: ['approve', 'reject'],
+    input: { amount: 100 },
+    outputs: { decision: '=Action' },      // <- what the gateway reads
+  })
+  .exclusiveGateway('gw', { default: 'fReject' })
+  .task('ok', { set: { outcome: 'approved' } })
+  .task('no', { set: { outcome: 'rejected' } })
+  .exclusiveGateway('join', { default: 'fJoin' })
+  .endEvent('done')
+  .sequenceFlow('start', 'approve')
+  .sequenceFlow('approve', 'gw')
+  .sequenceFlow('gw', 'ok', { id: 'fApprove', condition: '=js:vars.decision == "approve"' })
+  .sequenceFlow('gw', 'no', { id: 'fReject' })
+  .sequenceFlow('ok', 'join', { id: 'fOk' })
+  .sequenceFlow('no', 'join', { id: 'fNo' })
+  .sequenceFlow('join', 'done', { id: 'fJoin' })
+  .build();
+```
+
+**Test both arms offline** — the runtime stands in for the person:
+
+```bash
+flow-debug Invoice.bpmn --mock --virtual-time --hitl-response 'approve={"Action":"approve"}'
+flow-debug Invoice.bpmn --mock --virtual-time --hitl-response 'approve={"Action":"reject"}'
+```
+
+- `=Action` is the response field the runtime's outcome routing reads.
+- With **no** outcome injected the mapped field is empty and the gateway takes its
+  `default` arm — an un-decided task does not hang, it falls through. Design the
+  default accordingly.
+- `actions` is comma-joined. The platform does not validate its encoding, so if a
+  live run mis-reads the outcomes, compare against a Studio Web export.
+
+## Orchestrator: start work elsewhere
+
+Six methods over nine registry types — the sync/async and wait choices are
+options, not separate methods.
+
+| Method | What it starts |
+| --- | --- |
+| `.startProcess(id, opts)` | an RPA process, and waits |
+| `.startAgent(id, opts)` | an agent, and waits |
+| `.startAgenticProcess(id, { …, async? })` | an agentic process (call activity) |
+| `.startCaseProcess(id, { …, async? })` | a case-management process (call activity) |
+| `.executeApiWorkflow(id, opts)` | an API workflow, fire-and-forget |
+| `.queueItem(id, { queue, folder, item?, wait? })` | adds an Orchestrator queue item |
+
+```ts
+export default bpmn('nightly')
+  .startEvent('start')
+  .startProcess('post', { process: 'InvoicePosting', folder: 'Finance', input: { batch: 42 } })
+  .queueItem('audit', { queue: 'AuditTrail', folder: 'Finance', item: { source: 'nightly', batch: 42 } })
+  .endEvent('done')
+  .sequenceFlow('start', 'post')
+  .sequenceFlow('post', 'audit')
+  .sequenceFlow('audit', 'done')
+  .build();
+```
+
+- A process is addressed by **name** (`process: 'InvoicePosting'`), not by key —
+  the runtime resolves the key, so the same artifact works on any tenant that has
+  a process by that name.
+- `input` becomes the job's arguments; a queue item's `item` becomes its content.
+- The response lands in `<id>_processResponse` (jobs) or `<id>_response` (queues).
+- `folder` is **required** for `.queueItem()` — queue items are folder-scoped and
+  the runtime refuses to dispatch without it.
+- `.startAgent()` needs its process and folder supplied as **bindings**; the SDK
+  declares them for you from the plain names you pass, so just pass names.
+- **Business rules are not available** and are tracked separately — see
+  `docs/BPMN_BUSINESS_RULES_PLAN.md`.
+- `metadata.*` (e.g. `metadata.instanceId`) is **empty in a local run**, so an
+  `item`/`input` field built from it silently arrives as nothing. Use `vars.*` or a
+  literal when you want to see the value in a `flow-debug` dry run.
 
 ## Connector service task
 
@@ -208,6 +336,79 @@ export default bpmn('notify')
 - Warnings, not errors: a **superfluous gateway** (one in, one out) and an
   **implicit join** (an activity/event with more than one incoming flow) — the
   platform accepts both, but a gateway is clearer.
+
+## Importing an existing `.bpmn`
+
+`bpmn-decompile <Name.bpmn>` writes `<Name>.bpmn.ts` whose default export
+recompiles to an **equivalent** process — every element, id, extension type,
+graph edge and metadata row survives. Use it to bring a process authored in
+Studio Web (or handed over as a file) under SDK authoring.
+
+There is no `uip maestro bpmn decompile`; run the package bin. It is installed into
+`node_modules/.bin`, which is not always on `PATH` — `npx` finds it either way:
+
+```bash
+npx bpmn-decompile Invoice.bpmn                 # -> Invoice.bpmn.ts
+npx bpmn-compile   Invoice.bpmn.ts -o out.bpmn  # equivalent to Invoice.bpmn
+```
+
+### Editing an existing `.bpmn`: decompile, edit, compile, **merge**
+
+If the file is yours to own from now on, recompiling over it is fine. If you are making a
+**targeted change to a process someone else authored** — and must leave the rest of it
+alone — add a merge step. Recompiling rewrites every element in the file, including the
+ones you never looked at; merging rewrites only the ones you actually changed.
+
+```bash
+npx bpmn-decompile Invoice.bpmn                             # -> Invoice.bpmn.ts
+npx bpmn-compile   Invoice.bpmn.ts -o baseline.bpmn         # BEFORE editing — keep this
+#   ... make your change in Invoice.bpmn.ts ...
+npx bpmn-compile   Invoice.bpmn.ts -o edited.bpmn
+npx bpmn-merge     Invoice.bpmn edited.bpmn --baseline baseline.bpmn -o Invoice.bpmn
+uip maestro bpmn format Invoice.bpmn                        # only if you ADDED elements
+```
+
+`baseline.bpmn` is what a faithful round trip of the original produces before you touch
+anything. Comparing your `edited.bpmn` against it is how the merge tells which elements
+you changed: anything identical to the baseline you did not touch, so it is emitted from
+the **original**, byte for byte — original attribute order, original formatting, original
+`uipath:*` payloads, and the original diagram. It reports the split when it runs
+(`4 preserved, 1 authored, 0 removed`); if `authored` is larger than the change you meant
+to make, something else moved too.
+
+Skip `--baseline` for a two-way merge: takes your edited process and re-attaches the
+original diagram. Less precise, still better than a bare recompile, which drops layout.
+
+Run `format` only when you added elements — new ones have no diagram shape yet. It
+re-lays-out the whole file, so running it needlessly discards the geometry the merge just
+preserved.
+
+- **Not byte-for-byte, and not attribute-for-attribute.** One payload detail is
+  normalised, because the builder models authoring intent and not wire text: an
+  **output row keyed by a variable** loses a row `name` that differs from the
+  variable id — `name="total" var="Var_Total"` returns as `name="Var_Total"`.
+  `var` and `source` are intact, so the mapping still resolves the same way.
+
+  It is harmless to the runtime. It matters if something downstream compares XML
+  attribute-by-attribute — then a round trip is not a no-op. `bpmn-merge` above is
+  the answer: on an element you did not edit, the row comes from the original and
+  keeps its name.
+
+- **An `args` input row comes back with `type="json" target="bodyField"` added, and
+  that is a repair rather than a loss.** `uip maestro bpmn validate` REJECTS a bare
+  `<uipath:input name="args">`, so an artifact missing them is invalid and the
+  recompiled one is correct. Do not try to preserve the bare form.
+
+- **Diagram layout is not read or written.** The SDK emits semantic-only XML; run
+  `format`/`tidy` on the recompiled file when a canvas needs one.
+- **A connector task comes back as a generic `.activity()`**, not as a
+  `.connector()` call — the library's action slug is not in the XML, only its
+  `objectName`. Everything the platform needs IS in the artifact, so it recompiles
+  byte-identically with no connector library involved. Editing one means editing the
+  context/input rows directly rather than the friendlier `.connector()` arguments.
+- Types with no typed method decompile to `.activity(id, type, { … })`, the generic
+  form. That is faithful, just less readable than the typed methods.
+- Comments and method order are not preserved — the source is regenerated.
 
 ## Notes
 

@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ fd0070d. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ c0cf591. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -17,7 +17,7 @@ belong upstream.
 
 Author a UiPath **Case plan** by writing TypeScript that builds a hierarchy of
 **stages** and **tasks**, then serialize it to a `caseplan.json` (schema
-**V20**). Like the Flow builder, this is a *builder*, not a program: you declare
+**V30**). Like the Flow builder, this is a *builder*, not a program: you declare
 the case's shape by calling methods, and flow between stages is expressed with
 **conditions** (`rule(...)`), not edges — a case plan has **no edges**.
 
@@ -210,7 +210,7 @@ export declare function casePlan(id: string): CaseBuilder;
     stage(label: string, fn: (s: StageBuilder) => void): this;
 
 /**
-     * Add a secondary/exception stage (`case-management:ExceptionStage`).
+     * Add a secondary/exception stage (`case-management:Stage` with `data.stageType: "secondary"`).
      *
      * @param label - The stage's display name.
      * @param fn - Receives a sub-builder for the stage's tasks and conditions.
@@ -221,11 +221,11 @@ export declare function casePlan(id: string): CaseBuilder;
 /**
      * Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default).
      *
-     * @param rules - One rule, or an array for an AND-group.
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
      * @param opts - `displayName`, and whether meeting it completes the case.
      * @returns This builder, so calls chain.
      */
-    completeWhen(rules: CaseRule | CaseRule[], opts?: {
+    completeWhen(rules: CaseRuleGrid, opts?: {
         displayName?: string;
         marksCaseComplete?: boolean;
     }): this;
@@ -327,22 +327,22 @@ export interface JsonSchemaType {
     required(value?: boolean): this;
 
 /**
-     * Add a stage-entry condition (OR-group). Pass an array of rules for an AND-group.
+     * Add a stage-entry condition. Pass a nested array for the complete OR-of-AND grid.
      *
-     * @param rules - One rule, or an array for an AND-group.
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
      * @param opts - `displayName`, and the entry behaviour flags.
      * @returns This builder, so calls chain.
      */
-    entryWhen(rules: CaseRule | CaseRule[], opts?: EntryOpts): this;
+    entryWhen(rules: CaseRuleGrid, opts?: EntryOpts): this;
 
 /**
-     * Add a stage-exit condition (OR-group). Pass an array of rules for an AND-group.
+     * Add a stage-exit condition. Pass a nested array for the complete OR-of-AND grid.
      *
-     * @param rules - One rule, or an array for an AND-group.
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
      * @param opts - `displayName`, and whether meeting it completes the stage.
      * @returns This builder, so calls chain.
      */
-    exitWhen(rules: CaseRule | CaseRule[], opts?: ExitOpts): this;
+    exitWhen(rules: CaseRuleGrid, opts?: ExitOpts): this;
 
 /**
      * Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0).
@@ -597,13 +597,13 @@ export interface WaitConnectorSpec {
     }>): this;
 
 /**
-     * Add a task-entry condition (OR-group). Pass an array of rules for an AND-group.
+     * Add a task-entry condition. Pass a nested array for the complete OR-of-AND grid.
      *
-     * @param rules - One rule, or an array for an AND-group.
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
      * @param opts - `displayName` for the condition.
      * @returns This builder, so calls chain.
      */
-    entryWhen(rules: CaseRule | CaseRule[], opts?: {
+    entryWhen(rules: CaseRuleGrid, opts?: {
         displayName?: string;
     }): this;
 
@@ -760,16 +760,16 @@ authored offline.
 
 ## Conditions — `rule(type, opts?)`
 
-Combine rules into an **AND-group** by passing an array to
-`entryWhen`/`exitWhen`/`completeWhen`; call those methods multiple times for
-**OR-groups** (DNF).
+Pass one rule, an array for an **AND-group**, or an array of arrays for the
+complete **OR-of-AND grid** to `entryWhen`/`exitWhen`/`completeWhen`.
 
 <!-- GEN:conditions -->
 
 ```ts
 /**
- * Declare a condition rule. Combine rules into AND-groups by passing an array to
- * `entryWhen`/`exitWhen`/etc.; call those methods multiple times for OR-groups.
+ * Declare a condition rule. Pass one rule, an array for an AND-group, or an
+ * array of arrays for the complete OR-of-AND grid to
+ * `entryWhen`/`exitWhen`/etc.
  *
  * @param type - Which condition, e.g. `'case-entered'` or `'selected-tasks-completed'`.
  * @param opts - What the rule needs, e.g. the `tasks` a task-completion rule waits on.
@@ -784,7 +784,7 @@ export interface RuleOpts {
      * Symbolic stage label (for `selected-stage-completed` / `selected-stage-exited`).
      *
      * @remarks
-     * Both rules serialize identically — to `selectedStageId` — so this SDK draws no
+     * Both rules serialize identically — to the one-element `selectedStageIds` array — so this SDK draws no
      * distinction between them; the difference is interpreted at runtime. Use
      * `selected-stage-exited` for an interrupting exception-stage entry (what the
      * shipped example does) and `selected-stage-completed` when you mean the stage
@@ -1002,7 +1002,7 @@ export interface TimerTriggerOpts {
 
 /**
  * An Integration Service **event** trigger — an external event (a new row, an
- * email, a webhook) starts the case. Emits `data.uipath.serviceType:
+ * email, a webhook) starts the case. Emits `data.inputs.serviceType:
  * "Intsvc.EventTrigger"`; payload fields map onto its `outputs[]`.
  *
  * @param opts - The connector event to subscribe to, and its connection.
@@ -1020,7 +1020,7 @@ export interface EventTriggerOpts {
      * emits a trigger `outputs[]` row plus a readable root `inputOutputs` companion.
      *
      * @remarks
-     * With **no** outputs the event trigger is a **placeholder** (`data.uipath`
+     * With **no** outputs the event trigger is a **placeholder** (`data.inputs`
      * carries only `serviceType`) — the offline shape for an event on a connector
      * not yet registered; attach the real connection after registering it.
      */
@@ -1068,16 +1068,17 @@ export default casePlan('nightly-sweep')
   .build();
 ```
 
-- **`manualTrigger({ name?, description? })`** — a `case-management:Trigger` node
-  with **no `data.uipath`** (that absence is the manual signature).
+- **`manualTrigger({ name?, description? })`** — a `uipath.case.trigger` node
+  with `data.typeVersion: '1.0.0'` and **no `data.inputs`** (that absence is the
+  manual signature). Its name is at `data.display.label`.
 - **`timerTrigger({ every, name?, description? })`** — `every` is an **ISO-8601
   repeating interval**, emitted verbatim as `timeCycle`: `R/PT1H` (hourly,
   unbounded), `R5/P1D` (5×, daily), `R5/<iso>/P1D` (5×, daily from an explicit
-  start). Emits `data.uipath = { serviceType: 'Intsvc.TimerTrigger', timerType:
-  'timeCycle', timeCycle }`.
+  start). Emits `data.inputs = { timerType: 'timeCycle', timeCycle,
+  serviceType: 'timer' }`.
 - **`eventTrigger({ name?, description?, outputs? })`** — an Integration Service
-  **event** start. Emits `data.uipath.serviceType: 'Intsvc.EventTrigger'`. With no
-  `outputs` it is a **placeholder** (`data.uipath` = only `serviceType`) — the
+  **event** start. Emits `data.inputs.serviceType: 'Intsvc.EventTrigger'`. With no
+  `outputs` it is a **placeholder** (`data.inputs` = only `serviceType`) — the
   offline shape for an event on a connector not yet registered. `outputs` maps
   payload fields to readable case variables, e.g.
   `eventTrigger({ name: 'Order', outputs: { orderId: '=response.id' } })` →
@@ -1134,9 +1135,9 @@ casePlan('intake').name('Intake').identifier('IN')
 A bound In-arg emits three coordinated pieces: a **formal slot**
 (`variables.inputs[]`, `elementId` = the trigger node), a **companion**
 (`variables.inputOutputs[]`, `id` = the arg name, what `=vars.<name>` resolves),
-and a **bridge** on the trigger node's `data.uipath.outputs[]` that copies the slot
+and a **bridge** on the trigger node's `data.inputs.outputs[]` that copies the slot
 into the companion at fire. Binding an In-arg to a **manual** trigger gives that
-node a `data.uipath = { outputs: … }` **with no `serviceType`** (it stays manual).
+node a `data.inputs = { outputs: … }` **with no `serviceType`** (it stays manual).
 An `.input(...)` **without** `{ from }` stays a bare declaration (no binding).
 `from` must be a trigger you added with `.trigger(...)`.
 
@@ -1292,7 +1293,7 @@ export default casePlan('claim-review')
   also cover an escalation that notifies no one and a deadline with no
   escalations at all.
 - **Do not call `.version()`.** The Case JSON schema version is owned by the
-  serializer's format profile (currently V20). The compatibility method is
+  serializer's format profile (currently V30). The compatibility method is
   deprecated; `check` warns on any use and rejects a value that differs from the
   profile.
 - **`unit` is CALENDAR time, and there is no business-day unit.** `uip` enforces
@@ -1390,16 +1391,18 @@ directly with `node node_modules/@uipath/flow-sdk/dist/case/<name>-cli.js`.
   static check, then serializes to `caseplan.json` (default output name). Pair it
   with `uip maestro case validate` for the authoritative gate.
 - **`decompile`** (`uip maestro case decompile <caseplan.json> [-o Name.case.ts]`)
-  — the reverse: reads an existing V20 caseplan and emits builder source whose
-  default export re-serializes to the same caseplan. This is how you edit a case
+  — the reverse: reads an existing V20–V30 caseplan and emits builder source
+  whose default export re-serializes it losslessly. This is how you edit a case
   you did not author in this session: **decompile → edit the `.case.ts` →
   recompile**. The emitted `import` resolves to `@uipath/flow-sdk/case`; override
-  it with `--import <specifier>` when placing the file elsewhere.
+  it with `--import <specifier>` when placing the file elsewhere. The generated
+  `preserveCaseJson(...)` call carries non-authoring designer metadata alongside
+  the typed source; leave it intact except when deleting the typed construct to
+  which an identity entry belongs.
 
-  > Not reconstructed by decompile: triggers of any kind (a manual trigger is
-  > assumed), SLAs/escalations, and the Gap-E action fields (labels, catalog,
-  > form `inputs`/`outputs`). Re-add those by hand after decompiling, or the
-  > recompiled caseplan will silently drop them.
+  > Unsupported Phase 3 constructs fail decompile with a named refusal; the
+  > command does not silently drop them. Do not edit `node_modules` or a compiled
+  > `caseplan.json` to work around a refusal.
 
 Programmatic equivalents (`checkCase(built)` / `serializeCase(built)`) exist on the
 barrel, but the barrel is not importable from the authoring workspace (see the
