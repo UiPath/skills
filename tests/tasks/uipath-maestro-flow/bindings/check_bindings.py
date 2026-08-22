@@ -67,13 +67,18 @@ Exit 0 on success; non-zero with stderr message on failure.
 
 from __future__ import annotations
 
+from collections import Counter
 import glob
 import hashlib
 import json
 import os
 import sys
-from collections import Counter
+from pathlib import Path
 from typing import Any, NoReturn
+
+SHARED_DIR = Path(__file__).resolve().parents[1] / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+from flow_check import find_flow_files  # noqa: E402
 
 
 def _fail(message: str) -> NoReturn:
@@ -100,7 +105,7 @@ def _dedupe_aliases(paths: list[str]) -> list[str]:
     for p in by_realpath.values():
         try:
             with open(p, "rb") as fh:
-                key = hashlib.sha1(fh.read()).hexdigest()
+                key = hashlib.sha256(fh.read()).hexdigest()
         except OSError:
             key = p  # unreadable — don't collapse with anything else
         by_hash.setdefault(key, p)
@@ -109,7 +114,10 @@ def _dedupe_aliases(paths: list[str]) -> list[str]:
 
 
 def _load_one(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
+    if pattern.startswith("**/") and pattern.endswith(".flow"):
+        matches = find_flow_files(flow_glob=os.path.basename(pattern))
+    else:
+        matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
     if not matches:
         _fail(f"No file found for {pattern!r}")
     if len(matches) > 1:
@@ -148,6 +156,23 @@ def cmd_structure(pattern: str) -> None:
     if "bindings" not in flow:
         _fail(f"{path} missing `bindings`")
     print(f"OK: {path} valid JSON with nodes + bindings")
+
+
+def cmd_connector_node_count(pattern: str, minimum: str) -> None:
+    path, flow = _load_one(pattern)
+    nodes = flow.get("nodes") or []
+    connector_nodes = [
+        node
+        for node in nodes
+        if "uipath.connector." in str(node.get("type") or "").lower()
+    ]
+    required = int(minimum)
+    if len(connector_nodes) < required:
+        _fail(
+            f"{path}: expected at least {required} connector node(s), "
+            f"found {len(connector_nodes)}"
+        )
+    print(f"OK: {path} has {len(connector_nodes)} connector node(s)")
 
 
 def cmd_no_empty_stubs(pattern: str) -> None:
@@ -321,6 +346,7 @@ def cmd_both_ids_present_from_json(pattern: str, json_path: str) -> None:
 
 _COMMANDS = {
     "structure": cmd_structure,
+    "connector_node_count": cmd_connector_node_count,
     "no_empty_stubs": cmd_no_empty_stubs,
     "no_duplicates": cmd_no_duplicates,
     "matched_default": cmd_matched_default,

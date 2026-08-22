@@ -10,9 +10,10 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
   4. `inputs.prompt` is non-empty.
   5. `inputs.outputColumns` is an array of objects with `name` + `description`
      keys (not flattened to a `{name: description}` map and not a string array).
-  6. `inputs.attachment` matches the canonical canvas-produced wiring:
-     `=js:$vars.<triggerId>.output.<fileVarId>` — referencing a flow `in`
-     variable of `type: "file"` bound to the trigger via `triggerNodeId`.
+  6. `inputs.attachment` matches the canonical trigger-output wiring, either
+     as the v1 string `=js:$vars.<triggerId>.output.<fileVarId>` or the SDK's
+     equivalent typed expression envelope — referencing a flow `in` variable
+     of `type: "file"` bound to the trigger via `triggerNodeId`.
      Bare `=js:$vars.<name>` (no trigger output) is rejected.
   7. The instance `outputs.output.source` is the literal `=response`.
   8. The flow declares an `out` variable named `result`, and at least one End
@@ -20,11 +21,15 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      reference.
 """
 
-import glob
 import json
+import os
 import re
 import sys
 from typing import NoReturn
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
+from advisory_flow_utils import unwrap  # noqa: E402
+from flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "uipath.pattern.batch-transform"
 EXPECTED_TYPE_VERSION = "1.0"
@@ -33,11 +38,11 @@ EXPECTED_OUTPUT_SOURCE = "=response"
 # Canonical canvas wiring: =js:$vars.<triggerId>.output.<fileVarId>
 # (a trigger-bound `in` file variable surfaces under the trigger's output)
 _ATTACHMENT_REF = re.compile(
-    r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.([A-Za-z_][A-Za-z0-9_]*)\s*$"
+    r"^\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\.([A-Za-z_][A-Za-z0-9_]*)\s*$"
 )
 
 # Output mapping: =js:$vars.<bt>.output  (or any deeper subfield path)
-_OUTPUT_MAPPING_REF = re.compile(r"^=js:\s*\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\b")
+_OUTPUT_MAPPING_REF = re.compile(r"^\$vars\.([A-Za-z_][A-Za-z0-9_]*)\.output\b")
 
 
 def _fail(msg: str) -> NoReturn:
@@ -45,10 +50,8 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/BatchTransformDemo*.flow", recursive=True)
-    if not flows:
-        _fail("no BatchTransformDemo*.flow found under cwd")
-    with open(flows[0]) as f:
+    path = find_flow_file(flow_glob="BatchTransformDemo*.flow")
+    with open(path) as f:
         return json.load(f)
 
 
@@ -84,10 +87,23 @@ def _check_outputColumns(value) -> None:
                 )
 
 
+def _js_expression(value) -> str | None:
+    if isinstance(value, str) and value.startswith("=js:"):
+        return value[len("=js:") :].strip()
+    if isinstance(value, dict) and value.get("type") == "jsExpression":
+        expression = value.get("expression")
+        if isinstance(expression, str) and expression.strip():
+            return expression.strip()
+    return None
+
+
 def _check_attachment_canonical(flow: dict, attachment) -> None:
-    if not isinstance(attachment, str) or not attachment.strip():
-        _fail("inputs.attachment missing or empty — wire it to the trigger output binding")
-    m = _ATTACHMENT_REF.match(attachment.strip())
+    expression = _js_expression(attachment)
+    if expression is None:
+        _fail(
+            "inputs.attachment missing or empty — wire it to the trigger output binding"
+        )
+    m = _ATTACHMENT_REF.match(expression)
     if not m:
         _fail(
             f"inputs.attachment={attachment!r} is not the canonical canvas-produced shape. "
@@ -107,7 +123,10 @@ def _check_attachment_canonical(flow: dict, attachment) -> None:
             f"inputs.attachment references `$vars.{trigger_id}.output...` but no node with "
             f"id={trigger_id!r} exists in the flow."
         )
-    if not isinstance(trigger_node.get("type"), str) or "trigger" not in trigger_node["type"]:
+    if (
+        not isinstance(trigger_node.get("type"), str)
+        or "trigger" not in trigger_node["type"]
+    ):
         _fail(
             f"node id={trigger_id!r} has type={trigger_node.get('type')!r}; expected a trigger "
             "(file-typed input variables must be trigger-bound)."
@@ -157,7 +176,7 @@ def _check_type_version(node: dict) -> None:
 
 
 def _check_output_source(node: dict) -> None:
-    src = ((node.get("outputs") or {}).get("output") or {}).get("source")
+    src = unwrap(((node.get("outputs") or {}).get("output") or {}).get("source"))
     if src != EXPECTED_OUTPUT_SOURCE:
         _fail(
             f"outputs.output.source={src!r}; must be {EXPECTED_OUTPUT_SOURCE!r} (the BPMN "
@@ -169,7 +188,11 @@ def _check_output_source(node: dict) -> None:
 def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
     globals_ = (flow.get("variables") or {}).get("globals") or []
     result_var = next(
-        (v for v in globals_ if v.get("id") == "result" and v.get("direction") == "out"),
+        (
+            v
+            for v in globals_
+            if v.get("id") == "result" and v.get("direction") == "out"
+        ),
         None,
     )
     if result_var is None:
@@ -178,15 +201,18 @@ def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
             "Batch Transform result file handle to be surfaced as a flow output named `result`."
         )
 
-    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    end_nodes = [
+        n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"
+    ]
     if not end_nodes:
         _fail("flow has no End node — required to terminate the path and map outputs")
 
     for end in end_nodes:
         src = ((end.get("outputs") or {}).get("result") or {}).get("source")
-        if not isinstance(src, str) or not src.strip():
+        expression = _js_expression(src)
+        if expression is None:
             continue
-        m = _OUTPUT_MAPPING_REF.match(src.strip())
+        m = _OUTPUT_MAPPING_REF.match(expression)
         if m and m.group(1) == bt_node_id:
             return
 
