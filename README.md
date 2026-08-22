@@ -180,7 +180,7 @@ codex plugin marketplace add UiPath/skills --ref main
 codex plugin add uipath@uipath-marketplace
 ```
 
-The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
+> **Codex prerequisite:** Use Codex CLI 0.142.0 or later. This repository uses the repository root as the plugin root, supported since [openai/codex#17066](https://github.com/openai/codex/issues/17066) was resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash
