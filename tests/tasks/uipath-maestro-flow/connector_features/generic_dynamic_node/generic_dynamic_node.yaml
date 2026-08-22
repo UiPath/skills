@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-generic-dynamic-node
 description: >
   Connector feature: validate a generic (dynamic) connector node end-to-end. A
@@ -29,12 +33,13 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath Flow project named "AcrUserList" with a manual trigger.
+  Create a UiPath Flow project named "AcrUserList" inside a solution of the
+  same name, with a manual trigger.
   The process must call ServiceNow to list all records in the Acr User
   object, then surface the returned records as a flow output variable.
 
-  Bind it to the tenant's ServiceNow connection. Then run the flow with
-  `uip maestro flow debug` to confirm the connector call completes.
+  Bind it to the tenant's ServiceNow connection. Then debug the flow to confirm
+  the connector call completes.
 
   Use the connection present in Shared/uipath-maestro-flow.
 
@@ -55,17 +60,17 @@ success_criteria:
 
   # ── Agent invoked debug ────────────────────────────────────────────────
   - type: command_executed
-    description: "Agent ran flow debug"
+    description: "Advisory: live-v1 agent ran flow debug"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   # ── Execution: connector calls ServiceNow and surfaces an array output ──
   - type: run_command
     description: "ServiceNow list-all-records node on acr_user executes and surfaces an array output"
-    command: "python3 $TASK_DIR/check_generic_dynamic_node.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/generic_dynamic_node/check_generic_dynamic_node.py"
     timeout: 720
     expected_exit_code: 0
     weight: 6.0
