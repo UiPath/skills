@@ -95,7 +95,33 @@ def test_ixp_project_selection_rejects_mismatched_model(tmp_path: Path) -> None:
     assert result.returncode == 1
 
 
-def test_batch_transform_checker_accepts_root_sdk_emit(tmp_path: Path) -> None:
+@pytest.mark.parametrize("typed_envelopes", [False, True])
+def test_batch_transform_checker_accepts_equivalent_expression_shapes(
+    tmp_path: Path, typed_envelopes: bool
+) -> None:
+    attachment = (
+        {
+            "type": "jsExpression",
+            "expression": "$vars.trigger.output.csvFile",
+            "fieldType": "string",
+        }
+        if typed_envelopes
+        else "=js:$vars.trigger.output.csvFile"
+    )
+    output_source = (
+        {"type": "literal", "expression": "=response", "fieldType": "string"}
+        if typed_envelopes
+        else "=response"
+    )
+    result_source = (
+        {
+            "type": "jsExpression",
+            "expression": "$vars.batch.output",
+            "fieldType": "string",
+        }
+        if typed_envelopes
+        else "=js:$vars.batch.output"
+    )
     _write_flow(
         tmp_path / "BatchTransformDemo.flow",
         [
@@ -105,18 +131,18 @@ def test_batch_transform_checker_accepts_root_sdk_emit(tmp_path: Path) -> None:
                 "type": "uipath.pattern.batch-transform",
                 "typeVersion": "1.0",
                 "inputs": {
-                    "attachment": "=js:$vars.trigger.output.csvFile",
+                    "attachment": attachment,
                     "prompt": "Classify each row",
                     "outputColumns": [
                         {"name": "Category", "description": "classification"}
                     ],
                 },
-                "outputs": {"output": {"source": "=response"}},
+                "outputs": {"output": {"source": output_source}},
             },
             {
                 "id": "end",
                 "type": "core.control.end",
-                "outputs": {"result": {"source": "=js:$vars.batch.output"}},
+                "outputs": {"result": {"source": result_source}},
             },
         ],
         variables={
@@ -140,7 +166,35 @@ def test_batch_transform_checker_accepts_root_sdk_emit(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr or result.stdout
 
 
-def test_summarize_checker_accepts_root_sdk_emit(tmp_path: Path) -> None:
+@pytest.mark.parametrize("typed_envelopes", [False, True])
+def test_summarize_checker_accepts_equivalent_expression_shapes(
+    tmp_path: Path, typed_envelopes: bool
+) -> None:
+    attachment = (
+        {
+            "type": "jsExpression",
+            "expression": "$vars.trigger.output.documentFile",
+            "fieldType": "string",
+        }
+        if typed_envelopes
+        else "=js:$vars.trigger.output.documentFile"
+    )
+    output_source = (
+        {"type": "literal", "expression": "=response", "fieldType": "string"}
+        if typed_envelopes
+        else "=response"
+    )
+
+    def output_mapping(field: str):
+        expression = f"$vars.summary_node.output.content.{field}"
+        if typed_envelopes:
+            return {
+                "type": "jsExpression",
+                "expression": expression,
+                "fieldType": "string",
+            }
+        return f"=js:{expression}"
+
     _write_flow(
         tmp_path / "SummarizeDemo.flow",
         [
@@ -150,21 +204,21 @@ def test_summarize_checker_accepts_root_sdk_emit(tmp_path: Path) -> None:
                 "type": "uipath.pattern.deep-rag",
                 "typeVersion": "1.0",
                 "inputs": {
-                    "attachment": "=js:$vars.trigger.output.documentFile",
+                    "attachment": attachment,
                     "prompt": "Summarize the document",
                     "returnCitations": True,
                 },
-                "outputs": {"output": {"source": "=response"}},
+                "outputs": {"output": {"source": output_source}},
             },
             {
                 "id": "end",
                 "type": "core.control.end",
                 "outputs": {
                     "summary": {
-                        "source": "=js:$vars.summary_node.output.content.Text"
+                        "source": output_mapping("Text")
                     },
                     "citations": {
-                        "source": "=js:$vars.summary_node.output.content.Citations"
+                        "source": output_mapping("Citations")
                     },
                 },
             },
