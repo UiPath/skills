@@ -299,6 +299,46 @@ jobs:
             -f tests/docker/Dockerfile \
             .
 
+      # Campaign-only preview arm: keep the exact nightly base image and add the
+      # published Flow SDK plus connector-authoring assets from the preview
+      # skill's recorded upstream revision.
+      - name: Overlay preview Flow SDK
+        env:
+          DOCKER_BUILDKIT: "1"
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          FLOW_SDK_VERSION: "3.8.0"
+        run: |
+          set -euo pipefail
+          pin="$(grep -oE '@ [0-9a-f]{7,40}' preview/uipath-maestro-flow/SKILL.md | head -n 1 | cut -d' ' -f2)"
+          [ -n "$pin" ]
+          full_sha="$(gh api "repos/UiPath/flow-builder-sdk/commits/$pin" --jq .sha)"
+          case "$full_sha" in
+            "$pin"*) ;;
+            *) echo "resolved commit $full_sha does not match preview pin $pin" >&2; exit 1 ;;
+          esac
+
+          flow_source="$RUNNER_TEMP/preview-flow-builder-sdk"
+          mkdir -p "$flow_source"
+          gh api "repos/UiPath/flow-builder-sdk/tarball/$full_sha" \
+            > "$RUNNER_TEMP/preview-flow-builder-sdk.tar.gz"
+          tar -xzf "$RUNNER_TEMP/preview-flow-builder-sdk.tar.gz" \
+            --strip-components=1 -C "$flow_source"
+
+          docker build \
+            --build-arg BASE_IMAGE=skills-image:latest \
+            --build-arg FLOW_SDK_VERSION="$FLOW_SDK_VERSION" \
+            --build-arg FLOW_BUILDER_SDK_SHA="$full_sha" \
+            --build-context flow_builder_sdk="$flow_source" \
+            --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
+            -t skills-image:maestro-flow-sdk \
+            -f tests/docker/maestro-flow-sdk.Dockerfile \
+            .
+          docker run --rm --entrypoint bash skills-image:maestro-flow-sdk -lc \
+            'test -f /opt/preview-flow-sdk/node_modules/@uipath/flow-sdk/package.json && node -p '\''require("/opt/preview-flow-sdk/node_modules/@uipath/flow-sdk/package.json").version'\'' && prepare-connector --help >/dev/null'
+          echo "FLOW_BUILDER_SDK_REF=$full_sha" >> "$GITHUB_ENV"
+          echo "FLOW_SDK_VERSION=$FLOW_SDK_VERSION" >> "$GITHUB_ENV"
+
       # delegate-sdk under the docker driver: the orchestrator runs INSIDE the
       # container, so the coder_eval_uipath plugin (delegate-sdk registration)
       # and the @uipath/delegate-stdio Node host it shells out to must live in
@@ -328,21 +368,14 @@ jobs:
         run: |
           set -euo pipefail
           stage="$RUNNER_TEMP/maestro-preview-plugin"
-          experiment="$RUNNER_TEMP/maestro-preview-nightly.yaml"
           mkdir -p "$stage"
           git archive HEAD | tar -x -C "$stage"
           for skill in uipath-maestro-flow uipath-maestro-case uipath-maestro-bpmn; do
             rm -rf "$stage/skills/$skill"
             cp -a "$stage/preview/$skill" "$stage/skills/$skill"
           done
-          cp tests/experiments/nightly.yaml "$experiment"
-          sed -i "s|path: \"\\\$SKILLS_REPO_PATH\"|path: \"$stage\"|" "$experiment"
-          sed -i "/~\\/.uipath:\/.uipath:rw/a\\        - $GITHUB_WORKSPACE:/skills-repo:ro" "$experiment"
-          sed -i "/~\\/.uipath:\/.uipath:rw/a\\        - $GITHUB_WORKSPACE:$GITHUB_WORKSPACE:ro" "$experiment"
-          grep -F "path: \"$stage\"" "$experiment"
-          grep -F "$GITHUB_WORKSPACE:/skills-repo:ro" "$experiment"
-          grep -F "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE:ro" "$experiment"
-          echo "EVAL_EXPERIMENT=$experiment" >> "$GITHUB_ENV"
+          echo "PREVIEW_SKILLS_PLUGIN_PATH=$stage" >> "$GITHUB_ENV"
+          echo "EVAL_EXPERIMENT=$GITHUB_WORKSPACE/tests/experiments/maestro-flow-sdk.yaml" >> "$GITHUB_ENV"
 
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
       # cron's ROPC flow). Required because `uip flow debug` needs a real user
@@ -366,7 +399,10 @@ jobs:
       # globs). Word-splitting is intentional — do not quote.
       - name: Run coder-eval
         env:
+          SKILLS_REPO_HOST_PATH:    ${{ github.workspace }}
           SKILLS_REPO_PATH:         /skills-repo
+          PYTHONPATH:               /skills-repo/tests/tasks/uipath-maestro-flow
+          PREVIEW_SKILLS_PLUGIN_PATH: ${{ runner.temp }}/maestro-preview-plugin
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
@@ -521,6 +557,17 @@ jobs:
         if: always()
         run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
 
+      - name: Record preview SDK provenance
+        if: always()
+        run: |
+          mkdir -p /tmp/runs
+          jq -n \
+            --arg skills_commit "$GITHUB_SHA" \
+            --arg flow_builder_sdk_commit "${FLOW_BUILDER_SDK_REF:-}" \
+            --arg flow_sdk_version "${FLOW_SDK_VERSION:-}" \
+            '{skills_commit: $skills_commit, flow_builder_sdk_commit: $flow_builder_sdk_commit, flow_sdk_version: $flow_sdk_version, preview_plugin: true}' \
+            > /tmp/runs/preview-plugin-source.json
+
       # Strip heavy task scratch dirs before upload to keep artifact size
       # manageable. Matches smoke-skills.yml.
       - name: Clean up artifacts (remove .venv and node_modules)
@@ -536,6 +583,13 @@ jobs:
           # ** so the pattern matches the replicate-index segment that
           # coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
+            /tmp/runs/preview-plugin-source.json
+            /tmp/runs/experiment.html
+            /tmp/runs/experiment.md
+            /tmp/runs/experiment.json
+            /tmp/runs/experiment.log
+            /tmp/runs/run.json
+            /tmp/runs/run.md
             /tmp/runs/*/experiment.html
             /tmp/runs/*/experiment.md
             /tmp/runs/*/experiment.json
