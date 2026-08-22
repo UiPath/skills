@@ -18,6 +18,9 @@ initial_prompt: |
   the trigger against a live connection.
   Instead, write the exact connector-trigger detail object to `trigger_detail.json`.
   It must contain the structured filter tree that configures this trigger.
+  The file itself is the `--detail` value: put `filter` at the top level, next
+  to fields such as `connectionId` and `folderKey`. Do not wrap that value in
+  an outer `detail`, `inputs`, or node-descriptor object.
   Use placeholders for any connection/folder/event ids you cannot resolve offline.
 
 
