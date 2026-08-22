@@ -73,9 +73,7 @@ def _check_report() -> None:
     for key, accepted in EXPECTED.items():
         got = doc.get(key)
         if got not in accepted:
-            failures.append(
-                f"{key}: got {got!r}, expected one of {sorted(accepted)!r}"
-            )
+            failures.append(f"{key}: got {got!r}, expected one of {sorted(accepted)!r}")
 
     if failures:
         sys.exit("FAIL: " + " | ".join(failures))
