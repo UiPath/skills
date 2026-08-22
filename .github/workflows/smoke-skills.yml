@@ -453,13 +453,53 @@ jobs:
         id: smoke
         run: |
           shopt -s globstar nullglob
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
-          coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/smoke.yaml \
-            --model "$AGENT_MODEL" \
-            -j "$TASK_PARALLELISM" -v \
-            --run-dir /tmp/runs \
-            --tags smoke
+          # Tenant-exclusive tasks run serially. The compliance-pack suite shares
+          # ONE ISO 42001 pack state on the test tenant: `disable` turns it off
+          # while `restore` / `drift_restore` need it on for their whole turn. In
+          # parallel, one task's mutation lands mid-turn in another's and fails it
+          # through no fault of the agent — the agent correctly refuses to restore
+          # an inactive pack (CI 30455293977; run 2026-08-20_19-01-47, score 0.727).
+          # Split, don't serialize everything: the rest of the selection (up to
+          # SMOKE_MAX_TASKS=40) still gets $TASK_PARALLELISM.
+          #
+          # Both passes write into /tmp/runs, so every reader below globs ALL run
+          # dirs rather than just the newest one.
+          EXCLUSIVE_PREFIX="tasks/uipath-governance/compliance-pack/"
+          selected=()
+          while IFS= read -r f; do
+            [ -n "$f" ] && selected+=("$f")
+          done < <(
+            for t in ${{ needs.detect.outputs.task_globs }}; do
+              for f in $t; do [ -f "$f" ] && echo "$f"; done
+            done | sort -u
+          )
+          serial=(); parallel=()
+          for f in "${selected[@]+"${selected[@]}"}"; do
+            case "$f" in
+              "$EXCLUSIVE_PREFIX"*) serial+=("$f") ;;
+              *) parallel+=("$f") ;;
+            esac
+          done
+          rc=0
+          if [ ${#parallel[@]} -gt 0 ]; then
+            echo "Running ${#parallel[@]} task(s) at -j $TASK_PARALLELISM"
+            coder-eval run "${parallel[@]}" \
+              -e experiments/smoke.yaml \
+              --model "$AGENT_MODEL" \
+              -j "$TASK_PARALLELISM" -v \
+              --run-dir /tmp/runs \
+              --tags smoke || rc=1
+          fi
+          if [ ${#serial[@]} -gt 0 ]; then
+            echo "Running ${#serial[@]} tenant-exclusive task(s) at -j 1"
+            coder-eval run "${serial[@]}" \
+              -e experiments/smoke.yaml \
+              --model "$AGENT_MODEL" \
+              -j 1 -v \
+              --run-dir /tmp/runs \
+              --tags smoke || rc=1
+          fi
+          exit $rc
         continue-on-error: true
 
       - name: Fix permissions on /tmp/runs
@@ -469,22 +509,23 @@ jobs:
       - name: Summarize results
         if: always()
         run: |
-          # Find the most recent run directory (tests may not have produced
-          # one on catastrophic install failures).
-          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
-          if [ -z "$run_dir" ]; then
+          # List every run directory. The smoke step makes two coder-eval calls
+          # (parallel pass + serial tenant-exclusive pass), so reading only the
+          # newest would summarize half the results.
+          run_dirs=$(ls -td /tmp/runs/*/ 2>/dev/null)
+          if [ -z "$run_dirs" ]; then
             echo "::warning::No run directory found — nothing to summarize"
             exit 0
           fi
-          echo "Run directory: $run_dir"
+          echo "Run directories:"
+          echo "$run_dirs" | sed 's/^/  /'
           echo ""
           echo "## Task results"
           python - <<'PY'
           import json
           import pathlib
-          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
           rows = []
-          for p in sorted(run_dir.rglob('task.json')):
+          for p in sorted(pathlib.Path('/tmp/runs').rglob('task.json')):
               d = json.loads(p.read_text(encoding='utf-8'))
               lr = d.get('llm_review') or {}
               rows.append((
@@ -580,12 +621,14 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('/tmp/runs').glob('*/'))
-          if not run_dirs:
-              print('::warning::No run directory — skipping reviewer threshold check')
+          # rglob the whole tree, not just the newest run dir: the smoke step
+          # makes two coder-eval calls (parallel + serial tenant-exclusive), and
+          # gating on one of them would silently skip half the tasks. Matches the
+          # pass-rate gate below.
+          task_jsons = sorted(pathlib.Path('/tmp/runs').rglob('task.json'))
+          if not task_jsons:
+              print('::warning::No task results — skipping reviewer threshold check')
               sys.exit(0)
-          run_dir = run_dirs[-1]
-          task_jsons = sorted(run_dir.rglob('task.json'))
           failures = []
           missing = []
           for p in task_jsons:

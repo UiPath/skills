@@ -8,7 +8,9 @@ This script undoes ONLY what the compliance-pack tests create:
 
   1. Disables the `iso-42001-2023` compliance pack state on the login tenant
      (what the full-apply / `state enable` tasks turn on). Skipped silently if
-     the pack is not active.
+     the pack is not active, OR if this run's setup did not enable it (no
+     ownership marker) — see MARKER below. Only undo your own change: the
+     tenant is shared and tasks run in parallel.
   2. Deletes AOps policies whose name starts with `iso-42001` (the deterministic
      `iso-42001-2023-<clause>-<product>` namespace the partial-apply flow
      creates — see partial-apply/impl.md). Scoped by that prefix so it never
@@ -36,12 +38,21 @@ import logging
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="cleanup_compliance_pack: %(message)s")
 logger = logging.getLogger(__name__)
 
 PACK_ID = "iso-42001-2023"
 POLICY_NAME_PREFIX = "iso-42001"  # compliance-pack partial-apply namespace
+
+# Written by setup_enable_compliance_pack.py when THIS run enabled the pack.
+# Absent = the pack was already on when we arrived, so it belongs to another
+# task; disabling it would yank the precondition out from under a concurrent
+# restore/drift-restore/disable run mid-turn (observed: CI 30455293977, and the
+# 19:02:00 disable in run 2026-08-20_19-01-47). Task-sandbox scoped (cwd), not
+# /tmp: pre_run/post_run share one orchestrator container across parallel tasks.
+MARKER = Path(os.getcwd()) / ".iso42001-enabled-by-setup"
 
 
 def run_cli(args, timeout=30):
@@ -92,6 +103,11 @@ def get_tenant_id():
 
 
 def disable_pack():
+    if not MARKER.exists():
+        logger.info("No ownership marker (%s) — this run did not enable pack %s; "
+                    "leaving pack state untouched", MARKER, PACK_ID)
+        return
+
     tenant_id = get_tenant_id()
     if not tenant_id:
         logger.warning("No tenant ID found — skipping pack disable")
@@ -110,6 +126,7 @@ def disable_pack():
     logger.info("Pack %s IS active on tenant %s — disabling", PACK_ID, tenant_id)
     result = run_cli(["gov", "compliance-packs", "state", "disable", "tenant", tenant_id, PACK_ID])
     if result and result.get("Result") == "Success":
+        MARKER.unlink(missing_ok=True)
         logger.info("Pack disabled")
     else:
         logger.warning("Pack disable returned unexpected result: %s", result)
