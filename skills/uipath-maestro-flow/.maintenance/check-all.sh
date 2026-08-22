@@ -17,6 +17,7 @@ CHECKERS=(
   "check-template.sh"
   "check-orphans.sh"
   "check-plugin-pairs.sh"
+  "check-plugin-registration.sh"
   "check-uip-commands.sh"
   "check-versions.sh"
 )
