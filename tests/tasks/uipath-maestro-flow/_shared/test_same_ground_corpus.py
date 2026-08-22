@@ -12,23 +12,11 @@ from pathlib import Path
 
 FLOW_TASKS = Path(__file__).resolve().parent.parent
 
-V1_AUTHORING_ALLOWLIST = {
-    "connector_trigger/webhook_waitfor_parallel.yaml",
-    "e2e/devcon_expense_approval.yaml",
-    "evaluate/evaluator_type_choice.yaml",
-    "evaluate/inline_agent_eval/inline_agent_eval.yaml",
-    "evaluate/local_crud.yaml",
-    "evaluate/no_auto_upload.yaml",
-    "evaluate/simulation/simulation_crud.yaml",
-}
+V1_AUTHORING_ALLOWLIST = set()
 
 SKILL_TELEMETRY_ALLOWLIST = set()
 
-FORBIDDEN_PROMPT_ALLOWLIST = {
-    "evaluate/inline_agent_eval/inline_agent_eval.yaml",
-    "evaluate/local_crud.yaml",
-    "evaluate/simulation/simulation_crud.yaml",
-}
+FORBIDDEN_PROMPT_ALLOWLIST = set()
 
 # These born-neutral escalation tasks are outside the recipe-edit sweep. Their
 # prompts already require the same-name solution and tell the agent to leave
@@ -40,19 +28,7 @@ FORBIDDEN_PROMPT_EXCEPTIONS = {
     "e2e/escalation_slack_alert/escalation_slack_alert.yaml",
 }
 
-DEBUG_SOLUTION_ALLOWLIST = {
-    "e2e/escalation_jira_ticket/escalation_jira_ticket.yaml",
-    "e2e/jira_create_issue/jira_create_issue.yaml",
-    "e2e/jira_get_issue/jira_get_issue.yaml",
-    "e2e/jira_lifecycle/jira_lifecycle.yaml",
-    "e2e/jira_search_triage/jira_search_triage.yaml",
-    "edit/add_node/add_node.yaml",
-    "edit/add_output/add_output.yaml",
-    "edit/group_to_subflow/group_to_subflow.yaml",
-    "edit/move_node/move_node.yaml",
-    "edit/remove_node/remove_node.yaml",
-    "edit/update_node/update_node.yaml",
-}
+DEBUG_SOLUTION_ALLOWLIST = set()
 
 # F1 freezes the #2557 task even though its prompt predates the exact phrase.
 DEBUG_PROJECT_LAYOUT_EXCEPTIONS = {"single_node/coded_agent/coded_agent.yaml"}
