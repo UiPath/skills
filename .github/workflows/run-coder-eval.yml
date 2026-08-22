@@ -321,6 +321,25 @@ jobs:
             -f coder_eval_uipath/eval_runner/scripts/ci/delegate-overlay.Dockerfile \
             coder_eval_uipath
 
+      # Campaign-only preview arm. This temporary branch keeps checker paths on
+      # the real checkout while pointing the Claude plugin at a staged copy in
+      # which the three Maestro skills are replaced by their preview versions.
+      - name: Stage preview Maestro plugin
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/maestro-preview-plugin"
+          experiment="$RUNNER_TEMP/maestro-preview-nightly.yaml"
+          mkdir -p "$stage"
+          git archive HEAD | tar -x -C "$stage"
+          for skill in uipath-maestro-flow uipath-maestro-case uipath-maestro-bpmn; do
+            rm -rf "$stage/skills/$skill"
+            cp -a "$stage/preview/$skill" "$stage/skills/$skill"
+          done
+          cp tests/experiments/nightly.yaml "$experiment"
+          sed -i "s|path: \"\\\$SKILLS_REPO_PATH\"|path: \"$stage\"|" "$experiment"
+          grep -F "path: \"$stage\"" "$experiment"
+          echo "EVAL_EXPERIMENT=$experiment" >> "$GITHUB_ENV"
+
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
       # cron's ROPC flow). Required because `uip flow debug` needs a real user
       # `sub` claim — s2s/client_credentials tokens lack one. Writes
@@ -486,9 +505,9 @@ jobs:
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
             agent_flags="--model $model"
           fi
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags ${delegate_overrides[*]} -j $j ($TASK_COUNT task files)"
+          echo "Running: coder-eval run $TASK_GLOBS -e $EVAL_EXPERIMENT $agent_flags ${delegate_overrides[*]} -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
-            -e experiments/nightly.yaml \
+            -e "$EVAL_EXPERIMENT" \
             $agent_flags \
             "${delegate_overrides[@]}" \
             -j "$j" -v \
