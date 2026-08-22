@@ -3,7 +3,7 @@
 
 Checks the persisted outcomes of local evaluation operations:
 
-  1. An evaluator JSON file exists somewhere under SmokeEval/ with
+  1. An evaluator JSON file exists somewhere in the sandbox with
      name == "greeting-match" and evaluatorTypeId == "uipath-exact-match".
   2. An eval-set JSON file exists with name == "Smoke Set", carrying at
      least one data point in `evaluations[]` whose name == "hello" with

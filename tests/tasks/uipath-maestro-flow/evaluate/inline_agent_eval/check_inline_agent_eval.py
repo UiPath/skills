@@ -6,9 +6,9 @@ This task wires evaluation scaffolding against an INLINE agent node
 the correct evaluator is an LLM judge, NOT the `exact-match` the deterministic
 script-node eval tasks use. The checks assert these persisted side effects:
 
-  1. An inline agent.json exists under TriageEval/TriageEval/<uuid>/agent.json
-     (the inline agent dir is a UUID, so glob it; skip generated
-     .agent-builder/). Proves the eval target is a real inline agent.
+  1. An inline agent.json exists somewhere in the sandbox (skip generated
+     .agent-builder/ intermediates). Proves the eval target is a real inline
+     agent.
   2. An evaluator JSON exists with evaluatorTypeId ==
      "uipath-llm-judge-output-semantic-similarity" (the `llm-judge-output`
      internal id) carrying a non-empty `model` — the right choice for a

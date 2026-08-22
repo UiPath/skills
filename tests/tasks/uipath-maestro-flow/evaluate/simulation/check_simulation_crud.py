@@ -4,8 +4,8 @@
 Confirm the simulations landed in the eval-set JSON and that the remove
 actually mutated the file:
 
-  1. An eval-set JSON exists under SimEval/ with name == "Sim Set" carrying a
-     data point named "hello" in `evaluations[]`.
+  1. An eval-set JSON exists somewhere in the sandbox with name == "Sim Set",
+     carrying a data point named "hello" in `evaluations[]`.
   2. That data point has a non-empty `simulations` array.
   3. The Llm simulation targeting `agent-lookup` is still present (add worked).
   4. The Static simulation targeting `connector-send-email` is gone (the
