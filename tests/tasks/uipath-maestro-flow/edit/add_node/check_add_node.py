@@ -41,7 +41,10 @@ def _assert_edge_exists(source_id: str, target_id: str) -> None:
         with open(path) as f:
             flow = json.load(f)
         for edge in flow.get("edges") or []:
-            if edge.get("sourceNodeId") == source_id and edge.get("targetNodeId") == target_id:
+            if (
+                edge.get("sourceNodeId") == source_id
+                and edge.get("targetNodeId") == target_id
+            ):
                 return
     sys.exit(f"FAIL: no edge from '{source_id}' to '{target_id}'")
 
@@ -53,13 +56,9 @@ def _assert_celsius_output(payload: dict) -> None:
     try:
         celsius = float(value)
     except (TypeError, ValueError):
-        sys.exit(
-            "FAIL: convertToCelsius output has no numeric temperatureC value"
-        )
+        sys.exit("FAIL: convertToCelsius output has no numeric temperatureC value")
 
-    summary = find_node_output_field(
-        payload, "summary", node_ids={"formatSummary"}
-    )
+    summary = find_node_output_field(payload, "summary", node_ids={"formatSummary"})
     match = re.search(r"(-?\d+(?:\.\d+)?)\s*°?C\b", summary or "", re.IGNORECASE)
     if match is None:
         sys.exit("FAIL: formatSummary output does not include a Celsius value")
