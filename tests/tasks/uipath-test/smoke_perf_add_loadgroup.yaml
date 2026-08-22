@@ -1,0 +1,64 @@
+task_id: skill-test-perf-add-loadgroup
+description: >
+  Smoke test: agent uses the uipath-test skill to attach a test case as a
+  load group on an existing perf scenario referenced by the user. Asserts
+  that the agent (a) discovers the project's test cases first (Critical
+  Rule #7), (b) calls `uip tm perf-scenario load-groups add` with
+  `--scenario-key`, `--test-case-key`, `--folder-key`, and `--package-name`,
+  and (c) **omits `--package-version`** so the CLI auto-resolves to the
+  latest published version (per skill anti-pattern). The user supplies the
+  scenario key, folder key, and package name so the task stays offline and
+  focused on the load-group command shape; the skill — not the prompt —
+  must teach version auto-resolve and `--output json`.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:perf-loadgroup]
+
+sandbox:
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Attach my login test case to an existing performance scenario as a load
+  group. The scenario key is `PERF-SCN-1001` in project key `QA-REGRESSION`.
+  The automation lives in package `LoginTests` under Orchestrator folder
+  key `9f2c3a10-4d2a-4b11-8e01-perfloadgroup01`. Discover the login test
+  case in the project first, then attach it using the latest published
+  package version.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed test cases for the project (Critical Rule #7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--project-key\s+\S+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called `perf-scenario load-groups add` with the required IDs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+load-groups\s+add\s+.*--scenario-key\s+\S+.*--test-case-key\s+\S+.*--folder-key\s+\S+.*--package-name\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT use the retired `perf-scenario add-testcase` spelling"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+add-testcase\b'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT pin --package-version (skill anti-pattern: omit to auto-resolve latest)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+load-groups\s+add\s+.*--package-version'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0

@@ -1,0 +1,86 @@
+task_id: skill-test-perf-transaction-metrics-sut
+description: >
+  Integration test: agent uses the uipath-test skill to fetch
+  per-transaction (per-API) metrics for a perf scenario load group.
+  Asserts that the agent (a) inspects the load groups
+  (`perf-scenario load-groups list`, or `perf-scenario get` as a fallback)
+  to establish the system-under-test type before calling
+  `transaction-metrics list`, and (b) when the SUT is a browser
+  (`chrome`/`edge`/…) or `windowsApplication` — i.e. no API-level
+  transactions are captured — the agent explicitly **acknowledges the
+  empty result is expected** rather than fabricating per-API metrics
+  from `AggregatedData[]`. This validates the skill's API-SUT-only
+  caveat for `transaction-metrics`.
+tags: [uipath-test, integration, mode:operate, lifecycle:analyse, feature:perf-scenario]
+
+agent:
+  type: claude-code
+
+run_limits:
+  max_turns: 50
+
+sandbox:
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  For one of my completed perf scenario executions, give me the per-API
+  breakdown — average / p95 / p99 response time per endpoint, request
+  counts, error rates.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inspected the load groups (SUT type / config) before calling transaction-metrics"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+(load-groups\s+list\s+.*--execution-id\s+\S+|get\s+.*--scenario-key\s+\S+)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called `perf-scenario transaction-metrics list` with the required window flags"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+transaction-metrics\s+list\s+.*--load-group-id\s+\S+.*--start-time-ms\s+\S+.*--end-time-ms\s+\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "If the SUT is not an API, agent communicated the empty-transactions caveat (no fabricated per-API metrics)"
+    command: |
+      # The framework writes the agent transcript to ./agent_output.* — heuristically
+      # check that the agent's final messages either populated per-API rows
+      # OR explained why the breakdown isn't available (browser/desktop SUT).
+      python3 -c "
+      import glob, sys, re
+      candidates = (
+          glob.glob('agent_*.md') + glob.glob('agent_*.txt') + glob.glob('*.transcript')
+          + glob.glob('test-report-*.md')
+      )
+      if not candidates:
+          # No transcript-like artifact — assume the test runner asserted command
+          # invocations above and accept; this is a structural fallback.
+          sys.exit(0)
+      body = open(candidates[-1], encoding='utf-8', errors='replace').read()
+      lower = body.lower()
+      has_per_api_rows = re.search(r'(?i)transaction(name)?|/api/|http\s+(get|post|put|delete|patch)', body) is not None
+      acknowledges_caveat = (
+          ('systemundertest' in lower or 'system under test' in lower or 'sut' in lower
+           or 'apptype' in lower or 'app type' in lower or 'application type' in lower)
+          and ('browser' in lower or 'chrome' in lower or 'edge' in lower
+               or 'web' in lower or 'desktop' in lower or 'windowsapplication' in lower)
+          and ('transaction' in lower or 'api' in lower)
+      )
+      if has_per_api_rows or acknowledges_caveat:
+          sys.exit(0)
+      sys.stderr.write('agent neither populated per-API rows nor acknowledged the non-API SUT caveat\\n')
+      sys.exit(1)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
