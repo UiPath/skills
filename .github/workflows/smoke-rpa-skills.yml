@@ -126,9 +126,12 @@ jobs:
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
+      # anthropic 1.0.0 (2026-08-20) swapped httpx for httpx2. The pinned
+      # coder-eval imports httpx without declaring it, so llm_judge stops
+      # importing and every task carrying one errors at setup with score 0.
       - name: Install coder-eval
         shell: bash
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}" "anthropic<1.0"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
