@@ -100,7 +100,9 @@ def _js_expression(value) -> str | None:
 def _check_attachment_canonical(flow: dict, attachment) -> None:
     expression = _js_expression(attachment)
     if expression is None:
-        _fail("inputs.attachment missing or empty — wire it to the trigger output binding")
+        _fail(
+            "inputs.attachment missing or empty — wire it to the trigger output binding"
+        )
     m = _ATTACHMENT_REF.match(expression)
     if not m:
         _fail(
@@ -121,7 +123,10 @@ def _check_attachment_canonical(flow: dict, attachment) -> None:
             f"inputs.attachment references `$vars.{trigger_id}.output...` but no node with "
             f"id={trigger_id!r} exists in the flow."
         )
-    if not isinstance(trigger_node.get("type"), str) or "trigger" not in trigger_node["type"]:
+    if (
+        not isinstance(trigger_node.get("type"), str)
+        or "trigger" not in trigger_node["type"]
+    ):
         _fail(
             f"node id={trigger_id!r} has type={trigger_node.get('type')!r}; expected a trigger "
             "(file-typed input variables must be trigger-bound)."
@@ -183,7 +188,11 @@ def _check_output_source(node: dict) -> None:
 def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
     globals_ = (flow.get("variables") or {}).get("globals") or []
     result_var = next(
-        (v for v in globals_ if v.get("id") == "result" and v.get("direction") == "out"),
+        (
+            v
+            for v in globals_
+            if v.get("id") == "result" and v.get("direction") == "out"
+        ),
         None,
     )
     if result_var is None:
@@ -192,7 +201,9 @@ def _check_result_output_mapping(flow: dict, bt_node_id: str) -> None:
             "Batch Transform result file handle to be surfaced as a flow output named `result`."
         )
 
-    end_nodes = [n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"]
+    end_nodes = [
+        n for n in flow.get("nodes", []) if n.get("type") == "core.control.end"
+    ]
     if not end_nodes:
         _fail("flow has no End node — required to terminate the path and map outputs")
 
