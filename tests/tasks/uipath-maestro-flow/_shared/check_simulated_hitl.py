@@ -35,6 +35,24 @@ def hitl_nodes(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
+def check_quick_form(_flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
+    candidates = [
+        node
+        for node in hitl_nodes(nodes)
+        if node.get("type") == "uipath.human-in-the-loop.quick-form"
+        or (
+            node.get("type") == "uipath.human-in-the-loop"
+            and (node.get("inputs") or {}).get("type") == "quick"
+        )
+    ]
+    if not candidates:
+        fail(
+            "need an inline HITL quick form: either the quick-form node type or "
+            "the base HITL node with inputs.type='quick'"
+        )
+    print("OK: flow contains an inline HITL quick form")
+
+
 def field_text(field: dict[str, Any], key: str) -> str:
     value = field.get(key)
     return value.lower() if isinstance(value, str) else ""
@@ -135,6 +153,7 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
 CHECKS = {
     "expense": check_expense,
     "priority": check_priority,
+    "quick-form": check_quick_form,
     "schema": check_schema,
 }
 
