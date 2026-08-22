@@ -16,21 +16,15 @@ defaults:
   sandbox:
     driver: docker
     docker:
-      # Build with tests/docker/Dockerfile. The npmrc + NPM_CONFIG_USERCONFIG
-      # layer there is a hard requirement: without it, in-sandbox
-      # `npm install @uipath/flow-sdk` 404s and every compile fails.
+      # Build with tests/docker/Dockerfile: its npmrc layer is required.
       image: skills-codex:latest
       network: bridge
       env_passthrough_extra:
         - SKILLS_REPO_PATH
-        # GitHub Packages auth for `npm install @uipath/flow-sdk`. The image's
-        # npmrc references ${NODE_AUTH_TOKEN} and expands it at read time, so the
-        # token lives only in the environment.
+        # GitHub Packages auth for `npm install @uipath/flow-sdk`.
         - NODE_AUTH_TOKEN
         - UIPATH_CLI_DISABLE_VERSION_SYNC
-        # Same set nightly.yaml forwards. Nothing in the eval infra sets these;
-        # they are the runtime env-auth path UiPath Delegate supplies, and are
-        # inert (silently omitted) when unset. Kept for parity with nightly.
+        # Parity with nightly.yaml. Inert unless a Delegate runtime sets them.
         - UIPATH_CLI_ENABLE_ENV_AUTH
         - UIPATH_CLI_AUTH_TOKEN
         - UIPATH_CLI_ORGANIZATION_NAME
@@ -40,41 +34,25 @@ defaults:
         - E2E_PROCESS_KEY
         - E2E_LONG_PROCESS_KEY
       extra_mounts:
-        # uip CLI login state. Byte-for-byte the mount nightly.yaml uses, and
-        # deliberately so: this is the one auth arrangement with a 500-task/night
-        # track record, and a login the CLI cannot see fails tasks on their tenant
-        # calls, which scores as a capability problem rather than a config one.
-        # Verify with tests/docker/flow-v2-preflight.sh ("uip reports a live
-        # login") rather than reasoning about it.
+        # uip login state. Same destination nightly.yaml uses; do not "fix" it.
         - ~/.uipath:/.uipath:rw
-        #
-        # The skills REPO ROOT, read-only at its host path. Nightly gets this for
-        # free because its plugins.path IS the repo root. Narrowing the catalog to
-        # preview/ drops it, and criteria across the flow and case suites shell out
-        # to $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py, which then exit 2 with
-        # "No such file or directory" and score as ordinary misses. Mounting is not
-        # loading: skills still come only from agent.plugins[].path below.
-        #
-        # The destination must be the HOST path, because $SKILLS_REPO_PATH is
-        # forwarded with its host value and the criteria interpolate it in-container.
-        # Writing that portably needs destination-side $VAR expansion, i.e.
-        # coder_eval > 0.11.1 (UiPath/coder_eval#128). This is the only line in this
-        # file that needs it.
+        # Repo root. Narrowing plugins.path to preview/ drops the automatic
+        # repo-root mount, and criteria shell out to
+        # $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py. Destination must be the
+        # host path, so this line needs UiPath/coder_eval#128.
         - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
 
   agent:
     permission_mode: acceptEdits
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
-      # PREVIEW ONLY. This path is BOTH the skill catalog and an automatic :ro
-      # bind mount at the same absolute path in-container, with $VAR expanded.
+      # PREVIEW ONLY. Also the source of the automatic repo-path bind mount.
       - type: "local"
         path: "$SKILLS_REPO_PATH/preview"
     ignore_patterns: []
 
   post_run:
-    # A per-task `npm install` of the SDK leaves node_modules behind in every
-    # artifact dir; unpruned, a full Maestro run costs gigabytes of run output.
+    # Unpruned node_modules costs gigabytes across a full Maestro run.
     - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
       timeout: 30
 

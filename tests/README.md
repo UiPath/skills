@@ -193,11 +193,9 @@ and smoke jobs continue to use `skills-image:latest`.
 `flow-v2-preview.yaml` runs the three `preview/uipath-maestro-{flow,case,bpmn}`
 builder-SDK skills as the ONLY skill catalog, shadowing the shipped v1 skills of
 the same name, so a run measures the Flow v2 authoring path rather than a mix of
-both generations. Two consequences of narrowing `plugins.path` to `preview/`:
-the automatic repo-root bind mount goes with it, so the repo root is remounted
-explicitly (criteria shell out to `$SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py`),
-and the image needs runtime npm auth for the `@uipath` scope because tasks
-`npm install @uipath/flow-sdk` in-sandbox. Login state mounts at `/.uipath`,
+both generations. Narrowing `plugins.path` to `preview/` drops the automatic
+repo-root bind mount, so the root is remounted explicitly; the image also needs
+runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
 identical to `nightly.yaml`. Run `tests/docker/flow-v2-preflight.sh` first: it
 asserts those preconditions in one container, each standing for a failure that
 otherwise scores as a capability problem rather than a config one.

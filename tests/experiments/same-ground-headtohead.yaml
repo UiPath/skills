@@ -28,10 +28,8 @@ defaults:
         - SKILLS_REPO_PATH
         - UIPATH_CLI_DISABLE_VERSION_SYNC
       extra_mounts:
-        # Same login destination nightly.yaml uses. This used to be a literal
-        # /home/tmatup/... because coder-eval forwards the host HOME and there is
-        # no destination-side $VAR expansion; the nightly path needs neither, so
-        # the hardcode is gone. Deeper target wins, so .skills still shadows.
+        # Same login destination nightly.yaml uses. Deeper target wins, so
+        # .skills still shadows.
         - ${SG_UIPATH_HOME}:/.uipath:rw
         - ${SG_EMPTY_SKILLS}:/.uipath/.skills:ro
 
