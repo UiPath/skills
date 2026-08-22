@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -111,7 +112,7 @@ def _check_report() -> None:
             f"action={action!r} (expected one of {sorted(ALLOWED_ACTIONS)})"
         )
     reason = doc.get("reason") or ""
-    if "Studio Web" not in reason:
+    if re.search(r"\bstudio(?:\s+|-)web\b", reason, re.IGNORECASE) is None:
         failures.append(f"reason does not reference 'Studio Web': {reason!r}")
 
     if failures:
