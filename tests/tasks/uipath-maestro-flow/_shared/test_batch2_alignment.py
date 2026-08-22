@@ -105,6 +105,38 @@ def test_quick_form_check_rejects_action_app_variant(tmp_path: Path) -> None:
     assert "inline HITL quick form" in result.stderr
 
 
+def test_schema_check_rejects_outcomes_only_on_an_unrelated_node(
+    tmp_path: Path,
+) -> None:
+    flow = {
+        "nodes": [
+            {
+                "id": "review",
+                "type": "uipath.human-in-the-loop",
+                "inputs": {
+                    "schema": {
+                        "fields": [
+                            {"direction": "input"},
+                            {"direction": "output"},
+                        ]
+                    }
+                },
+            },
+            {
+                "id": "unrelated",
+                "type": "core.action.script",
+                "name": "Approve or Reject",
+            },
+        ]
+    }
+    (tmp_path / "Review.flow").write_text(json.dumps(flow))
+
+    result = run_script(SHARED / "check_simulated_hitl.py", "schema", cwd=tmp_path)
+
+    assert result.returncode != 0
+    assert "Approve and Reject outcomes" in result.stderr
+
+
 def test_solution_select_checks_use_selected_solution(tmp_path: Path) -> None:
     for name in ("SolarReports", "TideTracker"):
         directory = tmp_path / name
