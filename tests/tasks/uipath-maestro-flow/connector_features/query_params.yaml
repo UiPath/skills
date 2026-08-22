@@ -21,7 +21,8 @@ initial_prompt: |
   parameter so hidden tasks are returned.
   Validate the final flow file.
   If the Google Tasks connector operation is not present in the registry, use
-  an HTTP fallback for the same REST call and finish after validation.
+  a managed HTTP fallback through the generic `uipath-uipath-http` connector
+  for the same REST call and finish after validation.
   Do not keep searching for a connector node that the registry does not expose.
 
 success_criteria:

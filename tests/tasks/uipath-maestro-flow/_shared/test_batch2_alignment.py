@@ -26,6 +26,7 @@ def test_simulated_hitl_checks_accept_root_sdk_emit(tmp_path: Path) -> None:
                 "id": "review",
                 "type": "uipath.human-in-the-loop",
                 "inputs": {
+                    "type": "quick",
                     "priority": "High",
                     "schema": {
                         "fields": [
@@ -64,9 +65,44 @@ def test_simulated_hitl_checks_accept_root_sdk_emit(tmp_path: Path) -> None:
     (tmp_path / "Review.flow").write_text(json.dumps(flow))
     script = SHARED / "check_simulated_hitl.py"
 
-    for check in ("expense", "priority", "schema"):
+    for check in ("expense", "priority", "quick-form", "schema"):
         result = run_script(script, check, cwd=tmp_path)
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_quick_form_check_accepts_specialized_node_type(tmp_path: Path) -> None:
+    flow = {
+        "nodes": [
+            {
+                "id": "review",
+                "type": "uipath.human-in-the-loop.quick-form",
+                "inputs": {},
+            }
+        ]
+    }
+    (tmp_path / "Review.flow").write_text(json.dumps(flow))
+
+    result = run_script(SHARED / "check_simulated_hitl.py", "quick-form", cwd=tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_quick_form_check_rejects_action_app_variant(tmp_path: Path) -> None:
+    flow = {
+        "nodes": [
+            {
+                "id": "review",
+                "type": "uipath.human-in-the-loop",
+                "inputs": {"type": "custom"},
+            }
+        ]
+    }
+    (tmp_path / "Review.flow").write_text(json.dumps(flow))
+
+    result = run_script(SHARED / "check_simulated_hitl.py", "quick-form", cwd=tmp_path)
+
+    assert result.returncode != 0
+    assert "inline HITL quick form" in result.stderr
 
 
 def test_solution_select_checks_use_selected_solution(tmp_path: Path) -> None:
