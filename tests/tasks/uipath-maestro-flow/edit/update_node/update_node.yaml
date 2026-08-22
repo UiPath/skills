@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-update-node
 description: >
   Edit an existing Bellevue-weather flow: rewrite the decision-branch script
@@ -18,6 +22,8 @@ initial_prompt: |
   Update the flow to ensure if temperature is greater than 60F returns a summary with a message field 'amazing day',
   otherwise the message field should be 'go home'.
 
+  Keep the Flow inside a solution of the same name.
+
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
@@ -34,7 +40,7 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow debug runs and output contains 'amazing day' or 'go home'"
-    command: "python3 $TASK_DIR/check_update_node.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/update_node/check_update_node.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

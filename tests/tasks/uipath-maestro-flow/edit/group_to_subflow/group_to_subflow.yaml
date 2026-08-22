@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-group-to-subflow
 description: >
   Extract the getWeather HTTP node and formatSummary Script node into a subflow
@@ -18,6 +22,8 @@ sandbox:
 initial_prompt: |
   Move getWeather and formatSummary into a subflow called "fetchAndFormat". The subflow should output the temperatureF value. The rest of the main flow (decision + end nodes) stays but reads from the subflow output.
 
+  Keep the Flow inside a solution of the same name.
+
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
@@ -34,7 +40,7 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow debug runs with subflow, output contains branch message"
-    command: "python3 $TASK_DIR/check_group_to_subflow.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/group_to_subflow/check_group_to_subflow.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
