@@ -137,18 +137,3 @@ ENV DOTNET_ROOT=/usr/share/dotnet \
 # loops in the turn timeline). uipath-langchain is declared in the
 # SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
 RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"
-
-# Runtime npm auth for the @uipath scope, needed by any task that runs
-# `npm install @uipath/...` in-sandbox (the Maestro builder SDK,
-# `@uipath/flow-sdk`, is published only to GitHub Packages).
-#
-# Token-LESS: npm expands ${NODE_AUTH_TOKEN} at read time, so nothing secret
-# enters the image. NPM_CONFIG_USERCONFIG is required, not belt-and-braces:
-# npm resolves userconfig to $HOME/.npmrc, and the runner forwards --env HOME
-# with the HOST value, so npm would otherwise look in a dir the container does
-# not have and fall through to the public registry, where the package 404s.
-RUN printf '%s\n' \
-      '@uipath:registry=https://npm.pkg.github.com/' \
-      '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' \
-      > /root/.npmrc
-ENV NPM_CONFIG_USERCONFIG=/root/.npmrc
