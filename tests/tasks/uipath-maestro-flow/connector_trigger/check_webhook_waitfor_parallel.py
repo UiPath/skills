@@ -24,9 +24,12 @@ Static assertions (read from the `.flow` source):
 
 from __future__ import annotations
 
-import glob
 import json
+import os
 import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "_shared"))
+from flow_check import find_flow_file  # noqa: E402
 
 FLOW_GLOB = "**/WebhookSelfTest*.flow"
 EVENT_MARKERS = ("uipath.connector.event", "uipath-http-webhook")
@@ -40,10 +43,8 @@ def _fail(msg: str) -> None:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob(FLOW_GLOB, recursive=True)
-    if not flows:
-        _fail(f"no flow file matching {FLOW_GLOB} under cwd")
-    with open(flows[0], encoding="utf-8") as f:
+    path = find_flow_file(flow_glob=FLOW_GLOB)
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -83,7 +84,8 @@ def main() -> None:
 
     # 2. HTTP Webhook Wait-for-event node present.
     event_nodes = [
-        n for n in nodes
+        n
+        for n in nodes
         if all(m in str(n.get("type", "")).lower() for m in EVENT_MARKERS)
     ]
     if not event_nodes:
@@ -130,7 +132,10 @@ def main() -> None:
     end_ids = {n.get("id") for n in nodes if str(n.get("type", "")) == END_TYPE}
     if not end_ids:
         _fail(f"no End node ({END_TYPE}). Types seen: {types_seen}")
-    for label, node in (("wait-for-event", event_nodes[0]), ("http-request", good_http)):
+    for label, node in (
+        ("wait-for-event", event_nodes[0]),
+        ("http-request", good_http),
+    ):
         reach = _reachable(node.get("id"), edges)
         if not (reach & end_ids):
             _fail(f"{label} branch does not reach an End node")
