@@ -13,17 +13,6 @@ from pathlib import Path
 FLOW_TASKS = Path(__file__).resolve().parent.parent
 
 V1_AUTHORING_ALLOWLIST = {
-    "bindings/idempotent_reconfigure.yaml",
-    "bindings/multi_connector_independence.yaml",
-    "bindings/no_duplicate_connection_bindings.yaml",
-    "bindings/reconfigure_different_connection.yaml",
-    "connector_features/testmanager_attachments/testmanager_attachments.yaml",
-    "connector_features/testmanager_crud_grounded/testmanager_crud_grounded.yaml",
-    "connector_features/testmanager_execution_results/testmanager_execution_results.yaml",
-    "connector_features/testmanager_generic_records/testmanager_generic_records.yaml",
-    "connector_features/testmanager_requirement_lifecycle/testmanager_requirement_lifecycle.yaml",
-    "connector_features/testmanager_testcase_lifecycle/testmanager_testcase_lifecycle.yaml",
-    "connector_features/testmanager_testset_lifecycle/testmanager_testset_lifecycle.yaml",
     "connector_trigger/webhook_waitfor_parallel.yaml",
     "e2e/devcon_expense_approval.yaml",
     "evaluate/evaluator_type_choice.yaml",
@@ -47,7 +36,6 @@ SKILL_TELEMETRY_ALLOWLIST = {
 }
 
 FORBIDDEN_PROMPT_ALLOWLIST = {
-    "connector_features/slack-http-fallback/slack_http_fallback.yaml",
     "context-grounding/batch_transform/batch_transform.yaml",
     "context-grounding/summarize/summarize.yaml",
     "evaluate/inline_agent_eval/inline_agent_eval.yaml",
@@ -72,8 +60,6 @@ FORBIDDEN_PROMPT_EXCEPTIONS = {
 }
 
 DEBUG_SOLUTION_ALLOWLIST = {
-    "connector_features/generic_dynamic_node/generic_dynamic_node.yaml",
-    "connector_features/slack-http-fallback/slack_http_fallback.yaml",
     "e2e/escalation_jira_ticket/escalation_jira_ticket.yaml",
     "e2e/jira_create_issue/jira_create_issue.yaml",
     "e2e/jira_get_issue/jira_get_issue.yaml",
@@ -85,7 +71,6 @@ DEBUG_SOLUTION_ALLOWLIST = {
     "edit/move_node/move_node.yaml",
     "edit/remove_node/remove_node.yaml",
     "edit/update_node/update_node.yaml",
-    "connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml",
 }
 
 # F1 freezes the #2557 task even though its prompt predates the exact phrase.
