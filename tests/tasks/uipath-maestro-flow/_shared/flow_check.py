@@ -1482,6 +1482,19 @@ def find_flow_file(
     return matches[0]
 
 
+def assert_no_flow_files() -> None:
+    """Require that the sandbox contains no ``.flow`` artifact anywhere.
+
+    This is the negative counterpart to :func:`find_flow_files` for read-only
+    tasks. It deliberately scans every location because any emitted Flow is a
+    failure; there is no preferred artifact to select in the absence case.
+    """
+    matches = sorted(glob.glob("**/*.flow", recursive=True))
+    if matches:
+        joined = "\n  - ".join(matches)
+        _fail(f"Unexpected .flow file(s) found:\n  - {joined}")
+
+
 # ── Internals ───────────────────────────────────────────────────────────────
 
 

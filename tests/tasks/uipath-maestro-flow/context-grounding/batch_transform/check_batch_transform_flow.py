@@ -20,11 +20,14 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      reference.
 """
 
-import glob
 import json
+import os
 import re
 import sys
 from typing import NoReturn
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
+from flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "uipath.pattern.batch-transform"
 EXPECTED_TYPE_VERSION = "1.0"
@@ -45,10 +48,8 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/BatchTransformDemo*.flow", recursive=True)
-    if not flows:
-        _fail("no BatchTransformDemo*.flow found under cwd")
-    with open(flows[0]) as f:
+    path = find_flow_file(flow_glob="BatchTransformDemo*.flow")
+    with open(path) as f:
         return json.load(f)
 
 
