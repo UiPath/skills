@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-summarize
 description: >
   Create a UiPath Flow that runs a Summarize pattern node (`uipath.pattern.deep-rag`)
@@ -43,7 +47,7 @@ initial_prompt: |
   Note the PascalCase nested field names — lowercase `text`/`citations` would
   resolve to `undefined` at runtime.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the completed flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, follow the documented workflow steps exactly — in particular, note that the wire-level node type is
@@ -62,7 +66,7 @@ success_criteria:
   # ── Structural checks (node type, inputs, returnCitations boolean) ─────
   - type: run_command
     description: "Flow has a Summarize (deep-rag) node with prompt, attachment wired, and returnCitations=true"
-    command: "python3 $TASK_DIR/check_summarize_flow.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/context-grounding/summarize/check_summarize_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
