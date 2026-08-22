@@ -338,8 +338,10 @@ jobs:
           cp tests/experiments/nightly.yaml "$experiment"
           sed -i "s|path: \"\\\$SKILLS_REPO_PATH\"|path: \"$stage\"|" "$experiment"
           sed -i "/~\\/.uipath:\/.uipath:rw/a\\        - $GITHUB_WORKSPACE:/skills-repo:ro" "$experiment"
+          sed -i "/~\\/.uipath:\/.uipath:rw/a\\        - $GITHUB_WORKSPACE:$GITHUB_WORKSPACE:ro" "$experiment"
           grep -F "path: \"$stage\"" "$experiment"
           grep -F "$GITHUB_WORKSPACE:/skills-repo:ro" "$experiment"
+          grep -F "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE:ro" "$experiment"
           echo "EVAL_EXPERIMENT=$experiment" >> "$GITHUB_ENV"
 
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
