@@ -1,0 +1,99 @@
+task_id: skill-flow-voice-outbound-call
+description: >
+  Smoke test for the uipath-maestro-flow voice plugin: agent builds the outbound
+  voice topology from scratch — create-outgoing-call, a uipath.agent.voice node
+  backed by an inline conversational agent whose agent.json carries
+  settings.voice, and end-call — then gets uip maestro flow validate to pass.
+  Guards the plugin's headline wiring rule (callContext bound into BOTH the voice
+  agent and the end-call node). Fully offline: the voice node types resolve from the CLI's bundled
+  registry, and init / author / validate need no login.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
+
+run_limits:
+  expected_turns: 26
+  max_turns: 80
+  turn_timeout: 900
+
+initial_prompt: |
+  Build a UiPath Flow project named "PaymentReminder" that places an outbound
+  phone call, has an AI agent hold the conversation with whoever answers, and
+  hangs up when the conversation is over.
+
+  This sandbox has no UiPath tenant and is not logged in, so:
+  - Use placeholder E.164 numbers for the calling and destination numbers —
+    do not look up or provision real ones.
+  - Do NOT run anything that needs a live connection, and do NOT pack, deploy,
+    or place a real call. In particular, do not run `uip maestro flow debug`.
+
+  The task is NOT complete until `uip maestro flow validate` passes on the
+  generated flow.
+
+success_criteria:
+  # Discovery is dynamic in every criterion below: `uip maestro flow init` wraps
+  # the project in a `<Name>Solution/` directory the prompt does not pin, so a
+  # correct flow lands at `PaymentReminderSolution/PaymentReminder/…` and a
+  # hardcoded `path:` would score 0.0 on a valid build (#2213).
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the three outbound voice node types"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      '"uipath.conversational.voice.create-outgoing-call"'
+      '"uipath.agent.voice"'
+      '"uipath.conversational.voice.end-call"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The headline wiring rule: the create-outgoing-call node emits
+  # output.callContext and it must be bound into BOTH the voice agent
+  # (rule conversational-voice-call-context) and the end-call node
+  # (rule conversational-voice-end-call-context). Either serialization is
+  # accepted — the persisted Studio Web binding object or a `=js:` string —
+  # since both express the same wiring; `fieldType` is not graded because the
+  # validator never reads it on a jsExpression binding.
+  - type: run_command
+    description: "callContext from the create-outgoing-call node is bound into BOTH the voice agent and the end-call node"
+    command: "python3 $TASK_DIR/check_voice_flow.py call-context"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The inline agent dir is a UUID, so its agent.json is located through the
+  # voice node's inputs.source. `uip agent init --inline-in-flow
+  # --conversational` scaffolds everything EXCEPT settings.voice — adding it by
+  # hand is mandatory or validate fails.
+  - type: run_command
+    description: "Inline agent.json carries settings.voice and stays conversational"
+    command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory only (pass_threshold: 0) — records convention adherence without
+  # docking an agent that reaches the same graded outcome another way.
+  - type: command_executed
+    description: "Advisory: agent scaffolded the voice agent with uip agent init --inline-in-flow --conversational"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--conversational'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
