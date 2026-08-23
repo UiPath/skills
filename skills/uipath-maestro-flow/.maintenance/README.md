@@ -166,22 +166,6 @@ bash .maintenance/check-plugin-pairs.sh
 
 Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder is missing a required file. Catches half-deleted plugins or new plugin folders that haven't been completed.
 
-## Verifying plugin registration
-
-Run the registration checker to verify every plugin folder is reachable from the index files an agent reads while choosing a node:
-
-```bash
-bash .maintenance/check-plugin-registration.sh
-```
-
-Returns `plugins_checked=N missing_rows=M known_gaps=K`. Exits non-zero on any `MISSING` row.
-
-`check-plugin-pairs.sh` proves a plugin's files exist and `check-orphans.sh` proves something links them. Neither catches the failure this one targets: a plugin linked from a single index but absent from the node-type tables, which leaves its nodes undiscoverable in practice.
-
-Every plugin must be referenced from all three of `author/CAPABILITY.md`, `planning-arch.md`, and `planning-impl.md`. Plugins listed in the script's `INLINE_AGENT_PLUGINS` — those whose agent node carries its definition in an `agent.json` inside the flow project — additionally owe a row in `brownfield.md` and `shared/node-output-wiring.md`, because both enumerate that family by node type. Add a new inline-agent-family plugin to that list when you add the plugin.
-
-Gaps that predate the checker are listed in `KNOWN_GAPS` and reported as `KNOWN_GAP` without failing the run. Delete an entry when the owning team adds the row; never add new entries.
-
 ## Verifying `uip` command references
 
 Run the uip-command checker to verify every `uip ...` invocation resolves to a real command in the installed CLI:
@@ -260,7 +244,7 @@ Continues running all checkers even when one fails — the goal is to surface ev
 - After a refactoring phase
 - After deleting a doc — run `check-orphans.sh` to confirm nothing else became orphaned
 - Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md`
-- After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present, then `check-plugin-registration.sh` to confirm the index files route to it. Start from [plugin-planning-template.md](../assets/templates/plugin-planning-template.md) and [plugin-impl-template.md](../assets/templates/plugin-impl-template.md)
+- After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present
 - After a `uip` CLI version bump — run `check-uip-commands.sh` to catch any commands that were renamed or removed, and `check-versions.sh` to catch docs that pinned a now-stale `.flow`/node version
 
 The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.

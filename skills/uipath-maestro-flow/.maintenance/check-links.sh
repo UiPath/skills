@@ -9,9 +9,6 @@
 # - http(s):// links
 # - slash-command links (/uipath:..., /uipath-feedback)
 # - same-file anchor-only links (#anchor)
-# - assets/templates/ — templates are copy-sources, not navigation. Their links
-#   carry `<PLACEHOLDER>` path segments and are written to resolve from the
-#   destination the template is copied to, so they cannot resolve in place.
 #
 # Accepts:
 # - file links resolving to a file (-f)
@@ -67,7 +64,7 @@ while IFS= read -r srcfile; do
       broken=$((broken+1))
     fi
   done < <(extract_links "$srcfile")
-done < <(/usr/bin/find . -name "*.md" -type f -not -path "./assets/templates/*")
+done < <(/usr/bin/find . -name "*.md" -type f)
 
 echo ""
 echo "checked=$checked broken=$broken"
