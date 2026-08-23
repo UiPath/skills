@@ -1,6 +1,6 @@
 # Voice Nodes — Planning
 
-Voice nodes let a flow hold a real-time AI voice conversation on a live phone call. The centerpiece is `uipath.agent.voice` — an **inline conversational agent** whose `agent.json` carries a `settings.voice` block. Around it sit three plumbing nodes that create, identify, and end the call. There is no standalone voice agent — a voice agent only runs inside a Maestro Flow.
+Voice nodes let a flow hold a real-time AI voice conversation on a live phone call. The centerpiece is `uipath.agent.voice` — an **inline conversational agent** whose `agent.json` carries a `settings.voice` block. Around it sit three nodes that start, place, and end the call. There is no standalone voice agent — a voice agent only runs inside a Maestro Flow.
 
 For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, resource nodes on artifact ports), see [inline-agent/planning.md](../inline-agent/planning.md) — everything there applies to the voice agent node too. This plugin covers what voice adds on top: the node set, the two call topologies, and the `callContext` wiring rule.
 
@@ -77,14 +77,14 @@ core.trigger.manual (output) → uipath.conversational.voice.create-outgoing-cal
 | `context` | bottom | source (artifact) | Connect context resource nodes |
 | `escalation` | top | source (artifact) | Connect escalation resource nodes |
 
-`core.trigger.voice`: single `output` source port (right). `uipath.conversational.voice.create-outgoing-call` and `uipath.conversational.voice.end-call`: `input` (left, target) + `success` (right, source).
+`core.trigger.voice`: single `output` source port (right). `uipath.conversational.voice.create-outgoing-call` and `uipath.conversational.voice.end-call`: `input` (left, target) + `success` (right, source) + the implicit `error` port.
 
 ## Output Variables
 
 - `$vars.{originNodeId}.output.callContext` — the live-call handle (`{ type: "phone"|"web", id, conversationId }`). Origin is the trigger (inbound) or the create-outgoing-call node (outbound); it must be bound into **both** the voice agent and the end-call node.
 - `$vars.{voiceAgentNodeId}.output` — end-of-session data (`uipath__voice_session`, `uipath__voice_call_context`, `uipath__agent_response_messages`), not a typed result object. Field shapes: [impl.md § Accessing Output](impl.md#accessing-output).
 - `$vars.{endCallNodeId}.output.ended` — whether the call was ended.
-- `$vars.{nodeId}.error` — error details on any of the four (`code`, `message`, `detail`, `category`, `status`).
+- `$vars.{nodeId}.error` — error details (`code`, `message`, `detail`, `category`, `status`) on the three action nodes: `uipath.agent.voice`, create-outgoing-call, end-call. `core.trigger.voice` has no `error` — its outputDefinition is `output` only.
 
 ## Scaffolding Prerequisite
 

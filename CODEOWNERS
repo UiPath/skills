@@ -140,7 +140,7 @@
 /skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
 /tests/tasks/uipath-maestro-flow/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
 
-# Voice — inline voice agent node + call plumbing
+# Voice — inline voice agent node + the trigger, dial, and end-call nodes
 /skills/uipath-maestro-flow/references/author/references/plugins/voice/ @UiPath/jarvis
 /tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis
 

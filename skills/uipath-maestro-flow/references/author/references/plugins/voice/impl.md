@@ -2,7 +2,7 @@
 
 This plugin covers building the two voice topologies: scaffolding the voice agent's directory, the four node JSON shapes, `callContext` wiring, and what validate/pack/debug enforce. Inline-agent mechanics (the agent subdirectory, `inputs.source`, resource nodes, refresh) are identical to [inline-agent/impl.md](../inline-agent/impl.md) — the voice deltas below are complete on their own; open that file only when the voice agent has tools/contexts/escalations or prompt inputs (the two sections linked from here).
 
-Node type: `uipath.agent.voice`, bound to a local subdirectory via `inputs.source = <projectId>` — the same BPMN contract as the autonomous inline agent. The plumbing nodes serialize to `ConversationalService.CreateOutgoingCall` / `ConversationalService.EndCall` serviceTasks.
+Node type: `uipath.agent.voice`, bound to a local subdirectory via `inputs.source = <projectId>` — the same BPMN contract as the autonomous inline agent. The create-call and end-call nodes serialize to `ConversationalService.CreateOutgoingCall` / `ConversationalService.EndCall` serviceTasks.
 
 ## Prerequisite — Scaffold the Voice Agent
 
@@ -54,7 +54,7 @@ uip maestro flow registry get core.trigger.voice --output json
 uip maestro flow registry get uipath.conversational.voice.create-outgoing-call --output json
 ```
 
-`uipath.agent.voice` confirms identically to the autonomous inline agent — ports, `model.source: true` hoisting onto `inputs.source`, and `model.serviceType` / `model.version` — see [inline-agent/impl.md § Registry Validation](../inline-agent/impl.md#registry-validation). Voice adds no port or model field to that set. On the plumbing nodes, confirm `ConversationalService.CreateOutgoingCall` / `ConversationalService.EndCall` as `model.serviceType`. Never hand-write `definitions[]` entries — always copy them from `registry get`.
+`uipath.agent.voice` confirms identically to the autonomous inline agent — ports, `model.source: true` hoisting onto `inputs.source`, and `model.serviceType` / `model.version` — see [inline-agent/impl.md § Registry Validation](../inline-agent/impl.md#registry-validation). Voice adds no port or model field to that set. On the create-call and end-call nodes, confirm `ConversationalService.CreateOutgoingCall` / `ConversationalService.EndCall` as `model.serviceType`. Never hand-write `definitions[]` entries — always copy them from `registry get`.
 
 **`registry get` succeeding does not mean the tenant supports voice.** It answers from the bundled registry, so it succeeds offline and on any tenant. Whether conversational voice is actually enabled (and a SIP trunk provisioned) can only be established at deploy/debug time — if the user hasn't confirmed it, raise it as an Open Question rather than treating a clean `registry get` as proof.
 
@@ -68,7 +68,7 @@ The node that originates the call emits `output.callContext`. Bind it into **bot
 
 - Inbound: origin is the `core.trigger.voice` node
 - Outbound: origin is the `uipath.conversational.voice.create-outgoing-call` node
-- `fieldType` mirrors the declared type of the target property in the node definition's `inputDefinition` — read it off `registry get`. For the two voice targets that resolves to `"object"` on the voice agent and `"string"` on the end-call node (a code-editor text field)
+- `fieldType` is `"object"` on the voice agent and `"string"` on the end-call node (a code-editor text field) — the two values Studio Web persists. Write them as given; do not derive them from the node definition's `inputDefinition` (both properties are declared `object` there). For `type: "jsExpression"` bindings the validator never reads `fieldType` — it only checks that `expression` is non-empty — so neither value can fail validation
 
 ### Node JSON — inbound trigger
 
@@ -120,7 +120,7 @@ The node that originates the call emits `output.callContext`. Bind it into **bot
 }
 ```
 
-Exactly two inputs — `source` and `callContext`. Nothing else goes on the instance; see § What NOT to Do for the fields that do *not* belong here and why.
+Two inputs when you author the node — `source` and `callContext`. Hand-author nothing else; see § What NOT to Do for the fields that hydrate on their own, and for the Studio-Web-authored flow where they are already populated and must be left in place.
 
 ### Node JSON — end call
 
@@ -159,7 +159,7 @@ return { callEnded: session.callEnded, endedBy: session.endedBy };
 - `$vars.{originNodeId}.output.callContext` — the live-call handle (`type`, `id`, `conversationId`); consumed by the voice agent and end-call bindings
 - `$vars.{voiceAgentNodeId}.output.uipath__voice_session` — `callEnded` (bool), `endedBy` (`agent`/`user`/`system`/`error`), `reason`. The same node also emits `uipath__voice_call_context` and `uipath__agent_response_messages`
 - `$vars.{endCallNodeId}.output.ended` — whether the call was ended
-- `$vars.{nodeId}.error` — error details if a node fails
+- `$vars.{nodeId}.error` — error details if one of the three action nodes fails (`core.trigger.voice` emits `output` only)
 
 ## Validate and Pack
 
@@ -178,26 +178,29 @@ Debugging (`uip maestro flow debug`) needs a tenant with conversational voice an
 
 An inbound flow does nothing until a trunk points at its deployed process. Nothing in the `.flow` carries the number — the binding is made against the **release key** after deploy.
 
+> **Confirm with the user before running step 1.** `solution publish` and `solution deploy run` mutate the tenant, and this skill never defaults to an Orchestrator deploy — full flow and the Studio-Web alternative: [operate/references/ship.md § Path 2](../../../../operate/references/ship.md#path-2--orchestrator-deploy-explicit-only).
+
 ```bash
 # 1. ship the solution (the flow project alone is not deployable)
 uip solution pack "<SolutionDir>" "<OutDir>" --output json
 uip solution publish "<OutDir>/<SolutionName>_<version>.zip" --output json
-uip solution deploy run --name <n> --folder-name <n> \
+uip solution deploy run --name <DEPLOYMENT_NAME> --folder-name <FOLDER_NAME> \
   --package-name <SolutionName> --package-version <version> \
   --parent-folder-path Shared --output json
 
 # 2. read the release key + folder key back
-uip or processes list --folder-path "Shared/<n>" --output json   # Key, FolderKey
+uip or processes list --folder-path "Shared/<FOLDER_NAME>" --output json   # Key, FolderKey
 
 # 3. point the trunk at it
 uip conversational trunks assign <E164-number> \
   --process-key <Key> --folder-key <FolderKey> --yes --output json
 ```
 
+- `<FOLDER_NAME>` must be identical in step 1's `--folder-name` and step 2's `--folder-path` — deploy creates that folder under `--parent-folder-path`, and step 2 reads the process back out of it. `<DEPLOYMENT_NAME>` is independent and names the deployment only.
 - `--process-key` is the **release `Key`** from `or processes list` (a GUID), not the package name and not the process id.
 - `--entry-point` is optional and resolves automatically when the flow has exactly one incoming-call entry point — the normal case. Pass it explicitly only for a multi-entry-point package.
 - `--yes` is required when the trunk already has a non-null `processKey`; it re-points the number and the previous process stops receiving calls.
-- Verify with `uip conversational trunks list --direction inbound` — `processName` should show your process and `entryPoint` should match the `core.trigger.voice` node's `inputs.entryPointId`. A mismatch there means the trunk is bound to a different build.
+- Verify with `uip conversational trunks list --direction inbound --output json` — `processName` should show your process and `entryPoint` should match the `core.trigger.voice` node's `inputs.entryPointId`. A mismatch there means the trunk is bound to a different build.
 
 Outbound flows need no binding step — `inputs.from` names the trunk directly.
 
@@ -243,8 +246,8 @@ That drops the node, its `tool` edge, and its `bindings[]` entries together; als
 | `registry get` reports the voice type not found | The installed CLI predates voice support (the types ship in its bundled registry, so this is a CLI-version problem, not a tenant one) | `uip tools update`; re-run `registry get` |
 | Call never connects on a tenant that packs and deploys fine | Conversational voice not enabled on the tenant, or no SIP trunk provisioned — neither is detectable from the CLI | Confirm with the user / tenant admin; raise as an Open Question rather than re-authoring the flow |
 | Call connects but the agent is silent / call drops immediately | Package built without the embedded `agentDefinition` (hand-rolled pack pipeline), or `settings.voice` removed after pack | Re-pack with the CLI; verify the staged `.bpmn` has `name="agentDefinition"` on the voice serviceTask |
-| Outbound call never dials | `from` is not a SIP trunk number on the tenant, or `to` is malformed, or the trunk exists but is not outbound-enabled | `uip conversational trunks list --direction outbound`; use a number with `outboundEnabled: true` for `from`; `to` must be E.164 in a literal binding |
-| Inbound number rings but nothing runs | Trunk not bound, bound to a different process, or bound to an older build | `uip conversational trunks list --direction inbound` — check `processName` and that `entryPoint` matches the trigger's `inputs.entryPointId`; re-run `trunks assign` (§ Bind an Inbound Phone Number) |
+| Outbound call never dials | `from` is not a SIP trunk number on the tenant, or `to` is malformed, or the trunk exists but is not outbound-enabled | `uip conversational trunks list --direction outbound --output json`; use a number with `outboundEnabled: true` for `from`; `to` must be E.164 in a literal binding |
+| Inbound number rings but nothing runs | Trunk not bound, bound to a different process, or bound to an older build | `uip conversational trunks list --direction inbound --output json` — check `processName` and that `entryPoint` matches the trigger's `inputs.entryPointId`; re-run `trunks assign` (§ Bind an Inbound Phone Number) |
 | `solution publish`: `Duplicate binding key … for resource type 'Connection'` (errorCode 1206) | The voice agent has an IS connector tool | No workaround — remove the connector tool (§ Connector Tools Are Blocked at Ship Time) |
 | `solution deploy run`: `[CNS1072] … authenticate this connection before proceeding further` | Same — the connector tool's connection is declared as a solution resource | No workaround — remove the connector tool (§ Connector Tools Are Blocked at Ship Time) |
 | `solution deploy run`: `DraftDeploymentHasDifferentPackageVersion` | An earlier failed deploy left a draft under that deployment name, pinned to the version it first tried | Deploy under a new `--name`/`--folder-name`, or clear the stale draft |
@@ -254,7 +257,7 @@ That drops the node, its `tool` edge, and its `bindings[]` entries together; als
 
 - **Do not scaffold a standalone voice agent** — there is no such thing; `uip agent init` without `--inline-in-flow` builds text agents. A voice agent exists only as an inline conversational agent inside a flow project.
 - **Do not set an `isVoice` input flag on the node** — deprecated contract. The converter derives voice mode from the `uipath.agent.voice` node type; the `{"isVoice":true}` job body is emitted for you at pack time.
-- **Do not put a `model` block, `systemPrompt`/`userPrompt` placeholders, `agentInputVariables`, or `inputs.voice` on the voice node instance** — it carries exactly `inputs.source` + `inputs.callContext`. Prompts and prompt inputs live in `agent.json`; flow-core hoists `model.source` onto `inputs.source`; validate hydrates `voice` from `agent.json` `settings.voice`.
+- **Do not hand-author a `model` block, `systemPrompt`/`userPrompt`, `agentInputVariables`, or `inputs.voice` on the voice node instance** — author it as a shell carrying `inputs.source` + `inputs.callContext`. Prompts and prompt inputs live in the sidecar `agent.json`; flow-core hoists `model.source` onto `inputs.source`; validate/pack hydrate `voice` from `agent.json` `settings.voice`. **A Studio-Web-authored flow is the other case:** self-contained flows embed the agent's config inline, so `inputs.voice.model` / `persona` / `temperature` / `maxTokens` and `inputs.systemPrompt` are legitimately populated there — **leave them alone, never delete them as stray fields**. `uip agent refresh --inline-in-flow` shell-ifies the node back to structural inputs from your sidecar edits — see [inline-agent/impl.md § Refresh and Validate](../inline-agent/impl.md#refresh-and-validate).
 - **Do not declare `outputSchema` properties on a voice agent** — the schema must stay empty; the runtime streams the conversation and delivers session data via `$vars.<nodeId>.output.uipath__voice_session`.
 - **Do not collapse `settings.voice.model` into `settings.model`** — they are two different models (realtime speech vs engine LLM) and both are read.
 - **Do not run `uip maestro flow eval` on a voice flow** — the platform blocks voice agents from eval runs; the CLI rejects it with a clear error.
