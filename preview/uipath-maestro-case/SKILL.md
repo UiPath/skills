@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ c0cf591. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ b384859. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -128,12 +128,26 @@ export declare function casePlan(id: string): CaseBuilder;
     description(text: string): this;
 
 /**
-     * Turn the generated Case App on or off.
+     * Turn the generated Case App on or off, or configure its summary and sections.
      *
-     * @param enabled - Whether the plan ships a Case App.
+     * Section `details` are authored as a map of at most six primitive values; the
+     * serializer JSON-encodes that map into the shipped wire string. Configuring a
+     * Case App enables it. The platform-owned Case App version markers are never
+     * inferred by this method.
+     *
+     * @example
+     * **Configure a summary and one detail section**
+     * ```ts
+     * .caseApp({
+     *   summary: '=js:vars.summary',
+     *   sections: [{ title: 'Amounts', details: { total: '=js:vars.total', urgent: true } }],
+     * })
+     * ```
+     *
+     * @param enabledOrConfig - A boolean toggle, or the typed Case App configuration.
      * @returns This builder, so calls chain.
      */
-    caseApp(enabled?: boolean): this;
+    caseApp(enabledOrConfig?: boolean | CaseAppConfig): this;
 
 /**
      * Declare a read/write case variable.
@@ -305,6 +319,75 @@ export interface JsonSchemaType {
 
 <!-- /GEN:case-builder -->
 
+### Case App summary and sections
+
+Pass a typed configuration to `.caseApp(...)` to enable the generated Case App
+and define its summary view:
+
+```text
+.caseApp({
+  summary: '=js:vars.summary',
+  sections: [
+    {
+      title: 'Overview',
+      details: {
+        amount: '=js:vars.amount',
+        status: 'Open',
+        urgent: true,
+      },
+    },
+  ],
+})
+```
+
+Each section accepts at most six detail entries. Values must be primitives:
+string, number, boolean, or `null`; nested objects and arrays are not supported.
+The SDK JSON-encodes the map into the Case wire format and generates a stable
+section id when `id` is omitted. `.caseApp()` and `.caseApp(true)` remain the
+boolean-only enablement form. The SDK does not invent platform-owned
+`caseAppVersion` or `caseAppCreatedVersion` stamps.
+
+### Designer layout
+
+Use `.layout()` for optional stage and trigger canvas metadata. Keys are the
+exact author-level stage labels and trigger display names; the serializer
+resolves them to final node ids:
+
+```text
+.layout({
+  stages: { Intake: { position: { x: 160, y: 120 }, width: 420 } },
+  triggers: { 'Order received': { position: { x: 40, y: 120 } } },
+})
+```
+
+Layout never changes Case behavior. Unknown or ambiguous names fail compilation.
+When a decompiled foreign Case already has layout, authored fields replace only
+the same fields for the named node; all untouched node/edge entries and fields
+remain byte-identical. Omit `.layout()` to retain the serializer's default
+positions or the complete preserved foreign side-car.
+
+### Human-selected stages and ad-hoc tasks
+
+A `wait-for-user` exit can expose the Case runtime's select-next-stage API.
+Name the Data Fabric entity that receives `instanceId` and `nextStage`:
+
+```text
+.exitWhen(rule('required-tasks-completed'), {
+  marksStageComplete: true,
+  type: 'wait-for-user',
+  selectNextStage: { objectName: 'CaseStageSelection' },
+})
+```
+
+Exactly one exit per case may configure `selectNextStage`, and each destination
+stage should enter on `rule('user-selected-stage')`. The entity needs string
+fields named `instanceId` and `nextStage`.
+
+Call `.allowAdhocTasks()` at case level when optional tasks with
+`rule('adhoc')` entry conditions may be started through the Case ad-hoc message
+contract. This does not expose legacy `adhocOrchestrationData` or Case Manager
+objects.
+
 ### stage (`s`)
 
 <!-- GEN:stage-builder -->
@@ -397,6 +480,11 @@ export interface ExitOpts {
      * `user-selected-stage` entry on each destination.
      */
     exitToStage?: string;
+    /**
+     * Enable the runtime select-next-stage API for this `wait-for-user` exit.
+     * `objectName` is the Data Fabric entity that receives `{ instanceId, nextStage }`.
+     */
+    selectNextStage?: SelectNextStageSpec;
 }
 
 export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
@@ -511,29 +599,19 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
     waitForTimer(spec?: TimerSpecData): this;
 
 /**
-     * A wait-for-connector task — suspend the stage until an Integration Service
-     * **event** fires. Omit the spec (or `connectorKey`/`operation`) for a
-     * **placeholder** (a connector not yet registered): `data.uipath` carries only
-     * `serviceType: "Intsvc.WaitForEvent"`. Naming the connector/operation emits the
-     * `context` subscription. (A fully *resolved* subscription — real
-     * connection/typeId — needs live connector resolution and is out of scope.)
+     * A wait-for-connector task in placeholder or stringly-resolved form.
      *
-     * @param spec - The event to wait for. Omit it, or its `connectorKey` / `operation`, for a placeholder to fill in later.
+     * @param spec - Omit for a placeholder, pass `connectorKey`/`operation` for the legacy named placeholder,
+     * or pass a symbolic `{ connector, event, ... }` subscription for library resolution.
      * @returns This builder, so calls chain.
      */
     waitForConnector(spec?: WaitConnectorSpec): this;
 
 /**
- * A `wait-for-connector` subscription: suspend on an Integration Service event.
- * Omit `connectorKey`/`operation` for a bare **placeholder** (for a connector not
- * yet registered — `data.uipath` carries only `serviceType`).
+ * A placeholder connector/operation pair, or a library-resolved event
+ * subscription using the same symbolic shape as Flow `waitForEvent()`.
  */
-export interface WaitConnectorSpec {
-    /** Connector key, e.g. `uipath-microsoft-outlook365`. */
-    connectorKey?: string;
-    /** Event operation, e.g. `EMAIL_RECEIVED`. */
-    operation?: string;
-}
+export type WaitConnectorSpec = WaitConnectorPlaceholderSpec | EventSubscription;
 
 /**
      * Mark this task required, so its stage cannot complete without it.
@@ -550,6 +628,15 @@ export interface WaitConnectorSpec {
      * @returns This builder, so calls chain.
      */
     runOnce(value?: boolean): this;
+
+/**
+     * Run this task again whenever its entry condition is met after stage re-entry.
+     * This is the semantic inverse of {@link TaskBuilder.runOnce} and emits an explicit
+     * `shouldRunOnlyOnce: false`.
+     *
+     * @returns This builder, so calls chain.
+     */
+    runOnReEntry(): this;
 
 /**
      * Describe this task.
@@ -627,23 +714,33 @@ export interface ActionSpecData {
 /**
  * One field of an Action Center task's form. **Inputs** are read-only context the
  * assignee sees; **outputs** are the values they fill in. Emitted as a schema
- * `InputOutput` row (`{ name, type, displayName? }`) under `data.inputs[]` /
- * `data.outputs[]`.
+ * `InputOutput` row under `data.inputs[]` / `data.outputs[]`.
  *
  * @remarks
- * Note: no `required` flag — on a task's io row `required` means "must hold a
- * value now", which `uip maestro case validate` rejects as an empty required
- * field at author time. Whether the assignee must fill a field is governed by the
- * resolved action app's own form schema; here the reviewer-must-fill semantic is
- * carried by the input (context) vs output (fill-in) split itself.
+ * `required: true` means this serialized row must already hold a non-empty
+ * `value`; it does not mean that the reviewer must fill the field. The source
+ * checker and `uip maestro case validate` both reject an empty required row with
+ * `EMPTY_REQUIRED_FIELD`. Reviewer input is still modeled by placing the field
+ * in `outputs` rather than `inputs`.
  */
 export interface ActionField {
     /** Field key. */
     name: string;
     /** Field type (default `string`). */
     type?: TypeDesc;
+    /** UI control subtype, for example `dropdown`. */
+    subType?: string;
     /** Human-facing label (defaults to `name` in the UI when omitted). */
     displayName?: string;
+    /** Input literal/expression, or the readable variable name for an output field. */
+    value?: string;
+    /** Require `value` to be non-empty at validation time. */
+    required?: boolean;
+    /** Dropdown choices, using the product's lower-case `{ value, label }` shape. */
+    options?: Array<{
+        value: string;
+        label: string;
+    }>;
 }
 
 /**
@@ -717,11 +814,15 @@ data into the child case and read its results back:
     labels: 'finance',                     // a single string (not a list)
     actionCatalogName: 'Expense Review',   // the action app this task instantiates
     inputs: [                              // read-only context the assignee SEES
-      { name: 'employeeName', type: 'string', displayName: 'Employee' },
+      { name: 'employeeName', type: 'string', displayName: 'Employee',
+        value: '=vars.employeeName', required: true },
       { name: 'amount', type: 'number', displayName: 'Amount' },
     ],
     outputs: [                             // fields the assignee FILLS IN
-      { name: 'approved', type: 'boolean' },
+      { name: 'decision', subType: 'dropdown', options: [
+        { value: 'approve', label: 'Approve' },
+        { value: 'reject', label: 'Reject' },
+      ] },
       { name: 'comment', type: 'string' },
     ],
   })
@@ -730,12 +831,13 @@ data into the child case and read its results back:
 ```
 
 - **`inputs` vs `outputs`** is the reviewer-must-fill split: inputs are shown
-  read-only, outputs are what they submit. Each is `{ name, type?, displayName? }`
-  (`type` defaults to `string`).
-- There is deliberately **no `required` flag** on a field — on a task io row
-  `required` means "must already hold a value", which `uip maestro case validate`
-  rejects as an empty required field at author time. Model mandatory-ness with the
-  input/output split, not a flag.
+  read-only, outputs are what they submit. `type` defaults to `string`;
+  `subType: 'dropdown'` and lower-case `{ value, label }` `options` describe a
+  choice field.
+- **`required: true` means the row must already hold a non-empty `value`.** It is
+  not a reviewer-must-fill flag. Both `case check` and product validation reject
+  a missing or empty value as `EMPTY_REQUIRED_FIELD`; use `outputs` to model what
+  the reviewer must fill in.
 
 ### wait-for-connector — suspend on an Integration Service event
 
@@ -753,15 +855,48 @@ Two forms, both emitting `serviceType: "Intsvc.WaitForEvent"`:
 ```
 
 Omit `connectorKey`/`operation` for a **placeholder** (a connector not yet
-registered) — a task's `data.uipath` is then `serviceType` only; a rule still
-carries a `uipath` bag (a bare rule is rejected by `validate`). A fully *resolved*
-subscription (real connection / typeId) needs live connector resolution and is not
-authored offline.
+registered) — a task's `data` is then `serviceType` only; a rule still carries a
+`uipath` bag (a bare rule is rejected by `validate`).
+
+For a **resolved** subscription, pass the same symbolic event object to a wait
+task or rule. The compiler resolves its operation/type metadata from
+`$FLOW_SDK_LIBRARY_JSON` and its connection/folder from `bindings.json`, then
+emits the full `context`/`inputs`/`outputs` bag and root bindings:
+
+```text
+const emailReceived = {
+  connector: 'uipath-microsoft-outlook365',
+  event: 'email-received',
+  where: { parentFolderId: '<mail-folder-id>' },
+  filters: [{ field: 'subject', contains: 'Invoice' }],
+  connection: 'outlook',
+  folder: 'caseFolder',
+};
+
+.task('Wait for reply', t => t
+  .waitForConnector(emailReceived)
+  .required().entryWhen(rule('current-stage-entered')))
+.task('Process reply', t => t
+  .process('Handler', { folder: 'Shared' })
+  .entryWhen(rule('wait-for-connector', { connector: emailReceived })))
+```
+
+A generated trigger descriptor may replace the stringly object on the task:
+`.waitForConnector(EmailReceived, { where, connection, folder })`. Never put raw
+connection/type IDs in the `.case.ts`; bind symbolic names in `bindings.json`.
 
 ## Conditions — `rule(type, opts?)`
 
 Pass one rule, an array for an **AND-group**, or an array of arrays for the
 complete **OR-of-AND grid** to `entryWhen`/`exitWhen`/`completeWhen`.
+
+For a pure data gate, use `when(expression)`. The receiving slot supplies the
+platform's canonical event, so `stage.entryWhen(when('=js:vars.amount > 1000'))`
+means `rule('case-entered', { expression: '=js:vars.amount > 1000' })`. The
+other defaults are `current-stage-entered` for task entry,
+`selected-tasks-completed` for stage exit, and `required-stages-completed` for
+case completion. Use `rule(...)` when the event or its stage/task payload is
+part of the intent.
 
 <!-- GEN:conditions -->
 
@@ -850,7 +985,8 @@ all four node/metadata slots; these are the usual authoring patterns):
 
 `stage`/`tasks` references use the **labels/names you gave** in the builder; the
 serializer resolves them to the generated ids. A `selected-tasks-completed`
-rule with no tasks is incomplete; `check` warns to add `{ tasks: [...] }`.
+rule with neither tasks nor an expression is incomplete; `check` warns to add
+`{ tasks: [...] }` or use `when(expression)` for a pure stage-exit guard.
 
 ## Rules the validator enforces (common gotchas)
 
@@ -1001,11 +1137,9 @@ export interface TimerTriggerOpts {
 }
 
 /**
- * An Integration Service **event** trigger — an external event (a new row, an
- * email, a webhook) starts the case. Emits `data.inputs.serviceType:
- * "Intsvc.EventTrigger"`; payload fields map onto its `outputs[]`.
+ * An Integration Service event trigger in placeholder or stringly-resolved form.
  *
- * @param opts - The connector event to subscribe to, and its connection.
+ * @param opts - Display/output options and an optional symbolic subscription.
  * @returns A trigger to pass to `.trigger(...)`.
  */
 export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
@@ -1013,6 +1147,12 @@ export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
 export interface EventTriggerOpts {
     name?: string;
     description?: string;
+    /**
+     * Stringly resolved subscription. Prefer the descriptor overload when a
+     * prepared connector module is available. Omit this for the legacy
+     * `serviceType`-only placeholder.
+     */
+    subscription?: EventSubscription;
     /**
      * Optional event-payload extractions. Each key is a case-variable name read
      * downstream as `=vars.<name>`; each value is the payload field expression
@@ -1039,6 +1179,8 @@ export interface BuiltTrigger {
     timeCycle?: string;
     /** Event only: payload-field extractions onto the trigger's `outputs[]` (see {@link EventTriggerOpts.outputs}). */
     eventOutputs?: TaskOutputBinding[];
+    /** Event only: a library-resolved Integration Service subscription. */
+    eventSubscription?: EventSubscription;
 }
 
 export type CaseTriggerKind = 'manual' | 'timer' | 'event';
@@ -1077,12 +1219,19 @@ export default casePlan('nightly-sweep')
   start). Emits `data.inputs = { timerType: 'timeCycle', timeCycle,
   serviceType: 'timer' }`.
 - **`eventTrigger({ name?, description?, outputs? })`** — an Integration Service
-  **event** start. Emits `data.inputs.serviceType: 'Intsvc.EventTrigger'`. With no
-  `outputs` it is a **placeholder** (`data.inputs` = only `serviceType`) — the
-  offline shape for an event on a connector not yet registered. `outputs` maps
-  payload fields to readable case variables, e.g.
+  **event** start. With no `subscription` it is a **placeholder**
+  (`data.inputs` = only `serviceType`) — the offline shape for an event on a
+  connector not yet registered. `outputs` maps payload fields to readable case
+  variables, e.g.
   `eventTrigger({ name: 'Order', outputs: { orderId: '=response.id' } })` →
   `=vars.orderId` downstream.
+- **Resolved event start** — add the same symbolic object used by
+  `waitForConnector` as `subscription`, or use a generated descriptor:
+  `eventTrigger(EmailReceived, { where, connection: 'outlook', folder:
+  'caseFolder', outputs: { subject: '=response.subject' } })`. Compile requires
+  the connector library and resolves the full context plus root bindings. An
+  In-arg bound with `.input(shape, { from: trigger })` remains bridged alongside
+  those resolved connector outputs.
 - The **first** `.trigger(...)` is the primary. Compile also syncs the sibling
   `entry-points.json` (one entry per trigger) so the runtime can discover them.
 
@@ -1400,7 +1549,7 @@ directly with `node node_modules/@uipath/flow-sdk/dist/case/<name>-cli.js`.
   the typed source; leave it intact except when deleting the typed construct to
   which an identity entry belongs.
 
-  > Unsupported Phase 3 constructs fail decompile with a named refusal; the
+  > Unsupported wire constructs fail decompile with a named refusal; the
   > command does not silently drop them. Do not edit `node_modules` or a compiled
   > `caseplan.json` to work around a refusal.
 
