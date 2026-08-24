@@ -41,7 +41,6 @@ tags:
   - feature:registry
   - feature:escalation
   - feature:approval-gate
-  - path-to-ga
 
 # A healthy build of this fixture (39 tasks, 20 resources) measures ~60 min,
 # so 14400 leaves ~4x headroom — enough for one cold harness restart after a
