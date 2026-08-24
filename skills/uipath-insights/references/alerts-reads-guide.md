@@ -2,7 +2,7 @@
 
 Reference for the `uip insights alerts` read commands, with response shapes and interpretation rules. All three use the active CLI session for identity and tenant.
 
-Keys inside `Data` are PascalCase in the CLI's JSON output. Read `AlertName`, not `alertName`.
+Keys inside `Data` are PascalCase in the CLI's JSON output. Read `DeliveryId`, not `deliveryId`.
 
 ## Safe Output
 
