@@ -17,10 +17,16 @@ description: >
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connections]
 max_iterations: 1
 
+# Measured 2026-08-24: at 2100s a healthy build was still in Phase 3 connector
+# resolution (119 tool calls, connector unresolved) when the cap fired — ERROR /
+# score 0.0 with nothing graded. The same task at 3600s finished in 42 min with
+# every criterion passing. Both limits are raised together because one harness
+# "turn" is the entire agent query stream, so turn_timeout is the binding cap
+# and a smaller value makes task_timeout dead config.
 run_limits:
-  task_timeout: 2100
+  task_timeout: 3600
   max_turns: 150
-  turn_timeout: 2100
+  turn_timeout: 3600
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectionParityCase"
