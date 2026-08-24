@@ -1100,6 +1100,54 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   }
 });
 
+test("npm pack output parses on both the npm 11 array and npm 12 object shapes", (t) => {
+  // npm <= 11 prints `[ { ...packResult } ]`; npm >= 12 prints
+  // `{ "<packageName>": { ...packResult } }`. Reshape the real npm output into
+  // each form so both are covered whatever npm major runs the suite -- the
+  // object shape broke publishing to npmjs when CI's unpinned `npm@latest`
+  // moved to npm 12.
+  for (const shape of ["array", "object"]) {
+    const repo = fixtureRepo(t);
+    addSkill(repo, "uipath-example");
+    addPackageManifest(repo);
+
+    const runNpmPack = (options) => {
+      const result = runRealNpmPack(options, repo);
+      if (result.status !== 0) return result;
+      const parsed = JSON.parse(result.stdout);
+      const results = Array.isArray(parsed) ? parsed : Object.values(parsed);
+      const reshaped =
+        shape === "array"
+          ? results
+          : Object.fromEntries(results.map((entry) => [entry.name, entry]));
+      return { ...result, stdout: JSON.stringify(reshaped, null, 2) };
+    };
+
+    const packages = withNpmCache(repo, () =>
+      packAllVariants(repo, { runNpmPack }),
+    );
+    assert.equal(packages.length, 1, `${shape}: expected one package`);
+    assert.equal(packages[0].packageName, "@uipath/skills", `${shape}: package name`);
+    assert.ok(existsSync(packages[0].tarball), `${shape}: tarball exists`);
+  }
+});
+
+test("npm pack output that names no tarball still fails loudly", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example");
+  addPackageManifest(repo);
+
+  assert.throws(
+    () =>
+      withNpmCache(repo, () =>
+        packAllVariants(repo, {
+          runNpmPack: () => ({ status: 0, stdout: "{}", stderr: "" }),
+        }),
+      ),
+    /could not parse npm pack output/,
+  );
+});
+
 test("a failed npm pack preserves every last successful generated output", (t) => {
   const repo = fixtureRepo(t);
   addSkill(repo, "uipath-example", block("host", "Default."));
