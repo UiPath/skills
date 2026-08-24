@@ -402,6 +402,150 @@ def test_assert_outputs_contain_fails_when_missing():
         assert_outputs_contain(payload, ["world"])
 
 
+# ── assert_outputs_contain: input echoes must not satisfy the match ─────────
+#
+# `variables.globals` carries every global, `in` as well as `out`, and _leaves
+# flattens nested objects — so a needle that is also an input used to be matched
+# by the input's own value. Observed live on the file-attachment task: a flow
+# whose End node mapped the output to a hardcoded literal still "passed" because
+# the bound attachment object carried the random FullName the checker searched
+# for. These pin the guard that subtracts inputs before matching.
+
+
+@pytest.fixture
+def _no_bound_inputs():
+    """Isolate the run_debug stashes — they are process-global state."""
+    saved_ids = flow_check._LAST_DEBUG_INPUT_IDS
+    saved_dir = flow_check._LAST_DEBUG_PROJECT_DIR
+    flow_check._LAST_DEBUG_INPUT_IDS = set()
+    flow_check._LAST_DEBUG_PROJECT_DIR = None
+    yield
+    flow_check._LAST_DEBUG_INPUT_IDS = saved_ids
+    flow_check._LAST_DEBUG_PROJECT_DIR = saved_dir
+
+
+def _globals_payload(mapping):
+    """Payload using the dict form the runtime actually returns."""
+    return {"variables": {"globals": dict(mapping)}}
+
+
+def test_trigger_scoped_input_echo_does_not_satisfy_match(_no_bound_inputs):
+    # The exact live shape: attachment object under `<trigger>.output.<varId>`,
+    # real output hardcoded to something else.
+    payload = _globals_payload(
+        {
+            "start.output.inputDoc": {
+                "ID": "1106735d-3076-4315-92ab-08defd736ffd",
+                "FullName": "evidence-2ba9f1a197d0.txt",
+                "MimeType": "application/octet-stream",
+                "Metadata": {"size": "8"},
+            },
+            "fileName": "sample-report.txt",
+        }
+    )
+    with pytest.raises(SystemExit, match="INPUT ECHO"):
+        assert_outputs_contain(payload, "evidence-2ba9f1a197d0.txt")
+
+
+def test_bound_input_id_echo_does_not_satisfy_match(_no_bound_inputs):
+    # Plain (non-trigger) input, keyed by bare id — indistinguishable from an
+    # output by shape alone, so the guard leans on what run_debug bound.
+    flow_check._LAST_DEBUG_INPUT_IDS = {"webhookPayload"}
+    payload = _globals_payload(
+        {
+            "webhookPayload": {"invoice": {"invoiceNumber": "MCS-2026-04872"}},
+            "resolution": "unable to process",
+        }
+    )
+    with pytest.raises(SystemExit, match="INPUT ECHO"):
+        assert_outputs_contain(payload, "MCS-2026-04872")
+
+
+def test_declared_input_echo_does_not_satisfy_match(tmp_path, _no_bound_inputs):
+    # An `in` global with a defaultValue echoes even though no checker bound it.
+    # Caught only with project_dir, since neither key shape nor the stash sees it.
+    import json as _json
+
+    proj = tmp_path / "MyFlow"
+    proj.mkdir()
+    (proj / "MyFlow.flow").write_text(
+        _json.dumps(
+            {
+                "variables": {
+                    "globals": [
+                        {"id": "cities", "direction": "in", "defaultValue": ["Seattle"]},
+                        {"id": "report", "direction": "out"},
+                    ]
+                }
+            }
+        )
+    )
+    payload = _globals_payload({"cities": ["Seattle"], "report": "no data"})
+
+    # With no project known at all, key shape and the bind-stash see nothing...
+    assert_outputs_contain(payload, "Seattle")
+    # ...an explicit project_dir reports the vacuous match...
+    with pytest.raises(SystemExit, match="INPUT ECHO"):
+        assert_outputs_contain(payload, "Seattle", project_dir=str(proj))
+    # ...and so does the project run_debug resolved, with no opt-in at the call
+    # site. This is what closes the defaultValue case suite-wide.
+    flow_check._LAST_DEBUG_PROJECT_DIR = str(proj)
+    with pytest.raises(SystemExit, match="INPUT ECHO"):
+        assert_outputs_contain(payload, "Seattle")
+
+
+def test_real_output_still_passes_when_it_also_appears_in_input(_no_bound_inputs):
+    # Subtracting inputs must not create false failures: when the flow genuinely
+    # produces the value, matching it is legitimate even though an input echoes it.
+    flow_check._LAST_DEBUG_INPUT_IDS = {"inputDoc"}
+    payload = _globals_payload(
+        {
+            "start.output.inputDoc": {"FullName": "evidence-abc.txt"},
+            "fileName": "evidence-abc.txt",
+        }
+    )
+    assert_outputs_contain(payload, "evidence-abc.txt")
+
+
+def test_element_outputs_are_never_subtracted(_no_bound_inputs):
+    # Node results are genuine outputs regardless of the input-key filter.
+    flow_check._LAST_DEBUG_INPUT_IDS = {"inputDoc"}
+    payload = {
+        "variables": {
+            "globals": {"start.output.inputDoc": {"FullName": "evidence-xyz.txt"}},
+            "elements": [{"outputs": {"echo": "evidence-xyz.txt"}}],
+        }
+    }
+    assert_outputs_contain(payload, "evidence-xyz.txt")
+
+
+def test_allow_input_echo_restores_whole_payload_match(_no_bound_inputs):
+    payload = _globals_payload(
+        {"start.output.inputDoc": {"FullName": "evidence-def.txt"}}
+    )
+    with pytest.raises(SystemExit):
+        assert_outputs_contain(payload, "evidence-def.txt")
+    assert_outputs_contain(payload, "evidence-def.txt", allow_input_echo=True)
+
+
+def test_collect_outputs_still_includes_inputs(_no_bound_inputs):
+    # collect_outputs is unchanged — billing_dispute_resolution uses it for a
+    # "did the run produce anything at all" check that must stay permissive.
+    payload = _globals_payload(
+        {"start.output.inputDoc": {"FullName": "evidence-ghi.txt"}}
+    )
+    assert "evidence-ghi.txt" in collect_outputs(payload)
+
+
+def test_input_echo_note_absent_for_an_ordinary_miss(_no_bound_inputs):
+    # A needle that appears nowhere is a plain miss, not an input echo — the
+    # remediation hint must not fire and misdirect the reader.
+    payload = _globals_payload({"fileName": "sample-report.txt"})
+    with pytest.raises(SystemExit) as exc:
+        assert_outputs_contain(payload, "nowhere-to-be-found")
+    assert "INPUT ECHO" not in str(exc.value)
+
+
 # ── _find_project (manifest-based Flow filtering, MST-9734) ─────────────────
 
 from flow_check import _find_project, _is_flow_project, find_project_dir  # noqa: E402

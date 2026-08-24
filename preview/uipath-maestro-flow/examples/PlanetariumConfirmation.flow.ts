@@ -6,7 +6,7 @@
  *
  * Generic scenario: wait for the email confirming a planetarium reservation.
  */
-import { flow, waitForEvent, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, waitForEvent, script, out, types } from '@uipath/flow-sdk';
 
 const CONFIRMATIONS_FOLDER =
   'AQMkAGU5ZGFmM2QyLWY4OTEtNDAzNi04MGU2LWRjNzE2OWM0NTllMA==';

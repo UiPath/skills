@@ -1,0 +1,97 @@
+task_id: skill-case-timer-connector-from-sdd
+description: >
+  GREENFIELD TIMER TRIGGER AND CONNECTOR SHAPES — build the ScheduledComplianceSweep case
+  from a staged sdd.md and assert the declared trigger and task types survive into
+  caseplan.json. Across the 11 greenfield SDD fixtures in this suite the declared trigger
+  is Manual 8 times and an event trigger twice; a TIMER trigger is declared zero times, so
+  no task exercised projecting one from an SDD. Timer triggers are covered elsewhere
+  (multi_trigger, in_arg_trigger_bind) but only in prompt-driven builds. wait-for-connector
+  had the same gap for a different reason: only golden_rebuild declared it, and that task
+  costs ~$50 and ~40 min, so the sole SDD-driven cover of the connector shapes was also the
+  slowest in the suite. This build carries seven of the nine closed task types, two ordered
+  sequential chains, a run-once timer hold, and an adhoc optional task. Connector-free at
+  runtime and resource-unresolved, so it builds offline — placeholders are expected. Stops
+  at validate; no debug, no publish.
+tags:
+  - uipath-maestro-case
+  - integration
+  - mode:build
+  - lifecycle:generate
+  - shape:multi-node
+  - feature:trigger
+  - feature:timer
+  - feature:tasks
+
+# Inherits agent: and sandbox: from tests/experiments/default.yaml. A 3-stage build with
+# seven task types runs longer than the default budget allows.
+run_limits:
+  task_timeout: 3600
+  # With max_iterations: 1 the turn budget wraps the whole build, so it -- not
+  # task_timeout -- is the effective wall clock. Sized above task_timeout deliberately
+  # so task_timeout is the cap that fires.
+  turn_timeout: 3600
+  max_turns: 200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  Build the Case Management project described by sdd.md in this directory. It is the
+  sole source of truth — trust it as written.
+
+  No resources or connections for this case exist on the tenant, so leave identities
+  unresolved and emit placeholders per the skill's rules. Do NOT query the tenant
+  registry, connections, or users.
+
+  Not complete until `uip maestro case validate` passes on the generated caseplan.json.
+  Stop there — do not publish, upload, or run a debug session.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Before starting, load the uipath-maestro-case skill and follow its
+  workflow.
+
+success_criteria:
+  - type: run_command
+    description: "a caseplan.json was generated"
+    command: "find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "p=$(find . -name caseplan.json -not -path '*/.venv/*' | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      the SDD's timer trigger and task shapes survived the build — a timer trigger carrying
+      the SDD's verbatim timeCycle, all seven declared task types, both ordered chains on
+      runs-sequentially, shouldRunOnlyOnce on the hold (top-level, not nested in data where
+      validate ignores it), an adhoc optional task, and a completable case.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/timer_connector_from_sdd/check_timer_connector.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "no mutating case CLI verbs — caseplan.json is authored directly per the skill's invariant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+(cases|stages|tasks|[a-z-]*conditions)\s+(add|update|remove)'
+
+  - type: command_not_executed
+    description: "no debug run — this case is timer- and connector-driven and cannot run headless"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+debug'
+
+  - type: command_not_executed
+    description: "no publish — the task stops at validate"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(publish|upload)'

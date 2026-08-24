@@ -1,0 +1,50 @@
+task_id: skill-gov-aops-policy-create-e2e
+description: >
+  End-to-end (outcome-graded): the agent registers a governance policy for the
+  E2E product from that product's own form template. Nothing is seeded — pre_run
+  only records the name — so the check passes only if a policy with that name
+  exists afterwards with a service-assigned identifier and a non-empty form-data
+  payload, which a create without --input would not have. The policy is
+  deliberately left undeployed: registering changes nothing about which policy
+  governs a subject, while deploying would change it for everyone on the tenant.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, create]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-create" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Guardrails for the E2E product" AOPS_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 22
+
+initial_prompt: |
+  Register a new AOps governance policy for the `E2E` product:
+
+  - Name: exactly the `policy.name` value from `seed.json`.
+  - Description: exactly the `policy.description` value from `seed.json`.
+  - Fill it from the product's own form template, and give it 365 days of availability.
+
+  Register it only - do NOT deploy it to any tenant, user or group.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the policy is registered under E2E with a service identifier, the requested 365-day availability and a form-data payload"
+    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="present" AOPS_EXPECT_DESCRIPTION="Guardrails for the E2E product" AOPS_EXPECT_AVAILABILITY="365" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

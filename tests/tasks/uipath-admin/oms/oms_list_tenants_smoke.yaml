@@ -1,0 +1,50 @@
+task_id: skill-admin-oms-list-tenants-smoke
+description: >
+  Smoke test (outcome-graded): agent lists the organization's tenants. Graded on
+  the tenant records read back from the platform (id, name, status), not the
+  command string. Read-only — no tenant is created, disabled, or removed.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  List all tenants in my UiPath organization and save the complete JSON result
+  to ./tenants.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "tenants.json holds real tenant records from the platform (Id + Name + Status)"
+    command: |
+      python3 -c "
+      import json, re
+      d = json.load(open('tenants.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      rows = data if isinstance(data, list) else next((L for L in lists(data) if L and isinstance(L[0], dict)), None)
+      assert isinstance(rows, list) and rows, f'expected a list of tenants; got {type(rows).__name__}'
+      r = rows[0]
+      assert r.get('Name') and r.get('Id'), f'tenant record missing Name/Id; keys={list(r)[:10]}'
+      assert re.fullmatch(r'[0-9a-fA-F-]{36}', str(r.get('Id'))), f'tenant Id is not a UUID: {r.get(\"Id\")!r}'
+      assert any(x.get('Status') for x in rows), 'no tenant carries a Status — not a real tenant listing'
+      print(f'OK: {len(rows)} tenants retrieved; first={r.get(\"Name\")}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Listing tenants must not mutate any tenant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+(?:create|delete|disable|enable|update)\b'
+    weight: 2.0

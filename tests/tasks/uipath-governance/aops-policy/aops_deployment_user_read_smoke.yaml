@@ -1,0 +1,59 @@
+task_id: skill-gov-aops-policy-deployment-user-read-smoke
+description: >
+  Smoke test (outcome-graded): the agent reads governance deployment at user
+  scope. `deployment user get` answers with a bare list of per-product entries
+  that also carries inherited group assignments (GroupName / DeploymentLevel), so
+  the check asserts that provenance shape against the caller's own identity,
+  resolved live. Read-only: nothing is deployed or removed.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployment]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  I am auditing AOps governance at user scope. Retrieve and save, verbatim:
+
+  - every user known to governance -> ./users.json
+  - the per-product policy assignments that apply to my own user account -> ./user.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "user.json holds this user's per-product assignments with their deployment provenance"
+    command: |
+      python3 -c "
+      import json, subprocess
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      out = subprocess.run(['uip', 'login', 'status', '--output', 'json'], capture_output=True, text=True, timeout=60)
+      me = json.loads(out.stdout).get('Data') or {}
+      uid = me.get('UserId')
+      email = (me.get('UserEmail') or me.get('UserName') or '').lower()
+      assert uid, 'could not resolve the login user id'
+      listed = [x for x in dicts(load('users.json')) if x.get('Identifier') and x.get('Email')]
+      assert listed, 'users.json holds no governance user rows'
+      assert any(str(x.get('Email') or '').lower() == email for x in listed), 'the login user is not in the user listing'
+      entries = [x for x in dicts(load('user.json')) if x.get('ProductIdentifier')]
+      assert entries, 'user.json holds no per-product assignment entries'
+      with_provenance = [e for e in entries if 'DeploymentLevel' in e or 'GroupName' in e]
+      assert with_provenance, f'no entry carries deployment provenance: {entries[:2]}'
+      governed = [e for e in entries if e.get('PolicyIdentifier')]
+      print(f'OK: {len(entries)} product entries for the login user, {len(governed)} governed by a policy')
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

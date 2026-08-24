@@ -59,6 +59,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add <framework-package>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
 | **Build** | [lifecycle/build.md](lifecycle/build.md) | Code agent logic with framework patterns |
 | **Bindings** | [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md) | Sync resource overrides in `bindings.json` |
+| **Env vars** | [lifecycle/environment-variables.md](lifecycle/environment-variables.md) | Which store the cloud runtime reads (not `.env`); `%ASSETS/<ASSET_NAME>%` to pull a value from an Orchestrator asset |
 | **Run** | [lifecycle/running-agents.md](lifecycle/running-agents.md) | `uip codedagent run` |
 | **Evaluate** | [lifecycle/evaluate.md](lifecycle/evaluate.md) | `uip codedagent eval` |
 | **Deploy** | [lifecycle/deployment.md](lifecycle/deployment.md) | `uip codedagent deploy`, `uip codedagent invoke` |
@@ -198,7 +199,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution projects import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution projects import "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json

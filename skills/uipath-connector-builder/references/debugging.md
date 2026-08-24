@@ -43,8 +43,12 @@ exits non-zero on failure). All run under `uip is connectors builder`.
   so it matches the element.json resource path. See [standard-resources.md](standard-resources.md).
 - **Methods aren't curated activities**: a method created with `--no-curate` has no `curated`
   block — re-run `activity create` (curates by default) or `activity method curate`.
-- **by-id confusion**: GETBYID/PATCH/DELETE auto-add the `/{primaryKey}` path param; only
+- **by-id confusion**: GETBYID/PATCH/DELETE auto-add the `/{id}` path param; only
   model GETBYID for TRUE by-id endpoints, not search.
+- **an output field is always empty at run time**: its `name` doesn't match a key the vendor
+  returns. Response fields are resolved by name (dot-path) against the raw vendor JSON, and a
+  miss binds to an empty output with no error — check the real payload and rename the field
+  (a primary key inherited from a URL token is the classic case).
 
 ## Hook issues
 - **done() not called**: an exception or a branch skips `done()`.

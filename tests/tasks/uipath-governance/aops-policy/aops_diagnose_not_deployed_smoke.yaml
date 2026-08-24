@@ -1,0 +1,105 @@
+task_id: skill-gov-aops-policy-diagnose-not-deployed-smoke
+description: >
+  Smoke test (outcome-graded): a policy is registered for the E2E product but
+  never deployed, and the agent has to explain why it is not taking effect. The
+  distinction being graded is registration versus deployment — the registry read
+  must show the policy exists while the resolution read shows no policy applies.
+  The command_not_executed guard also keeps the diagnosis from "fixing" it by
+  deploying, which would change governance for every subject on the tenant.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployed-policy, troubleshoot]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-undeployed" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Registered but never deployed" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 18
+
+initial_prompt: |
+  Someone reports that the governance policy named in `seed.json` (the
+  `policy.name` field) is not being enforced for the `E2E` product with the `E2E`
+  license type on the tenant I am logged into. Work out why.
+
+  Save verbatim:
+
+  - the policy's registry record -> ./registry.json
+  - what the service says is actually in effect for that license type and product -> ./effective.json
+
+  Write your conclusion to ./diagnosis.md. Do not change any deployment.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "the reads show the policy registered but nothing in effect — the registration/deployment split"
+    command: |
+      python3 -c "
+      import json, re
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      seed = json.load(open('seed.json', encoding='utf-8-sig'))['policy']
+      wanted = seed['name']
+      reg = next((x for x in dicts(load('registry.json')) if x.get('Name') == wanted), None)
+      assert reg, f'registry.json does not show the policy {wanted} as registered'
+      ident = str(reg.get('Identifier') or '')
+      assert re.fullmatch(r'[0-9a-fA-F-]{36}', ident), f'registry record has no service identifier: {ident!r}'
+      def policy_id(x):
+          for k in ('PolicyIdentifier', 'policyIdentifier', 'PolicyId', 'policyId'):
+              if x.get(k): return str(x[k])
+          return ''
+      eff = load('effective.json')
+      text = json.dumps(eff).lower()
+      resolved = next((x for x in dicts(eff) if policy_id(x)), None)
+      # What the scenario requires is that the SEEDED policy is not in effect —
+      # it was registered and never deployed. Some other policy winning for
+      # E2E/E2E is legitimate org state, not an agent failure, so it is not
+      # graded as one; only the seeded policy resolving would mean there is
+      # nothing to diagnose.
+      assert policy_id(resolved or {}).lower() != ident.lower(), (
+          f'the seeded policy {wanted} IS in effect, so nothing is broken to diagnose')
+      if resolved:
+          other = policy_id(resolved)
+          print(f'OK: {wanted} is registered ({ident}) but a different policy ({other}) is what applies for E2E/E2E')
+      else:
+          assert 'no policy applies' in text, f'effective.json is not the service no-policy answer: {text[:120]}'
+          print(f'OK: {wanted} is registered ({ident}) while the service reports no policy in effect for E2E/E2E')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "the diagnosis says the policy is registered but not deployed to any scope"
+    files:
+      - diagnosis.md
+    max_file_chars: 20000
+    include_agent_output: false
+    prompt: |
+      A governance policy is registered for the E2E product but has never been
+      deployed to a tenant, user or group, so nothing enforces it and the service
+      answers "No policy applies." for that license type and product.
+
+      Read ./diagnosis.md. Award a pass only if it distinguishes registration from
+      deployment — the policy exists but no deployment assigns it to any scope —
+      and says the fix is to deploy it. Fail it if it claims the policy does not
+      exist, blames the policy's contents or priority, or asserts it is deployed
+      but overridden.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

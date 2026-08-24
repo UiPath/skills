@@ -1,6 +1,6 @@
 # Batch Transform
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`batchTransform()`](api.md#batchtransform-function).*
+*Exact signatures, fields, and defaults: [`batchTransform()`](api.md#batchtransform-function).*
 
 Adds AI-generated columns to a CSV and returns a new file attachment.
 
