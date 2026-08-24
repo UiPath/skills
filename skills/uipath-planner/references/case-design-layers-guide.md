@@ -206,6 +206,30 @@ Mutually-exclusive happy-path terminals ("Funding on approve, Adverse Action Not
 
 ## Layer 3 — Data: variables & expressions
 
+### Grammar — pick the shape from the need
+
+Every data pattern is one row of this table. Mechanism sections below state the rules each cell obeys.
+
+| What the case needs | Category | Declared in | Operator |
+|---|---|---|---|
+| Caller supplies a value at start | `In` | Case Variables row | — |
+| Same, but the start is an event/timer (no caller) | `In` + `Default` | Case Variables row | — |
+| A value returned to the caller | `Out` | Case Variables row + the producer's Outputs | `->` (or `Default` as fallback) |
+| A trigger payload field readable as `=vars.X` | `Variable` + `sourceTriggers` + `sourceFields` | Case Variables row | — |
+| The same slot filled by several triggers | `Variable`, CSV `sourceTriggers`, keyed `sourceFields` | Case Variables row | — |
+| A task's response field captured into case state | any | the producer's Outputs row | `->` |
+| A literal or computed value written to an existing variable | any | the producer's Outputs row | `=` |
+| One consumer reading one upstream output | **no row** | reference the producer directly | — |
+| A sub-field of structured state | `jsonSchema` (+ `body`) | Case Variables row, read `=vars.X.sub` | — |
+| A document the caller pre-uploads | `In`, `Type: file` | Case Variables row | — |
+| A document a connector fetches mid-case | `Variable`, `Type: file` | the producer's Outputs row | `->` |
+| A stored document sent back out | — | task Inputs, whole-record bind | — |
+| Only the link or document id, not the bytes | `string` (URL) / `jsonSchema` (metadata) | Case Variables row | — |
+
+**Files.** A connector activity whose spec returns `type: "file"` extracts with `response -> <fileVar>`; the runtime writes the JobAttachment record `{ID, FullName, MimeType, Metadata}`, and downstream reads `=vars.<fileVar>` or a sub-field (`.FullName`). A file **input** binds the whole record — `=vars.<fileVar>`; a sub-field (`.ID`), a path, or a URL is rejected by the picker. A file `In` argument carries the caller pre-upload obligation.
+
+**No `InOut`.** Declare separate `In` and `Out` names; copy with `<outVar> = =vars.<inVar>` on the first task, or produce the Out via `->`.
+
 ### Reference producers directly
 
 A downstream input or condition that consumes one upstream task's output references the output directly — the emitting task's output entry is its own declaration, and no Case Variables row exists:
@@ -251,7 +275,7 @@ Validation never reads trigger-node outputs. A trigger payload field is referenc
 | `Out` | Returned to the caller | forbidden | empty | needs a producer Outputs row or a `Default` |
 | `Variable` | Internal state | single `T<N>`, or CSV for multi-trigger | bare path for one trigger; keyed `T<N>: <path>; T<M>: <path>` for CSV — one entry per listed T-number | producer or `Default` |
 
-**Types:** `string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, `jsonSchema`, `file`. `json` is not a type. Use `jsonSchema` (with `body`) when downstream picks sub-fields; `string` for opaque JSON blobs nothing dereferences. `file` is a JobAttachment record — a file `In` argument carries the caller pre-upload obligation ([case-design-lane-guide.md § Confirm](case-design-lane-guide.md#confirm--the-single-checkpoint) surfaces it).
+**Types:** `string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, `jsonSchema`, `file`. `json` is not a type. Use `jsonSchema` (with `body`) when downstream picks sub-fields; `string` for opaque JSON blobs nothing dereferences. `file` is a JobAttachment record (§ Grammar — Files); the lane's confirmation surfaces the caller pre-upload obligation.
 
 **Config-as-In:** runtime business rules (priority bands, thresholds, taxonomies) ride ONE `In` variable — `string` with a JSON `Default` for opaque rule-sets; `jsonSchema` + `body` when the picker must navigate sub-fields.
 
