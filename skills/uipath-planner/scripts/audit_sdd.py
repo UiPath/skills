@@ -225,18 +225,23 @@ def lineage_findings(text: str) -> list[str]:
 LAYERS_MD = Path(__file__).resolve().parent.parent / "references" / "case-design-layers-guide.md"
 
 
-def load_model_facts() -> dict:
+def load_model_facts() -> tuple[dict, str | None]:
     """Parse the canonical tables in the case reference files (stdlib only).
 
     Reads the `### Task types` table (column 1 literals), the `### Lifecycle
     gates` table (legal WHEN rules per gate slot), and the `### Naming rules`
-    fenced regex — all from case-design-layers-guide.md. Returns {} when the
-    layers guide is absent so the shape audit still runs.
+    fenced regex — all from case-design-layers-guide.md.
+
+    Returns ``(facts, degraded)``. ``degraded`` is None on a clean parse and a
+    reason string when the model checks could not be armed — a missing guide or a
+    parse that came back empty. Never degrade silently: the caller turns the
+    reason into a finding, so a renamed heading or a reshaped table fails loudly
+    instead of no-op'ing the task-type enum, WHEN pairing, and naming checks.
     """
     try:
         text = LAYERS_MD.read_text(encoding="utf-8")
     except OSError:
-        return {}
+        return {}, f"{LAYERS_MD.name} not found beside this script"
 
     def section(heading: str) -> str:
         match = re.search(rf"^### {re.escape(heading)}\s*$(.*?)(?=^#|\Z)", text, re.M | re.S)
@@ -261,17 +266,29 @@ def load_model_facts() -> dict:
     facts["gate_rules"] = gate_rules
     pattern = re.search(r"```\s*(\^[^\n`]+\$)\s*```", section("Naming rules"))
     facts["name_pattern"] = re.compile(pattern.group(1)) if pattern else None
-    if not facts["task_types"] or not yes_when:
-        return {}
-    return facts
+
+    empty = [
+        label for label, ok in (
+            ("`### Task types` table", bool(facts["task_types"])),
+            ("`### Lifecycle gates` table", bool(yes_when)),
+            ("`### Naming rules` regex fence", facts["name_pattern"] is not None),
+        ) if not ok
+    ]
+    if empty:
+        return {}, (
+            f"{LAYERS_MD.name} parsed but " + ", ".join(empty) + " came back empty — the heading was "
+            "renamed or the table reshaped; the model checks are disarmed until it is restored"
+        )
+    return facts, None
 
 
-def model_findings(text: str, carried_names: frozenset[str] = frozenset()) -> list[str]:
+def model_findings(text: str, facts: dict, carried_names: frozenset[str] = frozenset()) -> list[str]:
     """Checks driven by the canonical model tables: task-type enum, WHEN/Marks-Complete
     pairing legality, and display-name character rules. ``carried_names`` — stage/task
     display names present in the draft — are exempt from the minting charset (the naming
-    contract preserves them verbatim); the ':' ban stays structural."""
-    facts = load_model_facts()
+    contract preserves them verbatim); the ':' ban stays structural. ``facts`` comes
+    from load_model_facts(); an empty dict means the caller already emitted the
+    degradation finding, so skip these checks rather than assert on missing tables."""
     if not facts:
         return []
     findings: list[str] = []
@@ -705,6 +722,79 @@ def contract_findings(text: str, facts: dict) -> list[str]:
     return findings
 
 
+# Schema field names are EXTERNAL LOOKUP KEYS — byte-for-byte, case-sensitive. The
+# `--output json` envelope of `case spec` / `registry search` PascalCases object keys
+# recursively (`request_body` -> `RequestBody`), so a design that reads names off those
+# keys wires to fields the resource does not have (Studio Web: "RequestBody not found,
+# did you mean request_body"). Canonical rule: uipath-maestro-case
+# references/registry-discovery.md § "Do NOT read I/O field names from Resource.{Inputs,Outputs}".
+#
+# Deterministic and false-positive-free by construction: only a name whose casing
+# CONTRADICTS this same document's Section 4 schema list is flagged. Casing that merely
+# looks unusual is never flagged — an app may legitimately declare `Decision`. When
+# Section 4 itself lists two spellings, both are taken as declared and the group is
+# skipped, so two resources with same-name/different-case fields stay clean.
+SCHEMA_TYPE_WORD = r"(?:string|integer|number|float|double|boolean|datetime|date|object|array|file|jsonSchema)"
+S4_FIELD = re.compile(rf"\b([A-Za-z_][A-Za-z0-9_]*)\s*:\s*{SCHEMA_TYPE_WORD}\b")
+READ_PATHS = (
+    (re.compile(r"^\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*(?:->|<-|=)", re.M), "Input/Output Schema Field cell"),
+    (re.compile(r"\bresponse\.([A-Za-z_][A-Za-z0-9_]*)"), "response path"),
+    (re.compile(r"\bvars\.[A-Za-z_][A-Za-z0-9_]*\.([A-Za-z_][A-Za-z0-9_]*)"), "vars sub-field path"),
+    (re.compile(r"\btrigger\.([A-Za-z_][A-Za-z0-9_]*)"), "trigger payload path"),
+    (re.compile(r'<-\s*"[^"]+"\."[^"]+"\.([A-Za-z_][A-Za-z0-9_]*)'), "cross-task output reference"),
+    (re.compile(r"\$xref\('[^']+','[^']+',\s*'([A-Za-z_][A-Za-z0-9_]*)'\)"), "xref output reference"),
+)
+RESERVED_HANDLES = {"response", "result", "error", "vars", "trigger", "metadata", "bindings", "iterator"}
+
+
+def field_key(name: str) -> str:
+    """Identity modulo the transforms a `--output json` envelope applies: separators and
+    case. `request_body`, `requestBody`, and `RequestBody` share one key — at runtime they
+    are three different fields, which is exactly why a mismatch has to be caught here."""
+    return re.sub(r"[_\-]", "", name).casefold()
+
+
+def field_casing_findings(text: str) -> list[str]:
+    """Section 2 read paths must spell schema field names exactly as Section 4 lists them."""
+    split = re.search(r"^## Section 4: Integrations\s*$", text, re.M)
+    if not split:
+        return []
+    design, integrations = text[: split.start()], text[split.start() :]
+
+    declared: dict[str, set[str]] = {}
+    for match in S4_FIELD.finditer(integrations):
+        name = match.group(1)
+        if name.casefold() in RESERVED_HANDLES:
+            continue
+        declared.setdefault(field_key(name), set()).add(name)
+
+    findings: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    for pattern, label in READ_PATHS:
+        for match in pattern.finditer(design):
+            used = match.group(1)
+            key = field_key(used)
+            if used.casefold() in RESERVED_HANDLES or key not in declared:
+                continue
+            spellings = declared[key]
+            if len(spellings) != 1 or used in spellings:
+                continue
+            schema_name = next(iter(spellings))
+            if (used, schema_name) in seen:
+                continue
+            seen.add((used, schema_name))
+            line_no = design[: match.start()].count("\n") + 1
+            findings.append(
+                f"line {line_no}: {label} reads {used!r} but Section 4 declares the schema field as "
+                f"{schema_name!r} — field names are external keys, matched byte-for-byte at runtime "
+                f"(Studio Web: \"{used} not found, did you mean {schema_name}\"). "
+                f"Carry the schema spelling verbatim (never re-case, never read names off a "
+                f"`--output json` envelope's PascalCased keys); if the casing is not sourced, "
+                f"render the field as <UNRESOLVED> and pair it with a review item"
+            )
+    return findings
+
+
 def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
     findings: list[str] = []
     text = sdd_path.read_text(encoding="utf-8")
@@ -794,9 +884,13 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
             {name.strip() for _, name, _ in stage_blocks(draft_text)}
             | {strip_id_suffix(m.group(1)).strip() for m in re.finditer(r"^#{5} Task [A-Za-z0-9.]+: ([^\n]+)$", draft_text, re.M)}
         )
+    facts, degraded = load_model_facts()
+    if degraded:
+        findings.append(f"model checks disarmed: {degraded}")
     findings.extend(lineage_findings(text))
-    findings.extend(model_findings(text, carried))
-    findings.extend(contract_findings(text, load_model_facts() or {"gate_rules": {}, "yes_when": set(), "no_when": set()}))
+    findings.extend(model_findings(text, facts, carried))
+    findings.extend(contract_findings(text, facts or {"gate_rules": {}, "yes_when": set(), "no_when": set()}))
+    findings.extend(field_casing_findings(text))
 
     draft_findings: list[str] = []
     if draft_path is not None:

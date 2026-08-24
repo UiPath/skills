@@ -121,28 +121,27 @@ Case App Disabled, Task-output passing Direct, SLA Type time-based, SLA Title `S
 
 | SLA Status | Threshold | Action | Display Name |
 |------------|-----------|--------|--------------|
-| At-Risk | <percentage>% of SLA duration | Notify: <recipient or group> | <non-empty root-unique escalation title, no `:`> |
-| Breached | 100% of SLA duration | Notify: <recipient or group> | <non-empty root-unique escalation title, no `:`> |
+| At-Risk | <percentage>% of SLA duration | Notify: <owner persona's group — never `—`> | <root-unique title, no `:`; `Escalation Rule {N}` only if no sla-status-change row references it> |
+| Breached | 100% of SLA duration | Notify: <one tier up: leadership, or Compliance when regulation-driven — never `—`> | <root-unique title, no `:`; same defaulting rule> |
 
-<!-- Required when Case SLA is set; both rows concrete, no `—`. Breached recipient = one tier up
-(leadership; Compliance for regulation-driven cases). Display Name defaults to `Escalation Rule {N}` only
-when no sla-status-change row references it; defaulted recipients get provenance `default applied`. -->
+<!-- Whole section required when Case SLA is set; omit it entirely when there is none. A recipient
+filled from the default tiers rather than the source carries provenance `default applied`. -->
 
 ### SLA Response Map
 
-<!-- Required whenever ANY SLA is configured (case, stage, or action task); omit the section only in a
-case with no SLA anywhere. One row per (Scope, SLA, Status). CLOSURE BOTH WAYS (blocking): every
-non-notify-only row has its matching rule elsewhere in this SDD (sla-status-change task-entry row for
-start-task, a stage-entry row for enter-stage, a stage-exit / case-exit row), and every sla-status-change
-row in the SDD has a row here. Interrupting: `—` for notify-only AND every start-task (a task entry
-interrupts nothing — never Yes/No); otherwise Yes/No matching the produced stage-entry row. Breach cells
-that enter a lane read `enter-stage: <Secondary Stage Name>`, never `Notify: <role>`. Default when the
-source states no response: both statuses notify-only, Target and Interrupting `—` — never invent a stage,
-task, or routing change for a notification. -->
+**THE single authored source of SLA responses.** Every per-stage SLA block carries only its title and
+duration and points here; nothing restates a response.
 
 | Scope | SLA | Status | Response | Target | Interrupting | Rationale |
 |-------|-----|--------|----------|--------|--------------|-----------|
-| <case \| stage: <StageName> \| task: <TaskName>> | <that target's SLA Title> | <At-Risk \| Breached> | <notify-only \| start-task \| enter-stage \| exit-stage \| exit-case> | <— for notify-only; task name; stage name; produced exit row> | <— \| Yes \| No> | <why this response fits the source> |
+| <case \| stage: <StageName> \| task: <TaskName>> | <that target's SLA Title> | <At-Risk \| Breached> | <notify-only \| start-task \| enter-stage \| exit-stage \| exit-case> | <— for notify-only; else the task name / stage name / produced exit row> | <— for notify-only and for every start-task; else Yes \| No matching the produced stage-entry row> | <why this response fits the source> |
+
+<!-- Section required whenever ANY SLA exists (case, stage, or action task); omit only in a case with no
+SLA at all. One row per (Scope, SLA, Status), at-risk and breached separately. Source states no response
+-> both statuses notify-only with Target and Interrupting `—`; never invent a stage, task, or routing
+change to carry a notification. Legal Response values and the Interrupting value each implies:
+case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's
+`sla-status-change` rows is enforced by audit_sdd.py — it is not re-checked by hand. -->
 
 ### Variable SLA Rules
 
@@ -155,7 +154,7 @@ task, or routing change for a notification. -->
 ### Case Triggers
 
 <!-- Trigger mapping into variables is declared in Case Variables with sourceTriggers/sourceFields, not here. T01 is reserved for the case file; number runtime triggers from T02.
-`Manual` is author shorthand — a manual trigger has no serviceType in the generated JSON (the on-disk serviceType enum is `None` / `Intsvc.EventTrigger` / `timer`; the SDD's `Intsvc.TimerTrigger` maps to on-disk `timer`; never write `serviceType: "Manual"`).
+`Manual` is author shorthand for "no event source" — never a serviceType value. The SDD writes `Manual`, `Intsvc.EventTrigger`, or `Intsvc.TimerTrigger`; the on-disk mapping is the build skill's.
 Tenant object starts are still event triggers: a case that starts when a tenant case-entity / data-object record is created authors `Intsvc.EventTrigger` with that object name as Source — never downgrade to `Manual` because the object is not provisioned; unresolved event triggers survive as placeholders (connectionId/activityTypeId → high review item).
 Configuration cell = user intent in business terms (`Record created`, `Email received in Inbox; filter: subject contains "URGENT"`, `daily at 09:00 UTC`, `N/A`); an event trigger MUST carry a concrete operation phrase. Forbidden here (build-time detail): CLI enum values (`CALENDAR_CREATED`), delivery modes (`polling`/`webhook`), meta notes, activity slugs, HTTP methods. -->
 
@@ -165,15 +164,12 @@ Configuration cell = user intent in business terms (`Record created`, `Email rec
 
 ### Trigger Filter
 
-<!-- Only when ≥1 trigger declares a filter; omit otherwise. AND/OR tree; nested {op, clauses} groups
-flatten into rows. Operators PascalCase, case-sensitive: Equals, NotEquals, Contains, NotContains,
-StartsWith, EndsWith, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, In, NotIn, IsNull,
-IsNotNull. Avoid `Literal: No` for unverified runtime expressions — lossy fallback; prefer literal values
-or a review item. -->
-
 | Field | Operator | Value | Literal? |
 |-------|----------|-------|----------|
-| <payload field> | <operator> | <value> | <Yes \| No> |
+| <payload field> | <one of, PascalCase and case-sensitive: Equals \| NotEquals \| Contains \| NotContains \| StartsWith \| EndsWith \| GreaterThan \| GreaterThanOrEqual \| LessThan \| LessThanOrEqual \| In \| NotIn \| IsNull \| IsNotNull> | <value> | <Yes — prefer a literal; No is a lossy fallback, so pair it with a review item> |
+
+<!-- Section only when ≥1 trigger declares a filter; omit otherwise. AND/OR tree; nested
+{op, clauses} groups flatten into rows. -->
 
 ### Case Exit Conditions
 
@@ -202,9 +198,8 @@ Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ri
 |------|----------|------|----------------|--------------|---------|-------------|
 | <camelCase name> | <In \| Out \| Variable> | <string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file> | <T02, blank, or CSV only for Variable rows> | <payload path or keyed T-number paths> | <default or blank — see below> | <what this variable represents> |
 
-> **`Default` is always a string, for every Type.** The downstream `caseplan.json` field is
-> string-typed, and a non-primitive value there is **silently deleted** when the case is serialized to
-> BPMN — the variable is then null at runtime and the first task that reads it fails. Write a
+> **`Default` is always a string, for every Type.** A non-string default is dropped on the way to
+> runtime, leaving the variable null for the first task that reads it. Write a
 > `jsonSchema` default as string-encoded JSON in the cell:
 > `{"employeeName":"Test Employee","amount":125.5}` becomes
 > `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
@@ -266,9 +261,14 @@ an SLA lane names the SLA, the response, and why it interrupts or not. -->
 **SLA Type:** <time-based \| condition-based>
 **SLA Title:** <non-empty stage-unique SLA rule title, no `:` — this exact title is what a `sla-status-change("<Stage>","<SLA Title>")` entry row references. Unnamed defaults: `<Stage Name> SLA`, at-risk display `<Stage Name> SLA at risk`, breach `<Stage Name> SLA breached`. Keep SLA Type and SLA Title as two separate lines — a collapsed line hides the title from line-start tooling>
 
-| SLA | Unit | At-Risk | At-Risk Action | At-Risk Escalation Display Name | Breach Action | Breach Escalation Display Name |
-|-----|------|---------|----------------|----------------------------------|---------------|---------------------------------|
-| <count> | <min \| h \| d \| w \| m> | <percentage>% | Notify: <recipient> | <stage-unique title, no `:`> | Notify: <recipient> | <stage-unique title, no `:`> |
+| SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
+|-----|------|---------|----------------------------------|---------------------------------|
+| <count> | <min \| h \| d \| w \| m> | <percentage>% | <stage-unique title, no `:`> | <stage-unique title, no `:`> |
+
+<!-- Titles and durations only. What HAPPENS at at-risk and breach is authored once, in
+§ SLA Response Map — this block never carries a Notify/enter-stage response. The display names above
+are load-bearing: they are the third argument of `sla-status-change("<Stage>","<SLA Title>","<display
+name>")`. -->
 
 ##### Stage Variable SLA Rules
 
@@ -339,7 +339,10 @@ the exact stage display name — never the case name. -->
 <!-- Buttons only on a decision task — then ≥2 rows; Maps To LHS = a §1.5 Name, taskOutcome, or this
 task's own output (read downstream via a direct producer reference) — never an identifier occurring
 nowhere else. Input/Output Schema fields MUST be ⊆ the resolved app's schema — a field the app lacks →
-Ask (task-specific app / drop / placeholder), never silently author. Reusing ONE deployed app across
+Ask (task-specific app / drop / placeholder), never silently author. Field NAMES are carried verbatim
+from whatever supplied them, never re-cased or convention-converted, and never read off a
+`--output json` envelope's PascalCased keys (layers § External names); unsourced spelling →
+<UNRESOLVED> + review item. Reusing ONE deployed app across
 several action tasks is sanctioned only when each task carries a distinct actionType dispatch value AND
 its fields ⊆ the app schema (code-switched app); otherwise it is the substitute-app defect. -->
 
@@ -347,7 +350,7 @@ its fields ⊆ the app schema (code-switched app); otherwise it is the substitut
 
 **Connector:** <connector name> · **Connector Key:** <connectorKey>
 **Connection:** <connection instance name or Tenant default> · **Connection ID:** <connectionId or <UNRESOLVED>>
-**Activity Type ID:** <activityTypeId or <UNRESOLVED>> · **Service Type:** <Intsvc.WaitForEvent \| Intsvc.ExecuteActivity>
+**Activity Type ID:** <activityTypeId or <UNRESOLVED>>
 **Auth Method:** <OAuth2 \| API Key \| Basic \| Service Account \| ...>
 **Account / Endpoint:** <explicit endpoint or —>
 **Operation:** <display/operation name>
@@ -400,7 +403,6 @@ activity schema. Operation Configuration carries through as =jsonString: only he
 **Resolved Resource:** <concrete intended resource name; never <UNRESOLVED>>
 **Folder Path:** <resolved exact folder path or <UNRESOLVED>>
 **Resource Identity:** <apiWorkflowId / agentId / processOrchestrationId (+version) or <UNRESOLVED>>
-**Binding Sub-Type:** <Api (api-workflow) \| Agent (agent) \| ProcessOrchestration (process) \| — (rpa) — omitting it makes Studio Web report the resource as not found>
 **Dispatch / Operation:** <selector and value for shared facades (`requestSource = "RegisterCaseShell"`) — also an Inputs row; — for single-purpose resources>
 
 <!-- Folder Path = the exact resource folder (never a parent), or <UNRESOLVED> when identity is
@@ -471,9 +473,20 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
 
 **Operations:**
 
-| Operation | Activity Type ID | Method | Input Fields | Output Fields |
-|-----------|------------------|--------|-------------|---------------|
-| <operation name> | <activityTypeId or <UNRESOLVED>> | <GET \| POST \| PUT \| DELETE \| PATCH \| EVENT> | <field: type, ...> | <field: type, ...> |
+| Operation | Activity Type ID | Method | Output Fields |
+|-----------|------------------|--------|---------------|
+| <operation name> | <activityTypeId or <UNRESOLVED>> | <GET \| POST \| PUT \| DELETE \| PATCH \| EVENT> | <field: type, ...> |
+
+<!-- No Input Fields column: inputs are authored per task in the task's Input Schema table, and
+Phase 3 re-derives the operation's full input shape from the connector spec — design time never
+transcribes it. Output Fields lists ONLY the fields some Section 2 read path actually consumes, and
+lists them with their SCHEMA SPELLING, byte-for-byte: field names are external lookup keys matched
+exactly at runtime, and the `--output json` envelope of `case spec` / `registry search` PascalCases
+object keys recursively (`request_body` -> `RequestBody`), so a name copied from those keys binds to a
+field the resource does not have. Casing not sourced from the user, the source document, or a build-time
+spec -> render the field as <UNRESOLVED> and pair it with a review item; never guess a convention.
+audit_sdd.py cross-checks every Section 2 read path against this list. Rule:
+case-design-layers-guide.md § Layer 3 (External names). -->
 
 ### API Workflows
 
@@ -575,41 +588,36 @@ Implementation tasks **do not live in this SDD** — they live in the planner's 
 <!-- ============================ VALIDATION (do not render) ============================
 Markers: <UNRESOLVED> renders as plain text — never backtick-wrapped, never annotated in-cell; allowed
 ONLY on registry identity ids (taskTypeId, connectionId, actionAppId, agentId, processOrchestrationId,
-entityKey), each paired with a review item. `—` allowed only where a cell above says so (optional cells
+entityKey) and on a schema FIELD NAME whose exact spelling nothing in the conversation supplied,
+each paired with a review item. A field name is an external lookup key matched byte-for-byte at
+runtime — an unsourced one is <UNRESOLVED>, never a plausible guess (layers § External names). `—` allowed only where a cell above says so (optional cells
 the build defaults safely). Narrative cells never carry skill-internal vocabulary (Pattern C, bridge,
 companion, inputOutputs[], groupOperator, essentialConfiguration-as-prose, savedFilterTrees, dispatcher,
 io-binding, aliased into/from, reassign, originalVar, auto-mint).
 
-Gate: run  python3 "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
-on-disk file BEFORE the Status: ready flip — in every mode. RUN it, never open the script source —
+Gate: run  <py> "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
+on-disk file BEFORE the Status: ready flip — in every mode. `<py>` = the first of `python3`, `python`,
+`py` that runs (Windows usually has no `python3` alias); only if all three are absent verify manually. RUN it, never open the script source —
 its findings are the interface. Minting charset applies to names THIS run minted; names carried from
 a draft are preserved verbatim and exempt (pass --draft so the validator knows), ':' banned always. Repair findings with Edit, re-run to AUDIT OK
 (max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like
 ## Source / ## Case Objective / ## Stages / ## Task Plan, or build-mode/path narration) even if a later
 caseplan.json would validate — rewrite from the model and this template.
 
-The validator enforces (manual fallback when python3 is unavailable — every item must hold):
- 1. Document skeleton: scaffold order + planner-handoff:v1 marker, section/stage/task headings and
-    numbering (Task S{K}.{M}, no letter prefixes), per-block markers, per-type detail blocks,
-    summary-only sections, literal \n, plain <UNRESOLVED>, the Case Variables header.
- 2. Closed enums + pairing: task-type enum; WHEN legality per gate slot; WHEN x Marks-Complete inside
-    exit tables; Exit Type x Marks-Complete; return-to-origin banned from case exits.
- 3. Names: charset + case-wide stage/task uniqueness (rules: layers guide § Naming rules).
- 4. References: sla-status-change arity (2 breach / 3 at-risk), target root-or-exact-stage, title
-    declared on that target; stage/task selectors name declared stages/tasks;
-    selected-tasks-completed selects only non-adhoc tasks in the SAME stage.
- 5. Data closure: consumed =vars.X declared + produced; Out rows have Default or producer; orphan
-    Buttons Maps To identifiers.
- 6. Cells: Recipient typed prefixes; non-empty task Entry Condition tables; forbidden vocabulary.
- 7. Structure: ≥1 Marks Case Complete: Yes row; ≥1 trigger row; a case-entered entry exists;
-    no empty stage entry/exit or task Entry Condition tables; wait-for-user ↔ user-selected-stage
-    both ways; no duplicate case-exit rows.
- 8. Precedence & liveness: no stage entry identical to a case-exit row (unreachable stage); no
-    unguarded exit sharing its WHEN with a guarded completion; no self-referencing stage entry;
-    required-* rules never vacuous (a Required: Yes stage / task exists); SLA minute counts
-    15–1000 and no stage SLA exceeding the case SLA.
- 9. Draft parity (--draft): stage/task inventory preserved; every draft =js: expression present;
-    comparator thresholds encoded executably, not prose-only.
+The validator's checks, by family — RUN it, do not hand-verify this list. Each name is what a finding
+will refer to; the rules themselves live at the cells above and in case-design-layers-guide.md:
+
+ 1. Document skeleton · 2. Closed enums + gate-slot pairing · 3. Names (charset + case-wide uniqueness)
+ 4. SLA references (arity, target, declared title) + stage/task selectors · 5. Data closure + orphan
+ Maps To · 6. Typed recipients, non-empty entry tables, forbidden vocabulary · 7. Structure (case-entered,
+ ≥1 trigger, ≥1 Marks Case Complete, wait-for-user ↔ user-selected-stage, no duplicate case-exit rows)
+ 8. Precedence & liveness (unreachable stage, exit-overrides-completion, self-reference, vacuous
+ required-*, SLA bounds) · 9. Field-name casing vs § Section 4 Output Fields · 10. Draft parity
+ (--draft: inventory, =js: expressions, thresholds encoded executably)
+
+If no interpreter is available at all, the enforcement detail behind each family is in the cell rules
+above — every one of them must hold.
+
 ===================================================================================== -->
 
 **End of Case Definition Blueprint.**

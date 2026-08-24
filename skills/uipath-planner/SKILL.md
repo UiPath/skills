@@ -25,8 +25,6 @@ The skill has three paths, decided by the **Entry Guard**:
 - User provides a **PDD or any process-knowledge source** — a PDD, Confluence page, BPMN model, meeting/Zoom transcript, SOP, or requirements doc (as PDF / Word / Markdown / `.txt` / `.bpmn` / pasted) — and asks to design or build from it → Phase D
 - User asks to **design / architect / generate an SDD** for a UiPath automation → Phase D
 - User provides an **SDD path** → Lane A
-- User asks to **design / generate a Case Management SDD** conversationally (no PDD), asks for a reviewable case design draft, or asks to **finalize a case `sdd.draft.md`** → Phase D — Design (Case Design Lane)
-- **`uipath-maestro-case` handed a case build request off to this skill** (no `sdd.md` exists yet; same conversation) → Phase D — Design (Case Design Lane, Build handoff: design with the user, Build-option confirmation, write `sdd.md` at the working root, the build continues immediately)
 - The request is **non-trivial** — spans **separate buildable projects** that each need their own specialist (a Flow orchestrating standalone RPA processes or agents that must themselves be built) → Lane B
 - The request is **ambiguous** — no single specialist clearly matches, or "what can I build?"
 

@@ -37,6 +37,8 @@ Reason the shape from the process — never reach for the template first. Build 
 
 ### Task types
 
+<!-- parsed at runtime by scripts/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+
 The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
 | Type | Pick when the work is… |
@@ -115,6 +117,8 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
+<!-- parsed at runtime by scripts/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
 | Stage entry | — | `case-entered` (first stage only), `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `user-selected-stage`, `sla-status-change` |
@@ -126,7 +130,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream gates key off `required-tasks-completed` / `selected-tasks-completed`.
 2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`). A `Yes` + `selected-*` pair is a schema error.
-3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required` (verified on uip 1.198.0-preview.102).
+3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required`.
 4. **Case completion is a root rule.** At least one case-exit row carries `Marks Case Complete: Yes` (normally `required-stages-completed`). A stage completing never closes the case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with `Marks Case Complete: No`.
 5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output instead ([Layer 3 § Gate on the producer](#gate-on-the-producer-never-on-the-variable-it-writes)).
 6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences: a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards; an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF. Both validator-enforced.
@@ -143,7 +147,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 - `wait-for-user` + `Marks Stage Complete: Yes` is legal and canonical for user-routed completion.
 - `return-to-origin` is completion-only, and its lane is always interrupting.
 
-**`wait-for-user` ↔ `user-selected-stage` pairing.** Validate enforces the pair both ways (verified on uip 1.198.0-preview.102): a `wait-for-user` exit with no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
+**`wait-for-user` ↔ `user-selected-stage` pairing.** Validate enforces the pair both ways: a `wait-for-user` exit with no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
 
 ### Secondary-lane entry shapes
 
@@ -158,7 +162,7 @@ Entry shape follows the lane's trigger source:
 
 Omitting the diverting exit makes a decision path dual-fire (ungated completion → the next stage AND the lane both enter) or deadlock (gated completion with no alternative exit). Only a `selected-stage-exited` lane entry needs a diverting exit; a `selected-stage-completed("<origin>")` + `IF` lane keys off the origin's normal completion — guard only.
 
-Two lanes with identical entry rules (same rule, selectors, and expression) are ambiguous routing — give each a distinct selector or guard. This is a design requirement; validate does not reject the duplicate (as of uip 1.198.0-preview.102).
+Two lanes with identical entry rules (same rule, selectors, and expression) are ambiguous routing — give each a distinct selector or guard. This is a design requirement; validate does not reject the duplicate.
 
 ### Sequencing & activation
 
@@ -238,11 +242,11 @@ A rule is evaluated **before** the extract of the task that triggered it. So a g
 | `selected-tasks-completed("Decide")` + `=js:vars.decision === "reject"`, where `Decide` declares `Action -> decision` | the case variable `Decide` writes | ✗ stale / `null` |
 | `selected-tasks-completed("Decide")` + `=js:vars.action === "reject"`, where `action` is `Decide`'s own output | the producing output | ✓ populated |
 
-**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep the `->` extract whenever the value must persist (Case App, audit, a later stage reads it) — the extract is not what the gate reads. Applies wherever the WHEN names the producer: stage-exit `selected-tasks-completed`, task-entry `selected-tasks-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit — that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay exact inverses of each other. (Verified on uip 1.198.0-preview.102, 2026-08-18.)
+**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep the `->` extract whenever the value must persist (Case App, audit, a later stage reads it) — the extract is not what the gate reads. Applies wherever the WHEN names the producer: stage-exit `selected-tasks-completed`, task-entry `selected-tasks-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit — that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay exact inverses of each other.
 
 ### Trigger payloads
 
-Validation never reads trigger-node outputs (verified on uip 1.198.0-preview.102). A trigger payload field is referenceable as `=vars.<name>` ONLY through a Case Variables `Variable` row carrying `sourceTriggers` (the trigger's T-number) + `sourceFields` (the payload path).
+Validation never reads trigger-node outputs. A trigger payload field is referenceable as `=vars.<name>` ONLY through a Case Variables `Variable` row carrying `sourceTriggers` (the trigger's T-number) + `sourceFields` (the payload path).
 
 ### Category semantics
 
@@ -279,6 +283,15 @@ Every consumer of `vars.X` needs a producer that fires earlier — stage order f
 - Use strict equality (`===` / `!==`); write mutually exclusive branch guards as exact inverses so completion and divert rows cannot dual-fire.
 - Thresholded policy ("Credit Analyst only over $5M") lands in an executable cell — owner/recipient, WHEN/IF, or a task input — with the numeral written out (`5000000`), actor and attribute on one line. Prose or a persona-table mention alone is a render failure.
 
+### External names — schema fields are lookup keys
+
+A schema field name is an **external lookup key**, not a label: the runtime matches it byte-for-byte, so `request_body`, `requestBody`, and `RequestBody` are three different fields and only one of them exists. This covers every place a design names a field it did not invent — `Input`/`Output Schema` cells, `response.<field>`, `=vars.<id>.<sub>`, `=trigger.<field>`, `<- "Stage"."Task".<out>`, and the Section 4 Output Fields list.
+
+- **Carry the spelling, never derive it.** Copy the name from the user, the source document, or (at build time) the resource's own schema. Never re-case it, never convert between conventions, never make it match the case name or a neighbouring variable.
+- **Never read names off a `--output json` envelope.** `case spec` and `registry search` PascalCase object **keys** recursively (`request_body` → `RequestBody`, `poText` → `PoText`); the true names are the **values** under `Outputs.ResponseFields[].Name`. Wiring against the keys binds to fields the resource does not have and fails only after build — Studio Web reports *"RequestBody not found, did you mean request_body"*. Canonical statement of the trap, build side: the `uipath-maestro-case` skill, its registry-discovery reference, § "Do NOT read I/O field names from `Resource.{Inputs,Outputs}`".
+- **Unsourced casing is `<UNRESOLVED>`, not a guess.** Schema discovery is build work (§ lane guide § Tenant grounding) — so when a design needs a field whose exact spelling nothing in the conversation supplies, render the field as `<UNRESOLVED>` and pair it with a review item. A plausible-looking guess is the one outcome that cannot be caught downstream.
+- Enforced: `audit_sdd.py` fails any Section 2 read path whose spelling contradicts the Section 4 Output Fields list for the same field (separators and case both count).
+
 ### Binding-cell forms (task Inputs)
 
 | Form | Meaning |
@@ -302,6 +315,8 @@ Bare field-name lists (`**Inputs:** a, b, c`) are forbidden — use the table wi
 
 ## Layer 4 — Time: SLAs & escalations
 
+> **Canonical + twin.** This layer owns the case SLA response model. The build skill `uipath-maestro-case` carries an operational twin of it (its SLA response-shapes reference), because skills here must work with siblings absent and a brownfield edit runs with no SDD and no planner in the loop. Twin, not a second source of truth: a change to the model lands here first, then there, in the same PR — parity is pinned by `tests/tasks/uipath-planner/_shared/test_case_twin_parity.py`.
+
 ### Where SLAs live
 
 | Surface | Location | Notes |
@@ -316,7 +331,7 @@ No SLA cells on any other task type.
 
 Conditional overrides first (priority order), then a trailing default entry with expression `=js:true`; the first truthy expression wins.
 
-1. Every entry requires an id AND a non-empty target-unique display name without `:` — validate rejects a missing name (`SLA name is missing`) and a missing id (schema error) (verified on uip 1.198.0-preview.102).
+1. Every entry requires an id AND a non-empty target-unique display name without `:` — validate rejects a missing name (`SLA name is missing`) and a missing id (schema error).
 2. `count`/`unit` may be omitted only as a pair, on a bare escalation-only entry. Units: `min | h | d | w | m`; minute counts bounded 15–1000.
 3. Non-default entries require a non-empty expression.
 4. Escalations: id + non-empty element-unique display name + ≥ 1 recipient (scope `User` / `UserGroup`); an at-risk percentage is required exactly when the trigger type is `at-risk`.
@@ -350,7 +365,7 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 - At-risk threshold: SLA ≤ 3 days → 75%; 3–10 days → 70%; > 10 days → 80%.
 - Recipients: at-risk → the owner persona's user group; breached → the leadership tier (Compliance for regulation-driven cases). Record substituted defaults with provenance.
 
-### Verified behavior (uip 1.198.0-preview.102)
+### SLA reference legality
 
 | Shape | Result |
 |---|---|
@@ -365,6 +380,8 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 ---
 
 ### Naming rules
+
+<!-- parsed at runtime by scripts/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
 
 Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
@@ -381,7 +398,7 @@ Never `:` — case-execution events are colon-delimited; a colon in a name break
 | SLA rule title | Its target (root or that stage) |
 | Escalation title | All SLAs on the element |
 
-Comparison exact — case-sensitive, untrimmed. Never normalize external lookup names (Action App titles, process/connector names — matching keys); keep a separate safe display name. Never silently clamp a numeric violation (e.g. out-of-range SLA duration) — surface and ask.
+Comparison exact — case-sensitive, untrimmed. Never normalize external lookup names (Action App titles, process/connector names, and schema field names — all matching keys; § External names); keep a separate safe display name. Never silently clamp a numeric violation (e.g. out-of-range SLA duration) — surface and ask.
 
 ---
 
@@ -392,13 +409,13 @@ ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
 1. **Other-path trigger source** — gate decision → `selected-stage-completed/-exited` + IF; person → `user-selected-stage` only with an upstream `wait-for-user` exit; external/global event → ONE `wait-for-connector` entry on the lane; SLA response needing case work → ONE `sla-status-change` entry (declared target + titles); warning-only escalation stays a notification; interrupting flags on stage + entry rows; terminal `exit-only` vs `return-to-origin`; never duplicate global-event exits/tasks across primary stages.
-2. **Reachability walk** — every stage reachable from a trigger or SLA source (walk entries forward); every primary stage's completion is consumed downstream, referenced by another entry, or feeds a lane; ≥ 1 primary stage `Required: Yes`. A decision-reachable lane carries `selected-stage-exited(origin)` + `IF` matching the origin's diverting exit (inverse `IF` on its completion — § Secondary-lane entry shapes); two lanes with identical entries = ambiguous routing (differentiate — validate does not reject, as of uip 1.198.0-preview.102); `adhoc` is never a stage entry.
+2. **Reachability walk** — every stage reachable from a trigger or SLA source (walk entries forward); every primary stage's completion is consumed downstream, referenced by another entry, or feeds a lane; ≥ 1 primary stage `Required: Yes`. A decision-reachable lane carries `selected-stage-exited(origin)` + `IF` matching the origin's diverting exit (inverse `IF` on its completion — § Secondary-lane entry shapes); two lanes with identical entries = ambiguous routing (differentiate — validate does not reject); `adhoc` is never a stage entry.
 3. **Entry producer** — every non-start entry names its concrete producer (source stage/task, connector event, paired `wait-for-user` exit, declared SLA reference); at-risk rows name the escalation, breach rows the SLA alone.
 4. **Decision-routing closure** — every decision outcome routes somewhere: no dead-end status values; an outcome targeting a lane keys that lane's entry; every routing button's variable+value is consumed downstream or a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
 5. **Gate reads the producer** — no condition whose WHEN names a task reads a case variable that task writes (§ Gate on the producer).
 6. **Data closure** — every configure/decide output lands in a variable or direct reference; every send/connector/agent required input maps to variables/literals/upstream outputs as far as knowable without schemas (rest resolves at build); thresholded policy in executable cells (§ Expressions).
 7. **Task-surface classification** — human-performed required work `action`, optional user-launched `adhoc`; no compliance trigger phrase paired with a non-`action` type without explicit user reconciliation (§ Task-type override priority).
-8. **Required-task presence** — a `required-tasks-completed` completion over a stage with zero `Required: Yes` tasks fails validate: `Stage exit rule '<name>' has no task(s) marked as required` (verified uip 1.198.0-preview.102); offer marking the terminal task required.
+8. **Required-task presence** — a `required-tasks-completed` completion over a stage with zero `Required: Yes` tasks fails validate: `Stage exit rule '<name>' has no task(s) marked as required`; offer marking the terminal task required.
 9. **Resources** — intended names concrete everywhere (`Resolved Resource`, Action App title, `Child Case` — never `<UNRESOLVED>`); identities per the lane's tenant grounding, unresolved only with a paired high review item; when a live contract is in memory: required inputs bound, extract fields exist verbatim, declared action-app fields ⊆ app schema.
 10. **Durable rationale** — every stage (kind + routing), task (type + activation, incl. why sequential/parallel/shared-set), and configured SLA (thresholds, recipients, response) carries Design Rationale; provenance on every non-user-stated value ([lane § Authoring policy](case-design-lane-guide.md#authoring-policy)).
 11. **Alt dispositions & obligations** — ≥ 1 secondary stage ⟹ non-completing case-exit rows exist (or an open high item); `In` + `file` row ⟹ the Caller-obligation block; SLA Response Map closes both ways with agreeing Interrupting cells (template § SLA Response Map); re-entry loops classified (§ Sequencing & activation).

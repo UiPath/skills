@@ -215,11 +215,18 @@ In the producing task (e.g., "Approve Decision" action task):
 | Field   | Binding / Value      |
 |---------|----------------------|
 | Decision | -> finalDecision    |
-| Comment  | -> reviewComment    |
+| review_comment | -> reviewComment |
 ```
 
+> **The two spellings are not a style choice.** This app declares `Decision` and `review_comment`; the
+> SDD copies each one byte-for-byte. Field names are external lookup keys — re-casing one (`review_comment`
+> → `ReviewComment`) binds to a field that does not exist and fails only after the case is built. Never
+> derive a field's casing, never take it from a `--output json` envelope's PascalCased keys, and render
+> `<UNRESOLVED>` + a review item when nothing supplied the exact spelling
+> ([layers § External names](../../references/case-design-layers-guide.md#external-names--schema-fields-are-lookup-keys)).
+
 **Runtime behavior:**
-- Task fires → extracts `response.Decision` to `vars.finalDecision`; extracts `response.Comment` to `vars.reviewComment`.
+- Task fires → extracts `response.Decision` to `vars.finalDecision`; extracts `response.review_comment` to `vars.reviewComment`.
 - Case ends → API caller receives `{finalDecision: "Approved", reviewComment: "OK to proceed"}`.
 - If the task never fires (case exits before reaching that stage), caller receives `{finalDecision: "Pending", reviewComment: ""}` — see Use Case 8 for the fallback mechanic.
 
@@ -529,3 +536,5 @@ AP Review exits to an SLA Escalation lane on `requiresEscalation`, else complete
 | SLA Escalation | exit | `required-tasks-completed` | — | `return-to-origin` | Yes |
 
 On escalate the divert fires (completion's inverse `IF` is false), the lane runs, `return-to-origin` re-activates AP Review; on non-escalate the completion fires and the next stage enters via its own `selected-stage-completed("AP Review")`. The decision is read directly from the producing action's output — never relayed through a §1.5 variable.
+
+> `requiresEscalation` is the AP ownership review action's own output — **no Case Variables row exists for it.** Both a declared variable and a direct producer read are spelled `vars.X`, so the table alone cannot tell them apart: the WHEN naming the producing task is what makes this a direct read rather than the stale-read anti-pattern ([layers § Gate on the producer](../../references/case-design-layers-guide.md#gate-on-the-producer-never-on-the-variable-it-writes)).

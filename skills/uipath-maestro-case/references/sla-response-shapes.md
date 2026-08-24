@@ -1,6 +1,8 @@
 # SLA Response Shapes
 
-Canonical rules for turning an SLA at-risk / breach event into case behavior. Single source of truth — SKILL.md Rule 21, the planner's case authoring rules (SLA response model — design side), [brownfield.md § SLA responses](brownfield.md#sla-responses-in-a-brownfield-edit), and the SLA / condition / task plugins all link here instead of restating it.
+Rules for turning an SLA at-risk / breach event into case behavior, on the BUILD side — SKILL.md Rule 21, [brownfield.md § SLA responses](brownfield.md#sla-responses-in-a-brownfield-edit), and the SLA / condition / task plugins all link here instead of restating it.
+
+> **Twin of a canonical page in `uipath-planner`.** The case SLA response model is owned by `uipath-planner`'s case design layers guide (Layer 4) — that is where the product's case knowledge and guidance live. This page exists because skills in this repo must function with siblings absent and may not read another skill's files, and because a brownfield edit designs deltas with no SDD and no planner in the loop. **It is a twin, not a second source of truth: a change to the response model lands in the planner first, then here, in the same PR.** The invariants both sides must agree on are pinned by `tests/tasks/uipath-planner/_shared/test_case_twin_parity.py`.
 
 An SLA **clock** ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and its **response** are separate authoring decisions. Read the response off the requirement — never off the SLA's scope.
 
