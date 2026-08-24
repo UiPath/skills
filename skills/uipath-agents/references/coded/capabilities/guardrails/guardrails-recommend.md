@@ -54,6 +54,8 @@ uip agent guardrails list --output json
 
 Build a lookup of `{ validatorId: status }` from the `Data` array. You will use this to filter recommendations.
 
+> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`, carrying `ByoValidatorName`/`ByoConnectionId`/`ByoConfigurationId`). Collapsing them loses the distinction and can point the discovery/wiring flow at the wrong entry. See [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).
+
 > **Catalog vs. list — the key distinction:** The catalog lists all guardrails that exist on the platform (with rich metadata for reasoning). The guardrails list returns only those accessible to this tenant. Only recommend validators where `Status == "Available"` in the list.
 
 ### SDK Documentation (NEVER skipped — Python class names)
@@ -114,6 +116,8 @@ For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
 5. If the validator is a candidate: use the catalog entry's `examples[].config` to determine the appropriate scope, stage, action, and parameters. Translate `validator_parameters` shape to the Python `Validator(...)` / `Middleware(...)` constructor arguments using the SDK docs from Step 0.
 
 Do **not** apply predetermined knowledge about which guardrail maps to which schema field. Let the catalog entry's authored fields drive every recommendation decision.
+
+> **Built-in vs. BYO — default to built-in.** When a matched validator has both a built-in entry and one or more `Available` BYO (`IsByo: true`) entries, recommend the standard SDK validator/middleware (built-in) by default, and mention a BYO alternative exists. Only wire in a specific BYO configuration when the user names it or asks for BYO explicitly — see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators) for how that's actually referenced in code.
 
 ### Step 3 — De-duplicate Overlapping Validators
 
@@ -235,7 +239,7 @@ For each existing guardrail discovered in the Python file (Step 1 from Recommend
 
 ### Correctness Check
 
-From the SDK docs and the catalog, look up the validator class referenced in the code:
+From the SDK docs and the catalog, look up the validator class referenced in the code. **If the guardrails list has more than one entry sharing the referenced `Validator` name** (built-in plus BYOG), disambiguate by whether the code wires a BYO validator construct (`ByoValidator(...)` or `UiPathByoGuardrailMiddleware(...)`, identified by its `validator_name`) or the plain SDK validator/middleware class — match against the corresponding list entry's `IsByo` before reading `Parameters`/scopes for that entry.
 
 | Aspect | What to check |
 |--------|---------------|
@@ -295,3 +299,4 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 13. **Class names and enum names come from the SDK docs** — never invent them. The SDK evolves; relying on memory produces stale code. For **import paths**, use the `langchain/guardrails/` page when the agent is LangChain (paths live in `uipath_langchain.guardrails`); for every other framework use the `core/guardrails/` page (paths live in `uipath.platform.guardrails`). See Rule 8.
 14. **Read [guardrails.md](guardrails.md) before writing any Python** — the middleware spread (`*`), decorator placement above `@tool` / factory, factory refactor, and import-source rules are specified there and cannot be safely inferred.
 15. **`EscalateAction` is the human-in-the-loop option only when the SDK docs expose it** — recommend it when the user wants a person to review/approve a flagged item rather than hard-block it. It requires a **deployed Action App** declared in `bindings.json` (`app_name` / `app_folder_path`) through the coded-agent bindings sync workflow; if the docs, app, or binding prerequisite is unavailable, fall back to Block/Log and say so — never silently drop the requested escalation. See Step 6 and [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop).
+16. **`Validator` is not unique — disambiguate built-in vs. BYO by `IsByo` before matching on name.** A tenant can have both a built-in and one or more BYOG entries sharing the same `Validator` name. Key any lookup on `(Validator, IsByo)`, and default recommendations/wiring to the built-in SDK validator/middleware unless the user names a BYO configuration or asks for BYO. Never fabricate the BYO validator construct from memory — see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).

@@ -1,6 +1,6 @@
 # case (root) — Planning
 
-The root case definition — the top-level container that every other node lives inside. Created exactly once per project. Under the JSON strategy the case plugin **also owns project scaffolding** (the 5 boilerplate files written by `uip maestro case init` on the CLI path) — see [impl-json.md](impl-json.md).
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. The case plugin **also owns project scaffolding**: T01 writes the 5 boilerplate project files directly — never via `uip maestro case init`, which forks the solution ([SKILL.md](../../../SKILL.md) Rule 23) — see [impl-json.md](impl-json.md).
 
 ## When to Use
 
@@ -53,7 +53,7 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 - directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "23.0.0", nodes == [], edges == []
+- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "27.0.0", nodes == [], edges == []
 ```
 
 > **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.
@@ -80,3 +80,5 @@ Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside
 **Naming (canonical) — the solution identity is derived ONCE and reused by every step that scaffolds or references the solution.** `<SolutionName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; `<SolutionDir>` = `<workingRoot>/<SolutionName>` (the working root adjacent to `sdd.md`). **Step 6.0 AND the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)) MUST derive `<SolutionName>` + `<SolutionDir>` identically** — so a solution scaffolded early by a Phase-1 Create is the *same* `.uipx` Step 6.0 then finds and skips. A divergent name or location forks the solution: the built agent sibling registers in one `.uipx`, the case project lands in another, and the case cannot resolve its own agent at runtime. (`<ProjectName>` is T01's to choose under `<SolutionDir>/`.)
 
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.
+
+<!-- END: planning.md -->

@@ -9,9 +9,10 @@ defaults:
   # sized to the turn budget (3 turns x 120s turn_timeout), not to a work loop.
   run_limits:
     # Activation is a recognition decision, not a work loop. We give the agent a
-    # small turn budget (3) rather than a hard 1-turn cap, then arm early-stop on
-    # the stacked skill_triggered criteria (stop_when: auto, see the task file).
-    # Under coder_eval >= 0.9.1 `auto` arms each instance's own decidable
+    # small turn budget (3) rather than a hard 1-turn cap; early-stop is armed
+    # per-criterion via `stop_early: {on_pass: stop}` blocks on the stacked
+    # skill_triggered criteria (coder_eval >= 0.9.5, see the task file — no
+    # run-level arming exists anymore). Each instance arms its own decidable
     # polarity: the row's positive criterion (skill_name == expected_skill) arms
     # pass, the distractors arm fail. A positive row pass-stops the moment the
     # expected skill is engaged — turn 1, with the exact verdict a max_turns:1
@@ -20,16 +21,15 @@ defaults:
     # negative row fail-stops on its first engagement; on a positive row a
     # wrong-skill engagement alone does NOT stop it (fail-stop is deferred
     # while the row's positive criterion is undecided), so misfire-only and
-    # no-engagement rows run to the cap — keep it small. (`decided` is invalid
-    # here: the any-engagement latch narrows each instance to ONE decidable
-    # polarity.) See coder_eval "early stop on criterion".
+    # no-engagement rows run to the cap — keep it small. Polarities an instance
+    # cannot decide are inert by design, so the same block serves every row.
+    # See coder_eval "early stop on criterion".
     #
     # Note: unarmed runs (`-D run_limits.stop_early=false`) are the
     # authoritative ones for precision — a pass-stop can hide a later
     # distractor misfire, so armed-run precision is optimistic by comparison
     # (recall.yes is unaffected; see tasks/activation/README.md).
     max_turns: 3
-    stop_early: true
     # Scaled with max_turns: a row that legitimately uses all 3 turns (a true
     # negative, or any unarmed run) must have wall-clock room for them — a
     # task_timeout below max_turns x turn_timeout silently drops the row from
@@ -38,10 +38,8 @@ defaults:
     turn_timeout: 120
 
   agent:
-    # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
-    # coder-eval's baseline default experiment supplies claude-code otherwise.
+    # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
     permission_mode: acceptEdits
-    model: claude-sonnet-5
     # Skill must be allowed so the agent can invoke a skill when it decides
     # to. Read/Write/Bash included so the agent isn't starved of basic tools
     # when it decides NOT to use Skill — removing them would bias the

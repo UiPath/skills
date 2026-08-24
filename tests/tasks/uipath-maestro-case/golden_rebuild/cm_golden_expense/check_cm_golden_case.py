@@ -136,7 +136,7 @@ def main():
     triggers = find_triggers(plan)
     if len(triggers) != 1:
         _fail(f"expected exactly 1 Manual trigger; got {len(triggers)}")
-    svc = (((triggers[0].get("data") or {}).get("uipath")) or {}).get("serviceType")
+    svc = (((triggers[0].get("data") or {}).get("inputs")) or {}).get("serviceType")
     if svc == "Intsvc.EventTrigger":
         _fail("case trigger must be Manual, not an Intsvc.EventTrigger")
 

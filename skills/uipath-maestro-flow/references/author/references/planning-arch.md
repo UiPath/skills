@@ -229,7 +229,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.logic.delay` | `input` | `output` |
 | `core.logic.decision` | `input` | `true`, `false` |
 | `core.logic.switch` | `input` | `case-{id}` (dynamic per case), `default` |
-| `core.logic.loop` | `input`, `loopBack` | `success`, `output`, `error` |
+| `core.logic.loop` | `input` (outer), `continue` / `break` (inner) | `success`, `error` (outer), `start` (inner) |
 | `core.logic.merge` | `input` (multiple) | `output` |
 | `core.control.end` | `input` | — |
 | `core.logic.terminate` | `input` | — |
@@ -249,7 +249,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.human-in-the-loop.quick-form` | `input` | `completed` |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
-> **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.
+> **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`), and it is **off by default**. Wire it only when the requirements state what should happen if that node fails — a failed HTTP call, script exception, transform error, agent fault. With no error edge the node faults the flow, which is the correct default: a faulted run is visible, a swallowed failure is not. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) for the default-off rule, wiring, when it fires, and the decision matrix vs branches/decision/switch.
 
 ---
 
@@ -264,11 +264,11 @@ Apply these when defining edges in the topology:
 5. Every non-terminal node must have at least one outgoing edge
 6. Decision nodes produce exactly two outgoing edges: one from `true`, one from `false`
 7. Switch nodes produce one outgoing edge per case + optionally one from `default`
-8. Loop nodes: the `loopBack` port receives the edge returning from the last node inside the loop body; `success` fires after all iterations
+8. Loop nodes: the inner `start` port feeds the first body node, the inner `continue` port receives the edge returning from the last body node; the outer `success` port fires after all iterations
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
-10. Do not create cycles except through Loop's `loopBack` mechanism
+10. Do not create cycles except through Loop's `continue` handle
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
-12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. The source node must also have `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands set it automatically, but direct JSON edits must include it. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
+12. **Wire the `error` source port only when the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge the failure faults the whole flow, which is what should happen when the requirements say nothing about handling it. **Do not add error edges the requirements never asked for, and never set `inputs.errorHandlingEnabled: true` on a node with no error edge** — the flag suppresses the fault, so the run reports success while the work failed. When an error edge does exist, the source node must also have `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands set it automatically, but direct JSON edits must include it. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ---
 
@@ -303,23 +303,27 @@ Trigger -> Prepare
 
 ```
 Trigger -> Fetch List -> Loop
-  |-- [loop body] Process Item -> (loopBack)
+  |-- start -> [loop body] Process Item -> (continue)
   |-- success -> Summarize -> End
 ```
 
 ### Error Handling (implicit `error` port)
 
-Wire the action node's implicit `error` source port directly to a handler — this catches node-level failures (network errors, timeouts, non-2xx HTTP responses, script exceptions, transform faults). Do NOT put a Decision downstream to check for errors — by the time execution reaches the Decision, a failing node has already faulted the flow.
+**Default: no error edge, and `inputs.errorHandlingEnabled` left unset.** An unhandled node failure should fault the flow — that is the visible, correct outcome. Add error handling only where the requirements say what the failure should do.
+
+When they do, wire the action node's implicit `error` source port directly to a handler — this catches node-level failures (network errors, timeouts, non-2xx HTTP responses, script exceptions, transform faults). Do NOT put a Decision downstream to check for errors — by the time execution reaches the Decision, a failing node has already faulted the flow.
 
 ```
 Trigger -> HTTP Request
-  |-- default -> Process -> End (success)
-  |-- error   -> Log Error -> End (error path with descriptive output)
+  |-- default -> Process -> End (success — status: "ok")
+  |-- error   -> Log Error -> End (failure — status: "failed", descriptive output)
 ```
+
+**The error path must end somewhere the caller can tell apart from success.** Routing `error` into the next happy-path node, or into the same End node the success path reaches, makes every failure look like a completed run — the flow "always looks successful" while the API call it depended on never succeeded. Terminal options: a distinct End node mapping an error/status `out` variable, a `core.logic.terminate` when recovery is impossible, or a recovery branch that rejoins the happy path only after obtaining valid data (a retry that succeeded, a fallback source that returned data).
 
 Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length > 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
 
-**Plan the error edge in Phase 1.** If the requirements mention "if the call fails", "invalid input", "article not found", or any failure fallback, add an edge from the action node's `error` port to a handler in the edge table — don't leave it to the build step.
+**Plan the error edge in Phase 1.** If the requirements mention "if the call fails", "invalid input", "article not found", or any failure fallback, add an edge from the action node's `error` port to a handler in the edge table — don't leave it to the build step. If they mention none of that, plan no error edges at all.
 
 ### Orchestration (Mixed Resources)
 
@@ -348,7 +352,7 @@ Here Maestro holds the case across the agent call and the human wait; RPA does t
 
 ```
 Scheduled Trigger -> HTTP (fetch batch) -> Loop
-  |-- Queue Create (per item) -> (loopBack)
+  |-- start -> Queue Create (per item) -> (continue)
   |-- success -> Script (summary) -> End
 ```
 
@@ -463,7 +467,7 @@ graph LR
 | 4 | checkHasOrders | true | processOrder | input | Has orders |
 | 5 | checkHasOrders | false | logSkip | input | No orders |
 
-> **Always include an `error`-port edge in the edge table whenever the requirements describe a failure fallback** (e.g., "return X if the API fails", "route to Y if the article doesn't exist", "handle timeouts gracefully"). Without the edge, the flow faults on failure instead of routing to the handler. See [Error Handling (implicit `error` port)](#error-handling-implicit-error-port).
+> **Include an `error`-port edge in the edge table whenever — and only when — the requirements describe a failure fallback** (e.g., "return X if the API fails", "route to Y if the article doesn't exist", "handle timeouts gracefully"). Without the edge, the flow faults on failure instead of routing to the handler; that fault is the right outcome when no fallback was specified. Every error edge you do add must reach a terminal the caller can distinguish from success — never the next happy-path node or the success End node. See [Error Handling (implicit `error` port)](#error-handling-implicit-error-port).
 
 **Rules:**
 
@@ -524,7 +528,7 @@ LLM-generated mermaid frequently contains syntax errors. After generating the di
 2. **Edge directions must match the flow** — trigger at the top, End at the bottom (for TB layouts)
 3. **Decision nodes must show both branches** — `true` and `false` edges, each labeled
 4. **Switch nodes must show all case edges** — one per case plus optional default
-5. **Loop structures**: show the loop body and the loopBack edge returning to the loop node
+5. **Loop structures**: show the loop body and the `continue` edge returning to the loop node
 6. **Parallel branches** must visually fork from one node and converge at a Merge node
 
 ### Validation Procedure

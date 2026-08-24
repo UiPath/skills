@@ -1,6 +1,6 @@
 # Brownfield — Edit an Existing Case
 
-Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pipeline. Terminates at `validate`, then hands off to Phase 5 (debug) / Phase 6 (publish).
+Targeted changes to an existing `caseplan.json`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
 
 > **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
@@ -17,10 +17,11 @@ Before the first edit, present the flow once so the dev knows the steps and wher
 > - I make the edit, then **validate** and fix errors.
 > - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
 > - **Publish** (optional) — **you choose** whether to upload to Studio Web.
+> - **Publish to Orchestrator** (optional) — **you choose** whether to publish the case to Orchestrator.
 
 ## Pull latest first (before editing)
 
-Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.json` and re-publishing (Phase 6 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.
+Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.json` and re-publishing (Phase 5 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.
 
 1. **Determine where the case lives.** If not already known, AskUserQuestion: `Edit my Studio Web case (pull latest first)` (default) / `Edit a local-only project (no pull)`.
 2. **Lives in Studio Web (has a SolutionId)** → pull current server state into the working dir before editing:
@@ -90,17 +91,20 @@ An SLA clock and its **response** are separate edits. Pick the response, the sta
 ## After edits
 
 1. **Validate** — `uip maestro case validate <ProjectName>/caseplan.json --output json`. Authoritative; retry ≤3, fix on failure. On 3rd failure HARD STOP: AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort` (same contract as Phase 4).
-2. **Any edit that adds, removes, or repoints a resource binding — connector OR non-connector** — regenerate `bindings_v2.json` per [bindings-v2-sync.md](bindings-v2-sync.md), then `uip solution resources refresh --solution-folder <SolutionDir> --output json` (Rule 14) before any debug/publish. `bindings_v2.json` holds non-connector bindings too (process/agent/rpa/action/api-workflow/case-management — [bindings-v2-sync.md § What `resource refresh` produces](bindings-v2-sync.md#what-resource-refresh-produces)); a stale file makes `uip solution upload` / `debug` throw "Resource is not configured". A pure schema-only re-sync (same resource, no binding change) needs no refresh.
+2. **Any edit that adds, removes, or repoints a resource binding — connector OR non-connector** — regenerate `bindings_v2.json` per [bindings-v2-sync.md](bindings-v2-sync.md), then `uip solution resources refresh --solution-folder <SolutionDir> --output json` (Rule 14) before any debug/publish. `bindings_v2.json` holds non-connector bindings too (process/agent/rpa/action/api-workflow/case-management — [bindings-v2-sync.md § What `resource refresh` produces](bindings-v2-sync.md#what-resource-refresh-produces)); a stale file makes `uip solution upload` / `debug` throw "Resource is not configured". A pure schema-only re-sync (same resource, no binding change) needs no refresh. Repoint or removal → also prune the orphan ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)).
 
 ## Completion Output
 
-Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": run debug if the edit changes runtime behavior, publish when ready to update Studio Web, or stop and inspect the local diff.
+Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": publish when ready to update Studio Web, run debug if the edit changes runtime behavior, or stop and inspect the local diff.
 
 | Option | What it does |
 |---|---|
-| **Run debug session** | Phase 5 — executes the case for real (consent-gated, Rule 12). |
-| **Publish to Studio Web** | Phase 6 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
+| **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
+| **Run debug session** | Phase 6 — executes the case for real (consent-gated, Rule 12). |
+| **Publish to Orchestrator** | Phase 7 — `uip maestro case pack` (mandatory BPMN recompile), then `uip solution pack`, then `uip solution publish` to the tenant solution feed (consent-gated, Rule 12). |
 | **Done** (default) | Stop here. |
 | **Something else** | Free-form. |
 
-Do not run debug or publish without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 contracts.
+Do not run debug, publish, or publish to Orchestrator without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 / Phase 7 contracts.
+
+<!-- END: brownfield.md -->

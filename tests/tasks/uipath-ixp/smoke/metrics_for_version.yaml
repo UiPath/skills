@@ -5,7 +5,7 @@ description: >
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
-tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 5

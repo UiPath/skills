@@ -17,7 +17,11 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import (  # noqa: E402
+    process_binding,
+    write_baseline_lowcode_agent,
+    write_bindings,
+)
 
 SOLUTION = Path("ReviewSol")
 TOOL_NAME = "vague_tool"
@@ -65,6 +69,7 @@ def main() -> None:
         "argumentProperties": {},
     }
     (base / "resource.json").write_text(json.dumps(resource, indent=2))
+    write_bindings(project, [process_binding(TOOL_NAME)])
     print(f"Injected tool {TOOL_NAME!r} with empty description")
 
 

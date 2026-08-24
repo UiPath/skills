@@ -47,7 +47,7 @@ Confirm from `registry get`:
 - `model.serviceType` — `Orchestrator.StartAgentJob`
 - `model.bindings.resourceSubType` — `Agent`
 - `model.bindings.resourceKey` — the `<FolderPath>.<AgentName>` string used to scope binding resolution
-- `inputDefinition` — typically empty (agents accept free-form input via the flow's wiring)
+- `inputDefinition` — the agent's typed input schema, one property per input field (mirrors the agent's `entry-points.json`). Each property gets one `inputs.<field>` entry on the node instance — see [Wiring Inputs](#wiring-inputs). Empty only when the agent declares no typed inputs (free-form)
 
 ## Adding / Editing
 
@@ -65,7 +65,13 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
   "type": "uipath.core.agent.ffa33d88-8a85-4570-933c-9a69aa2dfbb5",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Classify Intent" },
-  "inputs": {},
+  "inputs": {
+    "<INPUT_FIELD>": {
+      "type": "jsExpression",
+      "expression": "$vars.<UPSTREAM_NODE_ID>.output.<FIELD>",
+      "fieldType": "<FIELD_TYPE>"
+    }
+  },
   "outputs": {
     "error": {
       "type": "object",
@@ -101,7 +107,7 @@ Confirm all three from `registry get` before wiring.
 }
 ```
 
-**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. Exception: `output` MAY be declared with exactly `source: "=this"` plus the agent's output schema — that form is safe; the hazard is any other hand-authored `source`. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 `<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 
@@ -144,6 +150,45 @@ Same shape as the published variant — no `model` on the instance.
 
 > For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
+## Wiring Inputs
+
+One `inputs.<field>` entry per property in the definition's `inputDefinition.properties`. Two valid value shapes, same binding:
+
+1. **`jsExpression`** — bare `$vars...` expression, NO `=js:` prefix:
+
+   ```json
+   "inputs": {
+     "<INPUT_FIELD>": {
+       "type": "jsExpression",
+       "expression": "$vars.<UPSTREAM_NODE_ID>.output.<FIELD>",
+       "fieldType": "<FIELD_TYPE>"
+     }
+   }
+   ```
+
+2. **`literal`** — text template; static text mixable with `{{ }}` interpolations: `{ "type": "literal", "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}", "fieldType": "<FIELD_TYPE>" }`.
+
+NEVER a plain `"=js:..."` string value — it ships verbatim to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. `<FIELD_TYPE>` is the property's JSON-schema type from the definition's `inputDefinition.properties` (e.g. `string`, `boolean`, `number`) — read it from there, do not invent it.
+
+Worked example: trigger → agent → end, flow input surfaced through the trigger. The flow declares the input as a global bound to the trigger, and the agent reads it from the trigger's output:
+
+```json
+"variables": {
+  "globals": [
+    { "id": "<INPUT_FIELD>", "direction": "in", "type": "string", "defaultValue": "", "triggerNodeId": "trigger1" }
+  ]
+}
+```
+
+```json
+"edges": [
+  { "id": "e1", "sourceNodeId": "trigger1", "sourcePort": "output", "targetNodeId": "agent1", "targetPort": "input" },
+  { "id": "e2", "sourceNodeId": "agent1", "sourcePort": "output", "targetNodeId": "end1", "targetPort": "input" }
+]
+```
+
+The agent node's `inputs.<INPUT_FIELD>` then references `$vars.trigger1.output.<INPUT_FIELD>` (shape 1 above). Upstream values always read as `$vars.<nodeId>.output.<field>`; flow-level globals read as `$vars.<global>`.
+
 ## Accessing Output
 
 The agent's response is available downstream:
@@ -181,4 +226,4 @@ For the resource file format and wiring details, see the `uipath-agents` skill:
 | In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution projects add` was never run for the agent project | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
 | Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details. For coded agents, test locally first with `uip codedagent run` |
 | Empty `output.content` | Agent returned no response | Verify the agent is configured correctly (published: in Orchestrator; in-solution: in Studio Web) |
-| `inputDefinition` is empty | Expected — agents accept input via flow wiring, not typed fields | Wire upstream data to the agent via `$vars` expressions |
+| `inputDefinition` is empty | Agent declares no typed input schema (free-form) | Wire upstream data via `jsExpression` inputs — see [Wiring Inputs](#wiring-inputs) |

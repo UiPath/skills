@@ -8,10 +8,12 @@
 # Reads the SessionStart payload on stdin, takes its top-level `session_id`,
 # and appends `export UIPATH_SESSION_ID='<id>'` to $CLAUDE_ENV_FILE so every
 # subsequent Bash tool subprocess — and therefore every `uip` command the
-# agent runs — inherits it. The CLI stamps that value as the `session_id`
-# dimension on native command telemetry (UiPath/cli#2800), which joins the
-# command stream with the skills events emitted by send-telemetry.sh: both
-# streams then carry the same session id.
+# agent runs — inherits it. The CLI puts that value on App Insights' native
+# `ai.session.id` tag (query it as `session_Id`) for every command it runs,
+# including the `uip track` calls made by send-telemetry.sh (UiPath/cli#3431)
+# — so the command stream and the skills events share one session id. This
+# export is the ONLY way they correlate: since schema v3 the telemetry hook
+# sends no session id of its own.
 #
 # Registered SYNCHRONOUSLY in hooks.json (no "async": true): the write must
 # complete before the session's first Bash call, or early `uip` commands would

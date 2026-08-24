@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-excel-rr-nre-namedrange
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a Read Range failure where
   the workflow references a named range (Range="MyDataRange") in the

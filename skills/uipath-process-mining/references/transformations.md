@@ -3,7 +3,17 @@
 The transformation layer is a dbt project that runs on **Snowflake**. Loaded
 source tables (one per input table) feed the models that produce the process
 model. `transformations list/get/create/update/apply/run/status/logs` is the ELT
-editor surface.
+editor surface:
+
+| Operation | Command |
+|-----------|---------|
+| List the model tree | `transformations list <app>` |
+| Read a file (or save locally) + its ETag | `transformations get <app> <path> [--destination <file>]` |
+| Edit an existing file (ETag-guarded) | `transformations update <app> <path> --file <local> --etag '<etag>'` |
+| Create a new model file | `transformations create <app> <path> --file <local>` |
+| Re-run the **full** transform on loaded data | `transformations apply <app> --wait` |
+| Rebuild **one** dev model + dependents | `transformations run <app> --model models/X.sql` |
+| Status / logs of the last build | `transformations status <app>` · `transformations logs <app>` |
 
 ## Model set for `uipath.custom`
 
@@ -13,7 +23,7 @@ Four template models: **`Event_log`** (built from the source; the events table),
 `Tags` and `Due_dates` are pre-registered **Case-child** tables — fill their stubs
 with real rows keyed on `Case_ID` to get per-case labels (`Tag`/`Tag_type`) or
 per-case SLAs (`Expected_date`/`Actual_date`/`On_time`/`Cost`) with **no add-table
-needed**. See [`references/data-model.md`](references/data-model.md) for when to use
+needed**. See [`data-model.md`](data-model.md) for when to use
 them vs a custom table. `Event_log` builds first and independently. `models/schema/sources.yml` is
 generated from the data mapping and lists every input table with **all** its
 columns (mapped → TargetName, unmapped → raw source name), so multi-table custom
@@ -46,10 +56,13 @@ A successful run then reports `SUCCESS_WITH_WARNINGS` with repeated
 - **`apply`** re-runs the **full** transform on already-loaded data — the fix-loop
   verb after a transform-only failure. **Do not re-ingest** for a SQL-only change.
 - **`run --model models/X.sql`** rebuilds one dev model and its dependents.
-- **`create <path> --file`** adds a **new** model file (PUT without ETag);
-  **`update <path> --file`** edits an **existing** file (ETag-safe). `update` on a
-  missing path 404s — use `create`. You can also inline intermediate logic as CTEs
-  inside one model instead of many files.
+- **`create <path> --file`** adds a **new** model file (PUT without ETag — there is no
+  prior version to guard); **`update <path> --file`** edits an **existing** file and
+  **requires `--etag`**: the `Data.ETag` the `get` you edited from returned. `update` on
+  a missing path 404s — use `create`. A 409/412 means someone replaced the file after
+  your `get`: re-`get` for the new content **and** ETag, re-apply your edit on top, then
+  `update` with the new `--etag`. You can also inline intermediate logic as CTEs inside
+  one model instead of many files.
 - Use **`apply --wait`** to block to a terminal state and auto-print the dbt error.
 
 ## Snowflake / dbt notes

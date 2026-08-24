@@ -31,7 +31,7 @@ The Category column is REQUIRED in the SDD template.
 3. Record the user's answer in memory and emit the T-entries as if the Category column had been authored that way.
 4. Strongly recommend (via plain-text output before/after the prompts) that the user migrate their SDD to include the column for future regenerate-from-scratch runs.
 
-Never default missing categories to a guess. The pre-α "Listed in Trigger Initial Variable Mapping → In argument" inference rule is removed under α and MUST NOT be re-implemented as a fallback. See [`assets/templates/sdd-template.md`](../../../../assets/templates/sdd-template.md) § Case Variables for the post-α table shape.
+Never default missing categories to a guess. The pre-α "Listed in Trigger Initial Variable Mapping → In argument" inference rule is removed under α and MUST NOT be re-implemented as a fallback. The post-α table shape is defined by the case SDD template (authored by `uipath-planner`); canonical Category semantics live in [impl-json.md](impl-json.md).
 
 ## Phase 2 Structural Validation
 
@@ -97,7 +97,15 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 - `sourceTrigger` — T-number when the value comes from a single trigger's payload (Variable category)
 - `sourceTriggers` — for a `Variable`: CSV of T-numbers when multiple triggers populate it. For an `In`-arg: a single `T<N>` selecting the trigger it binds to (blank → primary trigger T02; never a CSV). Replaces the legacy `triggerRef` field.
 - `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
-- `default` — initial value (string-encoded for non-string types). Drives the `default` field on the companion `inputOutputs[]` entry.
+- `default` — initial value, **always written as a quoted string, for every `type`**. Drives the `default` field on the companion `inputOutputs[]` entry. This is the one field where **string-encoding overrides losslessness**: an SDD Default cell holding a bare JSON object, number, or boolean is re-encoded here rather than copied verbatim, because the downstream field is string-typed and a non-primitive value is silently deleted at BPMN serialization (see [`impl-json.md` § `default` encoding](impl-json.md#default-encoding-every-type-mandatory)). Record the re-encoding — it is the only Rule 6 exception in this plugin.
+
+  | SDD Default cell | `tasks.md` `default:` |
+  |---|---|
+  | `{"amount":125.5}` | `"{\"amount\":125.5}"` |
+  | `5` | `"5"` |
+  | `true` | `"true"` |
+  | `Open` | `"Open"` |
+  | (blank) | omit the line |
 - `producedBy` — informational only (for Out-args). The io-binding validator confirms the named task actually exists with a matching output.
 
 **`verify` text — use exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):**
@@ -118,3 +126,5 @@ camelCase IDs (`=vars.claimId`). See [`impl-json.md`](impl-json.md) § Uniquenes
 ## Completeness obligation
 
 Per [planning.md §4.0](../../../planning.md), every row in the Case Variables table emits exactly one T-entry. Skipping rows because their Category cannot be determined is forbidden — invoke AskUserQuestion instead. The pre-approval cross-check counts variable-table rows against emitted variable T-entries; mismatch is a defect.
+
+<!-- END: planning.md -->

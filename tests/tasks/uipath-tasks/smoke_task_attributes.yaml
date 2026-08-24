@@ -1,0 +1,94 @@
+task_id: skill-tasks-smoke-attributes
+description: >
+  Smoke test: agent uses the uipath-tasks skill to run the task annotation
+  commands offline — list comments, add a comment, set labels (JSON array), and
+  edit metadata (title + priority). Tests correct CLI verbs and flags
+  (comments list, comments add --text, labels --labels, metadata --title/--priority),
+  and that --output json is applied. Runs against fake IDs — auth errors are
+  expected.
+tags: [uipath-tasks, smoke, mode:operate, lifecycle:setup, attributes]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 18
+
+initial_prompt: |
+  You are annotating a UiPath Action Center task. Perform each step in order.
+  Use --output json on every uip tasks command, and pass --folder-id 123 on
+  every command (this is a non-interactive run, so the folder cannot be picked
+  interactively). Task IDs are numeric.
+
+  1. List the comments on task 7654321.
+  2. Add a comment to task 7654321 with the text "Escalated to finance".
+  3. Set labels on task 7654321 to a single label named "urgent". Labels are a
+     JSON array.
+  4. Edit metadata on task 7654321: set the title to "Urgent review" and the
+     priority to High.
+  5. Clear all labels on task 7654321 by passing an empty JSON array.
+  6. Associate task 7654321 with catalog ID 55, then in a separate command
+     remove the catalog association.
+
+  Important:
+  - The uip CLI is NOT connected to a live tenant. Commands fail with auth
+    errors — that is expected. Run each command once and move on. Do NOT retry
+    or attempt to login. If a command is not recognized or returns an error, do
+    NOT investigate, retry, or run help — record the outcome and continue.
+  - Do NOT invent other IDs. Use task 7654321 and folder 123 as given.
+  - Do NOT complete, assign, or delete the task.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed task comments"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+comments\s+list\s+7654321\s+.*--folder-id\s+123'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a comment with --text"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+comments\s+add\s+7654321\s+.*--text\s+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent set labels with a JSON array"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+labels\s+7654321\s+.*--labels\s+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent edited metadata with title and priority"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+metadata\s+7654321\s+.*--priority\s+High'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cleared labels with an empty array"
+    tool_name: "Bash"
+    command_pattern: "uip\\s+tasks\\s+labels\\s+7654321\\s+.*--labels\\s+'?\\[\\]'?"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent associated the task with a catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+metadata\s+7654321\s+.*--catalog-id\s+55'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed the catalog association"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+metadata\s+7654321\s+.*--unset-catalog'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

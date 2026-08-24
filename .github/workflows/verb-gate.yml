@@ -24,13 +24,13 @@ permissions:
 
 jobs:
   detect:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Detect changed skills
     outputs:
       skills: ${{ steps.detect.outputs.skills }}
       skip:   ${{ steps.detect.outputs.skip }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with: { fetch-depth: 0 }
 
       - id: detect
@@ -44,12 +44,16 @@ jobs:
           # Infrastructure edits (catalog refresh, checker script, this
           # workflow) re-gate every skill — same pattern as smoke-skills.yml's
           # "test infrastructure changed → run everything" branch.
+          # Both trees are gated, and the matrix carries the full PATH rather
+          # than a bare name — `preview/` skills are markdown that names `uip`
+          # verbs exactly like `skills/` ones, and a retired verb rots the same
+          # way in either place.
           if echo "$CHANGED" | grep -qE '^(assets/uip-catalog-snapshot\.json|scripts/check-skill-verbs\.py|\.github/workflows/verb-gate\.yml)$'; then
-            SKILLS=$(ls skills/ | sort -u)
+            SKILLS=$(ls -d skills/*/ preview/*/ 2>/dev/null | sed 's|/$||' | sort -u)
           else
             SKILLS=$(echo "$CHANGED" \
-              | grep -E '^skills/[^/]+/.*\.md$' \
-              | sed 's|skills/\([^/]*\)/.*|\1|' \
+              | grep -E '^(skills|preview)/[^/]+/.*\.md$' \
+              | sed -E 's#^((skills|preview)/[^/]+)/.*#\1#' \
               | sort -u || true)
           fi
 
@@ -66,7 +70,7 @@ jobs:
   gate:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: ${{ matrix.skill }}
     timeout-minutes: 5
     strategy:
@@ -74,16 +78,16 @@ jobs:
       matrix:
         skill: ${{ fromJSON(needs.detect.outputs.skills) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with: { python-version: '3.13' }
 
-      - name: Check verbs in skills/${{ matrix.skill }}
+      - name: Check verbs in ${{ matrix.skill }}
         env:
           SKILL: ${{ matrix.skill }}
         run: |
           set -euo pipefail
-          python3 scripts/check-skill-verbs.py --json "skills/$SKILL" > findings.ndjson || true
+          python3 scripts/check-skill-verbs.py --json "$SKILL" > findings.ndjson || true
 
           # Block only on Stale findings where no valid catalog prefix
           # matched at all. When matched_prefix is non-null, the trailing
@@ -93,16 +97,16 @@ jobs:
           BLOCKING=$(jq -c 'select(.severity=="Stale" and .matched_prefix == null)' findings.ndjson | wc -l | tr -d ' ')
           SOFT=$(jq -c 'select(.severity=="Stale" and .matched_prefix != null)' findings.ndjson | wc -l | tr -d ' ')
           UNCERTAIN=$(grep -c '"severity": "Uncertain"' findings.ndjson || true)
-          echo "skills/$SKILL: $BLOCKING blocking, $SOFT soft-stale, ${UNCERTAIN:-0} Uncertain"
+          echo "$SKILL: $BLOCKING blocking, $SOFT soft-stale, ${UNCERTAIN:-0} Uncertain"
 
           if [ "$SOFT" -gt 0 ]; then
-            echo "::group::Soft-stale verbs in skills/$SKILL (valid prefix, suspicious tail)"
+            echo "::group::Soft-stale verbs in $SKILL (valid prefix, suspicious tail)"
             jq -r 'select(.severity=="Stale" and .matched_prefix != null) | "::warning file=\(.path),line=\(.line)::Possibly stale `uip \(.verb_path)` (valid prefix: `\(.matched_prefix)`)"' findings.ndjson
             echo "::endgroup::"
           fi
 
           if [ "$BLOCKING" -gt 0 ]; then
-            echo "::group::Stale verbs in skills/$SKILL"
+            echo "::group::Stale verbs in $SKILL"
             jq -r 'select(.severity=="Stale" and .matched_prefix == null) | "::error file=\(.path),line=\(.line)::Stale verb `uip \(.verb_path)`"' findings.ndjson
             echo "::endgroup::"
             echo

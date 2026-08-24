@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-word-unknown-type
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Word Application Scope load
   failure on an unattended robot whose UiPath.Word.Activities package does not

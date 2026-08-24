@@ -1,12 +1,8 @@
----
-direct-json: supported
----
-
 # timer trigger — JSON Implementation
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`, `data.inputs`.
 
 ## Purpose
 
@@ -25,7 +21,7 @@ Add a scheduled trigger to a case. Adapts shape to whether any Trigger node alre
 Count existing Trigger nodes in `schema.nodes` **before** writing:
 
 ```text
-existingTriggers = schema.nodes.filter(n => n.type === "case-management:Trigger")
+existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")
 ```
 
 ### Case A — zero existing triggers (first-trigger path)
@@ -35,12 +31,13 @@ Emit the canonical first-trigger shape with the timer `uipath` block:
 ```json
 {
   "id": "trigger_1",
-  "type": "case-management:Trigger",
+  "type": "uipath.case.trigger",
   "data": {
-    "label": "<displayName or \"Trigger 1\">",
     "description": "<description from sdd.md or LLM-inferred>",
-    "uipath": {
-      "serviceType": "Intsvc.TimerTrigger",
+    "typeVersion": "1.0.0",
+    "display": { "label": "<displayName or \"Trigger 1\">" },
+    "inputs": {
+      "serviceType": "timer",
       "timerType": "timeCycle",
       "timeCycle": "<timeCycle from tasks.md>"
     }
@@ -57,13 +54,14 @@ Emit a secondary trigger with `data.parentElement` included:
 ```json
 {
   "id": "trigger_<6-rand>",
-  "type": "case-management:Trigger",
+  "type": "uipath.case.trigger",
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
-    "label": "<displayName or \"Trigger <N>\">",
     "description": "<description from sdd.md or LLM-inferred>",
-    "uipath": {
-      "serviceType": "Intsvc.TimerTrigger",
+    "typeVersion": "1.0.0",
+    "display": { "label": "<displayName or \"Trigger <N>\">" },
+    "inputs": {
+      "serviceType": "timer",
       "timerType": "timeCycle",
       "timeCycle": "<timeCycle from tasks.md>"
     }
@@ -82,13 +80,13 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
   "type": "CaseManagement",
   "input":  { "type": "object", "properties": {} },
   "output": { "type": "object", "properties": {} },
-  "displayName": "<same as node.data.label>"
+  "displayName": "<same as node.data.display.label>"
 }
 ```
 
 - `<caseplan-basename>` — the literal filename of the case file (typically `caseplan.json`), producing a path like `/content/caseplan.json.bpmn#trigger_xxxxxx`.
 - `<UUID v4>` — fresh `crypto.randomUUID()` per write. Non-deterministic; normalizer strips in golden diff.
-- `displayName` matches `node.data.label` (including the `Trigger <N>` default if `displayName` absent).
+- `displayName` matches `node.data.display.label` (including the `Trigger <N>` default if `displayName` absent).
 - Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
 **Write order:** `caseplan.json` first, then `entry-points.json`. If the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
@@ -105,13 +103,14 @@ Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference �
 After writing, confirm:
 
 - `schema.nodes` contains the new Trigger node with the expected `id`
-- `node.data.uipath.serviceType == "Intsvc.TimerTrigger"`
-- `node.data.uipath.timerType == "timeCycle"`
-- `node.data.uipath.timeCycle` is byte-identical to the input string
+- `node.data.inputs.serviceType == "timer"`
+- `node.data.inputs.timerType == "timeCycle"`
+- `node.data.inputs.timeCycle` is byte-identical to the input string
 - Node has NO `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 18 layout-strip)
 - Case A: no `data.parentElement`. Case B: `data.parentElement == {id: "root", type: "case-management:root"}`
 - **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
-- `entry-points.json.entryPoints` has a new entry with `filePath` containing the new `triggerId` and `displayName` matching `node.data.label`
+- `entry-points.json.entryPoints` has a new entry with `filePath` containing the new `triggerId` and `displayName` matching `node.data.display.label`
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
 
+<!-- END: impl-json.md -->

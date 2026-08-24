@@ -122,3 +122,5 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```
+
+<!-- END: planning.md -->

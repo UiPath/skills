@@ -72,6 +72,16 @@ In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. 
 
 SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
 
+### Null-safe task-output references
+
+In any `=js:` sink (conditions, SLA, task inputs, connector bodies), null-guard every task-output dereference — guard the object, not the property:
+
+```
+=js:JSON.parse((vars.response4 || {}).RequestBody || '{}').outcome === 'Signed'
+```
+
+`(vars.X || {}).Y` — never `vars.X.Y || <default>`. Whole-value `=vars.<id>` needs no guard.
+
 ### Conservative rule for `=metadata.X`
 
 The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is NOT resolved at runtime. **Always wrap as `=js:metadata.X`** (or `=js:(metadata.X)` if the sink requires parens). The FE design-time picker may classify `=metadata.X` as "variable" type, but that's a UI hint, not a runtime contract.
@@ -145,6 +155,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 - Three args = the same name-triple as whole-value `<-`: source stage `data.label`, source task `displayName`, source output `name`.
 - Single quotes ONLY — double quotes break the enclosing JSON string. Names containing a literal `'` are unsupported (re-author the name).
 - Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<outputReferenceId>` (NOT `=vars.` — it is already inside `=js:`).
+- Null-guard any dotted access off the resolved reference ([§ Null-safe task-output references](#null-safe-task-output-references)).
 
 **Example** — composite input payload, no middle variables:
 
@@ -207,4 +218,6 @@ vars.$xref('Stage Name','Task Name','output_name')
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
 - **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user.email`.
 - **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
-- **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-common.md](connector-trigger-common.md).
+- **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
+
+<!-- END: bindings-and-expressions.md -->

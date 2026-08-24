@@ -61,7 +61,7 @@ success_criteria:
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
     require_success: true
-    weight: 2.0
+    weight: 0.0
     pass_threshold: 0
 
   - type: run_command

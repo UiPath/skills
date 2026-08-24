@@ -8,7 +8,7 @@ Strategy selection and shared concepts for modifying `.flow` files. Direct `.flo
 >
 > 1. **CLI-managed carve-outs only** → use the relevant plugin workflow for connector activity, connector-trigger, or managed HTTP operations when the CLI populates product-managed state (`inputs.detail`, `bindings_v2.json`, connection resources).
 > 2. **Any structural `.flow` mutation** (add/delete OOTB nodes, add/delete edges, add/edit variables, in-place value tweaks, output mapping, subflows, scheduled triggers, non-connector resources, inline-agent node/wiring) → `Edit`.
-> 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write` — but never on a flow that already contains CLI-owned nodes (connector, connector-trigger, managed HTTP): the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail`, and `flow validate` won't catch it. Use `Edit` (rung 2), or re-run `node configure` afterward.
+> 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write` — but never on a flow that already contains CLI-owned nodes (connector, connector-trigger, managed HTTP): the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` and `flow validate` won't catch it. Use `Edit` (rung 2); if you do `Write`, re-run `node configure` **as the last write** to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers it). See [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
 > 4. **Anything else** → STOP and ask the user. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and present finite options — typically **Use `Edit` instead** / **Use `Write` (full rewrite)** / **Approve the script for this change** / **Cancel** / **Something else**. Only proceed after the user explicitly approves that path for this specific change. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
 
 ### Why not Python / Node / jq / sed?
@@ -43,8 +43,8 @@ Use this table to determine which strategy to follow for each operation. **Edit 
 | Add an edge | **Edit / Write** | — | Remember `targetPort` (Rule #6). |
 | Delete an edge | **Edit / Write** | — | |
 | Update node inputs | **Edit** | — | In-place edit; preserves node ID and `$vars`. **Exception:** managed HTTP `inputs.branches` / `timeout` / `retryCount` must be set at `node add --input` time — to change them, `uip maestro flow node remove` and re-add with new `--input`. |
-| Add/edit workflow variable | **Edit** | — | Edit-only; CLI does not support. |
-| Add variable update | **Edit** | — | Edit-only; CLI does not support. |
+| Add/edit workflow variable | **Edit** | — | `Edit` when authoring. `uip maestro flow variable add\|list\|remove` exists for declaring eval inputs — see [variables-and-expressions.md § Variable Management via CLI](../../shared/variables-and-expressions.md#variable-management-via-cli). |
+| Add variable update | **Edit** | — | Edit-only. No CLI command exists. |
 | Map outputs on End node | **Edit** | — | Edit-only. |
 | Create a subflow | **Edit / Write** | — | Edit-only (or `Write` for fresh template). |
 | Replace trigger (non-connector) | **Edit** | — | |
@@ -84,7 +84,7 @@ These apply regardless of which strategy you use.
 
 - `targetPort` is required on every edge — validate rejects edges without it
 - See [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type
-- Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`output`/`success`/`loopBack`)
+- Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`start`/`continue`/`break` inner, `success`/`error` outer)
 
 ### Validation
 

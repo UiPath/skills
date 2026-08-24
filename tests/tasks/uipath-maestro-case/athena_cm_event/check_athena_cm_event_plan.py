@@ -51,7 +51,7 @@ def task_section(plan: str, task_name: str) -> str:
 
 def field(section: str, name: str, task_name: str) -> str:
     match = re.search(
-        rf"(?im)^-\s*(?:\*\*)?{re.escape(name)}:(?:\*\*)?\s*"
+        rf"(?im)^(?:-\s*)?(?:\*\*)?{re.escape(name)}:(?:\*\*)?\s*"
         rf"`?([a-z][a-z0-9-]*)(?:\([^\n)]*\))?`?\s*$",
         section,
     )

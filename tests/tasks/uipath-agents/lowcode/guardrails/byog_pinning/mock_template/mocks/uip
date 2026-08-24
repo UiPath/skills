@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Selective `uip` shim for the byog_pinning smoke task.
+
+Intercepts exactly one command — `uip agent guardrails list` — and serves a
+canned tenant response containing the BYO guardrail entry the task's prompt
+references (`byog-smoke-agent-pin`, pii_detection), alongside the built-in
+`pii_detection` entry sharing the same `Validator` name, so the agent must
+disambiguate via `IsByo`/`ByoValidatorName` exactly as the skill teaches.
+`--byo` filters to the BYO entry only, mirroring the real CLI.
+
+Every other invocation exec's the REAL `uip` found later on PATH —
+`agent init` / `refresh` / `validate` are local operations that must
+actually run for the task's artifacts and checks to exist.
+
+Why mock discovery at all: the task's scope is the skill's authoring
+behavior (pin an already-configured BYO guardrail in agent.json), not
+tenant lifecycle. A real BYOG configuration can no longer be seeded
+per-run (`byo-configurations create` probes the connection server-side,
+no skip flag), and the shared smoke tenant has no guardrail-capable
+connection — mocking the read-only discovery call removes that tenant
+dependency entirely while leaving the graded behavior untouched.
+
+`mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
+sandbox. Linux smoke only (no `windows` tag on the task), hence no
+`uip.cmd` twin — same as the ixp mock.
+"""
+
+import json
+import os
+import shutil
+import sys
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+
+BYO_ENTRY = {
+    "Validator": "pii_detection",
+    "IsByo": True,
+    "Status": "Available",
+    "AllowedScopes": ["Agent", "Llm", "Tool"],
+    "GuardrailStages": {
+        "Agent": ["PreExecution", "PostExecution"],
+        "Llm": ["PreExecution", "PostExecution"],
+        "Tool": ["PreExecution", "PostExecution"],
+    },
+    "DisplayName": "PII Detection",
+    "Description": (
+        "Detects personally identifiable information. Served by the "
+        "tenant's external bring-your-own guardrail provider."
+    ),
+    "ByoValidatorName": "byog-smoke-agent-pin",
+    "ByoConnectionId": "18fb337c-29b7-4162-a9e8-0c05b01cf4df",
+    "ByoConfigurationId": "e5723bb8-fbc2-4317-c7d7-08de803bc010",
+    "ByoConnectorName": "Azure AI Content Safety",
+    "ByoConnectorKey": "uipath-azure-contentsafety",
+    "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19",
+    "Parameters": [
+        {
+            "Type": "enum-list",
+            "Id": "entities",
+            "Required": True,
+            "DefaultValue": ["Email", "PhoneNumber"],
+            "Options": [
+                "Email",
+                "PhoneNumber",
+                "Person",
+                "Address",
+                "USSocialSecurityNumber",
+            ],
+            "DisplayName": "Entities",
+            "Description": "PII entity types to detect.",
+        },
+        {
+            "Type": "map-enum",
+            "Id": "entityThresholds",
+            "Required": True,
+            "DefaultValue": {"Email": 0.5, "PhoneNumber": 0.5},
+            "KeySource": "entities",
+            "Min": 0,
+            "Max": 1,
+            "DisplayName": "Per-entity threshold",
+            "Description": "Confidence threshold (0-1) per selected entity.",
+        },
+    ],
+}
+
+BUILTIN_ENTRY = {
+    "Validator": "pii_detection",
+    "IsByo": False,
+    "Status": "Available",
+    "AllowedScopes": ["Agent", "Llm", "Tool"],
+    "GuardrailStages": {
+        "Agent": ["PreExecution", "PostExecution"],
+        "Llm": ["PreExecution", "PostExecution"],
+        "Tool": ["PreExecution", "PostExecution"],
+    },
+    "DisplayName": "PII Detection",
+    "Description": (
+        "Detects personally identifiable information using Azure "
+        "Cognitive Services (UiPath built-in)."
+    ),
+    "Parameters": BYO_ENTRY["Parameters"],
+}
+
+
+def real_uip():
+    path = os.environ.get("PATH", "")
+    parts = [
+        p for p in path.split(os.pathsep)
+        if p and os.path.abspath(p) != MOCK_DIR
+    ]
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def main():
+    args = sys.argv[1:]
+    literal = [a for a in args if not a.startswith("-")]
+    if literal[:3] == ["agent", "guardrails", "list"]:
+        data = [BYO_ENTRY] if "--byo" in args else [BUILTIN_ENTRY, BYO_ENTRY]
+        print(json.dumps({
+            "Result": "Success",
+            "Code": "GuardrailDefinitionsList",
+            "Data": data,
+        }, indent=2))
+        return 0
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

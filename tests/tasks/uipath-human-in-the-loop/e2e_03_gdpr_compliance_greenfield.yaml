@@ -27,34 +27,35 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created at the expected path"
-    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the inline HITL node type"
-    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow exposes Approve and Reject outcomes"
-    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
-    includes:
-      - "Approve"
-      - "Reject"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'Approve' 'Reject'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow wires the completed handle"
-    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
-    includes:
-      - 'completed'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'completed'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -68,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "uip maestro flow validate GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

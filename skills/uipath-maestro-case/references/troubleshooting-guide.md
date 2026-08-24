@@ -117,3 +117,5 @@ For full flag tables and all subcommands, see [case-commands.md](case-commands.m
 - `uip maestro case job` — `status`, `traces`
 
 Append `--output json` to any command whose output you parse.
+
+<!-- END: troubleshooting-guide.md -->

@@ -23,11 +23,11 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
 | `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name. Scopes both lookups below to that one SLA table. Required for `sla-status-change` |
-| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID preallocated from §4.8. Required |
+| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
 | `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response. A breach rule references the SLA alone; supplying an escalation converts it into an at-risk rule ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
 
 ## Rule-Type Catalog (stage-entry scope)
 
@@ -46,7 +46,7 @@ Allowed `ruleType` values and when to pick each:
 
 > **Global-event rule.** A connector event that can happen during any primary stage and requires case work/routing is declared once on the destination secondary stage with `is-interrupting: true`. An SLA response that enters a stage (`enter-stage`) uses `sla-status-change` on that destination stage. Set `is-interrupting` from whether the response stops, pauses, or reroutes active work, not from the SLA's scope. A `start-task` response is **not** a stage-entry rule — it belongs on the follow-up task's own entry ([task-entry-conditions/planning.md](../task-entry-conditions/planning.md)). A notify-only escalation needs no stage entry. Do not generate the same task or stage-exit rule on every primary stage.
 
-> **First-stage start — `case-entered` is the case-start signal (Rule 20).** The case begins at the stage whose entry condition is `case-entered`, not a Trigger→first-stage edge. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in [`sdd-generation-rules.md` § Logical integrity](../../../sdd-generation-rules.md) treats a case with no `case-entered` stage as a blocking orphan.
+> **First-stage start — `case-entered` is the case-start signal (Rule 20).** The case begins at the stage whose entry condition is `case-entered`, not a Trigger→first-stage edge. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in the design-side stage-graph contract (case SDD content contract § Logical integrity, `uipath-planner`) treats a case with no `case-entered` stage as a blocking orphan.
 
 ## Ordering
 
@@ -67,7 +67,7 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
 
 `sla-status-change` example:
 
@@ -84,3 +84,5 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 ```
 
 Breach, so **no `escalation-display-name`** — the rule references the SLA alone. An at-risk response adds `escalation-display-name: "<At-risk escalation on that same SLA>"`; nothing else changes.
+
+<!-- END: planning.md -->

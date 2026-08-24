@@ -85,19 +85,17 @@ def main():
     finalize_exit_rules = {
         (first_rule_of_condition(c) or {}).get("rule") for c in finalize_exits
     }
-    if "selected-tasks-completed" not in finalize_exit_rules:
+    if "required-tasks-completed" not in finalize_exit_rules:
         sys.exit(
-            f"FAIL: Finalize should have exit rule 'selected-tasks-completed'; "
+            f"FAIL: Finalize should have exit rule 'required-tasks-completed'; "
             f"got {sorted(r for r in finalize_exit_rules if r)}"
         )
     routed_targets = {ec.get("exitToStageId") for ec in finalize_exits if ec.get("exitToStageId")}
-    if done["id"] not in routed_targets:
+    if routed_targets:
         sys.exit(
-            f"FAIL: Finalize selected-tasks-completed exit must route to Done "
-            f"(id={done['id']!r}); got exitToStageId set {routed_targets}"
+            f"FAIL: Finalize declares no stage-exit hand-off; got exitToStageId "
+            f"set {routed_targets}"
         )
-    if not any(ec.get("marksStageComplete") is False for ec in finalize_exits):
-        sys.exit("FAIL: Finalize selected-tasks-completed exit must have marksStageComplete=false")
 
     finalize_entries = list(iter_stage_entry_conditions(finalize))
     finalize_entry_rules = {
@@ -107,6 +105,20 @@ def main():
         sys.exit(
             f"FAIL: Finalize should have entry rule 'selected-stage-completed'; "
             f"got {sorted(r for r in finalize_entry_rules if r)}"
+        )
+
+    done_entry_rules = [
+        first_rule_of_condition(c) or {} for c in iter_stage_entry_conditions(done)
+    ]
+    if not any(r.get("rule") == "selected-stage-completed" for r in done_entry_rules):
+        sys.exit(
+            f"FAIL: Done should have entry rule 'selected-stage-completed'; "
+            f"got {sorted(r.get('rule') for r in done_entry_rules if r.get('rule'))}"
+        )
+    if finalize["id"] not in {r.get("selectedStageId") for r in done_entry_rules}:
+        sys.exit(
+            f"FAIL: Done selected-stage-completed entry must reference Finalize id "
+            f"{finalize['id']!r}; got {[r.get('selectedStageId') for r in done_entry_rules]}"
         )
 
     first_step = _stage_task_by_label(process, "First Step")
@@ -264,8 +276,9 @@ def main():
 
     print(
         "OK: Process exit required-tasks-completed; Finalize exit "
-        "selected-tasks-completed→Done (marksStageComplete=false); Finalize "
-        "entry selected-stage-completed; task-entry rules cover runs-sequentially/"
+        "required-tasks-completed with no exit-only hand-off; Finalize entry "
+        "selected-stage-completed; Done entry selected-stage-completed on "
+        "Finalize; task-entry rules cover runs-sequentially/"
         "current-stage-entered/selected-tasks-completed/adhoc; First Step + "
         f"Second Step share task set {first_step_lane} (ordered by their "
         "runs-sequentially entry rules); First Step uses non-repeating timeDuration "

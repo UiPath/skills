@@ -20,7 +20,12 @@
 # the event name, the authenticated cloud identity, the `source:
 # "skills-plugin"` dimension, and — since UiPath/cli#2806 — the
 # environment/base_url/region base dimensions stamped fresh on every event
-# from its own auth context (so this hook sends no environment info). This
+# from its own auth context (so this hook sends no environment info). Since
+# UiPath/cli#3431 the CLI also owns the session id: it resolves one per process
+# (UIPATH_SESSION_ID, else an inherited agent/terminal handle) and puts it on
+# App Insights' native ai.session.id tag, and `uip track` no longer accepts a
+# session id from the payload — so this hook sends none. Correlation comes from
+# set-session-env.ps1, which exports UIPATH_SESSION_ID for the session. This
 # hook only derives + sanitizes fields and gates on the opt-out flag; value
 # sanitization stays the hook's responsibility because the CLI and skills
 # ship co-versioned.
@@ -31,7 +36,7 @@
 # JSON-shaped text (`"success":false`, `uip solution publish`, `.flow"`,
 # `"resolvedModel":"..."`). So the payload is parsed as real JSON
 # (ConvertFrom-Json) and each field is read ONLY from the region it lives in:
-#   ENVELOPE (top-level)  -> toolName, toolUseId, session_id, permissionMode,
+#   ENVELOPE (top-level)  -> toolName, toolUseId, permissionMode,
 #                            durationMs, effortLevel (effort.level), agentType,
 #                            source (-> session_source), reason (session-end),
 #                            model (-> agent_model; Claude sends it on
@@ -83,8 +88,11 @@ $ErrorActionPreference = 'SilentlyContinue'
 # eventName / session_source / reason / agent_model keys, renames
 # sessionId -> session_id (canonical casing, matches the CLI command stream,
 # UiPath/cli#2800), and drops environment/baseUrl (the CLI stamps fresh
-# environment/base_url/region base dimensions itself, UiPath/cli#2806).
-$SCHEMA_VERSION = 2
+# environment/base_url/region base dimensions itself, UiPath/cli#2806). v3:
+# drops session_id — the session is no longer a custom dimension; the CLI puts
+# its own per-process id on the native ai.session.id tag and `uip track`
+# rejects a payload session id (UiPath/cli#3431).
+$SCHEMA_VERSION = 3
 
 # --- extraction helpers ------------------------------------------------------
 
@@ -270,7 +278,6 @@ function Main {
   $hookEvent      = [string](Get-Prop $payload 'hook_event_name')
   $tool           = [string](Get-Prop $payload 'tool_name')
   $toolUseId      = [string](Get-Prop $payload 'tool_use_id')
-  $sessionId      = [string](Get-Prop $payload 'session_id')
   $permissionMode = [string](Get-Prop $payload 'permission_mode')
   $durationMs     = Get-Prop $payload 'duration_ms'
   $agentType      = [string](Get-Prop $payload 'agent_type')
@@ -364,7 +371,6 @@ function Main {
     @('effortLevel',    's', $effortLevel),
     @('skillsVersion',  's', $skillsVer),
     @('toolUseId',      's', $toolUseId),
-    @('session_id',     's', $sessionId),
     @('subagentModel',  's', $subagentModel),
     @('subagentType',   's', $subagentType),
     @('agentType',      's', $agentType),
@@ -383,7 +389,8 @@ function Main {
   # the uip.skills.<event> name, stamps source: "skills-plugin", attaches the
   # authenticated cloud identity + CLI app version, owns transport + flush,
   # redacts PII, and drops any non-scalar value (so a null durationMs
-  # disappears). Send no envelope and no `source` (the CLI overrides it).
+  # disappears). Send no envelope, no `source` (the CLI overrides it), and no
+  # session id (the CLI resolves its own and drops a payload one).
   #
   # `uip track` is never-fail (exits 0, emits nothing when telemetry is opted
   # out); piping to it is harmless even if the CLI is absent (the catch

@@ -2,8 +2,8 @@
 
 Shape-only smoke tasks under `../../smoke/` must not authenticate or hit a live
 tenant — the smoke harness injects a live alpha bot token, so a bare `uip ixp …`
-would otherwise reach designtime-api on alpha (404-ing on fixture ids). Every
-smoke task therefore mocks `uip` with this template:
+would otherwise reach designtime-api on alpha (404-ing on fixture ids). Most
+smoke tasks therefore mock `uip` with this template:
 
 ```yaml
 sandbox:
@@ -63,16 +63,34 @@ which can false-match commands merely quoted in heredocs, comments, or prose.
 
 Log-based negative guards MUST pair with a positive control — a log line a
 correct run is guaranteed to produce — otherwise re-pointing the mock's sink
-makes every negative guard pass vacuously. Only when no invocation is guaranteed
-in a correct run, fall back to a harness-integrity criterion asserting
-`mocks/uip` still contains `JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")`.
-That fallback is weak — static source text, brittle against cosmetic mock
-refactors. It broke once already: it previously asserted the sh mock's
-`>> "$(dirname "$0")/calls.log"` redirect, which the Python rewrite deleted.
-Prefer a real positive control wherever a correct run makes any call at all.
+makes every negative guard pass vacuously.
+
+Where no invocation is GUARANTEED in a correct run, the guard carries no positive
+control. Say so in a comment and add no criterion for it.
+
+Exclude the specific verb a task traps, never every invocation. Both sinks are
+seeded, so `calls.log` always exists (a file-absent check cannot stand in for
+"made no call"), and correct runs call unrelated verbs while orienting.
+
+Do NOT assert static text in `mocks/uip` — a `FLAT_LOG =`/`JSON_LOG =` line, or
+the old `>> "$(dirname "$0")/calls.log"` redirect. It cannot tell a moved sink
+from a reformat: the sh → Python rewrite deleted that redirect and pinned
+`list_model_options` at 0.909 for six nightlies, never passing.
 
 Integration/e2e tasks use `live_calls_template`; its wrapper writes the same two
 sinks in the same format, then delegates unchanged to the real CLI.
+
+## Not every task uses this template
+
+Tasks graded with `cli_called` declare `sandbox.record_cli` instead, and the
+framework generates the recorders, seeds the log and PATH-prepends `cli_mocks/`
+itself — no `mock_path_dirs`, no `template_sources`, no `log:` on the criterion.
+Prefer that for a new structured task. This template remains the answer whenever
+a recorder is not enough: `file_matches_regex` over the flat `calls.log`, a read
+that must return fixture data (`mock_template_taxonomy`), or per-invocation
+responses, none of which `record_cli` serves. `calls.jsonl` here has no consumer
+today for that reason — it is the structured sink for tasks that need this
+template's other behavior too.
 
 A task whose correct path reads before it writes cannot be graded on this mock
 alone — the read fails, so there is nothing to carry into the graded write, and

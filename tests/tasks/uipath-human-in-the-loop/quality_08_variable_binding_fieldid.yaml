@@ -34,50 +34,52 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate ContractReview/ContractReview/ContractReview.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has approved field with correct id and variable"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"id": "approved"'
-      - '"variable": "vars.legalApproval"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"approved\"' '\"variable\": \"vars.legalApproval\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has comments field with id reviewcomments"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"id": "reviewcomments"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"reviewcomments\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Downstream script references output by field ID .approved"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - ".output.approved"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Downstream script references output by field ID .reviewcomments"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - ".output.reviewcomments"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '.output.approved'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Downstream script references output by field ID .reviewcomments"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '.output.reviewcomments'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Negative check via --absent-regex: exit 0 only when discovery succeeded,
+  # the ContractReview flow was read, and the forbidden pattern is absent —
+  # a missing or unreadable flow can never score these points.
+  - type: run_command
     description: "Script does NOT reference output by variable name (.output.legalApproval or .output.legalNotes)"
-    command: "grep -cE '\\.output\\.(legalApproval|legalNotes)' ContractReview/ContractReview/ContractReview.flow"
-    timeout: 10
-    expected_exit_code: 1
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.(legalApproval|legalNotes)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 

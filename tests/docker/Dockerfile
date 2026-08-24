@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # Custom image for UiPath skills smoke tests
 # Extends coder-eval-agent with UiPath CLI tools pre-installed
 ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
@@ -29,11 +30,13 @@ ARG MIN_TOOLS=25
 # here. Belt-and-suspenders with the eval harness env.
 ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1
 
-# Install the UiPath CLI shell AND pre-bake EVERY whitelisted tool plugin, all
-# from the SAME feed on GitHub Packages, so the eval never depends on the CLI's
-# on-demand auto-install or channel resolution at task time. Pre-installing every
-# tool also means the on-demand auto-install path (which only fires for a
-# NOT-installed verb) never triggers.
+# Install the UiPath CLI shell from its public npm release and pre-bake EVERY
+# whitelisted tool plugin from GitHub Packages. Stable CLI releases such as the
+# campaign's 1.198.0 pin are not mirrored to GitHub Packages; installing the
+# shell before writing the scoped GitHub npmrc keeps the shell byte-aligned with
+# the SDK image while the private tool plugins still come from their real feed.
+# Pre-installing every tool also means the on-demand auto-install path (which
+# only fires for a NOT-installed verb) never triggers.
 #
 # The tool set is DISCOVERED at build time via `uip tools search` — NOT a
 # hand-copied list — so it can't drift behind the CLI's TOOLS_WHITELIST (a tool
@@ -51,12 +54,20 @@ ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1
 # the whitelist (toolLoader.ts), so a plain global install is found with no
 # registry work at eval time.
 #
-# The token-bearing npmrc is written and removed inside this single RUN, so it
-# never persists in an image layer. The @uipath→GHP mapping isn't needed at eval
-# time — tools are on disk and version-sync is off.
-RUN set -euo pipefail && \
-    if [ -z "$NPM_AUTH_TOKEN" ]; then \
-      echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
+# The token-bearing npmrc is written and removed inside this single RUN. CI and
+# campaign builds provide it through the BuildKit secret so it is absent from
+# build output and history. The ARG fallback keeps the external nightly caller
+# compatible until that caller can migrate; do not use it for new callers.
+RUN --mount=type=secret,id=npm_auth_token \
+    set -euo pipefail && \
+    npm_auth_token="" && \
+    if [ -s /run/secrets/npm_auth_token ]; then \
+      npm_auth_token="$(cat /run/secrets/npm_auth_token)"; \
+    elif [ -n "$NPM_AUTH_TOKEN" ]; then \
+      npm_auth_token="$NPM_AUTH_TOKEN"; \
+      echo "WARN: NPM_AUTH_TOKEN build-arg fallback is deprecated"; \
+    else \
+      echo "Error: npm_auth_token secret or NPM_AUTH_TOKEN build arg is required"; exit 1; \
     fi && \
     # Derive the tool dist-tag from CLI_VERSION: an exact prerelease pin
     # (1.199.0-dev.7923) → its train tag (dev); a bare stable semver → latest;
@@ -67,13 +78,23 @@ RUN set -euo pipefail && \
       *)      tool_tag="$CLI_VERSION" ;; \
     esac && \
     echo "CLI_VERSION=$CLI_VERSION -> tool dist-tag @$tool_tag" && \
+    case "$CLI_VERSION" in \
+      [0-9]*-*) public_cli=false ;; \
+      [0-9]*)   public_cli=true ;; \
+      *)        public_cli=false ;; \
+    esac && \
+    if [ "$public_cli" = true ]; then \
+      npm install -g --registry=https://registry.npmjs.org "@uipath/cli@${CLI_VERSION}"; \
+    fi && \
     npmrc="$(npm config get globalconfig)" && \
     mkdir -p "$(dirname "$npmrc")" && \
     printf '%s\n' \
       '@uipath:registry=https://npm.pkg.github.com/' \
-      "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
+      "//npm.pkg.github.com/:_authToken=${npm_auth_token}" \
       > "$npmrc" && \
-    npm install -g "@uipath/cli@${CLI_VERSION}" && \
+    if [ "$public_cli" = false ]; then \
+      npm install -g "@uipath/cli@${CLI_VERSION}"; \
+    fi && \
     uip --version && \
     uip tools search --output json > /tmp/uip-tools-search.json && \
     tools="$(grep -oE '@uipath/[a-z0-9-]+-tool' /tmp/uip-tools-search.json | sort -u || true)" && \

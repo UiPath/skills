@@ -10,7 +10,7 @@
 > giving a deterministic linear happy path) so `uip maestro case debug` can run
 > the case to completion without human input; escalation timers use seconds; a manual
 > trigger starts the case so `uip maestro case debug` can run it headlessly. Task payloads are generic (bound to
-> `NameToAgeFixed2`, `CountLetters`, `ProcurementProcess`, `ProjectEuler`,
+> `WeatherAPI`, `CountLetters`, `ProcurementProcess`, `ProjectEuler`,
 > `CaseTest`). The 7-stage topology, stage chaining, child case, and the
 > Rejected / Withdrawn terminal lanes are preserved; the reject / withdraw lanes
 > stay dormant at runtime (gated off by the default-`Approve` decision vars) but
@@ -70,7 +70,7 @@
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| caseRef | In | string | | | | External reference supplied by the caller at case start. |
+| caseRef | In | string | | | `""` (empty string) | External reference supplied by the caller at case start. |
 | employeeName | Variable | string | | | "Jane Smith" | Submitting employee's name. |
 | employeeEmail | Variable | string | | | "jane.smith@acme.com" | Submitting employee's email. |
 | amount | Variable | float | | | 1250.00 | Expense amount. |
@@ -137,9 +137,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -147,7 +147,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -240,9 +240,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -250,7 +250,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeEmail |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -329,9 +329,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -339,7 +339,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -534,9 +534,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -544,7 +544,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -602,9 +602,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -612,7 +612,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -739,9 +739,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -749,7 +749,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeEmail |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -805,9 +805,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -815,7 +815,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeEmail |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -849,7 +849,7 @@
 
 | Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
 |----------|--------|------------------------|------------------|---------------|
-| NameToAgeFixed2 | Shared/uipath-maestro-case/NameToAgeFixed2 | b6af8fa1-07cc-4a03-b0a1-f966e3fa23be | name → estimatedAge | Validate Expense Data, Send Approval Request, Policy Compliance Check, Payment Confirmation, Send Approval Confirmation, Log Rejection for Audit, Send Withdrawal Confirmation |
+| WeatherAPI | Shared/uipath-agents/WeatherAPI | be88b8d6-ec4d-484c-9474-805dd82d8d68 | location → temperature | Validate Expense Data, Send Approval Request, Policy Compliance Check, Payment Confirmation, Send Approval Confirmation, Log Rejection for Audit, Send Withdrawal Confirmation |
 
 ### Agents
 

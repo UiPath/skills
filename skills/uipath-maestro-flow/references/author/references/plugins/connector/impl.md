@@ -43,7 +43,7 @@ To classify a node, read `Node.form.sections[0].fields[0].componentProps.connect
 If you cannot run `node configure` (no live connection, sandbox forbids it, the user asked for planning only):
 
 1. Confirm the connector operation exists: `uip maestro flow registry search <keyword>` and `registry get <node-type>` (see [cli-commands.md — registry](../../../../shared/cli-commands.md#uip-maestro-flow-registry) for the `search` output shape).
-2. Add the connector node with `uip maestro flow node add <file> <node-type> --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`.
+2. Add the connector node with `uip maestro flow node add <file> <node-type> --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`. **Inside a loop body?** Add `--parent <LOOP_NODE_ID>` — see [loop/impl.md](../loop/impl.md).
 3. Write the planned `--detail` payload to a separate file (e.g. `<nodeId>.detail.json`) with placeholder values for missing connection/folder UUIDs. Do **not** put a partial `inputs.detail` on the node.
 4. **The node will not pass `flow validate` until `node configure` is run.** Surface this explicitly in your completion report under "Missing connections" or "Open questions" — do not let the user discover it via a validation failure later.
 
@@ -136,6 +136,8 @@ cat <metadataFile path from response>
 > **`<objectName>` is the activity's API object name, not the node-type's trailing segment — and NOT a case-conversion of it.** Read it from the node definition copied into `definitions[]` by `node add`: `model.context[]` entry `{name:"objectName", value:"…"}` (or the `objectName` field inside the `configuration` `=jsonString:` blob). Never derive it by transforming the node-type suffix — kebab→snake (`send-email` → `send_email`) and kebab→Pascal are both guesses and both 404. Example: node type `…google-gmail.send-email` has objectName `SendEmail` (not `send_email`); `…teams.send-bot-direct-message` has objectName `bot_direct_messages` (not `send-bot-direct-message`). A 404 means wrong objectName — re-read it from the definition and retry; do NOT treat the 404 as "describe unavailable" and skip the step. Skipping describe loses `requestFields[].reference.filterPattern` and other IS-level metadata that `registry get` does not carry (see Step 4).
 >
 > **Sequence, don't parallelize, the objectName-dependent calls.** `<objectName>` is an OUTPUT of `node add` (it lands in `definitions[]`). Read that value before calling `is resources describe` — do not place `describe` in the same parallel Bash batch as `node add` or `registry get`, or you'll have nothing to pass but a guess. This is the failure mode behind the snake-case 404 above.
+
+> **Pass `--operation` = the node definition's `model.context[].method` value verbatim** (from `registry get`, or `definitions[]` after `node add`). E.g. Jira `curated_get_issue` → `GETBYID` → `--operation GETBYID`; Data Service `QueryEntityRecordsCurated` → `POST` → `--operation POST`. Do NOT use `connectorMethodInfo.operation` or `connectorMethodInfo.method` — both can point at the wrong key and fail the lookup.
 
 The full metadata contains:
 - **`availableOperations[].method`** and **`availableOperations[].path`** — HTTP method and API endpoint path. Same value as `connectorMethodInfo.method` / `.path` from `registry get`.
@@ -238,23 +240,48 @@ For every match:
 - **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
 - **Do not pass a raw CEQL string under `--detail.queryParameters.<name>`.** It populates only the runtime half — debug runs succeed but the FilterBuilder UI shows `undefined` when the activity is reopened in SW. The CLI rejects this at configure time.
 - **A dynamic operand in the tree works**: `"value": {"value": "=js:$vars...", "isLiteral": false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.
-- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing.
+- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing. Copy-paste template, operator aliases, and the error→fix table → [Hand-authored CEQL strings](#hand-authored-ceql-strings) below.
 - Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
 
-**Dynamic-entity connectors (e.g. Dataservice V3) — documented CLI-limitation exception.** When filterable fields are resolved at design time via an `actionType: "api"` action keyed off a parent field (V3's `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the CLI's `--detail.filter` validator rejects leaf field IDs not in static metadata. Symptom: `Failed to build filter for activity "...": Filter references field 'X' which is not present in trigger metadata`. The CLI also rejects raw `--detail.queryParameters.<filterParamName>` for FilterBuilder params on these connectors.
+**Dynamic-entity connectors (e.g. Data Service).** Their FilterBuilder params take `--detail.filter` like every other connector. Always set the entity name in the same `node configure` call (`pathParameters.entityName` on Data Service) — the CLI runs the connector's schema-fetch action from it and resolves the entity's real fields. Field ids in the tree must match that schema exactly. Matching is case-sensitive: `InvoiceNumber` does not match `invoiceNumber`. Read the exact names from `uip df entities list --output json` (entity `Id`) plus `uip df entities get <entity-id> --output json` (field names). An unmatched leaf is dropped without an error — `node configure` reports Success and the filter is lost or malformed. See [Common Errors](#common-errors).
 
-> **This is the only sanctioned case where `Edit` touches `inputs.detail` on a CLI-owned node** (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)). The CLI cannot accept the input it itself requires for these connectors. Do not generalize this pattern to any other connector — for everything else, `node configure` is the only path. File a CLI issue if you hit a similar dynamic-entity rejection on a new connector before applying this workaround.
+##### Hand-authored CEQL strings
 
-Workaround (Dataservice V3 / dynamic-entity FilterBuilder only):
+Preference order. Do not skip step 1.
 
-1. `node configure` with `bodyParameters` / `queryParameters` and `customFieldsRequestDetails` — omit `filter`. This populates the rest of `inputs.detail` and the bindings the CLI normally writes.
-2. `Edit` the `.flow` file to inject the two filter halves the CLI refused:
-   - Runtime: `inputs.detail.queryParameters.<filterParamName>` = compiled CEQL string (e.g. `"test = 'Active'"`)
-   - Design-time: `essentialConfiguration.savedFilterTrees.<filterParamName>` = structured tree (inside the `=jsonString:` blob)
-3. Validate. Both halves must be present or Studio Web round-trip shows an empty FilterBuilder.
-4. Note in your completion report that this node was finished via the documented CLI-limitation Edit; this is a re-configure hazard (re-running `node configure` later will drop both halves per the full-rebuild rule below).
+1. **`node configure --detail.filter`** — pass a structured tree. The CLI compiles the CEQL for you. Use this for every literal filter. It does not report a leaf whose field id the entity schema does not match — it drops that leaf (see Step 6a).
+2. **Hand-authored `=js:` string** — use only when a runtime value forces it, and only from the template below. Nothing validates the string: `flow validate` passes it through and IS faults at `flow debug` with `[102003]`.
+
+Canonical template for a dynamic value:
+
+```text
+=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
+```
+
+Single quotes delimit a value. Double quotes mark a column reference to the CEQL parser.
+
+**Anti-patterns.** Match the IS error text, then apply the corrected form.
+
+| Wrong form | IS error text | Corrected form |
+|---|---|---|
+| `'accountNumber' = 'ACC123'` — field name quoted | `Expected a field name expression but got 'StringValue'` | `accountNumber = 'ACC123'` |
+| `` =js:"accountNumber = \"" + String(v) + "\"" `` — value double-quoted | `Unsupported value expression 'Column' on field 'accountNumber'` | `` =js:"accountNumber = '" + String(v) + "'" `` |
+| `accountNumber eq 'ACC123'` — OData alias | `[102003] Integration Services bad request` | `accountNumber = 'ACC123'` |
+
+CEQL rejects OData aliases. Map them:
+
+| OData alias | CEQL operator |
+|---|---|
+| `eq` | `=` |
+| `ne` | `!=` |
+| `gt` | `>` |
+| `ge` | `>=` |
+| `lt` | `<` |
+| `le` | `<=` |
+
+Full operator table → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 #### Step 6b — Run configure
 
@@ -303,17 +330,27 @@ Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (
 >
 > | `requestFields[].name` | `dataType` | Authoring shape in `inputs.detail` |
 > |---|---|---|
-> | `fields.labels[*]` | `string` | `"fields.labels": ["shield", "p0"]` |
-> | `fields.components_arrayRemap_name[*]` | `string` | `"fields.components_arrayRemap_name": ["IS Runtime"]` |
+> | `fields.labels[*]` | `string` | `"fields.labels": "=js:(['shield', 'p0'])"` |
+> | `fields.components_arrayRemap_name[*]` | `string` | `"fields.components_arrayRemap_name": "=js:(['IS Runtime'])"` |
+> | `users[*]` | `string` | `"users": "=js:(['U123ABC', 'U456DEF'])"` |
 >
-> **Strip `[*]` from the key; pass an array value in `--detail`.** The canvas UI is the source of truth — it omits `[*]` from the wire key on write, and the CLI follows the same convention when it builds `inputs.detail`. The runtime rejects any key containing the literal `[*]` substring as unknown (regardless of value shape), so pass the stripped form in your `node configure --detail` payload. **Distinct from `customFieldsRequestDetails.parameterValues`**, where `[*]` is encoded as `_array` — see Step 6c.
+> **Strip `[*]` from the key; pass a `=js:` expression returning the array.**  The runtime rejects any key containing the literal `[*]` substring as unknown (regardless of value shape), so pass the stripped form in your `node configure --detail` payload. **A literal JSON array (`"users": ["U123ABC", "U456DEF"]`) passes `node configure` and `flow validate` but does not bind — the field round-trips empty.** **Distinct from `customFieldsRequestDetails.parameterValues`**, where `[*]` is encoded as `_array` — see Step 6c.
 >
 > **Expression values.** The serializer is purely structural (dot-expansion only; no expression evaluation, no type coercion). Choose the authoring shape based on what the expression returns at runtime:
 >
 > | Expression resolves to | Authoring shape | Example |
 > |---|---|---|
 > | The whole array | `"<field>": "=<expr>"` | `"fields.labels": "=js:$vars.allTags"` |
-> | A single element to wrap | `"<field>": ["=<expr>"]` | `"fields.labels": ["=js:$vars.priorityTag"]` |
+> | A single element to wrap | `"<field>": "=js:([<expr>])"` | `"fields.labels": "=js:([$vars.priorityTag])"` |
+
+> **Connector output shape — derive it from `connectorMethodInfo`, never from vendor-API intuition.**
+>
+> | `connectorMethodInfo.operation` | `output` at runtime | Loop / binding shape |
+> |---|---|---|
+> | `list` | bare **array**; `outputResponseDefinition.fields` describes one element | `"collection": "=js:$vars.<node>.output"` |
+> | anything else (`retrieve`, `create`, `update`, …) | single **object** matching those fields | `=js:$vars.<node>.output.<field>` |
+>
+> Ignore `outputDefinition.output.type` — it says `"object"` even for `list` operations, where the actual output type is an array.
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
@@ -569,9 +606,9 @@ For every unique connection used in the flow, `node configure` appends **two ent
 | `default` | Connection binding → connection UUID. Folder binding → folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
-The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and appends the two top-level `bindings[]` entries. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
+The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and writes the two top-level `bindings[]` entries — claiming the empty `ConnectionId` stub that `node add` hoisted (matched by name) and adding the `FolderKey` row. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
 
-> **CLI side-effect — duplicate empty bindings.** `node configure` currently appends placeholder entries with `resourceKey: ""` and no `default` alongside the resolved pair (4 entries per configure call instead of 2). Validate passes; they're harmless but verbose. Remove the empty pair via `Edit` after configure if you care about clean diffs.
+> **An empty-keyed Connection binding is a defect, not a cosmetic nit.** A `bindings[]` row with `resource: "Connection"`, `propertyAttribute: "ConnectionId"`, and `resourceKey: ""` faults Studio Web at runtime with `Value cannot be null. (Parameter 'Connection')`. `node add` hoists exactly one such stub (`name: "<connector-key> connection"`); `node configure` **claims it in place** (matching by that name), so a fully configured connector leaves no empty row — do not expect a "duplicate" empty pair, and never hand-edit `bindings[]` to remove one (it is CLI-owned). The only legitimate empty stub is the No-Live-Tenant / Planned Configuration case above, where the node is deliberately left unconfigured and the flow is known not to pass `flow validate` yet. An empty stub that survives a real `node configure` — or lingers after a connector node is removed — is a CLI bug to report, not something to paper over by hand.
 
 **Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two binding entries — do not add duplicates. Matching is by `name` only (the `<CONNECTOR_KEY> connection` placeholder is unique per connector), so any node whose definition resolves against `<bindings.<CONNECTOR_KEY> connection>` picks up the shared binding pair.
 
@@ -677,17 +714,22 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Reference field has display name instead of ID | `uip is resources run list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
 | Node faults at runtime with "resource not found" or similar after a clean build and validate | Reference field uses an ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a Slack channel ID from workspace A pasted into a node bound to workspace B's connection) | Re-run `uip is resources run list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `bodyParameters` / `queryParameters` in `--detail`, re-run `node configure`, re-debug. See Step 4 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
 | Required field missing at runtime | Required input field not provided | Check metadataFile for all `required: true` fields in both `requestFields` and `parameters` |
+| `is resources describe ... -f` fails `No api-type ObjectAction matched for fields [...]` though the action exists in `registry get` | Wrong `--operation` — it scopes the lookup by the IS method label, and the value mapped to the wrong key. Both `connectorMethodInfo.operation` (Data Service query `List`→`GET`, action under `POST`) and `connectorMethodInfo.method` (Jira normalized `GET`, action under `GETBYID`) mislead. | Pass the node definition's `model.context[].method` value verbatim (the IS label): Jira get-by-id → `--operation GETBYID`; Data Service query → `--operation POST`. See Step 3. |
 | `$vars` expression unresolvable | Node outputs block missing or node not connected | Verify the node has edges and upstream outputs are correctly referenced |
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |
 | `bindings_v2.json` malformed or stale | It was hand-edited (the CLI overwrites edits on next debug/pack), or top-level `bindings[]` was mutated by hand | Never edit `bindings_v2.json` directly. Re-run `uip maestro flow node configure` on the affected connector node(s) so the CLI re-emits top-level `bindings[]`; `bindings_v2.json` is regenerated from those at the next debug/pack. Compare the emitted shape against the CLI-emitted reference in § Top-level `bindings[]` shape. |
 | Connector key not found | Wrong key name | Run `uip is connectors list --output json` — keys are often prefixed with `uipath-` |
 | FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
 | `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
-| Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` validates the expression; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |
+| Data Service query returns every record (or faults with malformed CEQL ending in `AND`) though a filter tree was configured; `node configure` reported Success | A filter-tree leaf's field id did not match the entity schema (matching is case-sensitive). The compiler drops unmatched leaves without an error — one bad leaf empties the query string, a bad leaf beside a good one leaves a dangling `AND`. | Compare the tree's field ids against the entity schema — `uip df entities list --output json` for the entity `Id`, then `uip df entities get <entity-id> --output json` for the field names. Re-run `node configure` with the exact ids. See Step 6a. |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` builds the expression for you; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Unsupported value expression 'Column' on field '<field>'"` — `flow validate` passed | Hand-authored CEQL double-quotes the **value**, typically from a concatenation with escaped quotes: `` =js:"accountNumber = \"" + String(v) + "\"" ``. CEQL reads a double-quoted token as a column reference, not a string literal. | Single-quote the value inside the concatenation: `` =js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'" ``. Or author via `--detail.filter`. See [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
+| Node faults `[102003] Integration Services bad request` and the filter uses `eq`, `ne`, `gt`, `ge`, `lt`, or `le` | OData aliases in a hand-authored CEQL string. CEQL accepts only symbol operators. | Replace with `=`, `!=`, `>`, `>=`, `<`, `<=`. See the alias table in [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
 | `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
-| Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key in your `--detail` payload, pass an array value matching the field's `dataType`, and re-run `node configure`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
+| Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key in your `--detail` payload, pass a `=js:` expression returning the array, and re-run `node configure`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
+| Array field round-trips empty after a clean `flow validate` | Literal JSON array authored for a `[*]` field — validates but does not bind | Author as `=js:` expression returning the array: `"users": "=js:(['U123ABC', 'U456DEF'])"`. See the array-fields table in Step 6b. |
 
 ### Debug Tips
 

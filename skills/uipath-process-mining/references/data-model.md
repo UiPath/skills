@@ -9,8 +9,8 @@ to `Cases` is treated as disconnected and rejected at query time
 
 | Model | Endpoint | Shape | Role |
 |-------|----------|-------|------|
-| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`add-table` edits this.** `apps model get` reads it. |
-| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` reads. **Derived** from the data model by `applyCurrentDatamodel` — do not hand-edit for add-table. |
+| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`apps data-model add-table` edits this; `apps data-model get` reads it.** |
+| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` (and `apps model get`) reads; edited by `apps model fields …` ([`model-editing.md`](model-editing.md)). `applyCurrentDatamodel` **reconciles** structural changes into it, preserving your semantic edits (calculated fields, metrics, data-kind overrides) — so add-table won't wipe them; just don't hand-author its per-column fields, edit the structural model. |
 
 Edit the structural data model; `applyCurrentDatamodel` regenerates the semantic
 model (its per-column fields) from it. `add-table` does both.
@@ -84,6 +84,13 @@ The table isn't one-row-per-case, but must still reach `Cases`. Give it a **surr
 PK** and a **nullable `Case_ID`** carrying the FK — a null FK is enough to satisfy the
 case-centric graph; aggregate queries don't need it to resolve to real cases.
 
+**Caveat — a null `Case_ID` makes the table analytically disconnected.** Case-level
+filters/selections (how PM dashboards normally scope data) won't propagate to it, and
+it can't be joined back to real cases. Use the null-FK loose link **only** for a
+genuinely case-independent aggregate (a weekly total, a cross-case study). If its rows
+*do* correspond to real cases, populate `Case_ID` with the real key so case filtering
+flows through.
+
 1. Author the dbt model. First two selected columns:
 
    ```sql
@@ -98,7 +105,7 @@ case-centric graph; aggregate queries don't need it to resolve to real cases.
    ```bash
    uip pm transformations create <app> models/Workload_weekly.sql --file ./Workload_weekly.sql
    uip pm transformations apply <app> --wait
-   uip pm apps model add-table <app> --file ./Workload_weekly.table.json      # edits /dev/dataModel + applyCurrentDatamodel
+   uip pm apps data-model add-table <app> --file ./Workload_weekly.table.json  # edits /dev/dataModel + applyCurrentDatamodel
    uip pm ingestions create <app> --wait                                       # REQUIRED — materializes the table
    uip pm query run <app> --group-by Service_Component --metric Closed_Interactions:sum --output table
    ```
@@ -107,7 +114,12 @@ case-centric graph; aggregate queries don't need it to resolve to real cases.
 
 `add-table` GETs `/dev/dataModel` (with its ETag), **upserts** the table by name
 (replace if present, else append), PUTs it back `If-Match`-guarded, then POSTs
-`applyCurrentDatamodel`. A concurrent edit surfaces as `412`. It returns
+`applyCurrentDatamodel`. Because it merges into exactly the document it just read,
+that ETag is a genuine compare-and-swap — so **`add-table` takes no `--etag`**, unlike
+`data-mapping update` / `model update` / `transformations update`, which replace a file
+you edited locally and therefore require it. A concurrent edit surfaces as `412`; **just
+re-run** — `add-table` re-reads and re-applies on top of the other write. (A data model
+returned without an ETag fails the command rather than writing unguarded.) It returns
 `IngestionNeeded: true` — the entity is not queryable until the re-ingest completes.
 
 ## Publish vs re-ingest

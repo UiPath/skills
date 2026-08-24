@@ -2,10 +2,10 @@ name: Publish skills package
 
 # Publishing channels (registry follows channel — see docs/RELEASE.md):
 #   - push to `main`                       -> `dev`     : GitHub Packages
-#         Auto on every merge. Version `<base>-dev.<run_number>` (never
+#         Auto on every push (normally a merge). Version `<base>-dev.<run_number>` (never
 #         committed). No provenance — GitHub Packages does not support it.
 #   - push to `release/v*`                 -> `preview` : npmjs (pre-release)
-#         Auto on every merge to a release line, mirroring UiPath/cli. Version
+#         Auto on every push to a release line, mirroring UiPath/cli. Version
 #         `<base>-preview.<run_number>` (never committed), signed with
 #         `--provenance` via OIDC trusted publishing.
 #   - workflow_dispatch (channel: latest)  -> `latest`  : npmjs (stable)
@@ -39,11 +39,13 @@ on:
           - dev
           - latest
 
-# Serialize publishes so rapid merges don't race on a shared dist-tag: each
-# run stamps a unique version, the group just orders the tag moves. Never
-# cancel an in-flight publish.
+# Serialize publishes by effective channel so equivalent automatic and manual
+# runs cannot race on the same dist-tag. A main push and manual dev dispatch
+# share `publish-dev`; a release push and manual preview dispatch share
+# `publish-preview`; manual latest uses `publish-latest`. Never cancel an
+# in-flight publish.
 concurrency:
-  group: publish-${{ github.event_name }}
+  group: publish-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || (github.ref == 'refs/heads/main' && 'dev' || 'preview') }}
   cancel-in-progress: false
 
 permissions:
@@ -52,10 +54,10 @@ permissions:
 jobs:
   guard:
     name: Validate version sync
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
       # Fails if version-manifest.json has drifted from package.json.
@@ -64,20 +66,20 @@ jobs:
   publish-dev:
     name: Publish dev to GitHub Packages
     needs: [guard]
-    # Auto on every merge to main; also re-runnable via dispatch (channel=dev).
+    # Auto on every push to main; also re-runnable via dispatch (channel=dev).
     # release/v* pushes route to preview on npmjs (publish-npmjs), not here.
     # The repo guard stops forks from attempting to publish on their own main.
     if: >-
       github.repository == 'UiPath/skills'
       && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
           registry-url: "https://npm.pkg.github.com"
@@ -116,7 +118,7 @@ jobs:
       && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
           || (github.event_name == 'workflow_dispatch'
               && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       contents: read
       # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
@@ -125,15 +127,23 @@ jobs:
       # pushes publish through the same OIDC exchange as tags on main.
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
 
       # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
+      #
+      # Pinned to a major, NOT `npm@latest`. This job is the only one that
+      # upgrades npm, so it is the only one exposed to a new npm major the
+      # moment it ships -- with no repo change to point at. npm 12 renamed the
+      # `npm pack --json` payload from an array to an object keyed by package
+      # name, which broke the nested pack inside our `prepack` hook and stalled
+      # npmjs at 1.199.0 for two release lines. Minor/patch upgrades still flow;
+      # moving majors is now a deliberate edit.
       - name: Upgrade npm for trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@12
           echo "npm $(npm --version) / node $(node --version)"
 
       # `preview` when: dispatch channel=preview, OR an auto push to a
@@ -171,3 +181,33 @@ jobs:
         run: |
           npm config set @uipath:registry https://registry.npmjs.org/
           npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+
+  publish-studioweb-dev:
+    name: Publish Studio Web dev to GitHub Packages
+    needs: [guard]
+    if: >-
+      github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-skill-flavor.yml
+    with:
+      flavor: studioweb
+      channel: dev
+
+  publish-studioweb-preview:
+    name: Publish Studio Web preview to GitHub Packages
+    needs: [guard]
+    if: >-
+      github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'preview'))
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-skill-flavor.yml
+    with:
+      flavor: studioweb
+      channel: preview

@@ -1,0 +1,162 @@
+task_id: skill-case-connection-emission-parity
+description: >
+  Regression guard: a case that calls an Integration Service connector must
+  declare that connector as a *solution* resource, not only resolve it inside
+  caseplan.json. The declaration is a chain of projections — caseplan
+  `bindings[]` -> `bindings_v2.json` `resources[]` -> emitted
+  `resources/*/connection/<connectorKey>/*.json` — and each link is regenerated
+  by a separate command. When a link is skipped the case still packs and
+  publishes with zero connector declarations, and nothing reports it:
+  `resources refresh` returns Success with `Warnings: []` and "Synced 0
+  resources" when the sidecar is empty, `validate` returns Valid, and pack and
+  publish both succeed. Observed on a real build that published to a tenant feed
+  and failed at consumption with `uipath-microsoft-outlook365 is not found`.
+  Distinct from connector_activity, which asserts the caseplan *node* resolved;
+  this asserts the solution-level *declaration* was emitted. Requires cloud auth
+  and a healthy Integration Service connection for the named connector.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connections]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 2100
+  max_turns: 150
+  turn_timeout: 2100
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ConnectionParityCase"
+  containing a project also named "ConnectionParityCase" from the sdd.md below.
+  Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ConnectionParityCase
+
+  Single-stage, single-task case whose only task calls an IS connector.
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+
+  | Property | Value |
+  |----------|-------|
+  | Case Name | ConnectionParityCase |
+  | Case Description | Single-node case that posts a Slack message via a connector activity. |
+  | Case Identifier | Type: constant. Prefix: CPC |
+  | Case-Level SLA | — |
+  | SLA Type | — |
+
+  ### Case Triggers
+
+  | T# | Trigger Type | Source | Configuration |
+  |----|-------------|--------|---------------|
+  | T01 | Manual | User-initiated start of the case | N/A |
+
+  ### Case Exit Conditions
+
+  | WHEN | IF | THEN | Marks Case Complete | Display Name |
+  |------|-----|------|---------------------|--------------|
+  | required-stages-completed | — | Case exited | Yes | Complete Rule 1 |
+
+  ### Case Variables
+
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |------|----------|------|----------------|--------------|---------|-------------|
+
+  ---
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Notify
+
+  **Type:** Stage
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+
+  | WHEN | IF | Interrupting | Display Name |
+  |------|-----|-------------|--------------|
+  | case-entered | — | No | Entry Rule 1 |
+
+  #### Stage Exit Conditions
+
+  | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+  |------|-----|-----------|---------------------|--------------|
+  | required-tasks-completed | — | exit-only | Yes | Complete Rule 1 |
+
+  #### Tasks
+
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Post Slack message | execute-connector-activity | Yes | No | system | — |
+
+  ---
+
+  ##### Task 1.1: Post Slack message
+
+  **Type:** execute-connector-activity
+  **Description:** Post a message to a Slack channel via the Slack connector.
+
+  **Entry Condition:**
+
+  | WHEN | IF | Display Name |
+  |------|-----|--------------|
+  | current-stage-entered | — | Entry Rule 1 |
+
+  ###### Connector Task Detail (type: `execute-connector-activity`)
+
+  **Connector:** Slack
+  **Connector Key:** uipath-salesforce-slack
+  **Activity:** Send Message to a Channel
+  **Type ID:** 37a305b2-89b1-315d-b73f-1778839a6c47
+  **Connection ID:** e03f734e-0f80-4e8a-a7c1-0ece309b0ca4
+  **Inputs:** channel: "#general", text: "Case started"
+  ```
+
+  Resolve the connector activity against the Integration Service registry and a
+  live Slack connection on the tenant. Leave the solution in a state that is
+  ready to publish — every resource the case depends on must be declared at the
+  solution level, not only inside caseplan.json.
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug` and
+  do NOT pack or publish (a connector activity executes for real). Do NOT ask
+  for approval, confirmation, or feedback. Build end-to-end in a single pass.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ConnectionParityCase/ConnectionParityCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Connection-emission parity: the connector the case calls is declared as a
+      solution resource (caseplan bindings == bindings_v2 == emitted
+      resources/*/connection/). This is the assertion the real incident failed.
+    command: "python3 $SKILLS_REPO_PATH/scripts/check_connection_parity.py ConnectionParityCase"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold 0): records whether the agent ran the sync step.
+  # The graded assertion is the outcome above, not the command — an agent that
+  # reaches parity another way must not be docked.
+  - type: command_executed
+    description: "Agent ran `uip solution resources refresh` to emit solution resources"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+solution\s+resources\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

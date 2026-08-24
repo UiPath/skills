@@ -1,8 +1,6 @@
----
-direct-json: supported
----
-
 # stages — JSON Implementation
+
+> **Node `type` value: `case-management:Stage`** — use this exact string for both primary and secondary stages. Never write `uipath.case.stage`, `uipath.stage`, or any other variant.
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
@@ -97,3 +95,4 @@ After writing, confirm:
 
 Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 
+<!-- END: impl-json.md -->

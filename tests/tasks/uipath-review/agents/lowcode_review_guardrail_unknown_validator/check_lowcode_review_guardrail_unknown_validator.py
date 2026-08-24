@@ -47,6 +47,11 @@ UNKNOWN_PHRASES = (
     "no such validator",
     "made-up validator",
     "made up validator",
+    "unsupported validator",
+    "unsupported built-in validator",
+    "unsupported built-in guardrail validator",
+    "not a supported validator",
+    "cannot be relied on",
 )
 MIN_REPORT_BYTES = 500
 

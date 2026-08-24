@@ -37,28 +37,27 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains inline HITL node"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow references the HITL output variable"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - "$vars."
-      - ".output"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval '$vars.' '.output'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow has a boolean output field for approved"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"boolean"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval '\"boolean\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

@@ -17,7 +17,8 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ```
 .
 ├── .claude/                   # Claude Code project-level configuration
-│   └── commands/              # Project-only slash commands (e.g., /test-coverage)
+│   ├── commands/              # Project-only slash commands (e.g., /test-coverage)
+│   └── skills/                # Contributor-only repository workflows
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
@@ -42,6 +43,9 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │       ├── SKILL.md           # Skill definition (required)
 │       ├── references/        # Supporting reference documents (optional)
 │       └── assets/            # Templates, examples, static files (optional)
+├── skill-flavors/             # Sparse build-time exceptions for custom hosts
+│   └── <flavor>/
+│       └── uipath-<name>/     # Sparse overrides mirroring skills/uipath-<name>/
 ├── tests/                     # Skill evaluation tests (coder_eval)
 │   ├── experiments/           # Experiment configs (smoke, integration, e2e)
 │   ├── tasks/                 # Test tasks organized by skill
@@ -57,9 +61,10 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ### Key Principles
 
 - **Skills are self-contained.** Each skill is an independent folder under `skills/`. Skills cannot reference or depend on other skills.
-- **SKILL.md is the entry point.** The AI agent reads `SKILL.md` first. Everything the agent needs to know must be reachable from there.
+- **SKILL.md is the complete default entry point.** Standard integrations read it directly, and reviewers can understand the default/local behavior without a build manifest.
+- **Custom flavors contain exceptions, not skill copies.** Mark only the canonical passages that actually differ, then provide sparse replacement blocks under `skill-flavors/<flavor>/`.
 - **References are supplementary.** Large reference material goes in `references/` subdirectories, linked from SKILL.md.
-- **No build system.** This is a documentation and skill-definitions repository. There is no compilation, bundling, or package publishing from this repo.
+- **Files are built before packages.** Build and validate complete default/custom skill trees first. Package staging consumes those finished trees; hosts do not resolve variants at runtime.
 
 ### Multi-Tool Compatibility
 
@@ -75,7 +80,11 @@ Tool wiring lives outside `skills/`:
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
-When adding a skill, only touch files under `skills/uipath-<name>/` — the root integration files already wire every tool up automatically.
+When adding a skill, put its canonical files under `skills/uipath-<name>/`.
+Every custom flavor includes that canonical skill automatically. Review the
+complete skill for each flavor and add the smallest sparse override wherever
+canonical guidance is not safe for that environment. No flavor manifest or
+inclusion list is required.
 
 ## Adding a New Skill
 
@@ -228,6 +237,82 @@ Reference files go in `references/` and follow these conventions:
 - **Organize by subdomain** when a skill covers multiple areas (e.g., `references/integration-service/`, `references/lifecycle/`)
 - **Link from SKILL.md** so the agent can discover them
 
+### 6a. Add a Custom Flavor Exception (Only When Needed)
+
+Before editing flavor sources or build/package logic, read
+`.claude/skills/manage-skill-flavors/SKILL.md` completely. It is the
+repository-local contributor workflow for this contract.
+
+Use a flavor exception only when a host's capabilities materially change an
+instruction. Keep the complete default behavior in the canonical file and
+wrap the smallest differing passage with a named block:
+
+```markdown
+<!--skill-flavor:project-creation:start-->
+Create the project with the default/local workflow.
+<!--skill-flavor:project-creation:end-->
+```
+
+Create a file at the matching path under
+`skill-flavors/<flavor>/<skill>/` and put only the replacement block in it:
+
+```markdown
+<!--skill-flavor:project-creation:start-->
+Create the project with the host capability exposed in this environment.
+<!--skill-flavor:project-creation:end-->
+```
+
+- Use lowercase kebab-case block names and keep each name unique within its file.
+- Use compact `<!--skill-flavor:<name>:start|end-->` boundaries with no internal, leading, or trailing whitespace; keep Markdown indentation on the content inside the block.
+- Keep shared content outside blocks; do not create a second full `SKILL.md`.
+- For a host-only addition to a shared table, list, or navigation section, keep the shared content unmarked and add an empty canonical `<name>-extra` block for the flavor to fill. If one existing item differs, mark only that item.
+- An override must contain complete marked blocks and no unmarked prose.
+- Mirror the canonical relative path, including nested `references/` paths.
+- Every flavor contains every canonical skill. If no override exists for a file, its canonical content is intentionally reused unchanged.
+- A new flavor directory must contain at least one real sparse override. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
+- Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
+
+Validate the source contract, then build the final Markdown trees:
+
+```bash
+npm run skills:validate
+npm run skills:build
+npm run skills:pack
+```
+
+The build writes complete, marker-free trees to `build/skills/default/` and
+`build/skills/<flavor>/`. Packaging consumes those trees, stages
+`build/packages/default/` plus `build/packages/<flavor>/`, and creates real
+tarballs under `build/npm/`; it must not read sparse override sources directly.
+The package convention is `default` → `@uipath/skills` and `<flavor>` →
+`@uipath/skills-<flavor>`. Adding a valid flavor directory with sparse
+overrides automatically adds its complete-catalog package—do not add an
+allowlist, registry JSON, flavor-specific npm build script, or generic
+validation-CI branch. Registry publication remains an explicit, isolated
+decision per published flavor.
+
+The existing root `npm pack` and `npm publish` commands remain default-only
+entry points. Their npm lifecycle temporarily composes the marker-free default
+tree and restores canonical `skills/` afterward. The default release jobs keep
+using those root commands. `npm run skills:pack` is the separate all-flavor
+build and verification command used by CI and isolated flavor publishers; a
+publisher must select one exact package by manifest rather than publish a
+tarball wildcard. Adding a flavor makes it buildable but does not publish it
+automatically. For a flavor that intentionally uses GitHub Packages `dev` or
+`preview`, add an explicit `publish.yml` caller of
+`.github/workflows/publish-skill-flavor.yml` with that flavor and channel; do
+not hardcode a flavor inside the reusable workflow or matrix-publish every
+discovered flavor. Generated custom manifests pin both the default and
+`@uipath` scoped registry to GitHub Packages and omit the
+`package.json.repository` field, but package
+visibility is an independent administrator setting. Complete the Internal
+package bootstrap and publication-gate steps in `docs/RELEASE.md` before
+enabling a new caller. If a root package operation fails or is interrupted and
+`build/.root-pack-transaction` remains, confirm its npm process has ended and
+run `npm run skills:recover`. Unexpected overlay edits are preserved under
+`build/.root-pack-recovery-*` for review. Do not use `--ignore-scripts` for
+source-repository packaging because that bypasses composition.
+
 ### 7. Add Templates/Assets (Optional)
 
 Static files like code templates go in `assets/`:
@@ -356,6 +441,21 @@ Before submitting your PR, verify:
 - [ ] Templates use `-template` suffix
 - [ ] No duplicate content already covered in another skill's references
 
+### Skill flavors
+
+- [ ] The canonical `SKILL.md` is still complete and useful as the default/local skill
+- [ ] Only genuinely different passages are enclosed in flavor blocks
+- [ ] Every marker boundary uses the compact whitespace-free form at column 1, with any required indentation kept on its enclosed Markdown
+- [ ] Host-only additions use an additive empty canonical block instead of copying a shared table, list, or navigation section
+- [ ] Custom override files contain matching complete blocks and no unmarked content
+- [ ] Every canonical skill has been reviewed for every custom flavor; add sparse overrides wherever canonical guidance is unsafe
+- [ ] Complete default and custom file trees build and validate before package staging
+- [ ] `npm run skills:pack` creates one correctly named tarball per discovered flavor
+- [ ] Root `npm pack` creates one marker-free `@uipath/skills` default tarball and leaves canonical sources unchanged
+- [ ] Root `npm publish --dry-run` selects only the default package and leaves canonical sources unchanged
+- [ ] Custom tarballs pin both default and scoped publication to GitHub Packages and omit `package.json.repository`
+- [ ] Built trees, staged packages, and actual tarballs contain no flavor marker comments or sparse override sources
+
 ### Tests
 - [ ] At least 1 smoke test in `tests/tasks/<skill-name>/`
 - [ ] At least 1 e2e test in `tests/tasks/<skill-name>/`
@@ -417,8 +517,10 @@ Before submitting your PR, verify:
 | Item | Convention | Example |
 |------|-----------|---------|
 | Skill folder | `uipath-<kebab-case>` | `uipath-rpa` |
-| SKILL.md | Exactly `SKILL.md` (uppercase) | `SKILL.md` |
+| Default entrypoint | Exactly `SKILL.md` (uppercase) | `SKILL.md` |
 | Reference files | `kebab-case.md` | `commands-reference.md` |
+| Flavor override | `skill-flavors/<flavor>/<skill>/<canonical-path>` | `skill-flavors/studioweb/uipath-api-workflow/SKILL.md` |
+| Flavor block | Lowercase kebab-case name | `skill-flavor:project-creation:start` |
 | Guide files | `<topic>-guide.md` | `orchestrator-guide.md` |
 | Template files | `<name>-template.md` | `codedworkflow-template.md` |
 | Reference subdirs | `kebab-case/` | `integration-service/` |

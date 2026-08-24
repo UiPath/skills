@@ -51,7 +51,7 @@ REQUIRED_TASK_TYPES = {
 # The automated runnable variant deliberately omits these (no HITL / no live connectors).
 FORBIDDEN_TASK_TYPES = {"action", "execute-connector-activity", "wait-for-connector"}
 REQUIRED_EXTERNAL_BINDINGS = {
-    "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow": "API Workflow",
+    "Shared/uipath-agents/WeatherAPI.WeatherAPI": "WeatherAPI",
     "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters": "CountLetters",
     "Shared/uipath-agents/ProcurementProcess.ProcurementProcess": "ProcurementProcess",
     "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow": "RPA Workflow",
@@ -154,7 +154,7 @@ def main():
     triggers = find_triggers(plan)
     if len(triggers) != 1:
         _fail(f"expected exactly 1 trigger; got {len(triggers)}")
-    stype = ((triggers[0].get("data") or {}).get("uipath") or {}).get("serviceType")
+    stype = ((triggers[0].get("data") or {}).get("inputs") or {}).get("serviceType")
     if stype not in (None, "", "None"):
         _fail(f"runnable variant must start from a Manual trigger (serviceType None), not {stype}")
 

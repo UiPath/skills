@@ -8,12 +8,13 @@ description: >
   names none) while one that knows the distinction answers from the skill.
 
   `model_options.md` is not a self-report — it carries ground truth the agent must
-  retrieve, not a claim about work performed. The guard reads the mock's calls.log
+  retrieve, not a claim about work performed. The guard reads the invocation log
   rather than Bash text because a correct answer quotes `configure-model --model
   <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
-  A correct run makes no `uip` call, so no guaranteed log line exists for the
-  positive control the mock README requires — hence its documented fallback, a
-  harness-integrity assertion on the log sink.
+  No `uip` call is guaranteed in a correct run, so the guard carries no positive
+  control and asserts none. It forbids the trap verb only, never every invocation —
+  correct runs DO call other verbs while orienting. A re-pointed sink cannot read as
+  "never ran": the log is seeded by the harness, and a missing one errors.
 
   Distinct from pick_capable_model / change_model_variant: both mutate a project
   via configure-model; this enumerates the catalog and mutates nothing.
@@ -25,9 +26,11 @@ run_limits:
   expected_turns: 4
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   List available model options for IXP extraction, and write them to
@@ -73,20 +76,14 @@ success_criteria:
     pass_threshold: 1.0
 
   # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
-  # is not. `includes:` only proves the log exists and is readable.
-  - type: file_contains
-    description: "Agent did NOT mistake the catalog for version listing: mock call log has no executed `projects list-models`"
-    path: "mocks/calls.log"
-    includes: ["# seeded by mock_template"]
-    excludes: ["uip ixp projects list-models"]
+  # is not. A `--help` probe would be exemptable (`flags: {help: {absent: true}}`);
+  # left off, since a max_count 0 guard wants the fewest facets and none has been
+  # observed.
+  - type: cli_called
+    description: "Agent did NOT mistake the catalog for version listing: no executed `projects list-models`"
+    verb: "ixp projects list-models"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  # Without this, re-pointing the mock's sink leaves the seeded log clean and the
-  # guard above passes vacuously.
-  - type: file_contains
-    description: "Mock still records invocations to the graded calls.log (guard is not vacuous)"
-    path: "mocks/uip"
-    includes: ['>> "$(dirname "$0")/calls.log"']
-    weight: 1.0
     pass_threshold: 1.0

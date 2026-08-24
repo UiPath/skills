@@ -1,13 +1,12 @@
 task_id: skill-agents-bindings-multi-entrypoint
 description: >
-  Bindings sync over a project with two entrypoints. Per the
-  bindings-reference Step 4, when `entry-points.json` has multiple
-  entrypoints the resolver must either ask which entrypoint each
-  resource binds to (`AskUserQuestion`) or leave the entrypoint
-  field off the binding. The check accepts any consistent outcome —
-  the load-bearing assertion is that no binding ends up with a
-  fabricated `EntryPointUniqueId` that doesn't match either real
-  entrypoint.
+  Bindings sync over a project with two entrypoints. The prompt
+  pre-answers bindings-reference Step 4's disambiguation — the agent
+  is told to pick any declared entrypoint rather than ask — so the
+  run must reach Step 5 and write both bindings. The check accepts
+  either declared entrypoint (or an omitted entrypoint field); the
+  load-bearing assertion is that no binding ends up with a fabricated
+  `EntryPointUniqueId` that doesn't match either real entrypoint.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
 
 run_limits:
@@ -21,6 +20,10 @@ pre_run:
 initial_prompt: |
   I have a uipath coded agent in the current directory. Can you sync its
   `bindings.json` so it reflects the resources the code uses?
+
+  The project has more than one entrypoint. Do not ask me which one to bind
+  each resource to — pick any of the declared entrypoints yourself. Any of
+  them is fine.
 
   Do NOT publish, upload, or deploy. Complete the task end-to-end. Only stop
   if there is a critical blocker you cannot resolve.

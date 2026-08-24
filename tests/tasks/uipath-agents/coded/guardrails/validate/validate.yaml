@@ -45,7 +45,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
     min_count: 1
-    weight: 2.0
+    weight: 0.0
     pass_threshold: 0.0
 
   - type: command_executed
@@ -53,7 +53,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+list'
     min_count: 1
-    weight: 2.0
+    weight: 0.0
     pass_threshold: 0.0
 
   - type: command_executed

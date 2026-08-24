@@ -10,7 +10,7 @@ description: >
   harness runs uip maestro case debug to prove the case executes to
   finalStatus=Completed across the Submission -> Manager Approval -> Finance
   Approval -> Payment -> Approved happy path, binding real deployed resources
-  (NameToAgeFixed2, CountLetters, ProcurementProcess, ProjectEuler, CaseTest).
+  (WeatherAPI, CountLetters, ProcurementProcess, ProjectEuler, CaseTest).
 tags:
   - uipath-maestro-case
   - e2e
@@ -55,13 +55,16 @@ initial_prompt: |
     only `subType` (or be empty). Do not add `bindingsVersion` or
     `solutionsSupport`: those fields make `uip solution resources refresh` fail
     with "Node already added to the graph" in this eval environment.
-  - The SDD resource labels are aliases. In `bindings_v2.json`, use these deployed
-    resource keys and names exactly: `NameToAgeFixed2` → `API Workflow`,
-    `CountLetters` → `CountLetters`, `ProcurementProcess` →
-    `ProcurementProcess`, `ProjectEuler` → `RPA Workflow`, and `CaseTest` →
-    `Maestro Case`. Do not substitute an SDD alias for a deployed name.
+  - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
+    deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
+    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `ProjectEuler` →
+    `RPA Workflow`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
+    alias for a deployed name. The alias on the left is NOT a resource key: keep
+    every `resourceKey` — and the matching `bindings_v2.json` `key` — as the
+    composite `<folderPath>.<deployed name>` (e.g.
+    `Shared/uipath-agents/WeatherAPI.WeatherAPI`).
   - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose the
+    planning approval, Phase 2 publish-for-review, and Phase 6 debug. Choose the
     continue / skip-publish path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Do NOT run `uip maestro case debug` yourself — the harness runs it.

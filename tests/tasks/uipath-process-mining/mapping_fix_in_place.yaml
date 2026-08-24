@@ -11,13 +11,22 @@ description: >
   wrong (the mirror of the transform-only fix loop).
 
   Command-construction only — no live tenant. Commands fail with auth errors;
-  what matters is which commands the agent chooses and in what order.
-tags: [uipath-process-mining, mode:fix, lifecycle:maintain, custom, data-mapping]
+  what matters is which commands the agent chooses and in what order. The
+  original mapping is staged as ./mapping.json so the agent has a real document
+  to edit when the unauthenticated `data-mapping get` cannot return one — without
+  it the agent correctly refuses to push a garbage file and the run stalls after
+  the `get`.
+tags: [uipath-process-mining, integration, mode:diagnose, lifecycle:setup, custom, data-mapping]
 
 run_limits:
   expected_turns: 8
   max_turns: 30
   turn_timeout: 600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/mapping_fix_in_place
 
 initial_prompt: |
   I created a Process Mining app (app id 9c46289e) from ./mapping.json, loaded
@@ -34,6 +43,14 @@ initial_prompt: |
     Commands WILL fail with auth errors — that is expected and acceptable.
     Run each command exactly once regardless of errors.
     Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Because the CLI is unauthenticated, no command returns real data — a read
+    may even write junk over its --destination. When a read gives you nothing
+    usable, do NOT stop and do NOT hand the remaining commands back to me as a
+    plan. Fall back to the mapping I actually used, staged in this workspace as
+    ./mapping.original.json, restore ./mapping.json from it, apply the fix
+    there, and carry on — using the literal placeholder W/"1" wherever a command
+    needs an ETag it could not read. Running the full corrective sequence on
+    ./mapping.json is the point of this exercise.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -59,6 +76,24 @@ success_criteria:
     command_pattern: 'uip\s+pm\s+apps\s+data-mapping\s+update\b.*--file\b'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed the --etag the get returned, now required on data-mapping update"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+data-mapping\s+update\b.*--etag\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent corrected the date format to day-first in the mapping it pushed"
+    path: "mapping.json"
+    includes:
+      - 'dd-mm-yyyy hh:mm:ss'
+    excludes:
+      - 'mm-dd-yyyy hh:mm:ss'
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

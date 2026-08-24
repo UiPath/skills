@@ -16,10 +16,16 @@ Before upload, publish, deploy, or debug:
    and package consistency.
 3. Confirm Integration Service enrichment is complete for executable connector elements.
    If enrichment tooling is unavailable, keep the project as a draft and do not operate it as executable.
-4. Regenerate or refresh package metadata with the supported CLI path.
+4. Regenerate or refresh package metadata:
+
+   ```bash
+   uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
+   uip maestro bpmn update-metadata <file.bpmn>             # regenerate
+   ```
+
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
-   CLI contract says otherwise. Use
-   [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for the local drift
+   CLI contract says otherwise. See
+   [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
    When the BPMN references external Orchestrator processes, `uip solution
    resource refresh` expects a versioned `bindings_v2.json` object with a

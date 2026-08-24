@@ -8,7 +8,7 @@ description: >
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is that the
   agent loads the skill and invokes the right discovery command.
-tags: [uipath-process-mining, smoke, mode:diagnose, discover, app-types]
+tags: [uipath-process-mining, smoke, mode:diagnose, lifecycle:discover, app-types]
 
 run_limits:
   expected_turns: 4

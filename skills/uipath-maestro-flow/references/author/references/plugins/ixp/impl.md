@@ -108,6 +108,8 @@ Confirm:
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `outputs` fields. Author CAPABILITY rule #15 (no top-level `model` block on the instance) and rule #14 (`variables.nodes[]` entry for every data-producing node) both apply. One IxP-specific difference: general action-node guidance treats the instance `outputs` block as optional, but on `uipath.ixp.*` it is required — see [Authoring rule #4](#authoring-rules).
 
+If you can't fully configure the node this turn (greenfield exploration, upstream not wired, planning-only, unconfirmed model), you must STILL land it rather than drop the extraction step — see [Landing the node when you cannot fully configure it](#landing-the-node-when-you-cannot-fully-configure-it).
+
 ## JSON Structure
 
 The IxP node instance carries `inputs` and `outputs` — and **no top-level `model` block**. The slim manifest `model` (`{ type, serviceType }`) lives only in `definitions[]`; the runtime `model.context` / `model.version` / `model.inputs` / `model.outputs` envelope is injected by the BPMN serializer at compile time.
@@ -203,7 +205,7 @@ sufficient. There is no version of this node where omitting `outputs` is correct
 1. **`inputs.model` MUST be present and MUST be copied from `Data.Node.inputDefaults.model`.** Copy the blob verbatim — do not abbreviate, do not omit fields, do not invent fields that aren't there. The current deployment-node blob is `{ id, modelName, modelDisplayName, folderKey, folderName, folderPath, description }`; source every field from the actual `registry get` response, not from memory (older docs showed `fullyQualifiedName` / `kind` / `type` / `detailsUrl` / `async*` fields — these are NOT present on deployment nodes; do not add them). The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` custom component, which destructures `modelName` and `folderKey` out of it. If `inputs.model` is undefined, clicking the node in Studio Web crashes the property panel with `Cannot destructure property 'modelName' of 't' as it is undefined` — and `flow validate` fails on it too (`ixp-node`: `inputs.model must be an object with non-empty string modelName and folderKey`).
    - **`inputs.model.modelName` MUST be a non-empty string.** For many published/OOB deployments `inputDefaults.model.modelName` comes back `null`, with the name carried in `inputDefaults.model.modelDisplayName` instead. When `modelName` is `null`/empty, set `inputs.model.modelName` to `modelDisplayName`. This is NOT synthesis — `modelDisplayName` is the model's own name from the same blob (and matches the flat `inputDefaults.modelName`). The `ixp-node` validator rejects a `null`/empty `inputs.model.modelName` (`flow validate` fails), and Studio Web crashes on it.
 2. **Flat mirrors stay alongside `inputs.model`.** `modelName`, `projectName`, `folderKey`, `folderName` are surfaced as disabled text fields in the `ixp-model` form section and are read directly from `inputs.*`, not from `inputs.model.*`.
-3. **`fileRef` is the only schema-required input** (`inputDefinition.required: ["fileRef"]`). Use `=js:$vars.<upstream>.output.<field>` per Critical Rule #13.
+3. **`fileRef` is the only schema-required input** (`inputDefinition.required: ["fileRef"]`). Use `=js:$vars.<upstream>.output.<field>` per Critical Rule #13. The upstream `<field>` variable MUST be declared `type: "file"` — `type: "object"` breaks attachment binding and faults extraction even when the `fileRef` expression itself is correct. See [Wiring `fileRef`](#wiring-fileref--file-variable-bound-to-the-trigger).
 4. **`outputs.output` AND `outputs.error` MUST both be present** — copy the fixed four-field literals from [Final shape](#final-shape); they are identical for every IxP node and need no `registry get` lookup. **`flow validate` hard-fails on the omission** — `ixp-node` emits `[nodes[<nodeId>].outputs.output] outputs.output must be present on the instance`, and the matching error for `outputs.error`.
 5. **No top-level `model` on the instance.** Studio Web–authored .flow files never carry one; the BPMN-format `model` envelope (with `context`, `version`, `inputs`, `outputs`) is emitted at serialize time only.
 6. **`inputs` MUST NOT contain `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, or `mimeType`.** These five fields were on a prior schema and have been removed from the standalone IxP node. Including them is the most common training-data-recall mistake. The serializer defaults `digitizationMode` to `fileUpload` internally — there is no scenario where you should set it on the instance.
@@ -216,6 +218,34 @@ The `definitions[]` entry is copied verbatim from `registry get` (`Data.Node`) �
 ### `inputs.fileRef` vs the emitted `model.inputs[]` body
 
 `inputs.fileRef` is the source of truth. At BPMN serialize time, `packages/services/src/serialization/uipath-extension.ts:handleIxpExtraction` wraps the value into a `model.inputs[]` entry with target `bodyField` and body `{"downloadedFileOutput": <fileRef>}`. Edit `inputs.fileRef` only; never hand-edit the BPMN body.
+
+### Wiring `fileRef` — file variable bound to the trigger
+
+The canonical canvas-produced shape is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, with the IxP node's `fileRef` referencing it through the trigger's output:
+
+```json
+"variables": {
+  "globals": [
+    {
+      "id": "disputedInvoice",
+      "direction": "in",
+      "type": "file",
+      "triggerNodeId": "start"
+    }
+  ]
+}
+```
+
+Then on the IxP node:
+
+```json
+"inputs": {
+  "fileRef": "=js:$vars.start.output.disputedInvoice",
+  ...
+}
+```
+
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment disputedInvoice=./path/to/invoice.pdf`). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ### Optional `attachment` input (Orchestrator job attachments)
 
@@ -271,10 +301,10 @@ Studio Web's variable picker renders `output.ExtractionResult` as opaque and doe
 The `FieldName` values present in `ResultsDocument.Fields[]` depend on the trained IxP model's taxonomy and are NOT exposed through `uip maestro flow registry get` (the registry's `outputDefinition.output.schema` describes the wrapper envelope shape, not the per-model trained fields). Get them from the deployment:
 
 ```bash
-uip ixp deployments get-taxonomy --folder-key <folderKey> "<modelName>" --output json
+uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json
 ```
 
-Both args come from the `registry get` response you already fetched in [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory): `--folder-key` ← `Data.Node.inputDefaults.folderKey`; `<modelName>` (positional) ← `Data.Node.inputDefaults.modelName`. No additional discovery step. Requires `uip login`; the command uses the user Bearer to call the same DU-App route that Studio Web's "Schema definition" panel uses.
+The positional is a project name from `uip ixp projects list`, and `--version` is required — get it from `uip ixp projects list-models "<project-name>"`. `Data.Node.inputDefaults.modelName` is frequently NOT a project name; passing it returns 404 `ProjectNotFoundError`, which is an ordinary outcome, not a problem to debug. Requires `uip login`; the command uses the user Bearer to call the same DU-App route that Studio Web's "Schema definition" panel uses.
 
 Response shape:
 
@@ -305,10 +335,17 @@ Agent call sequence:
 
 1. `uip maestro flow registry search "uipath.ixp" --output json` — list IxP nodes.
 2. `uip maestro flow registry get "<node-type>" --output json` — read `Data.Node.inputDefaults.{folderKey, modelName}` (already done as part of [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)).
-3. `uip ixp deployments get-taxonomy --folder-key <folderKey> "<modelName>" --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
+3. `uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 
-If the command fails (login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
+If the command fails (no matching project, login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. **One attempt** — a 404 or validation error will not resolve by reissuing the lookup under another spelling of the name, so do not iterate on name variants. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
+
+## Landing the node when you cannot fully configure it
+
+**The extraction step must ALWAYS land a node — never drop it because configuration is incomplete.** A greenfield/exploration turn, an unwired upstream, a "you don't need a working flow" instruction, or an unconfirmed model are NOT reasons to skip it. The common failure is landing the steps around extraction while the extraction node itself goes missing. Author it before the trigger and connector nodes — connector configuration branches open-endedly, and this is the node the request is about.
+
+- **Model published** (`registry search "uipath.ixp"` returns entries) → land the real `uipath.ixp.*` node. When you can't finish configuring it this turn, still build the instance from `registry get` (copy `inputs.model` and the fixed `outputs` literal — no user input needed), set `inputs.fileRef` to a placeholder expression, and defer the model choice, `fileRef` source, and taxonomy to **Open Questions**. Do NOT downgrade to `core.logic.mock` — a published model exists, so land the real node.
+- **No model published** (`Data: []`) → land a `core.logic.mock` placeholder per [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet).
 
 ## If the Model Does Not Exist Yet
 
@@ -338,6 +375,7 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | Empty `$vars.{nodeId}.output` | Model's taxonomy doesn't match the document, or extraction silently returned no fields | Inspect the raw API response via `$vars.{nodeId}.error` first; if no error, run the extraction against the same document on the IxP product UI to compare |
 | `fileRef` not resolving | Expression references an upstream variable that isn't wired, or the upstream node didn't produce a file output | Verify the upstream node exports a file reference and that the `=js:$vars.{upstreamId}.output.<field>` expression matches |
 | `[430002] Invalid input on document extraction operation` at debug | `fileRef` bound to the attachment's `.ID` (or another scalar) instead of the attachment object — `flow validate` does not catch this | Bind the whole object: `=js:$vars.<upstream>.output.<attachment>` — drop the `.ID` |
+| `[430002] Invalid input on document extraction operation` at debug, backend detail `'downloadedFileOutput' is missing the required 'ID' field` | The `fileRef` expression is correct, but the source flow input is declared `"type": "object"` instead of `"type": "file"` — the attachment has nowhere to bind, so the variable holds a plain JSON object | Declare the input `type: "file"`. See [Wiring `fileRef`](#wiring-fileref--file-variable-bound-to-the-trigger). |
 | Extraction failed | Underlying IxP model errored (unsupported MIME type, corrupted file, service-side failure) | Check `$vars.{nodeId}.error.detail` for the IxP service response |
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
 | Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob is missing or undefined. The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` component, which destructures `modelName` and `folderKey` out of it. When `inputs.model` is missing, the destructure throws. | Copy `definition.inputDefaults.model` verbatim into the node instance's `inputs.model`. The blob carries `id`, `modelName`, `modelDisplayName`, `folderKey`, `folderName`, `folderPath`, `description`. See [JSON Structure](#json-structure). |

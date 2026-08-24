@@ -1,0 +1,32 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NameToAgeFixed.api.NameToAgeFixed",
+    "kind": "Package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": "NameToAgeFixed.api.NameToAgeFixed.1.0.3.nupkg",
+      "fileReference": "NameToAgeFixed.api.NameToAgeFixed_1.0.3",
+      "name": "NameToAgeFixed.api.NameToAgeFixed"
+    },
+    "locks": [],
+    "key": "NameToAgeFixed.api.NameToAgeFixed:1.0.3",
+    "files": [
+      {
+        "key": "NameToAgeFixed.api.NameToAgeFixed_1.0.3",
+        "name": "NameToAgeFixed.api.NameToAgeFixed.1.0.3.nupkg",
+        "url": "https://alpha.uipath.com/codereval/DefaultTenant/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.DownloadPackage(key='NameToAgeFixed.api.NameToAgeFixed:1.0.3')?feedId=001c61d7-2108-4130-b7ff-198c88ecbf79",
+        "kind": "Package",
+        "version": "1.0.3"
+      }
+    ]
+  }
+}

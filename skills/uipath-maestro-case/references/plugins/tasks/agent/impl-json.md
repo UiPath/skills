@@ -67,3 +67,5 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - the bindings array has 2 entries: `resource: "process"`, `resourceSubType: "Agent"`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`
+
+<!-- END: impl-json.md -->

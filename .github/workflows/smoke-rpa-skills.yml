@@ -14,15 +14,22 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Exempt the first-party `coder-eval` wheel from safe-chain's
+# minimum-package-age suppression so a same-day pin in
+# tests/.coder-eval-version still resolves — see smoke-skills.yml for the full
+# rationale. Workflow-level so any job added later inherits it.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+
 jobs:
   detect:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Detect changed RPA skills
     outputs:
       task_globs: ${{ steps.detect.outputs.task_globs }}
       skip: ${{ steps.detect.outputs.skip }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0
 
@@ -81,7 +88,7 @@ jobs:
   smoke:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
-    runs-on: windows-latest
+    runs-on: uipath-windows-latest
     # RPA smoke tasks spin up Helm on each `uip rpa` call (30–60s each). A
     # typical 3-task smoke run with cold Helm + three tasks runs ~25–40
     # min; bump the ceiling so we don't cancel mid-task.
@@ -93,7 +100,7 @@ jobs:
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
       # Pin coder_eval to tests/.coder-eval-version so RPA smoke runs the same
       # engine as the skills smoke, ad-hoc, and nightly paths. shell: bash
@@ -103,17 +110,17 @@ jobs:
         shell: bash
         run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: '20'
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1
         with:
           dotnet-version: '8.0.x'
 
@@ -258,7 +265,7 @@ jobs:
       # post-mortem artifact even on success (baseline for comparison).
       - name: Upload auth-debug artifacts
         if: always() && steps.auth.outcome != 'skipped'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: auth-debug-${{ github.run_id }}
           path: ${{ github.workspace }}/auth-debug
@@ -271,6 +278,16 @@ jobs:
           mkdir -p /tmp/helm-warmup && cd /tmp/helm-warmup
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
+
+      # Model guard, deliberately its OWN step (mirror of smoke-skills.yml): the smoke
+      # step below carries continue-on-error, so a guard inside it is swallowed and the
+      # failure surfaces only as a downstream "no task.json" error. Fail here instead,
+      # named, before the run starts.
+      - name: Require an agent model
+        shell: bash
+        env:
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
 
       - name: Run RPA smoke tests
         env:
@@ -290,6 +307,11 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The gate's agent model, passed on the command line rather than pinned in
+          # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
+          # fallback: an unset variable fails the guard step above rather than gating a
+          # model nobody configured.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         shell: bash
@@ -329,7 +351,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/smoke-windows.yaml --tags smoke -j 1 -v; then
+                  -e experiments/smoke-windows.yaml --model "$AGENT_MODEL" --tags smoke -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs (not on real
@@ -356,7 +378,7 @@ jobs:
       # crash.
       - name: Upload HTML / JSON eval report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: eval-report-${{ github.run_id }}
           path: |

@@ -34,6 +34,7 @@ agent-builder low-code agent inside a solution:
 """
 
 import json
+import re
 from pathlib import Path
 
 SOLUTION_ID = "11111111-1111-4111-8111-111111111111"
@@ -124,6 +125,98 @@ def _write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
+_TOKEN_RE = re.compile(r"\{\{\s*([^}]+?)\s*\}\}")
+
+
+def content_tokens(content: str) -> list[dict]:
+    """Build the ``contentTokens`` array matching a message ``content`` string.
+
+    `uip agent validate` requires contentTokens to mirror content segment by
+    segment: plain text becomes ``simpleText`` entries and each ``{{expr}}``
+    becomes a ``variable`` entry. Inject scripts that patch a message's
+    ``content`` MUST also set ``contentTokens = content_tokens(content)`` or
+    the fixture fails schema validation before the reviewer ever sees the
+    intended defect signal.
+    """
+    tokens: list[dict] = []
+    pos = 0
+    for m in _TOKEN_RE.finditer(content):
+        if m.start() > pos:
+            tokens.append({"type": "simpleText", "rawString": content[pos : m.start()]})
+        tokens.append({"type": "variable", "rawString": m.group(1)})
+        pos = m.end()
+    if pos < len(content):
+        tokens.append({"type": "simpleText", "rawString": content[pos:]})
+    return tokens
+
+
+def set_message(agent_data: dict, role: str, content: str) -> None:
+    """Set a message's content AND its matching contentTokens in one step."""
+    for msg in agent_data.get("messages", []):
+        if msg.get("role") == role:
+            msg["content"] = content
+            msg["contentTokens"] = content_tokens(content)
+
+
+def connection_binding(connection_id: str, connector_key: str) -> dict:
+    """One bindings_v2 entry for an integration tool's connection.
+
+    Mirrors the packager's generateBindings() output — `uip agent validate`
+    derives the expected entries from the tool resources and fails with
+    "expected binding entry ... is not present on disk" when they're absent.
+    """
+    return {
+        "resource": "connection",
+        "key": connection_id,
+        "value": {
+            "connectionId": {
+                "defaultValue": connection_id,
+                "isExpression": False,
+                "displayName": "Connection ID",
+            }
+        },
+        "metadata": {
+            "connector": connector_key,
+            "useConnectionService": "true",
+            "bindingsVersion": "2.2",
+            "solutionsSupport": "true",
+        },
+    }
+
+
+def process_binding(process_name: str, folder_path: str = "Shared") -> dict:
+    """One bindings_v2 entry for a process tool (see connection_binding)."""
+    return {
+        "resource": "process",
+        "key": process_name,
+        "value": {
+            "name": {
+                "defaultValue": process_name,
+                "isExpression": False,
+                "displayName": "Process name",
+            },
+            "folderPath": {
+                "defaultValue": folder_path,
+                "isExpression": False,
+                "displayName": "Folder path",
+            },
+        },
+        "metadata": {
+            "subType": "process",
+            "bindingsVersion": "2.2",
+            "solutionsSupport": "true",
+        },
+    }
+
+
+def write_bindings(project_dir: Path, entries: list[dict]) -> None:
+    """Write bindings_v2.json (root) + .agent-builder/bindings.json with the
+    given entries, matching what `uip agent refresh` would generate."""
+    data = {"version": "2.0", "resources": entries}
+    _write_json(Path(project_dir) / "bindings_v2.json", data)
+    _write_json(Path(project_dir) / ".agent-builder" / "bindings.json", data)
+
+
 def write_baseline_lowcode_agent(
     solution_root: Path,
     *,
@@ -176,6 +269,9 @@ def write_baseline_lowcode_agent(
         },
     )
     _write_json(project_dir / "flow-layout.json", {"zoom": 1.0})
+    # Root-level bindings_v2.json — real `uip agent init` projects carry it,
+    # and `uip agent validate` requires it as soon as resources/ exists.
+    _write_json(project_dir / "bindings_v2.json", {"version": "2.0", "resources": []})
 
     # --- .agent-builder/ regenerated artifacts (same logical content)
     agent_builder = project_dir / ".agent-builder"

@@ -4,7 +4,7 @@ description: >
   using `selected-tasks-completed` referencing the action TaskId, and routes
   to a downstream stage. Verifies the exit-condition rule type and that the
   TaskId is referenced from the rule.
-tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
   Create a UiPath Case Management project named "PurchaseApprovalCase" with
   this shape:
@@ -156,11 +156,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Caseplan contains an action task"
     path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
-    includes:
-      - '"type": "action"'
+    assertions:
+      - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
+        operator: gt
+        expected: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -187,10 +189,6 @@ success_criteria:
       - "selected-tasks-completed"
     weight: 1.5
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
 
 run_limits:
   expected_turns: 57

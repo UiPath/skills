@@ -1,0 +1,97 @@
+task_id: skill-governance-compliance-drift-restore
+description: >
+  Skill-guided: "check my ISO 42001 posture" on a tenant whose settings have
+  drifted must run coverage, read Summary.DriftedControlCount / DriftedControls,
+  and route the drifted settings to state restore — NOT to aops-policy update
+  (the remedy for manual settings) and NOT to a re-apply via state enable.
+
+  This is the discovery path the drift feature unlocks: the user never says
+  "restore", they ask for posture, and the drift data is what turns the answer
+  into a restore offer.
+
+  Platform note: in CI the tenant is live and these commands succeed; locally
+  they fail with auth errors. The prompt must not assert either way — telling
+  the agent "auth errors expected" made it grep output.txt for auth keywords,
+  hit the words "unauthorized"/"forbidden" in the ISO 42001 control prose that
+  `catalog get` returns, and abort before running coverage (run
+  2026-08-07_04-44-12).
+tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
+
+sandbox:
+  python: {}
+
+# Same precondition as restore_smoke: drift can only exist on an active pack,
+# and the shared-tenant cleanup disables it between runs. Enable first so a
+# correct agent isn't stopped at "enable it first" through no fault of its own.
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''setup_enable_compliance_pack.py''))"'
+    timeout: 120
+
+# Safety net: smoke sandboxes have live tenant auth in CI. Coverage is read-only,
+# but a wrong-direction run (aops-policy update / state disable) really mutates
+# the tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+initial_prompt: |
+  Check my ISO 42001 compliance posture and tell me how to fix whatever isn't right.
+
+  Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - A uip command may fail with an auth error. If one does, carry on with the
+    remaining steps - do NOT retry or login.
+  - Decide whether a command succeeded from the `Result` field of that command's
+    own JSON response. Do NOT search the accumulated output.txt for words like
+    "unauthorized" or "forbidden" - the ISO 42001 control descriptions contain
+    them as ordinary policy text, so that check reports failure on a good run.
+  - Run each command once, capture output, move on.
+  - Always pass --output json.
+  - Do NOT prompt for confirmation - this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran the posture check via state coverage"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent loaded the catalog first — coverage joins with it for setting names"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+(?:get|list)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read applied state from state get — coverage alone cannot tell whether the pack is applied"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Deliberately NOT asserting that `state enable` is absent. Every gov task
+  # shares one pack and each cleanup disables it globally, so a sibling can
+  # flip Active mid-run — and with Active false the skill is RIGHT to offer
+  # the apply. The assertion would fail correct behavior at random.
+
+  - type: command_not_executed
+    description: "Drifted settings are NOT routed to aops-policy update (that is the manual-setting remedy)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+update'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Posture check does NOT disable the standard"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+disable'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

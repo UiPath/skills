@@ -38,6 +38,21 @@ def keyword(call: ast.Call, name: str) -> ast.expr | None:
     return next((item.value for item in call.keywords if item.arg == name), None)
 
 
+def positional_or_keyword(call: ast.Call, index: int, name: str) -> ast.expr | None:
+    """Like `keyword`, but also accepts the argument passed positionally at `index`.
+
+    `CustomValidator`'s `rule` is a regular (positional-or-keyword) constructor
+    parameter, so `CustomValidator(lambda args: ...)` is as valid as
+    `CustomValidator(rule=lambda args: ...)` — both bind the same parameter.
+    """
+    found = keyword(call, name)
+    if found is not None:
+        return found
+    if len(call.args) > index:
+        return call.args[index]
+    return None
+
+
 def is_call(node: ast.expr | None, name: str) -> bool:
     return isinstance(node, ast.Call) and call_name(node.func) == name
 
@@ -65,8 +80,22 @@ def contains_string_literal(node: ast.AST, value: str) -> bool:
     )
 
 
-def checks_secret_customer_id(node: ast.Lambda | ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    """Return whether a callable contains `"secret" in <customer_id expression>`."""
+def contains_substring_literal(node: ast.AST, value: str) -> bool:
+    """Return whether any string constant under `node` contains `value` (casefolded).
+
+    Looser than `contains_string_literal` — a regex pattern carries `secret` inside
+    delimiters (e.g. `r"\\bsecret\\b"`), so an exact-match check would never fire.
+    """
+    return any(
+        isinstance(item, ast.Constant)
+        and isinstance(item.value, str)
+        and value.casefold() in item.value.casefold()
+        for item in ast.walk(node)
+    )
+
+
+def checks_secret_customer_id_membership(node: ast.AST) -> bool:
+    """Return whether `node` contains `"secret" in <customer_id expression>`."""
     for item in ast.walk(node):
         if not isinstance(item, ast.Compare):
             continue
@@ -80,6 +109,30 @@ def checks_secret_customer_id(node: ast.Lambda | ast.FunctionDef | ast.AsyncFunc
             ):
                 return True
     return False
+
+
+def checks_secret_customer_id_regex(node: ast.AST) -> bool:
+    """Return whether `node` contains a `re.search`/`re.match`/`re.fullmatch` call
+    whose pattern argument mentions "secret" and whose target argument references
+    `customer_id` — the regex-based equivalent of the membership check above (e.g.
+    `re.search(r"\\bsecret\\b", str(tool_input.get("customer_id", "")), re.IGNORECASE)`).
+    """
+    for item in ast.walk(node):
+        if not isinstance(item, ast.Call) or call_name(item.func) not in ("search", "match", "fullmatch"):
+            continue
+        args = item.args
+        if len(args) < 2:
+            continue
+        pattern, target = args[0], args[1]
+        if contains_substring_literal(pattern, "secret") and contains_reference(target, "customer_id"):
+            return True
+    return False
+
+
+def checks_secret_customer_id(node: ast.Lambda | ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Return whether a callable checks customer_id for "secret" — either via
+    `"secret" in <expr>` membership, or an equivalent `re.search`/`match`/`fullmatch`."""
+    return checks_secret_customer_id_membership(node) or checks_secret_customer_id_regex(node)
 
 
 def resolve_rule(
@@ -142,7 +195,7 @@ def valid_decorator(
             if not is_call(validator, "CustomValidator"):
                 continue
             assert isinstance(validator, ast.Call)
-            rule = keyword(validator, "rule")
+            rule = positional_or_keyword(validator, 0, "rule")
             resolved = resolve_rule(rule, functions) if rule is not None else None
             if (
                 resolved is not None

@@ -1,7 +1,12 @@
 # CLI Reference — API Workflows
 
+<!--skill-flavor:reference-surface-summary:start-->
 All `uip` commands relevant to authoring, running, packaging, and publishing API workflows. The api-workflow-tool ships with `@uipath/cli` (no separate install).
+<!--skill-flavor:reference-surface-summary:end-->
 
+<!--skill-flavor:host-command-scope:start-->
+<!--skill-flavor:host-command-scope:end-->
+<!--skill-flavor:local-project-lifecycle:start-->
 ## `uip api-workflow init`
 
 Scaffold a new API workflow project in the **correct Studio Web editable shape**. This is the canonical way to create a project — do NOT hand-assemble the files.
@@ -83,7 +88,9 @@ uip api-workflow pack <project-path> <destinationPath> \
 | `--signing-*` | no | Optional package signing (certificate path/password, timestamp server). |
 
 Output: `{ "Result": "Success", "Code": "ApiWorkflowPack", "Data": { "Success": true, "Packages": ["<path>.nupkg"] } }`. Exit 1 on failure.
+<!--skill-flavor:local-project-lifecycle:end-->
 
+<!--skill-flavor:runtime-execution:start-->
 ## `uip api-workflow run`
 
 Execute an API workflow JSON file locally using the Serverless Workflow executor.
@@ -143,10 +150,13 @@ uip api-workflow run ./greet.json \
   --input-arguments '{"name":"Alice","count":3}' \
   --output json
 ```
+<!--skill-flavor:runtime-execution:end-->
 
 ## `uip api-workflow registry`
 
+<!--skill-flavor:registry-auth:start-->
 Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the old `uip case registry` flow for api-workflow authoring. Both subcommands require `uip login`. <!-- uip-check-skip -->
+<!--skill-flavor:registry-auth:end-->
 
 ### `uip api-workflow registry resolve`
 
@@ -188,7 +198,9 @@ Success output (keys are PascalCased by the output formatter):
 `Operation` is set for Generic activities (`"List"`, `"Retrieve"`, `"Create"`, …; capitalized in TypeCache) and `null` for Curated. Generic matches carry no `ObjectName`/`HttpMethod` — those resolve at stub time from `--object-name` + IS metadata.
 
 Failure modes:
+<!--skill-flavor:registry-auth-remediation:start-->
 - `"Not logged in. Run 'uip login' first."`
+<!--skill-flavor:registry-auth-remediation:end-->
 - `"No activities matched '<keyword>'"` — try a different keyword (vendor-internal names differ from marketing names).
 - `"Invalid --limit value"` — must be a positive integer.
 
@@ -214,7 +226,9 @@ uip api-workflow registry stub <activity-type-id> \
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
 | `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
+<!--skill-flavor:solution-resource-key:start-->
 | `--resource-key <field>=<key>` | no (repeatable) | Bind a Solution-resource picker field (listed in `Data.SolutionResourceFields`) to a solution resource **key**, so StudioWeb's picker renders the selection. The key is the `key` field of the matching file under the solution's `resources/` tree (e.g. `resources/solution_folder/process/process/<Name>.json`). The field's *value* (the resource name) still goes via `--inputs`. Requires a StudioWeb build with `savedResourceSelections` support; older builds ignore the entry (runtime unaffected). |
+<!--skill-flavor:solution-resource-key:end-->
 
 Success output:
 ```json
@@ -249,6 +263,7 @@ Failure modes:
 - `"Could not resolve operation '<op>' on object '<name>' …"` — the object doesn't exist or doesn't support this operation (Generic stubs hard-require IS metadata; there is no fallback path/verb). Check the object with `uip is resources describe <connector-key> <object-name> --connection-id <uuid>`.
 - `"Invalid --inputs JSON"` — `--inputs` must be a JSON object (`'{"key":"value"}'`).
 
+<!--skill-flavor:connector-typical-sequence:start-->
 ### Typical sequence
 
 ```bash
@@ -287,7 +302,9 @@ uip api-workflow run ./my-workflow.json --output json
 ```
 
 See [connector-activity-discovery.md](connector-activity-discovery.md) for the full flow, field-shape rules, the Solution-resource file shape, and worked examples.
+<!--skill-flavor:connector-typical-sequence:end-->
 
+<!--skill-flavor:local-solution-metadata:start-->
 ## `uip api-workflow bindings sync`
 
 Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Connection bindings are derived locally; **Solution-resource bindings** (process/queue/asset fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object — when IS is unreachable, generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
@@ -354,6 +371,7 @@ Requires `uip login`. The SDK resolves folder keys via Resource Catalog Service;
 **Idempotency.** Import-only by design. First run for a binding triggers `addOrUpdateResourceToSolutionAsync` (status `Added`); subsequent runs skip the binding because its key is already in the solution. Re-running is safe and a no-op when nothing changed.
 
 Lives in `solution-tool`, not `api-workflow-tool`. Full details in the uipath-solution skill.
+<!--skill-flavor:local-solution-metadata:end-->
 
 ## `uip is resources describe`
 
@@ -396,6 +414,7 @@ Sample output (Outlook `getNewestEmail`, `--operation List`):
 
 For every entry with `required: true`, confirm the stub's emitted activity has a value at `with.<location>Parameters.<name>`. Re-stub with `--inputs '{"<name>":"<value>"}'` or hand-edit. See [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields) and [troubleshooting.md](troubleshooting.md#required-request-field-dropped-by-registry-stub).
 
+<!--skill-flavor:local-solution-lifecycle:start-->
 ## `uip solution init`
 
 Initialize a new empty solution. Required before adding API workflow projects. (Formerly `uip solution new` — that verb was retired; `new` now errors `unknown command 'new'`.)
@@ -429,7 +448,7 @@ uip solution pack <solutionPath> <outputPath> \
 | Argument / Flag | Required | Description |
 |-----------------|----------|-------------|
 | `<solutionPath>` | yes | Path to solution folder or `.uis`/`.uipx` file. |
-| `<outputPath>` | yes | Output directory for the `.zip`. |
+| `<outputPath>` | yes | Output directory for the `.zip`. The file lands as `<outputPath>/<name>_<version>.zip` — underscore, not a dot. |
 | `-n, --name <name>` | no | Package name. Defaults to solution folder name. |
 | `-v, --version <version>` | no | Package version. Default `1.0.0`. |
 | `--login-validity <minutes>` | no | Min minutes before token refresh. Default `10`. |
@@ -507,17 +526,26 @@ uip solution pack . ./build \
   --version 1.0.0 \
   --output json
 
-# 6. Publish
-uip solution publish ./build/MyApiSolution.zip \
+# 6. Publish — pack names the zip <name>_<version>.zip
+uip solution publish ./build/MyApiSolution_1.0.0.zip \
   --tenant MyTenant \
   --output json
 ```
+<!--skill-flavor:local-solution-lifecycle:end-->
 
+<!--skill-flavor:command-surface-heading:start-->
 ## Commands That Do NOT Exist
 
 The agent should not invent these — they are NOT part of the api-workflow-tool surface:
+<!--skill-flavor:command-surface-heading:end-->
 
+<!--skill-flavor:api-workflow-publish-guidance:start-->
 - `uip api-workflow publish` <!-- uip-check-skip --> (publish goes through `uip solution publish`)
+<!--skill-flavor:api-workflow-publish-guidance:end-->
+<!--skill-flavor:api-workflow-alias-guidance:start-->
 - `uip apw <anything>` (no alias) <!-- uip-check-skip -->
+<!--skill-flavor:api-workflow-alias-guidance:end-->
 
+<!--skill-flavor:command-existence-guidance:start-->
 These DO exist (don't route around them): `uip api-workflow init` (scaffold), `uip api-workflow build` (compile one project), `uip api-workflow pack` (one-project `.nupkg`). Solution-level packaging/publishing go through `uip solution pack` / `uip solution publish`. Offline validation is `uip api-workflow validate` (or running with `--no-auth`).
+<!--skill-flavor:command-existence-guidance:end-->

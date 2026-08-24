@@ -180,7 +180,7 @@ auth, schema, or enrichment decision is missing).
 4. Author the structural BPMN the registry does not emit: sequence flows,
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
-5. Generate the `bpmndi:BPMNDiagram` (shape per node, edge per flow).
+5. Generate the `bpmndi:BPMNDiagram`: `uip maestro bpmn format <file.bpmn>`
 6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).
 
 ## OOTB extension types (29, login-free)

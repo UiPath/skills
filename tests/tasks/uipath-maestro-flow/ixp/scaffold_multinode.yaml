@@ -16,13 +16,16 @@ description: >
 
   Validate-only: no `uip maestro flow debug`.
 
+  The prompt names the document domain, not a model or bucket: resolving it is
+  the behaviour under test, so do not name either here.
+
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:ixp]
 initial_prompt: |
   Create a flow called "ReceiptIntake" with a manual trigger, an extractor
   node, and add three script nodes named `postReceipt`, `sendToValidation`,
   and `logError`. Wire all three scripts to consume the extraction result —
-  two off the success output, one off the error output. Document is in the
-  storage bucket named: ReceiptBucket. Model used: Receipt Model. Each of
+  two off the success output, one off the error output. Document: a PDF receipt,
+  supplied to the extractor node as the flow's document input. Each of
   the three script nodes logs OK when it receives its respective extraction
   result.
 
@@ -74,26 +77,18 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "All three script nodes are present by name"
-    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
-    includes:
-      - "postReceipt"
-      - "sendToValidation"
-      - "logError"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake 'postReceipt' 'sendToValidation' 'logError'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Scripts reference the extraction output via $vars expression"
-    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
-    includes:
-      - "$vars."
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake '$vars.'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
-
-run_limits:
-  expected_turns: 24
-  max_turns: 40
-  turn_timeout: 900
-  task_timeout: 900

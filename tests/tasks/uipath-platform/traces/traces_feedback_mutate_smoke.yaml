@@ -1,0 +1,55 @@
+task_id: skill-platform-traces-feedback-mutate
+description: >
+  Smoke test: agent corrects and removes existing feedback records — the only
+  test where the agent itself runs `update <id>` and `delete <id>` (delete is
+  otherwise reached only by harness-side post_run cleanup, whose exit code is
+  ignored). The category assertion is the discriminating one: `--category` is
+  replacement, not additive, so adding a tag means re-passing the existing tag
+  alongside the new one. An agent that passes only the new tag silently drops
+  the old one and fails. Also covers `--folder-key` and the required `-y` on the
+  two commands they were never checked for. Auth/404 responses are acceptable
+  outcomes — the graded behavior is command shape.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Two corrections to feedback in folder key
+  `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`:
+
+  - Record `5c2e8f13-4a76-49bd-8e01-b3d7f6a2c945` was filed thumbs-up by mistake.
+    It should be thumbs-down, with the comment "Extraction missed two line items".
+    It is tagged "Output" today; it needs to end up tagged "Agent Error" as well,
+    and it must keep "Output".
+  - Record `81a4d0c6-2f95-4e38-97b2-6ad1c3e5b704` is a duplicate. Get rid of it.
+
+  Both IDs come from the review export and are authoritative — apply the
+  corrections directly rather than looking the records up first. They may not
+  resolve against this tenant; that is expected and is not a reason to stop.
+  Report what each command returns.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent flipped the sentiment and set the new comment via update, with the required --folder-key"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+(?!-)\S+(?=[\s\S]*--negative)(?=[\s\S]*--comment[\s=])(?=[\s\S]*--folder-key)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-passed the existing tag alongside the new one (--category replaces, not appends)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+(?!-)\S+(?=[\s\S]*--category[\s=]["'']?Output)(?=[\s\S]*--category[\s=]["'']?Agent\s+Error)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent, not the harness, deleted the duplicate record with --folder-key and the required -y"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+delete\s+(?!-)\S+(?=[\s\S]*--folder-key)(?=[\s\S]*(?:\s-y(?:\s|$)|--yes))'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0

@@ -146,6 +146,15 @@ uip or roles delete <role-key> --output json
 
 `roles user-permissions` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles` is the inverse — given a user, which role assignments exist.
 
+For the forward lookup — "who holds this role" — use `roles users list`:
+
+```bash
+# Principals assigned to a role (users, groups, robots, external apps)
+uip or roles users list <role-key> --output json
+```
+
+`Pagination.Total` is the role's full membership count, so a role with no assignees returns `Data: []` and `Total: 0`. Auditing a whole tenant is therefore one call per role, not a directory sweep per principal.
+
 ### Step 4: Import Users from Identity Service
 
 Principals are managed in Identity Service (IS), not in Orchestrator. `users import` is the **single integration point** between IS and the tenant: it references an existing IS principal and provisions the matching tenant user record. Everything downstream (`users assign`, `users assign-roles`, `roles assign`, etc.) takes the resolved Orchestrator user-key — no further IS round-trips. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)

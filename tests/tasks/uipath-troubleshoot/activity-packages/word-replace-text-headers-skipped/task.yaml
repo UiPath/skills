@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-replace-text-headers-skipped
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Replace Text silent miss where
   the [CompanyName] placeholder in the document's header/footer is left

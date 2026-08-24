@@ -10,7 +10,7 @@ Use for agent output quality review and building evaluation datasets.
 | `create` | Add feedback to a trace (or specific span) |
 | `get <id>` | Fetch one feedback record |
 | `list` | List feedback with filters |
-| `list detailed` | Cross-trace feedback with span context (max 200 items) |
+| `list detailed` | List feedback with span context, plus extra filters (max 200 items) |
 | `update <id>` | Change sentiment, comment, or categories |
 | `delete <id>` | Remove feedback |
 
@@ -66,9 +66,11 @@ uip traces feedback list \
 | `--offset` | Pagination offset, default 0 |
 | `--folder-key` | Optional |
 
+`--trace-id` is optional — omit it to filter and paginate across all traces (e.g. by `--agent-id`/`--agent-version`/`--negative`) without needing `list detailed`.
+
 ## list detailed
 
-Returns `spanAttributes` per record (`agentId`, `agentName`, `userPrompt`, `output`). No `--trace-id` needed — designed for cross-trace bulk review.
+Adds span context per record (`spanAttributes`: `agentId`, `agentName`, `userPrompt`, `output`) plus time-range/category/sort filters over `list`. Not required for cross-trace filtering — plain `list` already covers that by omitting `--trace-id`.
 
 ```bash
 # Last 24 hours
@@ -86,7 +88,7 @@ uip traces feedback list detailed \
   --output json
 ```
 
-Additional flags over `list`: `--since <duration>`, `--after <ISO>`, `--before <ISO>`, `--category-id <guid>`, `--sortBy`, `--sortDir`. Max 200 items.
+Additional flags over `list`: `--since <duration>`, `--after <ISO>`, `--before <ISO>`, `--category-id <guid>` (repeatable), `--sort-by <createdAt|updatedAt>`, `--sort-order <asc|desc>`. Max 200 items.
 
 ## update
 
@@ -102,9 +104,12 @@ uip traces feedback update <feedback-id> \
 
 ## delete
 
+`-y` is required — the CLI never prompts, so a delete without it is rejected.
+
 ```bash
 uip traces feedback delete <feedback-id> \
   --folder-key <folder-key> \
+  -y \
   --output json
 ```
 

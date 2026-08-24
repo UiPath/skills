@@ -47,11 +47,15 @@ After editing `content`, rebuild the matching `messages[].contentTokens` (`type:
 
 ## Wiring Flow Variables into Agent Prompts
 
-Passing flow data into an inline agent requires **three hand-authored, aligned** pieces. **The CLI does not derive the input wiring** — `uip agent refresh` does **not** scan prompts, derive `inputSchema`, or populate `agentInputVariables`; you author all three, and packaging ships them as-authored. (Refresh *does* regenerate `messages[].contentTokens` from `content` — that's the one derived part; see the invariant below.) The converter builds the runtime `JobArguments` from the **flow node's `inputs.agentInputVariables[]`** (not from `$vars` tokens in `agent.json`). Flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`.
+Passing flow data into an inline agent requires **three hand-authored, aligned** pieces. **The CLI does not derive the input wiring** — `uip agent refresh` does **not** scan prompts, derive `inputSchema`, or populate `agentInputVariables`; you author all three, and packaging ships them as-authored. (Refresh *does* regenerate `messages[].contentTokens` from `content` — that's the one derived part; see the invariant below.) The converter builds the runtime `JobArguments` from the **flow node's `inputs.agentInputVariables[]`** (not from `$vars` tokens in `agent.json`). Any `inputs.systemPrompt` / `inputs.userPrompt` string on the node makes the converter drop every `agentInputVariables[]` entry the prompt text does not reference (`@uipath/flow-converter`; prune present 0.25.1 through 0.42.0). Flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`.
+
+Self-check the CLI you run: `uip maestro flow validate` must pass a prompt-less node and must fail empty-string prompts. Never add stub prompts. If validate rejects the absent keys, see § Refresh and Validate § Older CLI.
 
 > **Encoding note.** The flat `__` form above is the shipped encoding and the one to author. flow-workbench also has a NESTED encoding behind its `services.agent-storage.nested-agent-input-schema` feature flag (default off): dotted prompt tokens (`{{input.a.b.c}}`) and an `inputSchema` object tree whose auto-created containers carry `"x-uipath-container": true`. An `agent.json` you READ may arrive in either form (canvas, CLI, and runtime readers are dual-mode, and CLI packaging heals nested sidecars back to flat) — but keep WRITING the flat form until the flag ramps.
 
 The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (`agent.json` `inputSchema`), and **Resolution** (`{{input.<key>}}` in `messages[].content`) — and their examples are in the table below. `flow validate` catches a Resolution↔Contract mismatch (a `{{input.K}}` that's malformed or names a key not in `inputSchema`), but a missing/wrong **Delivery** binding passes validate and only shows up as empty input at `flow debug`. Agent-side `inputSchema`/`contentTokens` mechanics: the `uipath-agents` skill's [inline-in-flow § Wiring Flow Inputs Into an Inline Agent](../../../../../../uipath-agents/references/lowcode/capabilities/inline-in-flow/inline-in-flow.md#wiring-flow-inputs-into-an-inline-agent-required).
+
+- **A flow pulled from Studio Web carries node prompts mirrored from `agent.json`.** The canvas writes node `inputs` into `agent.json.messages[]` on save and back on load. Those mirrored prompts are safe only if they reference every `agentInputVariables[]` key. Otherwise run `uip agent refresh --inline-in-flow` — shell-ify strips node prompts and keeps structural inputs.
 
 > **Prerequisite — the bound value must actually exist as a variable.** A node binding `=$vars.X` resolves at runtime only if `$vars.X` is a declared variable. `flow validate` does **not** check that the path exists — a binding referencing an undeclared trigger field passes validate, then **faults at debug** with `JobArguments` empty. When the upstream node is a **trigger** (e.g. `core.trigger.manual`, id `start`), each field you bind must be declared in `variables.globals[]` as a trigger-associated input — `direction: "in"`, `triggerNodeId: "<triggerId>"` — and is then read as `$vars.<triggerId>.output.<id>`:
 >
@@ -117,7 +121,7 @@ Matching `agent.json` — `inputSchema` keys mirror the bindings; the prompt use
 ]
 ```
 
-Keep the flow-node `systemPrompt` / `userPrompt` as short generic placeholders — the canonical prompt lives in `agent.json messages[]`, and that system prompt should be a real structured one (see `autonomous-agent-prompting-guide.md`), not a bare blob.
+**Write no prompt keys on the flow node.** Omit `inputs.systemPrompt` and `inputs.userPrompt` — full rule in § Anti-patterns below. The canonical prompt lives in `agent.json messages[]`, and it must be a real structured one (see `autonomous-agent-prompting-guide.md`), not a bare blob.
 
 ### When the source field name is unknown at authoring time
 
@@ -127,7 +131,7 @@ Connector-trigger output fields (e.g. email `subject`/`from`/`body`) aren't in t
 
 - **In `agent.json` prompts, use the `{{input.<trigger>__output__<var>}}` form** (the flattened key, `input.` prefix). Never use raw `{{ $vars.X }}` (the runtime can't resolve it — agent gets the literal token) or `{{plainName}}` (no prefix).
 - **The `variable` `rawString` is exactly what sits between the braces** — `input.<trigger>__output__<var>`, brace-free, no added spaces.
-- **Keep the flow-node `inputs.systemPrompt` / `inputs.userPrompt` as short generic placeholders** — the canonical prompt lives in `agent.json messages[]`, and delivery comes from `agentInputVariables[]`, not from tokens in the node prompts.
+- **Never write `inputs.systemPrompt` / `inputs.userPrompt` on the flow node.** Delete the keys — do not empty them. A prompt string on the node makes the converter drop every `agentInputVariables[]` entry that text does not reference (`@uipath/flow-converter`; prune present 0.25.1 through 0.42.0). `JobArguments` then ships as `{"input":""}` and the agent job faults. Empty strings fail `flow validate`. The canonical prompt lives in `agent.json messages[]`; delivery comes from `agentInputVariables[]`.
 - **Declared `type` must match the bound node's real output shape, in BOTH `agentInputVariables[].type` and `inputSchema`.** The runtime strict-validates `JobArguments` before the model runs: a list bound to an `object`-typed key faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` (incident `170002`, `"Input should be a valid dictionary … input_type=list"`), and both `flow validate` and `agent validate` still report `Valid`. **Data Service query-entity-records returns an array. A script-built value has the shape the script returns — `.map()` returns array, never object.** The registry won't settle it — connector nodes declare `output.type: "object"` with no schema — so bind the leaf (`=$vars.crmLookup1.output[0].accountTier`) or read the shape from one `flow debug` run.
 - **Mark a key `required` only when the binding can never be empty** — otherwise an empty upstream fails the same startup validation instead of letting the agent reason about a missing value.
 - **Each `agentInputVariables[]` entry uses `binding` (not `value`).** The converter builds `JobArguments` from `binding`; a `value: "=js:$vars…"` entry (Studio Web's internal canvas form) is **ignored** — the agent gets empty input and faults at debug (`AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR`, "Template placeholders detected instead of actual values"). Write `{ "id": "<key>", "binding": "=$vars.<trigger>.output.<var>" }`. `binding` is what both the CLI converter and Studio Web's loader read.
@@ -164,8 +168,6 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
   "typeVersion": "1.0",
   "display": { "label": "Autonomous Agent" },
   "inputs": {
-    "systemPrompt": "You are an agentic assistant.",
-    "userPrompt": "What is the current date?",
     "source": "<projectId-uuid>",
     "agentInputVariables": [],
     "agentOutputVariables": [
@@ -182,6 +184,8 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
   }
 }
 ```
+
+No `inputs.systemPrompt` / `inputs.userPrompt` keys. Self-check the CLI you run: `uip maestro flow validate` must pass a prompt-less node and must fail empty-string prompts. Never add stub prompts. If validate rejects the absent keys, see § Refresh and Validate § Older CLI.
 
 Also add:
 
@@ -332,8 +336,6 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
   "typeVersion": "1.0",
   "display": { "label": "Autonomous Agent" },
   "inputs": {
-    "systemPrompt": "You are an agentic assistant.",
-    "userPrompt": "What is the current date?",
     "source": "<projectId-uuid>",
     "agentInputVariables": [],
     "agentOutputVariables": [
@@ -351,10 +353,12 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
+No `inputs.systemPrompt` / `inputs.userPrompt` keys. Self-check the CLI you run: `uip maestro flow validate` must pass a prompt-less node and must fail empty-string prompts. Never add stub prompts. If validate rejects the absent keys, see § Refresh and Validate § Older CLI.
+
 Notes:
 
 - `inputs.source` — the inline agent's `projectId`; must match the subdirectory name and `agent.json.projectId`. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the node instance.
-- `inputs.systemPrompt` / `inputs.userPrompt` must be non-empty for current `flow validate`. Treat them as validator placeholders; the canonical inline-agent prompts live in `agent.json`.
+- **No `inputs.systemPrompt` / `inputs.userPrompt` on the instance.** Omit both keys — full rule in § Wiring Flow Variables into Agent Prompts § Anti-patterns. Canonical inline-agent prompts live in `agent.json`.
 - `inputs.agentInputVariables` carries one entry per flow input the agent reads — `{ id: "<trigger>__output__<var>", binding: "=$vars.<trigger>.output.<var>" }`. This is the only thing the converter turns into the runtime `JobArguments`; prompts then reference each input as `{{input.<trigger>__output__<var>}}` (see § Wiring Flow Variables into Agent Prompts above). Leave it `[]` only when the agent reads no flow data.
 - **No `model` block on the inline-agent node instance.** The node inherits serviceType/version/context from `definitions[]`; `source` lives at `inputs.source`. Stale instance fields such as `model.serviceType`, `model.version`, or `model.context` override the inherited definition and can cause runtime mismatch.
 
@@ -401,17 +405,28 @@ uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 uip maestro flow validate <FlowName>.flow --output json
 ```
 
-> Current validator requirement: `uip maestro flow validate` rejects flows whose `uipath.agent.autonomous` node lacks non-empty `inputs.systemPrompt` / `inputs.userPrompt`. Include placeholder values on the flow node, but keep the canonical prompts in the inline agent's `agent.json`.
+> **Validator behavior — verified, not guaranteed.** `uip maestro flow validate` accepts a `uipath.agent.autonomous` node that carries **no** `inputs.systemPrompt` / `inputs.userPrompt` keys (verified 2026-08). It rejects **empty-string** prompts. The message varies by CLI build: `[SCHEMA_ERROR] System prompt is required` (current) or `[REQUIRED_FIELD] "systemPrompt" is required`. So delete the keys; never set them to `""`. The registry `inputDefinition` marks both fields `required` (`minLength: 1`), so acceptance of absent keys is a validator gap, not a guarantee. Re-run the self-check after each CLI upgrade: a prompt-less node must pass, empty-string prompts must fail. Older CLIs rejected absent keys and needed non-empty placeholders — see § Older CLI below. Canonical prompts stay in the inline agent's `agent.json`.
+
+> **Refresh also shell-ifies the parent `.flow` (self-contained flows).** When a flow was authored self-contained in Studio Web, its `.flow` embeds the inline agent's prompts/model/guardrails and each resource node's config **inline** (not just in the `<projectId>/` sidecar). Since you edit the **sidecar**, that stale embed would shadow your edits when the flow is re-opened in Studio Web (the embed wins over the sidecar on load). So `uip agent refresh --inline-in-flow` strips this agent's embedded config back out of the parent `.flow` — leaving only structural inputs (`source`, `agentInputVariables`, etc.) on the agent node and `{source, detail, itemsDescription}` on its resource nodes — so Studio Web re-hydrates the cluster from your freshly-written sidecar on import. It is **scoped to the agent being refreshed** (siblings untouched), a **no-op** for flows authored from scratch via the CLI (already shells), and **best-effort** (a failure never fails refresh). When it acts, the JSON output carries `FlowShellified: true` and `FlowResourceNodesStripped: <n>`. You author the sidecar (`agent.json` + `resources/`); refresh keeps the `.flow` a shell — do not hand-embed prompts/config back into the flow node.
+
+### Older CLI — validate rejects absent prompt keys
+
+Some environments pin a CLI whose validator still rejects absent prompt keys with `[REQUIRED_FIELD] "systemPrompt" is required`. Upgrade the CLI first. When the environment blocks an upgrade:
+
+1. Add minimal placeholder `inputs.systemPrompt` / `inputs.userPrompt` strings — **only** after validate rejects the absent keys. Never use `""`; empty strings fail the same check.
+2. Run `uip maestro flow debug` and read the trace. `JobArguments` must carry your bound inputs, not `{"input":""}`.
+3. If `JobArguments` is `{"input":""}`, that CLI also carries the converter prune (`@uipath/flow-converter` 0.25.1+): the placeholder text references no input, so the converter drops every `agentInputVariables[]` entry. No node edit fixes this — the placeholders satisfy the old validator and break the wiring at the same time. Escalate for a CLI upgrade; do not ship a workaround.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `flow validate` reports `systemPrompt` / `userPrompt` required | The flow node lacks non-empty validator placeholders, the `inputs.source` UUID is missing, or the inline agent subdirectory cannot be found | Add non-empty `inputs.systemPrompt` / `inputs.userPrompt` placeholders, set `inputs.source` to the inline agent UUID, and verify `<FlowDir>/<projectId>/agent.json` exists |
+| `flow validate` reports `[SCHEMA_ERROR] System prompt is required` or `[REQUIRED_FIELD] systemPrompt` / `userPrompt` required | The node carries **empty-string** prompt keys, the `inputs.source` UUID is missing, or the inline agent subdirectory cannot be found | Delete `inputs.systemPrompt` / `inputs.userPrompt` (delete the keys — `""` fails), or run `uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow --output json` to strip them. Set `inputs.source` to the inline agent UUID, and verify `<FlowDir>/<projectId>/agent.json` exists |
+| Debug faults with `JobArguments {"input":""}` — `AGENT_STARTUP.INPUT_VALIDATION_ERROR` `"Field required"` per `inputSchema` key (incident `170002` family); **expected, not yet observed:** `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` when the schema marks nothing required | Prompt keys on the agent node — the converter drops every `agentInputVariables[]` entry the node prompt text does not reference. Stub text references nothing, so every entry goes. Discriminator: the entries already use `binding:` | Delete `inputs.systemPrompt` and `inputs.userPrompt` from the node — delete the keys, because empty strings fail `flow validate`. Or run `uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow --output json` — shell-ify strips node prompts. Verify: the agent node instance must contain no `systemPrompt` key. See § Wiring Flow Variables into Agent Prompts |
 | `inputs.source` UUID does not match any subdirectory | Wrong source value, or folder renamed | Set `inputs.source` to the exact UUID of the inline agent directory |
 | Flow runs a different agent than expected | `inputs.source` points to a stale/leftover inline agent dir | Check subdirectory names — only one inline agent dir should correspond to each agent node |
 | `Orchestrator.StartAgentJob` error at runtime | Stale instance `model` fields override the inherited inline-agent definition | Remove the inline-agent node's instance `model` block and keep the registry definition's `model.serviceType: "Orchestrator.StartInlineAgentJob"` in `definitions[]` |
-| Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR derived files (`entry-points.json`, `bindings_v2.json`) are stale | Set prompts in `agent.json`, re-run `uip agent refresh --inline-in-flow` to regenerate derived files, then `uip agent validate --inline-in-flow` to check — see `uipath-agents` skill |
+| Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR derived files (`entry-points.json`, `bindings_v2.json`) are stale, OR the node carries no `inputs.systemPrompt` and Studio Web's node form validates the field | Set prompts in `agent.json`, re-run `uip agent refresh --inline-in-flow` to regenerate derived files, then `uip agent validate --inline-in-flow` to check — see `uipath-agents` skill. For the third cause: keep the keys off, set real prompts in `agent.json`, re-run `uip agent refresh --inline-in-flow`, and re-import so the canvas hydrates the form from the sidecar |
 | Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resources refresh` never created the solution-level resource | Re-run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to propagate bindings, then `uip agent validate --inline-in-flow` to check schema, then `uip solution resources refresh`, then re-upload |
 | `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete. Refresh is the verb that writes the file — do not hand-edit it |
 | Agent tool (process / agent / api / processOrchestration) cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `inputs.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `inputs.source` equal to the resource UUID, run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to write bindings, then `uip agent validate --inline-in-flow` to check, then run `uip solution resources refresh` |
@@ -424,8 +439,8 @@ uip maestro flow validate <FlowName>.flow --output json
 | `agent validate` flags `Expected "input.X" but got "{{input.X}}"` | Hand-edited `variable` token has the braces/extra spaces in its `rawString` | Re-run `uip agent refresh` to regenerate the tokens from `content` (brace-free `rawString`) — don't hand-fix it. See § The `content` ↔ `contentTokens` mirror invariant. |
 | `agent validate` flags `contentTokens has N entries but content requires M. Rebuild contentTokens to match content.` | `content` and `contentTokens` drifted (e.g. tokens edited without `content`, or vice versa) | Re-run `uip agent refresh` to regenerate `contentTokens` from `content`. If the prompt itself is wrong, fix `content` first, then refresh. See § The `content` ↔ `contentTokens` mirror invariant. |
 | Prompt shows literal `{{input.X}}` at runtime | `inputSchema.properties` missing the referenced key (`flow validate` flags this — run it) | Add the `<trigger>__output__<var>` key to `inputSchema`. |
-| `flow validate` passes but debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` (literal `input.<key>`) | Node `agentInputVariables` uses `value:` instead of `binding:` (or is missing) → empty `JobArguments` | Set `binding:"=$vars.<trigger>.output.<var>"` on the node entry; ensure the trigger global is declared (`direction:"in"`). |
-| Debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` "Template placeholders detected instead of actual values" — and the node *does* have `agentInputVariables[]` | Entries use `value: "=js:$vars…"` (Studio Web's canvas form) instead of `binding`; the converter only reads `binding`, so `JobArguments` are empty | Rename `value` → `binding` on each entry and strip the `=js:` prefix: `{ "id": "<key>", "binding": "=$vars.<trigger>.output.<var>" }`. See § Wiring Flow Variables into Agent Prompts. |
+| `flow validate` passes but debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` (literal `input.<key>`) | Node `agentInputVariables` uses `value:` instead of `binding:` (or is missing) → empty `JobArguments` | Set `binding:"=$vars.<trigger>.output.<var>"` on the node entry; ensure the trigger global is declared (`direction:"in"`). If `binding:` is already correct, check for prompt keys on the node — see the prune row. |
+| Debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` "Template placeholders detected instead of actual values" — and the node *does* have `agentInputVariables[]` | Entries use `value: "=js:$vars…"` (Studio Web's canvas form) instead of `binding`; the converter only reads `binding`, so `JobArguments` are empty | Rename `value` → `binding` on each entry and strip the `=js:` prefix: `{ "id": "<key>", "binding": "=$vars.<trigger>.output.<var>" }`. If `binding:` is already correct, check for prompt keys on the node — see the prune row. See § Wiring Flow Variables into Agent Prompts. |
 
 ## Repair Recipes
 
@@ -461,7 +476,7 @@ Same pattern works for any node type — substitute the `nodeType` string in bot
 
 ### Resolve a `[REQUIRED_FIELD] systemPrompt is required` validator error
 
-Current flow validation requires non-empty placeholder prompts on the flow node and uses the inline agent directory referenced by `inputs.source`. Check in order:
+Current CLIs report the same fault as `[SCHEMA_ERROR] System prompt is required`. Two causes. (a) Empty-string prompt keys on the node. (b) The validator's hydration through `inputs.source` short-circuited — missing UUID, missing subdirectory, or empty `agent.json` messages. Absent prompt keys pass on a current CLI; if they do not, see § Refresh and Validate § Older CLI. Check in order:
 
 1. **UUID at `inputs.source`** — the `projectId` UUID must be set at `inputs.source`. Diagnose:
 
@@ -499,12 +514,12 @@ Current flow validation requires non-empty placeholder prompts on the flow node 
 
 3. **Prompts in `agent.json`** — set `messages[0].content` (system) and `messages[1].content` (user) to real prompts before validate. Rebuild `messages[].contentTokens` to match — `[{ "type": "simpleText", "rawString": "<your prompt text>" }]` per message.
 
-4. **Validator placeholders on the flow node** — add non-empty `inputs.systemPrompt` and `inputs.userPrompt` placeholders if they are missing. These are for current `flow validate`; keep the canonical prompt text in `agent.json`.
+4. **Prompt keys on the flow node** — delete `inputs.systemPrompt` and `inputs.userPrompt` if present. Deleting the keys passes validate; `""` does not. Or run `uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow --output json` — shell-ify strips node prompts. Verify: the agent node instance must contain no `systemPrompt` key. Keep the canonical prompt text in `agent.json`.
 
 ## What NOT to Do
 
 - **Do not use Flow CLI `node add`, `edge add`, or `variable` commands for inline-agent graph edits** — inline-agent node, edge, variable, layout, and tool-resource node changes are non-carve-out structural `.flow` mutations and must be authored directly with `Edit` / `Write`.
-- **Do not treat `inputs.systemPrompt` / `inputs.userPrompt` as canonical prompts** — current validation requires non-empty placeholders on the flow node, but prompts live in `agent.json`.
+- **Do not write `inputs.systemPrompt` / `inputs.userPrompt` on the inline-agent node** — full rule in § Wiring Flow Variables into Agent Prompts § Anti-patterns. Prompts live in `agent.json`.
 - **Do not put a `model` block on the inline-agent node instance** — the node inherits serviceType/version/context from `definitions[]`; the inline-agent source lives at `inputs.source`.
 - **Do not use `model.agentProjectId`, `inputs.agentProjectId`, or `model.source` on any inline-agent-related node instance** — both `uipath.agent.autonomous` and every attached resource node (`uipath.agent.resource.tool.*`, `uipath.agent.resource.escalation`, `uipath.agent.resource.context.*`) carry source identity at `inputs.source` and have no instance `model` block.
 - **Do not create `entry-points.json` or `project.uiproj` inside the inline agent directory** — those belong only to standalone agent projects.

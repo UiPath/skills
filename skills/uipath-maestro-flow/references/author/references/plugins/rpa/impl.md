@@ -11,6 +11,10 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
+Search the **node-type token** `uipath.core.rpa-workflow` — this lists every published RPA workflow — then pick the one you need by its `resourceKey` / folder path and description. Do **not** search by the process name from the request: `registry search` matches the Orchestrator **release name**, which is frequently unrelated to the name the user uses or the folder the process lives in. The requested name often appears only in the folder path, so a keyword search for it returns nothing even though the process exists. Match on the folder path inside `resourceKey`, not on a name keyword.
+
+**An empty result is not authoritative — do not conclude the process is unpublished.** Before treating "not found" as real, confirm all three hold: (a) you searched the `uipath.core.rpa-workflow` token, not a name keyword; (b) `registry pull --force` ran first; (c) you scanned the returned folder paths and descriptions for the target, not just the display names. Only then is the process genuinely absent. Jumping to the local-scaffold fallback on a name-search miss builds a flow that validates but has nothing real to run.
+
 **In-solution (local, no login required):**
 
 ```bash
@@ -101,15 +105,17 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 > For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
-## If the RPA Process Does Not Exist Yet
+## If the RPA Process Is Genuinely Not Published
 
-Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip maestro flow registry list --local --output json` and wire it directly — no publish required.
+Reach this path only after the empty-result confirmation in [Discovery](#discovery) — a brand-name search miss does not qualify. When the process truly does not exist on the tenant and no sibling RPA project provides it, tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip maestro flow registry list --local --output json` and wire it directly — no publish required.
+
+A freshly scaffolded RPA project has no implementation, so the wired flow will pass `flow validate` but fault the moment it is debugged or run (`Robot.JobUnexpectedExitCode`) until `uipath-rpa` fills in the actual workflow. A validated flow is not a working one.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
+| Node type not found in registry | Searched by process name (matches release name, not folder), process not published, or registry stale | Search the `uipath.core.rpa-workflow` token and match on folder path — not a name keyword. If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |

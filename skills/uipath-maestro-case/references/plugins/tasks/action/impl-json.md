@@ -90,3 +90,5 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 - **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` written at Step 2 (not an io-binding target). The tasks.md value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task. Symptoms: `data.recipient` is a string, or missing while `tasks.md` has `recipient: =vars.X`.
 - **CLI `validate` does NOT check `data.recipient`** — verify presence/shape explicitly (Post-Write Verification).
+
+<!-- END: impl-json.md -->

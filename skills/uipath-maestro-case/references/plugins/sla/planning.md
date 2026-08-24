@@ -72,7 +72,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 
 ## Identity Resolution
 
-When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — Phase 0 still records email / group name as a string in sdd.md.
+When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
 
 ### Skip — UUID pass-through
 
@@ -209,3 +209,5 @@ Before emitting SLA T-entries, reject or repair the same cases the Case App reje
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.
 - **Do not cache user declines.** Session cache holds positive resolutions only. Re-ask on each T-entry occurrence of the same unresolved recipient.
+
+<!-- END: planning.md -->

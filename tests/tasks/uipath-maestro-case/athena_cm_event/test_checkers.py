@@ -172,7 +172,7 @@ closes on required-stages-completed.
                 {"id": f"{task_id}_folder", "default": "Shared"},
             ])
         plan = {
-            "version": "23.0.0",
+            "version": "27.0.0",
             "name": "AthenaCMEventCase",
             "metadata": {
                 "caseIdentifier": "=vars.instanceExternalId",
@@ -193,8 +193,8 @@ closes on required-stages-completed.
             "nodes": [
                 {
                     "id": "trigger",
-                    "type": "case-management:Trigger",
-                    "data": {"uipath": {"serviceType": "Intsvc.EventTrigger"}},
+                    "type": "uipath.case.trigger",
+                    "data": {"inputs": {"serviceType": "Intsvc.EventTrigger"}},
                 },
                 stage_a,
                 stage_b,
@@ -207,7 +207,12 @@ closes on required-stages-completed.
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
 
-    def write_tasks_md(self, *, rewrite_a2_as_sequential: bool = False) -> None:
+    def write_tasks_md(
+        self,
+        *,
+        rewrite_a2_as_sequential: bool = False,
+        bullet_prefix: bool = True,
+    ) -> None:
         contracts = {
             "StageATask1": ("parallel", "current-stage-entered", None),
             "StageATask2": (
@@ -222,12 +227,13 @@ closes on required-stages-completed.
             "StageCTask3": ("conditional-gate", "selected-tasks-completed", "StageCTask2"),
         }
         sections = []
+        prefix = "- " if bullet_prefix else ""
         for index, (task_name, (mode, rule, selected)) in enumerate(contracts.items(), 1):
             rendered_rule = f'{rule}("{selected}")' if selected else rule
             sections.append(
                 f'## T{index}: Add process task "{task_name}" to "Stage"\n\n'
-                f"- activation-mode: {mode}\n"
-                f"- entry-rule: {rendered_rule}\n"
+                f"{prefix}activation-mode: {mode}\n"
+                f"{prefix}entry-rule: {rendered_rule}\n"
             )
         tasks = self.workdir / "tasks" / "tasks.md"
         tasks.parent.mkdir()
@@ -245,6 +251,11 @@ closes on required-stages-completed.
 
     def test_plan_checker_accepts_authored_task_entry_rules(self) -> None:
         self.write_tasks_md()
+        result = run(PLAN_CHECK, self.workdir)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_plan_checker_accepts_plain_task_entry_fields(self) -> None:
+        self.write_tasks_md(bullet_prefix=False)
         result = run(PLAN_CHECK, self.workdir)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

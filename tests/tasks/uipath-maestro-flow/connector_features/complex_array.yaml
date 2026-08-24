@@ -1,8 +1,10 @@
 task_id: skill-flow-ipe-complex-array
 description: >
-  Tests the complex array IS feature — configures a connector node with a
-  complex array field on the Act! 365 connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, ipe, mode:build]
+  Tests the complex array IS feature — configures the Slack
+  (uipath-salesforce-slack) "Create Group Direct Message" operation, whose
+  users[*] field is a complex array of user IDs. Validate-only — no
+  `flow debug` (debug would open a real group DM in the workspace).
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe, mode:build]
 
 run_limits:
   expected_turns: 38
@@ -11,13 +13,9 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a new Flow project called "ComplexArrayTest" with a manual trigger.
-  You need a flow that records a sales interaction in Act! 365 and associates it
-  with several contacts in one call. Discover the right Act! 365 add-activity
-  operation and populate the contacts field (a complex array of contact IDs).
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "ComplexArray test failed".
-  Route success to a final action that logs "ComplexArray test passed".
+  Create a new Flow project called "ComplexArrayTest" with a manual trigger that
+  creates a Slack group direct message between the users "coder evals" and
+  "e2e-testing". Use the connection present in Shared/uipath-maestro-flow.
   Validate the final flow file.
 
 success_criteria:
@@ -26,30 +24,31 @@ success_criteria:
     command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
     timeout: 10
     expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has a connector node referencing uipath-act-act365"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-act-act365' in content, 'Connector key not found'; print('OK: connector key present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has the Slack Create Group Direct Message node with its users complex array populated"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); nodes=[n for n in f['nodes'] if n.get('type','')=='uipath.connector.uipath-salesforce-slack.create-group-direct-message']; assert nodes, 'No create-group-direct-message node'; d=json.dumps(nodes[0].get('inputs',{})); assert 'users' in d, 'users complex array not populated'; print('OK: group DM node with users array present')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: group DM participants referenced in the project (names may resolve to Slack user IDs on a live connection)"
+    command: "python3 -c \"import glob,os,sys; files=[p for p in glob.glob('**/ComplexArrayTest*/**',recursive=True)+glob.glob('**/ComplexArrayTest*.*',recursive=True) if os.path.isfile(p) and not p.endswith('.uipx')]; blob=''.join(open(p,errors='ignore').read() for p in files); missing=[u for u in ('coder evals','e2e-testing') if u not in blob]; sys.exit(1 if missing else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "uip maestro flow validate was called"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
     min_count: 1
+    require_success: true
     weight: 2.0
     pass_threshold: 1.0
 

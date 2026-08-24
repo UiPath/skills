@@ -1,0 +1,32 @@
+{
+  "name": "uipath",
+  "displayName": "UiPath",
+  "version": "1.202.0",
+  "description": "UiPath plugin for Cursor — skills for building, running, testing, and deploying UiPath automations, agents, coded apps, and platform operations.",
+  "author": {
+    "name": "UiPath",
+    "email": "support@uipath.com"
+  },
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": "https://github.com/UiPath/skills",
+  "license": "MIT",
+  "keywords": [
+    "uipath",
+    "automation",
+    "rpa",
+    "workflows",
+    "skills",
+    "code",
+    "xaml",
+    "studio",
+    "ui-automation",
+    "ui-testing",
+    "desktop",
+    "browser",
+    "coded-apps",
+    "coded-agents",
+    "agent",
+    "troubleshoot"
+  ],
+  "logo": "assets/uipath-icon.png"
+}

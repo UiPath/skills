@@ -28,7 +28,12 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import (  # noqa: E402
+    connection_binding,
+    set_message,
+    write_baseline_lowcode_agent,
+    write_bindings,
+)
 
 SOLUTION = Path("ReviewSol")
 TOOL_NAME = "SendCustomerEmail"
@@ -183,9 +188,7 @@ def _write_tool_resource(project: Path) -> None:
 def _patch_agent(agent_json: Path) -> None:
     data = json.loads(agent_json.read_text(encoding="utf-8"))
     data["guardrails"] = [json.loads(json.dumps(GUARDRAIL))]
-    for msg in data.get("messages", []):
-        if msg.get("role") == "user":
-            msg["content"] = USER_MSG
+    set_message(data, "user", USER_MSG)
     agent_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
@@ -194,6 +197,7 @@ def main() -> None:
     _write_tool_resource(project)
     _patch_agent(project / "agent.json")
     _patch_agent(project / ".agent-builder" / "agent.json")
+    write_bindings(project, [connection_binding(CONNECTION_ID, CONNECTOR_KEY)])
     print("Injected SendCustomerEmail tool + Tool-scope pii_detection block guardrail")
 
 

@@ -14,7 +14,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
 - User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
 - User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
-- User wants to embed the **Document Understanding Validation Station** widget for human review of DU extraction results
+- User asks for app UI that a **prebuilt UiPath widget** covers: review/correct Document Understanding extraction results (Validation Station), chat with a conversational agent, browse/edit a Data Fabric entity in a grid, upload files to a storage bucket, display a PDF, or sign in with an external IdP (Google/SAML)
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
@@ -28,7 +28,12 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
 
-> **Coded apps are not registered in `.uipx` solutions.** They have no `project.uiproj` / `project.json`, so `uip solution projects add` does not apply. A coded app can live alongside a solution directory but deploys independently via `uip codedapp publish` (and `uip codedapp deploy`), not via `uip solution pack` / `publish` / `deploy`.
+> **Two lifecycles, two scaffolding entry points.**
+>
+> - **Standalone coded app**: scaffold with `npx create-vite@latest` (see [create-web-app.md](references/create-web-app.md) / [create-action-app.md](references/create-action-app.md)). No `project.uiproj` / `webAppManifest.json` — those are solution-membership artefacts and standalone apps don't need them. Deploy via `uip codedapp pack` → `uip codedapp publish` (`-t Action` for action apps) → `uip codedapp deploy`. This is the classic single-app lifecycle covered by the rest of this skill.
+> - **In-solution coded app**: run `uip codedapp init` from **inside a `.uipx` solution**. Init writes `project.uiproj` (`ProjectType: "AppV2"`) + `webAppManifest.json`, nests runtime + build artefacts under `source/dist/`, auto-registers the project as `Type: "AppV2"` in the `.uipx`, and emits `resources/solution_folder/app/{Coded,CodedAction}/`. From then on the app is part of the solution — `uip solution pack` bundles its `.nupkg` and `uip solution deploy run` provisions it in the deployment folder. **Do not** run `uip codedapp pack` / `publish` / `deploy` on a coded app that's already registered in `.uipx` — that bypasses the solution's deploy config (external client ID, routing name, action schema) and double-registers the package. `uip solution projects add` / `uip solution projects import` register existing AppV2 folders too, reading `webAppManifest.config.isActionApp` to pick the `Coded` / `CodedAction` subType. For the solution-side lifecycle see [/uipath:uipath-solution](/uipath:uipath-solution).
+>
+> **`uip codedapp init` is for solutions only.** It is not the scaffolding entry point for a standalone coded app — use `create-vite` for that.
 
 ## Critical Rules
 
@@ -40,9 +45,9 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 6. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
 7. **Never handle access tokens manually.** Do not pass, print, parse, source, or set cached access tokens. Use `uip login` and supported `uip codedapp` commands; the CLI manages authentication.
 8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
-9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
+9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here. **Import static assets through the bundler** (`import logo from './assets/logo.png'`) so Vite fingerprints and base-rewrites them. Do NOT place them in `public/` or reference them by a hardcoded `/`-rooted path — those bypass base rewriting and 404 after deploy under the non-root mount.
 10. **Use `getAppBase()` from `@uipath/uipath-typescript` for any absolute URL constructed at runtime** — router basename, image `src`, `fetch` paths. Deployed apps mount at a non-root prefix; `/`-rooted paths work locally but 404 after deploy. Vite's `base: './'` only fixes import-time references.
-11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If the user provides a folder **name**, resolve it to a key with `uip or folders list --output json` and match on the `Name` field (output rows are `{ Key, Name, Path, Description, Type, ParentKey }`). A **personal workspace** is the row with `Type == "Personal"` — resolve its `Key` the same way. To deploy into a **new** folder, create it first with `uip or folders create "<NAME>" --output json` and read `Data.Key`. The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
+11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If the user provides a folder **name**, resolve it with the server-side filter `uip or folders list --all --name "<name>" --output json` and pick the row whose `Name` **exactly** equals the target, then read its `Key` (the plain list is paginated 50/page and `--name` is a *contains* match requiring `--all`, so never just take the first row). A **personal workspace** is not in `--all` — resolve it from the default `uip or folders list --output json` where `Type == "Personal"`. To deploy into a **new** folder, create it first with `uip or folders create "<NAME>" --output json` and read `Data.Key`. The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
 12. **Guard against text overflow in every UI.** See [patterns.md](references/patterns.md) "Preventing Text Overflow".
 13. **Inspect the DF schema before writing analytics, filters, or seeds.** Run `uip df entities get <ENTITY_ID> --output json` to inspect fields and types. At runtime, use `entities.getById(<id>)` from the app's authenticated session. DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
 14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
@@ -80,6 +85,11 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
 | **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
+| **Embed the Conversational Agent chat widget** | [references/widgets/conversational-agent-chat.md](references/widgets/conversational-agent-chat.md) |
+| **Embed the Data Fabric DataTable widget** | [references/widgets/datatable.md](references/widgets/datatable.md) |
+| **Embed the multi-file bucket upload widget** | [references/widgets/multi-file-upload.md](references/widgets/multi-file-upload.md) |
+| **Embed the PDF viewer widget** | [references/widgets/pdf-viewer.md](references/widgets/pdf-viewer.md) |
+| **Add external IdP sign-in buttons (Google/SAML)** | [references/widgets/external-auth.md](references/widgets/external-auth.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
 | **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
 | **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
@@ -123,19 +133,22 @@ uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 
-# Client-credentials (headless/CI) — MUST include Apps.Read Apps.Write or publish's
-# "Registering coded app" step fails with 401 even though package upload succeeds.
-# OR.Default alone is NOT sufficient — it covers Orchestrator but not the Apps service.
+# Client-credentials (headless/CI) — scope MUST name one Orchestrator scope AND
+# the two Apps-service scopes. Neither set covers the other:
+#   OR.Default            → Orchestrator
+#   Apps.Read Apps.Write  → Apps-service registration in `uip codedapp publish`
+# Do NOT substitute granular Orchestrator scopes (OR.Folders/OR.Execution/
+# OR.Administration) for OR.Default.
 uip login \
   --client-id <id> \
   --client-secret <secret> \
   --organization <org> \
   --tenant <tenant> \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write" \
+  --scope "OR.Default Apps.Read Apps.Write" \
   --authority https://alpha.uipath.com   # omit --authority for production
 ```
 
-> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs Orchestrator scopes) **and** registers the coded app (needs `Apps.Read Apps.Write`). Omitting the Apps scopes lets the upload succeed but silently 401s the registration.
+> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs `OR.Default`) **and** registers the coded app (needs `Apps.Read Apps.Write`). For what each failure looks like, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 ## SDK Config (web app)
 
@@ -161,7 +174,7 @@ To change any of these values, edit `uipath.json`.
 
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), always include `Apps.Read Apps.Write` in `--scope` — required by the Apps service registration inside `uip codedapp publish`. `OR.Default` alone covers Orchestrator (package upload) but not Apps registration; omitting them causes a silent 401 on the second half of publish.
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. With **client credentials** (headless/CI), use `--scope "OR.Default Apps.Read Apps.Write"` — all three names are required: `OR.Default` for Orchestrator, `Apps.Read` and `Apps.Write` for the Apps-service registration in `uip codedapp publish`. The External Application itself needs only `Apps.Read` and `Apps.Write`; `OR.Default` is auto-granted and not portal-selectable, so name it in `--scope`. If publish or deploy then fails, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
@@ -189,7 +202,7 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 |-------|-------|-----|
 | `Not authenticated` | No valid session | Run `uip login` |
 | `dist/ not found` | App not built | Run `npm run build` |
-| `Version already exists` | Same version re-published | Bump version in `pack` |
+| `Published app with package name '<name>' and version '<version>' already exists` | Same name+version already published (registration rejects duplicates) | Bump `--version` and re-publish |
 | `Folder key required` / deploy hangs on prompt | Missing folder for CLI deploy | Resolve folder name → key via `uip or folders list --output json` (match on `Name`, read `Key`), then run `uip codedapp deploy --folder-key <GUID> ...`. See [pack-publish-deploy.md](references/pack-publish-deploy.md#folder-key). |
 | `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |

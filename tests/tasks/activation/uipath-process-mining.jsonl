@@ -13,3 +13,7 @@
 {"id": "uipath-process-mining-013", "prompt": "Run a steps-to-resolution analysis on my ServiceNow incident data with uip pm", "expected_skill": "uipath-process-mining"}
 {"id": "uipath-process-mining-014", "prompt": "My ingestion finished with SUCCESS_WITH_WARNINGS — what do those mapping warnings mean?", "expected_skill": "uipath-process-mining"}
 {"id": "uipath-process-mining-015", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-016", "prompt": "My Process Mining dashboards won't open — I get 'Must be duration, not numeric, for the lt input'. How do I fix it?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-017", "prompt": "Change a field's data kind from numeric to duration in my process app", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-018", "prompt": "Add a calculated field to my process app model", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-019", "prompt": "After I changed a field's datakind my process app is locked to the data-upload screen — how do I recover it?", "expected_skill": "uipath-process-mining"}

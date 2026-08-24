@@ -21,21 +21,35 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import (  # noqa: E402
+    connection_binding,
+    set_message,
+    write_baseline_lowcode_agent,
+    write_bindings,
+)
 
 SOLUTION = Path("ReviewSol")
 TOOL_NAME = "SendCustomerEmail"
+TOOL_DESCRIPTION = (
+    "Sends an email to a customer. Requires the recipient's email address "
+    "and the message body. Use after drafting the reply to deliver it."
+)
+CONNECTION_ID = "88888888-8888-4888-8888-888888888888"
+FOLDER_KEY = "99999999-9999-4999-8999-999999999999"
 
+# Schema-valid integration tool wiring: `uip agent validate` parses each
+# resource through the storage-schema Zod union, which requires the full
+# connector wiring (properties.method/connection/parameters/bodyStructure,
+# iconUrl, argumentProperties). A bare tool stub fails with
+# "resource.json: Invalid input" — fixture noise that distracts the reviewer
+# from the intended missing-guardrail signal.
 TOOL_RESOURCE = {
     "$resourceType": "tool",
     "id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa",
     "type": "integration",
     "location": "external",
     "name": TOOL_NAME,
-    "description": (
-        "Sends an email to a customer. Requires the recipient's email address "
-        "and the message body. Use after drafting the reply to deliver it."
-    ),
+    "description": TOOL_DESCRIPTION,
     "isEnabled": True,
     "inputSchema": {
         "type": "object",
@@ -52,8 +66,36 @@ TOOL_RESOURCE = {
         "type": "object",
         "properties": {"sent": {"type": "boolean", "description": "Whether the email was sent"}},
     },
+    "iconUrl": "",
     "settings": {},
     "guardrail": {"policies": []},
+    "argumentProperties": {},
+    "properties": {
+        "toolPath": "/hubs/productivity/send-mail-v2",
+        "objectName": "send-mail-v2",
+        "toolDisplayName": TOOL_NAME,
+        "toolDescription": TOOL_DESCRIPTION,
+        "method": "POST",
+        "bodyStructure": {"contentType": "json"},
+        "connection": {
+            "id": CONNECTION_ID,
+            "name": "review-fixture-outlook",
+            "elementInstanceId": 0,
+            "apiBaseUri": "",
+            "state": "enabled",
+            "isDefault": False,
+            "connector": {
+                "key": "uipath-microsoft-outlook365",
+                "name": "Microsoft Outlook 365",
+                "image": "",
+                "enabled": True,
+                "isPreview": False,
+            },
+            "folder": {"key": FOLDER_KEY, "path": FOLDER_KEY},
+            "solutionProperties": {"resourceKey": CONNECTION_ID},
+        },
+        "parameters": [],
+    },
 }
 
 USER_MSG = (
@@ -74,9 +116,7 @@ def _write_tool_resource(project: Path) -> None:
 def _patch_agent(agent_json: Path) -> None:
     data = json.loads(agent_json.read_text(encoding="utf-8"))
     data.pop("guardrails", None)
-    for msg in data.get("messages", []):
-        if msg.get("role") == "user":
-            msg["content"] = USER_MSG
+    set_message(data, "user", USER_MSG)
     agent_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
@@ -85,6 +125,7 @@ def main() -> None:
     _write_tool_resource(project)
     _patch_agent(project / "agent.json")
     _patch_agent(project / ".agent-builder" / "agent.json")
+    write_bindings(project, [connection_binding(CONNECTION_ID, "uipath-microsoft-outlook365")])
     print("Injected SendCustomerEmail tool (handles PII) with no guardrail")
 
 

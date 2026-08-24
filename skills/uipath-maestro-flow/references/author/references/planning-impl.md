@@ -249,7 +249,7 @@ $vars.rollDice.output.roll              // Script return value
 $vars.fetchData.output.body             // HTTP response body
 $vars.fetchData.output.statusCode       // HTTP status code
 $vars.someNode.error.message            // Error information
-iterator.currentItem                     // Loop item (inside loop body)
+$vars.<loopId>.currentItem                // Loop item (inside loop body)
 ````
 
 **Expression prefixes:**

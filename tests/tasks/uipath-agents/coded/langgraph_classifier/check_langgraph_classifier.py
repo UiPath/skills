@@ -13,10 +13,11 @@ Checks performed:
   2. The project has either `langgraph.json` (Pattern A — recommended)
      OR `uipath.json` with a `functions.graph` entry (Pattern B). Both
      are valid per the LangGraph integration guide.
-  3. `main.py` (or `graph.py`) defines `GraphInput`/`GraphOutput`
-     Pydantic models, exports a top-level `graph` variable, and has
-     NO module-level UiPath* construction (`UiPathChat`,
-     `UiPathAzureChatOpenAI`, etc.).
+  3. `main.py` (or `graph.py`) wires a `StateGraph` to distinct
+     Pydantic input/output models, exports a top-level `graph`
+     variable, and has NO module-level UiPath* construction
+     (`UiPathChat`, `UiPathAzureChatOpenAI`, etc.). Model *names* are
+     not asserted — `agent-patterns.md` allows any naming.
   4. `entry-points.json` has one entrypoint whose schemas mention
      `text` (input) and `category` (output) — proves `uip codedagent
      init` ran AFTER the Pydantic models were written.
@@ -36,6 +37,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
+from _shared.langgraph_assertions import assert_graph_module_shape  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
 
 ROOT = find_project_root("support-classifier")
@@ -84,13 +86,7 @@ def find_graph_module() -> Path:
 
 
 def check_graph_module(path: Path) -> None:
-    text = _read_text(path)
-    for needle in ("GraphInput", "GraphOutput", "graph"):
-        if needle not in text:
-            sys.exit(f"FAIL: {path.name} is missing `{needle}`")
-    if "StateGraph" not in text and "CompiledStateGraph" not in text:
-        sys.exit(f"FAIL: {path.name} does not reference StateGraph / CompiledStateGraph")
-    print(f"OK: {path.name} defines GraphInput, GraphOutput, and a graph variable")
+    assert_graph_module_shape(path)
     violations = find_module_level_llm_clients(path)
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
@@ -148,8 +144,8 @@ def check_entry_points() -> None:
                 f'fields. Got: {raw}'
             )
     print(
-        "OK: entry-points.json schemas reflect the GraphInput/GraphOutput "
-        "fields (text, category)"
+        "OK: entry-points.json schemas reflect the declared input/output "
+        "model fields (text, category)"
     )
 
 
