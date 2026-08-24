@@ -69,9 +69,10 @@ Two surfaces that look useful and are NOT, for API-workflow jobs:
 | Command | What it actually returns |
 |---------|--------------------------|
 | `uip or jobs logs <jobId>` | Lifecycle lines only — `"Workflow started"` / `"Workflow completed"`, both at level `Info`. It reports **`Workflow completed` even for a Faulted job** and never carries the error. Do not diagnose from it, and never read "completed" as success. |
-| `uip traces spans get --job-key <jobKey>` | Fails with `"Error retrieving trace ID for job"`. API-workflow jobs have no span/trace surface. |
+| `uip traces spans get --job-key <jobKey>` | Returned `"Error retrieving trace ID for job"` on every API-workflow job probed. The CLI emits that message for any trace-ID lookup failure (a malformed GUID included), so read it as "no trace resolved for this job" rather than proof the surface is absent. Either way it carries no fault detail. |
+| `uip or jobs traces <jobId>` | Documented Agent-type-process-only — not applicable to an API-workflow job. |
 
-> **Diagnose before you tear down.** Uninstalling the deployment destroys its job records — `uip or jobs get <jobId>` then returns `Result: Failure` with an empty `State`. Capture what you need while the deployment still stands.
+> **Diagnose before you tear down.** After uninstalling the deployment, `uip or jobs get <jobId>` returns `Result: Failure` with an empty `State`. Jobs themselves are immutable audit records (`uip or jobs --help`: they "cannot be deleted -- they age out per the binding process's retention period"), so the likely cause is that the folder/process context needed to resolve the job is gone, not the records. Either way, capture what you need while the deployment still stands.
 
 > For per-activity detail the local loop is stronger than anything in cloud: reproduce with `uip api-workflow run <Workflow.json> --no-auth --output json`, which names the failing activity. Cloud gives you the fault message; local gives you its position.
 
