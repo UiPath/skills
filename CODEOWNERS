@@ -194,5 +194,5 @@
 /tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven
 
 # Automation Hub skills (Open API publish/read of processes via the user's cloud token)
-/skills/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
-/tests/tasks/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
+/skills/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
+/tests/tasks/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
