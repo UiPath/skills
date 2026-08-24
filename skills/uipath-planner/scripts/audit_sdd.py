@@ -337,7 +337,9 @@ def model_findings(text: str, facts: dict, carried_names: frozenset[str] = froze
             if name in carried_names:
                 return None  # read from the draft: preserved verbatim, minting charset does not apply
             if not name_pattern.fullmatch(name):
-                return f"{kind} name {name!r} breaks case-design-layers-guide.md § Naming rules (minted names only; draft-carried names are exempt)"
+                return (
+                    f"{ADVISORY}{kind} name {name!r} uses characters outside the safe display set in\n     case-design-layers-guide.md § Naming rules. Only ':' is known to break routing, so this does not\n     gate: prefer the safe set when MINTING a name, and keep a name the user or the source supplied"
+                )
             return None
 
         for kind, name, _ in stage_blocks(text):
@@ -736,14 +738,27 @@ def contract_findings(text: str, facts: dict) -> list[str]:
 # skipped, so two resources with same-name/different-case fields stay clean.
 SCHEMA_TYPE_WORD = r"(?:string|integer|number|float|double|boolean|datetime|date|object|array|file|jsonSchema)"
 S4_FIELD = re.compile(rf"\b([A-Za-z_][A-Za-z0-9_]*)\s*:\s*{SCHEMA_TYPE_WORD}\b")
+# Every capture group holds a dotted TAIL, not one segment: a mis-cased name hides at any depth
+# (`response.CounterpartyProfile.AuthorityLevel` — the head and the sub-field are both schema keys),
+# and checking only the first segment misses the deeper ones. The `vars.` form is the exception that
+# proves the rule: its first segment is a declared case variable, so the pattern consumes it and the
+# tail starts at the sub-field.
 READ_PATHS = (
     (re.compile(r"^\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*(?:->|<-|=)", re.M), "Input/Output Schema Field cell"),
-    (re.compile(r"\bresponse\.([A-Za-z_][A-Za-z0-9_]*)"), "response path"),
-    (re.compile(r"\bvars\.[A-Za-z_][A-Za-z0-9_]*\.([A-Za-z_][A-Za-z0-9_]*)"), "vars sub-field path"),
-    (re.compile(r"\btrigger\.([A-Za-z_][A-Za-z0-9_]*)"), "trigger payload path"),
-    (re.compile(r'<-\s*"[^"]+"\."[^"]+"\.([A-Za-z_][A-Za-z0-9_]*)'), "cross-task output reference"),
-    (re.compile(r"\$xref\('[^']+','[^']+',\s*'([A-Za-z_][A-Za-z0-9_]*)'\)"), "xref output reference"),
+    (re.compile(r"\bresponse\.([A-Za-z_][A-Za-z0-9_.]*)"), "response path"),
+    (re.compile(r"\bvars\.[A-Za-z_][A-Za-z0-9_]*\.([A-Za-z_][A-Za-z0-9_.]*)"), "vars sub-field path"),
+    (re.compile(r"\btrigger\.([A-Za-z_][A-Za-z0-9_.]*)"), "trigger payload path"),
+    (re.compile(r'<-\s*"[^"]+"\."[^"]+"\.([A-Za-z_][A-Za-z0-9_.]*)'), "cross-task output reference"),
+    (re.compile(r"\$xref\('[^']+','[^']+',\s*'([A-Za-z_][A-Za-z0-9_.]*)'\)"), "xref output reference"),
 )
+# Findings carrying this prefix are printed but do not gate AUDIT OK. Reserved for rules whose
+# violation is a display preference rather than a platform failure: gating on those costs full repair
+# rounds and — worse for a display NAME — makes the agent rewrite the user's own domain vocabulary,
+# which the lane's authoring policy forbids outright. Only rules with a known runtime consequence
+# block (a ':' in a name breaks colon-delimited case-execution event routing; that one still gates).
+ADVISORY = "[advisory] "
+
+
 RESERVED_HANDLES = {"response", "result", "error", "vars", "trigger", "metadata", "bindings", "iterator"}
 
 
@@ -772,26 +787,26 @@ def field_casing_findings(text: str) -> list[str]:
     seen: set[tuple[str, str]] = set()
     for pattern, label in READ_PATHS:
         for match in pattern.finditer(design):
-            used = match.group(1)
-            key = field_key(used)
-            if used.casefold() in RESERVED_HANDLES or key not in declared:
-                continue
-            spellings = declared[key]
-            if len(spellings) != 1 or used in spellings:
-                continue
-            schema_name = next(iter(spellings))
-            if (used, schema_name) in seen:
-                continue
-            seen.add((used, schema_name))
-            line_no = design[: match.start()].count("\n") + 1
-            findings.append(
-                f"line {line_no}: {label} reads {used!r} but Section 4 declares the schema field as "
-                f"{schema_name!r} — field names are external keys, matched byte-for-byte at runtime "
-                f"(Studio Web: \"{used} not found, did you mean {schema_name}\"). "
-                f"Carry the schema spelling verbatim (never re-case, never read names off a "
-                f"`--output json` envelope's PascalCased keys); if the casing is not sourced, "
-                f"render the field as <UNRESOLVED> and pair it with a review item"
-            )
+            for used in (s for s in match.group(1).split(".") if s):
+                key = field_key(used)
+                if used.casefold() in RESERVED_HANDLES or key not in declared:
+                    continue
+                spellings = declared[key]
+                if len(spellings) != 1 or used in spellings:
+                    continue
+                schema_name = next(iter(spellings))
+                if (used, schema_name) in seen:
+                    continue
+                seen.add((used, schema_name))
+                line_no = design[: match.start()].count("\n") + 1
+                findings.append(
+                    f"line {line_no}: {label} reads {used!r} but Section 4 declares the schema field as "
+                    f"{schema_name!r} — field names are external keys, matched byte-for-byte at runtime "
+                    f"(Studio Web: \"{used} not found, did you mean {schema_name}\"). "
+                    f"Carry the schema spelling verbatim (never re-case, never read names off a "
+                    f"`--output json` envelope's PascalCased keys); if the casing is not sourced, "
+                    f"render the field as <UNRESOLVED> and pair it with a review item"
+                )
     return findings
 
 
@@ -921,6 +936,17 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
     return findings
 
 
+def emit_advisories(advisories: list[str]) -> None:
+    """Suggestions, not gates — never repair-looped, never a reason to withhold the ready flip."""
+    if not advisories:
+        return
+    print("\nADVISORY (does not gate AUDIT OK — fix only if you agree):", file=sys.stderr)
+    for n, a in enumerate(advisories[:10], 1):
+        print(f"  {n}. {a}", file=sys.stderr)
+    if len(advisories) > 10:
+        print(f"  … and {len(advisories) - 10} more", file=sys.stderr)
+
+
 def main() -> None:
     args = [a for a in sys.argv[1:]]
     draft: Path | None = None
@@ -930,7 +956,9 @@ def main() -> None:
         del args[i:i + 2]
     if len(args) != 1:
         sys.exit(__doc__)
-    findings = audit(Path(args[0]), draft)
+    all_findings = audit(Path(args[0]), draft)
+    findings = [f for f in all_findings if not f.startswith(ADVISORY)]
+    advisories = [f[len(ADVISORY):] for f in all_findings if f.startswith(ADVISORY)]
     if findings:
         shown = findings[:40]
         print("AUDIT FAIL — repair these, then re-run:", file=sys.stderr)
@@ -938,8 +966,10 @@ def main() -> None:
             print(f"  {n}. {f}", file=sys.stderr)
         if len(findings) > len(shown):
             print(f"  … and {len(findings) - len(shown)} more", file=sys.stderr)
+        emit_advisories(advisories)
         sys.exit(1)
     print("AUDIT OK: sdd.md template shape is clean")
+    emit_advisories(advisories)
 
 
 if __name__ == "__main__":

@@ -409,7 +409,9 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-Never `:` — case-execution events are colon-delimited; a colon in a name breaks routing. The charset governs names being MINTED or first carried into a design: repair mechanically — replace disallowed runs with one space, collapse, trim; on empty result or collision add a safe qualifier and disclose. A name read from an existing draft/SDD during finalization is preserved verbatim, punctuation included — except `:` (structural ban): surface and ask, never silently keep or repair.
+**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character `audit_sdd.py` gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
+
+Everything else in that set is a **minting preference, not a platform limit** — the auditor reports it as an advisory that does not gate. Apply it to names YOU mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **A name the user, the source document, or a draft supplied is kept verbatim, punctuation included** (`Credit & Document Verification` stays). Rewriting one to fit the charset is the domain-fidelity defect the lane's authoring policy forbids, and it costs repair rounds for a display preference.
 
 **Default:** case name = PascalCase from the domain noun; case ID prefix = a 2–4 letter mechanical derivation of it.
 

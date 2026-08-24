@@ -595,11 +595,22 @@ the build defaults safely). Narrative cells never carry skill-internal vocabular
 companion, inputOutputs[], groupOperator, essentialConfiguration-as-prose, savedFilterTrees, dispatcher,
 io-binding, aliased into/from, reassign, originalVar, auto-mint).
 
+FINALIZING a draft (`sdd.draft.md` -> the final SDD): the render obeys this contract IN FULL — the
+document skeleton above, one `##### Task <n>: <Name>` detail block per task the draft inventories (never
+a stage-level Tasks table standing in for them), `**Type:** Stage` on every stage block, the exact
+type-specific detail headings and bold field labels (`**Timer:**` stays `**Timer:**`), Section 3/4 column
+headers verbatim, real newlines. A task the draft left as a summary still gets its full detail block:
+fill concise defaults, keep every concrete value the draft supplied, and set `**Resolved Resource:**` to
+the draft's intended resource name — or, when it names none, the task display name; never <UNRESOLVED>
+there. Pass --draft so the gate also checks inventory parity, verbatim `=js:` preservation, and
+executable threshold encoding. What the DRAFT specifically needs repaired on the way through is the
+lane guide's § Resumption; the shape is here.
+
 Gate: run  <py> "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
 on-disk file BEFORE the Status: ready flip — in every mode. `<py>` = the first of `python3`, `python`,
 `py` that runs (Windows usually has no `python3` alias); only if all three are absent verify manually. RUN it, never open the script source —
-its findings are the interface. Minting charset applies to names THIS run minted; names carried from
-a draft are preserved verbatim and exempt (pass --draft so the validator knows), ':' banned always. Repair findings with Edit, re-run to AUDIT OK
+its findings are the interface. Minting charset is ADVISORY — it never gates, and a name the user, the
+source, or a draft supplied is kept verbatim (pass --draft so the validator knows). ':' gates always. Repair findings with Edit, re-run to AUDIT OK
 (max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like
 ## Source / ## Case Objective / ## Stages / ## Task Plan, or build-mode/path narration) even if a later
 caseplan.json would validate — rewrite from the model and this template.
@@ -607,7 +618,8 @@ caseplan.json would validate — rewrite from the model and this template.
 The validator's checks, by family — RUN it, do not hand-verify this list. Each name is what a finding
 will refer to; the rules themselves live at the cells above and in case-design-layers-guide.md:
 
- 1. Document skeleton · 2. Closed enums + gate-slot pairing · 3. Names (charset + case-wide uniqueness)
+ 1. Document skeleton · 2. Closed enums + gate-slot pairing · 3. Names (':' ban + case-wide uniqueness;
+ charset is advisory)
  4. SLA references (arity, target, declared title) + stage/task selectors · 5. Data closure + orphan
  Maps To · 6. Typed recipients, non-empty entry tables, forbidden vocabulary · 7. Structure (case-entered,
  ≥1 trigger, ≥1 Marks Case Complete, wait-for-user ↔ user-selected-stage, no duplicate case-exit rows)

@@ -139,3 +139,35 @@ def test_load_model_facts_returns_a_two_tuple_contract():
     assert isinstance(result, tuple) and len(result) == 2
     assert isinstance(result[0], dict)
     assert result[1] is None or isinstance(result[1], str)
+
+
+# --- nested paths: a mis-cased name hides at any depth ------------------------------------
+
+def test_sub_field_of_a_response_path_is_checked():
+    """`response.X.Y` — Y is as much a schema key as X, and was the miss that shipped."""
+    findings = field_casing_findings(
+        sdd("| summary | `=js:response.CounterpartyProfile.AuthorityLevel` |",
+            "counterparty_profile: string, authority_level: string")
+    )
+    assert len(findings) == 2, findings
+    assert any("AuthorityLevel" in f and "authority_level" in f for f in findings)
+
+
+def test_third_level_vars_sub_field_is_checked():
+    findings = field_casing_findings(
+        sdd("| flags | `=vars.analysis.deviation.FlagList` |", "flag_list: string")
+    )
+    assert len(findings) == 1 and "FlagList" in findings[0], findings
+
+
+def test_nested_path_with_correct_casing_stays_clean():
+    assert field_casing_findings(
+        sdd("| summary | `=js:response.counterparty_profile.authority_level` |",
+            "counterparty_profile: string, authority_level: string")
+    ) == []
+
+
+def test_trailing_sentence_period_is_not_read_as_a_segment():
+    assert field_casing_findings(
+        sdd("The task reads response.amount. Nothing else.", "amount: integer")
+    ) == []
