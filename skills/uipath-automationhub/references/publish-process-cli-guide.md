@@ -71,19 +71,10 @@ uip ah documents create $PROCESS_ID \
 
 ## Step 6b (optional): Link a Studio Web solution
 
-When the caller wants the process linked to a Studio Web solution (or supplies one), set the `OVR-OVERVIEW_STUDIO_WEB_LINK` question — at create time inside `user_inputs`, or afterwards via `uip ah automations update $PROCESS_ID --file <answers.json>`.
+When the caller wants the process linked to a Studio Web solution (or supplies one), set the `OVR-OVERVIEW_STUDIO_WEB_LINK` question — at create time inside `user_inputs`, or afterwards via `uip ah automations update $PROCESS_ID --file <answers.json>`. The answer's exact value format (JSON-string `value` with a required `url`, `hasProcessMap` semantics, empty string to unlink) is a domain fact — read it in [`api-endpoints.md`](api-endpoints.md) (**Studio Web link**), don't restate it.
 
-**The answer's `value` is a JSON *string*** (not an object) with a required `url`:
-
-```json
-"OVR-OVERVIEW_STUDIO_WEB_LINK": {
-  "value": "{\"url\":\"<designer url>\",\"name\":\"<solution name>\",\"hasProcessMap\":true}"
-}
-```
-
-- **Resolve the solution from the caller — no CLI discovery exists.** No stable `uip` command lists Studio Web solutions today, so ask the user (`AskUserQuestion`) for the solution's **designer URL** — they can copy it from the browser address bar with the solution open in Studio Web. If they instead supply a solution id + project id, build the URL as `{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={solutionId}` (`projectId` = the solution's ProcessOrchestration project). **Never invent, guess, or search for a solution id or URL.**
-- **`hasProcessMap`**: `true` only when the solution's orchestration project contains a `.bpmn` file — this is what makes AH render the Maestro diagram preview. If the caller doesn't know, omit the field rather than guessing.
-- To **unlink**, set `value` to an empty string.
+- **Resolve the solution from the caller — no CLI discovery exists.** No stable `uip` command lists Studio Web solutions today, so ask the user (`AskUserQuestion`) for the solution's **designer URL** — they can copy it from the browser address bar with the solution open in Studio Web. If they instead supply a solution id + project id, build the URL per the catalog's designer-URL shape (`projectId` = the solution's ProcessOrchestration project). **Never invent, guess, or search for a solution id or URL.**
+- If the caller doesn't know whether the solution has a `.bpmn` (the `hasProcessMap` condition), omit that field rather than guessing.
 
 ## Step 7: Verify, then report
 
