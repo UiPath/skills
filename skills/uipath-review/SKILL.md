@@ -261,7 +261,7 @@ Required sections, in order:
 4. `### Automated Validation Results` — counts table and Error/Warning details only.
 5. `### Rules Skipped` — intended but unapplied rules only.
 6. `### Critical Findings`, `### Warnings`, `### Improvement Opportunities` — one row per finding: `| <id> | <rule> | <file>: <issue>. <fix>. |`; use `—` when no `rule_id`; never duplicate or split findings by source.
-7. `### Per-Project Summary` — Grade for agents and `—` otherwise; Quality for all.
+7. `### Per-Project Summary` — Grade for agents and `—` otherwise; Quality for all. Report size as structural counts, never lines: `.xaml` activity/nesting/variable/argument counts, `.cs` method/statement counts, `.flow` node/gateway/depth counts, `.py` function/statement/import counts, config entry/nesting counts.
 8. `### Recommended Next Steps` — route fixes to the appropriate skill.
 9. `### Optimization Notes` — only when relevant.
 10. `**Final grade: <A–F>**` — agents only, on its own line as the **last line** of the report (nothing after it); the letter **must match** the Summary Agent Grade.
