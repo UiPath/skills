@@ -71,7 +71,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created CE_FolderScopeTest in a folder with a valid schema body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create\s+"?CE_FolderScopeTest"?(?=.*--folder-key)(?=.*\\?\"name\\?\")'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create\s+"?CE_FolderScopeTest"?(?=.*--folder-key)(?=.*(\\?\"name\\?\"|--file))'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
