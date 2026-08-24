@@ -9,13 +9,13 @@ Exact `@uipath/flow-sdk/case` authoring signatures and option shapes, from the p
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**Case authoring** — [rule](#rule-function) · [escalation](#escalation-function) · [toUser](#touser-function) · [toGroup](#togroup-function) · [manualTrigger](#manualtrigger-function) · [timerTrigger](#timertrigger-function) · [eventTrigger](#eventtrigger-function) · [jsonSchema](#jsonschema-function) · [casePlan](#caseplan-function)
+**Case authoring** — [rule](#rule-function) · [when](#when-function) · [escalation](#escalation-function) · [toUser](#touser-function) · [toGroup](#togroup-function) · [manualTrigger](#manualtrigger-function) · [timerTrigger](#timertrigger-function) · [eventTrigger](#eventtrigger-function) · [jsonSchema](#jsonschema-function) · [casePlan](#caseplan-function)
 
 **Builders** — [CaseBuilder](#casebuilder-class) · [StageBuilder](#stagebuilder-class) · [TaskBuilder](#taskbuilder-class)
 
-**Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ConnectorOpts](#connectoropts-interface)
+**Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-interface) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TypeDesc](#typedesc-type) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [BuiltStage](#builtstage-interface) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
 
 ## rule (function)
 
@@ -26,6 +26,13 @@ generated from the built types; longer tutorials stay in the node references.
  * `entryWhen`/`exitWhen`/etc.
  */
 export declare function rule(type: CaseRuleType, opts?: RuleOpts): CaseRule;
+````
+
+## when (function)
+
+````ts
+/** Gate a condition slot only on case data without naming its default event. */
+export declare function when(expression: string): WhenExpression;
 ````
 
 ## escalation (function)
@@ -68,9 +75,13 @@ export declare function timerTrigger(opts: TimerTriggerOpts): BuiltTrigger;
 ````ts
 /**
  * An Integration Service **event** trigger — an external event (a new row, an
- * email, a webhook) starts the case. Emits `data.inputs.serviceType:
- * "Intsvc.EventTrigger"`; payload fields map onto its `outputs[]`.
+ * email, a webhook) starts the case. A generated descriptor supplies the
+ * connector and event identity; serialization resolves its context, inputs,
+ * outputs, and root bindings through the connector library.
  */
+export declare function eventTrigger<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: ResolvedEventTriggerOpts<W>): BuiltTrigger;
+
+/** An Integration Service event trigger in placeholder or stringly-resolved form. */
 export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
 ````
 
@@ -104,8 +115,19 @@ declare class CaseBuilder {
     description(text: string): this;
     /** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`). */
     identifier(id: string, type?: 'constant' | 'external'): this;
-    /** Turn the generated Case App on or off. */
-    caseApp(enabled?: boolean): this;
+    /** Turn the generated Case App on or off, or configure its summary and sections. */
+    caseApp(enabledOrConfig?: boolean | CaseAppConfig): this;
+    /**
+     * Enable optional tasks whose entry rule is `adhoc`, allowing them to be
+     * started through the Case ad-hoc message contract.
+     */
+    allowAdhocTasks(enabled?: boolean): this;
+    /**
+     * Set optional designer layout for stages and triggers by their author-level
+     * names. This metadata does not affect Case behavior. Unknown or ambiguous
+     * names fail serialization rather than being silently dropped.
+     */
+    layout(layout: CaseLayout): this;
     /**
      * Declare case In-args. Each value is a `TypeDesc`, or `{ type, default }`
      * to set a default. Pass `{ from: <trigger> }` to bind the args to a trigger —
@@ -239,12 +261,11 @@ declare class TaskBuilder {
     connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;
     /**
      * A wait-for-connector task — suspend the stage until an Integration Service
-     * **event** fires. Omit the spec (or `connectorKey`/`operation`) for a
-     * **placeholder** (a connector not yet registered): `data.uipath` carries only
-     * `serviceType: "Intsvc.WaitForEvent"`. Naming the connector/operation emits the
-     * `context` subscription. (A fully *resolved* subscription — real
-     * connection/typeId — needs live connector resolution and is out of scope.)
+     * **event** fires. A generated descriptor supplies the connector/event identity;
+     * serialization resolves its full subscription through the connector library.
      */
+    waitForConnector<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: TriggerOptions<W>): this;
+    /** A wait-for-connector task in placeholder or stringly-resolved form. */
     waitForConnector(spec?: WaitConnectorSpec): this;
     /** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`). */
     waitForTimer(spec?: TimerSpecData): this;
@@ -252,6 +273,12 @@ declare class TaskBuilder {
     required(value?: boolean): this;
     /** Run this task at most once, even if its entry condition is met again. */
     runOnce(value?: boolean): this;
+    /**
+     * Run this task again whenever its entry condition is met after stage re-entry.
+     * This is the semantic inverse of `TaskBuilder.runOnce` and emits an explicit
+     * `shouldRunOnlyOnce: false`.
+     */
+    runOnReEntry(): this;
     /** Describe this task. */
     description(text: string): this;
     /** Skip this task when the `=js:` expression is truthy. */
@@ -364,12 +391,35 @@ export interface TimerTriggerOpts {
 }
 ````
 
+## ResolvedEventTriggerOpts (interface)
+
+````ts
+/** Options for the typed `eventTrigger(Descriptor, options)` form. */
+export interface ResolvedEventTriggerOpts<W extends Record<string, string> = Record<string, string>> extends TriggerOptions<W> {
+    /** Trigger node label. */
+    name?: string;
+    /** Trigger node description. */
+    description?: string;
+    /** Event-payload fields to extract into readable case variables. */
+    outputs?: Record<string, string | {
+            source: string;
+            type?: TypeDesc;
+        }>;
+}
+````
+
 ## EventTriggerOpts (interface)
 
 ````ts
 export interface EventTriggerOpts {
     name?: string;
     description?: string;
+    /**
+     * Stringly resolved subscription. Prefer the descriptor overload when a
+     * prepared connector module is available. Omit this for the legacy
+     * `serviceType`-only placeholder.
+     */
+    subscription?: EventSubscription;
     /**
      * Optional event-payload extractions. Each key is a case-variable name read
      * downstream as `=vars.<name>`; each value is the payload field expression
@@ -380,6 +430,60 @@ export interface EventTriggerOpts {
             source: string;
             type?: TypeDesc;
         }>;
+}
+````
+
+## EventSubscription (interface)
+
+````ts
+/** What a connector event subscribes to. */
+export interface EventSubscription {
+    /** Connector key, e.g. `'uipath-microsoft-outlook365'`. */
+    connector: string;
+    /** The curated event, e.g. `'email-received'`. */
+    event: string;
+    /**
+     * The connector's event parameters — what SCOPES the subscription. For Outlook
+     * email-received that is `{ parentFolderId: '<mail folder id>' }`; the field
+     * names come from the connector, and the ids are only resolvable against the
+     * bound connection (`uip is triggers describe <key> <EVENT> <object>
+     * --connection-id <id>`).
+     */
+    where?: Record<string, string>;
+    /** Optional filters on the payload. Omit to take every event in scope. */
+    filters?: EventFilter[];
+    /** bindings.json id for the connection (defaults to the flow's single binding). */
+    connection?: string;
+    /** bindings.json id for the folder key. */
+    folder?: string;
+    version?: string;
+}
+````
+
+## TriggerOptions (interface)
+
+````ts
+/**
+ * The typed `onEvent`/`waitForEvent` options — everything an
+ * `EventSubscription` carries except `connector`/`event`, which the
+ * `TriggerDescriptor` supplies. `where` is generic so a connection-scoped
+ * descriptor (C4) can type its parameter names; offline it is a loose string map.
+ */
+export interface TriggerOptions<W = Record<string, string>> {
+    /**
+     * The subscription's scope — the connector's event parameters, which is what IS
+     * registers. Loose offline; for Outlook `email-received` that is
+     * `{ parentFolderId: '<mail folder id>' }`.
+     */
+    where?: W;
+    /** Optional filters on the payload. Omit to take every event in scope. */
+    filters?: EventFilter[];
+    /** bindings.json id for the connection (defaults to the flow's single binding). */
+    connection?: string;
+    /** bindings.json id for the folder key. */
+    folder?: string;
+    /** Override the descriptor's version. */
+    version?: string;
 }
 ````
 
@@ -438,6 +542,11 @@ export interface ExitOpts {
      * an exit that routes there).
      */
     exitToStage?: string;
+    /**
+     * Enable the runtime select-next-stage API for this `wait-for-user` exit.
+     * `objectName` is the Data Fabric entity that receives `{ instanceId, nextStage }`.
+     */
+    selectNextStage?: SelectNextStageSpec;
 }
 ````
 
@@ -473,6 +582,15 @@ export interface CaseRule extends RuleOpts {
 }
 ````
 
+## WhenExpression (interface)
+
+````ts
+export interface WhenExpression {
+    readonly kind: 'case-when-expression';
+    readonly expression: string;
+}
+````
+
 ## BuiltEscalation (interface)
 
 ````ts
@@ -499,7 +617,17 @@ export interface BuiltTrigger {
     description?: string;
     timeCycle?: string;
     eventOutputs?: TaskOutputBinding[];
+    eventSubscription?: EventSubscription;
 }
+````
+
+## TriggerDescriptor (type)
+
+````ts
+export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
+    readonly __where?: W;
+    readonly __output?: O;
+};
 ````
 
 ## JsonSchemaType (interface)
@@ -511,13 +639,10 @@ export interface JsonSchemaType {
 }
 ````
 
-## WaitConnectorSpec (interface)
+## WaitConnectorSpec (type)
 
 ````ts
-export interface WaitConnectorSpec {
-    connectorKey?: string;
-    operation?: string;
-}
+export type WaitConnectorSpec = WaitConnectorPlaceholderSpec | EventSubscription;
 ````
 
 ## EscalationTrigger (type)
@@ -542,16 +667,45 @@ export interface TaskOutputBinding {
 }
 ````
 
+## TriggerMeta (interface)
+
+````ts
+export interface TriggerMeta {
+    connector: string;
+    event: string;
+    version?: string;
+    displayName?: string;
+}
+````
+
 ## TypeDesc (type)
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
 ````
 
+## CaseAppConfig (interface)
+
+````ts
+export interface CaseAppConfig {
+    summary: string;
+    sections: CaseAppSection[];
+}
+````
+
+## CaseLayout (interface)
+
+````ts
+export interface CaseLayout {
+    stages?: Record<string, CaseNodeLayout>;
+    triggers?: Record<string, CaseNodeLayout>;
+}
+````
+
 ## CaseRuleGrid (type)
 
 ````ts
-export type CaseRuleGrid = CaseRule | CaseRule[] | CaseRule[][];
+export type CaseRuleGrid = CaseRuleInput | CaseRuleInput[] | CaseRuleInput[][];
 ````
 
 ## BuiltCase (interface)
@@ -565,11 +719,61 @@ export interface BuiltCase {
     identifier: string;
     identifierType: 'constant' | 'external';
     caseAppEnabled: boolean;
+    caseAppConfig?: CaseAppConfig;
+    allowAdhocOptionalStageTasks?: boolean;
     vars: CaseVarDecl[];
     stages: BuiltStage[];
     caseExit: BuiltCaseExitCondition[];
     slaRules: BuiltSla[];
     triggers: BuiltTrigger[];
+    layout?: CaseLayout;
+}
+````
+
+## WaitConnectorPlaceholderSpec (interface)
+
+````ts
+export interface WaitConnectorPlaceholderSpec {
+    connectorKey?: string;
+    operation?: string;
+}
+````
+
+## EventFilter (interface)
+
+````ts
+export interface EventFilter {
+    field: string;
+    contains: string;
+}
+````
+
+## CaseAppSection (interface)
+
+````ts
+export interface CaseAppSection {
+    id?: string;
+    title: string;
+    details: Record<string, CaseAppDetailValue>;
+}
+````
+
+## CaseNodeLayout (interface)
+
+````ts
+export interface CaseNodeLayout {
+    position?: {
+            x: number;
+            y: number;
+        };
+    style?: Record<string, string | number>;
+    measured?: {
+            width: number;
+            height: number;
+        };
+    width?: number;
+    height?: number;
+    zIndex?: number;
 }
 ````
 
@@ -586,6 +790,12 @@ export interface BuiltStage {
     exit: BuiltExitCondition[];
     slaRules: BuiltSla[];
 }
+````
+
+## CaseRuleInput (type)
+
+````ts
+export type CaseRuleInput = CaseRule | WhenExpression;
 ````
 
 ## SlaUnit (type)
@@ -629,6 +839,12 @@ export interface BuiltSla {
 }
 ````
 
+## CaseAppDetailValue (type)
+
+````ts
+export type CaseAppDetailValue = string | number | boolean | null;
+````
+
 ## RecipientType (type)
 
 ````ts
@@ -641,7 +857,14 @@ export type RecipientType = 0 | 1 | 2 | 3;
 export interface ActionField {
     name: string;
     type?: TypeDesc;
+    subType?: string;
     displayName?: string;
+    value?: string;
+    required?: boolean;
+    options?: Array<{
+            value: string;
+            label: string;
+        }>;
 }
 ````
 
@@ -691,6 +914,24 @@ export interface BuiltTask {
 export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
 ````
 
+## SelectNextStageSpec (interface)
+
+````ts
+export interface SelectNextStageSpec {
+    objectName: string;
+    connector?: {
+            /** Integration Service connector key, for example `uipath-http-webhook`. */
+            connectorKey: string;
+            /** Connector event operation, for example `GENERIC`. */
+            operation: string;
+            /** Symbolic connection name declared in bindings.json. */
+            connection?: string;
+            /** Symbolic folder name declared in bindings.json. */
+            folder?: string;
+        };
+}
+````
+
 ## BuiltEntryCondition (interface)
 
 ````ts
@@ -709,6 +950,7 @@ export interface BuiltExitCondition {
     marksStageComplete?: boolean;
     type?: StageExitType;
     exitToStage?: string;
+    selectNextStage?: SelectNextStageSpec;
     rules: CaseRule[][];
 }
 ````
