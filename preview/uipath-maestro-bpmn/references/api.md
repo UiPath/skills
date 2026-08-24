@@ -13,9 +13,9 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Builders** — [BpmnBuilder](#bpmnbuilder-class) · [ScopeBuilder](#scopebuilder-class) · [SubProcessBuilder](#subprocessbuilder-class)
 
-**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
+**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface)
+**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface)
 
 ## bpmn (function)
 
@@ -35,6 +35,8 @@ export declare function bpmn(id: string): BpmnBuilder;
 export declare class BpmnBuilder extends ScopeBuilder {
     /** Set the process's display name. */
     name(n: string): this;
+    /** Process-level metadata — see `ProcessMetadata`. */
+    metadata(meta: ProcessMetadata): this;
     /**
      * Declare an external identifier the process needs supplied — a base URL, a
      * folder path, a process name (`uipath:binding`). Expressions read it as
@@ -81,6 +83,8 @@ declare abstract class ScopeBuilder {
     scriptTask(id: string, opts: ScriptTaskOpts): this;
     /** A plain task that assigns variables (`BPMN.Variables`). */
     task(id: string, opts?: TaskOpts): this;
+    /** A task element carrying NO `uipath:*` payload — an abstract task, in BPMN's terms. */
+    plainTask(id: string, opts?: PlainTaskOpts): this;
     /**
      * An Integration Service **connector** service task (`bpmn:sendTask` +
      * `uipath:activity` / `Intsvc.ActivityExecution`) — the typed form, where a
@@ -89,6 +93,45 @@ declare abstract class ScopeBuilder {
     connector<I extends Record<string, unknown>, O>(id: string, descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: BpmnConnectorOpts): this;
     /** Stringly form, for a connector with no prepared module. */
     connector(id: string, key: string, action: string, inputs?: Record<string, unknown>, opts?: BpmnConnectorOpts): this;
+    /**
+     * An **HTTP request** service task (`bpmn:sendTask` +
+     * `uipath:activity` / `Intsvc.UnifiedHttpRequest`).
+     */
+    http(id: string, opts: HttpOpts): this;
+    /** Start an **RPA process** and wait for it (`Orchestrator.StartJob`). */
+    startProcess(id: string, opts: OrchestratorOpts): this;
+    /** Start an **agent** and wait for it (`Orchestrator.StartAgentJob`). */
+    startAgent(id: string, opts: OrchestratorOpts): this;
+    /**
+     * Invoke an **agentic process** as a call activity
+     * (`Orchestrator.StartAgenticProcess`, or `…Async` when `async` is set).
+     */
+    startAgenticProcess(id: string, opts: OrchestratorAsyncOpts): this;
+    /**
+     * Invoke a **case-management process** as a call activity
+     * (`Orchestrator.StartCaseMgmtProcess`, or `…Async` when `async` is set).
+     */
+    startCaseProcess(id: string, opts: OrchestratorAsyncOpts): this;
+    /**
+     * Execute an **API workflow**, fire-and-forget
+     * (`Orchestrator.ExecuteApiWorkflowAsync`).
+     */
+    executeApiWorkflow(id: string, opts: OrchestratorOpts): this;
+    /**
+     * Add an item to an Orchestrator **queue** (`Orchestrator.CreateQueueItem`, or
+     * `Orchestrator.CreateAndWaitForQueueItem` when `wait` is set).
+     */
+    queueItem(id: string, opts: QueueItemOpts): this;
+    /**
+     * A **human task** — an Action App task a person completes (`bpmn:userTask` +
+     * `uipath:activity` / `Actions.HITL`).
+     */
+    humanTask(id: string, opts: HumanTaskOpts): this;
+    /**
+     * ANY registry-backed node, by extension type — the generic form the typed
+     * methods are sugar over.
+     */
+    activity(id: string, type: string, opts?: ActivityNodeOpts): this;
     /** A sub-process — a scope of its own, with its own elements and flows (`bpmn:subProcess`). */
     subProcess(id: string, fn: (sp: SubProcessBuilder) => void, opts?: SubProcessOpts): this;
     /** A sequence flow from `source` to `target` (1-1 with `bpmn:sequenceFlow`). */
@@ -133,6 +176,8 @@ export interface BindingOpts {
     propertyAttribute?: string;
     /** The resource's key, when it differs from `BindingOpts.value`. */
     resourceKey?: string;
+    /** Narrows the resource, e.g. `'Agent'` for an agent process. */
+    resourceSubType?: string;
 }
 ````
 
@@ -274,6 +319,18 @@ export interface TaskOpts extends ActivityOpts {
 }
 ````
 
+## PlainTaskOpts (interface)
+
+````ts
+/** Options for `.plainTask()`. */
+export interface PlainTaskOpts extends ActivityOpts {
+    /** Display name the designer shows. */
+    name?: string;
+    /** Which task element to emit. Defaults to `bpmn:task`. */
+    element?: PlainTaskElement;
+}
+````
+
 ## BpmnConnectorOpts (type)
 
 ````ts
@@ -302,6 +359,172 @@ export type BpmnConnectorOpts = ConnectorOpts & ActivityOpts & {
      */
     outputVar?: string;
 };
+````
+
+## HttpOpts (interface)
+
+````ts
+/** Options for `.http()` — an `Intsvc.UnifiedHttpRequest` node. */
+export interface HttpOpts extends ActivityOpts {
+    /** Display name the designer shows on the task. */
+    name?: string;
+    /** Request URL. Accepts an `=`-expression, including `=bindings.<id>`. */
+    url: string;
+    /** HTTP method. Defaults to `'GET'`, matching the registry's own default. */
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
+    /** Request headers — serialized to the node's json context field. */
+    headers?: Record<string, unknown>;
+    /** Query parameters — serialized to the node's json context field. */
+    parameters?: Record<string, unknown>;
+    /** Request body — serialized to the node's json context field. */
+    body?: unknown;
+    /**
+     * EXTRA output rows: variable id → `=`-expression read against the node's own result,
+     * e.g. `{ runStatus: '=Status' }`.
+     */
+    outputs?: Record<string, string>;
+    /** Variable the response lands in. Defaults to `<id>_response`. */
+    outputVar?: string;
+    /** `=`-expression that skips the request when truthy. */
+    skipCondition?: string;
+}
+````
+
+## OrchestratorOpts (interface)
+
+````ts
+/**
+ * What every Orchestrator invocation needs: which process, in which folder, with
+ * what input.
+ */
+export interface OrchestratorOpts extends ActivityOpts {
+    /** Display name the designer shows on the node. */
+    name?: string;
+    /** The Orchestrator process to start, by name. */
+    process: string;
+    /** Folder path the process lives in. Omit for the personal/default folder. */
+    folder?: string;
+    /** Input arguments — serialized as the node's `JobArguments` body. */
+    input?: Record<string, unknown>;
+    /** The release key, when a binding supplies it (`=bindings.<id>`). */
+    releaseKey?: string;
+    /**
+     * EXTRA output rows: variable id → `=`-expression read against the node's own result,
+     * e.g. `{ runStatus: '=Status' }`.
+     */
+    outputs?: Record<string, string>;
+    /** Variable the job response lands in. Defaults to `<id>_processResponse`. */
+    outputVar?: string;
+    /** `=`-expression that skips the invocation when truthy. */
+    skipCondition?: string;
+}
+````
+
+## OrchestratorAsyncOpts (interface)
+
+````ts
+/** Options for the two agentic/case call activities, which come in sync and async forms. */
+export interface OrchestratorAsyncOpts extends OrchestratorOpts {
+    /**
+     * `true` starts the process and carries on without waiting (`…Async`), so only
+     * an error is mapped back. Default `false` — start and wait.
+     */
+    async?: boolean;
+}
+````
+
+## QueueItemOpts (interface)
+
+````ts
+/** Options for `.queueItem()`. */
+export interface QueueItemOpts extends ActivityOpts {
+    /** Display name the designer shows on the node. */
+    name?: string;
+    /** The queue to add the item to. */
+    queue: string;
+    /** Folder path the queue lives in. */
+    folder: string;
+    /** The item's content — serialized as the node's `ItemData` body. */
+    item?: Record<string, unknown>;
+    /**
+     * `true` waits for the item to be processed and maps its outcome back
+     * (`Orchestrator.CreateAndWaitForQueueItem`); default adds it and carries on.
+     */
+    wait?: boolean;
+    /**
+     * EXTRA output rows: variable id → `=`-expression read against the node's own result,
+     * e.g. `{ runStatus: '=Status' }`.
+     */
+    outputs?: Record<string, string>;
+    /** Variable the response lands in. Defaults to `<id>_response`. */
+    outputVar?: string;
+    /** `=`-expression that skips the enqueue when truthy. */
+    skipCondition?: string;
+}
+````
+
+## HumanTaskOpts (interface)
+
+````ts
+/** Options for `.humanTask()` — an `Actions.HITL` action-app task. */
+export interface HumanTaskOpts extends ActivityOpts {
+    /** Display name the designer shows on the task. */
+    name?: string;
+    /** The Action App's id (`appId`). Tenant-specific — see the remarks above. */
+    app: string;
+    /** The app version (`appVersion`). */
+    appVersion?: number;
+    /** The outcomes a human can pick, e.g. `['approve', 'reject']`. */
+    actions?: string[];
+    /** The task title a human sees (`taskTitle`). */
+    title?: string;
+    /** An existing task key, when resuming rather than creating (`key`). */
+    key?: string;
+    /** Data the task shows the human — the node's `HitlTaskArguments`. */
+    input?: Record<string, unknown>;
+    /**
+     * Fields to pull out of the human's response into variables, e.g.
+     * `{ decision: '=Action' }`.
+     */
+    outputs?: Record<string, string>;
+    /** Variable the whole typed response lands in. Defaults to `<id>_processResponse`. */
+    outputVar?: string;
+    /** `=`-expression that skips the task when truthy. */
+    skipCondition?: string;
+}
+````
+
+## ActivityNodeOpts (interface)
+
+````ts
+/** Options for `.activity()` — the generic registry-backed node. */
+export interface ActivityNodeOpts extends ActivityOpts {
+    /** Display name the designer shows. */
+    name?: string;
+    /** `uipath:context` values, by the registry's field names. */
+    context?: Record<string, unknown>;
+    /** The payload, shaped by the type's `inputPattern`. */
+    inputs?: Record<string, unknown>;
+    /** Variable the type's own output lands in. Defaults to `<id>_<outputName>`. */
+    outputVar?: string;
+    /** Extra output rows: variable id → `=`-expression against the node's result. */
+    outputs?: Record<string, string>;
+    /**
+     * The output rows spelled out, replacing `outputVar` and `outputs`. Set by
+     * `bpmn-decompile` when a row carries detail those cannot express — a
+     * connector's `jsonSchema` rows and their schema bodies. See
+     * `TypedOutputRow`.
+     */
+    outputRows?: TypedOutputRow[];
+    /** `=`-expression that skips the node when truthy (activity/event tags only). */
+    skipCondition?: string;
+    /**
+     * Emit `context` exactly as given, injecting no registry defaults. Set by
+     * `bpmn-decompile` so an imported artifact round-trips unchanged; an author
+     * writing `.activity()` by hand wants the defaults.
+     */
+    contextVerbatim?: boolean;
+}
 ````
 
 ## SubProcessOpts (interface)
@@ -377,6 +600,21 @@ export interface ConnectorOpts {
 }
 ````
 
+## ProcessMetadata (interface)
+
+````ts
+export interface ProcessMetadata {
+    migrationVersion?: string;
+    entryPointId?: string;
+    tags?: string[];
+    caseManagement?: {
+            version: string;
+            value?: string;
+        };
+    executable?: boolean;
+}
+````
+
 ## BuiltBpmn (interface)
 
 ````ts
@@ -389,6 +627,7 @@ export interface BuiltBpmn {
     bindings: BindingDecl[];
     nodes: BpmnNode[];
     flows: BpmnFlow[];
+    metadata?: ProcessMetadata;
 }
 ````
 
@@ -444,6 +683,32 @@ export type BpmnNode = {
     /** `=`-expression that, when true, skips this activity (`uipath:activity/@skipCondition`). */
     skipCondition?: string;
 }) | (ActivityNodeFields & {
+    kind: 'typed';
+    id: string;
+    name?: string;
+    /** The registry extension type, e.g. `'Intsvc.UnifiedHttpRequest'`. */
+    type: string;
+    /** `uipath:context` values, by field name. */
+    context: Record<string, unknown>;
+    /** The payload, shaped by the type's `inputPattern`. */
+    inputs: Record<string, unknown>;
+    /** Variable the output lands in; defaults to `<id>_<outputName>`. */
+    outputVar?: string;
+    /** Extra output rows: variable id → `=`-expression against the node's result. */
+    outputs?: Record<string, string>;
+    /** Output rows spelled out, replacing the derived ones — see `TypedOutputRow`. */
+    outputRows?: TypedOutputRow[];
+    /** `=`-expression that skips the node when truthy. */
+    skipCondition?: string;
+    /** Emit `context` exactly as given — for importers; see `TypedNodeInput`. */
+    contextVerbatim?: boolean;
+}) | (ActivityNodeFields & {
+    kind: 'plainTask';
+    id: string;
+    name?: string;
+    /** Which task element to emit. */
+    element: PlainTaskElement;
+}) | (ActivityNodeFields & {
     kind: 'subProcess';
     id: string;
     name?: string;
@@ -487,6 +752,16 @@ declare class DefinitionsRegistry {
     readonly errors: ErrorDecl[];
     messageRef(name: string): string;
     errorRef(name: string, code?: string): string;
+}
+````
+
+## BindingsRegistry (class)
+
+````ts
+declare class BindingsRegistry {
+    readonly bindings: BindingDecl[];
+    declare(decl: BindingDecl): BindingDecl;
+    has(id: string): boolean;
 }
 ````
 
@@ -534,6 +809,7 @@ export interface BindingDecl {
     propertyAttribute: string;
     default?: string;
     resourceKey?: string;
+    resourceSubType?: string;
 }
 ````
 
@@ -573,6 +849,24 @@ export interface ActivityNodeFields {
     retry?: RetrySpec;
     loop?: LoopSpec;
 }
+````
+
+## TypedOutputRow (interface)
+
+````ts
+export interface TypedOutputRow {
+    name: string;
+    type?: string;
+    var?: string;
+    source?: string;
+    schema?: unknown;
+}
+````
+
+## PlainTaskElement (type)
+
+````ts
+export type PlainTaskElement = 'bpmn:task' | 'bpmn:userTask' | 'bpmn:serviceTask' | 'bpmn:sendTask' | 'bpmn:manualTask' | 'bpmn:businessRuleTask' | 'bpmn:receiveTask';
 ````
 
 ## VarDirection (type)

@@ -12,7 +12,7 @@ Create a solution, add automation projects, and sync resource declarations.
 
 ## Prerequisites
 
-- Authenticated — verify with `uip login status` (required for remote resource lookup during `resource refresh` and for `upload`); if not logged in, ask the user to run `uip login` (interactive browser flow)
+- Authenticated — verify with `uip login status` (required for remote resource lookup during `resources refresh` and for `upload`); if not logged in, ask the user to run `uip login` (interactive browser flow)
 - Projects to add must contain `project.uiproj` or `project.json`
 
 ## Flow
@@ -64,12 +64,12 @@ The `.uipx` is auto-discovered by walking up from the project path if not specif
 Copy a project from outside the solution tree into the solution directory and register it.
 
 ```bash
-uip solution projects import --source /path/to/ExternalProject --output json
+uip solution projects import /path/to/ExternalProject --output json
 ```
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
 
-> **Three names can diverge after `import`.** The destination folder name is the basename of `--source`. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
+> **Three names can diverge after `import`.** The destination folder name is the basename of the source path. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
 
 ## Step 4: Remove a Project
 
@@ -331,8 +331,8 @@ An *already-imported* key is not an error — the idempotency check runs first, 
 
 | Mechanism | When to use | Behavior |
 |---|---|---|
-| `resource refresh` | A `bindings_v2.json` was edited (by Studio Web, Maestro Flow/Case scaffolds, `maestro flow new`) and you need to reconcile all projects | Scans every project's bindings, creates / imports for everything new, suffixes name collisions across folders |
-| `resource add` | One specific resource that's not driven by a binding (CI provisioning a queue, an agent that knows exactly what it wants to import) | Single resource, idempotent, no project scan |
+| `resources refresh` | A `bindings_v2.json` was edited (by Studio Web, Maestro Flow/Case scaffolds, `maestro flow new`) and you need to reconcile all projects | Scans every project's bindings, creates / imports for everything new, suffixes name collisions across folders |
+| `resources add` | One specific resource that's not driven by a binding (CI provisioning a queue, an agent that knows exactly what it wants to import) | Single resource, idempotent, no project scan |
 
 `add` does **not** mutate any `bindings_v2.json`. If a binding references this resource, you still need the binding file to be present — `add` just creates the solution-level artefact so deploy validation passes.
 
@@ -347,7 +347,7 @@ uip solution resources remove 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
 uip solution resources remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation --output json
 ```
 
-`<resource-key>` is positional and required, validated as a GUID. Use `resource list --source local` to discover keys.
+`<resource-key>` is positional and required, validated as a GUID. Use `resources list --source local` to discover keys.
 
 | Option | Values | Default |
 |--------|--------|---------|
@@ -368,9 +368,9 @@ uip solution resources remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation
 }
 ```
 
-If the key isn't in the local solution, the command exits with `Failure` and `Resource not found in solution` — there's no fallback to remote (unlike `resource get`). Use `resource list --source local` to confirm what's actually tracked.
+If the key isn't in the local solution, the command exits with `Failure` and `Resource not found in solution` — there's no fallback to remote (unlike `resources get`). Use `resources list --source local` to confirm what's actually tracked.
 
-> Removing a resource does **not** delete the binding in any `bindings_v2.json` that still references it. The next `resource refresh` will re-import it. To make a removal stick, either fix the binding through the owning product (Maestro Flow / Case, Studio Web, agent code) or remove the project from the solution first.
+> Removing a resource does **not** delete the binding in any `bindings_v2.json` that still references it. The next `resources refresh` will re-import it. To make a removal stick, either fix the binding through the owning product (Maestro Flow / Case, Studio Web, agent code) or remove the project from the solution first.
 
 ## Step 11: Edit a Resource
 
@@ -389,7 +389,7 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <resource-key> --patch -
 
 | Option | Values | Default |
 |--------|--------|---------|
-| `<resource-key>` | Solution resource key (GUID, positional) — discover via `resource list --source local` | **required** |
+| `<resource-key>` | Solution resource key (GUID, positional) — discover via `resources list --source local` | **required** |
 | `--patch <json\|->` | JSON object of spec property → value; `-` reads the JSON from stdin | **required** |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
 
@@ -420,7 +420,7 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <resource-key> --patch -
 }
 ```
 
-`Data` is the SDK's `ResourceConfiguration` — the **same shape `resource get` returns**, so `get`↔`edit` round-trips cleanly: `resource get <key> --output json`, mutate the JSON, feed it back via `--patch`. If you need a before/after diff, run `get` first.
+`Data` is the SDK's `ResourceConfiguration` — the **same shape `resources get` returns**, so `get`↔`edit` round-trips cleanly: `resources get <key> --output json`, mutate the JSON, feed it back via `--patch`. If you need a before/after diff, run `get` first.
 
 ## Step 12: Upload to Studio Web
 
@@ -493,7 +493,7 @@ ls -1 ./MySolution/resources/solution_folder/process/
 # 3. The two sets MUST agree by name. If not, the solution is corrupt.
 ```
 
-Steps 1–3 verify *project* mutations (`project add`/`remove`, `refresh`). For *resource* mutations (`resource add`/`remove`) the relevant files live under other `resources/solution_folder/<kind>/` subtrees (`queue/`, `asset/`, `bucket/`, …), so verify at the resource level instead:
+Steps 1–3 verify *project* mutations (`projects add`/`remove`, `refresh`). For *resource* mutations (`resources add`/`remove`) the relevant files live under other `resources/solution_folder/<kind>/` subtrees (`queue/`, `asset/`, `bucket/`, …), so verify at the resource level instead:
 
 ```bash
 uip solution resources list --source local --output json
@@ -508,13 +508,13 @@ If `.uipx` and `resources/solution_folder/` disagree, follow the recovery proced
 | `bindings.json` | `uipath init` (coded agent) | the agent at runtime |
 | `bindings_v2.json` | `uip maestro flow new`, Maestro Case scaffold, Studio Web (mirrors agent bindings up to solution root) | `uip solution resources refresh` |
 
-Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas differ, and `resource refresh` will silently fail (see "false success" gotcha above). Naive hand-authoring or copy-paste from `bindings.json` produces the opaque error `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. When a project's tooling already manages `bindings_v2.json` (Flow / Case / agent solutions), edit through that product's commands rather than the file directly, then run `resource refresh` to reconcile.
+Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas differ, and `resources refresh` will silently fail (see "false success" gotcha above). Naive hand-authoring or copy-paste from `bindings.json` produces the opaque error `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. When a project's tooling already manages `bindings_v2.json` (Flow / Case / agent solutions), edit through that product's commands rather than the file directly, then run `resources refresh` to reconcile.
 
-### `resource refresh` reports false success on schema errors
+### `resources refresh` reports false success on schema errors
 
 See [Step 7](#step-7-refresh-resources). Always capture stderr and grep for `ERROR`. The `Warnings` field stays empty even when the underlying parser throws.
 
-### `project remove` leaves orphan package resources
+### `projects remove` leaves orphan package resources
 
 See [Step 4](#step-4-remove-a-project). After `remove`, manually delete `resources/solution_folder/package/<name>.json` if you plan to re-add with the same name. To fully delete a project, also remove the project folder — `remove` does not touch source files.
 
@@ -524,7 +524,7 @@ See [Step 4](#step-4-remove-a-project). After `remove`, manually delete `resourc
 
 ### `add` vs `import`
 
-| | `project add` | `project import` |
+| | `projects add` | `projects import` |
 |-|----------------|-------------------|
 | Project location | Must already be inside the solution directory | Can be anywhere on disk |
 | File handling | Registers only (no file copy) | Copies into solution tree, then registers |
@@ -532,9 +532,9 @@ See [Step 4](#step-4-remove-a-project). After `remove`, manually delete `resourc
 
 ### `remove` does not delete files
 
-`project remove` unregisters from `.uipx` but leaves the project directory intact. Delete files manually if needed.
+`projects remove` unregisters from `.uipx` but leaves the project directory intact. Delete files manually if needed.
 
-### `resource refresh` is the sync mechanism
+### `resources refresh` is the sync mechanism
 
 Adding a project does not automatically sync its resources. The refresh scans all registered projects for `bindings_v2.json`, creates solution resources for untracked bindings, imports from Orchestrator when a match exists, and skips already-tracked bindings.
 
@@ -579,13 +579,13 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `--solution-folder` defaults to cwd
 
-`resource list / refresh / get / add / remove / edit` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resources list`) or pass `--solution-folder <path>` explicitly.
+`resources list / refresh / get / add / remove / edit` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resources list`) or pass `--solution-folder <path>` explicitly.
 
 ### `add` / `remove` / `edit` / `refresh` require a `.uipx` manifest in the target folder
 
-Unlike `resource get` and `list` (which fall back to RCS when local state is missing), the write commands refuse to operate on a directory that doesn't directly contain a `.uipx`. This prevents `--solution-folder /tmp` from silently writing stray resource files anywhere on disk. If you see `<path> is not a UiPath solution (no .uipx manifest found)`, you're pointed at the wrong directory.
+Unlike `resources get` and `list` (which fall back to RCS when local state is missing), the write commands refuse to operate on a directory that doesn't directly contain a `.uipx`. This prevents `--solution-folder /tmp` from silently writing stray resource files anywhere on disk. If you see `<path> is not a UiPath solution (no .uipx manifest found)`, you're pointed at the wrong directory.
 
-### `resource get` for cross-folder inspection
+### `resources get` for cross-folder inspection
 
 Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resources list --kind <kind> --source remote` to discover keys.
 
@@ -597,7 +597,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 |---|---|---|
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
 | Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
-| Pull in an external project | `uip solution projects import --source <path>` | Rename source folder first to avoid 3-name divergence |
+| Pull in an external project | `uip solution projects import <path>` | Rename source folder first to avoid 3-name divergence |
 | Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
 | Sync resource bindings | `uip solution resources refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Add a virtual queue / asset / bucket | `uip solution resources add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
