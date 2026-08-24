@@ -77,9 +77,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent ran the Step-0 preflight that selects the transport (uip ah --help)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah --help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent started with the connectivity/flows call (uip ah idea-flows list)"
     tool_name: "Bash"
-    command_pattern: '(?i)idea-flows list'
+    command_pattern: '(?i)uip ah idea-flows list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -87,7 +95,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created via the schema path (uip ah automations create --from-schema …)"
     tool_name: "Bash"
-    command_pattern: '(?i)automations create[^\n]*--from-schema'
+    command_pattern: '(?i)uip ah automations create[^\n]*--from-schema'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -95,7 +103,7 @@ success_criteria:
   - type: command_executed
     description: "Agent attached the document (uip ah documents create …) — best-effort: the fixture tenant is unreachable, so an agent may stop before this step"
     tool_name: "Bash"
-    command_pattern: '(?i)documents create'
+    command_pattern: '(?i)uip ah documents create'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

@@ -76,9 +76,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent ran the Step-0 preflight that selects the transport (uip ah --help)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah --help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent fetched the process by id (uip ah automations get …)"
     tool_name: "Bash"
-    command_pattern: '(?i)automations get'
+    command_pattern: '(?i)uip ah automations get'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -86,7 +94,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed the process documents (uip ah documents list …) — best-effort: the fixture tenant is unreachable, so an agent may stop after the first failed call"
     tool_name: "Bash"
-    command_pattern: '(?i)documents list'
+    command_pattern: '(?i)uip ah documents list'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

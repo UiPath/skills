@@ -1,6 +1,6 @@
 ---
 name: uipath-automationhub
-description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when the installed `uip` has the `ah` commands, flows run through them (`references/*-cli.md`); otherwise the raw Open API flows apply. Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs. Structured to extend to more Automation Hub operations."
+description: "Publish and read business processes in UiPath Automation Hub via the Open API, using the user's cloud login — no admin OpenAPI token needed. PUBLISH an approved process and its PDD/SDD documents (schema-driven payload, base64 file upload or link) to AH as the system of record — e.g. a process captured/approved by Process Scribe. GET a process back by id or search, list its attached documents, and DOWNLOAD their file bytes (e.g. for dedup / related-idea lookups or retrieving a published PDD). Authenticates with the user's cloud bearer token and NEVER sends the admin `x-ah-openapi-auth` header. CLI-first: when the installed `uip` has the `ah` commands, flows run through them (`references/*-cli-guide.md`); otherwise the raw Open API flows apply. Routes by intent to publish (create/upload) or get (read/fetch/download) references over the shared catalogs. Structured to extend to more Automation Hub operations."
 allowed-tools: Bash, Read, AskUserQuestion
 user-invocable: true
 ---
@@ -13,7 +13,7 @@ Work with business processes in UiPath Automation Hub (AH) through the AH Open A
 
 Run `uip ah --help` once per session:
 
-- **Succeeds** → use the **CLI flows**. Read [`references/cli-commands.md`](references/cli-commands.md) (command catalog + auth), then the matching `*-cli.md` flow. Auth is handled by `uip` itself — never touch a token.
+- **Succeeds** → use the **CLI flows**. Read [`references/cli-commands.md`](references/cli-commands.md) (command catalog + auth), then the matching `*-cli-guide.md` flow. Auth is handled by `uip` itself — never touch a token.
 - **Fails with `unknown command 'ah'`** (CLI predates the AH surface) → use the **raw Open API flows**. Read [`references/api-endpoints.md`](references/api-endpoints.md) (auth model, gateway URL, exact headers — and the header to never send), then the matching flow.
 
 Never mix the two transports in one run. The domain contract — required fields, wrapping rules, document types — is identical either way and lives in `api-endpoints.md`.
@@ -47,19 +47,19 @@ The platform injects tenant-routing headers from the `{org}/{tenant}` segments �
 
 ## Routing — pick the flow by intent
 
-Classify what the user wants, then follow the matching reference. All flows share the Authentication section above and the endpoint catalog in `references/api-endpoints.md`.
+Classify what the user wants, then follow the matching reference. The **raw-API flows** share the Authentication section above and the endpoint catalog in `references/api-endpoints.md`; the **CLI flows** never touch either — `uip` handles auth itself (see [`references/cli-commands.md`](references/cli-commands.md)).
 
 | The user wants to... | CLI available (preferred) | CLI unavailable |
 |---|---|---|
-| **Publish / create / upload** a process (+ its PDD/SDD documents) to AH | [`references/publish-process-cli.md`](references/publish-process-cli.md) | [`references/publish-process.md`](references/publish-process.md) |
-| **Get / read / fetch / download** a process (+ its documents) from AH | [`references/get-process-cli.md`](references/get-process-cli.md) | [`references/get-process.md`](references/get-process.md) |
+| **Publish / create / upload** a process (+ its PDD/SDD documents) to AH | [`references/publish-process-cli-guide.md`](references/publish-process-cli-guide.md) | [`references/publish-process.md`](references/publish-process.md) |
+| **Get / read / fetch / download** a process (+ its documents) from AH | [`references/get-process-cli-guide.md`](references/get-process-cli-guide.md) | [`references/get-process.md`](references/get-process.md) |
 | Shared **command / endpoint catalog** | [`references/cli-commands.md`](references/cli-commands.md) | [`references/api-endpoints.md`](references/api-endpoints.md) |
 | _(future AH Open API operation — add a row here)_ <!-- uip-check-skip --> | _add `references/<operation>.md` and route to it_ |
 
 **Extending this skill** (new AH operation, new field, new integration like the Studio Web link) — keep the shape, and put each kind of change in exactly one home:
 
 - **A new domain fact** (a field's format, a required rule, an id table): document it once in [`references/api-endpoints.md`](references/api-endpoints.md) — the transport-independent contract — and have the flow steps *reference* it rather than restate it. Never fork a fact across the CLI and API files.
-- **A new operation / user intent**: add a `references/<operation>-cli.md` flow (and, only while the raw-API fallback still exists, an API twin), plus one row in the routing table above and, if new commands are involved, rows in `cli-commands.md`. Do not create a new per-operation skill.
+- **A new operation / user intent**: add a `references/<operation>-cli-guide.md` flow (and, only while the raw-API fallback still exists, an API twin), plus one row in the routing table above and, if new commands are involved, rows in `cli-commands.md`. Do not create a new per-operation skill.
 - **A new optional capability inside an existing flow** (like Step 6b, Studio Web): add it as an optional step in that flow, with its discovery recipe and a never-invent rule.
 - **When the raw-API fallback retires** (once an `ah`-capable `uip` release is ubiquitous): delete the API flow files and the preflight's fallback arm in one commit — the CLI files are self-contained by design.
 

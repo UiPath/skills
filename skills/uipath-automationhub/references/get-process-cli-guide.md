@@ -47,10 +47,10 @@ Process: <name>  (process_id: <id>)
   Status:   <phase/status>
   Category: <category>
   Owner:    <owner>
-  View:     {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}/documentation
+  View:     {Data.Tenant.Url}/automation-profile/{process_slug}/documentation
 Documents:
   - PDD  (document_id 12, file_id 42 — downloadable)
   - SDD  (document_id 13, embed_link — link only)
 ```
 
-`process_slug` comes from `automations get --all-fields`; the base URL from `uip ah auth-info get` (`Data.Tenant.Url`). Offer the raw JSON, downloads, or components (`uip ah components list --automation-id <id>`) if relevant.
+`process_slug` comes from `automations get --all-fields`; the base from `uip ah auth-info get` → `Data.Tenant.Url`, which is **already the full AH tenant base** (`…/{org}/{tenant}/automationhub_`) — append only `/automation-profile/{process_slug}` (+ `/documentation`), never re-append org/tenant segments. Offer the raw JSON, downloads, or components (`uip ah components list --automation-id <id>`) if relevant.

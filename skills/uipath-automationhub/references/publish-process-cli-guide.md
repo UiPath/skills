@@ -103,8 +103,8 @@ uip ah automations get $PROCESS_ID --all-fields --output json   # read process_s
 Published to Automation Hub:
   Process: <name>  (process_id: <id>)
   Documents: PDD ✓ (doc 12, file 42), SDD ✓ (doc 13, file 43)
-  View process:   {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}
-  View documents: {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}/documentation
+  View process:   {Data.Tenant.Url}/automation-profile/{process_slug}
+  View documents: {Data.Tenant.Url}/automation-profile/{process_slug}/documentation
 ```
 
-Build the links from the tenant the write went to (`uip ah auth-info get` → `Data.Tenant.Url` is the AH base for it).
+Build the links from the tenant the write went to: `uip ah auth-info get` → `Data.Tenant.Url` is **already the full AH tenant base** (`…/{org}/{tenant}/automationhub_`) — append only `/automation-profile/{process_slug}` (+ `/documentation`), never re-append org/tenant segments.
