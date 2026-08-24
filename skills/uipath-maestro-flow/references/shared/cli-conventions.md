@@ -158,15 +158,15 @@ uip or folders list --output json
 
 Or pull it from the job/process context (e.g., `Data.folderKey` on a job status response, or from the debug output's surrounding metadata).
 
-## 7. `UIPCLI_LOG_LEVEL=info` for debug runs
+## 7. `UIP_LOG_LEVEL=info` for debug runs
 
-Set `UIPCLI_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail in the CLI output. Without it, debug runs return only the final result.
+Set `UIP_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail. At `info` the run narrates `jobKey` / `instanceId` / Studio Web URL to **stderr** — capture stderr, since a poll-budget timeout reports no instanceId on stdout.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
-The env var has no effect on other subcommands.
+> The variable is `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` (the latter is never read). The level applies to every `uip` command.
 
 ## 8. Global options
 

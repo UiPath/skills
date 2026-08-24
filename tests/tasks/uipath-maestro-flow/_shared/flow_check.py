@@ -77,13 +77,38 @@ _LAST_DEBUG_PROJECT_DIR: str | None = None
 # check (customer-escalation-triage). Distinct from a real flow failure (a
 # `finalStatus` that completed-with-fault, or wrong outputs), which must fail
 # immediately. Retry ONLY on the transient markers below.
-_DEBUG_RETRY_MARKERS = ('"retry": "retrylater"', '"errorcode": "server_error"')
+#
+# The CLI's own poll-budget expiry (`Debug polling timed out after Ns`) is also
+# transient, but it labels that path `Retry:RetryWillNotFix` — wrong for a poll
+# timeout — so it is matched on the message. It burns the full subprocess budget
+# each attempt, so it gets fewer tries (_POLL_TIMEOUT_ATTEMPTS): 3 × a 300s cap
+# overruns the 600s criterion budget in the task YAMLs.
+_POLL_TIMEOUT_MARKER = "debug polling timed out"
+_POLL_TIMEOUT_ATTEMPTS = 2
+_DEBUG_RETRY_MARKERS = (
+    '"retry": "retrylater"',
+    '"errorcode": "server_error"',
+    _POLL_TIMEOUT_MARKER,
+)
+
+# Give the CLI a `--timeout` below the subprocess cap so an overrun ends by the
+# CLI (parseable envelope + stderr narration) rather than a SIGKILL that keeps
+# nothing. Headroom covers the phases --timeout does NOT bound: solution upload,
+# Studio Web provisioning, begin-session, create-instance.
+_CLI_TIMEOUT_HEADROOM_SECONDS = 60
+_MIN_CLI_TIMEOUT_SECONDS = 30
+
+# `UIP_LOG_LEVEL` (NOT `UIPCLI_LOG_LEVEL`, which the CLI never reads). At `info`
+# the run narrates jobKey/instanceId/Studio Web URL to stderr — the only way to
+# find the instance after a timeout, whose error envelope carries none of them.
+_DEBUG_LOG_LEVEL = "info"
 
 
 def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
-    server-side error (5xx / RetryLater) worth retrying, rather than a real
-    flow fault. Case-insensitive so CLI key casing can't slip past."""
+    server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
+    rather than a real flow fault. Case-insensitive so CLI key casing can't slip
+    past."""
     if result.returncode == 0:
         return False
     blob = f"{result.stdout}\n{result.stderr}".lower()
@@ -94,6 +119,24 @@ def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     status = _get_ci(data or {}, "Context", default={})
     http = _get_ci(status if isinstance(status, dict) else {}, "HttpStatus")
     return isinstance(http, int) and 500 <= http < 600
+
+
+def _is_poll_timeout(result: subprocess.CompletedProcess) -> bool:
+    """True iff the CLI gave up on its own poll budget (retried on a shorter
+    leash than other transient errors — see :data:`_POLL_TIMEOUT_ATTEMPTS`)."""
+    if result.returncode == 0:
+        return False
+    return _POLL_TIMEOUT_MARKER in f"{result.stdout}\n{result.stderr}".lower()
+
+
+def _as_text(raw: bytes | str | None) -> str:
+    """``subprocess.TimeoutExpired`` carries partial output as bytes even under
+    ``text=True`` (unlike ``CompletedProcess``); decode defensively."""
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace")
+    return raw
 
 
 # ── Public helpers ──────────────────────────────────────────────────────────
@@ -111,22 +154,31 @@ def run_debug(
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
 
-    Transient server-side errors (5xx / ``RetryLater`` while polling the debug
-    instance — see :func:`_is_transient_debug_error`) are retried up to
-    ``retries`` times with ``backoff_seconds`` between attempts. A real flow
-    fault (non-transient failure, or a run that completes with the wrong
-    ``finalStatus``) fails immediately without burning retries.
+    ``timeout`` is the hard subprocess cap. The CLI gets a strictly smaller
+    ``--timeout`` (minus :data:`_CLI_TIMEOUT_HEADROOM_SECONDS`) plus
+    ``UIP_LOG_LEVEL=info`` so an overrun ends with a parseable envelope and the
+    stderr instanceId narration, not a SIGKILL that keeps nothing.
+
+    Transient server-side errors (5xx / ``RetryLater`` while polling, or the
+    CLI's own poll-budget expiry — see :func:`_is_transient_debug_error`) are
+    retried up to ``retries`` times with ``backoff_seconds`` between attempts;
+    poll timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS` tries. A real flow fault
+    (non-transient failure, or a wrong ``finalStatus``) fails immediately.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
     ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
     ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
+    cli_timeout = max(_MIN_CLI_TIMEOUT_SECONDS, timeout - _CLI_TIMEOUT_HEADROOM_SECONDS)
+    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json",
+           "--timeout", str(cli_timeout)]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
+    env = dict(os.environ)
+    env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
     global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS, _LAST_DEBUG_PROJECT_DIR
     # Record what we bound as input, and where the project lives, so output
     # assertions can discount echoes of our own inputs.
@@ -135,9 +187,26 @@ def run_debug(
     }
     _LAST_DEBUG_PROJECT_DIR = project_dir
     for attempt in range(retries):
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        try:
+            r = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout, env=env
+            )
+        except subprocess.TimeoutExpired as exc:
+            # Outran even the subprocess cap, so --timeout never fired: the stall
+            # is in a phase --timeout can't bound. Keep the partial output
+            # (stderr carries the instanceId) instead of a bare traceback.
+            _LAST_DEBUG_RAW = _as_text(exc.stdout)
+            _fail_with_capture(
+                f"flow debug exceeded the {timeout}s subprocess cap without returning "
+                f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
+                "polling: upload / Studio Web provisioning / begin-session / "
+                "create-instance).\n"
+                f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
+            )
         _LAST_DEBUG_RAW = r.stdout
         if r.returncode == 0 or not _is_transient_debug_error(r):
+            break
+        if _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
         if attempt + 1 < retries:
             time.sleep(backoff_seconds)

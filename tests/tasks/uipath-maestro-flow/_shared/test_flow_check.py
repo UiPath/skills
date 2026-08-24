@@ -778,6 +778,15 @@ _COMPLETED = (
 )
 
 
+# Verbatim `flow debug` poll-timeout envelope. The `RetryWillNotFix` label is
+# wrong for a poll timeout, so classification matches the Message instead.
+_POLL_TIMEOUT = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Debug polling timed out after 180s",\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
+
+
 def _cp(returncode, stdout="", stderr=""):
     return subprocess.CompletedProcess(
         args=["uip", "maestro", "flow", "debug"], returncode=returncode, stdout=stdout, stderr=stderr
@@ -785,16 +794,23 @@ def _cp(returncode, stdout="", stderr=""):
 
 
 def _stub_debug(monkeypatch, results):
-    """Feed run_debug a queue of CompletedProcess results, stub sleep to be
-    instant, and stub project discovery so no real tree is needed."""
-    calls = {"n": 0}
+    """Feed run_debug a queue of results, stub sleep + project discovery. A
+    queued ``BaseException`` is raised (exercises the ``TimeoutExpired`` path);
+    the last call's cmd/env/timeout are recorded for assertions."""
+    calls = {"n": 0, "cmd": None, "env": None, "timeout": None}
     queue = list(results)
     monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
     monkeypatch.setattr(flow_check.time, "sleep", lambda *_: None)
 
     def fake_run(cmd, **kwargs):
         calls["n"] += 1
-        return queue.pop(0)
+        calls["cmd"] = cmd
+        calls["env"] = kwargs.get("env")
+        calls["timeout"] = kwargs.get("timeout")
+        result = queue.pop(0)
+        if isinstance(result, BaseException):
+            raise result
+        return result
 
     monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
     return calls
@@ -844,7 +860,89 @@ def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
         (_cp(1, '{"Context": {"HttpStatus": 503}}'), True),            # 5xx via HttpStatus
         (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
         (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
+        (_cp(1, _POLL_TIMEOUT), True),                                 # CLI poll-budget expiry
     ],
 )
 def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
+
+
+# ── run_debug timeout budget + diagnostics ───────────────────────────────────
+
+
+def test_run_debug_passes_derived_cli_timeout(monkeypatch):
+    """CLI --timeout is strictly below the subprocess cap (cap - 60 headroom)."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(timeout=240)
+    cmd = calls["cmd"]
+    assert cmd[cmd.index("--timeout") + 1] == "180"
+    assert int(cmd[cmd.index("--timeout") + 1]) < calls["timeout"] == 240
+
+
+def test_run_debug_cli_timeout_never_goes_below_floor(monkeypatch):
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(timeout=45)
+    cmd = calls["cmd"]
+    assert cmd[cmd.index("--timeout") + 1] == str(flow_check._MIN_CLI_TIMEOUT_SECONDS)
+
+
+def test_run_debug_sets_uip_log_level(monkeypatch):
+    """UIP_LOG_LEVEL=info is the only channel emitting instanceId after a timeout."""
+    monkeypatch.delenv("UIP_LOG_LEVEL", raising=False)
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug()
+    assert calls["env"]["UIP_LOG_LEVEL"] == "info"
+
+
+def test_run_debug_keeps_operator_log_level(monkeypatch):
+    monkeypatch.setenv("UIP_LOG_LEVEL", "debug")
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug()
+    assert calls["env"]["UIP_LOG_LEVEL"] == "debug"
+
+
+def test_run_debug_retries_poll_timeout_then_completes(monkeypatch):
+    calls = _stub_debug(monkeypatch, [_cp(1, _POLL_TIMEOUT), _cp(0, _COMPLETED)])
+    payload = run_debug()
+    assert calls["n"] == 2
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_run_debug_caps_poll_timeout_attempts(monkeypatch):
+    """A poll timeout burns the full budget each try, so it stops at
+    _POLL_TIMEOUT_ATTEMPTS even when `retries` allows more."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _POLL_TIMEOUT)] * 3)
+    with pytest.raises(SystemExit):
+        run_debug(retries=3)
+    assert calls["n"] == flow_check._POLL_TIMEOUT_ATTEMPTS == 2
+
+
+def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
+    """A stall upstream of polling exits as a graded FAIL retaining the partial
+    output (incl. the stderr instanceId), not a bare TimeoutExpired traceback."""
+    exc = subprocess.TimeoutExpired(
+        cmd=["uip", "maestro", "flow", "debug"],
+        timeout=240,
+        output=b'{"partial": true}',
+        stderr=b"Debug instance created - instanceId: abc-123\n",
+    )
+    calls = _stub_debug(monkeypatch, [exc])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert calls["n"] == 1
+    assert "240s subprocess cap" in str(excinfo.value)
+    assert "abc-123" in str(excinfo.value)
+    assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        (b"bytes payload", "bytes payload"),
+        ("str payload", "str payload"),
+        (None, ""),
+        (b"\xff\xfe bad utf8", "�� bad utf8"),
+    ],
+)
+def test_as_text_decodes_defensively(raw, expected):
+    assert flow_check._as_text(raw) == expected

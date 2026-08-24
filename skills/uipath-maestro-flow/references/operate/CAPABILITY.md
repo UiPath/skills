@@ -88,7 +88,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-shared-cli-entry:start-->
 - [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `solution upload`, `solution resources refresh`, `flow pack`, `flow debug`, `flow process`, `flow job`, `flow instance`
 <!--skill-flavor:upload-shared-cli-entry:end-->
-- [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, FOLDER_KEY, UIPCLI_LOG_LEVEL, JSON output shape
+- [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, FOLDER_KEY, UIP_LOG_LEVEL, JSON output shape
 - [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — `--inputs` JSON shape for `flow debug`
 
 <!--skill-flavor:upload-orchestrator-pointer:start-->
