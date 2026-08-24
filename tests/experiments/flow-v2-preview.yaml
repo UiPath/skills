@@ -37,7 +37,8 @@ defaults:
         # Repo root. Narrowing plugins.path to preview/ drops the automatic
         # repo-root mount, and criteria shell out to
         # $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py. Destination must be the
-        # host path, so this line needs UiPath/coder_eval#128.
+        # host path, which the framework only expands from 0.11.2 on
+        # (UiPath/coder_eval#128); earlier versions reject it at load.
         - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
 
   agent:
