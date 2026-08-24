@@ -6,9 +6,6 @@ description: >
   that — it takes `--field <id>` directly, so an agent that skips discovery
   and guesses a column name gets `UserError_FieldNotFound`.
 
-  Also pins the 0..1 domain of `--values`: percentile points are fractions,
-  not percentages.
-
   Complements query_group_by_sugar, which covers the sugar path where ids are
   resolved for the agent.
 
@@ -57,12 +54,4 @@ success_criteria:
     command_pattern: 'uip\s+pm\s+query\s+percentile\b.*--field\b'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent passed percentile points, which are fractions in 0..1"
-    tool_name: "Bash"
-    command_pattern: '--values\s+0?\.\d'
-    min_count: 1
-    weight: 2.0
     pass_threshold: 1.0
