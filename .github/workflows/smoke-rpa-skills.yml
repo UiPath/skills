@@ -19,7 +19,7 @@ on:
 # tests/.coder-eval-version still resolves — see smoke-skills.yml for the full
 # rationale. Workflow-level so any job added later inherits it.
 env:
-  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   detect:
