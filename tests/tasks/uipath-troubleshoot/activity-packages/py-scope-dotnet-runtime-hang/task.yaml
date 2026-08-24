@@ -41,7 +41,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My PyScoreModel process hangs in Orchestrator on every run. The folder is
@@ -67,7 +67,9 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_dialog: true
     include_agent_output: true
     prompt: |
