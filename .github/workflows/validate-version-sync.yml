@@ -1,0 +1,44 @@
+name: Validate Version Sync
+
+concurrency:
+  group: validate-version-sync-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  # No `paths:` filter on purpose, for two reasons:
+  #
+  # 1. Required-check safety (same rationale as smoke-skills.yml): if `paths:`
+  #    excluded a PR the workflow wouldn't run, no check would be reported, and
+  #    merge would block forever. This job is cheap enough (checkout + node +
+  #    one dependency-free script) to just always run.
+  # 2. Drift can be introduced from more places than a path list reliably
+  #    covers — `package.json`, any of the four derived manifests, or
+  #    `sync-version.mjs` itself gaining a new mirror path. An out-of-date
+  #    `paths:` list is exactly how the drift this guard exists to catch got
+  #    through in the first place.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-version-sync:
+    runs-on: uipath-ubuntu-latest
+    name: Validate version sync
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Byte-identical to the `guard` job in publish.yml, so a green check here
+      # means publish.yml's guard will pass on merge. Without this, version
+      # drift is only discoverable AFTER merge, at publish time — and because
+      # every publish job declares `needs: [guard]`, a single stale manifest
+      # silently blocks `dev`, `preview`, and every flavor package until someone
+      # notices nothing has shipped.
+      #
+      # `sync-version.mjs` has no dependencies, so there is no install step.
+      - name: Check manifests are in sync with package.json
+        run: node scripts/sync-version.mjs --check
