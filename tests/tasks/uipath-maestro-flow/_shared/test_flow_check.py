@@ -776,9 +776,8 @@ _COMPLETED = (
     '  "Data": {"finalStatus": "Completed", "variables": {"globalVariables": '
     '[{"name": "severity", "value": "Sev1"}]}}\n}'
 )
-# Verbatim envelope from `uip maestro flow debug --timeout 1`. Note the
-# `RetryWillNotFix` label — wrong for a poll timeout, which is exactly the case
-# worth another attempt, so classification matches the Message instead.
+# Verbatim envelope from `uip maestro flow debug --timeout 1`. The
+# `RetryWillNotFix` label is wrong for a poll timeout, so we match the Message.
 _POLL_TIMEOUT = (
     '{\n  "Result": "Failure",\n'
     '  "Message": "Debug polling timed out after 180s",\n'
@@ -798,10 +797,9 @@ def _stub_debug(monkeypatch, results):
     """Feed run_debug a queue of CompletedProcess results, stub sleep to be
     instant, and stub project discovery so no real tree is needed.
 
-    A queued ``BaseException`` is raised instead of returned, which is how the
+    A queued ``BaseException`` is raised rather than returned, which is how the
     ``subprocess.TimeoutExpired`` path is exercised. The last invocation's
-    ``cmd`` / ``env`` / ``timeout`` are recorded so tests can assert on what we
-    actually handed the CLI."""
+    ``cmd`` / ``env`` / ``timeout`` are recorded for assertions."""
     calls = {"n": 0, "cmd": None, "env": None, "timeout": None}
     queue = list(results)
     monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
@@ -874,28 +872,20 @@ def test_is_transient_debug_error(cp, expected):
 
 # ── run_debug timeout budget + diagnostics ───────────────────────────────────
 #
-# Regression cover for skill-flow-wiki-pageviews, which scored 0 on a gating
-# criterion whose artifact passes this checker on re-run: the subprocess cap
-# fired below the CLI's own poll budget, SIGKILLing it mid-run so the failure
-# surfaced as a bare TimeoutExpired traceback with no payload, no instanceId
-# and no incidents to diagnose from.
+# Regression cover for skill-flow-wiki-pageviews: the subprocess cap fired below
+# the CLI's own poll budget, SIGKILLing it mid-run, so a correct artifact scored
+# 0 with nothing left to diagnose from.
 
 
 def test_run_debug_passes_derived_cli_timeout(monkeypatch):
-    """The CLI gets a --timeout strictly below our subprocess cap, so an
-    overrun is ended by the CLI (parseable envelope) not by SIGKILL."""
     calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
     run_debug(timeout=240)
     cmd = calls["cmd"]
-    assert "--timeout" in cmd
     assert cmd[cmd.index("--timeout") + 1] == "180"  # 240 - 60 headroom
     assert calls["timeout"] == 240
-    assert int(cmd[cmd.index("--timeout") + 1]) < calls["timeout"]
 
 
 def test_run_debug_cli_timeout_never_goes_below_floor(monkeypatch):
-    """A call site with a tiny cap still gets a usable CLI budget rather than
-    zero or a negative."""
     calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
     run_debug(timeout=45)
     cmd = calls["cmd"]
@@ -903,9 +893,7 @@ def test_run_debug_cli_timeout_never_goes_below_floor(monkeypatch):
 
 
 def test_run_debug_sets_uip_log_level_for_instance_id(monkeypatch):
-    """UIP_LOG_LEVEL=info is the only channel that emits jobKey / instanceId /
-    Studio Web URL — the polling-timeout envelope carries none of them.
-    (UIPCLI_LOG_LEVEL, which the docs used to show, is never read by the CLI.)"""
+    """The only channel that emits jobKey / instanceId / Studio Web URL."""
     monkeypatch.delenv("UIP_LOG_LEVEL", raising=False)
     calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
     run_debug()
@@ -913,7 +901,6 @@ def test_run_debug_sets_uip_log_level_for_instance_id(monkeypatch):
 
 
 def test_run_debug_keeps_operator_log_level(monkeypatch):
-    """An explicitly set level wins, so a human debugging locally can raise it."""
     monkeypatch.setenv("UIP_LOG_LEVEL", "debug")
     calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
     run_debug()
@@ -928,19 +915,16 @@ def test_run_debug_retries_poll_timeout_then_completes(monkeypatch):
 
 
 def test_run_debug_caps_poll_timeout_attempts(monkeypatch):
-    """A poll timeout burns the full subprocess budget each try, so it stops at
-    _POLL_TIMEOUT_ATTEMPTS even when `retries` allows more — 3 x a 300s cap
-    would overrun the 600s criterion budget in the task YAMLs."""
+    """Stops at _POLL_TIMEOUT_ATTEMPTS even when `retries` allows more."""
     calls = _stub_debug(monkeypatch, [_cp(1, _POLL_TIMEOUT)] * 3)
     with pytest.raises(SystemExit):
         run_debug(retries=3)
     assert calls["n"] == flow_check._POLL_TIMEOUT_ATTEMPTS == 2
 
 
-def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch, capsys):
-    """A stall upstream of polling (upload / provisioning / begin-session — the
-    phases --timeout cannot bound) must exit as a graded FAIL carrying the
-    partial output, not as an uncaught TimeoutExpired traceback."""
+def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
+    """A stall upstream of polling exits as a graded FAIL carrying the partial
+    output, not as an uncaught TimeoutExpired traceback."""
     exc = subprocess.TimeoutExpired(
         cmd=["uip", "maestro", "flow", "debug"],
         timeout=240,
@@ -953,16 +937,15 @@ def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch, capsys):
     assert calls["n"] == 1
     message = str(excinfo.value)
     assert "240s subprocess cap" in message
-    # The instanceId is the whole point: without it the run is unrecoverable.
-    assert "abc-123" in message
+    assert "abc-123" in message  # without the instanceId the run is unrecoverable
     assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
 
 
 @pytest.mark.parametrize(
     "raw,expected",
     [
-        (b"bytes payload", "bytes payload"),   # TimeoutExpired hands back bytes...
-        ("str payload", "str payload"),        # ...CompletedProcess hands back str
+        (b"bytes payload", "bytes payload"),  # TimeoutExpired hands back bytes
+        ("str payload", "str payload"),  # CompletedProcess hands back str
         (None, ""),
         (b"\xff\xfe bad utf8", "�� bad utf8"),
     ],
