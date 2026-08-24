@@ -1,0 +1,180 @@
+task_id: skill-case-supplier-onboarding
+description: >
+  LARGE LIVE-TENANT BUILD — build the SupplierOnboarding case-management
+  solution from a staged planner SDD that is the biggest case fixture in the
+  suite: 7 stages (5 primary + Rejected / Withdrawn secondary lanes), 39 tasks
+  across 6 task types, 20 pinned tenant resources (6 API workflows, 2 agents,
+  1 process, 1 child case, 9 dedicated Action Apps + the shared
+  Guardrail.Escalation.Action.App, and one Outlook 365 connection), a case SLA
+  plus a per-stage SLA whose every breach is a start-task response (14
+  stage-breach tasks + 3 case-breach post-mortems), two conditional sign-off
+  gates, a send-back rework lane, three-origin rejection routing and a
+  connector-event withdrawal interrupt. Graded on topology, the task matrix,
+  SLA wiring and live resource resolution. Stops at validate — NOT debug (the
+  case suspends on Action App tasks, ad-hoc tasks and the withdrawal event).
+
+  Distinct from golden_rebuild (same live-rebuild shape, 15 tasks): this task
+  grades a per-stage SLA matrix whose every breach is a start-task response,
+  three-origin interrupting rejection routing, a connector-event stage entry,
+  multi-selector conditional gates with both polarities, and 19 Action App
+  tasks — none of which that fixture exercises.
+
+  TENANT PRECONDITION: every resource pinned in fixtures/sdd.md § 4 must be
+  deployed on the eval tenant under Shared/uipath-maestro-case (plus
+  Guardrail.Escalation.Action.App in Shared) with the Outlook 365 connection
+  dd657127-91f5-4568-a3a3-c024bc03fb0f enabled in the uipath-maestro-case
+  folder. Resource IDs are re-minted by a redeploy — re-sweep fixtures/sdd.md,
+  the one file both the agent and the graders read.
+
+  NOT graded, because the fixture and the skill contract disagree there:
+  `metadata.caseIdentifier` (§1 states both a constant SUP prefix and an
+  =metadata.ExternalId source) and connector `serviceType` (the SDD prints
+  Intsvc.ExecuteActivity, the canonical value is Intsvc.ActivityExecution).
+tags:
+  - uipath-maestro-case
+  - e2e
+  - mode:build
+  - lifecycle:generate
+  - shape:multi-node
+  - connector
+  - resource
+  - node:hitl
+  - feature:registry
+  - feature:escalation
+  - feature:approval-gate
+  - path-to-ga
+
+# Sized from the golden_rebuild measurements (15 tasks ≈ 60 min of healthy
+# build) scaled to 39 tasks and 20 resources, with headroom for one cold
+# harness restart after a mid-stream API-limit death. Launch with
+# CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a caseplan-sized extended-thinking
+# response is not fatal.
+run_limits:
+  task_timeout: 21600
+  max_turns: 900
+  turn_timeout: 9000
+
+# The case skill delegates heavy legs (reference reading, registry sweeps) to
+# sub-agents; without Agent the whole build runs inline in one context and dies
+# to "Prompt is too long". Extends the experiment's allowed_tools — keep the
+# base list in sync with experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "TodoWrite"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our SupplierOnboarding case-management solution —
+  it's staged as `sdd.md` in this folder. Build a UiPath Case Management
+  solution named "SupplierOnboarding" containing a project also named
+  "SupplierOnboarding" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
+  not re-interview me, and do not redesign the process. Preserve every authored
+  stage and task entry/exit rule exactly as written — planning must not
+  normalize an explicit SDD rule into a different mode, retype a task, or swap
+  a resource.
+
+  Important:
+  - The `uip` CLI is available and already authenticated against the target
+    tenant. The tenant is LIVE and hosts every resource named in § 4: resolve
+    each one against a FRESH registry cache — a stale local cache, a skeleton
+    task or a placeholder binding is not acceptable.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval, Phase 2 publish-for-review, and Phase 5 publish. Choose
+    the continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - Do NOT publish the solution and do NOT run `uip maestro case debug` (the
+    case suspends on Action App tasks, ad-hoc tasks and the withdrawal event).
+  - The task is NOT complete until
+    `uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json`
+    passes.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran case validation (advisory; the outcome is graded below)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*SupplierOnboarding/SupplierOnboarding/caseplan\.json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: file_exists
+    description: "Phase 1 wrote the build plan the implementation phases read"
+    path: "tasks/tasks.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the generated SupplierOnboarding caseplan"
+    command: "uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "staged sdd.md still carries the full SupplierOnboarding contract (the build must not rewrite its input)"
+    command: "python3 $TASK_DIR/check_supplier_onboarding_sdd.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan encodes the stage graph: 5 primary + 2 secondary stages, manual trigger, all 8 authored hops, send-back / decline / reject / bank-failure guards, 3 case exit rules, case variables"
+    command: "python3 $TASK_DIR/check_supplier_onboarding_topology.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "all 39 tasks match the SDD matrix (type, required, run-once, entry rule) and the sign-off / compliance / portal gates resolve to their sibling tasks"
+    command: "python3 $TASK_DIR/check_supplier_onboarding_tasks.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "case SLA + 7 stage SLAs carry 70% at-risk and breach escalations, and every breach start-task references the right SLA in the Breached shape"
+    command: "python3 $TASK_DIR/check_supplier_onboarding_sla.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "every task is resolved against the live tenant: task → resource pairing, self-consistent resourceKeys, per-type resource/resourceSubType, connector identities, bindings_v2 parity"
+    command: "python3 $TASK_DIR/check_supplier_onboarding_bindings.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use the mutating case-authoring CLI commands (caseplan.json is authored directly)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug or publish (the case suspends; publish is out of scope)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
+    weight: 1.0
+    pass_threshold: 1.0
