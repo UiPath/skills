@@ -10,20 +10,28 @@ Use this guide when BPMN source changed and local package metadata must be refre
 
 ## Local Synthetic Project Contract
 
-When no CLI generator is available and you must author a local-only synthetic
-BPMN project, make the project executable and package-shaped before packing:
+`uip maestro bpmn update-metadata <file.bpmn>` is the contract. It writes the
+same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
+consumes it as written:
 
 - The root process must be `<bpmn:process ... isExecutable="true">`.
-- `project.uiproj` must use lowercase `"main"` pointing at the BPMN file.
-- `operate.json` must use `"main"` with the bare BPMN filename, not a
-  `/content/<file>.bpmn#<start-event-id>` entry-point path, plus
-  `"contentType": "ProcessOrchestration"`.
-- `package-descriptor.json` must use a top-level `"content"` array with
-  `content/<file>` entries. Do not use `contentFiles` or a CLI scaffold
-  `"files"` mapping for synthetic local metadata.
+- `project.uiproj` carries `"Name"` and `"ProjectType":
+  "ProcessOrchestration"`. The CLI does not write `"main"` here; it preserves a
+  hand-authored one, so do not add one expecting it to be required.
+- `operate.json` uses `"main"` with the entry-point path
+  `/content/<file>.bpmn#<start-event-id>` plus `"contentType":
+  "ProcessOrchestration"`. `update-metadata` rewrites this field every run — a
+  bare filename does not survive.
+- `package-descriptor.json` uses a top-level `"files"` map of name to path,
+  including the BPMN file, `operate.json`, `entry-points.json`, and
+  `"bindings.json": "bindings_v2.json"`. Do not use `contentFiles`.
 
-The minimal placeholder-safe JSON shape is shown below; keep it exact apart
-from project, file, and start event names.
+`pack` also accepts a hand-authored top-level `"content"` array of
+`content/<file>` paths, so pre-existing synthetic metadata in that shape stays
+valid. Prefer the CLI shape for anything new.
+
+The placeholder-safe JSON shape for a CLI-unavailable fallback is shown below;
+keep it exact apart from project, file, and start event names.
 
 ## Regeneration Inputs
 
@@ -74,18 +82,15 @@ Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run a
 ## Minimal Local Metadata Shape
 
 When a local-only synthetic project needs package files and the CLI cannot
-regenerate them in place, use this placeholder-safe shape before running
-`uip maestro bpmn pack`. Replace only the BPMN file name and start event id;
-do not invent `contentFiles` as a substitute for `content`.
+regenerate them in place, mirror what `update-metadata` would have written.
+Replace only the BPMN file name and start event id.
 
 `project.uiproj`:
 
 ```json
 {
-  "projectVersion": "1.0.0",
-  "ProjectType": "ProcessOrchestration",
   "Name": "SyntheticProject",
-  "main": "SyntheticProject.bpmn"
+  "ProjectType": "ProcessOrchestration"
 }
 ```
 
@@ -93,7 +98,7 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
-  "main": "SyntheticProject.bpmn",
+  "main": "/content/SyntheticProject.bpmn#Start_Manual",
   "contentType": "ProcessOrchestration"
 }
 ```
@@ -104,14 +109,18 @@ do not invent `contentFiles` as a substitute for `content`.
 {
   "entryPoints": [
     {
-      "id": "Entry_ManualStart",
       "filePath": "/content/SyntheticProject.bpmn#Start_Manual",
-      "inputSchema": { "type": "object", "properties": {} },
-      "outputSchema": { "type": "object", "properties": {} }
+      "uniqueId": "00000000-0000-0000-0000-000000000000",
+      "type": "ProcessOrchestration",
+      "input": { "type": "object", "properties": {} },
+      "output": { "type": "object", "properties": {} }
     }
   ]
 }
 ```
+
+Set each `uniqueId` to the start event's own `uipath:entryPointId` value, not to
+the placeholder above.
 
 `bindings_v2.json`:
 
@@ -130,23 +139,30 @@ imported an external process, queue, connector, or agent.
 
 ```json
 {
-  "content": [
-    "content/SyntheticProject.bpmn",
-    "content/bindings_v2.json",
-    "content/entry-points.json",
-    "content/operate.json"
-  ]
+  "files": {
+    "operate.json": "operate.json",
+    "entry-points.json": "entry-points.json",
+    "bindings.json": "bindings_v2.json",
+    "SyntheticProject.bpmn": "SyntheticProject.bpmn"
+  }
 }
 ```
 
 ## Entry Point Rules
 
-For each root start event with `uipath:entryPointId`, generated `entry-points.json` must include:
+For each root start event with a
+`<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`,
+generated `entry-points.json` must include:
 
-- `id` equal to the `uipath:entryPointId` value.
 - `filePath` equal to `/content/<bpmn-file>#<start-event-id>`.
-- `inputSchema` from root input variables whose `elementId` matches the start event.
-- `outputSchema` from root output variables.
+- `uniqueId` equal to the `uipath:entryPointId` value.
+- `type` equal to `ProcessOrchestration`.
+- `input` from root input variables whose `elementId` matches the start event.
+- `output` from root output variables.
+
+A start event without that element yields no entry point at all —
+`update-metadata` reports `EntryPointCount: 0` and writes an empty
+`entryPoints` array rather than inventing an id.
 
 JSON schema variables use their CDATA body as the property schema. Strip `$schema` from generated package schemas. Other primitive variables map by type, such as `string`, `integer`, `number`, `boolean`, `array`, `object`, or `json`.
 
