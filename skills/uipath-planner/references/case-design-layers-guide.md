@@ -11,6 +11,8 @@ Design in four layers, each settled before the next refines it:
 
 Close with [§ Layer closure](#layer-closure--the-design-checklist) — the single cross-layer checklist run at Sketch and re-walked at Confirm.
 
+**Best assumption is the design mode.** Every open field takes the **Default** stated in its layer — decided and disclosed, never asked. An optional field the source never touches renders `—`. Every non-verbatim value carries a Design Rationale plus a decision line in the confirmation.
+
 ---
 
 ## Layer 1 — Skeleton: trigger, stages, tasks
@@ -24,6 +26,8 @@ Reason the shape from the process — never reach for the template first. Build 
 | Stage | *What is the case working toward right now, and what makes that done?* One stage per named milestone. A stage that marks the case complete is main-flow (`Required: Yes`). |
 | Secondary stage | *Does this work belong at one fixed point (regular stage), or could it happen at several points / only on a condition?* "Handle rejected application", "escalate on breach", "rework loop" → secondary ([§ Secondary stages](#secondary-stages)). An optional one-off inside the current stage stays an `adhoc` task, not a lane. |
 | Task | *Who or what performs this, and how?* One verb in the description ≈ one task. The "how" answer is the task type. |
+| Persona | *Who acts?* Named roles verbatim, exact casing. **Default:** none named → one `Process Owner`. |
+| "Manual" work | *Does it start a case, or happen inside one?* Starts a case → Manual trigger; optional worker-launched step → `adhoc` + `Required: No`; worker-chosen exception lane → secondary stage with `user-selected-stage`. |
 
 ### Triggers
 
@@ -55,7 +59,7 @@ The enum is closed — exactly these nine literals, used verbatim as the SDD `Ty
 
 Never author: `external-agent`, `external-workflow`, `document-extraction`, `flow-process` (unsupported), and `wait-for-event` / `connector-activity` / `connector-trigger` (not schema literals). Externally-hosted AI agents (CrewAI, Einstein, Databricks, …) model as `api-workflow`, or `execute-connector-activity` when a tenant connector exists.
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. Ambiguous "approve / review / decide" verbs → `action` (human) vs `agent` (AI) per the assumption playbook ([case-design-lane-guide.md § Sketch](case-design-lane-guide.md#sketch--best-assumption-every-field)), decided and disclosed. A compliance trigger phrase forces `action` (below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. Ambiguous "approve / review / decide" verbs: named human role or implied judgment → `action`; framed as automated/AI → `agent`. **Default when truly even: `action`** — it keeps a human in the loop and one correction flips it. Decide, disclose, never ask. A compliance trigger phrase forces `action` (below).
 
 **Activation is a separate axis.** How a task starts (sequential, event-triggered, manually triggered, stage-started) maps to entry rules (Layer 2) and never changes the `type`.
 
@@ -67,7 +71,7 @@ Apply in order:
 2. **Regulatory constraint requiring human sign-off** — the task MUST be `action`. Trigger phrases: "only a licensed X may decide / sign off / certify / approve"; "regulation requires human review"; "ECOA adverse-action notice" / "FCRA adverse action"; "NCQA UM 3 adverse determination"; "HIPAA-protected approval"; "SOC 2 attestation"; any `<role>-licensed` / `<role>-credentialed` gate; "fiduciary review", "legal sign-off", "auditor review". If the user proposes a non-`action` type AND any phrase appears anywhere in the conversation → ask to confirm; never silently accept. Ask phrasing: name the regulation and propose `action` with the LLM/agent work bound to the action's form and recipient. Example: ECOA adverse-action notice with user-stated `agent` → `action` (Compliance Officer recipient; LLM-drafted body bound to the action's form).
 3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits → prefer that resource's type and surface the match.
 4. **Connector availability** — an Integration Service connector matches → `execute-connector-activity` over `api-workflow`.
-5. **Verb signal** — fall through to the assumption playbook.
+5. **Verb signal** — fall through to the § Task types tie-breakers.
 6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-design-lane-guide.md § Review items](case-design-lane-guide.md#review-items)).
 
 **Compliance-trigger scan.** Scan the whole conversation for tier-2 phrases BEFORE recording any non-`action` type. A phrase surfacing after a non-`action` type was provisionally recorded → re-ask before continuing. No tier-2 phrase in the transcript (e.g. jurisdiction-dependent underwriting) → keep the stated type, disclose the compliance caveat as a decision line.
@@ -100,15 +104,6 @@ Look beyond the primary flow. Check the source for each scenario; pick the small
 
 Clear source signal → model it by best assumption and disclose in **Other Paths Considered**. No signal at all → spend the one bounded question before the confirmation; "primary flow only" is then a recorded decision, never an omission.
 
-### Worked pass — vendor onboarding
-
-> "Vendors sign up through our portal. We screen them, run a compliance check, set them up in our finance system, then activate. If compliance fails it goes back for remediation."
-
-- Milestones → stages: Intake → Screening → Compliance → Finance Setup → Activation (primary).
-- "goes back for remediation" → a returning secondary lane (condition-entered, `return-to-origin`) — never a sixth inline primary stage.
-- "sign up through portal" → event trigger, not Manual — assume and disclose.
-- Verbs → types: *screen* (AI over unstructured docs) → `agent`; *compliance check* → `execute-connector-activity` vs human sign-off decided per the playbook — a "licensed officer signs off" phrase forces `action`; *set up in finance system* → `execute-connector-activity` (or `process` when a deployed process packages it); *activate* → confirm with the user.
-
 ---
 
 ## Layer 2 — Gates: entry, exit, sequencing
@@ -131,7 +126,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream gates key off `required-tasks-completed` / `selected-tasks-completed`.
 2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`). A `Yes` + `selected-*` pair is a schema error.
 3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required`.
-4. **Case completion is a root rule.** At least one case-exit row carries `Marks Case Complete: Yes` (normally `required-stages-completed`). A stage completing never closes the case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with `Marks Case Complete: No`.
+4. **Case completion is a root rule.** At least one case-exit row carries `Marks Case Complete: Yes` (normally `required-stages-completed`). A stage completing never closes the case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with `Marks Case Complete: No`. **Default:** the last primary stage completing closes the case unless the source describes another close-out.
 5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output instead ([Layer 3 § Gate on the producer](#gate-on-the-producer-never-on-the-variable-it-writes)).
 6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences: a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards; an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF. Both validator-enforced.
 
@@ -361,6 +356,7 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 
 ### Defaults when the source is silent
 
+- SLA exists only where the source mentions timing, read literally ("about a day" → 1 day). No timing → `—`, no SLA rule. Scope, status, and response are chosen separately (§ Choosing the response).
 - No stated response → both statuses `notify-only`. Never invent a stage, task, or routing change.
 - At-risk threshold: SLA ≤ 3 days → 75%; 3–10 days → 70%; > 10 days → 80%.
 - Recipients: at-risk → the owner persona's user group; breached → the leadership tier (Compliance for regulation-driven cases). Record substituted defaults with provenance.
@@ -390,6 +386,8 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ```
 
 Never `:` — case-execution events are colon-delimited; a colon in a name breaks routing. The charset governs names being MINTED or first carried into a design: repair mechanically — replace disallowed runs with one space, collapse, trim; on empty result or collision add a safe qualifier and disclose. A name read from an existing draft/SDD during finalization is preserved verbatim, punctuation included — except `:` (structural ban): surface and ask, never silently keep or repair.
+
+**Default:** case name = PascalCase from the domain noun; case ID prefix = a 2–4 letter mechanical derivation of it.
 
 | Name | Unique across |
 |---|---|
