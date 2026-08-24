@@ -92,7 +92,7 @@
         "The confirmation includes a complete Decisions I Made table with a plain-language provenance per assumption",
         "A manually triggered task is presented as optional adhoc worker-launched work without exposing schema mechanics",
         "The confirmation carries the build continuation choice (build straight through vs pause at the build preview) so it is never asked mid-build",
-        "On a Build answer the lane writes sdd.md (write-early cadence), then the build starts (solution init + planning); the design doc is mentioned in one line as a reference artifact — never presented for review, and never written before the Build answer"
+        "On a Build answer the lane writes sdd.md, then the build starts (solution init + planning); the design doc is mentioned in one line as a reference artifact — never presented for review, and never written before the Build answer"
       ]
     },
     {
