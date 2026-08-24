@@ -13,11 +13,10 @@ description: >
   SLA wiring and live resource resolution. Stops at validate — NOT debug (the
   case suspends on Action App tasks, ad-hoc tasks and the withdrawal event).
 
-  Distinct from golden_rebuild (same live-rebuild shape, 15 tasks): this task
-  grades a per-stage SLA matrix whose every breach is a start-task response,
-  three-origin interrupting rejection routing, a connector-event stage entry,
-  multi-selector conditional gates with both polarities, and 19 Action App
-  tasks — none of which that fixture exercises.
+  The graded core is the per-stage SLA matrix whose every breach is a
+  start-task response, three-origin interrupting rejection routing, a
+  connector-event stage entry, multi-selector conditional gates with both
+  polarities, and 19 Action App tasks.
 
   TENANT PRECONDITION: every resource pinned in fixtures/sdd.md § 4 must be
   deployed on the eval tenant under Shared/uipath-maestro-case (plus
@@ -44,13 +43,16 @@ tags:
   - feature:approval-gate
   - path-to-ga
 
-# Sized from the golden_rebuild measurements (15 tasks ≈ 60 min of healthy
-# build) scaled to 39 tasks and 20 resources, with headroom for one cold
-# harness restart after a mid-stream API-limit death. Launch with
+# A healthy build of this fixture (39 tasks, 20 resources) measures ~60 min,
+# so 14400 leaves ~4x headroom — enough for one cold harness restart after a
+# mid-stream API-limit death. Do not raise it further: run-coder-eval.yml gives
+# the whole Linux sweep timeout-minutes: 330 (19800s), so a longer per-task
+# budget would get the GitHub job killed — losing every co-scheduled task's
+# result — before this task could time out cleanly. Launch with
 # CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a caseplan-sized extended-thinking
 # response is not fatal.
 run_limits:
-  task_timeout: 21600
+  task_timeout: 14400
   max_turns: 900
   turn_timeout: 9000
 
