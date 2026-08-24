@@ -1,12 +1,12 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
+description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath Human-in-the-Loop Assistant
 
-Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Agent.
+Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, Case Management, or Agent.
 
 > **Coded agents:** for wiring HITL inside a coded agent, use the `uipath-agents` skill — see `skills/uipath-agents/references/coded/capabilities/human-in-the-loop.md`.
 
@@ -72,6 +72,11 @@ Run these checks in order:
 # Check for a .flow file (Flow project)
 find . -name "*.flow" -maxdepth 4 | head -5
 
+# Check for a Case Management project. The on-disk filename varies
+# (caseplan.json, or content/<name>.json.bpmn under a `uip maestro case init`
+# project) — detect by content marker, not by filename.
+grep -rl '"case-management:root"' --include="*.json*" . 2>/dev/null | head -3
+
 # Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
 
@@ -82,6 +87,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | Found | Surface | How HITL is added |
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
+| `caseplan.json` (any `*.json` with `root.type: "case-management:root"`) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
@@ -144,7 +150,11 @@ Wait for confirmation. Do not proceed to schema design until the user confirms. 
 
 ## Step 3 — Choose Task Type
 
-Present the user with three options. Do not choose on their behalf or perform any registry search.
+**The options differ by surface.** Present the options for the detected surface and confirm before doing anything.
+
+### Surface: Flow
+
+Present three options. Do not choose on behalf of the user or perform any registry search.
 
 | # | Option | Node type | Description |
 |---|---|---|---|
@@ -173,6 +183,34 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 ---
 
+### Surface: Case
+
+Present two options. Do not choose on behalf of the user or pull the registry.
+
+| # | Option | Fingerprint | Description |
+|---|---|---|---|
+| 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.json`. Action Center renders fields at runtime. No deployed app needed. |
+| 2 | **App-based action task** | `data.name` and `data.folderPath` as `=bindings.<id>` references + `data.actionCatalogName` | Uses a deployed Action Center app with custom input/output fields. Requires the app to exist in Orchestrator. |
+
+> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up, supports structured form fields, and doesn't need a deployed app. You can upgrade to an app-based task later if you need a custom UI layout."
+
+> **Build vs design time.** QuickForm in case management must round-trip both ways: the JSON written here is what Studio Web's case designer reads (design time), and what `uip maestro case validate` + Action Center render at runtime (build time). Always validate after writing.
+
+| User selects | Next step |
+|---|---|
+| QuickForm (file-based schema) | Read [references/hitl-casetask-action.md — Path 1](references/hitl-casetask-action.md#path-1--quickform-file-based-schema-no-deployed-app), then continue with Step 4 |
+| App-based action task → ask: "What is the name of the deployed Action Center app?" | Read [references/hitl-casetask-action.md — Path 2](references/hitl-casetask-action.md#path-2--app-based-action-task-deployed-action-center-app), then continue with Step 4 |
+
+**Fallback rules:**
+
+| Path | Blocker | Response |
+|---|---|---|
+| App-based | App not found in registry or `action-apps-index.json` | "I couldn't find that app. Would you like to try a different name, or fall back to QuickForm while the app is prepared?" |
+| QuickForm | Schema design rejected on validate (e.g. duplicate field IDs, missing primary outcome) | Surface the validator's error, fix the schema, re-show to user, validate again. Apply Step 4b checks. |
+| Any | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
+
+---
+
 ## Step 4 — Common configuration
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
@@ -180,9 +218,9 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 ---
 
-## Step 4b — Schema Design Rules (QuickForm only)
+## Step 4b — Schema Design Resilience (QuickForm — Flow and Case)
 
-Apply these rules unconditionally while designing the schema.
+Apply these checks while designing the schema before confirming with the user. Applies equally to Flow QuickForm nodes and Case QuickForm action tasks — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
 
 ### Field direction
 
@@ -198,14 +236,15 @@ Pick direction based on what the human does with the field:
 
 ### Field types
 
-Use the JS/JSON type that fits the field: `string`, `number`, `boolean`, `date`, or `file`. These are the only valid values — do not use `text`.
+Use the JS/JSON type that fits the field: `string`, `number`, `boolean`, `date`, or `file`. These are the only valid values — do not use `text`. Case also supports `datetime` (distinct from `date`, for full date+time values) — see [hitl-casetask-action.md](references/hitl-casetask-action.md) for the Case-specific type table.
 
 ### Vague or incomplete schema descriptions
 
 If the user says something like "just add some fields" or "use whatever makes sense":
 
-1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file.
-2. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only.
+1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file (Flow) or in `caseplan.json` upstream task `outputs[]` and `root.data.uipath.variables` (Case).
+2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
+3. If there is nothing upstream to bind to (Flow with only a trigger; Case with this as the first task), use output-direction fields only and note: "There are no upstream values to pull data from, so the reviewer will fill in all fields from scratch."
 
 ### Empty field labels block validation
 
@@ -268,6 +307,27 @@ After writing, validate:
 uip maestro flow validate <file> --output json
 ```
 
+### Surface: Case
+
+Read the `caseplan.json` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
+
+Full reference: **[references/hitl-casetask-action.md](references/hitl-casetask-action.md)** — three task JSON shapes (QuickForm, generic, app-based), field reference, assignee handling, post-write verification, and downstream output access.
+
+| Path chosen in Step 3 | What gets written |
+|---|---|
+| QuickForm | A `<TaskLabel>.hitl.json` schema file (unified `fields[]` with `direction`, `outcomes[]`) + action task in `caseplan.json` with `data.context[hitlType].value: "quick"`, `_schemaFileId` (placeholder UUID), and `hitlSchemaId` (matches `schemaId` in `.hitl.json`). `data.inputs[]` and `data.outputs[]` are empty arrays. No `root.data.uipath.bindings[]` entries. Apply Step 4b schema-design checks before writing. |
+| App-based | Action task with `data.actionCatalogName`, `data.name` and `data.folderPath` as `=bindings.<id>` references. Add 2 root-level bindings. |
+
+After writing, validate (build-time check — must pass before reporting success):
+
+```bash
+uip maestro case validate <caseplan.json> --output json
+```
+
+> `uip maestro case validate` is the only `uip maestro case` CLI used by this skill on the Case surface. All authoring is direct JSON.
+
+---
+
 ### Surface: Low-Code Agent
 
 The Low-Code Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
@@ -298,7 +358,44 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes — `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered element types in the BPMN validator ([bpmn-spec.json](../uipath-maestro-bpmn/validator/bpmn-spec.json)), same node-type strings as the Flow surface. Write the node directly into the `.bpmn` XML as a `bpmn:UserTask` with a `uipath:activity` extension element (see the `Actions.HITL` extension type in the validator spec for the app-based/coded-action-app XML shape and context fields — `appId`, `appVersion`, `actions`, `key`, `taskTitle`).
+QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes. `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered as **registry shortcut names** in the BPMN validator ([bpmn-spec.json](../uipath-maestro-bpmn/validator/bpmn-spec.json)) — these are palette/discovery identifiers, not literal XML to write. There is no dedicated CLI subcommand for Maestro (unlike Flow's `uip maestro flow hitl add`) — write the node directly into the `.bpmn` XML.
+
+**Confirmed node shape (verified by direct reproduction against a real Studio Web BPMN process with a working, editable QuickForm task):**
+
+```xml
+<bpmn:task id="Activity_InvoiceApproval" name="Invoice Approval">
+  <bpmn:extensionElements>
+    <uipath:activity version="v1">
+      <uipath:type value="Actions.HITL" version="v2" />
+      <uipath:context>
+        <uipath:input name="hitlType" type="string" value="quick" />
+        <uipath:input name="taskTitle" type="string" value="Please review this invoice and approve or reject" />
+        <uipath:input name="labels" type="string" />
+        <uipath:input name="priority" type="string" value="Medium" />
+        <uipath:input name="actionCatalogName" type="string" />
+        <uipath:input name="enableActionableNotifications" type="boolean" value="false" />
+        <uipath:input name="assignmentCriteria" type="string" />
+        <uipath:input name="recipient" type="json" />
+        <uipath:input name="_schemaFileId" type="string" value="<see file-id callout below>" />
+        <uipath:input name="hitlSchemaId" type="string" value="<matches schemaId in the .hitl.json sidecar>" />
+        <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"invoiceid":{"type":"string","title":"Invoice ID"},"amount":{"type":"number","title":"Amount"}},"required":[]}]]></uipath:inputSchema>
+      </uipath:context>
+      <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"invoiceid":"INV-1001","amount":500}]]></uipath:input>
+      <uipath:output name="Action" type="string" source="=Action" var="invoiceDecision" options="[{&#34;value&#34;:&#34;Approve&#34;,&#34;label&#34;:&#34;Approve&#34;},{&#34;value&#34;:&#34;Reject&#34;,&#34;label&#34;:&#34;Reject&#34;}]" />
+    </uipath:activity>
+  </bpmn:extensionElements>
+  <bpmn:incoming>edge_into_task</bpmn:incoming>
+  <bpmn:outgoing>edge_out_of_task</bpmn:outgoing>
+</bpmn:task>
+```
+
+Notes on what's easy to get wrong:
+- **Element is `bpmn:task`, not `bpmn:UserTask`.** `bpmn-spec.json`'s generic `Actions.HITL` XML template uses `bpmn:UserTask` and `version="v1"` — that template is for the app-based/coded-action-app path (its `context` fields are `appId`, `appVersion`, `actions`, `key`, `taskTitle`). A real QuickForm task exported from Studio Web is a plain `bpmn:task` with `uipath:type value="Actions.HITL" version="v2"`. Use the shape above for QuickForm; the spec's template for app-based.
+- **`<uipath:inputSchema>` (last child of `<uipath:context>`) and `<uipath:input name="HitlTaskArguments">` (sibling of `<uipath:context>`, not inside it) are both required.** Without them the "Edit Schema" canvas in Studio Web doesn't open at all — confirmed by direct reproduction. This mirrors the Case surface's `data.inputSchema`/`data.inputs[]` requirement — see [hitl-casetask-action.md § Step 3](hitl-casetask-action.md) for the parallel Case shape and full field-by-field rationale.
+- **The `Action` output requires a matching process-level variable declaration** — add `<uipath:inputOutput id="<varId>" name="Action" type="string" elementId="<taskId>" />` inside the process's top-level `<uipath:variables version="v1">` block.
+- **A separate `<TaskLabel>.hitl.json` sidecar file is required**, same shape as the Case surface's (`title`, `fields[]` with `direction`/optional `colSpan`/`binding` or `variable`, `outcomes[]` with **no** `action` key, `schemaId`) — see [hitl-casetask-action.md § Step 2](hitl-casetask-action.md) for the exact shape; it's identical across both surfaces.
+- **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** A placeholder value makes "Edit Schema" fail silently (a `404` on Studio Web's internal `FileOperations/File/Rename` call, confirmed by direct reproduction). There is no `uip` CLI command that resolves this today. The only known working procedure: upload once, look up the real file ID Studio Web assigned to the `.hitl.json` via `GET /api/Project/{projectId}/FileOperations/Structure` (an internal Studio Web REST endpoint, not a CLI verb), patch `_schemaFileId` to that real ID, then push the corrected `.bpmn` back with a **targeted single-file update** (`PUT /api/Project/{projectId}/FileOperations/File/{fileId}`) — **not** another whole-project `uip solution upload`, which re-imports everything and mints a fresh random file ID for every file, invalidating whatever was just patched. This is a real product/tooling gap, not just a documentation gap — flag it to the user rather than silently attempting it, unless they've explicitly asked for the schema to be Studio-Web-editable.
+- **Diagram-interchange edges are required for the connector lines to render, even though the logical `bpmn:sequenceFlow`s already exist.** Every `bpmn:sequenceFlow` needs a matching `bpmndi:BPMNEdge` (with two `di:waypoint` points, aligned to the source/target shapes' connecting edges) in the `bpmndi:BPMNPlane` — omitting it leaves the nodes logically connected but visually disconnected in the canvas. Confirmed by direct reproduction.
 
 Design the schema per Step 4b, confirm it with the user, then validate frequently (`uip maestro bpmn validate <file>.bpmn --output json`) while wiring the node so any shape mistakes surface immediately rather than at deploy time. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
@@ -328,3 +425,4 @@ After completing the wiring:
 - **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)** — Read this when the user wants to build a new React app inside the solution. Covers full project template, UUID generation, solution CLI commands, and post-creation build steps.
 - **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.
+- **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, QuickForm vs app-based paths, `.hitl` file format, context entries, field binding, and downstream output access.
