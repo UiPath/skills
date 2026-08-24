@@ -1,0 +1,164 @@
+task_id: skill-admin-role-assignment-not-working-e2e
+description: >
+  Troubleshoot e2e (outcome-graded): pre_run seeds a real broken grant — a custom
+  role owned by DocumentUnderstanding, assigned at the bare tenant path
+  (/tenant/<TID>) instead of the service path (/tenant/<TID>/documentunderstanding),
+  so the grant exists but never takes effect. The agent must inspect the role
+  definition, list the grant, and run the effective-access check. Graded on the
+  tenant records it reads back plus an llm_judge on the root cause. Retrieving
+  the grant requires `--scope-path`; the centralized-access listing shapes
+  cannot see a mis-scoped grant. Validates Playbook 7.
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, troubleshoot, authz, role-assignment]
+
+pre_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-misscoped-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-misscoped-role" AUTHZ_ROLE_PERMISSION="DOCUMENTUNDERSTANDING.PROJECTS.READ" AUTHZ_ROLE_SERVICE="documentunderstanding" AUTHZ_ROLE_DESCRIPTION="Seeded DU project reader" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/tenant/<TID>" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_assignment.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-misscoped-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+max_iterations: 2
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+
+initial_prompt: |
+  My own account was granted the custom role named in `seed.json` (the
+  `role.name` field), but Document Understanding still refuses the actions that
+  role is supposed to allow. Investigate why the grant is not taking effect:
+
+  - Save the role's definition as the tenant stores it to ./role.json.
+  - Save a role-assignment listing that contains this grant to
+    ./assignments.json, exactly as the CLI returned it. Retrieving the grant
+    into a listing is part of the diagnosis — the task is not complete until
+    assignments.json holds this grant's record.
+  - Save the raw JSON of the effective-access check for my account to
+    ./access.json.
+
+  Then explain the root cause and state the fix you would apply. Describe that
+  fix — do not perform it: leave the role and the assignment unchanged.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "role.json holds the seeded role as the tenant stores it (DocumentUnderstanding owner + granted DU action)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('role.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      seeded_name = json.load(open('seed.json'))['role']['name']
+      role = next((x for x in dicts(d) if (x.get('Name') or '') == seeded_name), None)
+      assert role, 'saved JSON does not contain this run\'s role record (' + seeded_name + ')'
+      owner = role.get('OwnerServiceName') or role.get('ownerServiceName') or ''
+      assert owner.lower() == 'documentunderstanding', f'role owner service not read back from the tenant: {owner!r}'
+      actions = [a.get('Name') for a in (role.get('ActionDetails') or [])]
+      assert 'DOCUMENTUNDERSTANDING.PROJECTS.READ' in actions, f'granted actions not retrieved: {actions}'
+      print('OK: role definition retrieved with its owning service and granted action')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "assignments.json shows the seeded grant sitting at the bare tenant scope path (requires --scope-path; the centralized-access shapes cannot see it)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('assignments.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      seeded_name = json.load(open('seed.json'))['role']['name']
+      hit = next((x for x in dicts(d) if (x.get('RoleName') or '') == seeded_name), None)
+      assert hit, 'the grant of ' + seeded_name + ' is not present in the saved listing'
+      scope = (hit.get('Scope') or '').lower()
+      assert scope.startswith('/tenant/'), f'grant scope not read back from the tenant: {scope!r}'
+      assert not scope.endswith('/documentunderstanding'), 'saved grant is at the service path — the seeded mis-scoped grant was not the one retrieved'
+      print('OK: grant retrieved at ' + scope)
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    # Gating. The grant is only retrievable with `--scope-path "/tenant/<tid>"`
+    # and no --service: every other shape pins a serviceName the mis-scoped
+    # grant cannot match (centralizedaccess for the default/--identity-id/
+    # --scope Tenant shapes, the service itself for --service <svc>). Finding
+    # that retrieval is part of the diagnosis, so this is a fair gate — see
+    # diagnose/references/failure-modes.md, "Role Assignment Not Taking Effect".
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "access.json holds a real effective-access decision retrieved from the PDP"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('access.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'check-access not successful: Result={res}'
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      allkeys = [k.lower().replace('_', '') for k in keys(d)]
+      assert any('roleassignment' in k for k in allkeys), 'no RoleAssignments field in the saved decision'
+      assert any('granted' in k and 'metadata' in k for k in allkeys), 'no Granted*Metadata — not a real effective-access decision'
+      print('OK: effective-access decision retrieved')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent identifies the scope-path / owning-service mismatch as the root cause"
+    include_agent_output: true
+    prompt: |
+      The custom role the role named in `seed.json` (the `role.name` field) is owned by the
+      DocumentUnderstanding service (ownerServiceName: DocumentUnderstanding,
+      scopeType: Tenant). It was granted to the user at the bare tenant scope
+      path `/tenant/<TENANT_ID>`.
+
+      Correct root cause: a role owned by a tenant-service must be assigned at
+      that service's scope path — `/tenant/<TENANT_ID>/documentunderstanding` —
+      so a grant sitting at the bare `/tenant/<TENANT_ID>` path never takes
+      effect for Document Understanding. The fix is to re-create the assignment
+      at the service scope path (e.g. via --service documentunderstanding or an
+      explicit --scope-path).
+
+      Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response identifies the mismatch between the role's
+        owning service and the scope path the grant sits at, AND names
+        re-assigning at the service scope path as the fix.
+      Score 0.5 if it notices the scope path is wrong or that the service
+        binding matters, but does not connect the two or gives no fix.
+      Score 0.0 if it blames something else (permission missing from the role,
+        licensing, caching, propagation delay) or gives no root cause.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Diagnosis must stay read-only — no role or assignment mutations"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:create|update|delete|assignments\s+(?:create|delete))\b'
+    weight: 1.5

@@ -7,6 +7,7 @@ on:
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/tasks/uipath-planner/**'
       - 'tests/tasks/uipath-agents/**'
+      - 'tests/tasks/uipath-admin/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
@@ -29,6 +30,27 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/tasks/uipath-maestro-flow/ -v
+
+  pytest-admin-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-admin verify negative controls
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # These are the negative controls for the uipath-admin verify scripts: they
+      # assert each verify FAILS on wrong tenant state, and that a degenerate seed
+      # fails loudly instead of skipping. Without this job the harness silently
+      # drifted from the verify scripts it guards — a synthetic payload shape kept
+      # 29/29 green while the real parser read nothing (see PR #2667).
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-admin/_shared/ -v
 
   pytest-case-check:
     runs-on: uipath-ubuntu-latest

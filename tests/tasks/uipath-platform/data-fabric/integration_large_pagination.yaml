@@ -36,6 +36,10 @@ initial_prompt: |
   row number, 1-500), and an `Active` flag (yes for rows 1-300, no for
   rows 301-500). I'd like you to paginate through it three different ways.
 
+  It's a tenant-level entity (no folder). I approve the temporary-row
+  inserts, updates, and deletes described below — proceed without asking for
+  confirmation, and don't change any other entities or rows.
+
   Three walks:
 
   1) Walk all 500 rows, 60 per page. Tell me how many pages and unique

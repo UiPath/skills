@@ -1,0 +1,40 @@
+task_id: skill-admin-audit-org-events-smoke
+description: >
+  Smoke test (outcome-graded): agent queries ORG-scoped audit events for a
+  bounded window. Graded on the events read back from the live tenant, not the
+  command string.
+
+  Scope discipline is graded from an intrinsic property of the records rather
+  than from the flag the agent typed: org-scope audit events are not attached to
+  any tenant and come back with a null `TenantId`, while tenant-scope events
+  always carry one. An agent that queries the wrong scope therefore fails on the
+  data it retrieved — which the old `audit org events` regex could not detect,
+  since a command mentioning `org` can still be pointed at the wrong surface.
+
+  Org-level activity (memberships, license, tenant lifecycle) is sparse on a
+  quiet org, so an empty window is accepted — but only after the harness confirms
+  the same org-scope query is empty for it too.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, scope-org]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Show me the 50 most recent organization-level audit events from the
+  last 7 days — I want to see who joined the org and any recent
+  admin-role changes. Save the complete JSON result to ./events-org.json so I
+  can review it.
+
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "events-org.json holds real ORG-scope events (no TenantId) inside the 7d window, capped at 50"
+    command: 'AUDIT_FILE=events-org.json AUDIT_SCOPE=org AUDIT_WINDOW_DAYS=7 AUDIT_MAX_COUNT=50 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_events.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

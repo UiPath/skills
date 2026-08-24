@@ -1,0 +1,29 @@
+task_id: skill-admin-authz-permissions-service-scope-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — retrieve the permission
+  catalog for one owning service (Orchestrator). Graded on the slice the service
+  returned: every row is Orchestrator-owned (plus the AuthZ and scope-agnostic
+  rows the service includes in every filter) and tenant-shaped, so the service
+  filter is verified by its effect on the data rather than by the flag typed.
+
+  Read-only, no tenant state is touched.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, permissions]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Which permissions does Orchestrator contribute to the permission catalog of my
+  UiPath organization? Retrieve just that service's permissions and save the
+  complete JSON result to ./orchestrator-permissions.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "orchestrator-permissions.json holds the Orchestrator slice of the catalog"
+    command: 'AUTHZ_PERM_FILE="orchestrator-permissions.json" AUTHZ_EXPECT_SCOPE="TENANT" AUTHZ_EXPECT_NAMESPACE="ORCHESTRATOR" AUTHZ_MIN_ROWS="30" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_permission_listing.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

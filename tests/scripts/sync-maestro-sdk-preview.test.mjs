@@ -262,6 +262,14 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
         'New upstream Case guidance.',
       ),
     );
+    write(
+      upstreamRoot,
+      'typescript/sdk/skill/SKILL.md',
+      read(upstreamRoot, 'typescript/sdk/skill/SKILL.md').replace(
+        '| Script | `core.action.script` |',
+        '| Script action | `core.action.script` |',
+      ),
+    );
     const newPin = commit(upstreamRoot, 'drift');
 
     const result = syncSnapshots({ skillsRoot, upstreamRoot });
@@ -287,7 +295,7 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
     );
     assert.match(
       read(skillsRoot, 'preview/uipath-maestro-flow/SKILL.md'),
-      /`examples\/Foo\.flow\.ts`/,
+      /\| Script action \|.*`examples\/Foo\.flow\.ts`/,
     );
     assert.match(
       read(skillsRoot, 'preview/uipath-maestro-case/SKILL.md'),

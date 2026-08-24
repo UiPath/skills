@@ -2,6 +2,13 @@
 
 *Exact signatures, fields, and defaults: [`dataFabricRead()`](api.md#datafabricread-function) and [`dataFabricUpdate()`](api.md#datafabricupdate-function).*
 
+Data Fabric and Data Service are different authoring surfaces. Use this native
+node family only when the scenario says **Data Fabric**. A **Data Service**
+entity is reached through the Integration Service connector key
+`uipath-uipath-dataservice`; follow
+[`connector-params.md`](connector-params.md) and do not substitute
+`dataFabricRead()` for that request.
+
 Read entity records with filters (`core.datafabric.read`) and write fields back
 to one record (`core.datafabric.update`).
 

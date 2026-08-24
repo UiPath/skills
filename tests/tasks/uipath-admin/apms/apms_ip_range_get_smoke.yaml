@@ -1,0 +1,59 @@
+task_id: skill-admin-apms-ip-range-get-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — fetch ONE allowlist entry
+  rather than the whole list. The entry is seeded in pre_run under a name unique
+  to this run, and the check requires the saved output to be that entry's own
+  record (its id, name and network as the service stores them) — so a whole-list
+  dump does not pass, and a concurrent run's entry cannot satisfy it.
+
+  Read-only apart from the seed, which post_run removes. Enforcement is never
+  enabled, and the seeded network is an RFC 5737 documentation range.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, apms, ip-ranges]
+
+pre_run:
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-get-entry" APMS_RANGE_COUNT="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-get-entry" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  One entry on our organization's IP allowlist needs checking — its name is in
+  `seed.json` (the `range.name` field). Show me just that entry's own details,
+  and save the complete JSON of it to ./entry.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "entry.json holds this run's seeded entry as the service stores it (id, name, network)"
+    command: |
+      python3 -c "
+      import json
+      seed = json.load(open('seed.json'))['range']
+      d = json.load(open('entry.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rows = [x for x in dicts(d) if x.get('Name') and (x.get('IpNetwork') or x.get('ipNetwork'))]
+      assert rows, 'no allowlist entry record in the saved output'
+      assert len(rows) == 1, f'saved output holds {len(rows)} entries — this scenario asks for one entry, not the whole list'
+      row = rows[0]
+      assert row.get('Name') == seed['name'], 'saved entry is ' + str(row.get('Name')) + ', not this run\\'s seeded entry ' + seed['name']
+      assert (row.get('IpNetwork') or row.get('ipNetwork')) in seed['cidrs'], 'network not read back from the service: ' + str(row)
+      assert row.get('Id') in (seed['ids'] or [row.get('Id')]), 'entry id does not match the seeded entry'
+      print('OK: seeded entry ' + seed['name'] + ' retrieved on its own (' + str(row.get('IpNetwork')) + ')')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

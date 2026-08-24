@@ -67,7 +67,7 @@ Three failure modes observed in agent-generated `.flow` files:
 | **Decision** (`core.logic.decision`) | `inputs.expression` | **NO** — already JS, do not prefix |
 | **Switch** (`core.logic.switch`) | `inputs.cases[].expression` | **NO** — already JS, do not prefix |
 | **End nodes** (`core.control.end`) | `outputs.<varId>.source` | **YES** |
-| **Variable updates** | `variables.variableUpdates.<nodeId>[].expression` | **YES** (the CLI auto-prefixes if missing, but write it explicitly) |
+| **Variable updates** | `variables.variableUpdates.<nodeId>[].expression` | **NO** — not a string field. Write the object form `{ "type": "jsExpression", "expression": "<bare JS>", "fieldType": "<target variable type>" }`. A `=js:` string fails `flow validate` at the 1.9→1.10 migration. See [variables-and-expressions.md § Variable Updates](variables-and-expressions.md#variable-updates-variableupdates). |
 | **Loop nodes** (`core.logic.loop`) | `inputs.collection` | **YES** |
 | **Subflow nodes** (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
 | **Script nodes** (`core.action.script`) | `inputs.script` body — `$vars.*` is read inside JS, no `=js:` wrapping | **NO** — the body is already JS |

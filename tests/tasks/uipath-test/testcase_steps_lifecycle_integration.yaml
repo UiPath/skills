@@ -37,9 +37,10 @@ initial_prompt: |
   CLAIM) and then tidying them up after a review — walk it through end to end.
   First create a new manual test case with a clear, unique name.
 
-  Add these one at a time as I give them to you:
-    - "Open the payments screen" — the tester should see the payments form.
+  Add these one at a time, in exactly the order I list them — I know the order
+  is wrong, we fix it in the review pass below:
     - "Enter valid card details" — the form should accept them.
+    - "Open the payments screen" — the tester should see the payments form.
 
   Now add these last two in one shot:
     - "Submit the payment" — expect a confirmation banner.

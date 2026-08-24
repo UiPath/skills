@@ -1,8 +1,10 @@
 task_id: skill-flow-ipe-dtl-load-by-default-true
 description: >
-  Tests the DTL loadByDefault=true IS feature — configures a connector node
-  where a dropdown is pre-populated on the Azure connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-microsoft-azure, ipe, mode:build]
+  Tests the DTL loadByDefault=true IS feature — configures a Jira Get Issue
+  connector node whose Project and Issue Type dropdowns are pre-populated
+  (loadByDefault=true), requiring the agent to resolve and pre-select the first
+  available project and issue type into customFieldsRequestDetails.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe, mode:build]
 
 run_limits:
   expected_turns: 40
@@ -12,9 +14,7 @@ run_limits:
 
 initial_prompt: |
   Create a new Flow project called "DTLLoadByDefaultTrueTest" with a manual trigger.
-  You need a flow that provisions a new Azure resource group in a chosen region.
-  Discover the create-resource-group operation and pick the region from the
-  location dropdown.
+  You need a flow that fetches Jira ticket ENGCE-00000. Select the first project and issue type available.
   Validate the final flow file.
   Use the connection present in Shared/uipath-maestro-flow.
 
@@ -28,8 +28,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has a connector node referencing uipath-microsoft-azure"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/DTLLoadByDefaultTrueTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-microsoft-azure' in content, 'Connector key not found'; print('OK: connector key present')\""
+    description: "Flow has a Jira Get Issue connector node referencing uipath-atlassian-jira"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/DTLLoadByDefaultTrueTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-atlassian-jira' in content, 'Jira connector key not found'; f=json.load(open(flows[0])); assert any(n.get('type','').startswith('uipath.connector.uipath-atlassian-jira.get-issue') for n in f['nodes']), 'No Jira Get Issue node'; print('OK: Jira get-issue node present')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "DTL loadByDefault feature: issue key set and first project + issue type pre-selected in queryParameters AND customFieldsRequestDetails (matching values)"
+    command: "python3 $TASK_DIR/check_dtl_load_by_default.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

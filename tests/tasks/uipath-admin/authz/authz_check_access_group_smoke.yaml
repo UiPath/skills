@@ -1,0 +1,47 @@
+task_id: skill-admin-authz-check-access-group-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — evaluate effective access for
+  a GROUP principal rather than a user. The effective-access endpoint takes any
+  identity positionally, and group evaluation is the common "why can this team do
+  X?" question. Graded on the decision the policy decision point returned for the
+  built-in Everyone group — a real payload carrying role assignments and granted
+  metadata, anchored on the service's own response code.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, check-access]
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  What can members of the built-in "Everyone" group actually do in my UiPath
+  organization right now? Resolve that group and evaluate its effective access,
+  saving the raw JSON output of the access check verbatim to ./group-access.json
+  (do not summarize, wrap, or reformat it).
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "group-access.json is a real effective-access decision for the group, from the service"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('group-access.json', encoding='utf-8-sig'))
+      assert isinstance(d, dict), 'saved output is not the raw command envelope'
+      assert d.get('Result') == 'Success', f'access check not successful: Result={d.get(\"Result\")}'
+      assert d.get('Code') == 'AuthzCheckAccess', f'not an effective-access response: Code={d.get(\"Code\")!r}'
+      data = d.get('Data') or {}
+      ra = data.get('RoleAssignments') or {}
+      assert 'TotalCount' in ra and isinstance(ra.get('Results'), list), f'no RoleAssignments collection; keys={list(data)}'
+      assert any(k.lower().startswith('granted') for k in data), f'no Granted*Metadata — not a real decision; keys={list(data)}'
+      print(f'OK: effective-access decision retrieved for the group ({ra.get(\"TotalCount\")} role entries)')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Evaluating access must not change any role or assignment"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:create|update|delete|assignments\s+(?:create|delete))\b'
+    weight: 2.0
