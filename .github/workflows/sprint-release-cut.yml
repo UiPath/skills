@@ -163,7 +163,19 @@ jobs:
             # here. Commit only if the version actually changed (no empty commit).
             npm version "$LINE.0" --no-git-tag-version --allow-same-version
             node scripts/sync-version.mjs
-            git add package.json version-manifest.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
+            # Stage exactly the file set sync-version.mjs owns, read back from
+            # the script itself. A hardcoded list silently drops any channel
+            # added later: that is how `.cursor-plugin/plugin.json` was left
+            # out of the 1.201 cut, which failed publish.yml's `guard` job and
+            # blocked every publish channel until #2767. Unquoted expansion is
+            # intended -- the list is newline-separated and no path contains
+            # whitespace.
+            MANIFESTS="$(node scripts/sync-version.mjs --list-paths)"
+            if [ -z "$MANIFESTS" ]; then
+              echo "::error::sync-version.mjs --list-paths returned nothing; refusing to commit a partial version bump."
+              exit 1
+            fi
+            git add $MANIFESTS
             if git diff --cached --quiet; then
               echo "release branch matches main at $LINE.0 — no version commit needed."
             else
@@ -271,7 +283,19 @@ jobs:
           git checkout -B "$PR_BRANCH" origin/main
           npm version "$NEXT_LINE.0" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
-          git add package.json version-manifest.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
+          # Stage exactly the file set sync-version.mjs owns, read back from
+          # the script itself. A hardcoded list silently drops any channel
+          # added later: that is how `.cursor-plugin/plugin.json` was left
+          # out of the 1.201 cut, which failed publish.yml's `guard` job and
+          # blocked every publish channel until #2767. Unquoted expansion is
+          # intended -- the list is newline-separated and no path contains
+          # whitespace.
+          MANIFESTS="$(node scripts/sync-version.mjs --list-paths)"
+          if [ -z "$MANIFESTS" ]; then
+            echo "::error::sync-version.mjs --list-paths returned nothing; refusing to commit a partial version bump."
+            exit 1
+          fi
+          git add $MANIFESTS
           if git diff --cached --quiet; then
             echo "main already at $NEXT_LINE.0 — no bump PR needed."
             exit 0

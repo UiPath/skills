@@ -34,7 +34,14 @@ Run after any version change:
 ```bash
 npm run version:sync      # rewrite derived manifests from package.json
 npm run version:check     # CI guard — non-zero exit if drifted
+node scripts/sync-version.mjs --list-paths   # the file set this script owns
 ```
+
+`--list-paths` prints `package.json` plus every derived manifest, one
+repo-relative path per line. `sprint-release-cut.yml` stages exactly that set
+when it commits a bump, so adding a channel to `PATHS` is picked up by release
+automation with no second edit — a hardcoded `git add` list is what dropped
+`.cursor-plugin/plugin.json` from the 1.201 cut.
 
 `version:check` runs in two places. `validate-version-sync.yml` runs it on every
 pull request, so drift fails pre-merge. The `guard` job in `publish.yml` runs it
@@ -43,7 +50,8 @@ stale manifest blocks `dev`, `preview`, and every flavor package at once — wit
 no failure louder than nothing shipping. **A PR that adds a new derived manifest
 to `PATHS` in `sync-version.mjs` must run `npm run version:sync` as its last
 step before merge**, or it lands the stale value together with the check that
-rejects it.
+rejects it. Staging in release automation needs no matching edit — it reads
+`--list-paths`.
 
 ### Why lockstep with the CLI
 
