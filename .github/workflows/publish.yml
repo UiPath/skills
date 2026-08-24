@@ -133,9 +133,17 @@ jobs:
           node-version: "22.x"
 
       # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
+      #
+      # Pinned to a major, NOT `npm@latest`. This job is the only one that
+      # upgrades npm, so it is the only one exposed to a new npm major the
+      # moment it ships -- with no repo change to point at. npm 12 renamed the
+      # `npm pack --json` payload from an array to an object keyed by package
+      # name, which broke the nested pack inside our `prepack` hook and stalled
+      # npmjs at 1.199.0 for two release lines. Minor/patch upgrades still flow;
+      # moving majors is now a deliberate edit.
       - name: Upgrade npm for trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@12
           echo "npm $(npm --version) / node $(node --version)"
 
       # `preview` when: dispatch channel=preview, OR an auto push to a
