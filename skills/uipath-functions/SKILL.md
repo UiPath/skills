@@ -269,8 +269,6 @@ uip function push
 }
 ```
 
-Verify after `pack`: `unzip -l .uipath/<NAME>.<VERSION>.nupkg` must not list excluded paths.
-
 ## Important Notes
 
 - `UiPath()` must never be instantiated at module level — always inside a function body
