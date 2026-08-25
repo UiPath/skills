@@ -75,17 +75,23 @@ on:
       # Windows runs it in-process on the host (tempdir driver) with its own
       # delegate-stdio install, ROPC user token, and shared interop — ports of
       # coder_eval_uipath's daily.sh / daily-windows.ps1 wiring.
+      #
+      # codex is the DEFAULT: it is the harness the nightly runs daily (claude runs
+      # twice a week), and codex on the cheap tier measures at pass-rate parity with
+      # claude-sonnet-5 for a fraction of the cost. An ad-hoc run should reproduce the
+      # daily driver by default, not the twice-weekly one.
       agent:
         description: 'Agent to run.'
         type: choice
         options:
-          - claude
           - codex
+          - claude
           - antigravity
           - delegate-sdk
-        default: claude
+        default: codex
       # Overrides the model for ANY agent. Blank keeps that harness's own repo
-      # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL).
+      # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL) — which is
+      # where the default model lives, so it stays correct whichever agent is picked.
       agent_model:
         description: 'Model override (blank = default).'
         type: string
