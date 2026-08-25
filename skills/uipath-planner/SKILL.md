@@ -51,15 +51,17 @@ The skill has three paths, decided by the **Entry Guard**:
 Run this guard before anything else.
 
 ```text
-0. Case Management design signals — checked first. Any of these routes to
-   Phase D — Design through the Case Design Lane
-   (references/case-design-lane-guide.md), which is Phase D's entrance for
-   this product:
-   - `uipath-maestro-case` handed off a build because no `sdd.md` exists
-     (same conversation),
-   - a case design request with no PDD,
-   - a case `sdd.draft.md` exists (or is named) and the user asks to
-     finalize it.
+0. Product design-lane signals — checked first. Some products register a
+   dedicated Phase D design lane (today: Case Management —
+   references/case-design-lane-guide.md). Route to Phase D — Design through
+   the product's lane when any of these fire (the path taxonomy stays the three
+   paths above; a lane is Phase D's product-specific entrance):
+   - a build request handed off by that product's build skill because its
+     design input is missing (same conversation) → the lane's Build
+     handoff mode,
+   - a design request for that product with no PDD → the lane, direct,
+   - the product's design draft exists (or is named) and the user asks to
+     finalize it → the lane, draft finalization.
 
 1. No document path?
    - Explicit design/architect language ("design this", "architect this",
