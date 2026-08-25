@@ -52,7 +52,8 @@ uip maestro flow registry get <node-type> --output json
 | `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
 | `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |
 | `uipath.agent.voice`            | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
-| `uipath.conversational.voice.*` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
+| `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
+| `uipath.conversational.voice.end-call` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
 | `uipath.core.rpa-workflow.*`    | [rpa/impl.md](plugins/rpa/impl.md)                             |
 | `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md)     |
