@@ -34,18 +34,29 @@ FORBIDDEN = [
 ]
 
 
-def root_variable_ids(root: ET.Element) -> set[str]:
-    variables: set[str] = set()
+def normalized_variable_key(value: str) -> str:
+    return "".join(character for character in value.casefold() if character.isalnum())
+
+
+def root_variables_by_key(root: ET.Element) -> dict[str, str]:
+    variables: dict[str, str] = {}
     process = root.find("bpmn:process", NS)
     if process is None:
-        return set()
+        return variables
     for variable in process.findall(
         "bpmn:extensionElements/uipath:variables/*",
         NS,
     ):
         variable_id = variable.attrib.get("id")
-        if variable_id:
-            variables.add(variable_id)
+        if not variable_id:
+            continue
+        name = variable.attrib.get("name")
+        for candidate in (name, variable_id):
+            if candidate:
+                variables.setdefault(normalized_variable_key(candidate), variable_id)
+        id_key = normalized_variable_key(variable_id)
+        if id_key.startswith("var"):
+            variables.setdefault(id_key[3:], variable_id)
     return variables
 
 
@@ -124,24 +135,27 @@ def main() -> None:
         if identifier not in body:
             fail(f"script body should reference mapped input identifier {identifier!r}")
 
-    variables = root_variable_ids(root)
+    variables = root_variables_by_key(root)
     for required in ("amount", "daysOverdue", "riskScore"):
-        if required not in variables:
-            fail(f"missing root variable id {required!r}")
+        key = normalized_variable_key(required)
+        if key not in variables:
+            fail(f"missing root variable for {required!r}")
 
     args_input = first_uipath_input(task, "args")
     if args_input is None:
         fail('script mapping must include uipath:input name="args"')
     args_body = text_content(args_input)
     for variable_name in ("amount", "daysOverdue"):
-        expected = f"=vars.{variable_name}"
+        variable_id = variables[normalized_variable_key(variable_name)]
+        expected = f"=vars.{variable_id}"
         if expected not in args_body:
             fail(f"script args should map {variable_name!r} through {expected!r}")
         if f"={variable_name}" in args_body:
             fail(f"script args should not use bare variable expression ={variable_name}")
 
     outputs = uipath_outputs(task)
-    if not any(out.attrib.get("var") == "riskScore" for out in outputs):
+    output_var = variables[normalized_variable_key("riskScore")]
+    if not any(out.attrib.get("var") == output_var for out in outputs):
         fail("script output must map to the declared riskScore variable id")
     if not any((out.attrib.get("source") or "").startswith("=result.") for out in outputs):
         fail("script output should map from a result expression such as =result.response")
