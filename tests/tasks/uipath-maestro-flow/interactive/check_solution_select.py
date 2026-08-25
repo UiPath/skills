@@ -9,9 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-SHARED = Path(__file__).resolve().parents[1] / "_shared"
-sys.path.insert(0, str(SHARED))
-from flow_check import find_flow_file, find_project_dir  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _shared.flow_check import find_flow_file, find_project_dir  # noqa: E402
 
 SELECTED = Path("WeatherSelection-7K4M")
 PROJECT_PATTERN = "WeatherSelection-7K4M/**/project.uiproj"
