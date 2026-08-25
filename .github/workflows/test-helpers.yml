@@ -190,6 +190,22 @@ jobs:
       - name: Run metadata refresh contract guard
         run: pytest tests/scripts/test_bpmn_metadata_refresh_contract.py -v
 
+  bpmn-di-shape-contract-guard:
+    runs-on: ubuntu-latest
+    name: maestro-bpmn DI shape contract guard
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run DI shape contract guard
+        run: pytest tests/scripts/test_bpmn_di_shape_contract.py -v
+
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest
     name: catalog build integrity guards

@@ -535,8 +535,36 @@ dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.b
   `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.
 - One `<bpmndi:BPMNEdge id="BPMNEdge_<flowId>" bpmnElement="<flowId>">` per
   sequence flow, with `<di:waypoint x= y= />` points.
-- Lay nodes out left-to-right with non-overlapping bounds. Typical sizes: tasks
-  100×80, events 36×36, gateways 50×50.
+- Lay nodes out left-to-right with non-overlapping bounds, using the canonical
+  sizes below.
+
+### Canonical shape dimensions
+
+These are the `dc:Bounds` `width`/`height` values the Studio Web canvas
+serializes. Match them exactly so a generated diagram renders identically to a
+canvas-authored one; an off-size shape imports misaligned against its neighbors.
+
+| Element | `width`×`height` |
+|---------|------------------|
+| Tasks and activities — `task`, `sendTask`, `receiveTask`, `scriptTask`, `userTask`, `manualTask`, `serviceTask`, `businessRuleTask`, `callActivity` | 100×80 |
+| Events — `startEvent`, `endEvent`, `intermediateCatchEvent`, `intermediateThrowEvent`, `boundaryEvent` | 36×36 |
+| Gateways — `exclusiveGateway`, `inclusiveGateway`, `parallelGateway`, `eventBasedGateway`, `complexGateway` | 50×50 |
+| Collapsed `subProcess` (`isExpanded="false"`) | 100×80 |
+| `textAnnotation` (default) | 100×80 |
+| `dataObjectReference` | 36×50 |
+| `dataStoreReference` | 50×50 |
+
+Size these to fit their contents instead of a fixed box — the shape must
+enclose every element it contains, or the canvas renders children outside their
+container:
+
+- Expanded `subProcess` (`isExpanded="true"`).
+- `participant` and `lane`.
+- `group`.
+- `textAnnotation` whose text needs more room than the 100×80 default.
+
+`uip maestro bpmn format <file.bpmn>` emits these sizes. Preserve them when
+editing a shape by hand, and never resize a fixed-size element to fit a label.
 
 Example:
 
