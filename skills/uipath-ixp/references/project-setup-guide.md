@@ -1,6 +1,6 @@
 # Project Setup Guide
 
-Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+Complete workflow for creating a **new** IXP project, labelling documents when quality matters, and getting initial metrics. Run steps 1-4 end-to-end automatically; Step 5 (deploy) only when the user's goal calls for it.
 
 > **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
@@ -85,6 +85,34 @@ uip ixp projects update-title <project-name> "Vendor Invoices" --output json
 
 Skip this step if the user already provided a meaningful name in Step 1.
 
-## Step 4 — Label All Documents
+## Step 4 — Decide whether labelling is needed
 
-Follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
+**Labelling improves extraction quality; it is NOT required for a working,
+callable model.** A trained version appears on its own within seconds of
+`projects create`.
+
+| The user wants… | Do this |
+| --- | --- |
+| A model an automation / Maestro Flow can call (documents + a downstream goal, not a quality target) | Skip labelling; go to [Step 5](#step-5--deploy-so-it-can-be-called). Say quality is untuned and labelling is the lever if fields come back wrong. |
+| Better extraction quality, or they named accuracy/F1/scores | Follow the [Label Documents Guide](label-documents-guide.md) for every document. Deploy (Step 5) only if they also want a callable model. |
+| Unclear | Skip labelling — cheap to add later (`deployments upgrade` moves a deployment to a newer version). Confirm before deploying: a deployment cannot be un-deployed. |
+
+## Step 5 — Deploy so it can be called
+
+**Optional — only when the user wants an automation to call the model.** A
+deployment cannot be un-deployed, so never deploy as a routine finishing step.
+
+Deployment to an **Orchestrator folder** is what makes a model callable by
+activity packs and Maestro Flow; `projects publish` is **not required** (it
+only marks a version published inside the project).
+
+```bash
+uip ixp projects list-models <project-name> --output json
+uip ixp deployments create <project-name> --version <Version from list-models> \
+  --folder-key <guid> --output json
+```
+
+Read `--version` from `list-models` immediately before deploying: the trained
+version advances while the project trains, and right after `projects create`
+the list can be empty for ~30s until the first version trains (deploy fails;
+wait and retry once).

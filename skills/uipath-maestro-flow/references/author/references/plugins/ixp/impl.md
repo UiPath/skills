@@ -48,9 +48,9 @@ Requires `uip login`. Only published IxP models from your tenant appear. Example
 
 Read entries as `raw["Data"][i]["NodeType"]` (not `raw["Data"]["Nodes"]`).
 
-### If `Data` is empty → stop and use a mock
+### If `Data` is empty → stop searching, then branch on documents
 
-If `uip maestro flow registry search "uipath.ixp"` returns `Data: []`, **no IxP extraction model is published on this tenant**. Add a `core.logic.mock` placeholder node (see [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet)) and surface the missing model in **Open Questions**.
+If `uip maestro flow registry search "uipath.ixp"` returns `Data: []`, **no IxP extraction model is published on this tenant**. Stop searching (see below) — but do NOT assume a mock. What to do next depends on whether the user supplied documents: with documents the extractor can be built, without them a `core.logic.mock` placeholder plus an **Open Questions** entry is the answer. Follow [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet) for both branches.
 
 **Stop searching.** Do not run any of these as a fallback:
 
@@ -58,9 +58,9 @@ If `uip maestro flow registry search "uipath.ixp"` returns `Data: []`, **no IxP 
 - `registry list` followed by client-side filtering for "ixp" / "extraction" — the strict `uipath.ixp` search is already authoritative.
 - Variant-prefix searches: `registry search "uipath.agent.resource.tool.ixp"`, `"core.ixp"`, etc.
 
-The fallback is `core.logic.mock`, full stop. At most run one broader `registry search "ixp"` to confirm there are no `uipath.ixp.*` hits hidden by stricter prefix matching, then mock.
+None of those will find an extraction node. At most run one broader `registry search "ixp"` to confirm there are no `uipath.ixp.*` hits hidden by stricter prefix matching, then mock.
 
-> A `uipath.agent.resource.tool.ixp.*` hit on the broader `"ixp"` search is the *agent-tool* variant — not a flow extraction node. Treat it as "no extraction model published" and fall back to mock.
+> A `uipath.agent.resource.tool.ixp.*` hit on the broader `"ixp"` search is the *agent-tool* variant — not a flow extraction node. Treat it as "no extraction model published" and branch on documents as above.
 
 ## Listing Published Models
 
@@ -345,13 +345,26 @@ If the command fails (no matching project, login expired, deployment not yet pub
 **The extraction step must ALWAYS land a node — never drop it because configuration is incomplete.** A greenfield/exploration turn, an unwired upstream, a "you don't need a working flow" instruction, or an unconfirmed model are NOT reasons to skip it. The common failure is landing the steps around extraction while the extraction node itself goes missing. Author it before the trigger and connector nodes — connector configuration branches open-endedly, and this is the node the request is about.
 
 - **Model published** (`registry search "uipath.ixp"` returns entries) → land the real `uipath.ixp.*` node. When you can't finish configuring it this turn, still build the instance from `registry get` (copy `inputs.model` and the fixed `outputs` literal — no user input needed), set `inputs.fileRef` to a placeholder expression, and defer the model choice, `fileRef` source, and taxonomy to **Open Questions**. Do NOT downgrade to `core.logic.mock` — a published model exists, so land the real node.
-- **No model published** (`Data: []`) → land a `core.logic.mock` placeholder per [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet).
+- **No model published** (`Data: []`) → branch on whether the user supplied documents, per [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet).
 
 ## If the Model Does Not Exist Yet
 
 Trigger: `uip maestro flow registry search "uipath.ixp"` returns `Data: []`, OR the only matches are `uipath.agent.resource.tool.ixp.*` (agent-tool variant — not a flow extraction node).
 
-Action: insert a `core.logic.mock` placeholder via Direct JSON edit and stop. Do not iterate on registry searches.
+**First: did the user supply documents?**
+
+- **Yes** — the extractor can be built, so do not mock. **Invoke the `uipath-ixp` Skill and hand it the documents and the extraction goal — do not drive `uip ixp` commands from this skill's context.** Building the extractor is its domain: project creation, model configuration, the labelling decision, folder choice, and deployment each carry guardrails that live in that skill's guides, and improvising the commands from here skips all of them. The outcome to expect back is a **folder deployment**, which is what makes the model appear in this registry. Then come back and finish the flow:
+
+  ```bash
+  uip maestro flow registry pull --force
+  uip maestro flow registry search "uipath.ixp" --output json
+  ```
+
+  How fast the node reaches the flow registry after `deployments create` is **environment weather, not a constant**: measured at ~25 seconds on a healthy environment, and from immediate one day to minutes-or-hours three days later on another — with publish and labelling state making no difference. So: `pull --force` + search once; if it is missing, retry every ~30s for at most **3 minutes**, then STOP polling. A slow-indexing environment can take hours, and burning the session on it helps nobody — land the flow with the mock procedure below, and record the deployment's `DeploymentName` **inside the artifact, not only in your reply**: put it in the mock node's `display.label` parenthetical — e.g. `Extract Licence Fields (mock — swap for falconry-licence-extraction-b1cc08a0-ixp once the registry serves it)` — and repeat it in the **Open Questions** entry. A name that lives only in the conversation is gone when the next session opens the flow; the label makes the swap mechanical from the file alone. *Runtime* resolution of a brand-new deployment additionally lags by roughly 15s (see [uipath-ixp cli-reference § Deployment errors](../../../../../../uipath-ixp/references/cli-reference.md#deployment-errors)), which matters when debugging a flow straight after deploying, not when authoring one. Build the node from `registry get` as usual ([Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)); its `inputs.modelName` is the deployment's name, not the project's. If `uipath-ixp` is unavailable in this session, fall back to the mock path below and surface the project-creation step in **Open Questions**.
+
+- **No** — nothing to train on; do not iterate on registry searches. Follow the mock procedure below.
+
+Mock procedure:
 
 1. Fetch the definition: `uip maestro flow registry get core.logic.mock --output json`. Copy `Data.Node` verbatim into `definitions[]` if not already present.
 2. Add a node to `nodes[]` with a stable id (e.g. `extractContractFieldsMock`), `type: "core.logic.mock"`, and a `display.label` whose **leading phrase** describes the work in the user's domain (e.g. `Extract Contract Fields`) rather than the underlying technology (`IxP Extraction`, `Run IxP`). The parenthetical may name IxP — e.g. `Extract Contract Fields (mock — IxP model not yet published)`.
@@ -360,7 +373,7 @@ Action: insert a `core.logic.mock` placeholder via Direct JSON edit and stop. Do
 5. **Wire downstream consumers against the mock with `$vars` references, not static values.** Scripts, decisions, and end-node mappings that follow the mock MUST reference `$vars.{mockNodeId}.output` (the mock's only port) instead of hard-coded returns. Example: a script that summarises the (future) extraction writes `return { vendor: $vars.extractInvoiceFieldsMock.output.vendorName };`, not `return { ok: "OK" };`. This keeps the **node-graph** swap-ready — node IDs, edge shapes, and the `output` port name stay intact when the mock is replaced. **Field-access paths inside downstream scripts WILL need rewriting at swap time** — the real IxP `output` is shaped as `{ ExtractionResult: { ResultsDocument: { Fields: [...] } } }` (see [Accessing Output](#accessing-output)), so flat-field accessors against the mock become structured `Fields.find(f => f.FieldName === '<name>')?.Values?.[0]` lookups against the real node. Surface the post-swap rewrite as a follow-up under **Open Questions**.
 6. Run `uip maestro flow validate <ProjectName>.flow --output json` once after all edits complete.
 
-Surface the missing model in the **Open Questions** section of the architectural plan: the user must train and publish the IxP extraction model via the IxP product before the flow can run. After publishing, follow the [mock replacement procedure](../../editing-operations-json.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real IxP node.
+Surface the missing model in the **Open Questions** section of the architectural plan: the user must train the IxP extraction model and deploy it to an Orchestrator folder before the flow can run — `projects publish` alone does not make it callable. After deploying, follow the [mock replacement procedure](../../editing-operations-json.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real IxP node.
 
 ## Classifier Variant
 
