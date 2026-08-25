@@ -47,11 +47,27 @@ import os
 import re
 import sys
 
-sys.path.insert(
-    0,
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "_shared"),
-)
-from flow_check import find_project_dir  # noqa: E402
+# `_shared/` is reachable two different ways depending on where this runs.
+# Locally the task dir sits in the repo, so `../_shared` resolves. Under
+# coder-eval the task dir is copied into the container alone ($TASK_DIR ->
+# /work/task_dir), so `../_shared` does not exist and only the repo mount does
+# — $SKILLS_REPO_PATH, the same root the other criteria in this task use.
+_TASK_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+_REPO = os.environ.get("SKILLS_REPO_PATH")
+_ROOTS = [_TASK_ROOT]
+if _REPO:
+    _ROOTS.insert(0, os.path.join(_REPO, "tests", "tasks", "uipath-maestro-flow"))
+for _root in _ROOTS:
+    if os.path.isdir(os.path.join(_root, "_shared")):
+        sys.path.insert(0, _root)
+        break
+else:
+    sys.exit(
+        "FAIL: cannot locate the _shared helpers. Looked in: "
+        + ", ".join(os.path.normpath(r) for r in _ROOTS)
+        + ". Set SKILLS_REPO_PATH to the repo root."
+    )
+from _shared.flow_check import find_project_dir  # noqa: E402
 
 VOICE_AGENT = "uipath.agent.voice"
 VOICE_TRIGGER = "core.trigger.voice"
