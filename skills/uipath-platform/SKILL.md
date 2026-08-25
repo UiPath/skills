@@ -181,6 +181,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Assign user/group license bundles** | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md) |
 | **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
 | **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
+| **Diagnose a licensing symptom** | [references/licensing/diagnose/CAPABILITY.md](references/licensing/diagnose/CAPABILITY.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
@@ -313,7 +314,7 @@ Every `uip` command accepts:
 - **[Data Fabric](references/data-fabric/data-fabric.md)** — Entity schemas, records CRUD, query filters and aggregates, choice sets, file attachments, CSV bulk import, folder scoping
 - **[LLM Gateway — BYO Connections](references/llmgateway/byo-connections.md)** — Register tenant-owned LLM keys against UiPath products
 - **[Guardrails — BYOG Configurations](references/guardrails/byo-configurations.md)** — Manage tenant-registered bring-your-own guardrail (BYOG) configurations and diagnose their underlying Integration Service connections
-- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting
+- **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting, [diagnose](references/licensing/diagnose/CAPABILITY.md)
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

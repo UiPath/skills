@@ -1,0 +1,76 @@
+task_id: skill-platform-licensing-diagnose-allocation-no-effect
+description: >
+  Integration test (mode:diagnose): a tenant allocation "did not take effect".
+  Verifies the agent explains the two documented semantics behind the symptom —
+  `quantity` is absolute rather than additive, and `set` is an overlay so codes
+  absent from the input keep their value — without re-running the mutation.
+tags: [uipath-platform, integration, licensing, tenants, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Yesterday I allocated licenses to tenant
+  `c0ffee00-0000-0000-0000-000000000001` with an input file containing exactly
+  `[{"code":"UNATT","quantity":5}]`. The tenant already had 5 Unattended
+  Robots and I wanted 5 more. The command reported success, but:
+
+  1. The tenant still shows 5 Unattended Robots, not 10.
+  2. `AIU`, which was not in my input file at all, still shows its old
+     quantity — I expected it to be cleared.
+
+  Explain both observations. Write the explanation to `analysis.md` in the
+  current directory. Do NOT change the allocation.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: run_command
+    description: "Agent read the tenant's current allocation (.uip-cmdlog shim log)"
+    command: "grep -Eq 'uip platform tenants licenses get' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent did NOT re-run the allocation while diagnosing"
+    command: "test -f .uip-cmdlog && ! grep -Eq 'uip platform tenants licenses set' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Explanation written to analysis.md"
+    path: "analysis.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Analysis explains observation 1: quantity is absolute, not a delta"
+    command: "grep -Eiq 'absolut|not a delta|not additive|does not add|replaces the' analysis.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Analysis explains observation 2: set is an overlay, so omitted codes keep their value"
+    command: "grep -Eiq 'overlay|omitted|absent from|not included|keeps? (its|their) current' analysis.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

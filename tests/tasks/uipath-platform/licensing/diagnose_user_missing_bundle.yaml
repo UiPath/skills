@@ -1,0 +1,76 @@
+task_id: skill-platform-licensing-diagnose-user-missing-bundle
+description: >
+  Integration test (mode:diagnose): a group-leased bundle disappeared for one
+  user. Verifies the agent walks the user-bundle layer correctly — reads the
+  user's leases, then reads the group RULE rather than stopping at the user
+  record — and that it diagnoses without mutating licensing state.
+tags: [uipath-platform, integration, licensing, users, groups, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  A developer, `priya.raman@example.com`, reports she can no longer use Studio
+  — her Automation Developer license is gone. She is a member of the
+  "RPA Developers" group, and nobody touched her account directly.
+
+  Work out why she lost the entitlement. Write your findings to `findings.md`
+  in the current directory: which licensing layer the entitlement should come
+  from, what you checked, and the most likely cause.
+
+  This is an investigation, not a repair — do NOT change any licensing state.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - If the CLI fails, still record which commands you ran and what each one
+    would have told you.
+
+success_criteria:
+  - type: run_command
+    description: "Agent read the user's current leases (.uip-cmdlog shim log)"
+    command: "grep -Eq 'uip platform users licenses get' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent read the GROUP RULE, not just the user record — the entitlement source for a group lease"
+    command: "grep -Eq 'uip platform groups rules (details|get)' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent did NOT mutate licensing state while diagnosing (no users/groups/tenants set)"
+    command: "test -f .uip-cmdlog && ! grep -Eq 'uip platform .*(licenses|rules) set' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Findings written to findings.md"
+    path: "findings.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Findings name a documented group-rule cause (rule replaced / quota filled / orphaned lease)"
+    command: "grep -Eiq 'group rule|groups rules|quota|orphan' findings.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
