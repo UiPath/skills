@@ -13,10 +13,11 @@ run_limits:
 
 initial_prompt: |
   Create a new AOps governance policy for the AI Trust Layer product, named
-  `ce-gov-aitl-walkthrough`. I have no specific settings in mind - take me through the
-  configuration and I will answer as we go.
+  `ce-gov-aitl-walkthrough`. I have no specific settings in mind, so walk me through all of
+  the configurable settings and their current defaults a page at a time - start with the
+  first page now - and I will answer as we go.
 
-  This is an automated run: when you need my input, ask and then stop your reply.
+  This is an automated run: after each page, stop your reply and wait for my answer.
   Do not register or create anything before I have answered.
 
 success_criteria:
