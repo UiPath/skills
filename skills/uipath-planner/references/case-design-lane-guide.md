@@ -193,14 +193,13 @@ Structured gap escalations — a field could not be fully resolved but the build
 
 ### Template conformance gate — before `sdd.md` is written
 
-Mechanized by `audit_sdd.py` — the template's § Validation footer is the contract (document skeleton, per-block markers, forbidden summary-only sections). Run it against the **written file, before the `Status: ready` flip** — every mode; one structural Read is allowed to repair findings. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
+Mechanized by `audit_sdd.py` — the template's § Validation footer is the contract (document skeleton, per-block markers, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode; one structural Read is allowed to repair findings. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
 
 ### Terminal step — write the SDD
 
-On the accept answer: compose the complete document and write it in ONE Write, gate it, flip it. The mode decides only the filename and whether the turn ends.
+On the accept answer: write the SDD to disk in batches, gate it, flip it. The mode decides only the filename and whether the turn ends.
 
-1. **Write once.** Compose Sections 1–4 (every primary and secondary stage in source order inside Section 2) plus `## Next Steps`, with the Planner Handoff header stamped `Status: draft`, `Template validation: pending`. One Write. Never `cp`/`mv`/`rsync` an artifact into place.
-   **Split only when the document is too large for one call** — beyond ~8 stages or ~40 tasks: seed the header + Table of Contents, then Edit-append in template order (Section 1 → Section 2, one stage block at a time → Section 3 → Section 4 → Next Steps), no re-Read between sibling appends. The partial file on disk is then the recovery point for a compaction mid-render (§Failure modes).
+1. **Seed Write, then Edit-append per section.** Seed Write: title + `## Document History` + the Planner Handoff header stamped `Status: draft`, `Template validation: pending` + `## Table of Contents`. Then Edit-append in template order — Section 1 → Section 2 one stage block at a time (every primary and secondary stage in source order) → Section 3 → Section 4 → `## Next Steps` — composing each section just before its append, not the whole document up front; no re-Read between sibling appends. The partial file on disk is the recovery point for a mid-turn failure or compaction (§Failure modes). Never `cp`/`mv`/`rsync` an artifact into place.
 2. **Gate the written file:** run the §Template conformance gate (`audit_sdd.py`). Repair findings with targeted Edits and re-run — max 3 rounds, then stop and present what remains. One structural Read is allowed here.
 3. **Ready flip is the LAST Edit:** `Status: ready`, `Template validation: passed`. Drafts keep `Status: draft`. An interrupted run leaves a resumable `draft` on disk.
 4. **Filename by mode** — a user-specified output path always wins:
@@ -272,7 +271,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
     - Persona prose and Design Rationale alone are not final.
 8. Secondary-stage task headings normalize to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never keep draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
 9. A draft's per-stage SLA table may carry `At-Risk Action` / `Breach Action` columns; the final SDD does not. Move each response into the § SLA Response Map row for that `(scope, SLA, status)` — never drop it, never keep the column.
-10. Write, gate, flip per §Terminal step — one Write (the draft on disk is the recovery point, so a compaction means re-finalizing from it), then the audit with the draft comparison:
+10. Write, gate, flip per §Terminal step (the draft on disk is also a recovery point, so a compaction means re-finalizing from it), then the audit with the draft comparison:
 
     ```bash
     python3 "<this skill's folder>/scripts/audit_sdd.py" <final SDD path> --draft <draft path>
