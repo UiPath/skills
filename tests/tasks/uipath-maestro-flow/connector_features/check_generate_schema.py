@@ -22,8 +22,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
-from flow_check import find_flow_file  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 JIRA_NODE_TYPE = "uipath.connector.uipath-atlassian-jira.create-issue"
 REQUIRED_PARENT_FIELDS = (

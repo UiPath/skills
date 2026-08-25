@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 CHECKER = Path(__file__).with_name("check_generate_schema.py")
+FLOW_CHECK = CHECKER.parents[1] / "_shared" / "flow_check.py"
 
 
 def _flow(*, parent_values: bool = True) -> dict:
@@ -54,6 +55,29 @@ def test_accepts_root_sdk_emit_with_arbitrary_filename(tmp_path: Path) -> None:
     (tmp_path / "workflow.flow").write_text(json.dumps(_flow()), encoding="utf-8")
 
     result = _run(tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_accepts_co_located_shared_helper_in_isolated_task_dir(tmp_path: Path) -> None:
+    task_dir = tmp_path / "task"
+    shared = task_dir / "_shared"
+    shared.mkdir(parents=True)
+    staged_checker = task_dir / CHECKER.name
+    staged_checker.write_bytes(CHECKER.read_bytes())
+    (shared / "__init__.py").write_text("", encoding="utf-8")
+    (shared / "flow_check.py").write_bytes(FLOW_CHECK.read_bytes())
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "workflow.flow").write_text(json.dumps(_flow()), encoding="utf-8")
+
+    result = subprocess.run(
+        [sys.executable, str(staged_checker)],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
     assert result.returncode == 0, result.stdout + result.stderr
 
