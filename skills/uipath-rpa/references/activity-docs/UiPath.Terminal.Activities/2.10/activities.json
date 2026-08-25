@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Machine-readable index of UiPath.Terminal.Activities for agent / code-generation consumption. Mirrors the per-activity markdown docs under docs/activities/. Update both when adding or changing an activity.",
   "package": "UiPath.Terminal.Activities",
   "namespaceUri": "http://schemas.uipath.com/workflow/activities/terminal",
@@ -13,7 +12,7 @@
       "requiredScope": null,
       "requiredProperties": [],
       "optionalProperties": ["ConnectionString", "ExistingConnection", "OutputConnection", "CloseConnection", "SSHUserName", "SSHPassword", "TimeoutMS", "DelayMS", "ContinueOnError"],
-      "outputProperty": "OutputConnection",
+      "outputProperties": ["OutputConnection"],
       "isContainer": true,
       "docPath": "activities/TerminalSession.md"
     },
@@ -25,7 +24,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": [],
       "optionalProperties": ["Text", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Text",
+      "outputProperties": ["Text"],
       "isContainer": false,
       "docPath": "activities/GetText.md"
     },
@@ -37,7 +36,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": [],
       "optionalProperties": ["LabeledBy", "FollowedBy", "Index", "Text", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Text",
+      "outputProperties": ["Text"],
       "isContainer": false,
       "docPath": "activities/GetField.md",
       "notes": "At least one of LabeledBy or FollowedBy must be set. Label-based field identification varies by provider — for cross-provider workflows prefer GetTextAtPosition or GetScreenArea."
@@ -50,7 +49,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Text"],
       "optionalProperties": ["LabeledBy", "FollowedBy", "Index", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/SetField.md",
       "notes": "At least one of LabeledBy or FollowedBy must be set. Label-based field identification varies by provider — for cross-provider workflows prefer MoveCursor+SendKeys or SetFieldAtPosition."
@@ -63,7 +62,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": [],
       "optionalProperties": ["Row", "Column", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Row,Column",
+      "outputProperties": ["Row", "Column"],
       "isContainer": false,
       "docPath": "activities/GetCursorPosition.md"
     },
@@ -75,7 +74,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Key"],
       "optionalProperties": ["TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/SendControlKey.md",
       "notes": "Key is an enum (ControlKey). Common values: Transmit (3270 enter), Return (VT enter), Tab, F1-F24."
@@ -88,7 +87,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Text"],
       "optionalProperties": ["MatchCase", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/WaitScreenText.md",
       "defaults": { "TimeoutMS": 30000 }
@@ -101,7 +100,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Text"],
       "optionalProperties": ["LabeledBy", "FollowedBy", "Index", "MatchCase", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/WaitFieldText.md",
       "defaults": { "TimeoutMS": 30000 },
@@ -115,7 +114,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column"],
       "optionalProperties": ["TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/MoveCursor.md"
     },
@@ -127,7 +126,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Keys"],
       "optionalProperties": ["TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/SendKeys.md",
       "notes": "Plaintext only. Use SendKeysSecure for credentials."
@@ -140,7 +139,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["SecureText"],
       "optionalProperties": ["TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/SendKeysSecure.md"
     },
@@ -152,7 +151,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": [],
       "optionalProperties": ["TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/WaitScreenReady.md",
       "defaults": { "TimeoutMS": 30000, "DelayMS": 0 },
@@ -166,7 +165,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column", "EndRow", "EndColumn"],
       "optionalProperties": ["Text", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Text",
+      "outputProperties": ["Text"],
       "isContainer": false,
       "docPath": "activities/GetScreenArea.md"
     },
@@ -178,7 +177,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column"],
       "optionalProperties": ["Length", "Text", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Text",
+      "outputProperties": ["Text"],
       "isContainer": false,
       "docPath": "activities/GetTextAtPosition.md"
     },
@@ -190,7 +189,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column"],
       "optionalProperties": ["Text", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Text",
+      "outputProperties": ["Text"],
       "isContainer": false,
       "docPath": "activities/GetFieldAtPosition.md"
     },
@@ -202,7 +201,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column"],
       "optionalProperties": ["TerminalColor", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "TerminalColor",
+      "outputProperties": ["TerminalColor"],
       "isContainer": false,
       "docPath": "activities/GetColorAtPosition.md",
       "notes": "Color support depends on the provider. TandemHLL always returns LightGreen."
@@ -215,7 +214,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column", "Text"],
       "optionalProperties": ["BackwardsCompatible", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/SetFieldAtPosition.md",
       "notes": "Set BackwardsCompatible=false for new workflows to get cursor-stays-at-end behavior."
@@ -228,7 +227,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Row", "Column", "Text"],
       "optionalProperties": ["MatchCase", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": null,
+      "outputProperties": [],
       "isContainer": false,
       "docPath": "activities/WaitTextAtPosition.md",
       "defaults": { "TimeoutMS": 30000 }
@@ -241,7 +240,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Text"],
       "optionalProperties": ["StartRow", "StartColumn", "IgnoreCase", "Row", "Column", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Row,Column",
+      "outputProperties": ["Row", "Column"],
       "isContainer": false,
       "docPath": "activities/FindText.md",
       "notes": "Throws InvalidCoordinates if not found."
@@ -254,7 +253,7 @@
       "requiredScope": "TerminalSession",
       "requiredProperties": ["Text"],
       "optionalProperties": ["StartRow", "StartColumn", "IgnoreCase", "Row", "Column", "TimeoutMS", "DelayMS", "WaitType"],
-      "outputProperty": "Row,Column",
+      "outputProperties": ["Row", "Column"],
       "isContainer": false,
       "docPath": "activities/MoveCursorToText.md",
       "notes": "Throws InvalidCoordinates if not found. Equivalent to FindText + MoveCursor."

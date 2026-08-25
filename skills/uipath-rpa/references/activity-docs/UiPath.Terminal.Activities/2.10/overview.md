@@ -8,7 +8,7 @@ Terminal emulation activities for automating interactions with IBM 3270/5250, VT
 
 - [XAML Activities Reference](activities/) — Per-activity documentation for XAML workflows
 - [Coded Workflow API Reference](coded/coded-api.md) — Service API for coded C# workflows
-- [Machine-readable activity index](activities.json) — JSON listing of every activity's class name, required properties, output property, and doc path. For code generators and agents that need the activity surface without parsing markdown.
+- [Machine-readable activity index](activities.json) — JSON listing of every activity's class name, required properties, output properties, and doc path. For code generators and agents that need the activity surface without parsing markdown.
 
 ## If you want to ...
 
@@ -48,7 +48,7 @@ All terminal activity XAML snippets in this documentation use the `uit:` prefix.
 xmlns:uit="http://schemas.uipath.com/workflow/activities/terminal"
 ```
 
-Do **not** infer this URL from the package name — `clr-namespace:UiPath.Terminal.Activities;assembly=UiPath.Terminal.Activities` is plausible but incorrect; using it causes silent activity-resolution failures (`validate` passes, `build` fails with unknown element / member errors at runtime).
+Do **not** infer this URL from the package name — `clr-namespace:UiPath.Terminal.Activities;assembly=UiPath.Terminal.Activities` is plausible but incorrect; using it causes silent activity-resolution failures (`validate` passes, `build` fails with unknown element / member errors).
 
 ## Known Authoring Pitfalls
 

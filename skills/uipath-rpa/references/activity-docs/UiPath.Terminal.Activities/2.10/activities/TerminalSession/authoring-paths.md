@@ -51,7 +51,7 @@ Same Studio-tooling trade-off as Option B: no Recorder, no Connection Settings d
 | Authoring context | Recommended option |
 |-------------------|---------------------|
 | Studio Desktop, you want the Connection Settings dialog or Terminal Recorder available | **A** (literal string in attribute) |
-| Studio Desktop, the string comes from an Asset / config / argument at runtime | **A** (literal expression binding) |
+| Studio Desktop, the string comes from an Asset / config / argument / variable at runtime | **A** (literal expression binding; Connection Settings / Terminal Recorder require a literal string and won’t work) |
 | Studio Web | **B** |
 | CLI authoring (`uip rpa`), PR review, code generation | **B** |
 | Coded C# workflow (`[Workflow]` class) | **C** |
