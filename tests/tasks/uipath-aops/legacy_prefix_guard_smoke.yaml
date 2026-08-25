@@ -1,0 +1,73 @@
+task_id: skill-aops-legacy-prefix-guard-smoke
+description: >
+  Migration guard — the user asks in the retired vocabulary (`uip sc`,
+  `uip cicd`). `@uipath/sc-tool` and `@uipath/cicd-tool` were unified into
+  `@uipath/aops-tool`, and `@uipath/cicd-tool` no longer exists on npm, so
+  copying the user's wording verbatim produces commands that cannot work.
+  The skill must translate to `uip aops` and install the right package.
+
+  Platform note: runs without an authenticated tenant — commands will fail.
+  What matters is which namespace and which package the agent reaches for.
+tags: [uipath-aops, smoke, migration, mode:build]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Use `uip sc` to list my StudioAdmin SourceControl connections, then use
+  `uip cicd` to list the pipelines in my runtime environment. Check first
+  that the required CLI tool is installed.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant and the
+    subcommands may not be installed. Commands WILL fail — that is expected
+    and acceptable. Run each command exactly once regardless of errors.
+    Do NOT retry and do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked the installed tool list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tools\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed connections under the current `uip aops` namespace"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+connection\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed pipelines under the current `uip aops` namespace"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+pipeline\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not run the retired `uip sc` tool even when the user names it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+sc\s+'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not run the retired `uip cicd` tool even when the user names it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+cicd\s+'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not try to install the retired sc-tool or cicd-tool packages"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tools\s+install\s+.*@uipath/(sc|cicd)-tool'
+    weight: 2.0
+    pass_threshold: 1.0
