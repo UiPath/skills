@@ -37,6 +37,8 @@ Only file-backed documents download, and the command takes the **`FileId`** — 
 uip ah documents download $FILE_ID --destination "<path>" --output json
 ```
 
+> 📁 **Download to the current working directory — never `/tmp`.** Hosted runtimes (e.g. the Delegate) sandbox their file tools to the session workspace: the CLI can write to `/tmp`, but every file-tool access to the download then fails with an access-denied error.
+
 - `Data` reports `Destination` and `Bytes` — confirm the file exists and is non-empty before reporting success.
 - Link-backed documents: present the `EmbedLink` instead. Never invent a download path.
 
