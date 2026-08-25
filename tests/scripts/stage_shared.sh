@@ -19,7 +19,13 @@
 # mutates the checked-out tree, not the committed repo.
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$(git -C "$script_dir" rev-parse --show-toplevel)"
+
+manifest=${STAGE_SHARED_MANIFEST:-}
+if [ -n "$manifest" ]; then
+  : > "$manifest"
+fi
 
 count=0
 while IFS= read -r f; do
@@ -32,6 +38,9 @@ while IFS= read -r f; do
   [ -d "$src" ] || continue          # group has no _shared -> nothing to stage
   [ -e "$dir/_shared" ] && continue  # already present (idempotent / hand-authored)
   cp -R "$src" "$dir/_shared"
+  if [ -n "$manifest" ]; then
+    printf '%s\n' "$PWD/$dir/_shared" >> "$manifest"
+  fi
   count=$((count + 1))
 done < <(git grep -lE 'from _shared|import _shared' -- 'tests/tasks/**/*.py')
 
