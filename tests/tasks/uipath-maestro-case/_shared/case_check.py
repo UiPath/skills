@@ -216,6 +216,15 @@ def find_node_by_label(plan: dict, label: str) -> dict:
     _fail(f"no node with data.label={label!r}; available labels: {labels}")
 
 
+def selected_stage_ids(rule: dict) -> list[str]:
+    """Return canonical V30 stage references with legacy-schema compatibility."""
+    selected = rule.get("selectedStageIds")
+    if isinstance(selected, list):
+        return [value for value in selected if isinstance(value, str) and value]
+    legacy_selected = rule.get("selectedStageId")
+    return [legacy_selected] if isinstance(legacy_selected, str) and legacy_selected else []
+
+
 def stage_transitions(plan: dict) -> list[dict]:
     """Stage→stage transitions derived from entry/exit conditions.
 
@@ -224,7 +233,7 @@ def stage_transitions(plan: dict) -> list[dict]:
     exists when EITHER:
 
     - ``Y``'s ``entryConditions`` carries a ``selected-stage-completed`` /
-      ``selected-stage-exited`` rule with ``selectedStageId == X``, OR
+      ``selected-stage-exited`` rule with ``X`` in ``selectedStageIds``, OR
     - ``X``'s ``exitConditions`` carries ``exitToStageId == Y``.
 
     ``case-entered`` entries are NOT transitions — their source is the case
@@ -244,8 +253,7 @@ def stage_transitions(plan: dict) -> list[dict]:
         for cond in iter_stage_entry_conditions(node):
             for group in cond.get("rules") or []:
                 for rule in group or []:
-                    src = (rule or {}).get("selectedStageId")
-                    if src:
+                    for src in selected_stage_ids(rule or {}):
                         pairs.add((src, nid))
         for cond in iter_stage_exit_conditions(node):
             dst = cond.get("exitToStageId")
