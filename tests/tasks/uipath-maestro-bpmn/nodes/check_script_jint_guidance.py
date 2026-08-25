@@ -34,19 +34,18 @@ FORBIDDEN = [
 ]
 
 
-def root_variables_by_name(root: ET.Element) -> dict[str, str]:
-    variables: dict[str, str] = {}
+def root_variable_ids(root: ET.Element) -> set[str]:
+    variables: set[str] = set()
     process = root.find("bpmn:process", NS)
     if process is None:
-        return variables
+        return set()
     for variable in process.findall(
         "bpmn:extensionElements/uipath:variables/*",
         NS,
     ):
-        name = variable.attrib.get("name")
         variable_id = variable.attrib.get("id")
-        if name and variable_id:
-            variables[name] = variable_id
+        if variable_id:
+            variables.add(variable_id)
     return variables
 
 
@@ -125,25 +124,24 @@ def main() -> None:
         if identifier not in body:
             fail(f"script body should reference mapped input identifier {identifier!r}")
 
-    variables = root_variables_by_name(root)
+    variables = root_variable_ids(root)
     for required in ("amount", "daysOverdue", "riskScore"):
         if required not in variables:
-            fail(f"missing root variable named {required!r}")
+            fail(f"missing root variable id {required!r}")
 
     args_input = first_uipath_input(task, "args")
     if args_input is None:
         fail('script mapping must include uipath:input name="args"')
     args_body = text_content(args_input)
     for variable_name in ("amount", "daysOverdue"):
-        expected = f"=vars.{variables[variable_name]}"
+        expected = f"=vars.{variable_name}"
         if expected not in args_body:
             fail(f"script args should map {variable_name!r} through {expected!r}")
         if f"={variable_name}" in args_body:
             fail(f"script args should not use bare variable expression ={variable_name}")
 
-    output_var = variables["riskScore"]
     outputs = uipath_outputs(task)
-    if not any(out.attrib.get("var") == output_var for out in outputs):
+    if not any(out.attrib.get("var") == "riskScore" for out in outputs):
         fail("script output must map to the declared riskScore variable id")
     if not any((out.attrib.get("source") or "").startswith("=result.") for out in outputs):
         fail("script output should map from a result expression such as =result.response")
