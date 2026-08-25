@@ -486,13 +486,41 @@ jobs:
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
             agent_flags="--model $model"
           fi
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags ${delegate_overrides[*]} -j $j ($TASK_COUNT task files)"
-          coder-eval run $TASK_GLOBS \
-            -e experiments/nightly.yaml \
-            $agent_flags \
-            "${delegate_overrides[@]}" \
-            -j "$j" -v \
-            --run-dir /tmp/runs
+          # Tenant-exclusive tasks run serially. The compliance-pack suite shares
+          # ONE ISO 42001 pack state on the test tenant and mutates it: some tasks
+          # reset it off in pre_run, `disable` turns it off mid-turn, `restore` /
+          # `drift_restore` need it on for their whole turn. In parallel one task's
+          # mutation lands inside another's turn and fails a correct agent — it
+          # rightly refuses to restore an inactive pack (CI 30455293977; run
+          # 2026-08-20_19-01-47, score 0.727). Mirrors smoke-skills.yml. TASK_GLOBS
+          # is already partition-resolved to tests/-relative file paths.
+          EXCLUSIVE_PREFIX="tasks/uipath-governance/compliance-pack/"
+          serial=(); parallel=()
+          for f in $TASK_GLOBS; do
+            case "$f" in
+              "$EXCLUSIVE_PREFIX"*) serial+=("$f") ;;
+              *) parallel+=("$f") ;;
+            esac
+          done
+          echo "Task split: ${#parallel[@]} parallel (-j $j) + ${#serial[@]} tenant-exclusive (-j 1) of $TASK_COUNT"
+          rc=0
+          if [ ${#parallel[@]} -gt 0 ]; then
+            coder-eval run "${parallel[@]}" \
+              -e experiments/nightly.yaml \
+              $agent_flags \
+              "${delegate_overrides[@]}" \
+              -j "$j" -v \
+              --run-dir /tmp/runs || rc=1
+          fi
+          if [ ${#serial[@]} -gt 0 ]; then
+            coder-eval run "${serial[@]}" \
+              -e experiments/nightly.yaml \
+              $agent_flags \
+              "${delegate_overrides[@]}" \
+              -j 1 -v \
+              --run-dir /tmp/runs || rc=1
+          fi
+          exit $rc
 
       - name: Fix permissions on /tmp/runs
         if: always()
@@ -531,12 +559,14 @@ jobs:
         if: always()
         run: |
           set -uo pipefail
-          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1 || true)
-          if [ -z "$run_dir" ]; then
+          # Pass the run ROOT, not the newest run dir: the eval step makes two
+          # coder-eval calls (parallel pass + serial tenant-exclusive pass), and
+          # the newest alone would report on half the tasks.
+          if [ -z "$(ls -d /tmp/runs/*/ 2>/dev/null || true)" ]; then
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          python - /tmp/runs <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
           rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:

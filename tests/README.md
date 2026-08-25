@@ -89,15 +89,21 @@ while `restore_smoke` / `drift_restore_smoke` need it on for their whole turn.
 Run them in parallel and one task's mutation lands mid-turn in another's, failing
 a correct agent (it rightly refuses to restore an inactive pack).
 
-`smoke-skills.yml` therefore runs this directory in a **separate serial pass**
-(`-j 1`) after the parallel pass; both write into the same run root, so every
-reader globs all run dirs. `setup_enable_compliance_pack.py` writes an ownership
-marker into the task sandbox and `cleanup_compliance_pack.py` disables the pack
-only when that marker is present, so a task never undoes another task's enable.
+`smoke-skills.yml` and `run-coder-eval.yml` therefore run this directory in a
+**separate serial pass** (`-j 1`) after the parallel pass. Both passes write into
+the same run root, so every reader (summary, LLM reviewer gate, pass-rate gate,
+verdict) globs all run dirs rather than only the newest.
+
+Serialization is the whole mechanism — deliberately, no per-task locking or
+ownership bookkeeping in the setup/cleanup scripts. Those scripts run in BOTH
+directions: six tasks call `cleanup_compliance_pack.py` from `pre_run` to force
+the pack off before the agent starts, and every task calls it from `post_run` to
+undo. A gate that made cleanup conditional would turn those six `pre_run` resets
+into dead code.
 
 Adding a task here? It inherits the serial pass — no tagging needed. Adding a
 similar shared-state suite elsewhere? Extend the `EXCLUSIVE_PREFIX` case branch in
-`smoke-skills.yml` to match it too, and locally run it with `TASK_PARALLELISM=1`.
+both workflows to match it too, and locally run it with `TASK_PARALLELISM=1`.
 
 ## Evaluation Framework
 
