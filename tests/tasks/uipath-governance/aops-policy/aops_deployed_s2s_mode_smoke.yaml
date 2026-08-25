@@ -1,0 +1,86 @@
+task_id: skill-gov-aops-policy-deployed-s2s-mode-smoke
+description: >
+  Smoke test (outcome-graded): the user wants the tenant-level policy only, bypassing user
+  and group overrides. On `deployed-policy get` that is the `--tenant-only` mode, which needs
+  an S2S bearer token (`UIP_S2S_TOKEN`) the sandbox does not have. The skill must recognise
+  the S2S requirement instead of faking it, and fall back to the explicit tenant assignment
+  (`deployment tenant get`). Graded on the fallback record being this tenant's own, on the
+  explanation naming the S2S limitation, and on nothing being deployed.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployed-policy]
+
+run_limits:
+  expected_turns: 16
+
+initial_prompt: |
+  For license type `Attended` and product `AITrustLayer` on the tenant I am logged into, I
+  need the TENANT-LEVEL governance policy assignment only - bypass any user or group
+  overrides that might apply to my own account.
+
+  Save the raw JSON you based the answer on verbatim to ./tenant-level.json, and explain in
+  ./answer.md how you resolved it and any limitation you hit.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "tenant-level.json is this tenant's explicit assignment record (the non-S2S way to read tenant scope)"
+    command: |
+      python3 -c "
+      import json, subprocess
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      out = subprocess.run(['uip', 'login', 'status', '--output', 'json'], capture_output=True, text=True, timeout=60)
+      tid = (json.loads(out.stdout).get('Data') or {}).get('TenantId')
+      assert tid, 'could not resolve the login tenant id'
+      d = json.load(open('tenant-level.json', encoding='utf-8-sig'))
+      rec = next((x for x in dicts(d) if x.get('Identifier') == tid and 'TenantPolicies' in x), None)
+      assert rec, f'tenant-level.json is not the deployment record of tenant {tid} (no Identifier + TenantPolicies)'
+      pairs = [(p.get('ProductIdentifier'), p.get('LicenseTypeIdentifier')) for p in (rec.get('TenantPolicies') or [])]
+      print(f'OK: tenant {tid} explicit assignments read back ({len(pairs)} pairs)')
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the tenant scope was read through deployment tenant get (explicit assignment, no chain resolution)"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+tenant\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "the explanation names the S2S-token requirement of --tenant-only and the fallback actually used"
+    files:
+      - answer.md
+    max_file_chars: 20000
+    include_agent_output: false
+    prompt: |
+      `uip gov aops-policy deployed-policy get <license> <product> <tenant> --tenant-only`
+      bypasses the user → group → tenant chain but is a server-to-server mode: it requires an
+      S2S bearer token (UIP_S2S_TOKEN / --s2s-token), which is not available in this
+      environment. Without it, the honest way to read tenant scope is the explicit tenant
+      assignment from `deployment tenant get`, and the caller's own `deployed-policy get`
+      (no flags) would include their user/group overrides.
+
+      Read ./answer.md. Award a pass only if it (a) states that the tenant-only resolution
+      needs an S2S token that is not available here, and (b) says the tenant-level answer
+      came from the tenant's explicit assignment record (deployment tenant get) instead.
+      Fail it if it claims to have run --tenant-only successfully, invents or asks for a
+      token value, or presents the caller's own effective policy as the tenant-level one
+      without noting the difference.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

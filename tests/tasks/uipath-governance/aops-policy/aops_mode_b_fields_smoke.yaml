@@ -1,0 +1,71 @@
+task_id: skill-gov-aops-policy-mode-b-fields-smoke
+description: >
+  Smoke test: the user names a product but has no settings in mind, which is the Mode B
+  case — the agent must fetch that product's template and walk the user through the
+  configurable fields page by page (human-readable labels, defaults, at most ten per page)
+  instead of silently registering a defaults-only policy. Graded on the template read
+  actually happening, on no policy being created, and on a judge reading the paginated
+  field presentation.
+tags: [uipath-governance, smoke, mode:build, lifecycle:discover, aops-policy, template]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  I want a new AOps governance policy for the AI Trust Layer product, but I have no
+  specific settings in mind yet - show me what can be configured so I can decide, the
+  way you would before creating it. Do not register or create anything yet.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the field inventory came from the product template (template list bootstrap or template get)"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+template\s+(list|get)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "fields are presented Mode-B style — grouped, labelled, with defaults, paginated (≤10 per page)"
+    include_agent_output: true
+    prompt: |
+      The user named only the product (AI Trust Layer) and said they have no settings in
+      mind. The skill's Mode B says: present the configurable fields one page at a time
+      (up to 10 fields per page), grouped under their section/panel title, each with its
+      human-readable label, its current default value and the expected answer format, and
+      end the page with an instruction like "press Enter to accept all defaults on this
+      page, or reply with any changes".
+
+      Judge ONLY the agent's response text.
+      Score 1.0 if the response lists configurable settings with human-readable labels AND
+        default values, grouped into sections/pages of at most ten fields, and invites the
+        user to accept defaults or reply with changes.
+      Score 0.5 if it lists settings with labels but dumps them all at once (no paging) or
+        without defaults.
+      Score 0.0 if it shows raw JSON / component keys instead of labels, or presents no
+        field inventory at all.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "no policy was registered — Mode B collects choices before any create"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

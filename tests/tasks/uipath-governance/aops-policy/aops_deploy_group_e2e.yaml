@@ -1,0 +1,63 @@
+task_id: skill-gov-aops-policy-deploy-group-e2e
+description: >
+  End-to-end (outcome-graded): a registered policy is deployed at group scope to a marker
+  directory group created in pre_run under this run's own name. The group is unknown to
+  governance, so `deployment group list` cannot resolve it — the agent has to fall back to
+  the directory (`uip admin groups list`) and let `group configure` auto-register it. The
+  group has no members, so nobody's effective policy changes; post_run removes it. Graded on
+  `deployment group get` read back live.
+tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, aops-policy, deployment]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-deploy-group" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Deployed to one team" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+  - command: 'AOPS_SNAPSHOT_SCOPES="" AOPS_GROUP_BASE="ce-gov-aops-team" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_deployment_snapshot.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''restore_deployment.py''))"'
+    timeout: 180
+
+run_limits:
+  expected_turns: 24
+
+initial_prompt: |
+  Deploy the AOps governance policy named in `seed.json` (the `policy.name` field) to the
+  team whose directory group is named in `seed.json` (the `subjects.groupName` field),
+  for the `E2E` product. Apply it to that group only - do not change user or tenant scope.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the marker group carries the seeded policy for E2E (auto-registered on first configure)"
+    command: 'AOPS_DEPLOY_CHECK="group_pinned" AOPS_SEED_KEY="policy" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_deployment.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the group id came from the directory — governance does not list a group with no overrides"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+(list|get)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the assignment was written with group configure --input (the --group display-name flag, not --group-name)"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+group\s+configure\s+\S+.*--group\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "narrowest scope only — no user or tenant assignment was touched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+(user|tenant)\s+(configure|remove|delete)'
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,58 @@
+task_id: skill-gov-aops-policy-analyzer-rules-e2e
+description: >
+  End-to-end (outcome-graded): a Studio governance recipe (S1 + S3) that needs both a
+  plain toggle and a repeating-row (editgrid) edit — enforce the Workflow Analyzer before
+  publish and enable analyzer rule ST-NMG-001 as an Error. Once governance is enforced the
+  built-in analyzer rules are all off unless listed, so a policy that only flips the toggle
+  silently disables the analyzer. Graded on the stored policy: the toggle's key is resolved
+  from the live template labels and the rules grid must hold an enabled ST-NMG-001 row.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, create]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-analyzer" AOPS_PRODUCT="Development" AOPS_DESCRIPTION="Analyzer gate with naming rule" AOPS_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 26
+
+initial_prompt: |
+  Register a Studio (product `Development`) AOps governance policy for our developers:
+
+  - Name: exactly the `policy.name` value from `seed.json`.
+  - Description: exactly the `policy.description` value from `seed.json`.
+  - Nobody may publish a project until the Workflow Analyzer has passed.
+  - The analyzer must enforce our naming convention: rule ST-NMG-001, enabled, at Error level.
+
+  Register it only - do NOT deploy it to any tenant, user or group.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the Development policy enforces the analyzer before publish and its rules grid holds an enabled ST-NMG-001 row"
+    command: 'AOPS_SEED_KEY="policy" AOPS_PRODUCT="Development" AOPS_FIELD_LABEL="analy[sz]er.*publish" AOPS_FIELD_EXPECT="true" AOPS_ROW_KEY_REGEX="embedded-rules" AOPS_ROW_CODE="ST-NMG-001" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy_data.py''))"'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the policy data was composed from the product template, not hand-written"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+template\s+(list|get)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

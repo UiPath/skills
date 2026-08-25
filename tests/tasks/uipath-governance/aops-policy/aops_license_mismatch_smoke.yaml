@@ -1,0 +1,93 @@
+task_id: skill-gov-aops-policy-license-mismatch-smoke
+description: >
+  Smoke test (outcome-graded): the user asks to deploy an Assistant product policy to the
+  tenant under the `Unattended` license type. Tenant assignments are keyed by
+  (product, license type) and Unattended carries no Assistant slot, so the deployment
+  would be a silent no-op — the deploy guide says push back before writing it. Graded on the
+  live license-type catalog being read, on no tenant assignment being written, and on a judge
+  reading the push-back. The seeded policy is registered only.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, aops-policy, deployment]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-assistant" AOPS_PRODUCT="Assistant" AOPS_DESCRIPTION="Assistant experience baseline" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 16
+
+initial_prompt: |
+  Deploy the AOps governance policy named in `seed.json` (the `policy.name` field - it is
+  an Assistant product policy) to the whole tenant I am logged into, under the `Unattended`
+  license type.
+
+  Save the license-type catalog you relied on verbatim to ./license-types.json, and write
+  what you did (or why you did not) to ./answer.md.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "license-types.json is the live catalog and shows Unattended without an Assistant slot (the premise of the push-back)"
+    command: |
+      python3 -c "
+      import json
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      d = json.load(open('license-types.json', encoding='utf-8-sig'))
+      lts = [x for x in dicts(d) if x.get('Name') and 'LicenseTypeProducts' in x]
+      assert lts, 'license-types.json holds no license-type records (Name + LicenseTypeProducts)'
+      un = next((x for x in lts if str(x.get('Name')).lower() == 'unattended'), None)
+      if not un:
+          print('OK (degenerate): this organization has no Unattended license type; the catalog read is real')
+      else:
+          products = {str(p.get('Name')) for p in dicts(un.get('LicenseTypeProducts')) if p.get('Name')}
+          assert 'Assistant' not in products, f'Unattended includes Assistant on this tenant ({sorted(products)}) — premise does not hold here'
+          print(f'OK: live catalog read; Unattended covers {sorted(products)} — no Assistant slot, so the deployment would be a no-op')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the compatibility check was made against the live license-type list"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+license-type\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "the agent pushed back: Unattended has no Assistant slot, so it did not write a no-op tenant assignment"
+    files:
+      - answer.md
+    max_file_chars: 20000
+    include_agent_output: false
+    prompt: |
+      Tenant deployments are keyed by (product, license type). The Unattended license type
+      covers only the Robot product, so assigning an Assistant policy under Unattended would
+      have no effect on anyone. The skill's deploy guide says: push back — do not deploy at a
+      (product, license type) pair whose license does not include that product.
+
+      Read ./answer.md. Award a pass only if it explains that the Unattended license type does
+      not include the Assistant product (so the assignment would be a no-op) and either
+      declines to deploy or asks the user to pick a license type that includes Assistant
+      (e.g. Attended / a developer license). Fail it if it reports having deployed the policy
+      under Unattended as requested, or gives a reason unrelated to license-type coverage.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "no tenant assignment was written — the no-op deployment was refused"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 3.0
+    pass_threshold: 1.0

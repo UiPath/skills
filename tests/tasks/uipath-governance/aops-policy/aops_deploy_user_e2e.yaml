@@ -1,0 +1,62 @@
+task_id: skill-gov-aops-policy-deploy-user-e2e
+description: >
+  End-to-end (outcome-graded): a registered policy is deployed at user scope — to the
+  caller's own account, for the shared E2E test product, so no other subject's
+  governance changes. `deployment user configure` is a full replace, so the check also
+  requires every pin the user already had (snapshotted in pre_run) to survive; post_run
+  restores the snapshot. Graded on `deployment user get` read back live.
+tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, aops-policy, deployment]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-deploy-user" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Deployed to one user only" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+  - command: 'AOPS_SNAPSHOT_SCOPES="user" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_deployment_snapshot.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''restore_deployment.py''))"'
+    timeout: 180
+
+run_limits:
+  expected_turns: 22
+
+initial_prompt: |
+  Deploy the AOps governance policy named in `seed.json` (the `policy.name` field) to my
+  own user account - the account this CLI is logged in as - for the `E2E` product.
+  Apply it to me only: do not touch group or tenant scope, and keep any other policy
+  assignments my account already has.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the caller's user now carries the seeded policy for E2E and every pre-existing user pin survived"
+    command: 'AOPS_DEPLOY_CHECK="user_pinned" AOPS_SEED_KEY="policy" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_deployment.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the assignment was written with the non-interactive user configure --input path"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+user\s+configure\s+\S+.*--input'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "narrowest scope only — no group or tenant assignment was touched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+(group|tenant)\s+(configure|remove|delete)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "the user's assignments were not wiped with a delete"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+user\s+delete'
+    weight: 2.0
+    pass_threshold: 1.0

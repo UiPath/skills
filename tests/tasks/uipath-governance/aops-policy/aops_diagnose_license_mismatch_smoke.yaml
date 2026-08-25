@@ -1,0 +1,85 @@
+task_id: skill-gov-aops-policy-diagnose-license-mismatch-smoke
+description: >
+  Smoke test (outcome-graded): "the Assistant policy we deployed under the Unattended license
+  type does nothing" is the failure mode `Wrong policy applied (license-type mismatch)`.
+  The agent has to read the live license-type catalog and the tenant's assignments, and
+  conclude that Unattended has no Assistant slot. Graded on the catalog record it saved, on
+  the tenant deployment being inspected, and on a judge reading the diagnosis; diagnose reads
+  only, so no deployment may change.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployment, troubleshoot]
+
+run_limits:
+  expected_turns: 16
+
+initial_prompt: |
+  A tenant admin deployed our Assistant governance policy to the tenant under the
+  `Unattended` license type and reports that it has no effect on anyone. Work out why.
+
+  Save the license-type catalog you used verbatim to ./license-types.json and write your
+  conclusion - the cause and what would have to change - to ./diagnosis.md.
+  Do not change any deployment.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "license-types.json is the live catalog and shows Unattended without an Assistant slot"
+    command: |
+      python3 -c "
+      import json
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      d = json.load(open('license-types.json', encoding='utf-8-sig'))
+      lts = [x for x in dicts(d) if x.get('Name') and 'LicenseTypeProducts' in x]
+      assert lts, 'license-types.json holds no license-type records (Name + LicenseTypeProducts)'
+      un = next((x for x in lts if str(x.get('Name')).lower() == 'unattended'), None)
+      if not un:
+          print('OK (degenerate): this organization has no Unattended license type; the catalog read is real')
+      else:
+          products = {str(p.get('Name')) for p in dicts(un.get('LicenseTypeProducts')) if p.get('Name')}
+          assert 'Assistant' not in products, f'Unattended includes Assistant on this tenant ({sorted(products)})'
+          print(f'OK: Unattended covers {sorted(products)} — the Assistant assignment cannot apply')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the tenant's (product, license type) assignments were inspected"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+tenant\s+(get|list)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "the diagnosis blames the license-type / product mismatch and proposes a license type that includes Assistant"
+    files:
+      - diagnosis.md
+    max_file_chars: 20000
+    include_agent_output: false
+    prompt: |
+      Tenant deployments are keyed by (product, license type). The Unattended license type
+      covers only the Robot product; an Assistant policy assigned under Unattended can never
+      reach an Assistant client, so it has no effect.
+
+      Read ./diagnosis.md. Award a pass only if it identifies the cause as the license type
+      not including the Assistant product (a product / license-type mismatch) and says the
+      fix is to deploy the policy under a license type that does include Assistant (for
+      example Attended or a developer license), for the license the affected users hold.
+      Fail it if it blames policy priority, policy contents, missing deployment, or user or
+      group overrides, or if it proposes no license-type change.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "diagnose reads; nothing was deployed, removed or deleted"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

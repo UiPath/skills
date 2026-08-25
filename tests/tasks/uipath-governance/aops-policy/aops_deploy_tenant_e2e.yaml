@@ -1,0 +1,67 @@
+task_id: skill-gov-aops-policy-deploy-tenant-e2e
+description: >
+  End-to-end (outcome-graded): a tenant-scope round trip on the shared E2E test product —
+  pin a registered policy for (E2E product, E2E license type), record the tenant's
+  assignments while pinned, then remove exactly that pin. `deployment tenant configure` is a
+  full replace keyed by the license-type NAME, so the saved pinned record must show every
+  pre-existing assignment alongside the new one, and the live tenant must equal its pre_run
+  snapshot afterwards. post_run restores the snapshot in any case.
+tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, aops-policy, deployment]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-deploy-tenant" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Tenant baseline for the E2E product" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+  - command: 'AOPS_SNAPSHOT_SCOPES="tenant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_deployment_snapshot.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''restore_deployment.py''))"'
+    timeout: 180
+
+run_limits:
+  expected_turns: 28
+
+initial_prompt: |
+  On the tenant I am logged into, make the AOps governance policy named in `seed.json`
+  (the `policy.name` field) the tenant-wide baseline for the `E2E` product under the
+  `E2E` license type - every other tenant assignment must stay exactly as it is.
+
+  Once it is saved, save the tenant's full deployment record verbatim to ./pinned.json.
+  Then remove that one assignment again (only that one) so the tenant ends up exactly as
+  it started.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "pinned.json shows the E2E/E2E baseline plus every prior assignment, and the live tenant is back to its snapshot"
+    command: 'AOPS_DEPLOY_CHECK="tenant_roundtrip" AOPS_SEED_KEY="policy" AOPS_PINNED_FILE="pinned.json" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_deployment.py''))"'
+    timeout: 150
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the tenant assignment was written with tenant configure --input"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+tenant\s+configure\s+\S+.*--input'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the single assignment was dropped with the scoped tenant remove, not a second full-replace"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+tenant\s+remove\s+\S+.*--product-name'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "tenant scope only — no user or group assignment was touched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+(user|group)\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

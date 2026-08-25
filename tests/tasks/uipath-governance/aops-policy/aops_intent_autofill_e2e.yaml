@@ -1,0 +1,81 @@
+task_id: skill-gov-aops-policy-intent-autofill-e2e
+description: >
+  End-to-end (outcome-graded): the user names the product layer and states an intent
+  ("block the Gemini models"), so Mode A must map that intent onto the AI Trust Layer
+  template's own component key and register the policy. Graded on the policy the service
+  stores: the check resolves the Gemini field key from the live locale resource at grading
+  time (no hard-coded key), so a policy composed from untouched defaults fails. A request
+  that already names the layer must not be re-asked the disambiguation question
+  (Critical Rule 2), and must stay on the AOps branch.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, create]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-intent" AOPS_PRODUCT="AITrustLayer" AOPS_DESCRIPTION="Gemini models blocked for governed users" AOPS_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 24
+
+initial_prompt: |
+  Govern the product layer (AI Trust Layer): the Gemini models must be blocked for
+  everyone this policy applies to. Register an AOps governance policy for that:
+
+  - Name: exactly the `policy.name` value from `seed.json`.
+  - Description: exactly the `policy.description` value from `seed.json`.
+
+  Register it only - do NOT deploy it to any tenant, user or group.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the policy is registered under AITrustLayer and its Gemini field (resolved from the live template labels) is switched off"
+    command: 'AOPS_SEED_KEY="policy" AOPS_PRODUCT="AITrustLayer" AOPS_FIELD_LABEL="gemini" AOPS_FIELD_EXPECT="false" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy_data.py''))"'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "the policy data was composed from the product template (bootstrap or single-product template fetch)"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+template\s+(list|get)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "the layer was already named — the agent did not ask the AOps-vs-Access disambiguation question"
+    include_agent_output: true
+    prompt: |
+      The user explicitly asked to govern the product layer (AI Trust Layer) and gave the
+      exact setting to apply. Per the skill's Critical Rule 2, a request that already names
+      the layer is routed silently — the agent must NOT ask "Which layer should this rule
+      govern?" or offer a numbered choice between an AOps product policy and an Access
+      tool-use policy.
+
+      Judge ONLY the agent's response text. Score 1.0 if it never asks the user to choose a
+      governance layer/branch. Score 0.0 if it presents that choice or asks which layer was
+      meant. Mentioning what it did (registered a policy, did not deploy) is fine.
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "stayed on the AOps branch — no access-policy commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0
