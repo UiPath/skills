@@ -171,9 +171,9 @@ First distinguish bridge rejection from background failure:
 <!--skill-flavor:script-budget-cause:end-->
 
 <!--skill-flavor:allowlist-versioning:start-->
-- **Cause:** the authorable set is closed and mirrors the Studio Web palette. It also changes between releases, so **read the valid list out of the error message itself — that is the authoritative set for the host you are on.**
+- **Cause:** the authorable set is closed and versioned. The host CLI can lag the Studio Web palette; native `LogMessage` is the known exception. **Read the valid list out of the error message itself — that is the authoritative set for the host you are on.**
 <!--skill-flavor:allowlist-versioning:end-->
 
 <!--skill-flavor:allowlist-run-proof:start-->
-  Some task types the runtime can execute are still not authorable, so **an activity that appears to work is not proof it can be published.** The validator is the gate.
+  Some task types the runtime can execute are still not authorable, so **an activity that appears to work is not proof it can be published.** The validator is the gate, with only the narrow native `LogMessage` compatibility exception documented below.
 <!--skill-flavor:allowlist-run-proof:end-->

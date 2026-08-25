@@ -1,12 +1,13 @@
 # Task Types Reference
 
-Detailed reference for the activity types supported in the API Workflow DSL — focused on logical/structural building blocks. Each section: required fields, export pattern, metadata, minimal JSON, common mistakes, and where applicable, nesting examples.
+Detailed reference for the activity types supported in the API Workflow DSL — focused on logical/structural building blocks. Each section: required fields, state/output behavior, metadata, minimal JSON, common mistakes, and where applicable, nesting examples.
 
 | Type | Action selector | Purpose |
 |------|-----------------|---------|
 | Sequence | `do` | Group child tasks |
 | Assign | `set` | Set or update workflow variables |
 | JavaScript (JsInvoke) | `run.script` | Run inline JavaScript |
+| Log Message (LogMessage) | `run.script` | Write an Info, Warning, or Error entry to Orchestrator logs |
 | If | `switch` (inside `#Wrapper`) | Conditional branching |
 | ForEach | `for.each` / `for.in` / `for.at` | Iterate over a collection |
 | DoWhile | `for.in` + `doWhile` | Repeat-until loop |
@@ -136,7 +137,57 @@ Inside the script, reference globals directly: `$context.variables.X`, `$context
 
 ---
 
-## 4. If (Switch Wrapper)
+## 4. Log Message (LogMessage)
+
+Writes a message to Orchestrator logs. Studio Web serializes this native activity as a JavaScript console call, but it is not a JsInvoke activity.
+
+**Required fields:** numeric `Log_Message_N` activity key, `run.script.code`, `run.script.language` (`"javascript"`), `run.script.arguments`, `metadata`
+
+Use the console method matching the selected level:
+
+| Level | Script call |
+|-------|-------------|
+| Info (default) | `console.log(...)` |
+| Warning | `console.warn(...)` |
+| Error | `console.error(...)` |
+
+Keep `run.script.arguments` as the same standard designer-scaffolding block used by JsInvoke. Log Message is side-effect-only: it has no `export`, produces no `$context.outputs` bucket, and its script has no `return`.
+
+**Minimal JSON (Info):**
+```json
+{
+  "Log_Message_1": {
+    "run": {
+      "script": {
+        "code": "console.log(\"Workflow started\")",
+        "language": "javascript",
+        "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+      }
+    },
+    "metadata": { "activityType": "LogMessage", "displayName": "Log Message", "fullName": "LogMessage" }
+  }
+}
+```
+
+For a dynamic message, put the expression directly inside the selected console method:
+
+```json
+"code": "console.log($workflow.input.SomeString)"
+```
+
+Use `$workflow.input.<name>` for workflow arguments, `$context.variables.<name>` for variables, and `$context.outputs.<ActivityKey>` for exported prior outputs. Do not use `$input.<name>` for a workflow argument: `$input` is only the immediate prior task's output and can be `undefined` after a Log Message because the activity has no output.
+
+**Common mistakes:**
+- Using a semantic key such as `Log_Message_Info` — Studio Web uses a numeric instance suffix: `Log_Message_1`, `Log_Message_2`, etc.
+- Using `metadata.activityType: "CustomLog"` — the native type is `LogMessage`
+- Replacing it with a JsInvoke activity instead of preserving the native Log Message card
+- Adding `export` or `return`
+- Using `console.log` for Warning/Error instead of `console.warn`/`console.error`
+- Reading workflow input through `$input` instead of `$workflow.input`
+
+---
+
+## 5. If (Switch Wrapper)
 
 Conditional branching. Requires a `#Wrapper` container with `#Then` and `#Else` branches.
 
@@ -206,7 +257,7 @@ Conditional branching. Requires a `#Wrapper` container with `#Then` and `#Else` 
 
 ---
 
-## 5. ForEach
+## 6. ForEach
 
 Iterates over a collection. Requires `#Body` inside `do`.
 
@@ -259,7 +310,7 @@ Inside the body, the iterator and index are accessible as globals **with a `$` p
 
 ---
 
-## 6. DoWhile
+## 7. DoWhile
 
 Repeat-until loop. Body always executes at least once.
 
@@ -307,7 +358,7 @@ The body MUST update the condition variable, otherwise the loop runs forever.
 
 ---
 
-## 7. Break
+## 8. Break
 
 Exits a loop early. Only valid inside `For_Each_N#Body` or `Do_While_N#Body`.
 
@@ -350,7 +401,7 @@ Typically wrapped in an `If` inside the body — break only when a condition is 
 
 ---
 
-## 8. TryCatch
+## 9. TryCatch
 
 Wraps activities in error handling.
 
@@ -413,7 +464,7 @@ There is **no** `.message` / `.name` / `.stack` property — those would return 
 
 ---
 
-## 9. Wait
+## 10. Wait
 
 Pauses execution.
 
@@ -439,7 +490,7 @@ Provide all three time fields — set unused ones to `0`.
 
 ---
 
-## 10. Response
+## 11. Response
 
 Returns a result and ends the workflow execution path.
 
