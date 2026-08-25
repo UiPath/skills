@@ -37,13 +37,12 @@ success_criteria:
     command_pattern: "(uip|\\$UIP)\\s+is\\s+resources\\s+describe.+(-f|--field)[=\\s]+[\"']?fields\\.project\\.key"
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: the SDK persists the same schema without this CLI command
 
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
+  - type: run_command
+    description: "Persisted Flow artifact passes CLI validation"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 60
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-
