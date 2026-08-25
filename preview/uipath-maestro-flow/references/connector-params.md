@@ -106,6 +106,11 @@ uip is resources describe <connector-key> <object> \
 That placeholder is also the **ordering**: resolve `fields.project.key` before
 you can resolve `fields.issuetype.id`.
 
+Parent-field names are operation-specific. Copy each `Name` exactly from this
+operation's describe response; do not reuse the dotted names from the
+`create-issue` example for another action (for example, Jira `get-issue` uses
+`project` and `issuetype`).
+
 **2. Resolve a value for each, outermost first.** Match the collection on
 `Reference.Path`, *not* on `Reference.ObjectName` — `ObjectName` is often the
 root resource shared by several fields (both Jira parents above report
