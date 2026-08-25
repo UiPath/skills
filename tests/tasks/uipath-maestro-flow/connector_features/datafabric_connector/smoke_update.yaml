@@ -2,8 +2,9 @@ task_id: skill-flow-datafabric-smoke-update
 description: >
   Smoke: Create → UpdateEntityRecordV2 (single-field score change) → Get → Delete.
   Verifies partial update wiring and update body contains only the target field.
-  Validate-only — no live tenant in sandbox — count enforcement lives in the
-  verifier script (counts nodes in the final .flow, not CLI invocations).
+  Static-validate only; runtime `flow debug` skipped to avoid live tenant
+  side effects. Count enforcement lives in the verifier script (counts
+  nodes in the final .flow, not CLI invocations).
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:

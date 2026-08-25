@@ -2,8 +2,9 @@ task_id: skill-flow-datafabric-smoke-create-all-types
 description: >
   Smoke: DF Create node on FlowCodeEvalEntity binds all 8 supported field
   types (STRING, MULTILINE_TEXT, DECIMAL, INTEGER, BOOLEAN, DATE, DATETIME,
-  UUID) with correct JSON literal shapes. Validate-only — no live tenant in
-  sandbox. Full CRUD/negative-path coverage lives in e2e_contract_intake_pipeline.
+  UUID) with correct JSON literal shapes. Static-validate only; runtime
+  `flow debug` skipped to avoid live tenant side effects. Full CRUD /
+  negative-path coverage lives in e2e_contract_intake_pipeline.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:

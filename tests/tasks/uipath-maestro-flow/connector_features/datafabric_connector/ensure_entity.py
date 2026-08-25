@@ -6,9 +6,10 @@ definition from a JSON file whose path is passed as the sole argument:
 
     python3 ensure_entity.py <definition.json>
 
-The definition file is passed verbatim to `uip df entities create --file`
-(same shape returned by `uip df entities get`). Must include at least
-`Name` and `Fields[]` with `Name` + `FieldDataType.Name`.
+The definition file is passed to `uip df entities create <name> --file`.
+Must include `displayName` (or `name`) and a `fields[]` array of
+`{fieldName, type}` entries — the simplified schema used by these
+coder-eval fixtures.
 
 Exits 0 whether the entity already existed or was created. Exits non-zero
 only on real infrastructure failure (login expired, CLI missing, etc.),

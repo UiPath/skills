@@ -4,7 +4,7 @@ Queries on FlowCodeEvalEntity. Closes the wrong-reason pass where an agent
 builds a valid FlowCodeEvalEntity Create + 2 Queries and satisfies the loose
 command_executed criteria.
 
-ponytail: entity-binding check only; topology (parallel branch) is not parsed —
+Note: entity-binding check only; topology (parallel branch) is not parsed —
 the prompt-driven shape plus entity split already blocks the common wrong-reason
 paths. Add topology parsing if a live case slips through."""
 import glob, json, sys
