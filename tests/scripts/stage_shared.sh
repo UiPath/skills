@@ -27,6 +27,18 @@ if [ -n "$manifest" ]; then
   : > "$manifest"
 fi
 
+search_root=${STAGE_SHARED_ROOT:-tests/tasks}
+if [[ "$search_root" = "$PWD"/* ]]; then
+  search_root=${search_root#"$PWD"/}
+fi
+case "$search_root" in
+  tests/tasks | tests/tasks/*) ;;
+  *)
+    echo "stage_shared: STAGE_SHARED_ROOT must be under tests/tasks: $search_root" >&2
+    exit 2
+    ;;
+esac
+
 count=0
 while IFS= read -r f; do
   dir=$(dirname "$f")
@@ -42,6 +54,6 @@ while IFS= read -r f; do
     printf '%s\n' "$PWD/$dir/_shared" >> "$manifest"
   fi
   count=$((count + 1))
-done < <(git grep -lE 'from _shared|import _shared' -- 'tests/tasks/**/*.py')
+done < <(git grep -lE 'from _shared|import _shared' -- "$search_root/**/*.py")
 
 echo "stage_shared: co-located _shared into ${count} task dir(s)"
