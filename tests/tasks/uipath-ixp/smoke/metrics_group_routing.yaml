@@ -1,0 +1,87 @@
+task_id: skill-ixp-metrics-group-routing-smoke
+description: >
+  Smoke: deciding WHERE a rewrite belongs, the agent routes a uniformly-low
+  group to its group-level instructions and a single bad field inside an
+  otherwise healthy group to that field's instructions.
+
+  Both group rows sit below the 0.7 target, so neither level of the payload
+  answers alone: group-row F1 alone flags both groups (rewriting group
+  instructions to fix one field's problem), and per-field F1 alone emits four
+  field rewrites (missing that the three Shipping fields fail together). The
+  correct read is 2a's order — FieldGroups first, then inside the low group.
+
+  Every Annotations is 10, so noise floors collapse to the flat 0.1 and stay
+  out of the routing question.
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:improve]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_routing}
+
+initial_prompt: |
+  Extraction scores in the IXP project `parcel_docs-6e2b91c8-ixp` are below
+  the target F1 of 0.7 and the instructions need rewriting. Before writing
+  anything, decide WHERE each rewrite belongs.
+
+  Write `routing.json` in the working directory, with exactly these two keys:
+
+      {"group_rewrite": ["<names of field groups whose GROUP-LEVEL
+                          instructions should be rewritten>"],
+       "field_rewrite": ["<field ids whose own per-field instructions
+                          should be rewritten>"]}
+
+  Both values are arrays and either may be empty. A problem belongs at ONE
+  level — do not list a group in `group_rewrite` and also its members in
+  `field_rewrite`.
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do not change any instructions — decide only.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Read the project's metrics"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+.*parcel_docs-6e2b91c8-ixp)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The group direction. All three Shipping fields are low together (0.400 /
+  # 0.500 / 0.400), so the rewrite belongs to the group's instructions — an
+  # agent working per-field lists three field ids instead and fails both
+  # length assertions.
+  - type: json_check
+    description: "Routed the uniformly-low group (Shipping Address) to a group-level rewrite, not three per-field rewrites"
+    path: "routing.json"
+    assertions:
+      - expression: "length(group_rewrite)"
+        operator: equals
+        expected: 1
+      - expression: "group_rewrite[0]"
+        operator: equals
+        expected: "Shipping Address"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The field direction. Invoice Header's group row is ALSO below target
+  # (0.667) but only because Reference Number is at 0.200 — its siblings score
+  # 0.800 and 1.000. An agent gating on group-row F1 alone rewrites this
+  # group's instructions too, and fails the group_rewrite length above.
+  - type: json_check
+    description: "Routed the one bad field inside the otherwise healthy group (Reference Number) to a per-field rewrite"
+    path: "routing.json"
+    assertions:
+      - expression: "length(field_rewrite)"
+        operator: equals
+        expected: 1
+      - expression: "field_rewrite[0]"
+        operator: equals
+        expected: "dddd000000000004"
+    weight: 3.0
+    pass_threshold: 1.0

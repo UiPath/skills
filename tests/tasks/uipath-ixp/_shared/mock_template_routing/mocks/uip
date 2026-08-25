@@ -1,0 +1,115 @@
+#!/bin/sh
+# Group-vs-field routing `uip` mock for uipath-ixp smoke tasks that must decide
+# WHERE a rewrite belongs: group-level instructions (`groups update-prompts`)
+# or one field's instructions (`fields update-prompts`). Overlays the base
+# mock_template (list it SECOND in template_sources so this file wins).
+#
+# Fixture - project parcel_docs-6e2b91c8-ixp, ValidatedDocuments 10, target
+# F1 0.7, two field groups:
+#
+#   Shipping Address - uniformly low            -> rewrite the GROUP instructions
+#     dddd000000000001  F1 0.400
+#     dddd000000000002  F1 0.500
+#     dddd000000000003  F1 0.400
+#     group row         F1 0.433
+#
+#   Invoice Header - one bad field, rest fine   -> rewrite ONE FIELD's instructions
+#     dddd000000000004  F1 0.200   <- the field
+#     dddd000000000005  F1 0.800
+#     dddd000000000006  F1 1.000
+#     group row         F1 0.667
+#
+# BOTH group rows sit below the 0.7 target - that is the point. Neither level
+# of the payload answers alone:
+#
+#   * group-row F1 alone flags both groups as "entire group low" and rewrites
+#     Invoice Header's group instructions to fix what is one field's problem;
+#   * per-field F1 alone emits four field rewrites and misses that the three
+#     Shipping fields fail TOGETHER - the group-instruction case the guide
+#     routes to `--groups`.
+#
+# The correct read is the guide's 2a order: check `FieldGroups` first, then
+# look INSIDE a low group - every field low means the group instructions,
+# one field low means that field.
+#
+# Every Annotations is 10, so each field's regression threshold collapses to
+# the flat 0.1 - no noise-floor interference with the routing question.
+#
+# Rows derive from explicit confusion matrices:
+#   ...0001  TP4  FP6 FN6   ...0004  TP2  FP8 FN8
+#   ...0002  TP5  FP5 FN5   ...0005  TP8  FP2 FN2
+#   ...0003  TP4  FP6 FN6   ...0006  TP10 FP0 FN0
+# Group rows aggregate them (TP13 FP17 FN17 -> 0.433; TP20 FP10 FN10 -> 0.667);
+# ErrorRate is the integer error count max(FP,FN) over Annotations; and
+# ProjectScore is the unweighted mean of per-field F1 (0.550).
+#
+# Logging matches the base mock exactly - same `uip ` prefix, same newline
+# folding - so anchored `^uip\s+ixp ...` criteria keep matching.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+METRICS='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":17,"ValidatedDocuments":10,"ProjectScore":0.55,"ProjectScoreQuality":"average","FieldGroups":[{"FieldGroup":"Shipping Address","F1":0.433,"Precision":0.433,"Recall":0.433,"ErrorRate":0.567,"Documents":10},{"FieldGroup":"Invoice Header","F1":0.667,"Precision":0.667,"Recall":0.667,"ErrorRate":0.333,"Documents":10}],"Fields":[{"FieldGroup":"Shipping Address","FieldId":"dddd000000000001","F1":0.4,"Precision":0.4,"Recall":0.4,"ErrorRate":0.6,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Shipping Address","FieldId":"dddd000000000002","F1":0.5,"Precision":0.5,"Recall":0.5,"ErrorRate":0.5,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Shipping Address","FieldId":"dddd000000000003","F1":0.4,"Precision":0.4,"Recall":0.4,"ErrorRate":0.6,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"dddd000000000004","F1":0.2,"Precision":0.2,"Recall":0.2,"ErrorRate":0.8,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"dddd000000000005","F1":0.8,"Precision":0.8,"Recall":0.8,"ErrorRate":0.2,"Documents":10,"Annotations":10,"Quality":"good"},{"FieldGroup":"Invoice Header","FieldId":"dddd000000000006","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":10,"Annotations":10,"Quality":"good"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"6e2b91c8-4d07-4f2a-b833-9a1c5e7d0f42","Name":"parcel_docs-6e2b91c8-ixp","Title":"Parcel_Docs","CreatedAt":"2026-07-15T10:30:00Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"parcel_docs-6e2b91c8-ixp","Title":"Parcel_Docs","Description":"Parcel shipping documents","CreatedTime":"2026-07-15T10:30:00Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":17,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-20T16:44:09.310000+00:00","Description":""}],"Tags":[],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"name":"Exact Text"},{"name":"Inferred Text"}],"label_groups":[{"name":"Shipping Address","repeatable":false,"instructions":"The delivery destination block.","field":[{"field_id":"dddd000000000001","name":"Street"},{"field_id":"dddd000000000002","name":"City"},{"field_id":"dddd000000000003","name":"Postal Code"}]},{"name":"Invoice Header","repeatable":false,"instructions":"The document header block.","field":[{"field_id":"dddd000000000004","name":"Reference Number"},{"field_id":"dddd000000000005","name":"Issue Date"},{"field_id":"dddd000000000006","name":"Carrier Name"}]}]}}}
+EOF
+exit 0
+;;
+"ixp documents list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpDocumentsList","Data":{"Documents":[{"Id":"p01"},{"Id":"p02"},{"Id":"p03"},{"Id":"p04"},{"Id":"p05"},{"Id":"p06"},{"Id":"p07"},{"Id":"p08"},{"Id":"p09"},{"Id":"p10"}],"Total":10,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    ""|latest|17)
+        printf '%s\n' "$METRICS"
+        ;;
+    *)
+        printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+
+# Everything else fails like the base mock: offline, no network call.
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1
