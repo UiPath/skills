@@ -1,4 +1,4 @@
-"""Deterministic guards for the SDD **SLA Response Map** contract (uipath-planner references/case/render-case-definition.md § SLA Response Map).
+"""Deterministic guards for the SDD **SLA Response Map** contract (uipath-planner assets/templates/case-sdd-template.md § SLA Response Map).
 
 The map is the single place SLA breach / at-risk behavior is decided:
 
@@ -172,16 +172,40 @@ def check(text: str) -> list[str]:
         )
 
     # Interrupting must survive from the map into the entry-conditions table.
+    # Matching is (SLA title AND scope↔target): a case-level and a stage-level SLA may
+    # legally share a title, so a title-only match can satisfy closure with a row for
+    # the wrong target. `root` matches Scope `case`; a stage target matches
+    # `stage: <name>`.
+    def _scope_matches_target(scope: str, target: str) -> bool:
+        scope = scope.strip().casefold()
+        target = target.strip().strip('"').strip("'").casefold()
+        if target == "root":
+            return scope == "case"
+        match = re.match(r"stage\s*:\s*(.+)", scope)
+        return bool(match) and match.group(1).strip() == target
+
     for args, entry_interrupting in entries.items():
         sla_title = ""
+        target = ""
         parts = [p.strip().strip('"').strip("'") for p in args.split(",")]
+        if parts:
+            target = parts[0]
         if len(parts) >= 2:
             sla_title = parts[1]
-        candidates = [r for r in graph_rows if r.get("sla", "").strip() == sla_title]
-        if not candidates:
+        titled = [r for r in graph_rows if r.get("sla", "").strip() == sla_title]
+        if not titled:
             issues.append(
                 f"`sla-status-change({args})` references SLA {sla_title!r}, which has no "
                 "SLA Response Map row"
+            )
+            continue
+        candidates = [r for r in titled if _scope_matches_target(r.get("scope", ""), target)]
+        if not candidates:
+            scopes = sorted({r.get("scope", "?") for r in titled})
+            issues.append(
+                f"`sla-status-change({args})` targets {target!r} but every SLA Response Map "
+                f"row titled {sla_title!r} is scoped {scopes} — the map row must be scoped to "
+                "the call's target (root → `case`; a stage target → `stage: <name>`)"
             )
             continue
         if not entry_interrupting:

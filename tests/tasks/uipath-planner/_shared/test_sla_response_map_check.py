@@ -155,3 +155,27 @@ def test_parse_map_rows_flags_missing_columns():
 def test_entry_condition_interrupting_reads_the_last_yes_no_cell():
     line = '| sla-status-change("root","Case SLA","Breach") | - | No |\n'
     assert entry_condition_interrupting(line) == {'"root","Case SLA","Breach"': "no"}
+
+
+def test_shared_title_wrong_scope_fails_closure():
+    """P2 (PR #2718 review): a case-level and stage-level SLA sharing a title — a map row
+    scoped to the wrong target must NOT satisfy closure for the entry's target."""
+    text = sdd(
+        "| case | Review SLA | Breached | enter-stage | Escalation | Yes | case handover |\n"
+        + "\n#### Stage Entry Conditions\n\n"
+        + "| WHEN | IF | Interrupting | Display Name |\n|---|---|---|---|\n"
+        + '| `sla-status-change("Assess","Review SLA")` | — | Yes | Breach entry |\n'
+    )
+    issues = check(text)
+    assert any("scoped" in i and "'Assess'" in i for i in issues), issues
+
+
+def test_matching_scope_passes_closure():
+    text = sdd(
+        "| stage: Assess | Review SLA | Breached | enter-stage | Escalation | Yes | handover |\n"
+        + "\n#### Stage Entry Conditions\n\n"
+        + "| WHEN | IF | Interrupting | Display Name |\n|---|---|---|---|\n"
+        + '| `sla-status-change("Assess","Review SLA")` | — | Yes | Breach entry |\n'
+    )
+    issues = [i for i in check(text) if "scoped" in i or "no SLA Response Map row" in i]
+    assert not issues, issues

@@ -9,13 +9,13 @@ description: >
   closure both ways (every graph response has an sla-status-change entry and vice versa) and
   that the map's Interrupting cell matches the Stage Entry Conditions row it produces —
   the guard against defaulting every SLA lane to interrupting.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conversational]
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conversational]
 max_iterations: 1
 
 run_limits:
-  task_timeout: 2400
+  task_timeout: 4200
   max_turns: 90
-  turn_timeout: 1800
+  turn_timeout: 3600
 
 initial_prompt: |
   Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
