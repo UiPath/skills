@@ -31,6 +31,8 @@ uip ixp labellings get-predictions <project-name> <document-id> --output json
 
 This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
 
+The response also carries `ModelVersion` — the model version that produced these predictions. Note it: pass it to `confirm --model-version` in step 2d so a retrain mid-review can't silently change the values `confirm` stamps.
+
 ### 2b. Download the document file
 
 - **If the file already exists** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse it — do NOT re-download.
@@ -89,12 +91,15 @@ For **NOT CONFIRMED** fields: state the predicted value, the actual value (if vi
 
 Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
 
+**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
+
 **If there are corrections:**
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
   --fields "<all_submitted_ids>" \
   --corrections '[{"field_id":"<id>","value":"<corrected_value>"}]' \
+  -m <model_version> \
   --output json
 ```
 
@@ -104,13 +109,13 @@ The `--fields` list includes CONFIRMED, CORRECTED, and MISSING field IDs togethe
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
-  --fields "<field_id_1>,<field_id_2>,<field_id_3>" --output json
+  --fields "<field_id_1>,<field_id_2>,<field_id_3>" -m <model_version> --output json
 ```
 
 If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm every predicted field on **that one document** in a single call:
 
 ```bash
-uip ixp labellings confirm <project-name> <document-id> --output json
+uip ixp labellings confirm <project-name> <document-id> -m <model_version> --output json
 ```
 
 This per-document form is fine **once you've reviewed the document and every field is correct** (2c). What you must NOT do is run `confirm` **without a `<document-id>`** — that confirms every document in the project at once, bypassing the per-document review loop. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric reports 1.00 even when the confirmed values are wrong**. F1 alone is never evidence the values are correct.
@@ -121,6 +126,7 @@ This per-document form is fine **once you've reviewed the document and every fie
 uip ixp labellings confirm <project-name> <document-id> \
   --fields "<confirmed_id>,<corrected_id>,<missing_id_1>,<missing_id_2>" \
   --corrections '[{"field_id":"<corrected_id>","value":"<corrected_value>"}]' \
+  -m <model_version> \
   --output json
 ```
 
@@ -133,11 +139,11 @@ Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to rec
 ```bash
 # All predicted fields in occurrence 0:
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --occurrence 0 --output json
+  --group "Line Items" --occurrence 0 -m <model_version> --output json
 
 # Just Quantity in occurrence 2:
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 --output json
+  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 -m <model_version> --output json
 ```
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated).
@@ -147,6 +153,7 @@ Occurrences not targeted carry forward whatever annotation they already had (so 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
   --group "Line Items" --updates '[{"occurrence":0},{"occurrence":2,"fields":["c4e1907a3b8f25d6"]}]' \
+  -m <model_version> \
   --output json
 ```
 

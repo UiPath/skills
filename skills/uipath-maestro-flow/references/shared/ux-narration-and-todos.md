@@ -63,9 +63,11 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Logical step | Narration |
 | --- | --- |
 | Login probe | "Checking whether you're logged in to the UiPath tenant…" |
+<!--skill-flavor:flow-project-creation-narration:start-->
 | Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
 | Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
 | Verify project layout | "Confirming the solution/project layout is correct before continuing." |
+<!--skill-flavor:flow-project-creation-narration:end-->
 | Registry discovery | "Looking up `<node-type>` in the registry so I can wire its inputs correctly…" |
 | Node add (multi-step) | "Adding the `<node-type>` node and copying its registry definition into the file…" |
 | Edit flow JSON | "Editing the flow JSON to add the `<thing>`." |
@@ -108,7 +110,7 @@ A todo is a **state-changing outcome the user cares about**. One logical step �
 
 **Counts as a todo:**
 - Solution scaffolded
-- Flow project initialized
+- Flow project created
 - Node added and wired
 - Edges connected
 - Variables defined and mapped

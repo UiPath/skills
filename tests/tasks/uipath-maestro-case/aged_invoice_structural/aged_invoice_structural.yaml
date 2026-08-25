@@ -5,7 +5,7 @@ description: >
   the coder-eval tenant with existing generic resources only. A staged sdd.md
   (3 primary stages + 2 interrupting secondary lanes with return-to-origin;
   every external system modelled as api-workflow/rpa; tasks bound to
-  NameToAgeFixed2, CountLetters, ProjectEuler, purchaseorderapp, CaseTest) is the
+  WeatherAPI, CountLetters, ProjectEuler, purchaseorderapp, CaseTest) is the
   sole source of truth. The skill builds the case-management solution and
   validates the caseplan; a structural check then asserts the primary chain, the
   two interrupting/canonical-return-to-origin exception lanes, the connector-free
@@ -31,8 +31,8 @@ agent:
 
 run_limits:
   task_timeout: 5400
-  max_turns: 300
-  turn_timeout: 3600
+  max_turns: 450
+  turn_timeout: 5400
 
 sandbox:
   template_sources:

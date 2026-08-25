@@ -1,0 +1,77 @@
+task_id: skill-api-workflow-diagnose-export-chain
+description: >
+  Diagnose (export-pattern pitfall): the workflow VALIDATES and RUNS
+  "successfully" but returns the wrong number. Its Assign exports with the
+  activity-output shape instead of the variables shape, so the value never reaches
+  $context.variables and Response reads the default. A silent wrong answer — the
+  hardest class to spot, because nothing errors.
+
+  Covers the export-pattern category of references/troubleshooting.md, which had
+  no test. Complements diagnose/runtime_fix (fails at run time) and
+  diagnose/validate_fix (fails validate): this one does neither.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py export_chain"
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json should take a numeric `amount` input and
+  return `total` = amount x 2. It validates, it runs, it reports success — and the
+  total always comes back 0.
+
+  Find out why and fix it. Keep the intent: total = amount x 2.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place, not replaced wholesale"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
+      reading the file is equally valid, and 3 of 4 agents did exactly that)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: repaired workflow returns the correct result"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"amount":21}'
+      --output json | grep -qiE '"total":[ ]*42'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: still correct on a second, different input — not hardcoded"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"amount":5}'
+      --output json | grep -qiE '"total":[ ]*10'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

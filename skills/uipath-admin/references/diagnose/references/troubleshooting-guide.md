@@ -58,6 +58,19 @@ Interpret the results:
 
 See [check-access.md](../../authorization/check-access.md) for full interpretation guide.
 
+### Step 3b: Identify the Permission the Denied Action Requires
+
+The PDP says what the principal *has*; it never says what the action *needs*. Look the required permission up in the catalog before naming a fix — searching the whole catalog, not a guessed `--service` slice:
+
+```bash
+uip admin authorization permissions list --output json \
+  --output-filter "[?contains(Name, 'ADMINISTRATION')]"
+```
+
+`contains` is case-sensitive: `Name` is UPPERCASE, `Description` is lowercase. A guessed `--service` returns `Data: []` and an unfiltered list is ~210 KB that truncates — neither empty result proves the permission is absent. See [permission-catalog.md — Find the Permission Governing an Action](../../authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action).
+
+State the diagnosis as: *principal holds `<roles>`, none of which carry `<PERMISSION.NAME>` (`ScopeType` `<SCOPE>`) → grant a `<SCOPE>`-shape role carrying it.* Never substitute a permission you did not find in the catalog.
+
 ## Step 4: Check Audit History
 
 For historical investigation (login failures, "who changed X", "when did access break"):

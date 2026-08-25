@@ -1,15 +1,15 @@
 # SDD — AgedInvoiceResolution
 
-**Case Definition Blueprint** · Aged Invoice Payment Resolution — compact connector-free structural variant
+**Case Definition Blueprint** · Aged Invoice Payment Resolution — minimal connector-free structural variant
 
 > Derived from the Aged Invoice Payment Case Management PoV PDD, reduced to a
-> compact three-stage backbone plus the two interrupting exception lanes so it
+> minimal three-stage backbone plus the two interrupting exception lanes so it
 > builds within the agent turn budget. Every external system is modelled as an
 > `api-workflow` / `rpa` task (PDD §12.4), so no Integration Service connection
 > is required. Exercises the full connector-free task-type mix (api-workflow,
 > agent, action, rpa, wait-for-timer, case-management) and — the point of this
 > eval — two interrupting secondary lanes (SLA Escalation, Automation Incident)
-> that return to origin. Tasks bind real deployed resources (NameToAgeFixed2,
+> that return to origin. Tasks bind real deployed resources (WeatherAPI,
 > CountLetters, ProjectEuler, purchaseorderapp, CaseTest); payloads are generic.
 
 ## Table of Contents
@@ -133,9 +133,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -143,7 +143,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.invoiceId |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -410,9 +410,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -420,7 +420,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.invoiceId |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -547,9 +547,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** NameToAgeFixed2
-**Folder Path:** Shared/uipath-maestro-case/NameToAgeFixed2
-**Resource Identity:** b6af8fa1-07cc-4a03-b0a1-f966e3fa23be
+**Resolved Resource:** WeatherAPI
+**Folder Path:** Shared/uipath-agents/WeatherAPI
+**Resource Identity:** be88b8d6-ec4d-484c-9474-805dd82d8d68
 **Binding Sub-Type:** Api
 **Dispatch / Operation:** —
 
@@ -557,7 +557,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.invoiceId |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -591,7 +591,7 @@
 
 | Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
 |----------|--------|------------------------|------------------|---------------|
-| NameToAgeFixed2 | Shared/uipath-maestro-case/NameToAgeFixed2 | b6af8fa1-07cc-4a03-b0a1-f966e3fa23be | name → estimatedAge | Register case, Close case and update KPIs, Create incident record |
+| WeatherAPI | Shared/uipath-agents/WeatherAPI | be88b8d6-ec4d-484c-9474-805dd82d8d68 | location → temperature | Register case, Close case and update KPIs, Create incident record |
 
 ### Agents
 

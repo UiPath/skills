@@ -125,11 +125,11 @@ uip codedapp publish -n my-webapp --version 1.0.0
 ### What Happens Internally
 
 1. Selects the `.nupkg` file (auto-select, by name, or interactive)
-2. Uploads the package to Orchestrator via the OData API — needs Orchestrator scopes (`OR.Folders`, `OR.Execution`, `OR.Administration`, or `OR.Default`)
+2. Uploads the package to Orchestrator via the OData API — needs `OR.Default`
 3. Registers the coded app with the UiPath Apps service — needs `Apps.Read Apps.Write`
 4. Creates `.uipath/app.config.json` with registration metadata
 
-> **Steps 2 and 3 hit different services with different scope requirements.** The `uip login` session `--scope` must cover **both**. If it has only Orchestrator scopes, step 2 succeeds and step 3 silently 401s ("Registering coded app" fails). Interactive `uip login` grants a broad default that includes both; client-credentials logins must list `Apps.Read Apps.Write` explicitly. These are the *CLI session* scopes — separate from the runtime OAuth scopes in `uipath.json`.
+> **Steps 2 and 3 hit different services with different scope requirements.** The `uip login` session `--scope` must cover **both services** — Orchestrator for step 2, the Apps service for step 3. Interactive `uip login` grants a broad default that includes both; client-credentials logins must request `OR.Default Apps.Read Apps.Write` explicitly, and granular Orchestrator scopes are not a substitute for `OR.Default`. These are the *CLI session* scopes — separate from the runtime OAuth scopes in `uipath.json`. For the failure signatures when either scope set is missing, see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 > **`pack`/`publish`/`deploy` read org, tenant, base URL, and token from your `uip login` session** — you don't pass `--org-id`, `--tenant-id`, `--base-url`, or set a `.env` for them. Any `uip login` populates the session (interactive or client-credential). This is the *CLI session* config — distinct from `orgName`/`tenantName`/`baseUrl` in `uipath.json`, which configure the deployed app's **runtime SDK** calls, not the CLI.
 
@@ -326,10 +326,10 @@ uip codedapp deploy
 
 ```bash
 # Non-interactive flow with explicit options — every flag passed, no prompts.
-# --scope MUST include Apps.Read Apps.Write, or publish's "Registering coded app"
-# step 401s even though the package upload succeeds (see publish internals above).
+# --scope MUST name OR.Default (Orchestrator) AND Apps.Read Apps.Write
+# (Apps-service registration in publish) — neither set covers the other.
 uip login --client-id $CLIENT_ID --client-secret $CLIENT_SECRET \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write"
+  --scope "OR.Default Apps.Read Apps.Write"
 npm run build
 uip codedapp pack dist -n my-webapp --version $VERSION
 uip codedapp publish -n my-webapp --version $VERSION

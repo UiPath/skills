@@ -27,7 +27,9 @@ When editing the `.flow` file with `Edit` / `Write`, **you** are responsible for
 
 Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Edit / Write default, **you** are responsible for them.
 
+<!--skill-flavor:flow-project-location:start-->
 1. **Locate the canonical `.flow` file.** Before any `Edit` / `Write`, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution init <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `Edit` / `Write` call to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
+<!--skill-flavor:flow-project-location:end-->
 2. **Definitions and versions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the returned node definition object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Depending on CLI/plugin version, the node definition may appear as `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`; copy that node object, not the surrounding `Result` / `Code` envelope. Then set each node instance's `typeVersion` to match the copied definition's `version` exactly — string match, no normalization. Never hand-write or paraphrase definitions (see "Every node type needs a `definitions` entry" in [the Author capability index](../CAPABILITY.md)). For node types with a documented `uip maestro flow node add` carve-out (managed HTTP, connector activities, connector triggers), use the CLI — see [http/impl.md — Step 1](plugins/http/impl.md#add-the-node).
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
 4. **`sourcePort` and `targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (see "`targetPort` is required on every edge" in [the Author capability index](../CAPABILITY.md)). Use `sourcePort`, never `sourceHandle`; `sourceHandle` is not part of the `.flow` edge schema and produces a precise schema error such as `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` (the path tells you exactly which edge entry is missing the `sourcePort` key). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](../../shared/file-format.md). If an edge uses `sourcePort: "error"`, the source node must also have `inputs.errorHandlingEnabled: true`; `uip maestro flow format` self-heals this, but direct JSON edits must set it. Only those nodes — setting the flag on a node with no `error` edge swallows its failures (see [file-format.md — Default: off](../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles)).
@@ -118,6 +120,8 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
   }
 }
 ```
+
+> **Loop body nodes — set `parentId`.** When adding a node inside a `core.logic.loop` body, add `"parentId": "<LOOP_NODE_ID>"` to the node object. Without it, the runtime executes the node outside the loop context — `$vars.<loopId>.currentItem` is inaccessible and per-iteration state does not update. This applies to **every** node type inside the loop (HTTP, script, connector, etc.). See [loop/impl.md](plugins/loop/impl.md).
 
 **Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function): declare `error` only (`source: "=Error"`) — `output` is derived.** The converter copies an authored `source` verbatim there, and injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` only when a non-empty `outputs` omits `output`. So authoring `output` with `"=result.response"` on one of those leaves `$vars.{nodeId}.output` null at runtime while `flow validate` passes. Every other node type ignores the instance `outputs` block (DAP nodes — connector, HTTP, triggers — `Intsvc.*` — and script/transform take outputs from the manifest; inline agents have theirs overwritten; queue nodes never read it), so `error`-only stays a safe default everywhere and a manifest-matching `output` entry is harmless documentation. Downstream reads `$vars.{nodeId}.output` in every case.
 
@@ -308,7 +312,11 @@ Use `Edit` to add an entry to `variables.variableUpdates.<NODE_ID>`:
       "<NODE_ID>": [
         {
           "variableId": "<INOUT_VARIABLE_ID>",
-          "expression": "=js:<EXPRESSION>"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "<BARE_JS_NO_PREFIX>",
+            "fieldType": "<TARGET_VARIABLE_TYPE>"
+          }
         }
       ]
     }
@@ -317,6 +325,10 @@ Use `Edit` to add an entry to `variables.variableUpdates.<NODE_ID>`:
 ```
 
 Only `inout` variables can be updated. `in` variables are read-only.
+
+> **`expression` is an object here, not a `=js:` string** — unlike `inputs` and End-node `outputs[].source`, which still accept the string form. Set `fieldType` to the target variable's declared `type` (`integer` → `number`); `flow validate` does not cross-check it against the variable, so a mismatch passes silently. The string form does not: it fails with `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<NODE_ID>.0.expression`.
+
+> **There is no CLI command for variable updates.** `Edit` is the only way to write them.
 
 ---
 
@@ -436,7 +448,7 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
          "edges": [ ... ],
          "variables": {
            "globals": [
-             { "id": "<IN_VAR>", "direction": "in", "type": "..." },
+             { "id": "<IN_VAR>", "direction": "in", "type": "...", "triggerNodeId": "sfStart" },
              { "id": "<OUT_VAR>", "direction": "out", "type": "..." }
            ],
            "nodes": []

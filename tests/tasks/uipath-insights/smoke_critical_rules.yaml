@@ -41,16 +41,21 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # Negative patterns use [^&;|\n]* and \b, not .* : the grader compiles with
+  # re.DOTALL, so .* bleeds across command separators (a legitimate insights
+  # call batched with an out-of-scope command would false-fail), bare `start`
+  # matches --started-after, and bare `queue` matches the now-taught
+  # filter-queues discovery command.
   - type: command_not_executed
     description: "Agent did NOT run uip insights for starting a job (out of scope)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights.*start|uip\s+insights.*Invoice_Processing'
+    command_pattern: 'uip\s+insights[^&;|\n]*\bstart\b|uip\s+insights[^&;|\n]*Invoice_Processing'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did NOT run uip insights for queue metrics (not supported)"
+    description: "Agent did NOT run uip insights jobs for queue metrics (not supported)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights.*queue'
+    command_pattern: 'uip\s+insights\s+jobs[^&;|\n]*queue'
     weight: 2.0
     pass_threshold: 1.0

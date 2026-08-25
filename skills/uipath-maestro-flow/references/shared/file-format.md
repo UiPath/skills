@@ -5,7 +5,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ## Table of contents
 
 - [Top-level structure](#top-level-structure)
-- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
 - [Node instance](#node-instance)
 - [Layout](#layout)
 - [Edge — both ports required](#edge--both-ports-required)
@@ -23,7 +23,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "<version from `uip maestro flow init`>",
+  "version": "<scaffolded file-format version>",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -40,15 +40,17 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
 
+<!--skill-flavor:flow-format-version-source:start-->
 **Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
+<!--skill-flavor:flow-format-version-source:end-->
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
-`solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
+`solutionId` and `projectId` may also appear at the top level — these are auto-populated by the project scaffold and packaging. Preserve the generated values.
 
 > **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/references/plugins/connector/impl.md) for the connector-binding shape.
 
-## Project structure (from `uip maestro flow init`)
+## Project structure (generated scaffold)
 
 ```
 <ProjectName>/
@@ -287,7 +289,7 @@ uip maestro flow registry search <keyword>
 | `core.action.transform` | `output`, `error` | `input` |
 | `core.logic.decision` | `true`, `false` | `input` |
 | `core.logic.switch` | `case-{id}` (dynamic), `default` | `input` |
-| `core.logic.loop` | `success`, `output` | `input`, `loopBack` |
+| `core.logic.loop` | `success`, `error` (outer), `start` (inner) | `input` (outer), `continue`, `break` (inner) |
 | `core.logic.merge` | `output` | `input` |
 | `core.control.end` | — | `input` |
 | `core.logic.terminate` | — | `input` |
@@ -384,12 +386,14 @@ Building a flow is a two-step process: write the nodes/edges structure, then pop
 
 ### Step 1 — Write nodes and edges
 
+<!--skill-flavor:minimal-example-version-source:start-->
 Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator) — this applies ONLY to the top-level flow `id` and `entryPointId` (the same UUID must appear in `entry-points.json` as `uniqueId`). **Node and edge ids are NOT UUIDs** — they must start with a letter (see the Edge gotcha above). Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
+<!--skill-flavor:minimal-example-version-source:end-->
 
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "<version from `uip maestro flow init`>",
+  "version": "<scaffolded file-format version>",
   "name": "DiceRoller",
   "nodes": [
     {
@@ -497,7 +501,7 @@ The `definitions` array must contain exactly one entry per unique `type:typeVers
 
 ## entry-points.json — auto-generated, do not edit
 
-`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). **Do not edit this file directly** — it is auto-generated by `uip maestro flow init` and regenerated by `uip maestro flow debug` before upload. Manual edits will be overwritten.
+`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). Preserve its lifecycle-generated contents; project scaffolding creates it, and the Flow lifecycle regenerates it before execution or publication.
 
 Flow input and output parameters are declared through **variables** in the `.flow` file:
 - **Flow inputs**: Add entries to `variables.nodes[]` whose `binding.nodeId` is the start node and whose `binding.outputId` names each input value — the start node "outputs" input values to downstream nodes

@@ -18,15 +18,17 @@ run_limits:
 initial_prompt: |
   I want an OpenAI Agents UiPath coded agent called `triage-agent` that
   sits in front of two specialists. A triage agent reads the customer's
-  message and hands off to a billing agent for invoice and payment
-  questions, or to a technical agent for product and feature questions.
+  message and hands off to a `billing-agent` for invoice and payment
+  questions, or to a `technical-agent` for product and feature questions.
   All three should run on the UiPath LLM gateway, not the public OpenAI
   API.
 
   Register the triage agent's factory as the entry point under the key
   `agent`. It should also take the customer's ID as typed context
-  alongside their message — model that context as a `CustomerInput` — so
-  the specialists know who they're helping.
+  alongside their message — model that context as a `CustomerInput`
+  with a single `customer_id` field (the message itself travels as the
+  standard `messages` input, not inside the context) — so the
+  specialists know who they're helping.
 
   Build it end-to-end, and before you call it done, run it locally on a
   sample billing question to confirm the handoff actually fires.

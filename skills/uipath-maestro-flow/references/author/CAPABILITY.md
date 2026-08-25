@@ -8,7 +8,9 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 ## When to use this capability
 
+<!--skill-flavor:project-creation-scope:start-->
 - Create a new Flow project with `uip maestro flow init`
+<!--skill-flavor:project-creation-scope:end-->
 - Edit a `.flow` file — adding nodes, edges, or logic
 - Explore available node types via the registry
 - Validate a Flow file locally
@@ -66,7 +68,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 6. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <node-type>` output. Never hand-write definitions. The definition is the sole source for BPMN type (`model.type`), serviceType, event definitions, and binding/context templates — none of that belongs on the instance.
 7. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
 8. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete. Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
-9. **Manage variables with `Edit` against the `.flow` file** — there are no CLI commands for variable management. Use `Edit` to add/remove/update entries in the `variables` section of the `.flow` file. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).
+9. **Author variables with `Edit` against the `.flow` file** — use `Edit` to add/remove/update entries in the `variables` section. `variables.variableUpdates` is `Edit`-only; there is no CLI command for it. Globals do have a CLI surface (`uip maestro flow variable add|list|remove`), but it is scoped to declaring eval inputs — see [shared/variables-and-expressions.md](../shared/variables-and-expressions.md#variable-management-via-cli).
 10. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).
 11. **`=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference in a value field** — not on condition expressions (decision, switch, HTTP branch), which are auto-evaluated as JS. Without it, the BPMN runtime sees a literal string and `flow validate` fails with MST-9107. See [shared/node-output-wiring.md](../shared/node-output-wiring.md) for the canonical rule and per-node-type field reference, and [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) for the expression system.
 12. **Always run `flow format` after edits** — `uip maestro flow format <ProjectName>.flow` is the canonical layout step. Format arranges nodes horizontally, sets each node's `size` by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96), and recurses into subflows (`subflows[<id>].layout`). Skipping format is the most common cause of misshapen nodes in Studio Web.
@@ -115,7 +117,9 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 
 ## Anti-patterns
 
+<!--skill-flavor:project-creation-antipatterns:start-->
 - **Prefer running `uip maestro flow init` from inside the solution you named** — run outside one it auto-scaffolds `<Project>Solution/`, but the auto name won't match your chosen solution name. Never pass `--skip-solution-registration` for a project you intend to upload (it leaves a bare single-nested layout). See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal) for the required double-nested `<Solution>/<Project>/<Project>.flow` layout and the self-check.
+<!--skill-flavor:project-creation-antipatterns:end-->
 - **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
 - **Never guess the value or format of a business output** — when a request names an output (`caseKey`, `ticketId`, `severity`, …) without saying how to derive it, elicit the rule ([SKILL.md rule #5](../../SKILL.md#critical-rules-universal)) or confirm your assumption before building. Inventing a format — e.g. prefixing an id that should pass through unchanged — yields a flow that passes `flow validate` but returns the wrong business outcome at runtime. See rule #17 above.
 - **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.

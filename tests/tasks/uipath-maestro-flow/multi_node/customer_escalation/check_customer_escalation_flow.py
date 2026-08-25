@@ -27,12 +27,13 @@ from __future__ import annotations
 
 import glob
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
-
-FLOW_GLOB = "CustomerEscalation/CustomerEscalation/CustomerEscalation.flow"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.flow_check import find_project_dir  # noqa: E402
 
 
 def fail(msg: str) -> NoReturn:
@@ -40,9 +41,22 @@ def fail(msg: str) -> NoReturn:
 
 
 def load_flow() -> dict[str, Any]:
-    matches = glob.glob(FLOW_GLOB)
+    # Discover the Flow project rather than hardcoding
+    # `CustomerEscalation/CustomerEscalation/CustomerEscalation.flow`: the prompt
+    # names only the FLOW ('a Maestro Flow called "CustomerEscalation"'), never
+    # the enclosing solution, and the two names are independent — `uip solution
+    # init <S> && cd <S> && uip maestro flow init <F>` yields `<S>/<F>/<F>.flow`
+    # for any <S>, while a bare `uip maestro flow init <F>` auto-scaffolds
+    # `<F>Solution/<F>/<F>.flow`. A path-pinned glob graded the solution name,
+    # an unstated requirement: skill-flow-customer-escalation scored 0.0 on this
+    # criterion with a fully valid flow at
+    # `CustomerEscalationSolution/CustomerEscalation/CustomerEscalation.flow`.
+    # Mirrors the discovery in `_shared/validate_flow.py`, so this criterion and
+    # the validate criterion address the same file.
+    project_dir = find_project_dir()
+    matches = sorted(glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True))
     if not matches:
-        fail(f"No flow file matching {FLOW_GLOB}")
+        fail(f"No .flow file found under {project_dir}")
     path = Path(matches[0])
     try:
         return json.loads(path.read_text())

@@ -3,7 +3,8 @@
 ## Missing diagram
 
 Studio Web import rejects BPMN without a valid diagram and plane.
-Add `bpmndi:BPMNDiagram`, `bpmndi:BPMNPlane`, shapes for nodes, and edges for sequence flows.
+Run `uip maestro bpmn format <file.bpmn>` to generate the full diagram.
+If CLI unavailable: add `bpmndi:BPMNDiagram`, `bpmndi:BPMNPlane`, shapes for nodes, and edges for sequence flows manually.
 
 ## Orphaned diagram plane
 
@@ -12,7 +13,9 @@ Point the plane to a valid element or remove the orphaned diagram.
 
 ## Missing shape or waypoint
 
-Rendered elements without BPMN DI may parse but fail to render correctly. Add bounds for nodes and waypoints for edges.
+Rendered elements without BPMN DI may parse but fail to render correctly.
+Run `uip maestro bpmn format <file.bpmn>` to regenerate all shapes and waypoints.
+If CLI unavailable: add bounds for nodes and waypoints for edges manually.
 
 ## Entry point mismatch
 
@@ -45,7 +48,7 @@ The model may adjust BPMN structure around the connector but must not invent con
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
-Regenerate package metadata and verify package descriptor content before upload or deploy.
+Run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to identify drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate before upload or deploy.
 
 Signs:
 

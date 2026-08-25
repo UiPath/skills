@@ -32,8 +32,8 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 Before doing any work, check `.claude/rules/project-context.md` in the project directory:
 
 - **Exists and fresh** → proceed with the skill workflow.
-- **Missing (with a `project.json`) or stale** → run the discovery flow. The staleness check (metadata-comment counts vs current counts, 60–70% threshold), the discovery-agent spawn options per host, and the output-file contract (`.claude/rules/project-context.md` + `AGENTS.md` markers): [environment-setup.md § Project Context Discovery](references/environment-setup.md). **Dispatch discovery AT MOST ONCE per session** — if a discovery agent is already running or its context document was already produced, reuse that result; a later step that calls for "project-context discovery" means INTEGRATE the earlier dispatch, never spawn a second.
-- **Greenfield (no `project.json`)** → skip the discovery agent; after the build completes, write both context files yourself per the same section.
+- **Missing or stale** → run the skip gate, then — only if it does not trip — the discovery flow, both per [environment-setup.md § Project Context Discovery](references/environment-setup.md): the staleness check (metadata-comment counts vs current counts, 60–70% threshold), the skip gate (greenfield / empty project / untouched scaffold — nothing to discover yet), the discovery-agent spawn options per host, and the handling of the agent's `context-files:` / `SKIP:` status lines (the agent writes the context files itself — do NOT re-read or rewrite them). **Dispatch discovery AT MOST ONCE per session** — if a discovery agent is already running or its context document was already produced, reuse that result; a later step that calls for "project-context discovery" means INTEGRATE the earlier dispatch, never spawn a second.
+- **Skip gate tripped (greenfield / empty / untouched scaffold)** → no discovery agent and no context files now; after the build completes, write both context files yourself per the same section.
 
 ## Step 0: Resolve PROJECT_DIR
 

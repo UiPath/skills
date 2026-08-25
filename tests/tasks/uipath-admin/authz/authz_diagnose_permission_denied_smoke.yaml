@@ -1,0 +1,112 @@
+task_id: skill-admin-permission-denied-check-access-smoke
+description: >
+  Diagnose smoke (outcome-graded): agent investigates an HTTP 403 for members of
+  a built-in directory group by resolving the group, running the effective-access
+  (PDP) evaluation on it, and looking the governing permission up in the catalog.
+  Graded on both tenant read-backs plus an llm_judge on the conclusion — not on
+  the command string. Validates the diagnostic workflow from
+  references/diagnose/references/troubleshooting-guide.md Steps 3 and 3b.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, authz, permission-denied]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Users in the built-in "Everyone" group report HTTP 403 when they open the
+  Administration page on this tenant. Diagnose it:
+
+  - Determine what that group can effectively do, and save the raw JSON output
+    of the access check verbatim to ./access.json.
+  - Find the permission definition that governs viewing the Administration page
+    and save the catalog result to ./permission.json.
+
+  Then tell me whether that group actually carries the permission and what
+  would have to change to fix the 403.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "access.json holds a real effective-access decision retrieved from the PDP for the group"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('access.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'check-access not successful: Result={res}'
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      allkeys = [k.lower().replace('_', '') for k in keys(d)]
+      assert any('roleassignment' in k for k in allkeys), 'no RoleAssignments field in the saved decision'
+      assert any('granted' in k and 'metadata' in k for k in allkeys), 'no Granted*Metadata — not a real effective-access decision'
+      print('OK: effective-access decision retrieved for the group')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "permission.json holds the Administration Page permission definition read back from the catalog"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('permission.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      hit = next((x for x in dicts(d) if (x.get('Name') or '') == 'CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW'), None)
+      assert hit, 'CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW not present in the saved catalog result'
+      assert (hit.get('ScopeType') or '').upper() == 'TENANT', 'permission record is missing its TENANT ScopeType — not a real catalog record'
+      print('OK: Administration Page permission definition retrieved from the catalog')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent states whether the group carries the Administration Page permission and what grant would fix the 403"
+    include_agent_output: true
+    prompt: |
+      The agent investigated an HTTP 403 hitting members of the built-in
+      "Everyone" directory group when they open the Administration page. The
+      permission governing that page is
+      CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW (Tenant scope).
+
+      A correct diagnosis is grounded in the effective-access data the agent
+      retrieved for that group: it states whether the group's effective roles do
+      or do not carry the Administration Page permission, and names the fix —
+      assigning the group a role that grants that permission (at tenant scope).
+
+      Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response states whether the group has the permission
+        (based on the retrieved access decision) AND identifies the remediation
+        as granting a role carrying the Administration Page view permission.
+        Naming the permission is not required, but any permission it does name
+        as the governing one must be CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW.
+      Score 0.5 if it reports the group's effective access but gives no
+        actionable remediation, or names a fix without grounding it in the
+        retrieved decision, or names some other permission (e.g.
+        OMS.ORGANIZATION.READ) as the one governing the Administration page —
+        a wrong permission makes the remediation unactionable.
+      Score 0.0 if it misdiagnoses (blames licensing, network, or the user's
+        password), reports nothing about the group's access, or never concludes.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Advisory (recorded, not gated): the diagnosis should be read-only — no role or assignment mutations"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:create|update|delete|assignments\s+(?:create|delete))\b'
+    weight: 1.0
+    pass_threshold: 0
