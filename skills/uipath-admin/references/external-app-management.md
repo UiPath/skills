@@ -1,30 +1,33 @@
 # External App Management
 
-Workflows for managing OAuth2 external clients via `uip admin external-apps`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#external-apps--uip-admin-external-apps).
+Workflows for OAuth2 external clients via `uip admin external-apps`. See [identity-commands.md](identity-commands.md#external-apps--uip-admin-external-apps) for full syntax and flags.
 
-External apps provide Client ID + Secret credentials for API integrations, CI/CD pipelines, and external systems.
+External apps provide Client ID and Secret credentials for API integrations, CI/CD, and external systems. **They are not robot credentials.** See [SKILL.md — Robot Accounts vs External Apps](../SKILL.md#robot-accounts-vs-external-apps).
 
-> **External apps are NOT robot credentials.** See [SKILL.md — Robot Accounts vs External Apps](../SKILL.md#robot-accounts-vs-external-apps).
+## Scopes and Grant Types
 
-## Scope Types
+Run `uip admin scopes list --output json` to discover valid scopes.
 
-`--app-scope` grants permissions to the app itself (client_credentials flow). `--user-scope` delegates user permissions through the app (authorization_code flow). Discover available scopes: `uip admin scopes list --output json`
+- `--app-scope` grants app permissions for `client_credentials` (for example, `uip login --client-id`).
+- `--user-scope` delegates user permissions for the `authorization_code` browser flow.
+- Apps may have both, but each grant must use its matching scopes. Requesting user scopes through `client_credentials` fails with `not allowed to access User scopes`.
 
-## Workflow: Create a Confidential App (Server-Side)
+## Create an External App
 
-1. Check for duplicates: `uip admin external-apps list --output json`
-2. Create with app scopes:
+### Confidential app (server-side)
+
+1. Check for duplicates by running `uip admin external-apps list --output json`.
+2. Run:
    ```bash
    uip admin external-apps create "<APP_NAME>" \
      --app-scope "OR.Folders,OR.Assets,OR.Jobs" \
      --output json
    ```
-3. **Save the response immediately.** It contains `id` (Client ID) and `secret` (Client Secret — shown only once).
+3. Save the response immediately: `id` is the Client ID and `secret` is the Client Secret, shown only once.
 
-## Workflow: Create a Public App (SPA/Mobile)
+### Public app (SPA/mobile)
 
-Non-confidential apps have no client secret. Require `--redirect-uri` and only support `--user-scope`. Do NOT use `--app-scope` with `--non-confidential` — the CLI will reject it. If user wants app-only scopes, create a confidential app (default) instead.
-
+Run:
 ```bash
 uip admin external-apps create "<APP_NAME>" \
   --non-confidential \
@@ -33,8 +36,11 @@ uip admin external-apps create "<APP_NAME>" \
   --output json
 ```
 
-## Workflow: Create App with Both Scope Types
+Public apps have no client secret, require `--redirect-uri`, and support only `--user-scope`. Do not use `--app-scope` with `--non-confidential`; create a confidential app for app-only scopes.
 
+### App with both scope types
+
+Run:
 ```bash
 uip admin external-apps create "<APP_NAME>" \
   --app-scope "OR.Folders,OR.Jobs" \
@@ -43,25 +49,23 @@ uip admin external-apps create "<APP_NAME>" \
   --output json
 ```
 
-Apps with `--user-scope` require `--redirect-uri` for OAuth2 authorization code flow.
+Any app with `--user-scope` requires `--redirect-uri` for authorization-code flow.
 
-> **Scope types are tied to grant types.** `client_credentials` grant (non-interactive, e.g., `uip login --client-id`) can only access app scopes. `authorization_code` grant (interactive browser flow) can only access user scopes. An app with both scope types registered works — but each grant type can only use its matching scopes. Requesting user scopes via client_credentials will fail with "not allowed to access User scopes".
+## Secrets
 
-## Workflow: Generate/Delete Secrets
-
-Generate (value shown only once):
+Run the following to generate a secret; its value is shown only once:
 ```bash
 uip admin external-apps generate-secret <CLIENT_ID> --description "Rotated secret" --expiration "2027-06-01" --output json
 ```
 
-Delete (only secret ID needed — confirm with user first):
+Confirm with the user first, then run the following to delete a secret; only the secret ID is required:
 ```bash
 uip admin external-apps delete-secret <SECRET_ID> --output json
 ```
 
-## Workflow: Update an External App
+## Update an External App
 
-At least one field required. Scopes are **replaced, not merged** — provide complete list.
+Provide at least one update flag. Scopes are replaced, not merged; provide the complete list.
 
 ```bash
 uip admin external-apps update <CLIENT_ID> \
@@ -70,19 +74,20 @@ uip admin external-apps update <CLIENT_ID> \
   --output json
 ```
 
-## Workflow: Delete an External App
+Valid update fields are `--name`, `--app-scope`, `--user-scope`, and `--redirect-uri`.
 
-Confirm with user first — this revokes all secrets and access.
+## Delete an External App
 
+Confirm with the user first; deletion revokes all secrets and access. Then run:
 ```bash
 uip admin external-apps delete <CLIENT_ID> --output json
 ```
 
 ## Federated Credentials
 
-Enable workload identity federation with external identity providers (GitHub Actions, Azure AD) — authenticate without client secrets.
+Use workload identity federation with external identity providers such as GitHub Actions or Azure AD to authenticate without client secrets.
 
-### Create a Federated Credential
+### Create
 
 ```bash
 uip admin external-apps federated-credentials create <CLIENT_ID> \
@@ -93,15 +98,15 @@ uip admin external-apps federated-credentials create <CLIENT_ID> \
   --output json
 ```
 
-### List Federated Credentials
+### List
 
 ```bash
 uip admin external-apps federated-credentials list <CLIENT_ID> --output json
 ```
 
-### Update a Federated Credential
+### Update
 
-All fields are required on update (full replace):
+All fields are required; updates are full replacements.
 
 ```bash
 uip admin external-apps federated-credentials update <CLIENT_ID> <CREDENTIAL_ID> \
@@ -112,31 +117,29 @@ uip admin external-apps federated-credentials update <CLIENT_ID> <CREDENTIAL_ID>
   --output json
 ```
 
-### Delete a Federated Credential
+### Delete
 
-Confirm with user before deleting.
-
+Confirm with the user first, then run:
 ```bash
 uip admin external-apps federated-credentials delete <CLIENT_ID> <CREDENTIAL_ID> --output json
 ```
 
-## Using Credentials for Authentication
+## Authenticate with an External App
 
-After creating an external app, use Client ID and Secret for non-interactive login:
-
+Run this for non-interactive login:
 ```bash
 uip login --client-id "<CLIENT_ID>" --client-secret "<CLIENT_SECRET>" --tenant "<TENANT_NAME>" --output json
 ```
 
-Used by: CI/CD pipelines, external API integrations, service-to-service calls, automated scripts.
+Use it for CI/CD pipelines, external API integrations, service-to-service calls, and automated scripts.
 
 ## Error Handling
 
 | Error | Cause | Fix |
-|-------|-------|-----|
+|---|---|---|
 | `already exists` | App name taken | Choose a unique name |
 | `No fields to update` | No update flags provided | Provide `--name`, `--app-scope`, `--user-scope`, or `--redirect-uri` |
-| `not found` | Invalid client ID | Run `external-apps list` to find correct ID |
+| `not found` | Invalid client ID | Run `external-apps list` to find the correct ID |
 | `scope not found` | Invalid scope name | Run `uip admin scopes list` to find valid scopes |
-| Non-confidential + `--app-scope` | Public apps can't use app scopes | Use `--user-scope` only |
-| User scopes without redirect URI | OAuth2 auth code flow needs redirect | Add `--redirect-uri` |
+| Non-confidential + `--app-scope` | Public apps cannot use app scopes | Use `--user-scope` only |
+| User scopes without redirect URI | Authorization-code flow requires redirect | Add `--redirect-uri` |
