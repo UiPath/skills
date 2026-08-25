@@ -4,7 +4,8 @@ description: >
   the full loop: bulk-create 6 contract records in ContractRegistry with
   priority-based logic, sort-query for the highest-priority record,
   filter-query for urgent contracts, update a targeted record, then delete
-  all 6 as cleanup.
+  all 6 as cleanup. Static-validate only; runtime `flow debug` skipped to
+  avoid live tenant side effects (6 real records per eval run).
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:

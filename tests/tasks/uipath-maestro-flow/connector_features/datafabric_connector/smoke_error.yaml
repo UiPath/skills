@@ -45,3 +45,10 @@ success_criteria:
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
+  - type: run_command
+    description: "Create targets NonExistentEntity; Queries target FlowCodeEvalEntity"
+    command: "python3 $TASK_DIR/check_smoke_error.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

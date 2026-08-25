@@ -18,16 +18,20 @@ broken environment.
 import json
 import subprocess
 import sys
+import time
 
 
-def uip_json(*args):
-    r = subprocess.run(["uip", *args, "--output", "json"],
-                       capture_output=True, text=True)
-    if r.returncode != 0:
-        print(f"FAIL: uip {' '.join(args)}\n{r.stderr[:800] or r.stdout[:800]}",
-              file=sys.stderr)
-        sys.exit(r.returncode)
-    return json.loads(r.stdout)
+def uip_json(*args, retries=1):
+    for attempt in range(retries):
+        r = subprocess.run(["uip", *args, "--output", "json"],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            return json.loads(r.stdout)
+        if attempt < retries - 1:
+            time.sleep(2)
+    print(f"FAIL: uip {' '.join(args)}\n{r.stderr[:800] or r.stdout[:800]}",
+          file=sys.stderr)
+    sys.exit(r.returncode)
 
 
 def main():
@@ -35,14 +39,16 @@ def main():
         print("usage: ensure_entity.py <definition.json>", file=sys.stderr)
         sys.exit(2)
     def_path = sys.argv[1]
-    body = json.load(open(def_path))
+    with open(def_path) as f:
+        body = json.load(f)
     name = body.get("name") or body.get("displayName") or body.get("Name")
     if not name:
         print("FAIL: definition JSON must include `name` or `displayName`", file=sys.stderr)
         sys.exit(2)
 
     existing = uip_json("df", "entities", "list", "--include-folders",
-                        "--output-filter", f"[?Name=='{name}'].Id")
+                        "--output-filter", f"[?Name=='{name}'].Id",
+                        retries=3)
     if existing.get("Data"):
         print(f"OK: entity {name!r} already exists ({existing['Data'][0]})")
         return

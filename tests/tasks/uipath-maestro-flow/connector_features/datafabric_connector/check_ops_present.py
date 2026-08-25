@@ -11,7 +11,8 @@ import glob, json, sys
 if len(sys.argv) < 3:
     print("usage: check_ops_present.py <entity> <op-suffix>...", file=sys.stderr); sys.exit(2)
 
-entity, *ops = sys.argv[1], *sys.argv[2:]
+entity = sys.argv[1]
+ops = sys.argv[2:]
 required = {f".{op}" for op in ops}
 
 for path in glob.glob("**/*.flow", recursive=True):

@@ -3,6 +3,8 @@ description: >
   Integration test for the UiPath Data Fabric connector in Maestro Flow.
   Covers Create + Get round-trip on FlowCodeEvalEntity (C-01) and
   expansionLevel comparison across levels 1, 2, and 3 (C-02).
+  Static-validate only; runtime `flow debug` skipped to avoid live tenant
+  side effects.
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:
