@@ -1,0 +1,54 @@
+task_id: skill-api-workflow-log-message
+description: >
+  Build: author Studio Web-native Log Message activities for all three levels and
+  a dynamic workflow-input message. Grades the native `LogMessage` shape, its
+  side-effect-only semantics, durable input scope, and the narrowly tolerated
+  validator lag instead of accepting a JsInvoke or `CustomLog` substitute.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+sandbox:
+  python: {}
+
+run_limits:
+  expected_turns: 14
+  max_turns: 30
+
+initial_prompt: |
+  Create an API workflow project `OrderLogger` with a string input `SomeString`.
+  Add native Log Message activities for Info `Order received`, Warning `Manual
+  review required`, Error `Order processing failed`, and a dynamic Info message
+  containing the value of `SomeString`.
+
+  Validate it. Keep the workflow Studio Web-native and do not run it.
+
+success_criteria:
+  - type: run_command
+    description: "Native Log Message cards have the exact level, metadata, scope, and no-output shape"
+    command: "python3 $TASK_DIR/check_log_message.py structure"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Validation is green or fails only for the known native LogMessage allowlist lag"
+    command: "python3 $TASK_DIR/check_log_message.py validation"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the API Workflow static validator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent respected the request not to execute the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    weight: 1.0
+    pass_threshold: 1.0
