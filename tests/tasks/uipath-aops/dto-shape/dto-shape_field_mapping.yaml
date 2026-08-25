@@ -76,6 +76,12 @@ success_criteria:
   - type: file_contains
     description: "DTO uses camelCase input keys, not the PascalCase of CLI output"
     path: "pipeline.json"
+    includes:
+      - '"connectionIdentifier"'
+      - '"repositoryId"'
+      - '"repositoryType"'
+      - '"projectName"'
+      - '"processIdentifier"'
     excludes:
       - '"RepositoryId"'
       - '"RepositoryType"'
@@ -87,8 +93,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "DTO omits server-assigned fields"
+    description: "DTO carries the source binding but omits server-assigned fields"
     path: "pipeline.json"
+    includes:
+      - '"projectPath"'
     excludes:
       - '"latestPipelineExecution"'
     weight: 1.0

@@ -35,7 +35,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent loaded the uipath-aops skill"
     skill_name: "uipath-aops"
-    expected: "yes"
+    expected_skill: "uipath-aops"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -92,6 +92,10 @@ success_criteria:
   - type: file_contains
     description: "Composed DTO uses camelCase input keys, not the PascalCase of CLI output"
     path: "pipeline.json"
+    includes:
+      - '"connectionIdentifier"'
+      - '"repositoryId"'
+      - '"branch"'
     excludes:
       - '"RepositoryType"'
       - '"ProjectName"'

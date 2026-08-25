@@ -73,6 +73,8 @@ success_criteria:
   - type: file_contains
     description: "DTO does NOT use the SourceControl internal UUID for repositoryId"
     path: "pipeline.json"
+    includes:
+      - '"repositoryId"'
     excludes:
       - '"repositoryId": "ffcefc70-dcfe-4bbb-89f5-08de956e99e9"'
     weight: 3.0
@@ -91,6 +93,8 @@ success_criteria:
   - type: file_contains
     description: "DTO did not borrow ids from the second repository row"
     path: "pipeline.json"
+    includes:
+      - '"connectionIdentifier": "24efc94e-ffd6-43a7-56ae-08de956e94fd"'
     excludes:
       - '1063999812'
       - '1afdd97c-1c57-4288-89f6-08de956e99e9'
