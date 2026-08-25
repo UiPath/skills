@@ -4,7 +4,7 @@ description: >
   license-allocation rules across the account, with pagination flags, and
   saves the full CLI response to `rules.json`. Verifies the file is written
   and captures the response envelope. CLI auth failure is expected offline.
-tags: [uipath-platform, smoke, licensing, groups]
+tags: [uipath-platform, smoke, licensing, groups, mode:operate, lifecycle:discover]
 
 initial_prompt: |
   List the group license-allocation rules in this account. Sort them by name

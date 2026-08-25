@@ -4,7 +4,7 @@ description: >
   group's license-rule details — who in the group holds which bundle — and
   saves the full CLI response to `details.json`. Verifies the file is written
   and captures the response envelope. CLI auth failure is expected offline.
-tags: [uipath-platform, smoke, licensing, groups]
+tags: [uipath-platform, smoke, licensing, groups, mode:operate, lifecycle:discover]
 
 initial_prompt: |
   Who in the "RPA Developers" group currently holds which license bundle?
