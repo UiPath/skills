@@ -34,9 +34,8 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
-SHARED_DIR = Path(__file__).resolve().parents[2] / "_shared"
-sys.path.insert(0, str(SHARED_DIR))
-from flow_check import find_flow_file  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 FLOW_GLOB = "**/SpotifyProfileTest*.flow"
 # The generic HTTP connector — the only managed path to a service with no
