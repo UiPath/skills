@@ -1,14 +1,17 @@
 task_id: skill-gov-aops-policy-deployed-s2s-mode-smoke
 description: >
-  Smoke test (outcome-graded): the user wants the tenant-level policy only, bypassing user
-  and group overrides. On `deployed-policy get` that is the `--tenant-only` mode, which needs
-  an S2S bearer token (`UIP_S2S_TOKEN`) the sandbox does not have. The skill must recognise
-  the S2S requirement instead of faking it, and fall back to the explicit tenant assignment
-  (`deployment tenant get` / `tenant list`). Graded on the fallback record being this tenant's own, on the
-  explanation naming the S2S limitation, and on nothing being deployed. The sandbox shares the
-  runner's `uip` login, so the prompt forbids — and guards assert — any attempt to mint a token
-  by re-logging in as another identity or registering an external application.
-tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployed-policy]
+  Integration test (outcome-graded, error path): the user wants the tenant-level policy only,
+  bypassing user and group overrides. On `deployed-policy get` that is the `--tenant-only`
+  mode, which needs an S2S bearer token (`UIP_S2S_TOKEN`) the sandbox does not have. The skill
+  must recognise the S2S requirement instead of faking it, and fall back to the explicit tenant
+  assignment (`deployment tenant get` / `tenant list`). Graded on the fallback record being this
+  tenant's own, on the explanation naming the S2S limitation, and on nothing being deployed. The
+  sandbox shares the runner's `uip` login, so the prompt forbids — and guards assert — any attempt
+  to mint a token by re-logging in as another identity or registering an external application.
+  Integration tier (nightly, not the PR smoke gate): the agent's route to the answer legitimately
+  varies (tenant get vs list, reading CLI help), which is expected for an error-path scenario but
+  too path-variant for a 16-task PR gate with a 95% bar.
+tags: [uipath-governance, integration, mode:diagnose, lifecycle:discover, aops-policy, deployed-policy]
 
 run_limits:
   expected_turns: 16
