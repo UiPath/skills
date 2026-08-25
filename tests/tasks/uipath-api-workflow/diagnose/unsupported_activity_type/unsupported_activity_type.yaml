@@ -1,0 +1,123 @@
+task_id: skill-api-workflow-diagnose-unsupported-activity-type
+description: >
+  Diagnose (closed activityType allowlist): the workflow uses a native pre-condition
+  `while` loop. The executor runs it correctly, but `validate` rejects it with a single
+  `Unknown activityType 'While'` — the authorable set is narrower than the runtime, so a
+  workflow that runs locally can still be unshippable.
+
+  Covers the allowlist entry this PR adds to references/troubleshooting.md. The documented
+  substitution is `DoWhile`, which tests its condition AFTER each iteration, so a faithful
+  conversion needs the body wrapped in an `If` whose `#Else` exits via `Break`. Grading does
+  not mandate that exact shape — it requires a loop (`DoWhile` or `ForEach`) to survive, so an
+  equivalent iterative conversion also scores. Deleting the loop and returning the input
+  directly is what the loop criterion exists to catch: it otherwise passes everything else.
+
+  `count: 0` is the discriminating input and is graded at the highest weight. A naive
+  rename of `while` to `doWhile` validates and passes the non-zero cases, but returns
+  `seen: 1` for zero because DoWhile always executes once — verified against exactly that
+  variant.
+
+  The fixture's only fault is the allowlist: it runs and returns the right `seen` for
+  every graded input, `count: 0` included, so the sole reason to change it is that it
+  cannot ship. Reaching that required guarding the loop's `output.as` with optional
+  chaining — with a zero-iteration body `$context.outputs` is undefined as a whole, so a
+  bare `$context.outputs.While_1` throws. Reference fix (DoWhile + `If`/`#Else` `Break`)
+  verified `Valid` and returning `seen` 0 / 3 / 5 on the three graded inputs.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py unsupported_activity_type"
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json counts up to a numeric `count` input and returns
+  how many iterations it performed as `seen`. It currently fails validation.
+
+  Fix it so it validates and still behaves correctly — including `count: 0`, which must
+  perform no iterations at all.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place, not replaced wholesale"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
+      reading the file is equally valid, and agents legitimately do that)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: count 0 performs NO iterations — the case a naive DoWhile swap fails"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"count":0}'
+      --output json | grep -qiE '"seen":[ ]*0'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A real loop survives the fix — the count is computed by iterating, not echoed
+      straight from the input (a workflow with the loop deleted passes every other criterion)"
+    command: >-
+      python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
+      sys.exit(0 if ('\"activityType\": \"DoWhile\"' in t or '\"activityType\": \"ForEach\"' in t)
+      else 'no loop activity left in the workflow')"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No unsupported activityType remains in the workflow"
+    command: >-
+      python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
+      sys.exit('While activityType still present' if '\"activityType\": \"While\"' in t else 0)"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: count 3 performs three iterations"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"count":3}'
+      --output json | grep -qiE '"seen":[ ]*3'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: count 5 — not hardcoded"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"count":5}'
+      --output json | grep -qiE '"seen":[ ]*5'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

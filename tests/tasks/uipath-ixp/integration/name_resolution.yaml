@@ -5,7 +5,7 @@ description: >
   DocumentId via `documents list`, and a project by its TITLE → Name via
   `projects list` — rather than passing the human label straight through. The
   resolution step is the integration part; smokes pass the id in the prompt.
-tags: [uipath-ixp, integration, mode:operate]
+tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
 
 run_limits:
   max_turns: 48

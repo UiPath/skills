@@ -1,0 +1,57 @@
+task_id: skill-admin-oms-services-available-by-region-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — "what could we provision in
+  this region?" The provisionable catalog is region-keyed, so the agent has to
+  resolve the organization's region before it can ask. Graded on the catalog the
+  platform returned: rows carry the service name and the regions each service
+  supports, and the region asked about is among them.
+
+  Distinct from oms_list_tenant_services_smoke, which reads what is ALREADY
+  provisioned on a tenant. Read-only — nothing is provisioned or removed.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms, service-provisioning]
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  Before we plan a new tenant, I want to know which services we could provision in
+  the region my organization lives in. Work out that region, then retrieve the
+  catalog of services available there and save the complete JSON result to
+  ./available-services.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "available-services.json holds the platform's provisionable catalog for the organization's own region"
+    command: |
+      python3 -c "
+      import json, subprocess
+      saved = json.load(open('available-services.json', encoding='utf-8-sig'))
+      res = saved.get('Result') if isinstance(saved, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      org = json.loads(subprocess.run(['uip','admin','organizations','get','--output','json'], capture_output=True, text=True).stdout)['Data']
+      region = str(org.get('Region'))
+      rows = [x for x in dicts(saved) if x.get('Name') and 'SupportedRegions' in x]
+      assert len(rows) >= 10, f'only {len(rows)} catalog rows — a real provisionable catalog returns dozens'
+      supporting = [r for r in rows if region in (r.get('SupportedRegions') or [])]
+      assert supporting, f'no catalog row supports the organization region {region!r} — the catalog was not read for that region'
+      assert any(r.get('ProvisioningMode') or r.get('Entitlement') for r in rows), 'rows carry no provisioning metadata — not the available-services catalog'
+      print(f'OK: {len(rows)} provisionable services retrieved, {len(supporting)} available in {region}')
+      "
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Reading the catalog must not provision or remove a service"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+services\s+(?:add|remove|enable|disable)\b'
+    weight: 2.0

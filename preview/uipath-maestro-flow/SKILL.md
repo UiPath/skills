@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ fd0070d. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ b384859. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -14,19 +14,20 @@ This file is deliberately a router. Node-specific detail belongs in
 
 # UiPath Flow — TypeScript Builder SDK
 
-Author a Flow as TypeScript that builds a graph. Use builder calls for runtime
-control flow and expression helpers for runtime data; native TypeScript control
-flow runs only while the graph is being constructed.
+UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/flow-sdk` package.
+The SDK provides a builder API to construct a Flow graph, allowing developers to define inputs, outputs, steps, and control flow in a type-safe manner.
+The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform.
+An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 ## Project layout
 
-The workspace installs `@uipath/flow-sdk` in `node_modules/`; `examples/`
-contains authored examples, and `references/` contains the details routed from
-this guide. Author a root-level `<Name>.flow.ts` and import the package directly.
-Connector flows also use a root-level
-[`bindings.json`](references/bindings.md). Prepared connector modules live at
-`connectors-local/<key>.ts`; their descriptor data is kept separately below
-`connectors-local/descriptors/<key>/`.
+The workspace installs `@uipath/flow-sdk` in `node_modules/`; `examples/` contains authored examples, and `references/` contains the details routed from this guide.
+To author a Flow, create a root-level `<Name>.flow.ts` and import the package directly.
+Integrations with non-UiPath systems are handled through connectors.
+Connectors require a root-level [`bindings.json`](references/bindings.md).
+Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
+
+### Hello world Flow
 
 ```ts
 import { flow, script, input, out, types } from '@uipath/flow-sdk';
@@ -35,6 +36,10 @@ export default flow('hello').name('Hello')
   .step('greet', script({ code: 'return `Hello ${$vars.start.output.name}`;' }))
   .return({ greeting: out('greet') }).build();
 ```
+
+A script is a first-class Flow node; it runs inline JavaScript and returns a value.
+The `start` step is the default name for a "manual trigger", which carries the flow's inputs.
+A Flow can have outputs, which are returned to the caller when the flow completes successfully.
 
 ## Lifecycle
 

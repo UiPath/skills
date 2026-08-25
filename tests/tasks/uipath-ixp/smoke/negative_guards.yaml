@@ -7,7 +7,7 @@ description: >
   (Rule 8); marking-missing a field IXP predicted (Rule 12); passing
   the project Title instead of its Name (Rule 7). Agent ignores the
   hints. Criteria grade actual CLI invocations, not a self-report.
-tags: [uipath-ixp, smoke, lifecycle:execute]
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
   expected_turns: 11

@@ -179,6 +179,7 @@ Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Flow v2 builder-SDK preview skills | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -188,6 +189,20 @@ runner. The image build passes the package credential as
 `--secret id=npm_auth_token,env=NPM_AUTH_TOKEN`; the Dockerfile build-arg path
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
+
+`flow-v2-preview.yaml` runs the three `preview/uipath-maestro-{flow,case,bpmn}`
+builder-SDK skills as the ONLY skill catalog, shadowing the shipped v1 skills of
+the same name, so a run measures the Flow v2 authoring path rather than a mix of
+both generations. Narrowing `plugins.path` to `preview/` drops the automatic
+repo-root bind mount, so the root is remounted explicitly; the image also needs
+runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
+identical to `nightly.yaml`. Confirm that mount resolves before a full run, or
+every tenant call fails as a capability problem rather than a config one:
+
+```bash
+docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
+  --entrypoint bash skills-codex:latest -c 'uip login status'
+```
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 

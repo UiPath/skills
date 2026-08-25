@@ -34,10 +34,11 @@
  * Usage:
  *   node scripts/sync-version.mjs               # rewrite derived manifests
  *   node scripts/sync-version.mjs --check       # exit 1 if any are out of sync
+ *   node scripts/sync-version.mjs --list-paths  # print the files this script owns
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -59,6 +60,24 @@ const PATHS = {
   codexPlugin: join(ROOT, ".codex-plugin", "plugin.json"),
   cursorPlugin: join(ROOT, ".cursor-plugin", "plugin.json"),
 };
+
+// `--list-paths` prints every file this script owns -- the authoritative
+// package.json plus each derived manifest -- as one repo-relative POSIX path
+// per line, then exits.
+//
+// Release automation stages exactly this set, so adding a channel to PATHS is
+// picked up automatically instead of needing a matching edit to a hardcoded
+// `git add` list. Skipping that edit is what dropped
+// `.cursor-plugin/plugin.json` from the 1.201 sprint-cut commit and blocked
+// every publish channel (#2767).
+//
+// Keep stdout to the paths alone: this is consumed via command substitution.
+if (process.argv.includes("--list-paths")) {
+  for (const p of Object.values(PATHS)) {
+    console.log(relative(ROOT, p).split(sep).join("/"));
+  }
+  process.exit(0);
+}
 
 function readJson(p) {
   return JSON.parse(readFileSync(p, "utf-8"));

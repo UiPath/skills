@@ -1,0 +1,39 @@
+task_id: skill-admin-authz-roles-name-filter-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — find a custom role by name
+  when the organization holds many roles. Two marker roles are seeded in pre_run:
+  one whose name matches the search term and one that does not, so a listing that
+  ignores the filter fails the check. Graded on the rows the service returned —
+  every name matches the term and the intended role is present.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, role]
+
+pre_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 60
+  - command: 'AUTHZ_SEED_KEY="match" AUTHZ_ROLE_BASE="ce-authz-namefilter-payroll-viewer" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded match for the name-filter smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 60
+  - command: 'AUTHZ_SEED_KEY="decoy" AUTHZ_ROLE_BASE="ce-authz-namefilter-warehouse-viewer" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded non-match for the name-filter smoke" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 60
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-namefilter" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 60
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Someone created a payroll-related custom role in my UiPath organization and I
+  need its details. Find the roles whose name mentions "payroll" and save the
+  complete JSON result to ./payroll-roles.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "payroll-roles.json holds only roles matching the search term, including the seeded one"
+    command: 'AUTHZ_ROLE_FILE="payroll-roles.json" AUTHZ_EXPECT_CONTAINS="payroll" AUTHZ_REQUIRE_SEED_KEY="match" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_listing.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

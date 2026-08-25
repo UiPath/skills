@@ -26,9 +26,9 @@ Schema file format (passed verbatim as the body of `uip df entities create`):
     {
       "displayName": "Integration Orders",
       "fields": [
-        {"fieldName": "Code",   "type": "STRING"},
-        {"fieldName": "Value",  "type": "DECIMAL"},
-        {"fieldName": "Status", "type": "STRING"}
+        {"name": "Code",   "type": "STRING"},
+        {"name": "Value",  "type": "DECIMAL"},
+        {"name": "Status", "type": "STRING"}
       ]
     }
 
@@ -51,7 +51,7 @@ import sys
 from pathlib import Path
 
 
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 120
 UIP_LONG_TIMEOUT_SECONDS = 180  # entities create can be slow server-side
 
 
@@ -196,6 +196,7 @@ def wipe_records(entity_id: str) -> bool:
         del_code, _del_out, del_err = run_uip(
             "df", "records", "delete", entity_id, *ids,
             "--yes", "--reason", "brownfield-test pre/post-run wipe",
+            timeout=UIP_LONG_TIMEOUT_SECONDS,
         )
         if del_code != 0:
             print(f"WARN: uip df records delete batch failed (exit {del_code}): {del_err.strip()}", file=sys.stderr)

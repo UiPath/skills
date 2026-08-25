@@ -167,12 +167,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
-   If the user asks to package or operate, run
-   `uip maestro bpmn update-metadata <file.bpmn>` to generate the five package
-   metadata files. Only fall back to the minimal local metadata shape in
+   If the user asks for the package metadata files, or to package or operate,
+   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
+   files, and keep its output as written — that shape is the contract `pack`
+   consumes. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
-   when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
-   synthetic local project.
+   when the CLI is unavailable. Every root start event needs a
+   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
+   the project generates zero entry points.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
