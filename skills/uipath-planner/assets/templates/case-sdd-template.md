@@ -485,8 +485,7 @@ exactly at runtime, and the `--output json` envelope of `case spec` / `registry 
 object keys recursively (`request_body` -> `RequestBody`), so a name copied from those keys binds to a
 field the resource does not have. Casing not sourced from the user, the source document, or a build-time
 spec -> render the field as <UNRESOLVED> and pair it with a review item; never guess a convention.
-audit_sdd.py cross-checks every Section 2 read path against this list. Rule:
-case-design-layers-guide.md § Layer 3 (External names). -->
+Rule: case-design-layers-guide.md § Layer 3 (External names). -->
 
 ### API Workflows
 
@@ -624,8 +623,8 @@ will refer to; the rules themselves live at the cells above and in case-design-l
  Maps To · 6. Typed recipients, non-empty entry tables, forbidden vocabulary · 7. Structure (case-entered,
  ≥1 trigger, ≥1 Marks Case Complete, wait-for-user ↔ user-selected-stage, no duplicate case-exit rows)
  8. Precedence & liveness (unreachable stage, exit-overrides-completion, self-reference, vacuous
- required-*, SLA bounds) · 9. Field-name casing vs § Section 4 Output Fields · 10. Draft parity
- (--draft: inventory, =js: expressions, thresholds encoded executably)
+ required-*, SLA bounds) · 9. Draft parity (--draft: inventory, =js: expressions, thresholds encoded
+ executably)
 
 If no interpreter is available at all, the enforcement detail behind each family is in the cell rules
 above — every one of them must hold.

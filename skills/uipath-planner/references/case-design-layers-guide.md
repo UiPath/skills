@@ -309,7 +309,6 @@ A schema field name is an **external lookup key**, not a label: the runtime matc
 - **Carry the spelling, never derive it.** Copy the name from the user, the source document, or (at build time) the resource's own schema. Never re-case it, never convert between conventions, never make it match the case name or a neighbouring variable.
 - **Never read names off a `--output json` envelope.** `case spec` and `registry search` PascalCase object **keys** recursively (`request_body` → `RequestBody`, `poText` → `PoText`); the true names are the **values** under `Outputs.ResponseFields[].Name`. Wiring against the keys binds to fields the resource does not have and fails only after build — Studio Web reports *"RequestBody not found, did you mean request_body"*. Canonical statement of the trap, build side: the `uipath-maestro-case` skill, its registry-discovery reference, § "Do NOT read I/O field names from `Resource.{Inputs,Outputs}`".
 - **Unsourced casing is `<UNRESOLVED>`, not a guess.** Schema discovery is build work (§ lane guide § Tenant grounding) — so when a design needs a field whose exact spelling nothing in the conversation supplies, render the field as `<UNRESOLVED>` and pair it with a review item. A plausible-looking guess is the one outcome that cannot be caught downstream.
-- Enforced: `audit_sdd.py` fails any Section 2 read path whose spelling contradicts the Section 4 Output Fields list for the same field (separators and case both count).
 
 ### Binding-cell forms (task Inputs)
 
