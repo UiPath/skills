@@ -54,7 +54,7 @@ Save the response. The interesting parts:
 | `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — single `body` entry. Body holds `parameters` (from eventParameters) and/or `filters.expression` (compiled JMESPath) when authored |
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — `response` (with displayName like "Email Received") + `Error` |
 | `spec.outputs.responseFields[]` | `.Data.Outputs.ResponseFields` — connector-contract field names as dotted leaf paths, held in `Name` VALUES (which the serializer leaves intact). The authority for the payload output's `body.properties` keys, which the serializer damages |
-| `spec.inputs.*[]` | `.Data.Inputs.EventParameters` / `.BodyFields` / `.QueryParameters` / `.PathParameters` — same shape, the authority for `inputs[].body` keys. See [§ Pass 3 — restore contract keys](#pass-3--restore-contract-keys) for both |
+| `spec.inputs.*[]` | `.Data.Inputs.EventParameters` / `.BodyFields` / `.QueryParameters` / `.PathParameters` — same shape, the authority for `inputs[].body` keys. See [§ Step 6](#step-6--repair-spliced-keys) for both |
 | `spec.caseShape.context[]` | `.Data.CaseShape.Context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty |
 
@@ -108,65 +108,38 @@ For **outputs** apply the dedup rule: collect existing output `var` values acros
 
 ### Step 6 — Repair spliced keys
 
-Runs **after** Step 5, on the whole spliced subtree — `context`, `inputs`, `outputs`, and every nested `body` — because Pass 3 and the verify gate below need `inputs[]` / `outputs[]` already present in the target. Nothing else may touch the subtree afterwards.
+Runs after Step 5, over the whole spliced subtree (`context`, `inputs`, `outputs`, nested `body` included) — Pass 3 needs `inputs[]` / `outputs[]` already written. Nothing touches the subtree afterwards.
 
-`case spec --output json` applies a PascalCase **naming policy** to every object key it serializes: `Data.CaseShape.Context`; context / input / output entries (`"Name"`, `"Type"`, `"Value"`, `"Target"`, `"Body"`, `"DisplayName"`, `"Source"`); nested config (`"ActivityPropertyConfiguration"`, `"ActivityMetadata"`, `"InputMetadata"`, `"TelemetryData"`, `"UiPathActivityTypeId"`, …); response-schema keywords (`"Type"`, `"Properties"`, `"Definitions"`, `"Title"`, `"Items"`); and the connector-contract field names inside the request and response schemas (`request_body` comes back as `"RequestBody"`; `message.toRecipients` as `"Message": { "ToRecipients": … }`). Values are never touched.
+`case spec --output json` PascalCases every key it serializes. That is a naming **policy**, not a reversible casing toggle, so the correct on-disk form depends on what a key IS. Values are never touched.
 
-The policy is a rename, not a reversible casing toggle, so the correct on-disk form depends on what a key IS, not on how it looks:
-
-| Class | Keys | Correct on-disk form |
+| Class | Keys | Correct form |
 |---|---|---|
-| **Structural** — keywords the caseplan disk schema defines. A closed set | Entry fields (`Name`, `Type`, `Value`, `Target`, `Body`, `DisplayName`, `Source`); nested config (`ActivityPropertyConfiguration`, `ActivityMetadata`, `InputMetadata`, `TelemetryData`, `UiPathActivityTypeId`, `Configuration`, `ErrorState`, `Multipart`, `MultipartParameters`, `BodyFieldName`); schema keywords (`Properties`, `Definitions`, `Title`, `Items`, `Required`, `Reference`, `DataType`) | camelCase — first character lowered, rest preserved: `name`, `uiPathActivityTypeId` (Pass 2) |
-| **Contract** — field names the connector defines. Data, not keywords, so ANY casing is legitimate | Keys inside `inputs[].body` and inside the payload output's `body.properties` / `body.definitions` | Byte-exact name from its authority in the same spec response (Pass 3). Lowering only round-trips camelCase names — `ConversationId`→`conversationId` ✓; `RequestBody`→`requestBody` ✗ (the contract says `request_body`) |
+| **Structural** — disk-schema keywords. Closed set | `Name` `Type` `Value` `Target` `Body` `DisplayName` `Source` `DataType` `Required` `Reference` `Properties` `Definitions` `Title` `Items` `ActivityPropertyConfiguration` `ActivityMetadata` `InputMetadata` `TelemetryData` `UiPathActivityTypeId` `Configuration` `ErrorState` `Multipart` `MultipartParameters` `BodyFieldName` | camelCase — lower first char, preserve rest (Pass 2) |
+| **Contract** — connector field names. Data, so any casing is legitimate | keys inside `inputs[].body`, and inside the payload output's `body.properties` / `body.definitions` | byte-exact from its authority (Pass 3). Lowering round-trips camelCase only: `ConversationId`→`conversationId` ✓, `RequestBody`→`requestBody` ✗ (contract says `request_body`) |
 
-Invariants across all passes:
+**Keys only — never values.** `"name": "Subject"`, `"source": "=response.Subject"` and the `=jsonString:` / `=js:` blobs are case-sensitive identifiers; re-casing one breaks byte-for-byte runtime matching ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). Blob-internal JSON is already camelCase — leave it.
 
-- **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
-- **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, bindings, task scaffolding) is already camelCase — do not re-case it. **One exception:** the root `variables[].inputOutputs[].body` companion is a verbatim copy of this same schema ([global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md)), so it carries the identical Pass 3 repair — copy the repaired body, never the cached one.
-- **Ordered, never combined.** Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped (observed: `multipartParameters` lost → runtime `400 "Unable to parse multipart body"` while `validate` stays green).
+**Scope: the spliced subtree.** The skill-authored envelope is already camelCase. One exception: the root `variables[].inputOutputs[].body` companion is a copy of this schema, so copy the repaired body, not the cached one.
 
-#### Pass 1 — write verbatim
+**Pass 1 — write verbatim**, per [§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext).
 
-Write the subtree **PascalCase-verbatim** from the spec-cache — never drop, reorder, or retype content ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext) mechanical contract).
+**Pass 2 — lower structural keys.** One `Edit` per structural key present, `replace_all: true`, old/new carrying BOTH quotes AND the trailing colon: `"Name":` → `"name":`. That anchor makes it keys-only by construction — a value has no trailing colon, a blob-internal key is escaped (`\"Name\":`). Drive it from the closed set above, never from "every capital-first key you see": a contract field is legitimately `Fields` or `Id`, and lowering it here is safe only because Pass 3 overwrites it next.
 
-#### Pass 2 — lower structural keys
+**Pass 3 — restore contract keys.** Runtime matches these byte-for-byte; `validate` never checks them. Each authority `Name` is a dotted **leaf path**, not a top-level key:
 
-One `Edit` per distinct **structural** key present in the subtree (the closed set in the table above), `replace_all: true`, old/new including BOTH quotes AND the trailing colon — `"Name":` → `"name":`. The quote-colon anchor makes the edit keys-only **by construction**: a value sits after a colon (`: "Name"` — no trailing colon), and a blob-internal key is escaped (`\"Name\":`), so neither can match.
-
-Drive this pass from the structural set, **not** from "every capital-first key you can see" — a contract field is legitimately named `Fields` or `Id`, and lowering it here is only safe because Pass 3 overwrites it next. Where a contract field collides with a structural name (a Jira response nests a contract field literally named `name`), Pass 3 still owns the final form.
-
-#### Pass 3 — restore contract keys
-
-Runtime matches contract keys byte-for-byte, and `validate` never checks them. Restore them from their authority in the **same persisted spec response** — never derive them by casing, never by position.
-
-**Authorities.** Every entry's `Name` is a **dotted leaf path**, not a top-level key:
-
-| Subtree to repair | Authority |
+| Repair | Authority |
 |---|---|
-| Payload output `body.properties` (the `response` / curated output) | `.Data.Outputs.ResponseFields[].Name` |
-| `inputs[name="body"].body` | `.Data.Inputs.BodyFields[].Name` |
-| `inputs[name="queryParameters"]` / `[name="pathParameters"]` bodies | `.Data.Inputs.QueryParameters[].Name` / `.Data.Inputs.PathParameters[].Name` |
-| Any `body.definitions` key | The `$ref` value that targets it — `"$ref": "#/definitions/response_metadata"` makes `response_metadata` the byte-exact name |
+| payload output `body.properties` | `.Data.Outputs.ResponseFields[].Name` |
+| `inputs[].body` | `.Data.Inputs.BodyFields` / `.QueryParameters` / `.PathParameters` / `.EventParameters`, `[].Name` |
+| a `body.definitions` key | the `$ref` value targeting it — `"#/definitions/response_metadata"` → `response_metadata` |
 
-**Derivation.** Split each authority `Name` on `.`; walk the segments down the schema (through `properties`, `items`, and `$ref` hops). At every level the segment IS the byte-exact key — overwrite the written key with it. The top-level key set is the ordered de-duplicated set of **first** segments.
+Split each `Name` on `.` and walk the segments through `properties` / `items` / `$ref`; each segment is the byte-exact key at its level. Top-level set = de-duplicated first segments. Match by comparing with case and underscores ignored, confirmed by `DisplayName` ↔ `title`. **Never by index** — the collections differ in shape and length: Jira returns `Fields, Id, Key` against `fields.issuetype.name, id, key`, so index pairing writes a literal `"fields.issuetype.name":` key, while segment-walking gives `fields`/`issuetype`/`name`.
 
-Match each written key to a segment by comparing them with case and underscores ignored, and confirm with `DisplayName` ↔ the property's `title` where present. **Never pair by index** — the two collections are different shapes and lengths: Jira returns three properties `Fields, Id, Key` against `ResponseFields` `fields.issuetype.name, id, key`, so index pairing writes a literal `"fields.issuetype.name":` key. Walking segments instead repairs the whole path: `Fields`/`Issuetype`/`Name` → `fields`/`issuetype`/`name`.
+**Payload output only.** The `Error` output carries the fixed envelope `Code, Message, Detail, Category, Status, Element`, which `ResponseFields` never describes — skip it. Pass 2's camelCase is correct there, and renaming it breaks every `=Error.Message` binding.
 
-**Scope — the payload output only.** `caseShape.outputs[]` also carries the `Error` output, whose properties are the fixed platform envelope `Code, Message, Detail, Category, Status, Element`. `ResponseFields` never describes it. Skip it entirely — Pass 2's camelCase is already correct there, and renaming it breaks every `=Error.Message` binding ([io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md)).
+**Cannot complete** → log to `build-issues.md` and surface; never invent a name or guess a casing. Three cases: a written key with no matching segment (or the reverse); a `$ref` with no matching `definitions` key; the authority missing because the cache kept only `CaseShape` — re-read the persisted response, re-run `case spec` only if genuinely absent, and persist the WHOLE response (`Outputs.ResponseFields` / `Inputs.*` sit outside `CaseShape`).
 
-**When the repair cannot be completed** — log to `build-issues.md` and surface. Never invent a name, and never fall back to a cased guess:
-
-- **A written key matches no authority segment, or a segment matches no written key.** Report both sides.
-- **`ResponseFields` / `Inputs` absent from the spec-cache** — the cache kept only `CaseShape`. Re-read the persisted response first; re-run `case spec` only if it is genuinely absent (permitted by [phased-execution.md](phased-execution.md) — the in-session memo's "never re-run an identical spec call" does not cover recovering an authority the cache dropped), and persist the WHOLE response: `Outputs.ResponseFields` and `Inputs.*` sit outside `CaseShape`.
-- **A `$ref` target with no matching `definitions` key** (or the reverse).
-
-#### Verify
-
-`validate` catches mis-cased schema fields but NOT content-level keys — a Pascal `multipartParameters`, or a contract name that is merely plausible, passes `validate` and fails at runtime — so this is the only build-time gate.
-
-1. **Contract keys — set equality against the authority.** For the payload output, the top-level `body.properties` key set must equal the de-duplicated first segments of `ResponseFields[].Name` byte-for-byte, and each repaired nested level must equal its segment. Same for `inputs[].body` against `Inputs.*`. A capital-letter scan cannot substitute: the PR-motivating defect is lowercase-first (`requestBody` where the contract says `request_body`), which no capital scan sees.
-2. **Structural keys — no capital-first key survives.** Outside the repaired contract regions, no `"Xxx…":` key may remain; each is a missed Pass 2 `Edit`. Do not exempt a key because it looks like a contract name: across every observed capture, ZERO `ResponseFields` names are capital-first, so `"Id":` under `properties` is the serializer's damage, not the contract (the live Outlook response returns `id`).
-3. **Re-verify after the last node.** Pass 2's `replace_all` is file-wide, so a later node's Pass 2 can lower a key an earlier node's Pass 3 restored whenever a contract field collides with a structural name. After the final connector node is written, re-run check 1 for every connector node in the case.
+**Verify.** `validate` passes a Pascal `multipartParameters` and a merely plausible field name alike, so this is the only build-time gate. (1) Repaired key sets equal their authority segments byte-for-byte — a capital-first scan cannot substitute, since the defect is lowercase-first (`requestBody` for `request_body`). (2) No capital-first key remains outside the repaired regions; each is a missed Pass 2 `Edit`. No observed connector field name is capital-first, so `"Id":` under `properties` is damage, not contract.
 
 ---
 
