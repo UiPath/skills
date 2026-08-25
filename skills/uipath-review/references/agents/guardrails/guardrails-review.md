@@ -77,7 +77,7 @@ Build `{ validatorId: status }` from the `Data` array, using only `Status == "Av
 
 If output contains `"Code": "GuardrailCatalogUnavailable"` or the CLI is unavailable, do not guess:
 
-- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 11). Emit no catalog-grounded effectiveness/relevance verdict.
+- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 10 — Rules Skipped). Emit no catalog-grounded effectiveness/relevance verdict.
 - **Recommend Mode:** continue `agent.json`-only schema/prompt/tool inference; use generic scope/action wording and note `catalog-limited`.
 
 ## Audit Mode — existing guardrails (defects)

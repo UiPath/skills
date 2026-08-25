@@ -63,8 +63,7 @@ Ranked feature list, severity matrix, migration tooling and blockers, pre-flight
 
 **Detection:** Run:
 ```bash
-find . -name "*.xaml" -size +500k -exec ls -lh {} \\
-;
+find . -name "*.xaml" -size +500k -exec ls -lh {} \;
 ```
 
 **Fix:** Split workflows with Invoke Workflow File and extract reusable sequences.
@@ -133,7 +132,7 @@ grep -r 'idx=' --include="*.xaml" .
 **Detection:** Run:
 ```bash
 # Check for common credential patterns in all project files
-grep -ri "password\s*=\|" --include="*.xaml" --include="*.cs" --include="*.json" .
+grep -ri "password\s*=" --include="*.xaml" --include="*.cs" --include="*.json" .
 grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --include="*.json" .
 ```
 
@@ -227,7 +226,7 @@ grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --
 
 **Symptom:** `GlobalHandler.xaml` unconditionally sets `result = Retry`.
 
-**Impact:** Parent handlers multiply nested retries and may loop indefinitely. **Severity: Warning.**
+**Impact:** Parent handlers multiply nested retries: a 3-retry configuration nested one level produces `6 inner × 3 outer = 18` executions, with documented cases of infinite loops. **Severity: Warning.**
 
 **Detection:** Read `GlobalHandler.xaml`; flag unconditional retry without activity- or exception-type filtering.
 
@@ -379,6 +378,8 @@ Session scope, shared credentials, one-portal framing, and PDD wording do not ch
 - Status filter such as `WHERE Status != 'Processed'`.
 - Pre-check workflow invocation whose display name or purpose contains, case-insensitively, `check`, `verify`, `exists`, `processed`, `already`, `idempoten`, or `skip`.
 - Persistent per-sub-item progress written to queue `Output`, Data Service, or external state.
+
+Look semantically, not by filename. A filename like `CheckIfEmployeeExists.xaml` is one manifestation, not the signal itself — inline checks, SQL patterns, HTTP headers, queue `UniqueReference`s, and conditional branches all count.
 
 **Severity and finding framing:**
 

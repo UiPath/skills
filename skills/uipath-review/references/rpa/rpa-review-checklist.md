@@ -1,274 +1,316 @@
 # RPA Project Review Checklist
 
-Quality checklist for UiPath RPA projects: coded workflows (C#), XAML workflows, and hybrid projects.
+Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#), XAML workflows, and hybrid projects.
 
 > For advanced review criteria (project organization, selector robustness, variable hygiene, data manipulation, error handling depth, testing maturity, idempotent processing), see [rpa-advanced-checklist.md](rpa-advanced-checklist.md).
 
 ## 1. Project Structure
 
-### project.json
+### project.json Validation
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| `project.json` exists at project root | Critical | Run `ls project.json` |
-| `name` is non-empty; `main` points to an existing file | Critical | Read project.json and verify |
-| `entryPoints` is non-empty and every `filePath` exists | Critical | Read project.json and verify |
-| `expressionLanguage` is `VisualBasic` or `CSharp` | Warning | Read project.json |
-| `designOptions.outputType` is `Process`, `Library`, or `Tests` as appropriate | Warning | Read project.json |
-| Compatibility is Windows or Cross-platform, not Windows-Legacy | Info / Warning | Check `targetFramework: "Windows"` or `"Portable"`; apply the Windows-Legacy severity matrix below |
-| `dependencies` has no empty version strings or duplicate keys | Critical | Read project.json |
+| `project.json` exists at project root | Critical | `ls project.json` |
+| `name` field is set and non-empty | Critical | Read project.json |
+| `main` field points to an existing file | Critical | Read project.json → verify file exists |
+| `entryPoints` array is non-empty and all `filePath` values exist | Critical | Read project.json → verify each path |
+| `expressionLanguage` is set (`VisualBasic` or `CSharp`) | Warning | Read project.json |
+| `designOptions.outputType` is correct (`Process`, `Library`, or `Tests`) | Warning | Read project.json |
+| Project compatibility is Windows or Cross-platform (not Windows-Legacy) | Info / Warning | Check `project.json` for `targetFramework: "Windows"` or `"Portable"`. See "Windows-Legacy Compatibility" section below for severity matrix. |
+| `dependencies` object contains no empty version strings | Critical | Read project.json |
+| No duplicate keys in `dependencies` | Critical | Read project.json |
 
-### Files and organization
+### File Organization
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| No workflow files exceed 2 nesting levels | Info | Glob `**/*.xaml` and `**/*.cs` |
-| No XAML exceeds 5MB | Critical | Run `find . -name "*.xaml" -size +5M` |
-| No XAML exceeds 500KB | Warning | Run `find . -name "*.xaml" -size +500k` |
-| `.local/`, `.codedworkflows/`, and `.objects/` are not manually modified | Info | Check git diff |
-| No leftover debug/test data files in project root (`.csv`, `.xlsx`, `.json`) | Warning | Inspect root |
-| Use logical folders such as `Framework/`, `BusinessLogic/`, `Utilities/`, and `Data/` | Info | Inspect root |
-| Main.xaml is an orchestrator: no direct UI/business logic, mostly `InvokeWorkflowFile` calls, and fewer than 30 activities | Warning | Grep Main.xaml for `NClick`, `NTypeInto`, `NGetText`, `Click`, `TypeInto`, `GetText`, `SendHotkey`, `NCheckAppState` |
-| No production breakpoints | Warning | Grep `.xaml` for breakpoint metadata |
-| No workflow exceeds 50 activities, 30 root-scope variables, or 7 nesting levels (ST-MRD-009 default) | Warning | Count activities, `Variables` elements, and maximum indentation depth per `.xaml`; report counts, never “lines” |
+| No workflow files at >2 levels of nesting | Info | Glob `**/*.xaml` and `**/*.cs` |
+| No files >5MB (XAML) | Critical | `find . -name "*.xaml" -size +5M` |
+| No files >500KB (XAML) | Warning | `find . -name "*.xaml" -size +500k` |
+| `.local/`, `.codedworkflows/`, `.objects/` are not manually modified | Info | Check git diff for these dirs |
+| No leftover debug/test data files in project root | Warning | Look for .csv, .xlsx, .json data files |
+| Logical folder structure used (Framework/, BusinessLogic/, Utilities/, Data/) | Info | `ls` project root — check for meaningful subdirectories |
+| Main.xaml acts as orchestrator only (no direct UI or business logic) | Warning | Grep Main.xaml for UI activities (`NClick`, `NTypeInto`, `NGetText`, `Click`, `TypeInto`, `GetText`, `SendHotkey`, `NCheckAppState`). If any are found, Main.xaml is doing work it should delegate. Should contain mostly `InvokeWorkflowFile` calls, <30 activities total. |
+| No leftover breakpoints in production code | Warning | Grep `.xaml` for breakpoint metadata |
+| No workflow exceeds 50 activities OR 30 root-scope variables OR 7 nesting levels (ST-MRD-009 default) | Warning | Count activities, Variables elements, and max indentation depth per .xaml. Report these counts in the review (never "lines") |
 
-### Workflow dependency graph
+### Workflow Dependency Graph
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| No circular `InvokeWorkflowFile` dependencies | Critical | Trace all references recursively |
-| No orphaned workflows unreachable from Main.xaml | Warning | Traverse from Main.xaml and report unreached `.xaml` files |
-| Every `InvokeWorkflowFile` target exists | Critical | Verify paths on disk |
-| Every app opened in `InitAllApplications.xaml` by Open Application/Open Browser has a corresponding close in `CloseAllApplications.xaml`; launch and close counts match | Warning | Compare workflows |
+| No circular dependencies between workflows | Critical | Trace `InvokeWorkflowFile` references across all XAML files — A invokes B invokes A is a cycle |
+| No orphaned workflows (files unreachable from Main.xaml) | Warning | Starting from Main.xaml, follow all `InvokeWorkflowFile` references recursively. Any .xaml not reached is orphaned. |
+| No missing invocation targets | Critical | Every `InvokeWorkflowFile` path must point to a file that exists on disk |
+| Init/Close symmetry | Warning | Every app launched in `InitAllApplications.xaml` (via Open Application/Open Browser) must have a corresponding close in `CloseAllApplications.xaml`. Count launch invocations vs close invocations — they must match. |
 
-### Config.xlsx cross-reference (REFramework)
+### Config.xlsx Cross-Reference (REFramework projects)
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Every `Config("key")` in XAML exists in Config.xlsx Name column | Critical | Grep all XAML for `Config("`; compare keys; missing keys cause runtime `KeyNotFoundException` |
-| No unused Config.xlsx entries | Warning | Compare keys with all XAML and `.cs` references |
-| No duplicate keys across Settings, Constants, and Assets sheets | Critical | All populate one Dictionary and duplicates silently overwrite |
+| Every `Config("key")` reference in XAML has a matching key in Config.xlsx | Critical | Grep all XAML for `Config("` patterns, collect keys, compare against Config.xlsx Name column. Missing key = runtime `KeyNotFoundException`. |
+| No unused Config.xlsx entries | Warning | Keys in Config.xlsx that are never referenced in any XAML or .cs file. Dead config adds confusion. |
+| No duplicate keys across Settings/Constants/Assets sheets | Critical | All three sheets populate one Dictionary — duplicate keys silently overwrite. |
 
 ### Dependencies
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| All referenced packages resolve | Critical | Run `uip rpa build "<PROJECT_DIR>" --output json`; do NOT run `uip rpa packages install` because review is read-only |
-| No unused packages | Warning | Run/check Workflow Analyzer rule ST-USG-010 |
-| Version constraints use `[1.0.0]` or `[1.0.0, 2.0.0)` syntax | Warning | Read project.json |
-| No package-version conflicts | Critical | Check package families |
+| All referenced packages resolvable | Critical | `uip rpa build "<PROJECT_DIR>" --output json` fails on unresolvable packages. Do NOT run `uip rpa packages install` — review is read-only |
+| No unused packages | Warning | Workflow Analyzer rule ST-USG-010 |
+| Version constraints use proper syntax (`[1.0.0]`, `[1.0.0, 2.0.0)`) | Warning | Read project.json dependencies |
+| No package version conflicts | Critical | Check for multiple versions of same package family |
 
-## 2. Coded Workflow Quality (C#)
+## 2. Coded Workflow Quality (C# Projects)
 
-### Structure
+### Structural Checks
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Every `.cs` workflow has a companion `.cs.json` | Critical | Glob `**/*.cs` and verify |
-| Workflow classes inherit from `CodedWorkflow` and have `[Workflow]` | Critical | Grep for `class.*:.*CodedWorkflow` and `\[Workflow\]` |
-| Test case classes have `[TestCase]` | Critical | Grep for `\[TestCase\]` |
-| One class per file; class and file names match | Warning | Read `.cs` files |
-| Namespace matches sanitized project name | Warning | Compare with project.json `name` |
+| Every `.cs` workflow has a companion `.cs.json` metadata file | Critical | Glob `**/*.cs` → verify `.cs.json` exists |
+| Workflow classes inherit from `CodedWorkflow` | Critical | Grep for `class.*:.*CodedWorkflow` |
+| Workflow classes have `[Workflow]` attribute | Critical | Grep for `\[Workflow\]` |
+| Test case classes have `[TestCase]` attribute | Critical | Grep for `\[TestCase\]` |
+| One class per file, class name matches file name | Warning | Read each .cs file |
+| Namespace matches sanitized project name | Warning | Compare namespace to project.json `name` |
 
-### Code and errors
+### Code Quality
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| No unused `using` statements | Warning | Compare imports and usage |
-| Service methods use correct accessors (`system.*`, `uiAutomation.*`) | Critical | Inspect calls |
-| No hardcoded paths or URLs (`C:\\`, `/Users/`, `http://localhost`) | Warning | Grep source |
-| No hardcoded credentials/secrets; inspect string literals containing `password`, `secret`, `apikey`, `token` | Critical | Grep source |
-| Utility classes without `CodedWorkflow` use Coded Source Files | Info | Inspect organization |
-| Use strongly typed `workflows.MyWorkflow()` rather than string-based `RunWorkflow()` | Warning | Grep for `RunWorkflow` |
-| Use Object Repository descriptors rather than hardcoded selectors | Warning | Check `using *.ObjectRepository` |
-| External API, file-I/O, and UI calls have Try-catch handling; catches log context before rethrowing; no empty catches | Warning | Inspect code; check ST-DBP-003 |
+| No unused `using` statements | Warning | Check imports vs usage |
+| Service methods called via correct service accessor (`system.*`, `uiAutomation.*`) | Critical | Verify service patterns |
+| No hardcoded file paths or URLs | Warning | Grep for `C:\\`, `/Users/`, `http://localhost` |
+| No hardcoded credentials or secrets | Critical | Grep for `password`, `secret`, `apikey`, `token` in string literals |
+| Coded Source Files (no `CodedWorkflow` base) used for utility classes | Info | Check class organization |
+| Strongly-typed `workflows.MyWorkflow()` used instead of string-based `RunWorkflow()` | Warning | Grep for `RunWorkflow` |
+| Object Repository descriptors used (no hardcoded selectors) | Warning | Check for `using *.ObjectRepository` |
+
+### Error Handling
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| Try-catch blocks around external calls (API, file I/O, UI automation) | Warning | Check error handling patterns |
+| Exceptions logged with context before re-throwing | Warning | Check catch blocks |
+| No empty catch blocks | Warning | Workflow Analyzer rule ST-DBP-003 |
 
 ## 3. XAML Workflow Quality
 
-### Structure and analyzer checks
+### Structural Checks
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Every `.xaml` validates | Critical | Run `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` |
-| XAML expression language matches project.json | Critical | Compare all files |
-| VisualBasic projects contain no C# syntax: `!=`, `&&`, `\|\|`, `null`, `$"`, `=>`, `//`, `typeof()` | Warning | Grep all `.xaml`; VB uses `Nothing` and `GetType()` |
-| No default display names (`Sequence`, `Assign`, `If`) | Warning | Check ST-MRD-002 |
-| No nesting over 7 levels | Warning | Check ST-MRD-009 |
-| No empty Catch blocks | Warning | Check ST-DBP-003 |
-| No empty Sequences | Info | Check ST-MRD-008 |
-| No unreachable activities | Warning | Check ST-MRD-004 |
-| Use Log Message, not Write Line | Warning | Check ST-MRD-011 |
+| All `.xaml` files pass validation | Critical | `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` |
+| Expression language in all XAML files matches `project.json` setting | Critical | Check `expressionLanguage` consistency |
+| No C# syntax in VB.NET projects | Warning | If `expressionLanguage` is `VisualBasic`, grep all `.xaml` for C# patterns: `!=`, `&&`, `\|\|`, `null` (VB uses `Nothing`), `$"` (interpolated strings), `=>` (lambda), `//` (comments), `typeof()` (VB uses `GetType()`). These compile-fail or silently misbehave. |
+| No activities with default display names ("Sequence", "Assign", "If") | Warning | Workflow Analyzer rule ST-MRD-002 |
+| No deeply nested activities (>7 levels, ST-MRD-009 default) | Warning | Workflow Analyzer rule ST-MRD-009 |
+| No empty Catch blocks | Warning | Workflow Analyzer rule ST-DBP-003 |
+| No empty Sequences | Info | Workflow Analyzer rule ST-MRD-008 |
+| No unreachable activities | Warning | Workflow Analyzer rule ST-MRD-004 |
+| No Write Line usage (use Log Message instead) | Warning | Workflow Analyzer rule ST-MRD-011 |
 
-### Naming
+### Naming Conventions
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Variables use PascalCase/camelCase | Warning | Check ST-NMG-001; default regex: `^([A-Z]|[a-z])+([0-9])*$` |
-| DataTables use `dt_` prefix | Info | Check ST-NMG-009; it is not part of ST-NMG-001 |
-| Arguments use `in_`, `out_`, `io_` prefixes | Warning | Check ST-NMG-002 |
-| No variable/argument shadowing | Warning | Check ST-NMG-005 and ST-NMG-006 |
-| Activity display names are descriptive | Warning | Check ST-MRD-002 |
-| Workflow names use Verb + Object PascalCase | Info | Manual check, e.g. `GetTransactionData.xaml`, `ProcessInvoice.xaml` |
+| Variables follow PascalCase/camelCase | Warning | Workflow Analyzer rule ST-NMG-001 (default regex: `^([A-Z]\|[a-z])+([0-9])*$`; the `dt_` prefix convention is ST-NMG-009, not part of ST-NMG-001) |
+| DataTable variables prefixed with `dt_` | Info | Workflow Analyzer rule ST-NMG-009 |
+| Arguments use directional prefixes (`in_`, `out_`, `io_`) | Warning | Workflow Analyzer rule ST-NMG-002 |
+| No variable-argument name conflicts (shadowing) | Warning | Workflow Analyzer rules ST-NMG-005, ST-NMG-006 |
+| Activity display names are descriptive | Warning | Workflow Analyzer rule ST-MRD-002 |
+| Workflow file names use Verb + Object (PascalCase) | Info | Manual check (e.g., `GetTransactionData.xaml`, `ProcessInvoice.xaml`) |
 
-### Required containers
+### Container and Scope Requirements
 
-| Activity | Required container | Severity if missing |
+Activities that require specific parent containers:
+
+| Activity Type | Required Container | Severity if Missing |
 |---|---|---|
-| Excel | `ExcelApplicationScope` or `ExcelApplicationCard` | Critical |
-| UI Automation | `Use Application/Browser` (`NApplicationCard`) | Critical |
-| Word | `WordApplicationScope` | Critical |
-| Office 365 | Office 365 scope activity | Critical |
-| GSuite | GSuite scope activity | Critical |
+| Excel activities | `ExcelApplicationScope` or `ExcelApplicationCard` | Critical |
+| UI Automation activities | `Use Application/Browser` (`NApplicationCard`) | Critical |
+| Word activities | `WordApplicationScope` | Critical |
+| Office 365 activities | Office 365 scope activity | Critical |
+| GSuite activities | GSuite scope activity | Critical |
 
-### Conflicting properties
+### Conflicting Property Pairs
 
-Set only one property in each pair: `Password` / `SecurePassword` (Critical); `EditPassword` / `SecureEditPassword` (Critical); `SimulateClick` / `SendWindowMessages` (Warning).
+Only ONE of each pair may be set:
 
-### Selectors
-
-Assess the majority tier: Tier 1 `id`, `automationid` (highest; no finding); Tier 2 `name` + `role`, `name` + `controltype` (high; no finding); Tier 3 `aaname`, `innertext` (medium; Info if majority); Tier 4 `tag` + `parentid`, `class` (low; Warning if majority); Tier 5 `idx`, `tableRow`, or position-based (worst; Warning per occurrence).
-
-| Check | Severity | Verify |
+| Property A | Property B | Severity |
 |---|---|---|
-| No `idx=` selectors | Warning | Grep `.xaml` |
-| No environment-specific selector data (qa/uat/prod URLs, ports) | Warning | Grep selectors |
-| Dynamic attributes use wildcards where appropriate | Info | Inspect selectors |
-| Use Object Repository instead of hardcoded selectors | Warning | Check `.objects/` usage |
-| Element Exists / Check App State precedes interactions where appropriate | Info | Inspect patterns |
-| Modern UI Descriptors use Strict + Fuzzy + Image + Anchor | Info | Grep `.xaml` for `NUnifiedTargetDefinition` |
-| Selector depth is minimal; prefer 2–3 levels | Info | Inspect `.xaml` |
+| `Password` | `SecurePassword` | Critical |
+| `EditPassword` | `SecureEditPassword` | Critical |
+| `SimulateClick` | `SendWindowMessages` | Warning |
 
-### Security and performance
+### Selector Quality
 
-| Check | Severity | Verify |
+Selectors are ranked by attribute stability. When reviewing, assess which tier the majority of selectors fall into:
+
+| Tier | Attributes Used | Stability | Review Action |
+|---|---|---|---|
+| 1 (best) | `id`, `automationid` | Highest — set by developer, rarely change | No finding |
+| 2 | `name` + `role`, `name` + `controltype` | High — stable across sessions | No finding |
+| 3 | `aaname`, `innertext` | Medium — stable if text doesn't change | Info if majority |
+| 4 | `tag` + `parentid`, `class` | Low — changes with DOM restructuring | Warning if majority |
+| 5 (worst) | `idx`, `tableRow`, position-based | Brittle — changes whenever sibling order changes | Warning per occurrence |
+
+| Check | Severity | How to Verify |
 |---|---|---|
-| Password variables use `SecureString` | Critical | Check ST-SEC-007 and ST-SEC-008 |
-| No `SecureString` conversion to plain `String` | Warning | Check ST-SEC-009 |
-| Credentials come from Orchestrator assets/Credential Store, not literals | Critical | Check `Get Credential` and literals |
-| No sensitive data in logs | Warning | Inspect messages |
-| No PII in queue-item specific data, or encrypt it | Warning | Inspect queue creation |
-| No hardcoded Delay activities | Warning | Check ST-DBP-026 and ST-PRR-004 |
-| Use Simulate Click / SendWindowMessages where possible | Info | Inspect UI properties |
-| Avoid nested For Each loops over large DataTables; use LINQ | Warning | Inspect loops |
-| Filter large DataTables before processing | Info | Inspect data flow |
-| Avoid excessive logging in tight loops | Warning | Inspect placement |
+| No `idx`-based selectors (index-based, brittle) | Warning | Grep for `idx=` in .xaml files |
+| No environment-specific data in selectors (qa/uat/prod URLs, ports) | Warning | Grep for environment-specific strings |
+| Wildcards used for dynamic attributes | Info | Check selector patterns |
+| Object Repository used instead of hardcoded selectors | Warning | Check for `.objects/` usage |
+| Element Exists / Check App State used before interactions | Info | Check for pre-validation patterns |
+| Modern UI Descriptors used (Strict + Fuzzy + Image + Anchor) | Info | Grep `.xaml` for `NUnifiedTargetDefinition` |
+| Selector depth minimal (2-3 levels preferred, not deep chains) | Info | Check selector nesting depth in `.xaml` |
 
-## 4. Hybrid Projects
+### Security
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Separate XAML UI automation from coded business logic | Info | Review organization |
-| No duplicated logic across coded and XAML workflows | Warning | Compare behavior |
-| Cross-mode invocation uses `InvokeWorkflowFile` correctly | Warning | Inspect invocations |
-| Shared data models are in Coded Source Files, not duplicated | Info | Inspect models |
+| `SecureString` used for all password variables | Critical | Workflow Analyzer rule ST-SEC-007, ST-SEC-008 |
+| No `SecureString` converted to plain `String` | Warning | Workflow Analyzer rule ST-SEC-009 |
+| Credentials retrieved from Orchestrator assets or Credential Store (not hardcoded) | Critical | Grep for `Get Credential` vs hardcoded strings |
+| No sensitive data in Log Messages | Warning | Check log message content |
+| No PII in queue item specific data (or encrypted) | Warning | Check queue item creation patterns |
+
+### Performance
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| No hardcoded Delay activities | Warning | Workflow Analyzer rules ST-DBP-026, ST-PRR-004 |
+| Simulate Click / SendWindowMessages used where possible | Info | Check UI activity properties |
+| No nested For Each loops over large DataTables (use LINQ) | Warning | Check loop patterns |
+| Filter Data Table used before processing large datasets | Info | Check data processing patterns |
+| No excessive logging inside tight loops | Warning | Check log placement |
+
+## 4. Hybrid Project Quality
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| Clear separation — XAML for UI automation, coded for business logic | Info | Review file organization |
+| No duplicated logic between coded and XAML workflows | Warning | Compare functionality |
+| InvokeWorkflowFile used correctly for cross-mode invocation | Warning | Check invocation patterns |
+| Shared data models in Coded Source Files (not duplicated) | Info | Check for model consistency |
 
 ## 5. REFramework Compliance (Queue-Based Projects)
 
 > **Transaction Granularity:** REFramework correctness requires that the queue item's declared unit of work matches the unit of work `ProcessTransaction.xaml` actually performs. Run Step 3a (Unit of Work Discovery) in SKILL.md before this section — classify the shape as one-to-one / one-to-many / unclear. Strong signal of a one-to-many shape: presence of `CheckIf<X>Exists.xaml` or `Verify<X>Exists.xaml` in the project (homegrown idempotency guards compensating for bulk-in-transaction). See [rpa-common-issues.md](rpa-common-issues.md) → "Transaction Shape: One-to-Many" for the full signals, severity matrix, fixes, and the "When it cannot be split — hardening checklist" subsection.
 
-Apply this section when the project uses or should use REFramework.
 
-### Architecture and transaction flow
+If the project uses or should use the REFramework pattern:
 
-| Check | Severity | Verify |
+### State Machine Architecture
+
+| Check | Severity | How to Verify |
 |---|---|---|
-| State machine has Init, GetTransactionData, ProcessTransaction, EndProcess | Warning | Read Main.xaml |
-| All 7 stock transitions exist: Init→GetTx, Init→End, GetTx→ProcessTx, GetTx→End, ProcessTx→GetTx on Success, ProcessTx→GetTx on BusinessRuleException, ProcessTx→Init on SystemException | Warning | Trace transitions |
-| Init has SystemException → Init self-retry; stock template's Init → End is insufficient | Warning | Trace transient-failure handling |
-| Queue projects fetch items per-item in GetTransactionData, not Init; non-queue projects load bulk data in Init | Warning | Inspect InitAllApplications / InitAllSettings for Read Range, Get Queue Items, and Data Scraping |
-| Do not force REFramework onto single-shot/stateless processes | Info | Use a linear workflow when there is no real transaction iteration |
-| Non-queue `SetTransactionStatus` handles `QueueRetry` correctly and does not retain queue-only `in_TransactionItem.RetryNo` logic | Critical | Grep for `QueueRetry` and retry logic |
-| DataTable GetTransactionData uses `dt.Rows(in_TransactionNumber - 1)` | Warning | Check 0-index/1-index handling |
-| `Process.xaml` processes exactly one transaction per invocation | Critical | Review Process.xaml |
-| Framework/ files are unmodified: InitAllSettings, framework GetTransactionData, framework SetTransactionStatus | Warning | Check Framework/ |
-| Business logic is only in root-level Process.xaml, root GetTransactionData.xaml, and root SetTransactionStatus.xaml | Warning | Review locations |
+| State Machine with 4 states: Init, GetTransactionData, ProcessTransaction, EndProcess | Warning | Read Main.xaml structure |
+| All 7 stock transitions present (Init→GetTx, Init→End, GetTx→ProcessTx, GetTx→End, ProcessTx→GetTx on Success, ProcessTx→GetTx on BusinessRuleException, ProcessTx→Init on SystemException) | Warning | Check transitions |
+| Init state has SystemException → Init self-retry transition (enhancement — the stock template goes Init → End on failure) | Warning | Transient login/app failures should retry, not terminate the process |
+| Queue-based projects: Init state does NOT fetch transaction data (fetched per-item in GetTransactionData). Non-queue projects load bulk data in Init — see "Non-Queue REFramework" below | Warning | Check InitAllApplications / InitAllSettings — no Read Range / Get Queue Items / Data Scraping in queue-based projects |
+| REFramework not forced onto single-shot / stateless processes | Info | If no real transaction iteration (one execution per run), REFramework is overkill — use a linear workflow |
+| If using non-queue data source: `QueueRetry` flag in SetTransactionStatus properly handled (not left at queue default) | Critical | Grep SetTransactionStatus for `QueueRetry` or `in_TransactionItem.RetryNo` logic that only applies to QueueItems |
+| If using DataTable: `GetTransactionData` uses `dt.Rows(in_TransactionNumber - 1)` (DataTable is 0-indexed; transaction counter is 1-indexed) | Warning | Off-by-one skips first row, errors on last |
+| `Process.xaml` processes exactly ONE transaction per invocation | Critical | Review Process.xaml |
+| Framework/ folder files NOT modified (InitAllSettings, framework GetTransactionData, framework SetTransactionStatus) | Warning | Check Framework/ folder |
+| Business logic only in root-level files (Process.xaml, root GetTransactionData.xaml, root SetTransactionStatus.xaml) | Warning | Review file locations |
 
-### Failure paths
+### REFramework Failure-Path Validation
 
-| Path | Required behavior | Severity |
+Beyond structural checks, verify each state transition path is wired correctly by tracing the logic:
+
+| Path | What to Trace | Severity if Broken |
 |---|---|---|
-| System Exception → Retry | ProcessTransaction propagates, state machine transitions to Init, apps reopen, same item retries | Critical |
-| Business Exception → Skip | `BusinessRuleException` is caught without retry; status becomes Failed-Business; transition goes to GetTransactionData | Warning |
-| Queue Empty → Clean Exit | GetTransactionData returns Nothing/null; transition reaches EndProcess; CloseAllApplications runs | Warning |
-| Max Retries Exceeded → Fail Item | After N system exceptions, `MaxRetryNumber` is reached; item is Failed and processing continues in GetTransactionData | Critical |
-| Init Failure → Retry or Stop | Init self-retries while `ProcessRetries` is below max, then transitions to EndProcess | Warning |
+| **System Exception → Retry** | In ProcessTransaction: system exception propagates (not swallowed by Try-Catch) → state machine catches it → transitions to Init → Init re-opens apps → transitions back to GetTransactionData → same item retried | Critical — broken retry means failed items are silently marked successful |
+| **Business Exception → Skip** | In ProcessTransaction: `BusinessRuleException` thrown → caught and NOT retried → `SetTransactionStatus` marks item as Failed-Business → transitions to GetTransactionData → next item | Warning — wrong exception type causes unnecessary retries |
+| **Queue Empty → Clean Exit** | GetTransactionData returns Nothing/null when no items → transitions to EndProcess → `CloseAllApplications` runs → process ends cleanly | Warning — missing Nothing check causes infinite loop or crash |
+| **Max Retries Exceeded → Fail Item** | After N system exceptions on same item: retry counter reaches `MaxRetryNumber` → item marked as Failed → transitions to GetTransactionData for next item (not EndProcess) | Critical — exceeded retries should skip item, not terminate process |
+| **Init Failure → Retry or Stop** | Init state throws exception → if `ProcessRetries` < max, self-transitions back to Init → if exceeded, transitions to EndProcess | Warning — Init failure without retry terminates on first transient login failure |
 
-### Config.xlsx
+### Config.xlsx Validation
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| `Data/Config.xlsx` exists with Settings, Constants, Assets sheets | Warning | Check file |
-| No duplicate keys across sheets | Critical | Read workbook; all keys share one Dictionary |
-| No credentials/tokens in Settings or Constants | Critical | Inspect values |
-| Assets sheet contains Orchestrator Asset names, not values | Warning | Inspect sheet |
-| `OrchestratorQueueName` is in Settings, not hardcoded | Warning | Inspect workflows and Settings |
-| `OrchestratorQueueFolder` is set when using modern folders | Warning | Inspect Settings |
+| `Config.xlsx` exists in Data/ folder with Settings, Constants, Assets sheets | Warning | Check for Data/Config.xlsx |
+| No duplicate keys across sheets (all go into one Dictionary) | Critical | Read Config.xlsx |
+| No sensitive data (credentials, tokens) in Settings or Constants sheets | Critical | Review Config.xlsx values |
+| Assets sheet references Orchestrator Asset names (not actual values) | Warning | Check Assets sheet |
+| `OrchestratorQueueName` set in Settings (not hardcoded in workflows) | Warning | Check Settings sheet |
+| `OrchestratorQueueFolder` set if using modern folders | Warning | Check Settings sheet |
 
-### Retry configuration
+### Retry Configuration
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| `MaxRetryNumber` = 0 with Orchestrator queue retries | Critical | Check Constants; double retry can produce multiplicative attempts (e.g., 3x3=9) |
-| `MaxRetryNumber` > 0 for Excel, DataTable, or API sources | Warning | Check Constants |
-| `MaxConsecutiveSystemExceptions` is configured and not 0 | Warning | Check Constants; 0 disables the circuit breaker |
-| Queue `Max # of Retries` is 1–50, typically 3 | Warning | Check queue settings |
-| Queue auto-retry is enabled for Application Exceptions | Warning | Check queue settings |
+| `MaxRetryNumber` = 0 when using Orchestrator queue retries | Critical | Check Constants sheet — double-retry causes multiplicative behavior (e.g., 3x3=9 attempts) |
+| `MaxRetryNumber` > 0 for non-queue scenarios (Excel, DataTable, API) | Warning | Check Constants sheet |
+| `MaxConsecutiveSystemExceptions` configured (not 0) | Warning | Check Constants sheet — 0 disables the circuit breaker, bot runs forever even if every transaction fails |
+| Orchestrator queue `Max # of Retries` configured (1-50, typically 3) | Warning | Check queue settings |
+| Auto-retry enabled on queue for Application Exceptions | Warning | Check queue settings |
 
-### Exceptions and lifecycle
+### Exception Handling
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Data/validation issues throw `BusinessRuleException`, not `System.Exception` | Critical | Grep usage |
-| Business exceptions transition to GetTransactionData, not Init | Critical | Trace handling |
-| Application/System exceptions recover via CloseAll → KillAll → re-init | Warning | Trace flow |
-| `SetTransactionStatus` runs on Success, Business Exception, and Application Exception paths | Critical | Trace every exit |
-| Application Exceptions capture a screenshot | Warning | Check configuration |
-| Transaction reference is set and within the 128-character limit | Info | Inspect field |
-| CloseAllApplications.xaml and KillAllProcesses.xaml are implemented, not empty | Warning | Read files |
-| InitAllApplications.xaml retrieves credentials from Orchestrator assets | Warning | Read file |
-| InitAllApplications.xaml checks whether apps are already open | Info | Inspect app-state validation |
-| First Init calls KillAllProcesses.xaml for a clean state | Info | Trace Init |
-| GetTransactionData handles Orchestrator Stop/Terminate signals | Warning | Inspect workflow |
+| `BusinessRuleException` thrown for data/validation issues (NOT `System.Exception`) | Critical | Grep for `BusinessRuleException` usage |
+| Business exceptions NOT retried (transitions to GetTransactionData, not Init) | Critical | Check ProcessTransaction exception handling |
+| Application/System exceptions trigger app recovery (CloseAll → KillAll → re-Init) | Warning | Check ProcessTransaction exception flow |
+| `SetTransactionStatus` called on ALL paths (Success, Business Exception, Application Exception) | Critical | Check all transaction exit paths |
+| Screenshot captured on Application Exception | Warning | Check screenshot configuration |
+| Transaction reference set (128-char limit) | Info | Check reference field usage |
+
+### Application Lifecycle
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| `CloseAllApplications.xaml` properly implemented (NOT left empty) | Warning | Read CloseAllApplications.xaml |
+| `KillAllProcesses.xaml` properly implemented (NOT left empty) | Warning | Read KillAllProcesses.xaml |
+| `InitAllApplications.xaml` includes credential retrieval from Orchestrator assets | Warning | Read InitAllApplications.xaml |
+| `InitAllApplications.xaml` checks if app is already open before re-opening | Info | Check for app-state validation |
+| `KillAllProcesses.xaml` called during first Init to ensure clean state | Info | Check Init flow |
+| Orchestrator Stop/Terminate signals handled in GetTransactionData | Warning | Check for stop signal handling |
 
 ### Non-Queue REFramework (Excel/DataTable/API)
 
-| Check | Severity | Verify |
-|---|---|---|
-| `TransactionItem` changes from `QueueItem` to `DataRow`, `Dictionary`, or appropriate type | Critical | Check Main.xaml |
-| `TransactionData` changes from default to `DataTable` or appropriate collection | Critical | Check Main.xaml |
-| Data loads during Init, not GetTransactionData | Warning | Trace states |
-| GetTransactionData uses `io_TransactionNumber` as index and returns Nothing when exhausted | Critical | Read root workflow |
-| SetTransactionStatus updates source data, such as an Excel status column | Warning | Read root workflow |
-| `MaxRetryNumber` > 0 for local retries | Warning | Check Constants |
+If the project uses REFramework with non-queue data sources:
 
-## 6. Logging
-
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Use Log Message, not Write Line | Warning | Check ST-MRD-011 |
-| Minimum logging exists in each workflow | Warning | Check ST-USG-020 |
-| More than 80% of invoked sub-workflows have LogMessage near first and last activity | Warning | Count `(workflows with bookends / total invoked workflows)`; below 80% is a finding |
-| Every Catch block has an error-level log | Warning | Inspect catches |
-| Production configuration has no Verbose/Trace logging | Info | Inspect log levels |
-| Business context uses custom log fields via Add Log Fields | Info | Inspect usage |
-| Logs contain no PII, credentials, or other sensitive data | Critical | Review content |
+| `TransactionItem` type changed from `QueueItem` to appropriate type (`DataRow`, `Dictionary`, etc.) | Critical | Check Main.xaml variable types |
+| `TransactionData` type changed from default to `DataTable` or appropriate collection | Critical | Check Main.xaml variable types |
+| Data loaded during Init state (not in GetTransactionData) | Warning | Check data loading location |
+| GetTransactionData uses `io_TransactionNumber` as index, returns Nothing when exhausted | Critical | Read root GetTransactionData.xaml |
+| SetTransactionStatus updates the source data (e.g., Excel status column) | Warning | Read root SetTransactionStatus.xaml |
+| `MaxRetryNumber` > 0 (local retries needed without queue) | Warning | Check Constants sheet |
+
+## 6. Logging Quality
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| Log Message used (not Write Line) | Warning | Workflow Analyzer rule ST-MRD-011 |
+| Minimum logging present in each workflow | Warning | Workflow Analyzer rule ST-USG-020 |
+| Log bookends: >80% of invoked sub-workflows have LogMessage near first and last activity | Warning | For each workflow invoked from Main.xaml, check if it starts and ends with a LogMessage. Count coverage: (workflows with bookends / total invoked workflows). Below 80% = finding. |
+| Error-level logs in all Catch blocks | Warning | Check catch blocks |
+| No Verbose/Trace logging in production configuration | Info | Check log levels |
+| Custom log fields for business context (Add Log Fields) | Info | Check for Add Log Fields usage |
+| No sensitive data (PII, credentials) in log messages | Critical | Review log content |
 
 ## 7. Test Coverage
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| Critical workflows have tests | Warning | Glob `**/*[Tt]est*` |
-| Coded tests use `[TestCase]`; other tests use a Test Case project type | Warning | Inspect organization |
-| Assertions verify outcomes, not merely successful execution | Info | Read assertions |
-| Data-driven tests use `.variations/` | Info | Check parameterization |
-| Tests are independent | Info | Check shared state |
-| Tests use synthetic/test data, never production connections/data | Warning | Inspect sources |
+| Test cases exist for critical workflows | Warning | Glob `**/*[Tt]est*` files |
+| Test cases use `[TestCase]` attribute (coded) or Test Case project type | Warning | Check test organization |
+| Assertions verify expected outcomes (not just "runs without error") | Info | Check assertion content |
+| Data-driven tests use `.variations/` for parameterization | Info | Check for variation files |
+| Tests are independent of each other | Info | Check for shared state |
+| Tests use synthetic/test data — never production data | Warning | Check test data sources for production connections |
 
-## 8. Workflow Analyzer
+## 8. Workflow Analyzer Summary
 
-Run Workflow Analyzer and verify no Error-level violations.
+Run Workflow Analyzer and verify no Error-level violations. Key rules to check:
 
-### Must pass (Error level)
+### Must Pass (Error Level)
 
 - ST-ANA-005: project.json exists
 - ST-ANA-006: Main workflow exists
@@ -278,7 +320,7 @@ Run Workflow Analyzer and verify no Error-level violations.
 - ST-USG-009: No unused variables
 - ST-NMG-006: No variable-argument name conflicts
 
-### Should pass (Warning level)
+### Should Pass (Warning Level)
 
 - ST-DBP-002: Argument count not excessive
 - ST-DBP-003: No empty Catch blocks
@@ -296,79 +338,89 @@ Run Workflow Analyzer and verify no Error-level violations.
 
 ## 9. Deployment Readiness
 
-| Check | Severity | Verify |
+| Check | Severity | How to Verify |
 |---|---|---|
-| All project.json entry points are correctly defined | Critical | Verify `entryPoints` |
-| Dependencies are pinned to specific versions | Warning | Read project.json |
-| No hardcoded environment-specific URLs or paths | Warning | Grep project |
-| No debug artifacts or test data | Info | Inspect project |
-| Global Exception Handler is configured | Info | Check project settings |
-| Every entry point validates with 0 errors | Critical | Run `uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json` |
-| Project builds cleanly | Critical | Run `uip rpa build "<PROJECT_DIR>" --output json`; build catches unknown member names and invalid enum values that `validate` misses (SKILL.md Critical Rule 2) |
-| Recent successful-run evidence exists | Info | Check job history/test results; do NOT run the automation during review because `uip rpa run` executes UI actions and writes; route runtime verification to `uipath-rpa` |
+| All entry points correctly defined in project.json | Critical | Verify entryPoints array |
+| Dependencies pinned to specific versions | Warning | Check version constraints |
+| No hardcoded environment-specific values (URLs, paths) | Warning | Grep for hardcoded values |
+| No debug artifacts or test data included | Info | Check for leftover files |
+| Global Exception Handler configured | Info | Check project settings |
+| Project validates clean | Critical | `uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json` returns 0 errors for every entry point |
+| Project builds clean | Critical | `uip rpa build "<PROJECT_DIR>" --output json` — catches unknown member names and invalid enum values that `validate` misses (SKILL.md Critical Rule 2) |
+| Recent successful run evidence (job history, test results) | Info | Do NOT run the automation during review — `uip rpa run` executes UI actions and writes. Check existing evidence; runtime verification routes to `uipath-rpa` |
 
 ## 10. Windows-Legacy Compatibility
 
-### Support status
+### Support Status (Important Context)
 
-Windows-Legacy is supported indefinitely in Studio LTS. Studio LTS 2024.10, 2025.10, 2026.10, and **all future LTS releases** continue to support creating, opening, and editing Windows-Legacy projects. Studio LTS provides 24 months Mainstream + 12 months Extended support per release. Legacy projects validate, run, and deploy correctly and are **not** deployment blockers. Studio STS does not support Legacy; Legacy teams must stay on LTS. Deprecation means no new features are added to Legacy, not that Legacy will be removed.
+Windows-Legacy is supported **indefinitely** in Studio LTS:
+- Studio LTS 2024.10, 2025.10, 2026.10, and **all future LTS releases** continue to support creating, opening, and editing Windows-Legacy projects
+- Studio LTS provides 24 months Mainstream + 12 months Extended support per release
+- Legacy projects **validate, run, and deploy correctly** — they are NOT a deployment blocker
+- Studio STS does **not** support Legacy — teams using Legacy must stay on LTS
+- **Deprecation means "no new features added to Legacy," not "Legacy will be removed"**
 
 > **NEVER flag Windows-Legacy as Critical based on framework alone.** Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).
 
-The decision is what the project gives up by staying on Legacy, not whether it can continue using Legacy.
+### The Real Question
 
-### Features unavailable to Legacy
+Not "Can we keep using Legacy?" (yes) but **"What are we giving up by staying on Legacy?"**
 
-When recommending migration, lead with the 2–3 features most relevant to the project; do not list the whole menu.
+### What Legacy Projects Cannot Access
 
-| Rank | Category | Feature and impact |
+Ordered by developer-impact for a real production RPA team. **When recommending migration, lead with the top 2-3 features most relevant to what THIS project does today** — don't list the whole menu.
+
+| Rank | Category | Feature and why it matters |
 |---|---|---|
-| 1 | Maintenance | **Healing Agent**: runtime selector self-healing; Legacy requires tickets and redeployments |
-| 2 | UI Automation resilience | **Unified Target Method** (Strict + Fuzzy + Image + Anchor); Legacy has classic single-strategy selectors |
-| 3 | Reusable UI management | **Object Repository + UI Libraries**: centralized, hierarchical, versioned descriptors; Legacy has limited Object Repository support and no shared UI Library consumption |
-| 4 | Testing quality | **Coded test cases (C#)** + **Test Manager integration**; Legacy has only Studio Test Activity testing, with limited assertions and no mocking framework |
-| 5 | Development velocity | **Autopilot**; unavailable to Legacy |
-| 6 | ScreenPlay / modern UI orchestration | **ScreenPlay**; available only for Modern projects |
-| 7 | Platform capabilities | **AI Agents + Maestro orchestration + Agentic Automation**; Legacy cannot participate as an actor or invoke/be invoked by these |
-| 8 | Code-based logic | **Coded workflows (C#)** alongside XAML: type safety, unit testing, and IDE refactoring |
-| 9 | Performance and security | **Modern .NET (6+)**; Legacy uses .NET Framework 4.6.1 with aging security libraries |
-| 10 | Platform reach | **Cross-platform execution** including Linux robots |
-| 11 | Studio cadence | **Studio STS** two-month releases; Legacy is limited to annual Studio LTS |
-| 12 | Developer ergonomics | New design experience, Data Manager globals/constants, customizable library activity layouts |
+| 1 | Maintenance | **Healing Agent** — AI-powered selector self-healing at runtime. When a selector drifts (app update, DOM change, resolution shift), Healing Agent recovers automatically. Legacy projects have NO self-healing — every broken selector is a ticket and a deploy. |
+| 2 | UI Automation resilience | **Unified Target Method** (Strict + Fuzzy + Image + Anchor) — modern multi-strategy targeting. Legacy uses only classic single-strategy selectors, which break on minor UI changes. |
+| 3 | Reusable UI management | **Object Repository + UI Libraries** — centralized, hierarchical, versioned UI descriptors. Legacy has limited Object Repository support and no shared UI Library consumption. |
+| 4 | Testing quality | **Coded test cases (C#)** + **Test Manager integration** — write real unit/integration tests for workflows. Legacy testing is Studio Test Activity only — limited assertions, no mocking framework. |
+| 5 | Development velocity | **Autopilot** — AI-assisted Studio (generate activities from description, fix workflows, explain code). Legacy projects cannot use Autopilot. |
+| 6 | ScreenPlay / modern UI orchestration | **ScreenPlay** — modern scripted UI interaction / recording experience. Available only for Modern projects. |
+| 7 | Platform capabilities | **AI Agents + Maestro orchestration + Agentic Automation** — participate as actors in multi-agent/multi-robot BPMN processes. Legacy processes cannot be invoked from / cannot invoke these. |
+| 8 | Code-based logic | **Coded workflows (C#)** alongside XAML — type safety, unit testability, IDE refactoring for complex business logic. |
+| 9 | Performance and security | **Modern .NET (6+)** — faster execution, modern GC, current TLS/crypto stack. Legacy runs on .NET Framework 4.6.1 with aging security libraries. |
+| 10 | Platform reach | **Cross-platform execution** (Linux robots) — deployment flexibility for cloud-native environments. |
+| 11 | Studio cadence | **Studio STS** (2-month release cycle) — access to new activities and features as they ship. Legacy locks the team to Studio LTS (annual). |
+| 12 | Developer ergonomics | New design experience, Data Manager globals/constants, customizable library activity layouts. |
 
-### Tailored recommendations
+### Tailoring the Migration Recommendation
 
-| Project context | Lead with |
+The review should pick the **2-3 most relevant features for this project's context**, not enumerate the list. Heuristics:
+
+| If the project has... | Lead the recommendation with... |
 |---|---|
-| Heavy UI automation, many selectors, high maintenance | Healing Agent + Unified Target + Object Repository |
+| Heavy UI automation (many selectors, high maintenance load) | Healing Agent + Unified Target + Object Repository |
 | No tests or weak tests | Coded test cases + Test Manager |
-| Long XAML or complex business logic | Coded workflows (C#) |
-| Human-in-the-loop or multi-actor orchestration | Maestro + Agentic Automation + Agents |
-| One environment or scaling concerns | Cross-platform execution + Studio STS |
-| Many similar projects | Object Repository + UI Libraries (shared descriptors) + Autopilot |
+| Long XAML files, complex business logic | Coded workflows (C#) |
+| Human-in-the-loop / multi-actor orchestration | Maestro + Agentic Automation + Agents |
+| Runs only in one environment, scaling concerns | Cross-platform execution + Studio STS |
+| Team maintains many similar RPA projects | Object Repository + UI Libraries (shared descriptors) + Autopilot |
 
-### Severity matrix
+### Severity Matrix
 
 | Condition | Severity |
 |---|---|
-| Legacy with team intentionally using Studio LTS | Info |
-| Legacy and the team would benefit from top-ranked features (heavy UI maintenance, missing tests, AI/agent use cases, or coded-logic complexity) | Warning |
-| Legacy required for SOAP web services | Info — valid design; document reason |
+| Legacy in use, team on Studio LTS by organizational choice | Info |
+| Legacy in use AND team would benefit from the top-ranked features above (heavy UI maintenance, missing tests, AI/agent use cases, coded-logic complexity) | Warning |
+| Legacy in use because of SOAP web services (only supported in Legacy) | Info — valid design, document reason |
 | Greenfield project started on Legacy without technical justification | Warning |
-| Legacy library consumed by Windows/Cross-platform project | Warning — migrate library first |
+| Legacy library consumed by a Windows/Cross-platform project | Warning — migrate library first |
 
-### Migration blockers
+### Migration Blocker Detection
 
-When migration is being considered, scan for activities that cannot be auto-migrated; they require manual rework.
+When Legacy is detected and migration is on the table, scan for **activities that cannot be auto-migrated** — these represent manual rework effort:
 
-**UI Automation blockers (Activity Migrator cannot convert):**
+**UI Automation blockers (Activity Migrator cannot convert these):**
 
-| Activity/pattern | Severity |
+| Activity / Pattern | Severity |
 |---|---|
 | All Computer Vision activities (CV Click, CV Check, CV Get Text, CV Screen Scope, etc.) | Warning |
 | All Trigger activities (Click Trigger, Hotkey Trigger, Element State Change Trigger, Monitor Events, Key Press Trigger, Mouse Trigger, System Trigger) | Warning |
 | Anchor Base | Warning — manually replace with modern anchor pattern |
-| Context Aware Anchor; Element Scope | Warning |
+| Context Aware Anchor | Warning |
+| Element Scope | Warning |
 | Double Click / Double Click Image / Double Click OCR Text / Double Click Text | Warning |
 | Classic OCR engines (Microsoft OCR, Tesseract OCR, Google Cloud Vision OCR, Microsoft Azure Computer Vision OCR) | Warning |
 | Callout / Tooltip | Warning |
@@ -378,54 +430,54 @@ When migration is being considered, scan for activities that cannot be auto-migr
 
 **Mail blockers (Classic Outlook Desktop → M365):**
 
-| Activity/pattern | Severity |
+| Activity / Pattern | Severity |
 |---|---|
-| `Outlook Desktop Mail Messages Trigger` — skipped entirely; M365 has no folder-monitoring equivalent | Critical — fundamental capability loss without rework |
-| `Get Outlook Desktop Mail Messages` with filter options — filters do not migrate | Warning — recreate manually |
+| `Outlook Desktop Mail Messages Trigger` — skipped entirely during migration; no folder-monitoring equivalent in M365 | Critical — fundamental capability loss without rework |
+| `Get Outlook Desktop Mail Messages` with filter options — filters not migrated | Warning — manual recreation needed |
 | Other Classic Outlook activities (Send, Reply, Move, Delete, Mark Read, Set Categories, Save) | Info — auto-migrate but require ConnectionId configuration |
 
-### Migration tool
+### Migration Tool Decision
 
-| Scenario | Tool |
+| Scenario | Recommended Tool |
 |---|---|
 | Single project, framework-only (W-L → W) | Studio's built-in Converter |
 | Multiple projects / bulk conversion | **Activity Migrator** (`UiPath.Upgrade.exe bulk`) |
-| Classic UI Automation | **Activity Migrator** — also migrates Classic → Modern UIA |
-| Classic Outlook Desktop mail | **Activity Migrator** — also migrates to M365 Mail |
-| Activity-level migration | **Activity Migrator** |
+| Project uses Classic UI Automation | **Activity Migrator** — also migrates Classic → Modern UIA |
+| Project uses Classic Outlook Desktop mail | **Activity Migrator** — also migrates to M365 Mail |
+| Project needs activity-level migration (not just framework) | **Activity Migrator** |
 
 > Studio's built-in Converter does framework-only conversion. For most real-world Legacy projects (which use Classic UIA), **Activity Migrator** is the right tool.
 
-### Migration version requirements
+### Migration Version Requirements
 
 | Check | Severity |
 |---|---|
-| Planned migration uses `UiPath.UIAutomation.Activities` at an Activity-Migrator-supported version; check current UiPath docs | Warning |
-| Planned M365 mail migration uses `UiPath.MicrosoftOffice365.Activities` at a Migrator-supported version | Warning |
-| Studio 2024.10+ is available to open the migrated project | Warning |
-| Studio supports ST-AMG-001 post-migration rule; use recent LTS/STS and check current docs | Info |
+| If planning migration: `UiPath.UIAutomation.Activities` at an Activity-Migrator-supported version (check current UiPath docs) | Warning |
+| If planning migration: `UiPath.MicrosoftOffice365.Activities` at a Migrator-supported version (if Mail migration needed) | Warning |
+| Studio 2024.10+ available to open migrated project | Warning |
+| Studio version supports the ST-AMG-001 post-migration rule (recent LTS/STS — check current docs) | Info |
 
-### Migration pre-flight
+### Migration Pre-Flight Checklist
+
+| Pre-flight check | Severity |
+|---|---|
+| Project/library backup created | Warning |
+| Activity Migrator `analyze` run first (dry-run) — SARIF report reviewed before commit | Warning |
+| Libraries migrated **BEFORE** consumer projects | Critical |
+| Project/library names NOT changed during migration | Warning |
+| NuGet feeds verified in `NuGet.config` (or Orchestrator PAT/OAuth configured) | Warning |
+| For M365 mail migration: `--config` file with ConnectionId mappings prepared | Warning |
+| Pilot on single project before `bulk` command | Info |
+
+### Post-Migration Validation
+
+If the project shows signs of recent migration (`.upgrade` folder present, mix of modern activities with Legacy-originated naming, synthetic `Use Application/Browser` scopes):
 
 | Check | Severity |
 |---|---|
-| Create a project/library backup | Warning |
-| Run Activity Migrator `analyze` first as a dry run and review the SARIF report before commit | Warning |
-| Migrate libraries before consumer projects | Critical |
-| Do not change project/library names | Warning |
-| Verify NuGet feeds in `NuGet.config`, or configure Orchestrator PAT/OAuth | Warning |
-| For M365 mail, prepare a `--config` file with ConnectionId mappings | Warning |
-| Pilot one project before `bulk` | Info |
-
-### Post-migration
-
-If `.upgrade` exists, modern activities coexist with Legacy-originated naming, or synthetic `Use Application/Browser` scopes appear, check:
-
-| Check | Severity |
-|---|---|
-| ST-AMG-001 passes with post-migration annotations | Warning |
-| SARIF report from `.upgrade` is reviewed and archived | Info |
-| Organic application scopes are preserved and synthetic scopes merged correctly | Warning |
-| Migrated M365 activities have populated ConnectionId values | Critical — empty ConnectionIds cause runtime failures |
-| End-to-end tests pass | Warning |
-| Execution time is monitored because modern activities may initially be slower | Info |
+| Workflow Analyzer rule **ST-AMG-001** passes (post-migration annotations present) | Warning |
+| SARIF report from `.upgrade` folder reviewed and archived | Info |
+| Application scopes validated (organic preserved, synthetic merged correctly) | Warning |
+| ConnectionId values populated for migrated M365 activities | Critical — empty ConnectionIds cause runtime failures |
+| End-to-end tests passed post-migration | Warning |
+| Execution time monitored (modern activities may initially be slower) | Info |

@@ -6,7 +6,7 @@ Step 2.5 runs after Step 2 (`uip agent refresh` then `uip agent validate` for lo
 
 ### 2.5a — Run the review CLI first
 
-Run the applicable review command once, even if another review pass already produced findings (SKILL.md Critical Rule 9), and capture JSON:
+Run the applicable review command once, even if another review pass already produced findings (SKILL.md Critical Rule 8 — run the review CLI first), and capture JSON:
 
 | Agent type | Command |
 |---|---|
@@ -24,7 +24,7 @@ If the CLI is unavailable (not installed or lacking `agent review` / `codedagent
 1. Use the detection table to identify applicable catalog files.
 2. Read every applicable catalog file in full.
 3. Apply each rule's `detection_method` in its judgment form: read the named source, reason about it, and emit a finding when criteria hold. Log the reasoning in the finding's `description`.
-4. Track every intended rule that cannot be applied (`status: deferred`, review CLI unavailable, guardrail catalog unavailable, or required source unreadable) in the report's "Rules Skipped" subsection with `rule_id` and reason. Never silently skip. An empty subject set is not a skip (SKILL.md Critical Rule 11).
+4. Track every intended rule that cannot be applied (`status: deferred`, review CLI unavailable, guardrail catalog unavailable, or required source unreadable) in the report's "Rules Skipped" subsection with `rule_id` and reason. Never silently skip. An empty subject set is not a skip (SKILL.md Critical Rule 10 — Rules Skipped).
 5. Merge findings into the Step 5 report's Critical / Warning / Info tables, one row per finding:
 
    ```
@@ -63,7 +63,7 @@ Sort findings by `(severity, category, rule_id, file, line)`, never discovery or
 
 ## Anti-patterns
 
-1. Do not invent rule IDs. If a real critical issue is covered by neither the CLI nor catalog, report it under Critical Findings as a normal finding, not with a `rule_id`; only critical issues qualify (SKILL.md Critical Rule 12).
+1. Do not invent rule IDs. If a real critical issue is covered by neither the CLI nor catalog, report it under Critical Findings as a normal finding, not with a `rule_id`; only critical issues qualify (SKILL.md Critical Rule 11 — never invent `rule_id`).
 2. Do not re-rank severities. CLI `Severity` and catalog `severity` are authoritative for `error` / `warning` / `info`. For `judgment` rows, log the reasoning used to select the report band.
 3. Do not silently skip rules. Record every skip in "Rules Skipped" with its reason.
 4. Do not run the catalog before the CLI. Run `uip agent review` / `uip codedagent review` first (2.5a). For low-code agents, run `uip agent refresh` then `uip agent validate` during Step 2; the catalog handles only reasoning the CLI cannot perform.

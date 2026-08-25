@@ -46,7 +46,7 @@ find . -maxdepth 3 \( -type d \( -name ".agent-builder" -o -path "*/.local/build
 
 The PDD is the source of truth for process behavior, business context, inputs/outputs, exceptions, SLAs, transactions, queues, applications, credentials, and success criteria. Search in order: `./docs/`, `./documentation/`, `./Design/`, project root; names containing `PDD.*`, `Process_Design_Document.*`, `SDD.*`, `Solution_Design_Document.*`, or `Requirements.*`; root `AGENTS.md` or `README.md`; then `project.json.description` and metadata. Read supported documents with appropriate tools and extract review criteria.
 
-If none is found, ask:
+If none is found, use the `AskUserQuestion` tool to ask interactively (do not print the question as prose):
 
 ```text
 Question: I could not find a Process Design Document (PDD) in this project. Do you have one I can use as the source of truth for this review?
@@ -143,8 +143,8 @@ Every report includes:
 | ... | ... | ... | ... | ... |
 
 #### Validation Details
-- [E-001] <file>: <rule ID> — <message>
-- [W-001] <file>: <rule ID> — <message>
+- [V-E-001] <file>: <rule ID> — <message>
+- [V-W-001] <file>: <rule ID> — <message>
 ```
 
 Include counts for every command. Detail Errors and Warnings only. Do not narrate clean results, passes, zero issues, drift status, scores, regeneration counts, or schema status; the table is sufficient.
@@ -219,7 +219,7 @@ For coded projects inspect `for`, `foreach`, `while`, and external I/O. Classify
 | No loop | one-to-one |
 | Contract or execution cannot be mapped deterministically | unclear |
 
-Side effects making a loop one-to-many include invoked side-effect workflows, HTTP/connectors, queue operations, database writes, non-temporary file writes, state-changing UI actions, and email sends. Session scope, shared credentials, one portal, PDD wording, idempotency, or queue size do not reclassify the shape.
+Side effects making a loop one-to-many include invoked side-effect workflows, HTTP/connectors, queue operations (`Add Queue Item`, `Set Transaction Progress`), database writes (`Execute Non Query`, `Insert Data Table`, `Bulk Insert`), non-temporary file writes (`Write Range`, `Write CSV`, `Append to File`), state-changing UI actions (Click submit/save, persistent Type Into, SAP `Call Transaction`), and email sends. Session scope, shared credentials, one portal, PDD wording, idempotency, or queue size do not reclassify the shape.
 
 For one-to-many, determine whether sub-units can be independently queued. If yes, recommend dispatcher/performer splitting. If no, use the 10-point hardening checklist in [rpa-common-issues.md](references/rpa/rpa-common-issues.md) under “When it cannot be split — hardening checklist”; report each missing safeguard separately. Check read-before-write, conditional skips, `UniqueReference`, SQL `MERGE`/`ON CONFLICT`/`UPSERT`/`WHERE NOT EXISTS`, HTTP idempotency headers, status filters, pre-check workflows, and per-sub-item progress.
 
@@ -237,7 +237,7 @@ Consult as applicable: [rpa-advanced-checklist.md](references/rpa/rpa-advanced-c
 
 ### Step 4 — Evaluate Optimization
 
-Only after validation and manual review, assess business suitability, architecture, dependencies, queue usage, bulk operations, transaction/error recovery, redundant calls, logging, selectors, files, data handling, configuration consistency, environment separation, and performance. For solutions assess cross-project architecture, pinned libraries, circular dependencies, dispatcher/performer suitability, and shared configuration. For single projects assess queues for more than 50 independent items, batching, REFRAMEWORK/equivalent retry, resource efficiency, and selector/data patterns. Read [review-workflow-guide.md](references/review-workflow-guide.md) and [architecture-assessment-guide.md](references/architecture-assessment-guide.md).
+Only after validation and manual review, assess business suitability, architecture, dependencies, queue usage, bulk operations, transaction/error recovery, redundant calls, logging, selectors, files, data handling, configuration consistency, environment separation, and performance. For solutions assess cross-project architecture, pinned libraries, circular dependencies, dispatcher/performer suitability, and shared configuration. For single projects assess queues for more than 50 independent items, batching, REFramework/equivalent retry, resource efficiency, and selector/data patterns. Read [review-workflow-guide.md](references/review-workflow-guide.md) and [architecture-assessment-guide.md](references/architecture-assessment-guide.md).
 
 ### Step 4.5 — Compute Agent Grade
 
