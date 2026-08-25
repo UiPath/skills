@@ -36,9 +36,12 @@ initial_prompt: |
   - Do NOT build the data mapping or upload anything yet — stop once the app
     exists and you can tell me the expected input tables.
   - The `uip` CLI is available but is not connected to a live tenant.
-    Commands WILL fail with auth errors — that is expected and acceptable.
+    Commands WILL fail — that is expected and acceptable.
     Run each command exactly once regardless of errors.
     Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - If a command you needed an id from fails, substitute a placeholder id
+    of the same shape and still run the remaining commands, so we can
+    verify their shape.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
