@@ -1,0 +1,100 @@
+task_id: skill-ixp-metrics-annotations-shortfall-smoke
+description: >
+  Smoke: for fields whose samples are too small for an instruction rewrite to
+  be evaluated, the agent tells a genuinely small sample (upload more
+  documents) from unconfirmed labels (confirm what is already there).
+
+  The fixture puts three fields below the 0.7 target with ValidatedDocuments 5,
+  every one with a sample too small to measure a rewrite against
+  (regression_threshold 0.2, 0.167 and 0.25). The separating signal is the
+  field's own Documents: 5 of 5 (UPLOAD), 2 of 5 (CONFIRM), and 4 of 5 —
+  short by exactly one, which is the missing-marker allowance, so UPLOAD, not
+  CONFIRM.
+
+  Annotations is the trap. The CONFIRM field carries the LARGEST Annotations
+  (6) of the three while being reviewed on the fewest documents, because
+  Annotations counts reviewed extractions and that field averages three per
+  document. An agent that treats Annotations as a document count, or takes the
+  smallest Annotations as the smallest sample, swaps the fixes. Recall does not
+  separate them either — the CONFIRM field sits at 0.667, above the 0.5 gate on
+  step 2a-check.
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:improve]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_shortfall}
+
+initial_prompt: |
+  In the IXP project `receipts_lite-4a9f30d2-ixp`, the fields below the target
+  F1 of 0.7 all have samples too small for an instruction rewrite to be
+  evaluated, so rewriting prompts is not the next move for any of them.
+
+  For each field below target, work out which of these two things would
+  actually grow its sample, and write `remedy.json` in the working directory —
+  one key per field below target, keyed by field id:
+
+      {"<field_id>": "UPLOAD" | "CONFIRM"}
+
+      "UPLOAD"  = its evidence is already as complete as the labelled data
+                  allows; more documents must be uploaded and labelled
+      "CONFIRM" = the documents are labelled, but this field's predictions
+                  were never confirmed on some of them
+
+  Fields at or above target must not appear.
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do not change any instructions and do not confirm anything — decide only.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Read the project's metrics"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+.*receipts_lite-4a9f30d2-ixp)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The discriminator. Reading Annotations as a document count, or picking the
+  # smallest Annotations as the smallest sample, swaps these two: the CONFIRM
+  # field has the LARGEST Annotations (6) yet the fewest Documents (2 of 5).
+  - type: json_check
+    description: "Separated UPLOAD from CONFIRM on the field's own Documents vs ValidatedDocuments, not on Annotations"
+    path: "remedy.json"
+    assertions:
+      - expression: '"cccc000000000001"'
+        operator: equals
+        expected: "UPLOAD"
+      - expression: '"cccc000000000002"'
+        operator: equals
+        expected: "CONFIRM"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The allowance. Documents 4 of 5 — short by exactly one — is a missing
+  # marker, not unconfirmed labels; flagging it CONFIRM sends the user to
+  # re-confirm labels that do not exist.
+  - type: json_check
+    description: "Treated the one-document shortfall (…0004) as the missing-marker allowance — UPLOAD, not CONFIRM"
+    path: "remedy.json"
+    assertions:
+      - expression: '"cccc000000000004"'
+        operator: equals
+        expected: "UPLOAD"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Did not include the field already above target (…0003 at F1 1.000)"
+    path: "remedy.json"
+    assertions:
+      - expression: "length(keys(@))"
+        operator: equals
+        expected: 3
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,93 @@
+task_id: skill-ixp-metrics-regression-noise-floor-smoke
+description: >
+  Smoke: after an improvement iteration, the agent decides what to roll back
+  using each field's OWN noise floor, and finds the regression in a field it
+  never edited.
+
+  The fixture drops four fields between model version 40 and 41. Two were
+  edited: one by 0.111 with Annotations 5 (under its own 0.200 threshold, so
+  keep) and one by 0.200 with Annotations 40 (over its own 0.100 threshold, so
+  roll back) — a flat 0.1 rolls back both. A third dropped 0.250 and was never
+  edited, so only a diff over every field finds it. A fourth is untouched and
+  sub-threshold, so a collateral check that ignores noise floors reports it as
+  damage.
+
+  ProjectScore falls 0.925 -> 0.757, mostly from fields whose own thresholds
+  say keep, so gating on it over-rolls-back.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:improve]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_regression}
+
+initial_prompt: |
+  An improvement iteration just finished on the IXP project
+  `receipts_qa-7c2e11a4-ixp`. Model version 40 was the state before it;
+  version 41 is the result.
+
+  The iteration edited the per-field extraction instructions of exactly two
+  fields, using `fields update-prompts`:
+
+    - `bbbb000000000001`
+    - `bbbb000000000002`
+
+  No field-group instructions were changed.
+
+  Decide what to do about the result. Write `decision.json` in the working
+  directory, with exactly these two keys:
+
+      {"rollback":   ["<field ids whose instructions should be rolled back>"],
+       "collateral": ["<field ids that regressed but were NOT edited>"]}
+
+  Both values are arrays of field id strings, and either may be empty. List
+  each field id at most once, and do not put the same id in both arrays.
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do not change any instructions — decide only.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Read the previous iteration's metrics (version 40), not just the current ones"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\b(?=.*(?:--model-version[= ]|-m\s+)40\b).*)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The noise-floor discriminator. Both edited fields dropped; only
+  # bbbb000000000002 cleared its own threshold. An agent using a flat 0.1
+  # rolls back bbbb000000000001 too and fails the length assertion.
+  - type: json_check
+    description: "Rolled back only the edited field whose drop cleared its own threshold (…0002), not the sub-threshold one (…0001)"
+    path: "decision.json"
+    assertions:
+      - expression: "length(rollback)"
+        operator: equals
+        expected: 1
+      - expression: "rollback[0]"
+        operator: equals
+        expected: "bbbb000000000002"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The collateral discriminator. bbbb000000000003 regressed hardest and was
+  # never edited, so only a diff over every field finds it; bbbb000000000004
+  # is untouched but sub-threshold and must not be reported.
+  - type: json_check
+    description: "Found the regression in the field it never edited (…0003) and left the untouched sub-threshold field (…0004) out"
+    path: "decision.json"
+    assertions:
+      - expression: "length(collateral)"
+        operator: equals
+        expected: 1
+      - expression: "collateral[0]"
+        operator: equals
+        expected: "bbbb000000000003"
+    weight: 3.0
+    pass_threshold: 1.0
