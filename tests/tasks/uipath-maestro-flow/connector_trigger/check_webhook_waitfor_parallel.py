@@ -28,8 +28,8 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "_shared"))
-from flow_check import find_flow_file  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 FLOW_GLOB = "**/WebhookSelfTest*.flow"
 EVENT_MARKERS = ("uipath.connector.event", "uipath-http-webhook")
