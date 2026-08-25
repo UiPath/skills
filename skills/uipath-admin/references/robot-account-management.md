@@ -6,7 +6,7 @@ Robot accounts are unattended automation identities that run processes without h
 
 ## Credential Model
 
-See [SKILL.md — Robot Accounts vs External Apps](../SKILL.md#robot-accounts-vs-external-apps). Orchestrator provisions robot credentials during machine connection; do not create external apps as robot credentials.
+See [Key Concepts — Robot Accounts vs External Apps](key-concepts.md#robot-accounts-vs-external-apps). Orchestrator provisions robot credentials during machine connection; do not create external apps as robot credentials.
 
 ## Create a Robot Account
 

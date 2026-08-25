@@ -2,7 +2,7 @@
 
 Workflows for OAuth2 external clients via `uip admin external-apps`. See [identity-commands.md](identity-commands.md#external-apps--uip-admin-external-apps) for full syntax and flags.
 
-External apps provide Client ID and Secret credentials for API integrations, CI/CD, and external systems. **They are not robot credentials.** See [SKILL.md — Robot Accounts vs External Apps](../SKILL.md#robot-accounts-vs-external-apps).
+External apps provide Client ID and Secret credentials for API integrations, CI/CD, and external systems. **They are not robot credentials.** See [Key Concepts — Robot Accounts vs External Apps](key-concepts.md#robot-accounts-vs-external-apps).
 
 ## Scopes and Grant Types
 
