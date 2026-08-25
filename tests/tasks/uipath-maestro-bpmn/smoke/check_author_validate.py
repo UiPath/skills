@@ -15,7 +15,11 @@ import os
 import sys
 
 # Import shared helpers from the task suite's _shared module.
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "_shared"))
+_shared = (os.path.join(os.environ["SKILLS_REPO_PATH"],
+                        "tests", "tasks", "uipath-maestro-bpmn", "_shared")
+           if os.environ.get("SKILLS_REPO_PATH")
+           else os.path.join(os.path.dirname(__file__), "..", "_shared"))
+sys.path.insert(0, _shared)
 
 from bpmn_check import (  # noqa: E402
     attr,
