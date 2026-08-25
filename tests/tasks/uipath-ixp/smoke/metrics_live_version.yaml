@@ -33,7 +33,7 @@ initial_prompt: |
 
 success_criteria:
   - type: file_matches_regex
-    description: "Resolved the deployed version from `list-models` before reading any score"
+    description: "Resolved the live version from `list-models` before reading any score"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+projects\s+list-models\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
