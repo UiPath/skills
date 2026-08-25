@@ -37,44 +37,34 @@ initial_prompt: |
     Run each command once and move on. Do NOT retry or login.
   - Do NOT skip --type on any complete call. Do NOT skip --folder-id.
 
+# Each per-type criterion asserts every required flag for that completion
+# (--type, --folder-id, and --action/--data where required) via order-independent
+# lookaheads scoped to a single line ([^\n]*). This grades behaviour regardless of
+# flag order and whether the agent runs the three completions as separate commands
+# or batches them into one newline-separated Bash call (Codex does the latter),
+# which a min_count:3 "every call" criterion would under-count.
 success_criteria:
   - type: command_executed
-    description: "Agent completed an ExternalTask with --type and --folder-id (minimal form)"
+    description: "Completed an ExternalTask with --type and --folder-id (minimal form)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+complete\s+\d+\s+.*--type\s+ExternalTask.*--folder-id\s+\d+'
+    command_pattern: 'uip\s+tasks\s+complete\s+\d+(?=[^\n]*--type\s+ExternalTask)(?=[^\n]*--folder-id\s+\d+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent completed a FormTask with --action and --data"
+    description: "Completed a FormTask with --type, --folder-id, --action and --data"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+complete\s+\d+\s+.*--type\s+FormTask.*--action\s+.*--data\s+'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent completed an AppTask with --action and --data"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+complete\s+\d+\s+.*--type\s+AppTask.*--action\s+.*--data\s+'
+    command_pattern: 'uip\s+tasks\s+complete\s+\d+(?=[^\n]*--type\s+FormTask)(?=[^\n]*--folder-id\s+\d+)(?=[^\n]*--action\s+)(?=[^\n]*--data\s+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Every complete call includes --folder-id"
+    description: "Completed an AppTask with --type, --folder-id, --action and --data"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+complete\s+\d+\s+.*--folder-id\s+\d+'
-    min_count: 3
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Every complete call includes --type"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+complete\s+\d+\s+.*--type\s+\w+'
-    min_count: 3
-    weight: 2.0
+    command_pattern: 'uip\s+tasks\s+complete\s+\d+(?=[^\n]*--type\s+AppTask)(?=[^\n]*--folder-id\s+\d+)(?=[^\n]*--action\s+)(?=[^\n]*--data\s+)'
+    min_count: 1
+    weight: 2.5
     pass_threshold: 1.0
 
