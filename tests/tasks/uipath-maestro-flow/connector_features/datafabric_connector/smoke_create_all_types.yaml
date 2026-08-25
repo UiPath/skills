@@ -5,7 +5,7 @@ description: >
   UUID) with correct JSON literal shapes. Static-validate only; runtime
   `flow debug` skipped to avoid live tenant side effects. Full CRUD /
   negative-path coverage lives in e2e_contract_intake_pipeline.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:
   max_turns: 30

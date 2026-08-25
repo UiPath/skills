@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Verify integration_create_get: at least 2 Create nodes and >=1 Get node
-with expansionLevel=3 on FlowCodeEvalEntity."""
+"""Verify integration_create_get: at least 2 Create nodes and Get nodes
+covering expansionLevel {1, 2, 3} on FlowCodeEvalEntity."""
 import glob
 import json
 import sys
 
 ENTITY = "FlowCodeEvalEntity"
+REQUIRED_EXPANSION = {1, 2, 3}
 
 
 def main() -> int:
     creates = 0
     gets = 0
-    max_expansion = 0
+    expansion_levels = set()
     for path in glob.glob("**/*.flow", recursive=True):
         with open(path) as f:
             doc = json.load(f)
@@ -27,7 +28,7 @@ def main() -> int:
                 gets += 1
                 exp = (detail.get("queryParameters") or {}).get("expansionLevel")
                 try:
-                    max_expansion = max(max_expansion, int(exp))
+                    expansion_levels.add(int(exp))
                 except (TypeError, ValueError):
                     pass
 
@@ -37,10 +38,12 @@ def main() -> int:
     if gets < 4:
         print(f"FAIL: expected >=4 get nodes on {ENTITY}, found {gets}", file=sys.stderr)
         return 1
-    if max_expansion < 3:
-        print(f"FAIL: no Get node with expansionLevel=3 (max found: {max_expansion})", file=sys.stderr)
+    missing = REQUIRED_EXPANSION - expansion_levels
+    if missing:
+        print(f"FAIL: Get nodes missing expansionLevel(s) {sorted(missing)} "
+              f"(found: {sorted(expansion_levels)})", file=sys.stderr)
         return 1
-    print(f"OK: {creates} creates, {gets} gets, max expansionLevel={max_expansion}")
+    print(f"OK: {creates} creates, {gets} gets, expansionLevels={sorted(expansion_levels)}")
     return 0
 
 

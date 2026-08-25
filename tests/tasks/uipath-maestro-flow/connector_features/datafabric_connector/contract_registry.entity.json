@@ -2,11 +2,11 @@
   "displayName": "ContractRegistry",
   "description": "Coder-eval fixture — created by pre_run for the DF Flow connector e2e",
   "fields": [
-    {"fieldName": "contractTitle", "type": "STRING",  "lengthLimit": 200},
-    {"fieldName": "status",        "type": "STRING",  "lengthLimit": 100},
-    {"fieldName": "priority",      "type": "INTEGER"},
-    {"fieldName": "dueDate",       "type": "DATE"},
-    {"fieldName": "value",         "type": "DECIMAL"},
-    {"fieldName": "isUrgent",      "type": "BOOLEAN"}
+    {"name": "contractTitle", "type": "STRING",  "lengthLimit": 200},
+    {"name": "status",        "type": "STRING",  "lengthLimit": 100},
+    {"name": "priority",      "type": "INTEGER"},
+    {"name": "dueDate",       "type": "DATE"},
+    {"name": "value",         "type": "DECIMAL"},
+    {"name": "isUrgent",      "type": "BOOLEAN"}
   ]
 }

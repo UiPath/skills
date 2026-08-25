@@ -62,14 +62,18 @@ def main() -> int:
         print(f"FAIL: queryParameters.isAscending not reverted: initial={i_qp.get('isAscending')!r} final={f_qp.get('isAscending')!r}", file=sys.stderr)
         return 1
 
-    # No other nodes may have been added or removed
-    i_ids = {n["id"] for n in initial.get("nodes", [])}
-    f_ids = {n["id"] for n in final.get("nodes", [])}
-    if i_ids != f_ids:
-        print(f"FAIL: node set changed. initial={sorted(i_ids)} final={sorted(f_ids)}", file=sys.stderr)
+    # No drift anywhere in the document — every field must match the snapshot,
+    # not just the three we explicitly checked. Catches label / limit / edge /
+    # definition / variable changes that the targeted diff would miss.
+    if initial != final:
+        print("FAIL: document drift beyond targeted fields — revert not clean",
+              file=sys.stderr)
+        for k in sorted(set(initial) | set(final)):
+            if initial.get(k) != final.get(k):
+                print(f"  key {k!r} differs", file=sys.stderr)
         return 1
 
-    print(f"OK: MovieReportFlow reverted cleanly; {len(i_ids)} nodes, no drift")
+    print(f"OK: MovieReportFlow reverted cleanly; {len(initial.get('nodes', []))} nodes, byte-identical to snapshot")
     return 0
 
 

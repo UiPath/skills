@@ -8,8 +8,8 @@ definition from a JSON file whose path is passed as the sole argument:
 
 The definition file is passed to `uip df entities create <name> --file`.
 Must include `displayName` (or `name`) and a `fields[]` array of
-`{fieldName, type}` entries — the simplified schema used by these
-coder-eval fixtures.
+`{name, type, ...}` entries — matching the write shape the CLI expects
+(see `uip df entities create --help`).
 
 Exits 0 whether the entity already existed or was created. Exits non-zero
 only on real infrastructure failure (login expired, CLI missing, etc.),
