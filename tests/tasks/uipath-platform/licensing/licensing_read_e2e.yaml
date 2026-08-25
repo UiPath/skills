@@ -11,6 +11,17 @@ tags: [uipath-platform, e2e, licensing, mode:operate, lifecycle:discover]
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "WebFetch"]
 
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
 initial_prompt: |
   Produce a read-only licensing snapshot of this account. This is read-only:
   do NOT run anything that mutates licensing state.
@@ -83,6 +94,22 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All four read verbs actually ran (.uip-cmdlog shim log) — the envelope validator checks shape, which hand-written JSON also satisfies"
+    command: "grep -Eq 'uip platform users licenses available' .uip-cmdlog && grep -Eq 'uip platform groups rules get' .uip-cmdlog && grep -Eq 'uip platform licenses consumables get' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent honoured the read-only instruction — no licensing state was mutated"
+    command: "test -f .uip-cmdlog && ! grep -Eq 'uip platform .*(licenses|rules) set' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: llm_judge

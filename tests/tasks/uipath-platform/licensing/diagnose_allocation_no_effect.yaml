@@ -42,7 +42,7 @@ success_criteria:
     command: "grep -Eq 'uip platform tenants licenses get' .uip-cmdlog"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -56,7 +56,7 @@ success_criteria:
   - type: file_exists
     description: "Explanation written to analysis.md"
     path: "analysis.md"
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -64,7 +64,7 @@ success_criteria:
     command: "grep -Eiq 'absolut|not a delta|not additive|does not add|replaces the' analysis.md"
     timeout: 10
     expected_exit_code: 0
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -72,5 +72,5 @@ success_criteria:
     command: "grep -Eiq 'overlay|omitted|absent from|not included|keeps? (its|their) current' analysis.md"
     timeout: 10
     expected_exit_code: 0
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0

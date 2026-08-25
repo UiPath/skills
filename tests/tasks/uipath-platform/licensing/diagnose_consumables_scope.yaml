@@ -38,11 +38,19 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "Agent ran a consumables summary to reproduce observation 1 (.uip-cmdlog shim log)"
-    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Eq -- '--mode[= ]summary'"
+    description: "Agent ran a tenant-scoped consumables summary to reproduce observation 1 (.uip-cmdlog shim log)"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]summary' | grep -Eq -- '--tenant[= ]default'"
     timeout: 10
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent also ran the summary UNSCOPED, so scoped and account-wide figures could be compared — the diagnostic move, not just an assertion about it"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]summary' | grep -v -- '--tenant' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -50,13 +58,13 @@ success_criteria:
     command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Eq -- '--mode[= ]folders'"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Verdict written to verdict.md"
     path: "verdict.md"
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -64,7 +72,7 @@ success_criteria:
     command: "grep -Eiq 'suppress|scoped|by design|deliberat|expected behaviou?r' verdict.md"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -72,7 +80,7 @@ success_criteria:
     command: "grep -Eiq 'non.?recursive|not recursive|child folder|consumedBySelf|exclude' verdict.md"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -80,5 +88,5 @@ success_criteria:
     command: "grep -Eiq 'not broken|no.{0,3}t broken|working as|correct|by design|expected' verdict.md"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.0
+    weight: 1.0
     pass_threshold: 1.0
