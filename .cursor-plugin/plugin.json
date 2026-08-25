@@ -1,7 +1,7 @@
 {
   "name": "uipath",
   "displayName": "UiPath",
-  "version": "1.200.0",
+  "version": "1.202.0",
   "description": "UiPath plugin for Cursor — skills for building, running, testing, and deploying UiPath automations, agents, coded apps, and platform operations.",
   "author": {
     "name": "UiPath",

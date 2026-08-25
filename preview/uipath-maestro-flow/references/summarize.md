@@ -1,6 +1,6 @@
 # Summarize
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`summarize()`](api.md#summarize-function).*
+*Exact signatures, fields, and defaults: [`summarize()`](api.md#summarize-function).*
 
 Reads an attachment and produces a summary given a prompt.
 

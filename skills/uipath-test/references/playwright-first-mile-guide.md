@@ -24,7 +24,7 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
-> **Reading command output.** `--output json` prints a JSON envelope, but not on its own line: auto-updater chatter (including `Update completed with failures.`, which is unrelated to your command), `Resolved project …` progress lines and trailing telemetry warnings share the same stream. Judge a command by the `Result` field inside the envelope, never by surrounding text, and extract from the first `{` before parsing.
+> **Reading command output.** `--output json` prints a JSON envelope, but not on its own line: auto-updater chatter (including `Update completed with failures.`, which is unrelated to your command), `Resolved project …` progress lines and trailing telemetry warnings share the same stream. Judge a command by the `Result` field inside the envelope, never by surrounding text. Noise appears on **both sides** of the JSON, so taking everything from the first `{` is not enough — slice from the first `{` to the **matching final `}`** (or read the last balanced JSON object) before parsing, or a trailing telemetry line will break the parse.
 
 > **If a command is missing.** Two commands in this pipeline are hidden from `--help`, so `--help` is not a reliable way to tell whether a build has them: `testsets playwright-context` (Step 5) and `run --playwright-projects` (Step 6). Older CLIs answer `unknown command` / `unknown option` for them. Treat them differently:
 >
@@ -59,7 +59,7 @@ uip tm pack --project-path <dir> --type playwright \
 uip or packages upload "<out-dir>/<PackageName>.1.0.0.nupkg" --output json
 ```
 
-`--package-version` is a NuGet/SemVer-style version: three numeric parts with an optional prerelease suffix (`1.0.0`, `1.0.1-beta.1`) — `1.0` is rejected. Each upload needs a version the feed does not already have, so before re-packing check what is published and go above it:
+`--package-version` is a NuGet/SemVer-style version: **three or four** numeric parts with an optional prerelease/build suffix (`1.0.0`, `1.0.0.0`, `1.0.1-beta.1`) — `1.0` is rejected. Each upload needs a version the feed does not already have, so before re-packing check what is published and go above it:
 
 ```bash
 uip or packages list --search <PackageName> --output json
@@ -135,7 +135,8 @@ uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 Read the fields off the JSON response rather than relying on the names below staying current — this list describes today's shape, and `--output json` always carries whatever the API returns.
 
 - `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` holds the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set. Both are **comma-joined strings** (`"chromium, firefox"`), not arrays — split on `", "` when scripting; no stored selection is `""`.
-- `Data.IsPlaywright: false` → RPA, mixed, manual, or multi-package test set — run it **without** `--playwright-projects`.
+- `Data.IsPlaywright: false` → the set does **not** resolve to exactly one synced Playwright package (RPA, multi-package, or no package at all) — run it **without** `--playwright-projects`.
+- **`true` does not mean "only Playwright".** The check is *one* Playwright package, not *only* Playwright tests: a set holding Playwright tests from one package plus manual test cases still reports `true`, because manual cases resolve to no package. Treat the flag as "project selection is available here", not as a purity test.
 - The server never errors on type here, so this is the safe discriminator for automation: probe first, branch on `IsPlaywright`.
 - **False negative without a folder:** the probe resolves the package through the project's default folder — if that isn't set (Step 4), a genuine Playwright test set reports `IsPlaywright: false`. Set the default folder before trusting a `false`.
 

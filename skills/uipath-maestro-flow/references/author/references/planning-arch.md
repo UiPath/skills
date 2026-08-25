@@ -229,7 +229,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.logic.delay` | `input` | `output` |
 | `core.logic.decision` | `input` | `true`, `false` |
 | `core.logic.switch` | `input` | `case-{id}` (dynamic per case), `default` |
-| `core.logic.loop` | `input`, `loopBack` | `success`, `output`, `error` |
+| `core.logic.loop` | `input` (outer), `continue` / `break` (inner) | `success`, `error` (outer), `start` (inner) |
 | `core.logic.merge` | `input` (multiple) | `output` |
 | `core.control.end` | `input` | — |
 | `core.logic.terminate` | `input` | — |
@@ -264,9 +264,9 @@ Apply these when defining edges in the topology:
 5. Every non-terminal node must have at least one outgoing edge
 6. Decision nodes produce exactly two outgoing edges: one from `true`, one from `false`
 7. Switch nodes produce one outgoing edge per case + optionally one from `default`
-8. Loop nodes: the `loopBack` port receives the edge returning from the last node inside the loop body; `success` fires after all iterations
+8. Loop nodes: the inner `start` port feeds the first body node, the inner `continue` port receives the edge returning from the last body node; the outer `success` port fires after all iterations
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
-10. Do not create cycles except through Loop's `loopBack` mechanism
+10. Do not create cycles except through Loop's `continue` handle
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
 12. **Wire the `error` source port only when the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge the failure faults the whole flow, which is what should happen when the requirements say nothing about handling it. **Do not add error edges the requirements never asked for, and never set `inputs.errorHandlingEnabled: true` on a node with no error edge** — the flag suppresses the fault, so the run reports success while the work failed. When an error edge does exist, the source node must also have `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands set it automatically, but direct JSON edits must include it. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
@@ -303,7 +303,7 @@ Trigger -> Prepare
 
 ```
 Trigger -> Fetch List -> Loop
-  |-- [loop body] Process Item -> (loopBack)
+  |-- start -> [loop body] Process Item -> (continue)
   |-- success -> Summarize -> End
 ```
 
@@ -352,7 +352,7 @@ Here Maestro holds the case across the agent call and the human wait; RPA does t
 
 ```
 Scheduled Trigger -> HTTP (fetch batch) -> Loop
-  |-- Queue Create (per item) -> (loopBack)
+  |-- start -> Queue Create (per item) -> (continue)
   |-- success -> Script (summary) -> End
 ```
 
@@ -528,7 +528,7 @@ LLM-generated mermaid frequently contains syntax errors. After generating the di
 2. **Edge directions must match the flow** — trigger at the top, End at the bottom (for TB layouts)
 3. **Decision nodes must show both branches** — `true` and `false` edges, each labeled
 4. **Switch nodes must show all case edges** — one per case plus optional default
-5. **Loop structures**: show the loop body and the loopBack edge returning to the loop node
+5. **Loop structures**: show the loop body and the `continue` edge returning to the loop node
 6. **Parallel branches** must visually fork from one node and converge at a Merge node
 
 ### Validation Procedure

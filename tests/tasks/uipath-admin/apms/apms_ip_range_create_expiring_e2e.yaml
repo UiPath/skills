@@ -1,0 +1,44 @@
+task_id: skill-admin-apms-ip-range-create-expiring-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — allowlist a contractor
+  network temporarily. Graded on the expiry the service stored: only entries
+  created with an expiry carry an ExpiresAt timestamp, and the check requires it
+  to land about 30 days out, so a permanent entry fails.
+
+  Enforcement is never enabled by this test, and the CIDR is a TEST-NET
+  documentation range.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, ip-management]
+
+pre_run:
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-contractor-net" APMS_RANGE_COUNT="1" APMS_RANGE_CLAIM="0" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-contractor-net" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  A contractor needs platform access from the network listed in `seed.json` (the
+  `range.cidrs` field) for the next 30 days only — after that the access should
+  lapse on its own without anyone having to remember to remove it. Set that up on
+  our IP allowlist under the name in `range.name`.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The allowlist entry carries an expiry about 30 days out, as the service stored it"
+    command: 'APMS_CHECK="expiring" APMS_SEED_KEY="range" APMS_EXPIRES_IN_DAYS="30" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''verify_apms_ip_range.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Adding allowlist entries must not touch the enforcement toggle"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+enforcement\s+(?:enable|disable)\b'
+    weight: 2.0

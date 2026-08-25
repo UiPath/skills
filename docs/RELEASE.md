@@ -25,7 +25,7 @@ All channels carry `package.json`'s version; the pre-release channels (`dev`, `p
 | `@uipath/skills` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
 | `@uipath/skills-studioweb` | `preview` | GitHub Packages | `M.N.<release>-preview.<run>` | per push to `release/v*`, or preview dispatch |
 | `@uipath/skills-studioweb` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
-| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | — | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
+| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`) | — | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex / Cursor plugin auto-update |
 
 `sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace, Codex, and Cursor versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
 
@@ -34,7 +34,24 @@ Run after any version change:
 ```bash
 npm run version:sync      # rewrite derived manifests from package.json
 npm run version:check     # CI guard — non-zero exit if drifted
+node scripts/sync-version.mjs --list-paths   # the file set this script owns
 ```
+
+`--list-paths` prints `package.json` plus every derived manifest, one
+repo-relative path per line. `sprint-release-cut.yml` stages exactly that set
+when it commits a bump, so adding a channel to `PATHS` is picked up by release
+automation with no second edit — a hardcoded `git add` list is what dropped
+`.cursor-plugin/plugin.json` from the 1.201 cut.
+
+`version:check` runs in two places. `validate-version-sync.yml` runs it on every
+pull request, so drift fails pre-merge. The `guard` job in `publish.yml` runs it
+again on merge; because every publish job declares `needs: [guard]`, a single
+stale manifest blocks `dev`, `preview`, and every flavor package at once — with
+no failure louder than nothing shipping. **A PR that adds a new derived manifest
+to `PATHS` in `sync-version.mjs` must run `npm run version:sync` as its last
+step before merge**, or it lands the stale value together with the check that
+rejects it. Staging in release automation needs no matching edit — it reads
+`--list-paths`.
 
 ### Why lockstep with the CLI
 

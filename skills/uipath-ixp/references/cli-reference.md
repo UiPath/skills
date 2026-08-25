@@ -191,8 +191,62 @@ So an `Occurrence` value is invalidated by any write to its group:
 
 ## Deployments
 
-For working with runtime (deployed) IXP models — separate from the training workflow above. The `uip ixp` publish and tag commands operate within the project; they do **not** deploy a model to an Orchestrator folder. Making a model available to downstream consumers such as Maestro Flow requires deploying it to a folder — a separate, product-side step done by the user in-product.
+Publishing a version (`projects publish`) makes it usable **inside** the project. Deploying it to an Orchestrator folder is the separate step that makes it callable **at runtime** — activity packs and Maestro Flow address a model by the `{FolderKey, DeploymentName}` pair.
 
 | Command | Description |
 |---------|-------------|
+| `uip ixp deployments create <project-name> --version <N> --folder-key <guid> [--title <title>] --output json` | Deploy a trained model version to an Orchestrator folder. **Only ever adds** — never repoints an existing deployment (see [create vs upgrade](#create-vs-upgrade)). `--version` and `--folder-key` are both **required**; `--title` defaults to the project name minus its `-ixp` suffix. Returns `ProjectName`, `ModelVersion`, `FolderKey`, `DeploymentTitle`, `DeploymentName` (Code: `IxpDeploymentsCreate`). |
+| `uip ixp deployments upgrade <project-name> <deployment-name> --version <N> --folder-key <guid> --output json` | Move an existing deployment to another trained model version. `<deployment-name>` is a positional argument and takes the **`DeploymentName`** from `deployments list` — NOT the title (Code: `IxpDeploymentsUpgrade`). |
+| `uip ixp deployments list <project-name> --output json` | List the project's deployments across every version and folder. **The only reliable source of `DeploymentName`.** `Data` is an array — `[]` for a never-deployed project, never a `{Message: ...}` object, so iterate unconditionally. Each entry carries `DeploymentName`, `DeploymentTitle`, `ModelVersion`, `FolderKey`, `DeployedAt` (Code: `IxpDeploymentsList`). |
 | `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is **required** (non-negative integer; 0 is valid; no short alias) — get the number from `projects list-models`. Like `projects get-taxonomy`, the body is the raw IXP dataset artifact in snake_case, under `Data.dataset` (`entity_defs[]` + `label_groups[]`), bound to the snapshot the version was trained on (Code: `IxpDeploymentsGetTaxonomy`). |
+
+### create vs upgrade
+
+Two commands, not one. `create` only adds; `upgrade` moves an existing deployment.
+
+| Existing deployment in the folder | `create` | `upgrade` |
+|---|---|---|
+| none | deploys | `404 [DeploymentNotFoundError]` |
+| same model version | no-op, exit `0` | no-op, exit `0` — `DeployedAt` does not move |
+| different model version | `409 [DeploymentAlreadyExistsError]` | repoints |
+
+Both verbs are no-ops at the same version, so both are safe to re-run from CI. `create` has **no `--force`** — use `upgrade` to repoint.
+
+`upgrade` changes which model version **every runtime caller of that folder and name** gets. Confirm the intent before running it against a shared folder.
+
+`upgrade`'s response echoes the *requested* version without re-reading. Call `list` to prove the move landed.
+
+### DeploymentName vs DeploymentTitle
+
+Distinct fields. Confusing them is the failure mode this command split exists to prevent.
+
+- `--title` sets `DeploymentTitle` — free-form, returned verbatim.
+- `DeploymentName` is the name the **runtime** resolves: the backend slugs the title and appends a per-deployment suffix (`invoices` → `invoices-08963f00-ixp`).
+- The suffix is generated per deployment and **cannot be predicted from the request** — two deployments of the same project in the same folder get different suffixes, and it matches neither the project name's suffix nor the folder key. Read `DeploymentName` off the create response or from `list`; never construct it.
+- A deploy with no `--title` still gets its own suffix. `DeploymentName` is never just the project name.
+- When `create` returns `DeploymentName: null` (the backend had not yet listed the new deployment), get it from `list`.
+- `upgrade` takes `DeploymentName`. Passing a title lands a `404 [DeploymentNotFoundError]`.
+
+### --folder-key
+
+Required on both `create` and `upgrade`; passed in the body, never as a path. The same name can be deployed in several folders, so the folder is part of the deployment identity — there is no tenant-level or default-folder deploy. Get keys from `uip or folders list --output json`. There is no `--folder-path` form, and the key format is not validated client-side (the backend owns what a valid key is), so a malformed key fails server-side.
+
+Omitting either required option fails locally with exit `3` / `Result: ValidationError` before any auth or backend call. `--version 0` is valid — versions are 0-based.
+
+### Deployment errors
+
+| Surfaced error | Meaning | Fix |
+|---|---|---|
+| `409 [DeploymentAlreadyExistsError]` on `create` | The title is already deployed in that folder on a **different** version | Run `upgrade` with the `DeploymentName` from `list` — NOT the title the backend's message quotes |
+| `404 [DeploymentNotFoundError]` on `upgrade` | Name was never deployed, is deployed only in **another** folder, or a *title* was passed where `DeploymentName` belongs | Re-read `DeploymentName` from `list`; verify `--folder-key` |
+| `404 [ModelVersionNotFoundError]` on `upgrade` | `--version` is not deployable (the version is checked before the deployment is looked up) | Pick a version from `projects list-models <project-name> --output json` |
+| `408 Timed out waiting for new model version` on `upgrade` | Upstream IXP timeout. The CLI surfaces it without retrying, and the outcome is **unknown** — the write may or may not have landed | Run `list` and read the version actually being served before retrying. Do not assume either outcome |
+| `409 [AmbiguousDeploymentError]` | More than one deployment matches in the folder | Disambiguate from `list`; carries the same `create` hint as the conflict above |
+
+**Rejected writes are no-ops** — every `409`/`404` above leaves the deployment on its original version with `DeployedAt` untouched.
+
+**Do not branch on `ErrorCode` for these.** A `409` surfaces as `ErrorCode: invalid_argument`, because `400`/`409`/`422` map alike. Branch on `Context.HttpStatus` or the bracketed backend error name.
+
+**`upgrade` is not a rollback path.** Versions leave the deployable list as a project retrains, so a deployment can be serving a version it can no longer be moved back to. Verify the target is in `projects list-models` first.
+
+After a successful deploy, the folder-scoped runtime API takes roughly 15 seconds to resolve the new deployment. A runtime lookup immediately after `create` can miss it.

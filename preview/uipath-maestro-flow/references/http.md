@@ -1,6 +1,6 @@
 # HTTP
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`http()`](api.md#http-function).*
+*Exact signatures, fields, and defaults: [`http()`](api.md#http-function).*
 
 The one factory selects two distinct product nodes:
 
@@ -36,6 +36,16 @@ the task's named evidence mode and use live debug for product response shape.
 
 The definitions default `timeout` to `PT15M` and `retryCount` to `0`. Override
 them only when the scenario calls for different operational behavior.
+
+## Response branches
+
+`branches: [{ name, condition }]` declares extra exits evaluated against the
+response — each becomes a `branch-<name>` source port routed with
+`.stepToList('branch-<name>', …)`, while the main path continues from the
+default port. Conditions are expressions (e.g.
+``js`$vars.fetch.output.statusCode === 429` ``), typically reading the step's
+own declared `returns`. Names must be unique and constant conditions are
+rejected by `check`.
 
 ## Evidence
 

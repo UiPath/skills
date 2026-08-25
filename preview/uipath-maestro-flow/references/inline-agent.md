@@ -1,12 +1,12 @@
 # Inline Agent
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`inlineAgent()`](api.md#inlineagent-function).*
+*Exact signatures, fields, and defaults: [`inlineAgent()`](api.md#inlineagent-function).*
 
 An inline agent is defined inside this Flow project and may be connected to
 tenant context, callable tools, and human escalation resources.
 
 Signature:
-`inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, temperature?, maxTokenPerResponse?, modelMaxTokens?, maxIterations?, context?, tools?, escalation? })`.
+`inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, temperature?, maxTokenPerResponse?, modelMaxTokens?, maxIterations?, mode?, guardrails?, context?, tools?, escalation? })`.
 
 ```ts
 .step('triage', inlineAgent({ model: 'gpt-5.4',
@@ -31,6 +31,24 @@ Resolve the index name and id together from the tenant registry. Local execution
 has no semantic retrieval service, so an inline-agent answer is ungrounded even
 when the resource wiring is present. Platform evidence must establish that the
 intended index was used and that its retrieved knowledge influenced the answer.
+
+The `uip context-grounding` bridge runs in the project's Python environment.
+Activate the existing environment and run setup once before list/search; setup
+is the command itself, not a `setup --help` probe:
+
+```bash
+source .venv/bin/activate
+uip context-grounding setup
+uip context-grounding list --folder-path "<folder-path>" --format json
+uip context-grounding search \
+  --index-name "<index-name>" --query "<one bounded evidence query>" \
+  --folder-path "<folder-path>" --limit 5 --format json
+```
+
+Use `--folder-key` instead of `--folder-path` when that is the known identity.
+The delegated command uses `--format json`; it does not use the outer CLI's
+`--output json` spelling. One search that answers the stated grounding claim is
+enough; do not repeat paraphrases solely for confidence.
 
 ## Tools
 
@@ -65,3 +83,19 @@ the evidence for the actual configured model and cloud resources.
 Compile emits the node plus a stable `<source>/agent.json` sidecar. Prompt variables
 use `{{input.<name>}}`; `inputs` binds those names to flow references and `returns`
 declares what the agent hands back.
+
+## Guardrails and harness mode
+
+`guardrails` is Agent Builder's own array, carried on the node and in the
+sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
+`'builtInValidator'` (with `validatorType` + `validatorParameters`), plus
+`id`, `name`, `selector: { scopes: ['Agent'|'Llm'|'Tool'] }`, an `action`
+(`block` with a reason, `filter` over fields, or `log` with a severity), and
+`enabledForEvals`. Custom rules are `$ruleType: 'word' | 'number' | 'boolean'`
+over a field selector, or `'always'`. A rail with no scopes or an empty rules
+array can never fire — `check` rejects both.
+
+`mode: 'standard' | 'advanced'` picks the harness; naming it selects the
+node's 1.3 definition (omitting it keeps 1.2 byte-identically) and lands on
+the sidecar's `settings.mode`. Guardrail/harness behavior is runtime-side:
+offline rungs prove the emitted shape only.
