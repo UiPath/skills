@@ -107,10 +107,11 @@ If the user names a profile, check that profile explicitly:
 uip login status --profile dev --output json
 ```
 
-**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. In a non-interactive or automated session, do NOT run it yourself — tell the user to run it and wait.
-```bash
-uip login --output json
+**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. **Never run an interactive login through your own shell tool — with or without `--no-browser`.** Run by an agent, the person who must sign in sees only a spinner: the printed URL and the blocking wait live in your tool output, not in front of them. `--no-browser` does not make the command agent-runnable — it exists for automation that opens the URL *itself*; it still blocks until the sign-in callback arrives, and relaying the printed URL by copy/paste is fragile (a line-wrapped or truncated copy is rejected by the identity server with an opaque browser-side error). Instead, ask the user to run the command directly in their own terminal — in Claude Code, prefixing it with `!` runs it inside the session:
+```text
+! uip login
 ```
+Then confirm with `uip login status --output json` once they say it's done. (An abandoned earlier attempt is harmless: a newer `uip login` automatically takes over the callback port.)
 
 For a named interactive login:
 ```bash

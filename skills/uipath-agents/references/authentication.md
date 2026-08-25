@@ -18,7 +18,7 @@ Authenticate before running cloud commands. Do not hand-edit auth tokens — use
 # Status (includes "Expiration Date") — the wrapper auto-refreshes tokens before forwarding cloud commands
 uip login status --output json
 
-# Production cloud (one-shot, non-interactive)
+# Production cloud (one-shot browser sign-in, org/tenant pre-selected — see Critical Rules for who runs it)
 uip login --organization "<ORG>" --tenant "<TENANT>" --output json
 
 # Staging
@@ -34,7 +34,8 @@ uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --out
 ## Critical Rules
 
 - **`uip login status --output json` once per invocation.** Reports `Status`, `Organization`, `Tenant`, `Expiration Date`. When the user has not asked to connect to a specific org/tenant, trust one `Logged in` result — the wrapper auto-refreshes tokens on forwarded cloud calls. No `uip login refresh` subcommand exists. Re-auth only on a real `401`.
-- **If the user supplied environment + organization + tenant, connect with those exact values.** First run/capture `uip login status --output json` if requested or required, then run the matching one-shot command from the Quick Reference (`uip login --organization "<ORG>" --tenant "<TENANT>" --output json`, plus `--authority` for staging/alpha). Do this even if the status check reports an existing `Logged in` session, because the active session may point at a different org/tenant. Do not ask another auth question when all three values are already present.
+- **If the user supplied environment + organization + tenant, connect with those exact values.** First run/capture `uip login status --output json` if requested or required, then use the matching one-shot command from the Quick Reference (`uip login --organization "<ORG>" --tenant "<TENANT>" --output json`, plus `--authority` for staging/alpha) — see the next rule for who runs it. Do this even if the status check reports an existing `Logged in` session, because the active session may point at a different org/tenant. Do not ask another auth question when all three values are already present.
+- **Interactive sign-ins belong in the user's own terminal.** Every `uip login` without `--client-secret` is a browser sign-in: it blocks until the person completes it, and run from your shell tool it shows them nothing while your tool's timeout can kill it mid-wait. Prefer asking the user to run the one-shot command themselves (in Claude Code, prefix it with `!` so it runs inside the session); if you do run it, first tell the user a browser window is about to open and the command will wait for them. **Never pass `--no-browser` for a human sign-in** — that flag is for automation that opens the printed URL programmatically; relaying the URL by copy/paste is fragile (a line-wrapped or truncated copy is rejected by the identity server with an opaque browser-side error).
 - **NEVER run `uip login` without `--tenant`.** The interactive tenant picker cannot be driven from Claude's Bash tool.
 - **When auth is needed and the user did not supply all values, ask one question, then stop.** If the status check shows the user is not logged in and any of environment / organization / tenant is missing, your entire response must be exactly this question — no headers, no bullets, no next-steps:
 
