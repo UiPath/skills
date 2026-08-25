@@ -174,3 +174,20 @@ def test_debug_graded_prompts_name_a_same_name_solution() -> None:
         if not re.search(r"\b(?:in|inside) a solution of the same name\b", prompt):
             offenders.add(relative)
     assert offenders == DEBUG_SOLUTION_ALLOWLIST | DEBUG_PROJECT_LAYOUT_EXCEPTIONS
+
+
+def test_external_graders_use_package_qualified_shared_imports() -> None:
+    shared_modules = {
+        path.stem for path in (FLOW_TASKS / "_shared").glob("*.py")
+    }
+    offenders = set()
+    for path in FLOW_TASKS.rglob("*.py"):
+        relative = path.relative_to(FLOW_TASKS)
+        if relative.parts[0] == "_shared":
+            continue
+        for module in re.findall(
+            r"(?m)^(?:from|import)\s+([A-Za-z_][A-Za-z0-9_]*)", path.read_text()
+        ):
+            if module in shared_modules:
+                offenders.add(relative.as_posix())
+    assert offenders == set()
