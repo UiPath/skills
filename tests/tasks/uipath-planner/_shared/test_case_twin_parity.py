@@ -100,13 +100,15 @@ def test_field_name_invariant_stated_on_both_sides():
     assert_pair(FIELD_NAME_INVARIANT, CANONICAL_FIELDS, TWIN_FIELDS)
 
 
-def test_both_sides_declare_the_twin_relationship():
-    """Neither page may present itself as the only source, or the next editor will not know to sync."""
-    canonical, twin = read(CANONICAL), read(TWIN)
+def test_the_planner_declares_the_twin_relationship():
+    """The planner side must name its twin, or the next editor will not know to sync.
+
+    The build page carries no reciprocal declaration by review decision (PR #2718): it stays as
+    shipped and keeps its own framing, so parity is asserted on content below, not on its header.
+    """
+    canonical = read(CANONICAL)
     assert "Canonical + twin" in canonical, "planner Layer 4 lost its canonical/twin declaration"
     assert "uipath-maestro-case" in canonical, "planner no longer names the twin skill"
-    assert "Twin of a canonical page" in twin, "maestro page lost its twin declaration"
-    assert "uipath-planner" in twin, "maestro page no longer names the canonical skill"
 
 
 def test_neither_side_links_into_the_other_skills_files():
