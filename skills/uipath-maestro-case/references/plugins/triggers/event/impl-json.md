@@ -53,6 +53,8 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 - `id` = same as `var`
 - **No `elementId`** on trigger inputs (different from in-stage task inputs).
 
+> **Repair `outputs[].body.properties` keys before caching** — per [common § Pass 3 — restore contract keys](../../../connector-trigger-impl.md#pass-3--restore-contract-keys). The cache is what every downstream consumer reads, so an unrepaired schema propagates.
+
 > **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume.
 
 ## Step 7 — Build trigger node and write to caseplan.json

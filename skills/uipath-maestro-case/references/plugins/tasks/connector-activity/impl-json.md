@@ -100,6 +100,7 @@ Save the response. The interesting parts:
 | `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding |
 | `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — response (JSON Schema body) / curated / Error |
+| `spec.outputs.responseFields[]` | `.Data.Outputs.ResponseFields` — the connector-contract field **names**, the authority for `outputs[].body.properties` keys ([common § Pass 3 — restore contract keys](../../../connector-trigger-impl.md#pass-3--restore-contract-keys)) |
 | `spec.caseShape.context[]` | `.Data.CaseShape.Context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
 
@@ -176,6 +177,7 @@ For each entry in `caseShape.inputs[]`:
 - `elementId` = the task's elementId
 
 For each entry in `caseShape.outputs[]`:
+- **Repair `body.properties` keys first** per [common § Pass 3 — restore contract keys](../../../connector-trigger-impl.md#pass-3--restore-contract-keys) — the dedup rule and output binding below consume the restored names.
 - Same fields, plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
@@ -215,11 +217,11 @@ Generate the task skeleton:
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 
-#### Step 8.a — Re-case spec keys via `Edit` (mandatory, immediately after the write)
+#### Step 8.a — Repair spec keys via `Edit` (mandatory, immediately after the write)
 
-The write above left the spec subtrees PascalCase; the disk schema is camelCase. Lower-case the first character of every spec-subtree KEY with per-key `Edit` calls — never by retyping the JSON:
+The write above left the spec subtrees PascalCase. Repair the keys with per-key `Edit` calls — never by retyping the JSON:
 
-1. **List every distinct PascalCase key** visible in the transcribed subtrees. Standard set: `Name` `Type` `Value` `Target` `Source` `Body` `DisplayName` `DataType` `Required` `Reference` `ActivityPropertyConfiguration` `ActivityMetadata` `InputMetadata` `TelemetryData` `UiPathActivityTypeId` `Configuration` `ErrorState` `Multipart` `MultipartParameters` `BodyFieldName` `Properties` `Definitions` `Title` `Items` — plus ANY other `"Xxx…":` key you can see. The CLI also PascalCases the payload keys it folded from `--input-details` (`Message`, `ToRecipients`, `SaveToSentItems`, …) — lowering restores the connector-contract names; list those too.
+1. **List every distinct PascalCase key** visible in the transcribed subtrees. Standard set: `Name` `Type` `Value` `Target` `Source` `Body` `DisplayName` `DataType` `Required` `Reference` `ActivityPropertyConfiguration` `ActivityMetadata` `InputMetadata` `TelemetryData` `UiPathActivityTypeId` `Configuration` `ErrorState` `Multipart` `MultipartParameters` `BodyFieldName` `Properties` `Definitions` `Title` `Items` — plus ANY other `"Xxx…":` key you can see, including the payload keys the CLI folded from `--input-details` (`Message`, `ToRecipients`, `SaveToSentItems`, …).
 2. **One `Edit` per key, `replace_all: true`**, old/new including BOTH quotes AND the trailing colon:
 
    ```
@@ -228,9 +230,10 @@ The write above left the spec subtrees PascalCase; the disk schema is camelCase.
    ```
 
    The quote-colon anchor makes each edit keys-only **by construction**: a value sits after a colon (`: "Name"` — no trailing colon) and a key inside a `=jsonString:` blob is escaped (`\"Name\":`), so neither can match. This mechanically implements "keys only — never values".
-3. **Verify.** Read the task's `data` back: NO capital-first `"Xxx…":` key may remain anywhere in `context` / `inputs` / `outputs`. Each leftover = one more Edit. `validate` catches mis-cased schema fields but NOT content fields — a missing or Pascal `multipartParameters` passes `validate` and fails at runtime with `400 "Unable to parse multipart body"` — so this scan is the only build-time gate for those.
+3. **Restore contract keys** per [common § Pass 3 — restore contract keys](../../../connector-trigger-impl.md#pass-3--restore-contract-keys): overwrite each top-level `outputs[].body.properties` key with its `ResponseFields[].Name`; confirm every `inputs[].body` payload key matches the Step 1 `--input-details` JSON byte-for-byte (lowering only round-trips camelCase contract names — it destroys snake_case ones).
+4. **Verify.** Read the task's `data` back: every remaining capital-first `"Xxx…":` key must be a restored contract key (matching a `ResponseFields[].Name` or a Step 1 input key); any other leftover = one more Edit. `validate` catches mis-cased schema fields but NOT content fields — a missing or Pascal `multipartParameters` passes `validate` and fails at runtime with `400 "Unable to parse multipart body"` — so this scan is the only build-time gate for those.
 
-Full rule + rationale: [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
+Full rule + rationale: [connector-trigger-impl.md § Repair spliced keys](../../../connector-trigger-impl.md#repair-spliced-keys).
 
 ### Step 9 — Append root-level bindings
 
@@ -276,7 +279,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 13. **Lossless inputs (HARD GATE).** Every `tasks.md input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
-14. **No PascalCase keys remain (HARD GATE).** Scan the written task's `data.context` / `data.inputs` / `data.outputs` for any capital-first `"Xxx…":` key — every one must have been re-cased in Step 8.a. `validate` does NOT catch content-level leftovers (a Pascal or missing `multipartParameters` passes validate and fails at runtime).
+14. **No unrepaired PascalCase keys remain (HARD GATE).** Scan the written task's `data.context` / `data.inputs` / `data.outputs` for any capital-first `"Xxx…":` key — every one must be a restored contract key (matching a `ResponseFields[].Name` or a Step 1 input key, per Step 8.a.3); anything else must have been re-cased in Step 8.a.2. Never re-lower a restored contract key. `validate` does NOT catch content-level leftovers (a Pascal or missing `multipartParameters` passes validate and fails at runtime).
 
 ## What NOT to Do
 
@@ -285,7 +288,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and transcribe PascalCase-verbatim. See Step 6 / Step 8.
-- **Do NOT leave spec PascalCase keys in the finished task — and do NOT re-case by retyping.** The write is PascalCase-verbatim (Step 8); the re-case is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Step 8.a). Retyping the subtree to change casing is the memory-reconstruction failure above wearing a different hat. See [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
+- **Do NOT leave spec PascalCase structural keys in the finished task — and do NOT repair by retyping.** The write is PascalCase-verbatim (Step 8); the repair is per-key `Edit` with `replace_all` plus the contract-key restore (Step 8.a). Retyping the subtree to change keys is the memory-reconstruction failure above wearing a different hat. See [connector-trigger-impl.md § Repair spliced keys](../../../connector-trigger-impl.md#repair-spliced-keys).
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.

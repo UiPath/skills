@@ -102,12 +102,14 @@ Phase 2 stub (exact):
 
 Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger --input-details` caseShape ([common § Procedure (Phase 3)](../../../connector-trigger-impl.md#procedure-phase-3)):
 
+Repair the outputs' `body.properties` keys per [common § Pass 3 — restore contract keys](../../../connector-trigger-impl.md#pass-3--restore-contract-keys).
+
 ```json
 "uipath": {
   "serviceType": "Intsvc.WaitForEvent",
   "context": "<caseShape.context — placeholders substituted>",
   "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
-  "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
+  "outputs": "<caseShape.outputs — body.properties repaired, var/id/elementId minted, dedup applied>",
   "bindings": []
 }
 ```
