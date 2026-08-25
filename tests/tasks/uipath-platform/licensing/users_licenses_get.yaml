@@ -6,7 +6,7 @@ description: >
   --output json` shape, (2) docs page fetch for code resolution, and
   (3) final reply uses `<Friendly Name> (<CODE>)` format. CLI auth failure
   is expected in this offline environment.
-tags: [uipath-platform, smoke, licensing, users]
+tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:discover]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

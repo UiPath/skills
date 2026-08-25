@@ -31,6 +31,7 @@ All `uip platform` licensing commands share a set of cross-cutting options:
 | Tenant Allocations | [tenant-allocations.md](tenant-allocations.md) | `tenants licenses get/set` — allocate license units to tenant pools |
 | User & Group Licenses | [user-licenses-allocations.md](user-licenses-allocations.md) | `users licenses get/set/available`, `groups rules get/details/set` — assign bundles directly or via group rules |
 | Consumables Report | [consumables-report.md](consumables-report.md) | `licenses consumables get --mode {summary,daily,folders}` — consumption reporting. `get` is mandatory; summary/daily/folders are `--mode` values, not subcommands (there is no `licenses summary` verb) |
+| Diagnose | [diagnose/CAPABILITY.md](diagnose/CAPABILITY.md) | Symptom-first triage — entitlement gaps, allocations that did not take effect, reports that read wrong. Layer-first ladder + failure-mode lookup |
 
 ---
 
