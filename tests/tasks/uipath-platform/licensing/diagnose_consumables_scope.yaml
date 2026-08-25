@@ -1,0 +1,84 @@
+task_id: skill-platform-licensing-diagnose-consumables-scope
+description: >
+  Integration test (mode:diagnose): two consumables figures that look wrong but
+  are correct by design — `consumedFromOrgWithoutTenant` suppressed under
+  `--tenant`, and non-recursive `folders` totals. Verifies the agent reaches the
+  "reporting is not broken" verdict and names both documented semantics.
+tags: [uipath-platform, integration, licensing, consumables, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Our AI Units (`AIU`) consumption reporting looks broken. Two problems, both
+  for tenant `default` over 2026-04-01 to 2026-04-30:
+
+  1. When I scope a consumables summary to that tenant,
+     `consumedFromOrgWithoutTenant` comes back as 0 — but account-wide it is
+     definitely not 0.
+  2. The per-folder AIU numbers for that tenant do not add up to the tenant's
+     own total for the same period.
+
+  Is consumption reporting actually broken? Write your verdict and reasoning to
+  `verdict.md` in the current directory.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: run_command
+    description: "Agent ran a consumables summary to reproduce observation 1 (.uip-cmdlog shim log)"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Eq -- '--mode[= ]summary'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent ran folders mode to reproduce observation 2"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Eq -- '--mode[= ]folders'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Verdict written to verdict.md"
+    path: "verdict.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Verdict explains observation 1: cross-tenant pool figures are suppressed under --tenant"
+    command: "grep -Eiq 'suppress|scoped|by design|deliberat|expected behaviou?r' verdict.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Verdict explains observation 2: folders mode is non-recursive (consumedBySelf excludes children)"
+    command: "grep -Eiq 'non.?recursive|not recursive|child folder|consumedBySelf|exclude' verdict.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Verdict concludes reporting is NOT broken"
+    command: "grep -Eiq 'not broken|no.{0,3}t broken|working as|correct|by design|expected' verdict.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
