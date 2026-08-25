@@ -2,7 +2,7 @@
 
 Review guide for UiPath solutions (`.uipx`) — multi-project packages deployed as a single unit.
 
-> **Windows-Legacy compatibility guard:** `.uipx` solutions are NOT supported for Legacy projects. If any detected executable in the repo is Windows-Legacy (`expressionLanguage: "VisualBasic"` with no or `Legacy` `targetFramework`), **do NOT flag missing `.uipx` and do NOT recommend creating one**. Recommend migration to Modern compatibility (Windows / Cross-platform) if solution bundling is desired — that is the prerequisite, not the finding. Review each Legacy project independently.
+> **Windows-Legacy compatibility guard:** `.uipx` solutions are NOT supported for Legacy projects. If any detected executable in the repo is Windows-Legacy (`project.json` has no `targetFramework` or `targetFramework: "Legacy"`), **do NOT flag missing `.uipx` and do NOT recommend creating one**. Recommend migration to Modern compatibility (Windows / Cross-platform) if solution bundling is desired — that is the prerequisite, not the finding. Review each Legacy project independently.
 
 ## Solution Structure Validation
 

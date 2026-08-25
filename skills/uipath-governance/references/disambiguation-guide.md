@@ -7,6 +7,21 @@ The two branches:
 - **Branch A — AOps product policy** (`uip gov aops-policy`) → governs *product feature behavior* on Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder.
 - **Branch B — Access ToolUsePolicy** (`uip gov access-policy`) → governs *resource/tool use* on the Actor Process → child Resource boundary.
 
+## Compliance standard override (highest priority)
+
+**Before evaluating Branch A / B signals**, check for compliance standard framing:
+
+If the request contains a **standard name** (`ISO 42001`) **AND** a scope-limiting phrase (`just that area`, `only that part`, `not the whole standard`, `just that control`, `just the traceability`, `only the AI provider controls`, `just that compliance piece`), it is a **partial-apply** request regardless of whether the content words also match a Branch A model-gate signal.
+
+| Request shape | Route |
+|---|---|
+| ISO 42001 + "make AI usage traceable / logged" + "not the full standard" | Compliance standard → partial-apply (AITrustLayer traceability clauses) |
+| ISO 42001 + "lock down AI model providers / approved providers" + "just that control" | Compliance standard → partial-apply (AITrustLayer model-governance clauses) |
+| ISO 42001 + "robot allowlists / URL allowlists / application allowlists" + scoped | Compliance standard → partial-apply (Robot UIAutomation clauses) |
+| ISO 42001 + no scope-limiting phrase | Compliance standard → full-apply or posture check |
+
+Do **not** route ISO 42001 + model/traceability intents to `aops-policy` directly — even though those intents look like Branch A model-gate signals, the standard-framing signals the catalog-based path that understands which clauses apply.
+
 ## Strong signals — Branch A (AOps)
 
 Route directly, no disambiguation needed, when the user:

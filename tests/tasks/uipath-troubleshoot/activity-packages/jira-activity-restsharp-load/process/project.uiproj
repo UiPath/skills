@@ -1,0 +1,6 @@
+{
+  "Name": "JiraTicketCreator",
+  "ProjectType": "Process",
+  "Description": "JiraTicketCreator automation project.",
+  "MainFile": "Main.xaml"
+}

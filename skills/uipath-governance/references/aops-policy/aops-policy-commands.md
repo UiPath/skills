@@ -8,7 +8,7 @@ Single source of truth for every `uip gov aops-policy` subcommand, its flags, an
 
 ## uip gov aops-policy list
 
-List policies (optionally filtered by product).
+List policies (optionally filtered by product). Returns policy **metadata** only (`identifier`, `name`, `productName`, `priority`, `availability`) — not the policy `data` payload. Fetch one policy via `get` to retrieve `data`.
 
 ```bash
 uip gov aops-policy list --output json
@@ -23,8 +23,8 @@ uip gov aops-policy list --output json
 | `--search <TERM>` | no | Search by name |
 | `--limit <N>` | no | Page size (default: 20) |
 | `--offset <N>` | no | Page index, 0-based (default: 0) |
-| `--order-by <FIELD>` | no | Sort field (e.g. `priority`, `name`) |
-| `--order-direction <asc\|desc>` | no | Sort direction |
+| `--sort-by <FIELD>` | no | Sort field (e.g. `priority`, `name`) |
+| `--sort-order <asc\|desc>` | no | Sort direction |
 
 **Output:** `Data` is an array of `PolicyDto`. Each entry has `identifier`, `name`, `productName`, `priority`, and `availability`. `productName` is a flat string (the product identifier) — not a nested `product.{name,label}` object. An empty array means no policies matched.
 
@@ -144,25 +144,25 @@ The positional argument accepts either the product `name` (e.g. `StudioX`) or it
 
 ## uip gov aops-policy license-type list
 
-List license types available to the organization. Required for tenant deployment, where assignments are keyed by `(product, licenseType)`.
+List license types available to the organization. Required for tenant deployment, where assignments are keyed by `(product, license type)`.
 
 ```bash
 uip gov aops-policy license-type list --output json
 ```
 
-**Output:** `Data` is an array. Each entry has `identifier` (GUID) and `name` (e.g. `Attended`, `Unattended`).
+**Output:** `Data` is an array. Each entry has `name` (e.g. `Attended`, `Unattended`), `label`, and `licenseTypeProducts[]` (the products the license includes). There is **no** GUID `identifier` field — the license type's `name` is its identifier.
 
 Sample rendering:
 
 ```text
 Available license types:
-  1. Attended        (identifier: a1b2c3d4-0000-0000-0000-0000000000A1)
-  2. Unattended      (identifier: a1b2c3d4-0000-0000-0000-0000000000A2)
+  1. Attended      (products: Assistant, Robot)
+  2. Unattended    (products: Robot)
 ```
 
-> **Two different identifiers — do not confuse them:**
-> - For `deployment tenant configure` entries, the JSON `licenseTypeIdentifier` field takes the license type's **`identifier` (GUID)** from `license-type list`.
-> - For `deployed-policy get` / `deployed-policy list`, the positional `<licenseType>` argument takes the license type's **`name`** (e.g. `Attended`).
+> **The license-type `name` is the identifier in both places — neither takes a GUID:**
+> - For `deployment tenant configure` entries, the JSON `licenseTypeIdentifier` field takes the license type's **`name`** (e.g. `Attended`, `E2E`) from `license-type list`.
+> - For `deployed-policy get` / `deployed-policy list`, the positional `<license-type>` argument takes the same **`name`**.
 
 ---
 
@@ -231,10 +231,10 @@ The `--input` payload is an array of per-product assignments. Semantics are the 
 |---------|------------|
 | `user`  | `[{ "productIdentifier": "<PRODUCT_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
 | `group` | `[{ "productIdentifier": "<PRODUCT_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
-| `tenant` | `[{ "productIdentifier": "<PRODUCT_NAME>", "licenseTypeIdentifier": "<LICENSE_TYPE_GUID>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
+| `tenant` | `[{ "productIdentifier": "<PRODUCT_NAME>", "licenseTypeIdentifier": "<LICENSE_TYPE_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
 
 - `productIdentifier` — product `name` (not label). See [product list](#uip-gov-aops-policy-product-list).
-- `licenseTypeIdentifier` (tenant only) — license type **`identifier` (GUID)** from `license-type list`, not the `name` and not the label. See [license-type list](#uip-gov-aops-policy-license-type-list).
+- `licenseTypeIdentifier` (tenant only) — license type **`name`** (e.g. `Attended`, `E2E`) from `license-type list`, not the label. The live CLI exposes no GUID for license types. See [license-type list](#uip-gov-aops-policy-license-type-list).
 - `policyIdentifier`:
   - a GUID → assign that policy for this product (and license type, for tenants)
   - `null` → **No Policy** (explicitly overrides any inherited policy)
@@ -252,10 +252,12 @@ uip gov aops-policy deployment tenant list --output json
 
 Optional: `--limit <N>` (default 20), `--offset <N>` (zero-based page index, default 0). Tenant variant also accepts `--product-name <PRODUCT_NAME>` to scope results to tenants with an assignment for that product.
 
-**Output:** `Data` is an array.
-- User entries: `identifier`, `name`, and `source` (the identity-provider source — e.g. `cloud`, `local`, `aad`). This is **not** a full IdP roster; it includes only users the governance service has already seen.
-- Group entries: `identifier`, `name`, `source`. Typically only groups that have at least one policy override are returned.
-- Tenant entries: `identifier`, `name`, and `tenantPolicies[]`. Each policy entry carries `productIdentifier`, `licenseTypeIdentifier` (GUID), and `policyIdentifier`.
+> **Tenant variant triggers an OMS sync** before returning, so the page reflects the latest tenant catalog (new tenants, disabled/re-enabled state) — not governance's local cache. The first call after a tenant create/delete may take longer.
+
+**Output:** `Data` is `{ totalCount: <N>, result: [ ... ] }`. Iterate `Data.result[]`.
+- User entries: `identifier`, `name`, `email`, `source` (identity-provider source — e.g. `cloud`, `local`, `aad`), `lastModified`, `isActive`. This is **not** a full IdP roster; it includes only users the governance service has already seen.
+- Group entries: `identifier`, `name`, `source`, `lastModified`, `isActive`. Typically only groups that have at least one policy override are returned.
+- Tenant entries: `identifier`, `name`, `url`, `status`, and `tenantPolicies[]`. Each policy entry carries `productIdentifier`, `licenseTypeIdentifier` (the license-type `name`, e.g. `E2E`, `NoLicense` — not a GUID), and `policyIdentifier`.
 
 ### deployment {user|group|tenant} get
 
@@ -275,9 +277,14 @@ uip gov aops-policy deployment tenant get <TENANT_ID> --output json
 
 Apply assignments non-interactively via `--input`. **FULL-REPLACE, not merge** — entries not in the input file are removed from the subject. To preserve existing assignments while adding new ones, seed the input from `deployment <subject> get`.
 
+> **Auto-registration on first call.** For `user configure` and `group configure`, if the subject is not yet known to the governance service, the command auto-registers it in the same call (`AddUser` / `AddGroup` endpoints) — no separate registration step is needed. Pass any IdP-sourced GUID (from `uip admin users list` / `uip admin groups list`) directly. The `--source` flag is consumed only on the upsert path; on first-time registration the server resolves source from CIS.
+
+> **Tenant variant triggers an OMS sync** before saving, so a freshly-created tenant (or a tenant whose status changed) is reconciled into governance before assignments are persisted. No separate "register tenant" step is needed before `tenant configure`.
+
 ```bash
 uip gov aops-policy deployment user configure "<USER_ID>" \
   --user "<USER_DISPLAY_NAME>" \
+  --email "<USER_EMAIL>" \
   --source "<IDP_SOURCE>" \
   --input "<SESSION_DIR>/user-policies.json" \
   --output json
@@ -298,7 +305,7 @@ uip gov aops-policy deployment tenant configure "<TENANT_ID>" \
 
 | Subject | Display-name flag | Extra flags | Notes |
 |---------|-------------------|-------------|-------|
-| user    | `--user <NAME>`   | `--source <SRC>` (default `local`; e.g. `cloud`, `aad`) | Display name stored alongside the override (surfaced in audit logs / UI). |
+| user    | `--user <NAME>`   | `--source <SRC>` (default `local`; e.g. `cloud`, `aad`), `--email <EMAIL>` (defaults to `--user` value) | Display name stored alongside the override (surfaced in audit logs / UI). `--email` is consumed only on first-time auto-registration (`AddUser` path) and ignored thereafter — pass it when the IdP supplied a distinct email. |
 | group   | `--group <NAME>`  | `--source <SRC>` (default `local`)                      | Display name stored alongside the override. |
 | tenant  | `--tenant-name <NAME>` | —                                                  | Must match the tenant's name in the governance service (from `tenant get`/`tenant list`). |
 
@@ -322,7 +329,7 @@ uip gov aops-policy deployment group delete "<GROUP_ID>" --output json
 
 ### deployment tenant remove
 
-Remove a tenant's assignment for a single product (optionally one license type). **Destructive.** Internally this is a client-side read-modify-write — the CLI runs `get` → filters out the matching entry → calls `configure` — so it is not atomic. Fails fast with `No matching policy assignment to remove` when nothing matches.
+Remove a tenant's assignment for a single product (optionally one license type). **Destructive.** Internally this is a client-side read-modify-write — the CLI triggers an OMS sync, runs `get` → filters out the matching entry → calls `configure` — so it is not atomic. Fails fast with `No matching policy assignment to remove` when nothing matches.
 
 ```bash
 uip gov aops-policy deployment tenant remove "<TENANT_ID>" \
@@ -340,7 +347,7 @@ Add `--license-type <LICENSE_TYPE_NAME>` to remove only one license-type entry f
 
 ## uip gov aops-policy deployed-policy get
 
-Return the single effective deployed policy for a `(licenseType, product, tenant)` tuple — the one policy that actually applies after the user → group → tenant inheritance chain has been walked and any 'No Policy' pins have been honored. Uses the caller's `uip login` token by default.
+Return the single effective deployed policy for a `(license type, product, tenant)` tuple — the one policy that actually applies after the user → group → tenant inheritance chain has been walked and any 'No Policy' pins have been honored. Uses the caller's `uip login` token by default.
 
 ```bash
 uip gov aops-policy deployed-policy get \
@@ -368,7 +375,7 @@ Modes 2 and 3 require an S2S token (read from the `UIP_S2S_TOKEN` environment va
 
 | Flag | Description |
 |------|-------------|
-| `--s2s-token <TOKEN>` | S2S bearer token. Overrides the user token from `uip login`. Required for `--user-id` or `--tenant-only`. Prefer setting `UIP_S2S_TOKEN` in the environment — the CLI reads it automatically so the token never lands in shell history. See [Authentication](#authentication). |
+| `--s2s-token <TOKEN>` | S2S bearer token. Overrides the user token from `uip login`. Required for `--user-id` or `--tenant-only`. Prefer setting `UIP_S2S_TOKEN` in the environment — the CLI reads it automatically. Tokens passed as `--s2s-token <TOKEN>` are visible in process listings (`ps aux`, `/proc/*/cmdline`) as well as shell history. See [Authentication](#authentication). |
 | `--user-id <GUID>` | Look up the effective policy for a specific user (runs the full user→group→tenant walk). Requires `--s2s-token`. |
 | `--tenant-only` | Bypass the user/group chain — return the tenant-level assignment only. Requires `--s2s-token`. |
 
@@ -378,7 +385,7 @@ Modes 2 and 3 require an S2S token (read from the `UIP_S2S_TOKEN` environment va
 
 ## uip gov aops-policy deployed-policy list
 
-List every policy that applies to a `(licenseType, product, tenant)` for the calling user, in priority order. Unlike `get`, which returns only the single effective (top-priority) policy, `list` shows every applicable entry — useful for understanding why a particular policy wins. **User token only — does NOT accept `--s2s-token`.** Returns an empty array when nothing applies.
+List every policy that applies to a `(license type, product, tenant)` for the calling user, in priority order. Unlike `get`, which returns only the single effective (top-priority) policy, `list` shows every applicable entry — useful for understanding why a particular policy wins. **User token only — does NOT accept `--s2s-token`.** Returns an empty array when nothing applies.
 
 ```bash
 uip gov aops-policy deployed-policy list \
@@ -444,7 +451,7 @@ All `uip` commands support:
 | `401 Unauthorized` | User token expired or missing | Run `uip login` (or re-export `UIP_S2S_TOKEN` for S2S modes) and retry |
 | `command not found: uip` | UiPath CLI not installed | `npm install -g @uipath/uipcli` |
 | `unknown productIdentifier` | Used the product label instead of the `name` | Re-fetch via [product list](#uip-gov-aops-policy-product-list) and pass the `name` field |
-| `unknown licenseTypeIdentifier` | Used the license type `name` or label instead of its `identifier` (GUID) in a tenant assignment | Re-fetch via [license-type list](#uip-gov-aops-policy-license-type-list) and copy the `identifier` field |
+| `unknown licenseTypeIdentifier` | Used the license type label instead of its `name` in a tenant assignment | Re-fetch via [license-type list](#uip-gov-aops-policy-license-type-list) and copy the `name` field |
 | `unknown policyIdentifier` (GUID) | Stale or wrong GUID | Re-run `list` and copy the `identifier` from the result |
 | `missing licenseTypeIdentifier in tenant entries` | Tenant assignment entry omitted `licenseTypeIdentifier` | Add it to every tenant-subject entry (required key) |
 | `deployed-policy list rejects --s2s-token` | `list` mode does not accept S2S tokens | Remove `--s2s-token`; re-run under `uip login` |

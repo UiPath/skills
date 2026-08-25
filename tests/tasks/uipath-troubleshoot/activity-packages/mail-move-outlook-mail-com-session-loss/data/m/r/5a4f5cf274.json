@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f",
+      "State": "Faulted",
+      "ProcessName": "MailboxTriageMover",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T03:00:00.140Z",
+      "EndTime": "2026-06-04T03:00:05.260Z",
+      "CreationTime": "2026-06-04T02:59:59.910Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

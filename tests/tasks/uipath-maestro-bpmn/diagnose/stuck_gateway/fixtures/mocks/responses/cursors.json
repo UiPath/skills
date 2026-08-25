@@ -1,0 +1,9 @@
+[
+  {
+    "elementId": "Gw_ApprovalRoute",
+    "elementType": "exclusiveGateway",
+    "state": "Blocked",
+    "blockedReason": "No outgoing sequence-flow condition evaluated true and no default flow is defined; the token cannot advance.",
+    "since": "2026-05-01T12:03:00Z"
+  }
+]

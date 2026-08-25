@@ -1,0 +1,90 @@
+task_id: skill-api-workflow-diagnose-validate-fix
+description: >
+  Diagnose + repair: a pre-seeded Workflow.json fails `uip api-workflow validate`
+  because the If_1 activity has no `switch` block (validateIfBranches requires
+  every If to have a switch child). Both branch blocks (If_1#Then -> PASS,
+  If_1#Else -> FAIL) are present; only the routing switch is missing, so the fix is
+  to restore the switch mapping score>=60 -> If_1#Then and default -> If_1#Else.
+  Tests whether the skill teaches the *static* validate -> read errors -> fix ->
+  re-validate loop (rule 20) on a broken artifact, not happy-path authoring.
+  Complements diagnose/runtime_fix (a *runtime* fault that passes validate).
+  mode:diagnose. Graded on behavior: after the fix, validation passes AND the
+  workflow routes score>=60 -> PASS, else FAIL.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/validate_fix/seed_broken_workflow.py"
+    timeout: 30
+
+initial_prompt: |
+  The Workflow.json in the current directory is a UiPath API Workflow that fails
+  validation. Diagnose why and fix it so `uip api-workflow validate` reports the
+  workflow is valid.
+
+  Preserve its intent: it takes a numeric `score` input and returns a `grade` of
+  "PASS" (score >= 60) or "FAIL" (otherwise).
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present (agent repaired, not deleted, the seeded file)"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON after the fix"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Still a real API workflow — WorkflowStart + Response survived (not replaced by something trivial)"
+    path: "Workflow.json"
+    includes:
+      - "WorkflowStart"
+      - "Response_1"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the validator to diagnose the fault (rule 20 loop)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Static validation now passes (Status: Valid) — the structural fault is fixed"
+    command: 'uip api-workflow validate ./Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: the once-broken PASS branch now works (score 75 -> PASS)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":75}'' --output json | grep -q ''"PASS"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: the FAIL branch still works (score 30 -> FAIL)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":30}'' --output json | grep -q ''"FAIL"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25

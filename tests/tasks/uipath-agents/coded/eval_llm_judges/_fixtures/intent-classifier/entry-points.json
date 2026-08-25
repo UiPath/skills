@@ -1,0 +1,119 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "agent",
+            "uniqueId": "d233ce37-5355-4c8b-94b4-80db06a494e5",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "description": "Free-text user request to classify",
+                        "title": "Text",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "text"
+                ]
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "description": "Classified category: weather, news, or joke",
+                        "enum": [
+                            "weather",
+                            "news",
+                            "joke"
+                        ],
+                        "title": "Category",
+                        "type": "string"
+                    },
+                    "text": {
+                        "description": "The original input text",
+                        "title": "Text",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "category",
+                    "text"
+                ]
+            },
+            "graph": {
+                "nodes": [
+                    {
+                        "id": "__start__",
+                        "name": "__start__",
+                        "type": "__start__",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "model",
+                        "name": "model",
+                        "type": "node",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "tools",
+                        "name": "tools",
+                        "type": "tool",
+                        "subgraph": null,
+                        "metadata": {
+                            "tool_names": [
+                                "submit_category"
+                            ],
+                            "tool_count": 1
+                        }
+                    },
+                    {
+                        "id": "extract",
+                        "name": "extract",
+                        "type": "node",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "__end__",
+                        "name": "__end__",
+                        "type": "__end__",
+                        "subgraph": null,
+                        "metadata": {}
+                    }
+                ],
+                "edges": [
+                    {
+                        "source": "__start__",
+                        "target": "model",
+                        "label": null
+                    },
+                    {
+                        "source": "model",
+                        "target": "extract",
+                        "label": null
+                    },
+                    {
+                        "source": "model",
+                        "target": "tools",
+                        "label": null
+                    },
+                    {
+                        "source": "tools",
+                        "target": "model",
+                        "label": null
+                    },
+                    {
+                        "source": "extract",
+                        "target": "__end__",
+                        "label": null
+                    }
+                ]
+            }
+        }
+    ]
+}

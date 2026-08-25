@@ -1,0 +1,27 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "UiPath.System.Activities/22.10.5": {
+        "type": "package"
+      },
+      "UiPath.UIAutomation.Activities/22.10.7": {
+        "type": "package"
+      }
+    }
+  },
+  "libraries": {
+    "UiPath.System.Activities/22.10.5": {
+      "type": "package"
+    },
+    "UiPath.UIAutomation.Activities/22.10.7": {
+      "type": "package"
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETCoreApp,Version=v6.0": [
+      "UiPath.System.Activities >= 22.10.5",
+      "UiPath.UIAutomation.Activities >= 22.10.7"
+    ]
+  }
+}

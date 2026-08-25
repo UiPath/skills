@@ -1,0 +1,106 @@
+{
+  "name": "CodedProc",
+  "projectId": "fa329871-c4a7-4a00-bc58-e1fd26aabf81",
+  "description": "Coded process that reads invoices from Excel and enqueues them.",
+  "main": "Main.cs",
+  "dependencies": {
+    "UiPath.System.Activities": "[25.12.2]",
+    "UiPath.Testing.Activities": "[25.10.0]",
+    "UiPath.UIAutomation.Activities": "[25.10.26]",
+    "UiPath.Excel.Activities": "[3.3.1]",
+    "PDFsharp": "[6.2.0]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "25.0.0.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": true,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "NewtonsoftJson",
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": true,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.cs",
+      "uniqueId": "f5ecd3ba-31b9-47b5-8a91-5ecef2090c81",
+      "input": [
+        {
+          "name": "excelFilePath",
+          "type": "System.String",
+          "required": false
+        },
+        {
+          "name": "queueName",
+          "type": "System.String",
+          "required": false
+        }
+      ],
+      "output": []
+    },
+    {
+      "filePath": "ReadExcelData.cs",
+      "uniqueId": "11f49b0b-86f1-495d-a53a-04a4264ad4de",
+      "input": [
+        {
+          "name": "filePath",
+          "type": "System.String",
+          "required": true
+        }
+      ],
+      "output": [
+        {
+          "name": "excelData",
+          "type": "System.Data.DataTable"
+        }
+      ]
+    },
+    {
+      "filePath": "AddToQueue.cs",
+      "uniqueId": "cfd7fe1c-1eff-42be-ba17-891840a12f35",
+      "input": [
+        {
+          "name": "queueName",
+          "type": "System.String",
+          "required": true
+        },
+        {
+          "name": "excelData",
+          "type": "System.Data.DataTable",
+          "required": true
+        }
+      ],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Windows"
+}

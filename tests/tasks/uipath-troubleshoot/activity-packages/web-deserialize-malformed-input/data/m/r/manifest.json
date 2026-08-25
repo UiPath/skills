@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay of staging job febd892d-787b-4008-a573-4af66cf710cf (process ParseResponse, folder Shared): Deserialize JSON received a hardcoded non-JSON HTML literal -> Newtonsoft.Json.JsonReaderException. Matches web-activities/deserialize-malformed-input.md literal-input branch (no upstream HTTP). Real uip CLI evidence, scrubbed.",
+  "rules": [
+    {
+      "match": "or jobs logs febd892d-787b-4008-a573-4af66cf710cf --level Error",
+      "file": "64a90d375a.json"
+    },
+    {
+      "match": "or jobs logs febd892d-787b-4008-a573-4af66cf710cf",
+      "file": "308d7e6716.json"
+    },
+    {
+      "match": "or jobs get febd892d-787b-4008-a573-4af66cf710cf",
+      "file": "e3f1a4df3f.json"
+    },
+    {
+      "match": "or jobs history febd892d-787b-4008-a573-4af66cf710cf",
+      "file": "8fb5f28c15.json"
+    },
+    {
+      "match": "or jobs traces febd892d-787b-4008-a573-4af66cf710cf",
+      "file": "9e4929c4d3.json"
+    },
+    {
+      "match": "traces spans get --job-key febd892d-787b-4008-a573-4af66cf710cf",
+      "file": "bf6714348f.json",
+      "exit_code": 1
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Faulted",
+      "file": "73158e111a.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "file": "73158e111a.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "73158e111a.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "aa608d720c.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": {
+      "Result": "Success",
+      "Code": "Empty",
+      "Data": []
+    },
+    "exit_code": 0,
+    "_doc": "Empty result for any unmatched read-only uip query."
+  }
+}

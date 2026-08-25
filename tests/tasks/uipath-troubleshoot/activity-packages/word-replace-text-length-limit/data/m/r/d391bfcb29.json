@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e1f2a3b4-c5d6-4204-e8f9-012435465718",
+      "State": "Faulted",
+      "ProcessName": "TermsLetterGen",
+      "ReleaseKey": "",
+      "Source": "Queue",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-04",
+      "MachineKey": "",
+      "StartTime": "2026-06-13T11:40:02.330Z",
+      "EndTime": "2026-06-13T11:40:05.910Z",
+      "CreationTime": "2026-06-13T11:40:02.080Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

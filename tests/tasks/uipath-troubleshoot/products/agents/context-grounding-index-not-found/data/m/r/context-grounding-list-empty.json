@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "ContextGroundingIndexList",
+  "Data": [
+    {
+      "indexName": "legacy-support-kb",
+      "folderPath": "Shared/Agents",
+      "last_ingestion_status": "Successful",
+      "status": "Active"
+    }
+  ]
+}

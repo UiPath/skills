@@ -15,7 +15,7 @@ uip maestro flow registry search "uipath.core.api-workflow" --output json
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 ## Registry Validation
@@ -36,7 +36,7 @@ Confirm:
 - `model.bindings.resourceSubType` — `Api`
 - `model.bindings.resourceKey` — the `<FolderPath>.<ApiName>` string used to scope binding resolution
 - `inputDefinition` — typically empty
-- `outputDefinition.error` — error schema
+- `outputDefinition` — always `error` (`source: "=Error"`). Whether it also declares `output` varies per published API workflow; either way, do not author `output` on the instance (see § JSON Structure)
 
 ## Adding / Editing
 
@@ -56,21 +56,17 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
   "display": { "label": "Call API Function" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the API workflow",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the API workflow fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
+
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -109,3 +105,4 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 | --- | --- | --- |
 | Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution API workflows use `--local` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |
+| Node Completed but `$vars.{nodeId}.output` is null downstream (consumer agent faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` / incident `170002`) | Instance declares `outputs.output` with `source: "=result.response"`, suppressing the injected `=this` output | Delete the `output` entry — keep `error` only |

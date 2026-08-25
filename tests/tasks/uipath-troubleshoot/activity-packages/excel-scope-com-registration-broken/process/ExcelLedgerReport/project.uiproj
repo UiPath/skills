@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelLedgerReport",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Ledger' sheet from the monthly ledger workbook at C:\\Robot\\Data\\ledger-2026-05.xlsm into a DataTable via Read Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "22bb2222-2222-3333-4444-555566667777",
+      "StartTime": "2026-05-20T08:00:01.300Z",
+      "EndTime": "2026-05-20T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelWriteCellProcess",
+      "Source": "Schedule",
+      "Reference": "DailySalesTotal",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0022222-2222-3333-4444-555566667777",
+      "Info": "UiPath.Excel.BusinessException: The data you want to write has a wrong format, or Excel is busy.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

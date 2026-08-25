@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Word append-text zero-byte-file scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "4519cfade3.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"d2e3f4a5-b6c7-4193-a283-94a5b6c7d8e9\" --state Faulted --output json",
+      "file": "90fb3d3a43.json"
+    },
+    {
+      "match": "or jobs list --folder-key d2e3f4a5-b6c7-4193-a283-94a5b6c7d8e9 --state Faulted --output json",
+      "file": "90fb3d3a43.json"
+    },
+    {
+      "match": "or jobs get \"e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0\" --output json",
+      "file": "793d617b10.json"
+    },
+    {
+      "match": "or jobs get e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0 --output json",
+      "file": "793d617b10.json"
+    },
+    {
+      "match": "or jobs logs \"e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0\" --level Error --output json",
+      "file": "c28d4b82ef.json"
+    },
+    {
+      "match": "or jobs logs e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0 --level Error --output json",
+      "file": "c28d4b82ef.json"
+    },
+    {
+      "match": "or jobs logs \"e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0\" --output json",
+      "file": "4c8fb557ac.json"
+    },
+    {
+      "match": "or jobs logs e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0 --output json",
+      "file": "4c8fb557ac.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

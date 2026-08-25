@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "d4e5f6a7-b8c9-4193-a5b6-c7d8e9f01403",
+      "Name": "Reporting",
+      "Path": "Reporting",
+      "Description": "Production folder for scheduled reporting processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

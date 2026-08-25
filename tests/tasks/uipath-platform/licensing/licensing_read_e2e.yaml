@@ -1,0 +1,98 @@
+task_id: skill-platform-licensing-read-e2e
+description: >
+  E2E test: agent uses the uipath-platform skill to walk through the
+  read-only licensing queries against the live tenant — seat availability,
+  group rules + per-group details, and a consumables summary. Verifies each
+  CLI call succeeds (`Result: "Success"`), each JSON artifact is written,
+  and the agent's final summary reports at least one bundle using the
+  `<Friendly Name> (<CODE>)` format from the docs page.
+tags: [uipath-platform, e2e, licensing]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "WebFetch"]
+
+initial_prompt: |
+  Produce a read-only licensing snapshot of this account. This is read-only:
+  do NOT run anything that mutates licensing state.
+
+  Cover these four areas, saving the full CLI output (the entire response
+  envelope, not just its `Data`) to the named file for each:
+
+  - Account-level user-bundle seat availability → `available.json`
+  - The account's group license-allocation rules → `rules.json`
+  - Per-group rule details for one group (the first group from `rules.json`)
+    → `details.json`. If `rules.json` lists no groups, skip this one.
+  - A consumables summary → `consumables.json`
+
+  Then translate bundle codes to friendly names from the UiPath docs
+  license-codes page, and finish with a human-readable summary that
+  references at least one bundle in the `<Friendly Name> (<CODE>)` format —
+  e.g., `Automation Developer Named User (RPADEVPRONU)`.
+
+  Save the docs lookup evidence as `license-codes-evidence.json` in the
+  current directory. Include the source URL and at least one resolved
+  friendly-name/code pair that you use in the summary.
+
+  Use `--output json` on every uip command.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote web-resolution evidence at license-codes-evidence.json"
+    path: "license-codes-evidence.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Evidence file records the docs source URL and at least one resolved bundle mapping"
+    path: "license-codes-evidence.json"
+    includes:
+      [
+        "docs.uipath.com",
+        "Named User"
+      ]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "available.json written to sandbox"
+    path: "available.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "rules.json written to sandbox"
+    path: "rules.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "consumables.json written to sandbox"
+    path: "consumables.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "details.json written when a group was selected for drilldown"
+    path: "details.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Each JSON artifact has Result=Success and valid envelope shape"
+    command: "python3 $TASK_DIR/_shared/licensing_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Final reply renders at least one bundle as `<Friendly Name> (<CODE>)`"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Score 1.0 if it references at
+      least one license bundle in the form `<Friendly Name> (<CODE>)` —
+      e.g., `Automation Developer Named User (RPADEVPRONU)` or `Attended
+      Named User (ATTUNU)`. Score 0.0 if the reply shows only raw codes,
+      only friendly names without codes, or no bundle references at all.
+    weight: 2.0
+    pass_threshold: 1.0

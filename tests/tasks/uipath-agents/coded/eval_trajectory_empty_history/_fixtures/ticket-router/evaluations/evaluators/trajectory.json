@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "id": "TrajectoryEvaluator",
+  "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+  "evaluatorConfig": {
+    "name": "TrajectoryEvaluator",
+    "model": "gpt-4o-mini-2024-07-18",
+    "defaultEvaluationCriteria": {
+      "expectedAgentBehavior": "Agent should route the ticket to the correct queue."
+    }
+  }
+}

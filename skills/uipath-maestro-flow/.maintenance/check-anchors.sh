@@ -70,7 +70,7 @@ while IFS= read -r srcfile; do
     resolved=$(cd "$(/usr/bin/dirname "$full")" 2>/dev/null && /bin/pwd)/$(/usr/bin/basename "$full")
     [ ! -f "$resolved" ] && continue
     checked=$((checked+1))
-    if heading_anchors "$resolved" | /usr/bin/grep -qx "$anchor"; then
+    if heading_anchors "$resolved" | /usr/bin/grep -qx -- "$anchor"; then
       :
     else
       echo "BAD ANCHOR  $srcfile -> $raw"

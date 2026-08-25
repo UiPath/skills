@@ -2,7 +2,7 @@
 
 Quality checklist for UiPath Coded Web Applications — apps built with web frameworks (React, Angular, Vue, etc.) and deployed through the UiPath platform.
 
-> **Unit of Work:** Before running the technical checks below, complete Step 3a (Unit of Work Discovery) from SKILL.md. For coded apps the declared unit is the entry point input schema (`operate.json` / `entry-points.json`). The actual unit is what each endpoint/page action produces. If a single user action triggers N unbounded downstream calls over a sub-collection of input, that is a Granularity Mismatch (see [rpa-common-issues.md](../rpa/rpa-common-issues.md) for the generic pattern).
+> **Unit of Work:** Before running the technical checks below, complete Step 3a (Unit of Work Discovery) from SKILL.md. For coded apps the declared unit is the entry point input schema (`operate.json` / `entry-points.json`). The actual unit is what each endpoint/page action produces. If a single user action triggers N unbounded downstream calls over a sub-collection of input, the shape is one-to-many — assess per Step 3a (see [rpa-common-issues.md](../rpa/rpa-common-issues.md) for the generic pattern).
 
 ## 1. Project Structure
 
@@ -32,12 +32,13 @@ Quality checklist for UiPath Coded Web Applications — apps built with web fram
 
 ## 2. Build Verification
 
+> Review is read-only — do NOT run `npm run build` (mutates the workspace). Verify the existing build output; a missing or stale `dist/` is itself a finding.
+
 | Check | Severity | How to Verify |
 |---|---|---|
-| `npm run build` completes successfully | Critical | Run build command |
-| `dist/` (or configured output) contains expected files | Critical | `ls dist/` |
+| Build output exists (`dist/` or configured output) with expected files | Critical | `ls dist/` — if missing, report as finding; do not build |
 | Build output includes an `index.html` entry point | Critical | `ls dist/index.html` |
-| No build warnings about missing dependencies | Warning | Check build output |
+| No build warnings about missing dependencies | Warning | Check CI/build logs if available; otherwise record under "Rules Skipped" |
 | Bundle size is reasonable (no massive unoptimized bundles) | Info | Check dist/ file sizes |
 
 ## 3. Pack Readiness
@@ -115,20 +116,20 @@ Quality checklist for UiPath Coded Web Applications — apps built with web fram
 | Environment-specific configuration externalized | Warning | No hardcoded env-specific URLs |
 | Deployment target correctly configured | Warning | Check deploy config |
 
-## 9. Deployment Lifecycle Verification
+## 9. Deployment Lifecycle Readiness
 
-The complete deployment lifecycle:
+The lifecycle this project must be ready for. **Do NOT execute any of it during review** — publish and deploy are operator tasks (route to `uipath-coded-apps`). The only sanctioned command is the dry-run pack (§3).
 
-```
-1. Build: npm run build → dist/
-2. Pack:  uip codedapp pack dist → .uipath/*.nupkg
+```text
+1. Build:   npm run build → dist/
+2. Pack:    uip codedapp pack dist → .uipath/*.nupkg
 3. Publish: uip codedapp publish → registers with Apps service
-4. Deploy: uip codedapp deploy → deploys to UiPath platform
+4. Deploy:  uip codedapp deploy → deploys to UiPath platform
 ```
 
-| Check | Severity | How to Verify |
+| Check | Severity | How to Verify (read-only) |
 |---|---|---|
-| Full lifecycle completes without errors | Critical | Run each step |
-| Published version matches expected version | Warning | Check version after publish |
-| App accessible after deployment | Critical | Verify app URL |
-| Upgrade path works (not just fresh deploy) | Info | Test upgrade scenario |
+| Pack readiness (build output + dry-run pack) | Critical | §2 and §3 results — do not re-run |
+| Version consistent across `package.json`, `.uipath/` metadata, `app.config.json` | Warning | Compare version fields |
+| Prior publish evidence consistent (`app.config.json` present after first publish, IDs match `.uipath/` metadata) | Info | Read app.config.json + `.uipath/` metadata |
+| Upgrade path documented (version bump strategy, release notes — not just fresh deploy) | Info | Check versioning fields + changelog |

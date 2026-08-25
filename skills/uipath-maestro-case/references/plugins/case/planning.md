@@ -1,6 +1,6 @@
 # case (root) — Planning
 
-The root case definition — the top-level container that every other node lives inside. Created exactly once per project. Under the JSON strategy the case plugin **also owns project scaffolding** (the 5 boilerplate files written by `uip maestro case init` on the CLI path) — see [impl-json.md](impl-json.md).
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. The case plugin **also owns project scaffolding**: T01 writes the 5 boilerplate project files directly — never via `uip maestro case init`, which forks the solution ([SKILL.md](../../../SKILL.md) Rule 23) — see [impl-json.md](impl-json.md).
 
 ## When to Use
 
@@ -15,14 +15,24 @@ Always. This plugin is invoked for the very first T-entry (`T01`) in every `task
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
+| `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
 
 ## identifier-type Guidance
 
-- `constant` — **Default.** Use when sdd.md does not mention external identifier sources. The case identifier is fixed across instances (typically matches `name`).
-- `external` — Use when sdd.md says something like "the case is identified by the incoming PO number" or "the case uses the external ticket ID." Runtime will pull the identifier from case data.
+- `constant` — **Default.** Use when sdd.md does not mention external identifier sources. The identifier is a fixed 2-4 char prefix; runtime emits `<prefix>-<generated>`.
+- `external` — Use when sdd.md says the identifier comes from upstream data ("identified by the incoming PO number", "uses the external ticket ID"). `case-identifier` becomes a `=`-prefixed expression; runtime evaluates it and the result IS the case external id.
 
 When ambiguous, use **AskUserQuestion** with both options + "Something else".
+
+### External identifier value
+
+`case-identifier` is carried verbatim from sdd.md — one of two forms (no other engine):
+
+- **Bare var** — `=vars.<varId>`, where `<varId>` is a single variable declared in the §4.2.1 block. It MUST be an **In** argument or a **Variable** — not an **Out** argument (produced at case end).
+- **`=js:` expression** — for string ops / concatenation, e.g. `` =js:`${metadata.InstanceId}-${vars.region}` ``. May read `vars.<id>` and `metadata.InstanceId` / `metadata.FolderKey` / `metadata.ProcessKey` — never `metadata.ExternalId` (the field being set).
+
+A referenced variable must have its own §4.2.1 T-entry (the completeness cross-check requires it).
 
 ## Registry Resolution
 
@@ -40,10 +50,13 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 - case-identifier: "<identifier>"
 - identifier-type: constant
 - case-app-enabled: false
+- directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; root.id == "root", nodes == [], edges == []
+- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "27.0.0", nodes == [], edges == []
 ```
+
+> **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.
 
 ## Project Structure Prerequisites
 
@@ -52,7 +65,7 @@ The case file lives inside a solution + project structure. After T01 completes, 
 ```
 <directory>/
   <SolutionName>/
-    <SolutionName>.uipx            ← created by `uip solution new` (Step 6.0, CLI)
+    <SolutionName>.uipx            ← created by `uip solution init` (Step 6.0, CLI)
     <ProjectName>/                 ← created + populated by T01 (case plugin)
       project.uiproj               ← § Scaffold writes
       operate.json                 ← § Scaffold writes
@@ -62,6 +75,10 @@ The case file lives inside a solution + project structure. After T01 completes, 
       caseplan.json                ← § Write caseplan.json writes
 ```
 
-Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.0b.
+Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution projects add` bookend T01 as Step 6.0 and Step 6.0b.
+
+**Naming (canonical) — the solution identity is derived ONCE and reused by every step that scaffolds or references the solution.** `<SolutionName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; `<SolutionDir>` = `<workingRoot>/<SolutionName>` (the working root adjacent to `sdd.md`). **Step 6.0 AND the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)) MUST derive `<SolutionName>` + `<SolutionDir>` identically** — so a solution scaffolded early by a Phase-1 Create is the *same* `.uipx` Step 6.0 then finds and skips. A divergent name or location forks the solution: the built agent sibling registers in one `.uipx`, the case project lands in another, and the case cannot resolve its own agent at runtime. (`<ProjectName>` is T01's to choose under `<SolutionDir>/`.)
 
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.
+
+<!-- END: planning.md -->

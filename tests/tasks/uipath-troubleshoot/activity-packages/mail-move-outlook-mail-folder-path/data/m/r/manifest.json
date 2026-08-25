@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Move Outlook Mail Message scenario; mock dispatcher only -- do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "6814c2ec5c.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"d9e0f1a2-3b4c-4d5e-8f6a-7b8c9d0e1f2a\" --state Faulted --output json",
+      "file": "f164ffd674.json"
+    },
+    {
+      "match": "or jobs list --folder-key d9e0f1a2-3b4c-4d5e-8f6a-7b8c9d0e1f2a --state Faulted --output json",
+      "file": "f164ffd674.json"
+    },
+    {
+      "match": "or jobs get \"e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b\" --output json",
+      "file": "2ed5559edf.json"
+    },
+    {
+      "match": "or jobs get e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b --output json",
+      "file": "2ed5559edf.json"
+    },
+    {
+      "match": "or jobs logs \"e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b\" --level Error --output json",
+      "file": "dc2dbfc263.json"
+    },
+    {
+      "match": "or jobs logs e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b --level Error --output json",
+      "file": "dc2dbfc263.json"
+    },
+    {
+      "match": "or jobs logs \"e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b\" --output json",
+      "file": "33c5307b4b.json"
+    },
+    {
+      "match": "or jobs logs e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b --output json",
+      "file": "33c5307b4b.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

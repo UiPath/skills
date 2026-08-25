@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "f1a10001-0000-4000-8000-000000000001",
+      "Name": "Unattended Ops",
+      "Path": "Unattended Ops",
+      "Description": "Scheduled unattended automations.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

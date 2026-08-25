@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-17T16:25:02.460Z",
+      "Message": "JiraNoteBot execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-17T16:25:03.170Z",
+      "Message": "Jira Scope: session opened to https://acme.atlassian.net (Authentication Type: Api Token)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-17T16:25:03.640Z",
+      "Message": "Add Comment: posting comment to issue OPS-1605 (visibility: Role 'Service Desk Team')"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T16:25:03.890Z",
+      "Message": "[Add Comment] Response status code does not indicate success: 400 (Bad Request). You are currently not a member of the project role 'Service Desk Team' that you are restricting the comment visibility to."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T16:25:03.960Z",
+      "Message": "UiPath.Jira.Activities.JiraException: You are currently not a member of the project role 'Service Desk Team' that you are restricting the comment visibility to.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at AddComment \"Add Comment\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-17T16:25:04.020Z",
+      "Message": "JiraNoteBot execution ended"
+    }
+  ]
+}

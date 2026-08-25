@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "a7b8c9d0-e1f2-4204-b5c6-d7e8f9012415",
+      "State": "Stopped",
+      "ProcessName": "NDAFiller",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-11T10:05:02.110Z",
+      "EndTime": "2026-06-11T10:35:09.730Z",
+      "CreationTime": "2026-06-11T10:05:01.880Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

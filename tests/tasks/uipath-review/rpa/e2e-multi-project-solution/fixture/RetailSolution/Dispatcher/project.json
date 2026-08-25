@@ -1,0 +1,37 @@
+{
+  "name": "Dispatcher",
+  "projectId": "e2e2c3d4-0001-4a2b-9c3d-0e1f2a3b0200",
+  "description": "Scrapes invoices from the vendor portal and enqueues them.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[24.10.5]",
+    "UiPath.UIAutomation.Activities": "[24.10.5]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "24.10.0.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow"
+  },
+  "designOptions": {
+    "projectProfile": "Development",
+    "outputType": "Process",
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "e2e2d4e5-0002-4b3c-8d4e-1f2a3b4c0201",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "targetFramework": "Windows"
+}

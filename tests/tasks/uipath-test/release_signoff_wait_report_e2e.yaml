@@ -1,0 +1,219 @@
+task_id: skill-test-release-signoff-wait-report-e2e
+description: >
+  E2E test: a release manager kicks off a test set, blocks on it to completion,
+  and pulls the sign-off summary — exercising the run → wait → report loop whose
+  middle and end (`uip tm wait`, `uip tm report get`) no existing task covers.
+  The agent starts a run of a test set in the existing CLAIM project
+  (`testsets run`), blocks on that execution with `uip tm wait --execution-id`
+  using a BOUNDED `--timeout` so the call returns within the agent turn budget
+  rather than hanging on a long/stuck run, then fetches the summary report for
+  that execution (`uip tm report get --execution-id`) to render a go/no-go call.
+  Asserts the run start (`testsets run`) plus the new surface — the bounded
+  synchronous wait and the summary-report verb. The skill — not
+  the prompt — must teach the `wait --timeout` flag, that `report get`
+  summarizes an execution, and `--output json`.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+  turn_timeout: 1500
+  task_timeout: 1800
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the EVFX- contract.
+#
+# This task WRITES: it starts a run on whatever suite it is pointed at. While
+# that was CLAIM's shared "UAT Smoke Suite" it added executions to a suite three
+# read-only tasks depend on. It now owns EVFX-SIGNOFF-SET.
+#
+# Creating the set here also removes the agent's need to touch Orchestrator
+# folder configuration. Under the old Critical Rule 10 the agent picked a
+# folder off `or folders list` and `project set-default-folder` failed, killing
+# the run before `testsets run` and taking every downstream criterion with it.
+# Rule 10 now says to attempt the run first and leave a working default alone.
+#
+# NOTE: the cases are linked to an existing Orchestrator package so the run
+# STARTS, but nothing completes it on this robot-less tenant. That is within
+# the task's design — the prompt asks the agent to cap its wait and pull the
+# report regardless — but a genuinely finishing automated run stays out of
+# reach until a robot exists. See tests/tasks/uipath-test/fixtures/README.md.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-SIGNOFF-SET"
+      CASES = ["EVFX-SIGNOFF-TC1", "EVFX-SIGNOFF-TC2"]
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if len(keys) != len(CASES):
+          fail(f"expected {len(CASES)} test cases, resolved {len(keys)}: {keys}")
+      if keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+               "--test-case-keys", *keys)
+
+      # `testsets run` defaults to --execution-type automated, which errors
+      # outright when no case in the set carries an automation link — that is
+      # what leaves wait and report get with no execution to act on. Link the
+      # cases to the Orchestrator package this tenant already publishes, so the
+      # run starts. Linking needs no robot; only COMPLETING the run does, and
+      # the task already tolerates a non-finish.
+      FOLDER = "fc225050-4ad9-45dc-a98e-c50eb9ce09a3"
+      PACKAGE = "Testcases.with.parameters"
+      autos = call("automations", "tm", "testcases", "list-automations",
+                   "--project-key", P, "--folder-key", FOLDER,
+                   "--package-name", PACKAGE).get("Data") or []
+      test_name = (autos[0].get("Name") or autos[0].get("TestName")) if autos else None
+      if test_name:
+          for k in keys:
+              call(f"link.{k}", "tm", "testcases", "link-automation", "--project-key", P,
+                   "--test-case-key", k, "--folder-key", FOLDER,
+                   "--package-name", PACKAGE, "--test-name", test_name)
+      else:
+          # Without a link, `testsets run` (default --execution-type automated)
+          # errors, so the agent gets no execution id and the wait/report half
+          # of the task cannot be graded at all. Stop rather than hand the
+          # evaluator a fixture that cannot support the task.
+          fail(f"no automation found in package {PACKAGE!r} under folder "
+               f"{FOLDER}; EVFX-SIGNOFF cases cannot be linked and an "
+               f"automated run would fail")
+
+      print(f"FIXTURE: {SET} ready ({ts['TestSetKey']}) with {len(keys)} cases, "
+            f"automation={test_name!r}", flush=True)
+      EOF
+    timeout: 240
+
+# Owner-scoped repair. Every run starts an automated execution that nothing
+# completes on this robot-less tenant, so without this the set gains one
+# permanent Pending execution per run -- the same unbounded growth the EVFX
+# contract exists to prevent. Close the logs of any non-terminal execution on
+# THIS task's own set; nothing else reads it, so rewriting its history is safe.
+post_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      P, SET = "CLAIM", "EVFX-SIGNOFF-SET"
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      ts = next((t for t in call("tm", "testsets", "list", "--project-key", P,
+                                 "--filter", SET).get("Data") or []
+                 if t.get("Name") == SET), None)
+      if not ts:
+          print("CLEANUP: no", SET); raise SystemExit(0)
+      # Leave the newest non-terminal execution alone. The nightly runs several
+      # models against this tenant at once, and closing every pending execution
+      # would finish a concurrently-running evaluation's in-flight run out from
+      # under it. Sweeping all but the most recent still bounds growth.
+      pending = sorted((e for e in call("tm", "executions", "list", "--project-key", P,
+                                        "--test-set-id", ts["Id"]).get("Data") or []
+                        if e.get("Status") in ("Pending", "Running")),
+                       key=lambda e: e.get("Created") or "", reverse=True)
+      closed = 0
+      for e in pending[1:]:
+          for l in call("tm", "executions", "testcaselogs", "list",
+                        "--project-key", P, "--execution-id", e["Id"]).get("Data") or []:
+              if l.get("Result") in (None, "", "None"):
+                  call("tm", "testcaselog", "finish", "--project-key", P,
+                       "--execution-id", e["Id"], "--test-case-id", l["TestCaseId"],
+                       "--result", "Passed", "--has-error", "false",
+                       "--executed-by", "eval-fixture@uipath.com")
+                  closed += 1
+      print(f"CLEANUP: closed {closed} open log(s) on {SET}")
+      EOF
+    timeout: 240
+
+initial_prompt: |
+  I need a quick go/no-go on our EVFX-SIGNOFF-SET suite in the CLAIM project (Test
+  Manager) before we cut the release. Can you kick off a run of that suite and
+  wait for it to actually finish — but don't sit there forever, put a sensible
+  cap on how long you wait. Then pull the summary report for that run either
+  way — I want it even if the wait timed out and the run is still going, since
+  a partial report still tells me where we stand. Give me the go/no-go straight,
+  based on the pass/fail outcome, and say so plainly if the run hadn't wrapped
+  up by the time your wait was up. Run it straight through, no need to loop
+  back to me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started the named suite run (`testsets run --test-set-key ... --output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testsets?\s+run\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # NO require_success here, deliberately: with no robot to complete the run,
+  # `uip tm wait` exits non-zero on timeout, and the prompt explicitly asks the
+  # agent to cap the wait and report a non-finish. The timeout IS the designed
+  # path, so grading command success would fail a correct run.
+  - type: command_executed
+    description: "Agent blocked on the execution with a bounded wait (`uip tm wait --execution-id ... --timeout`)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--timeout\s+\d)(?=[\s\S]*--output\s+json)uip\s+tm\s+wait\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # require_success IS safe here: `report get` returns exit 0 against a pending
+  # execution (verified — it fetches execution stats rather than requiring a
+  # terminal state), so demanding success grades the real outcome instead of
+  # awarding credit for a call that errored.
+  - type: command_executed
+    description: "Agent fetched the summary report for the execution (`report get --execution-id` + --output json)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+report\s+get\b'
+    min_count: 1
+    require_success: true
+    weight: 3.0
+    pass_threshold: 1.0

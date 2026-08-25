@@ -1,0 +1,6 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/uipath",
+  "id": "89852b5d-8559-4c57-b752-0e2b500902fc",
+  "runtimeOptions": {"isConversational": false},
+  "functions": {"main": "./main.py:main"}
+}

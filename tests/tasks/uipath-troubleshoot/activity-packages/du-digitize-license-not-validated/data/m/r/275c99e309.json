@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T13:47:26.500Z",
+      "Message": "Digitize Document: One or more errors occurred. (Request CorrelationId: 11fe739d-f26f-4631-9a47-8ad14cee388a\nRequest PredictionId: dxESNP+Cfd/lURIXfBaFd6eHzUvHTZKA7mdpXTRI848=_39ca2d10-d072-4747-b92a-efbe827a1a92\nServer response: Invalid API key specified Error:UiPathOCRInvalidApiKey CF-RAY: cid-v1:354c7cb9-ae5a-4d16-84a7-f13242bbac6d. AppId: )\r\nException Type: System.AggregateException\r\nin Main.xaml\r\n    at DigitizeDocument \"Digitize Document\"\r\n    at Sequence \"Main\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.AggregateException: One or more errors occurred. (Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey)\r\n   at UiPath.DocumentUnderstanding.Digitizer.Digitization.PageDigitizer.ApplyOcr(CachingPageRenderer renderer, IOcrEngine ocrEngine, DigitizationSettings settings, String contentId, CancellationToken token)\r\n   at UiPath.IntelligentOCR.Activities.Digitization.DigitizeDocument.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)"
+    }
+  ]
+}

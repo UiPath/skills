@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e3f9c1a4-6b28-4d70-9a15-7c0e2b8d4f61",
+      "State": "Successful",
+      "ProcessName": "AccountPortalEntry",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-20T02:14:05.220Z",
+      "EndTime": "2026-07-20T02:14:31.640Z",
+      "CreationTime": "2026-07-20T02:14:05.220Z"
+    },
+    {
+      "Key": "1a2b3c4d-5e6f-4071-8293-a4b5c6d7e8f9",
+      "State": "Successful",
+      "ProcessName": "AccountPortalEntry",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-19T02:14:04.110Z",
+      "EndTime": "2026-07-19T02:14:29.980Z",
+      "CreationTime": "2026-07-19T02:14:04.110Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

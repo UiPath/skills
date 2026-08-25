@@ -2,6 +2,46 @@
 
 Workflows for managing users via `uip admin users`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#users--uip-admin-users).
 
+## Workflow: Onboard a User (canonical flow)
+
+The most common identity flow: invite the user, find them once they accept, and assign them to a group.
+
+### Step 0 — Verify login
+
+```bash
+uip login status --output json
+```
+
+If not logged in: `uip login`. The CLI reads org ID from the active session automatically.
+
+### Step 1 — Invite a user
+
+```bash
+uip admin users invite \
+  --email "<USER_EMAIL>" \
+  --name "<FIRST_NAME>" \
+  --surname "<LAST_NAME>" \
+  --output json
+```
+
+### Step 2 — Find the user once they accept
+
+```bash
+uip admin users list \
+  --search "<USER_EMAIL>" --output json
+```
+
+### Step 3 — Assign to a group
+
+```bash
+uip admin groups list --output json
+uip admin groups members add <GROUP_ID> \
+  --user-ids "<USER_ID>" \
+  --output json
+```
+
+Apply the principal-resolution protocol before the `members add` call — echo `Principal: <displayName> (<userName>) — <id>` from the `users list` result (SKILL.md Rule 5).
+
 ## Workflow: Discover Existing Users
 
 ```bash
@@ -32,9 +72,6 @@ uip admin users invite \
 
 Use `create` instead of `invite` when:
 - **Migrations & batch imports** — syncing users from external systems
-- **Service accounts** — accounts with admin-set passwords, no email workflow needed
-- **Admin-provisioned access** — user needs immediate login without waiting for email acceptance
-- **No email available** — `create` does not require an email address; `invite` does
 
 1. Check for duplicates: `uip admin users list --search "<USERNAME>" --output json`
 2. Create: `uip admin users create "<USERNAME>" --email "<EMAIL>" --name "<FIRST_NAME>" --surname "<LAST_NAME>" --output json`
@@ -55,7 +92,7 @@ Use `create` instead of `invite` when:
 
 ```bash
 uip admin users list --limit 20 --offset 0 --output json
-uip admin users list --order-by "UserName" --order-direction "asc" --output json
+uip admin users list --sort-by "UserName" --sort-order "asc" --output json
 ```
 
 ## Error Handling

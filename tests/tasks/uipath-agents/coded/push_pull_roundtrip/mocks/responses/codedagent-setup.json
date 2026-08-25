@@ -1,0 +1,7 @@
+{
+  "Result": "Success",
+  "Code": "CodedAgentsSetup",
+  "Data": {
+    "PythonPath": "python3"
+  }
+}

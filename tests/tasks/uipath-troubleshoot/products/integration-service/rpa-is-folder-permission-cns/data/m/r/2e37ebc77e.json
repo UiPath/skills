@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Name": "Finance",
+      "ID": 2980990,
+      "Key": "7c9e1f22-5b3a-4d48-9e10-6a2b8c4d0e5f",
+      "Path": "Shared/Finance",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "InvoiceOps",
+      "ID": 2981001,
+      "Key": "f1a2b3c4-9d0e-4f61-8a72-3b4c5d6e7f80",
+      "Path": "Shared/Finance/InvoiceOps",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "Sales",
+      "ID": 2980721,
+      "Key": "0a1b2c3d-4e5f-4601-a2b3-c4d5e6f7a8b9",
+      "Path": "Shared/Sales",
+      "Type": "Standard",
+      "Description": ""
+    }
+  ]
+}

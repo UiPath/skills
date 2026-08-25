@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-20T02:14:31.480Z",
+      "Message": "Value confirmed in portal field: 4201-7789-316"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-20T02:14:12.360Z",
+      "Message": "Account number read from source: 4021-7789-3316"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-20T02:14:06.010Z",
+      "Message": "Customer record update started"
+    }
+  ]
+}

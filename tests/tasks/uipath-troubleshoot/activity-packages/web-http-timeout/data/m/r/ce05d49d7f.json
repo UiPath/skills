@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "3bdb5a85-b6ae-4e1f-b5a5-2488ca74de12",
+      "State": "Faulted",
+      "ProcessName": "FetchReport",
+      "ReleaseName": "FetchReport",
+      "StartTime": "2026-06-23T17:36:29.233Z",
+      "EndTime": "2026-06-23T17:36:32.110Z",
+      "CreationTime": "2026-06-23T17:36:28.890Z",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}

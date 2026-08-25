@@ -1,0 +1,6 @@
+{
+  "Name": "BulkDocPdf",
+  "ProjectType": "Process",
+  "Description": "Opens an invoice Word document and saves it as a PDF in the output folder while logging the export.",
+  "MainFile": "Main.xaml"
+}

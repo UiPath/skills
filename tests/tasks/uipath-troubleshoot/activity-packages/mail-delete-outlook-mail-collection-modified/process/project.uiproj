@@ -1,0 +1,6 @@
+{
+  "Name": "BulkMailPurger",
+  "ProjectType": "Process",
+  "Description": "Reads the Inbox with Get Outlook Mail Messages and deletes each retrieved message in a For Each loop to clear processed mail in bulk.",
+  "MainFile": "Main.xaml"
+}

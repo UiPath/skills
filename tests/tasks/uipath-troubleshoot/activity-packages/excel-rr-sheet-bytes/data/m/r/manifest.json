@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Canned uip responses for investigating a faulted Excel Read Range job (folders, jobs, job logs).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "6b808e9e6a.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "6b808e9e6a.json"
+    },
+    {
+      "match": "or jobs get \"cc333333-7777-8888-9999-000011112222\" --output json",
+      "file": "d35bb9b790.json"
+    },
+    {
+      "match": "or jobs get cc333333-7777-8888-9999-000011112222 --output json",
+      "file": "d35bb9b790.json"
+    },
+    {
+      "match": "or jobs history \"cc333333-7777-8888-9999-000011112222\" --output json",
+      "file": "61d7a8b016.json"
+    },
+    {
+      "match": "or jobs history cc333333-7777-8888-9999-000011112222 --output json",
+      "file": "61d7a8b016.json"
+    },
+    {
+      "match": "or jobs logs \"cc333333-7777-8888-9999-000011112222\" --output json",
+      "file": "22546d1c6d.json"
+    },
+    {
+      "match": "or jobs logs cc333333-7777-8888-9999-000011112222 --output json",
+      "file": "22546d1c6d.json"
+    }
+  ]
+}

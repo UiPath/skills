@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T19:19:13.781Z",
+      "Message": "[Get Credential] Orchestrator information is not available. Connection timed out connecting to https://cloud.uipath.com after 30000 ms.\r\nInner exception: System.Net.WebException: The operation has timed out."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T19:19:13.802Z",
+      "Message": "Orchestrator information is not available.\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

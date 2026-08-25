@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "Error retrieving trace ID for job",
+  "Instructions": "Response returned an error code"
+}

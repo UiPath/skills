@@ -1,0 +1,32 @@
+{"id": "uipath-automation-discovery-001", "prompt": "Discover automation opportunities across our organization", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-002", "prompt": "What should we automate? Mine our Slack and tell me", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-003", "prompt": "Run an internal automation audit and give me a prioritized backlog", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-004", "prompt": "Scan our help channels and rank automation opportunities by ROI", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-005", "prompt": "Find repetitive manual work in our company that we could automate with UiPath", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-006", "prompt": "Mine our Jira and Confluence for processes worth automating", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-007", "prompt": "Identify single points of failure in our operations from our Slack history", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-008", "prompt": "Find proven automations in one team that we could replicate elsewhere", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-009", "prompt": "Produce a 4-tier prioritized automation opportunity report for our org", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-010", "prompt": "Which departments have zero automation coverage?", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-011", "prompt": "Build a UiPath automation backlog from how our employees actually work", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-012", "prompt": "Analyze our CRM and ERP for process bottlenecks we could automate", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-013", "prompt": "Where are people swivel-chairing data between systems in our company?", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-014", "prompt": "Find the highest-ROI automation opportunities to feed into Automation Hub", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-015", "prompt": "Audit our email patterns for hidden recurring work we could automate", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-016", "prompt": "What manual reports are people compiling by hand that we could automate?", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-017", "prompt": "Run a discovery pass over our systems of record and summarize automation opportunities", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-018", "prompt": "Find automation opportunities in the Finance department specifically", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-019", "prompt": "Map our existing automations and identify the biggest gaps", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-020", "prompt": "Which approvals are stalling that we could automate?", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-021", "prompt": "Discover what to automate before we start any specific project", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-022", "prompt": "Give me a quick scan of automation opportunities — cap it at 10 findings", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-023", "prompt": "Do a deep-dive automation discovery across all our departments", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-024", "prompt": "Find replicable automation models and lead the report with them", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-025", "prompt": "Identify behavioral patterns in our help desk that point to automation", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-026", "prompt": "Which roles are sole responders we should de-risk with automation?", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-027", "prompt": "Build an automation opportunity report and map each finding to a UiPath implementation path", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-028", "prompt": "Mine our HRIS for people-process friction worth automating", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-029", "prompt": "Tie our strategic priorities to internal automation opportunities", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-030", "prompt": "Find what repetitive work my support team does that a bot could handle", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-031", "prompt": "Survey our organization and tell me the top automation candidates with evidence", "expected_skill": "uipath-automation-discovery"}
+{"id": "uipath-automation-discovery-032", "prompt": "Where should we start with automation? Give me an evidence-backed shortlist", "expected_skill": "uipath-automation-discovery"}

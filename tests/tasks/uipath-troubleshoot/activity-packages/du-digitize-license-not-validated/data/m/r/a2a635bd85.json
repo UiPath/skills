@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T13:47:20.330Z",
+      "EndTime": "2026-06-20T13:47:26.901Z",
+      "ReleaseName": "DocIntake",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 50620044
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+task_id: skill-ixp-integration-publish-lifecycle
+description: >
+  Integration: model publish/tag lifecycle on a live project, verified by
+  re-reading `list-models` after each transition. Covers publish, tag
+  staging/live, moving a tag to another version, unpublish, and untag — asserting
+  the published flag / tag pointer actually moved (wire-effect), not just command
+  shape.
+
+  Ordering matters and the prompt pins it: the first version is published BEFORE
+  the retrain that produces the second. Publishing pins a version; an unpublished
+  one is discarded when the next trains, leaving a single version and no distinct
+  V_OLD to tag or move. Measured over 10 live runs — every run that published
+  before its final retrain passed, every run that retrained first found one
+  version left and could not complete the sequence.
+
+  Version numbers also come from `list-models`, never from training order.
+tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
+
+run_limits:
+  max_turns: 68
+  task_timeout: 6000
+  turn_timeout: 1800
+
+sandbox:
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
+  python: {}
+  mock_path_dirs: [mocks]
+  template_sources:
+    - type: template_dir
+      path: ../_shared/live_calls_template
+    - type: template_dir
+      path: ../_shared/fixtures
+
+initial_prompt: |
+  I need to manage releases on an invoice project. Use the tenant I'm already
+  signed into (check I'm logged in; don't re-authenticate): start a project from
+  the files in `./fixtures/` (give it a unique title
+  `codereval-integ-publish-<random-suffix>` so concurrent runs don't collide) — import the taxonomy, upload one of the invoices —
+  and let it train.
+
+  Once that first version has trained, put it on staging right away — before you
+  retrain. An unpublished version is discarded when the next one trains, so
+  publishing it is what keeps two versions around to tag. Then tweak the
+  "Total Amount" field's instruction to retrain a second version.
+
+  Work only on the project you create; other runs share this tenant, so never
+  list, read, or modify any other project.
+
+  Training takes a few minutes (you'll wait through it twice). Each time, poll
+  the project's training status on a fixed interval — wait 2 min between checks,
+  up to 5 checks. Do NOT use a single long sleep or escalating waits. Move on
+  only once training has completed; if it's still training after 5 checks, stop
+  and report rather than waiting longer.
+
+  Take every version number you use from `list-models` — read it off that output
+  rather than assuming what a retrain numbered it. If the two versions you need
+  are not both there, stop and report; do not tag one version twice to finish the
+  sequence.
+
+  Then, saving the model list after each step so I can see the state move
+  (V_OLD = the version you put on staging, V_NEW = the one trained after it):
+  - Put V_NEW on live → save to `models_tagged.json`.
+  - Move the live tag over to V_OLD → save to `models_after_move.json`.
+  - Take the tags off V_OLD → save to `models_after_untag.json`.
+  - Unpublish V_NEW → save to `models_after_unpublish.json`.
+
+  Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
+
+success_criteria:
+  # Shape only — the log records the invocation whether or not the server
+  # accepted it, so a rejected `publish` still matches here. The wire effect is
+  # owned by check_tags.py below; keep this at supporting weight so a run that
+  # only *attempted* the tagging cannot bank most of the score.
+  - type: file_matches_regex
+    description: "Issued two tagged publishes (staging/live) — command shape"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging))[^\r\n]*$){2}
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Removed the staging tag by name (untag --tag staging)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?staging\b)[^\r\n]*$
+    weight: 0.75
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Removed the live tag by name (untag --tag live)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+untag\b.*--tag\s+["']?live\b)[^\r\n]*$
+    weight: 0.75
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Unpublished a version"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+unpublish\b.*--model-version)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # One snapshot per transition, graded as the four artifacts rather than as a
+  # count of `list-models` calls: the agent legitimately polls `list-models`
+  # while waiting for training, so a call count reaches 4 without any transition
+  # having been snapshotted. These are also check_tags.py's inputs — asserting
+  # them here turns a missing file into a named failure instead of a traceback.
+  - type: file_exists
+    description: "Snapshot after tagging (models_tagged.json)"
+    path: "models_tagged.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Snapshot after moving the live tag (models_after_move.json)"
+    path: "models_after_move.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Snapshot after untagging (models_after_untag.json)"
+    path: "models_after_untag.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Snapshot after unpublishing (models_after_unpublish.json)"
+    path: "models_after_unpublish.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification: full tag/publish lifecycle (see check_tags.py) ---
+  # Version numbers are dynamic, so it checks relative wire-effects, not fixed values.
+  - type: run_command
+    description: "Tag + publish lifecycle landed: tag -> move -> untag -> unpublish all verified across snapshots"
+    command: "python3 $TASK_DIR/check_tags.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+# Safety net: delete the project even if the agent's in-band cleanup never ran
+# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
+# always exits 0 so it never fails the test.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60

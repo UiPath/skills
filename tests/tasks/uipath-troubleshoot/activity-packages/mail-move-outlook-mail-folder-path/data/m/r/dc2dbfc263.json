@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T07:20:02.205Z",
+      "Message": "[Move Outlook Mail Message] destination folder 'Processed' not found at the mailbox root; no such top-level folder. The specified folder does not exist."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T07:20:02.241Z",
+      "Message": "Move Outlook Mail Message: The specified folder does not exist.\r\nin Main.xaml\r\n    at MoveOutlookMessage \"Move Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

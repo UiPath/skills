@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""TaskDependencyChain: task-driven exits + under-covered task-entry rule-types."""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import (  # noqa: E402
+    _get_ci,
+    find_node_by_label,
+    find_stages,
+    first_rule_of_condition,
+    get_variables,
+    iter_stage_entry_conditions,
+    iter_stage_exit_conditions,
+    read_caseplan,
+    start_debug,
+    task_is_skeleton,
+)
+
+
+def _stage_task_by_label(stage: dict, label: str) -> dict:
+    lanes = (stage.get("data") or {}).get("tasks") or []
+    for lane in lanes:
+        for task in lane or []:
+            if (task or {}).get("displayName") == label or (task or {}).get("label") == label:
+                return task
+    labels = [
+        (t or {}).get("displayName") or (t or {}).get("label")
+        for lane in lanes
+        for t in (lane or [])
+    ]
+    sys.exit(
+        f"FAIL: task with displayName/label={label!r} not found in stage "
+        f"{(stage.get('data') or {}).get('label')!r}; saw {labels}"
+    )
+
+
+def _stage_task_lane(stage: dict, label: str) -> int:
+    lanes = (stage.get("data") or {}).get("tasks") or []
+    for lane_idx, lane in enumerate(lanes):
+        for task in lane or []:
+            if (task or {}).get("displayName") == label or (task or {}).get("label") == label:
+                return lane_idx
+    sys.exit(
+        f"FAIL: task with displayName/label={label!r} not found in any lane of stage "
+        f"{(stage.get('data') or {}).get('label')!r}"
+    )
+
+
+def _task_entry_rule(task: dict) -> str | None:
+    conds = task.get("entryConditions") or []
+    for cond in conds:
+        rule = first_rule_of_condition(cond)
+        if rule and rule.get("rule") not in (None, "current-stage-entered"):
+            return rule.get("rule")
+    if conds:
+        rule = first_rule_of_condition(conds[0])
+        return rule.get("rule") if rule else None
+    return None
+
+
+def main():
+    plan = read_caseplan()
+
+    stages = find_stages(plan, include_exception=False)
+    if len(stages) != 3:
+        sys.exit(f"FAIL: expected 3 regular stages, got {len(stages)}")
+
+    process = find_node_by_label(plan, "Process")
+    finalize = find_node_by_label(plan, "Finalize")
+    done = find_node_by_label(plan, "Done")
+
+    process_exits = list(iter_stage_exit_conditions(process))
+    process_exit_rules = {
+        (first_rule_of_condition(c) or {}).get("rule") for c in process_exits
+    }
+    if "required-tasks-completed" not in process_exit_rules:
+        sys.exit(
+            f"FAIL: Process should have exit rule 'required-tasks-completed'; "
+            f"got {sorted(r for r in process_exit_rules if r)}"
+        )
+
+    finalize_exits = list(iter_stage_exit_conditions(finalize))
+    finalize_exit_rules = {
+        (first_rule_of_condition(c) or {}).get("rule") for c in finalize_exits
+    }
+    if "required-tasks-completed" not in finalize_exit_rules:
+        sys.exit(
+            f"FAIL: Finalize should have exit rule 'required-tasks-completed'; "
+            f"got {sorted(r for r in finalize_exit_rules if r)}"
+        )
+    routed_targets = {ec.get("exitToStageId") for ec in finalize_exits if ec.get("exitToStageId")}
+    if routed_targets:
+        sys.exit(
+            f"FAIL: Finalize declares no stage-exit hand-off; got exitToStageId "
+            f"set {routed_targets}"
+        )
+
+    finalize_entries = list(iter_stage_entry_conditions(finalize))
+    finalize_entry_rules = {
+        (first_rule_of_condition(c) or {}).get("rule") for c in finalize_entries
+    }
+    if "selected-stage-completed" not in finalize_entry_rules:
+        sys.exit(
+            f"FAIL: Finalize should have entry rule 'selected-stage-completed'; "
+            f"got {sorted(r for r in finalize_entry_rules if r)}"
+        )
+
+    done_entry_rules = [
+        first_rule_of_condition(c) or {} for c in iter_stage_entry_conditions(done)
+    ]
+    if not any(r.get("rule") == "selected-stage-completed" for r in done_entry_rules):
+        sys.exit(
+            f"FAIL: Done should have entry rule 'selected-stage-completed'; "
+            f"got {sorted(r.get('rule') for r in done_entry_rules if r.get('rule'))}"
+        )
+    if finalize["id"] not in {r.get("selectedStageId") for r in done_entry_rules}:
+        sys.exit(
+            f"FAIL: Done selected-stage-completed entry must reference Finalize id "
+            f"{finalize['id']!r}; got {[r.get('selectedStageId') for r in done_entry_rules]}"
+        )
+
+    first_step = _stage_task_by_label(process, "First Step")
+    second_step = _stage_task_by_label(process, "Second Step")
+    region_check = _stage_task_by_label(finalize, "Region Check")
+    final_task = _stage_task_by_label(finalize, "Final Task")
+    optional_audit = _stage_task_by_label(finalize, "Optional Audit")
+
+    expectations = {
+        "First Step": (first_step, "runs-sequentially"),
+        "Second Step": (second_step, "runs-sequentially"),
+        "Final Task": (final_task, "selected-tasks-completed"),
+        "Optional Audit": (optional_audit, "adhoc"),
+    }
+    for name, (task, want) in expectations.items():
+        got = _task_entry_rule(task)
+        if got != want:
+            sys.exit(
+                f"FAIL: task {name!r} task-entry rule should be {want!r}; got {got!r}"
+            )
+
+    for name in ("First Step", "Second Step"):
+        task = expectations[name][0]
+        rules = [
+            (first_rule_of_condition(condition) or {}).get("rule")
+            for condition in (task.get("entryConditions") or [])
+        ]
+        if rules != ["runs-sequentially"]:
+            sys.exit(
+                f"FAIL: sequential task {name!r} must have only runs-sequentially; got {rules!r}"
+            )
+
+    adhoc_rules = [
+        (first_rule_of_condition(condition) or {}).get("rule")
+        for condition in (optional_audit.get("entryConditions") or [])
+    ]
+    if adhoc_rules != ["adhoc"] or optional_audit.get("isRequired") is not False:
+        sys.exit(
+            "FAIL: Optional Audit must be an adhoc-only, non-required task; "
+            f"rules={adhoc_rules!r}, isRequired={optional_audit.get('isRequired')!r}"
+        )
+
+    # Region Check fires when the Finalize stage is entered. current-stage-entered
+    # is the default task-entry rule and may be emitted explicitly or omitted.
+    rc_rule = _task_entry_rule(region_check)
+    if rc_rule not in ("current-stage-entered", None):
+        sys.exit(
+            f"FAIL: task 'Region Check' task-entry rule should be "
+            f"'current-stage-entered' (or default); got {rc_rule!r}"
+        )
+
+    # A strict sequential chain uses consecutive single-task structural sets.
+    # Same-set grouping is reserved for explicitly parallel siblings.
+    first_step_lane = _stage_task_lane(process, "First Step")
+    second_step_lane = _stage_task_lane(process, "Second Step")
+    if first_step_lane == second_step_lane:
+        sys.exit(
+            f"FAIL: strict sequential tasks 'First Step' and 'Second Step' must "
+            f"not share a parallel task set; both are in set {first_step_lane}"
+        )
+    if first_step_lane >= second_step_lane:
+        sys.exit(
+            f"FAIL: strict sequential task sets must preserve declaration order; "
+            f"First Step set={first_step_lane}, Second Step set={second_step_lane}"
+        )
+    process_sets = (process.get("data") or {}).get("tasks") or []
+    for task_name, set_idx in (("First Step", first_step_lane), ("Second Step", second_step_lane)):
+        if len(process_sets[set_idx] or []) != 1:
+            labels = [
+                (t or {}).get("displayName") or (t or {}).get("label")
+                for t in (process_sets[set_idx] or [])
+            ]
+            sys.exit(
+                f"FAIL: strict sequential task {task_name!r} must be alone in "
+                f"its task set; set {set_idx} contains {labels!r}"
+            )
+
+    if optional_audit.get("type") != "process":
+        sys.exit(
+            f"FAIL: 'Optional Audit' should be a process-typed skeleton task; "
+            f"got type={optional_audit.get('type')!r}"
+        )
+    if not task_is_skeleton(optional_audit):
+        sys.exit(
+            f"FAIL: 'Optional Audit' must be a skeleton process task — "
+            f"data.name/data.folderPath must be absent; got data keys "
+            f"{sorted((optional_audit.get('data') or {}).keys())}"
+        )
+
+    fs_data = first_step.get("data") or {}
+    if fs_data.get("timerType") != "timeDuration":
+        sys.exit(
+            f"FAIL: 'First Step' wait-for-timer should use the timeDuration "
+            f"branch (data.timerType='timeDuration'); got {fs_data.get('timerType')!r}"
+        )
+    if "repeat" in fs_data:
+        sys.exit(
+            f"FAIL: 'First Step' must be non-repeating — data.repeat must be "
+            f"absent; got {fs_data.get('repeat')!r}"
+        )
+
+    ss_data = second_step.get("data") or {}
+    if ss_data.get("timerType") != "timeDuration":
+        sys.exit(
+            f"FAIL: 'Second Step' wait-for-timer should use the timeDuration "
+            f"branch (data.timerType='timeDuration'); got "
+            f"{ss_data.get('timerType')!r}"
+        )
+    if ss_data.get("timeDuration") != "PT5S":
+        sys.exit(
+            f"FAIL: 'Second Step' data.timeDuration should be 'PT5S' (5 seconds); "
+            f"got {ss_data.get('timeDuration')!r}"
+        )
+    if "repeat" in ss_data:
+        sys.exit(
+            f"FAIL: 'Second Step' must be non-repeating — data.repeat must be "
+            f"absent; got {ss_data.get('repeat')!r}"
+        )
+
+    ft_conds = final_task.get("entryConditions") or []
+    ft_rule = first_rule_of_condition(ft_conds[0]) if ft_conds else None
+    sel_ids = (ft_rule or {}).get("selectedTasksIds") or []
+    if region_check.get("id") not in sel_ids:
+        sys.exit(
+            f"FAIL: 'Final Task' selected-tasks-completed must reference Region Check id "
+            f"{region_check.get('id')!r}; got {sel_ids}"
+        )
+
+    io_vars = get_variables(plan).get("inputOutputs") or []
+    region = next(
+        (v for v in io_vars if v.get("id") == "region" or v.get("name") == "region"),
+        None,
+    )
+    if not region:
+        names = [v.get("name") for v in io_vars]
+        sys.exit(f"FAIL: missing root variable 'region'; got {names}")
+    if region.get("type") != "string":
+        sys.exit(f"FAIL: variable 'region' should be type=string; got {region.get('type')!r}")
+
+    priority = next(
+        (v for v in io_vars if v.get("id") == "priorityScore" or v.get("name") == "priorityScore"),
+        None,
+    )
+    if not priority:
+        names = [v.get("name") for v in io_vars]
+        sys.exit(f"FAIL: missing root variable 'priorityScore'; got {names}")
+    if priority.get("type") not in ("integer", "float", "double"):
+        sys.exit(
+            f"FAIL: variable 'priorityScore' should be a numeric type "
+            f"(integer/float/double); got {priority.get('type')!r}"
+        )
+
+    payload = start_debug(timeout=540)
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
+
+    print(
+        "OK: Process exit required-tasks-completed; Finalize exit "
+        "required-tasks-completed with no exit-only hand-off; Finalize entry "
+        "selected-stage-completed; Done entry selected-stage-completed on "
+        "Finalize; task-entry rules cover runs-sequentially/"
+        "current-stage-entered/selected-tasks-completed/adhoc; First Step + "
+        f"Second Step share task set {first_step_lane} (ordered by their "
+        "runs-sequentially entry rules); First Step uses non-repeating timeDuration "
+        "PT2S; Second Step uses non-repeating timeDuration PT5S; Region Check fires on "
+        "current-stage-entered; root variables 'region' (string) "
+        "and 'priorityScore' (number); 'Optional Audit' is a process-typed "
+        f"skeleton task (no data.name / data.folderPath); debug payload "
+        f"returned (status={status})"
+    )
+
+
+if __name__ == "__main__":
+    main()

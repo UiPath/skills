@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "419a6787-6cc6-4b93-bae4-ba985bf6fe67",
+      "State": "Faulted",
+      "ProcessName": "CallService",
+      "ReleaseName": "CallService",
+      "StartTime": "2026-06-23T17:36:33.547Z",
+      "EndTime": "2026-06-23T17:36:34.967Z",
+      "CreationTime": "2026-06-23T17:36:30.333Z",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ee3333cc-001",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-26T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-002",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-26T08:00:01.418Z",
+      "Message": "[ExcelDirectoryProcess] Scraping employee names from HR system and writing directory to C:\\Robot\\Data\\directory.xlsx",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-003",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-26T08:00:02.010Z",
+      "Message": "Invoke: ScrapeHRDirectory.xaml — returned dtEmployees with 312 rows, 5 columns (Id, FullName, Department, Email, Title)",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-004",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-26T08:00:02.510Z",
+      "Message": "Use Excel File: directory.xlsx — workbook opened (COM provider; OpenXML fallback declined due to cell-format requirements)",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-005",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-26T08:00:02.810Z",
+      "Message": "Write Range: employee directory — resolved config Sheet='Directory' StartingCell='A1' ExcludeHeaders=False DataTable='dtEmployees' (rows=312 cols=5)",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-006",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-26T08:00:03.610Z",
+      "Message": "Write Range: employee directory — marshalling DataTable to Excel COM range A1:E313 (header row + 312 data rows)",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-007",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-26T08:00:04.310Z",
+      "Message": "Write Range: employee directory — COM Range.set_Value rejected cell B44: source row 43 (0-indexed 42) column 'FullName' has value '=Smith, John' (leading '=' interpreted as malformed formula by Excel)",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee3333cc-008",
+      "JobKey": "ee333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-26T08:00:04.802Z",
+      "Message": "Write Range: employee directory — System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.",
+      "ProcessName": "ExcelDirectoryProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

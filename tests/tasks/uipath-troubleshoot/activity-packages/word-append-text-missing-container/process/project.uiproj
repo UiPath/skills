@@ -1,0 +1,6 @@
+{
+  "Name": "AppendNotes",
+  "ProjectType": "Process",
+  "Description": "Appends a review note to a Word document as part of a document approval process.",
+  "MainFile": "Main.xaml"
+}

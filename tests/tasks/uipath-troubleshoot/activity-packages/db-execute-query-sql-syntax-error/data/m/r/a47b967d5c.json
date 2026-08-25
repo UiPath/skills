@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "3a1f6c8e-7b2d-4e9a-8c1f-5d6e7a8b9c0d",
+      "Name": "Sales Automation",
+      "Path": "Sales Automation",
+      "Description": "Folder hosting the customer lookup and reporting processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

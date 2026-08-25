@@ -1,0 +1,9 @@
+[project]
+name = "daily-digest"
+version = "0.0.1"
+description = "Returns today's date as a one-line digest"
+requires-python = ">=3.11"
+dependencies = ["uipath"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

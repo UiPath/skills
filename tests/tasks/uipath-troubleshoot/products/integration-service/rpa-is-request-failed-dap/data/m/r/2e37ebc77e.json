@@ -1,0 +1,406 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Name": "e2e-folder-b-72c44bd7",
+      "ID": 2976049,
+      "Key": "fb61e5ba-40ef-4aca-9830-0a86dd6cfdae",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-72c44bd7",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "RequestFailed_DAPRuntime",
+      "ID": 2976014,
+      "Key": "e555fecd-20d3-47aa-864c-1c2e588d4769",
+      "Path": "Shared/uipath-rpa-isActivities/RequestFailed_DAPRuntime",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "uipath-rpa-isActivities",
+      "ID": 2975935,
+      "Key": "b262689d-e2a9-4c1a-8e68-04382a7fff76",
+      "Path": "Shared/uipath-rpa-isActivities",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-94ece13e-B",
+      "ID": 2975612,
+      "Key": "94f779c1-f602-49d1-a253-8a6bc18c0c45",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-94ece13e-top/e2e-fh-94ece13e-B",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-94ece13e-A",
+      "ID": 2975609,
+      "Key": "fb57fea0-6855-4bd2-8b86-3bc9332a545f",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-94ece13e-top/e2e-fh-94ece13e-A",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-94ece13e-top",
+      "ID": 2975605,
+      "Key": "7f121d04-2efb-4a6e-964a-2b00c7ac41e5",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-94ece13e-top",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-5b56c68d",
+      "ID": 2975488,
+      "Key": "3cbad2ee-ba8a-4d87-8048-985d7bb95336",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-5b56c68d",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-00fb23da",
+      "ID": 2975403,
+      "Key": "95d78e99-e937-417f-8e0c-82d6e46c04bd",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-00fb23da",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-22d1b6dd",
+      "ID": 2974296,
+      "Key": "2292cfbc-81ef-4252-a991-554de4bf2d48",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-22d1b6dd",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-acdd13ce",
+      "ID": 2974264,
+      "Key": "e1e0b094-425b-4a36-a7ec-0fe528e6ac1c",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-acdd13ce",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "CaseTest",
+      "ID": 2973309,
+      "Key": "583f75bc-3630-4d55-b269-5c8af1f17b80",
+      "Path": "Shared/uipath-maestro-case/CaseTest",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-deploy-folder-7188808a",
+      "ID": 2973247,
+      "Key": "40d377a0-0938-4e07-ad53-3e4b1f4dccdb",
+      "Path": "Shared/uipath-platform-e2e/e2e-deploy-folder-7188808a",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-d6910c88",
+      "ID": 2973163,
+      "Key": "c1ddde01-465d-4684-a603-b2b96d87af94",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-d6910c88",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-0875838e",
+      "ID": 2973103,
+      "Key": "9cabacb6-8568-46e8-8cca-21a46f1a236b",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-0875838e",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-b372c290-B",
+      "ID": 2973045,
+      "Key": "a909fdc9-4d95-48ab-9cf3-1f1c7e60d5de",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-b372c290-top/e2e-fh-b372c290-B",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-b372c290-A",
+      "ID": 2973044,
+      "Key": "c14bac5f-e6f0-4cc1-bb72-486f229421d2",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-b372c290-top/e2e-fh-b372c290-A",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-b372c290-top",
+      "ID": 2973043,
+      "Key": "37fc9a90-9d49-414a-9158-c883eb0cd43b",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-b372c290-top",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-83886617-B",
+      "ID": 2955039,
+      "Key": "e66dbaa5-d7cf-4b9e-b66c-d42b372a2df1",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-83886617-top/e2e-fh-83886617-B",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-83886617-A",
+      "ID": 2955037,
+      "Key": "46cc134a-e616-47ec-9e9a-360bf905ed5d",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-83886617-top/e2e-fh-83886617-A",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-83886617-top",
+      "ID": 2955036,
+      "Key": "d6cd4cc4-a00e-4b87-8c46-4044385ddb3f",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-83886617-top",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-8df5d996",
+      "ID": 2954999,
+      "Key": "cd615438-aad8-4efe-af56-557bad7c1c2c",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-8df5d996",
+      "Type": "Standard",
+      "Description": "E2E test folder B for asset sharing"
+    },
+    {
+      "Name": "e2e-folder-b-fce8a341",
+      "ID": 2954890,
+      "Key": "ad9bf36f-32e3-42b8-b051-c6cb114902ea",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-fce8a341",
+      "Type": "Standard",
+      "Description": "E2E test folder B for asset scoping isolation check"
+    },
+    {
+      "Name": "e2e-fh-0b53372d-B",
+      "ID": 2952698,
+      "Key": "a1ef65e1-0213-4b50-ac52-e00b8235cad9",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-0b53372d-top/e2e-fh-0b53372d-B",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-0b53372d-A",
+      "ID": 2952696,
+      "Key": "7a03267f-ec72-4cf6-a7a0-aa9128d8389a",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-0b53372d-top/e2e-fh-0b53372d-A",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-0b53372d-top",
+      "ID": 2952694,
+      "Key": "c6f01161-4e94-4c59-a85a-76ac9b14963d",
+      "Path": "Shared/uipath-platform-e2e/e2e-fh-0b53372d-top",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-372553a0",
+      "ID": 2952623,
+      "Key": "5acebb10-f8d0-4c9a-a732-651f0f77a6ac",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-372553a0",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-e7972fc2",
+      "ID": 2952381,
+      "Key": "0347966b-d3db-4da4-b4ce-055d1b9a70a7",
+      "Path": "Shared/uipath-platform-e2e/e2e-folder-b-e7972fc2",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "Solution 7",
+      "ID": 2933058,
+      "Key": "2c3f72f3-aaad-4cf6-b1bc-9e6504a3cb04",
+      "Path": "Shared/Solution 7",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "Example-dr-debug",
+      "ID": 2923711,
+      "Key": "993f1502-37ff-43f4-81d9-3c6b040d8bbf",
+      "Path": "Shared/uipath-maestro-flow/Example-dr-debug",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "Example-dailyreport",
+      "ID": 2923530,
+      "Key": "1c8e5662-0616-410f-b9e7-c01003b467c2",
+      "Path": "Shared/uipath-maestro-flow/Example-dailyreport",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "ExampleV3",
+      "ID": 2923525,
+      "Key": "1fc080e4-a221-44fe-a9b5-9f526637502f",
+      "Path": "Shared/ExampleV3",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "Example-debug",
+      "ID": 2923476,
+      "Key": "26315131-b943-4d72-9442-3476a0196bec",
+      "Path": "Shared/uipath-maestro-flow/Example-debug",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "FraudEscalation",
+      "ID": 2922399,
+      "Key": "8492394e-2f77-4b7d-96c1-c0b0662e3819",
+      "Path": "Shared/uipath-agents/FraudEscalation",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-eecfa769-B",
+      "ID": 2901931,
+      "Key": "fefa7912-d5d3-4dd5-87ea-3c4e3813321f",
+      "Path": "Shared/e2e-fh-eecfa769-top/e2e-fh-eecfa769-B",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-eecfa769-A",
+      "ID": 2901928,
+      "Key": "44fd0e78-9eda-4a45-84f5-b2e07473f312",
+      "Path": "Shared/e2e-fh-eecfa769-top/e2e-fh-eecfa769-A",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-fh-eecfa769-top",
+      "ID": 2901927,
+      "Key": "ffd6cb46-e6b8-4c58-94b4-3ebd480903c0",
+      "Path": "Shared/e2e-fh-eecfa769-top",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "Finance",
+      "ID": 2901921,
+      "Key": "fbb6bcb1-11a3-44e4-87b1-9e77b04f25ed",
+      "Path": "Finance",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-a-0a0a527c",
+      "ID": 2901912,
+      "Key": "c8c3f842-ef1f-4e9a-9728-191cba4bfd89",
+      "Path": "Shared/e2e-folder-a-0a0a527c",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-0a0a527c",
+      "ID": 2901910,
+      "Key": "0098b403-912d-48bf-983b-0bf7cc7a1240",
+      "Path": "Shared/e2e-folder-b-0a0a527c",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-a-8805f811",
+      "ID": 2901871,
+      "Key": "f573d08c-c8fa-485b-ad39-917b502eca45",
+      "Path": "Shared/e2e-folder-a-8805f811",
+      "Type": "Standard",
+      "Description": "E2E test folder A for asset sharing"
+    },
+    {
+      "Name": "e2e-folder-b-8805f811",
+      "ID": 2901870,
+      "Key": "66247ea0-e4ad-4eb5-989d-846926c0acd5",
+      "Path": "Shared/e2e-folder-b-8805f811",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-a441329c",
+      "ID": 2901830,
+      "Key": "b5eb7093-74cf-443c-8d02-8712f4831c5a",
+      "Path": "Shared/e2e-folder-b-a441329c",
+      "Type": "Standard",
+      "Description": "E2E test folder B for asset sharing"
+    },
+    {
+      "Name": "e2e-folder-a-a441329c",
+      "ID": 2901829,
+      "Key": "616562ea-0b92-41bc-9c3e-110c3981a647",
+      "Path": "Shared/e2e-folder-a-a441329c",
+      "Type": "Standard",
+      "Description": "E2E test folder A for asset sharing"
+    },
+    {
+      "Name": "e2e-folder-a-4c752284",
+      "ID": 2901827,
+      "Key": "abd2c82d-ddc3-4c1d-8c9e-6da3a0321921",
+      "Path": "Shared/e2e-folder-a-4c752284",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "e2e-folder-b-4c752284",
+      "ID": 2901826,
+      "Key": "8a06458d-c42e-4f8b-9295-447bbdf2702e",
+      "Path": "Shared/e2e-folder-b-4c752284",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "FinancialPostingFunction",
+      "ID": 2897454,
+      "Key": "aa52840c-acc5-44f7-ac5b-9f67f6453ed1",
+      "Path": "Shared/uipath-maestro-flow/BillingDispute/FinancialPostingFunction",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "BillingDispute",
+      "ID": 2897440,
+      "Key": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+      "Path": "Shared/uipath-maestro-flow/BillingDispute",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "acme-echo-solution 1",
+      "ID": 2895681,
+      "Key": "49f00a14-48be-405d-8568-976dbc6e1594",
+      "Path": "Shared/acme-echo-solution 1",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "acme-echo-solution",
+      "ID": 2895676,
+      "Key": "726471ba-7358-4d4e-ab6e-980698eccd1c",
+      "Path": "Shared/acme-echo-solution",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "uipath-platform-e2e",
+      "ID": 2892937,
+      "Key": "c23e5354-4c28-4a8d-ab8e-d63844b35926",
+      "Path": "Shared/uipath-platform-e2e",
+      "Type": "Standard",
+      "Description": ""
+    }
+  ]
+}

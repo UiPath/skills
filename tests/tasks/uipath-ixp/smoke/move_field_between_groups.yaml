@@ -1,0 +1,100 @@
+task_id: skill-ixp-move-field-between-groups-smoke
+description: >
+  Smoke: agent moves a field from one field group to another. There is no
+  move/reparent command, so the only clean path is the two-call composite —
+  `fields add` into the target group, then `fields delete` from the source
+  (add first, so a failed add leaves the field where it was).
+
+  Anti-patterns, both of which duplicate taxonomy: editing a get-taxonomy
+  dump and re-importing it (`import-taxonomy` MERGES — the field ends up in
+  BOTH groups), and `groups delete`/`groups add` (destroys every other field
+  in the group).
+
+  The overlaid uip mock serves the fixture taxonomy and succeeds on the two
+  `fields` mutations. Both are required for the graded shape to be reachable:
+  a failing `get-taxonomy` leaves nothing to carry into `fields add`, and a
+  failing `fields add` makes withholding the `fields delete` the correct call
+  (add-before-delete). Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_taxonomy}
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, the field "Total Amount"
+  currently sits in the "Invoice Header" group. It belongs on the line
+  items instead — move it into the existing "Line Items" group.
+
+  Important:
+  - The `uip` CLI in this environment is not connected to a live tenant;
+    some commands fail. Run each command once and move on. Do NOT retry or
+    attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Agent read the taxonomy to recover the field's type and instructions before recreating it"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # --type asserts the value, not just the flag: "Monetary Quantity" is only
+  # knowable from the taxonomy read, via the moon_form entry's field_type_id.
+  # --instructions stays presence-only — carrying them over is the graded
+  # behavior; rewording them is not a failure.
+  - type: file_matches_regex
+    description: "Agent recreated \"Total Amount\" in the target group via `fields add`, carrying over its type and instructions"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Line Items)(?=.*--field\s+["']?Total Amount)(?=.*--type\s+["']?Monetary Quantity)(?=.*--instructions).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent removed \"Total Amount\" from the source group via `fields delete --group 'Invoice Header' -y`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Total Amount)(?=.*(?:-y\b|--yes\b)).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The duplicating path: import-taxonomy MERGES, so a hand-edited dump
+  # leaves the field in both groups.
+  - type: file_matches_regex
+    description: "Agent did NOT move the field by re-importing an edited taxonomy"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy\b)[^\r\n]*$
+    must_match: false
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Both groups already exist. Touching the groups themselves either
+  # duplicates one or destroys every other field in it.
+  - type: file_matches_regex
+    description: "Agent did NOT add or delete a field group (both already exist)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+(?:add|delete)\b)[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `fields rename` takes --group but only to address the field — it cannot
+  # reparent one, so reaching for it means the move never happened.
+  - type: file_matches_regex
+    description: "Agent did NOT try to reparent the field with `fields rename`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+rename\b)[^\r\n]*$
+    must_match: false
+    weight: 1.0
+    pass_threshold: 1.0

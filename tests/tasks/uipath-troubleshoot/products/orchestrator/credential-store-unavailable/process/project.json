@@ -1,0 +1,14 @@
+{
+  "name": "SecurePortalBot",
+  "projectId": "9e3f6c2b-5d8a-4f01-9c24-7e2faedd7733",
+  "description": "Unattended worker that signs into a secure portal; logs activity and exits.",
+  "main": "Main.xaml",
+  "dependencies": {"UiPath.System.Activities": "[26.2.6]"},
+  "webServices": [], "entitiesStores": [],
+  "schemaVersion": "4.0", "studioVersion": "26.0.194.0", "projectVersion": "1.0.3",
+  "runtimeOptions": {"autoDispose": false, "requiresUserInteraction": false, "isAttended": false, "executionType": "Workflow", "mustRestoreAllDependencies": true},
+  "designOptions": {"projectProfile": "Developement", "outputType": "Process", "processOptions": {"ignoredFiles": []}, "fileInfoCollection": []},
+  "expressionLanguage": "VisualBasic",
+  "entryPoints": [{"filePath": "Main.xaml", "uniqueId": "2c1d4e6f-58ae-4e94-85c4-75b082299aa1", "input": [], "output": []}],
+  "isTemplate": false, "targetFramework": "Windows"
+}

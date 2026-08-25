@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T08:14:10.608Z",
+      "Message": "ERN execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T08:14:10.283Z",
+      "Message": "Click 'Simt că am noroc': Could not find the user-interface (UI) element for this action.\r\n\r\nPossible solutions:\r\n •  Ensure application is opened and the UI element is visible on the screen at execution time\r\n •  Edit the Target of the UI activity and use Validation to debug the issue.\r\n •  If needed, re-indicate the element as its properties might have changed\r\n •  Use \"Check state\" activity to check the application state before executing the action\r\n •  Increase the \"Delay before\" value to allow time to the application to render entirely and become responsive \r\n\r\n[Target]: Strict selector failure:\r\n<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit' />\n\r\nThe closest selector matches found are:\r\n[94%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\n[82%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\n[69%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\n[57%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>)\r\nin Google.xaml\r\n    at NClick \"Click 'Simt că am noroc'\"\r\n    at Sequence \"Do\"\r\n    at NApplicationCard \"Edge Google\"\r\n    at Sequence \"Google\"\r\n    at Google \"Google\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.UIAutomationNext.Exceptions.NodeNotFoundException\r\n   at UiPath.UIAutomationNext.Activities.Services.RuntimeActivityMonitorService.ActivityFaultedAsync(String activityInstanceId, Exception ex, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n--- End of stack trace from previous location ---\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\r\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T08:14:08.818Z",
+      "Message": "Healing agent could not recover the activity. Self-healing is disabled."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T08:13:35.580Z",
+      "Message": "Healing agent: starting recovery analysis."
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-05-12T08:13:35.580Z",
+      "Message": "'Click 'Simt că am noroc'' execution failed with exception NodeNotFoundException."
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-05-12T08:13:32.408Z",
+      "Message": "Click 'Simt că am noroc': [Target]: Strict selector failure:\r\n<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit' />\n\r\nThe closest selector matches found are:\r\n[94%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\n[82%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\n[69%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\n[57%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T08:13:00.952Z",
+      "Message": "Healing agent analysis is enabled but recovery is disabled for current job."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T08:13:00.379Z",
+      "Message": "ERN execution started"
+    }
+  ]
+}

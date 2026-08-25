@@ -1,0 +1,137 @@
+task_id: skill-sdd-integration-maestro-engine-disambiguation
+description: >
+  Skill-guided evaluation: agent uses the uipath-planner skill to analyze a
+  PDD with formal BPMN control-flow structure (parallel fork/join, boundary
+  timeout, intermediate message event, multi-instance loop) and no case
+  stages/SLA lifecycle. Tests the Maestro disambiguation rules: the SDD must
+  use the Maestro BPMN template, not Flow (plain pipeline) or Case.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+initial_prompt: |
+  Analyze the following Process Design Document and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
+  UiPath Automation Cloud as the delivery model.
+
+  The RPA process and the API workflow referenced below are ALREADY built and
+  published to Orchestrator — do not plan to build them.
+
+  For any [SME REVIEW] items, use industry-standard defaults and proceed.
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Vendor Onboarding Orchestration
+
+  ## Process Overview
+  - **Process Name:** Vendor Onboarding Orchestration
+  - **Department:** Procurement
+  - **Objective:** Orchestrate the end-to-end onboarding of a new vendor
+    across compliance, credit, contracting, and system provisioning.
+  - **Volume:** ~30 onboardings per week; a single onboarding can run for days
+
+  ## Process Steps
+  1. Onboarding starts when procurement submits the vendor intake form.
+  2. Two checks run at the same time and must BOTH finish before continuing:
+     - Compliance screening via the published API workflow `SanctionsCheck`.
+     - Credit assessment: request sent to the credit bureau system.
+  3. The credit bureau normally answers within hours. If no answer arrives
+     within 24 hours, cancel the credit request and escalate to the
+     procurement lead, then continue with a provisional credit tier.
+  4. After both checks pass, send the contract for signature and wait for the
+     "contract signed" event from the vendor portal before proceeding.
+  5. For EACH vendor site in the intake form (1–20 sites), run the published
+     RPA process `SAP_VendorMasterEntry` to create the site record in SAP —
+     sites are processed in parallel.
+  6. Notify procurement that onboarding completed.
+
+  ## Exceptions
+  | Scenario | Action |
+  |----------|--------|
+  | Sanctions hit | Terminate the whole onboarding, notify compliance |
+  | SAP entry fails for a site | Retry twice, then flag that site for manual entry |
+
+  ## Applications
+  | Application | Access |
+  |-------------|--------|
+  | SanctionsCheck | Published API workflow (Orchestrator) |
+  | SAP_VendorMasterEntry | Published RPA process (Orchestrator) |
+  | Vendor portal | Emits the contract-signed event |
+
+  --- END PDD ---
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD file was created"
+    path: "vendor-onboarding-orchestration-sdd.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD uses the Maestro BPMN template sections (gateways, events, activities)"
+    path: "vendor-onboarding-orchestration-sdd.md"
+    includes:
+      - "Pools & Lanes"
+      - "Activities Inventory"
+      - "Gateways & Sequence Flows"
+      - "Events"
+    weight: 3.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "SDD carries the BPMN activities inventory and did NOT fall back to the Flow template (plain pipeline) or the Case template (stage lifecycle)"
+    path: "vendor-onboarding-orchestration-sdd.md"
+    includes:
+      - "Activities Inventory"
+    excludes:
+      - "Nodes Inventory"
+      - "Tasks Grid"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Scope stayed single-product: no Solution overview SDD was written"
+    command: "test -z \"$(find . -maxdepth 1 -name '*-solution-sdd.md' -print -quit)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD carries the Planner Handoff detection contract"
+    path: "vendor-onboarding-orchestration-sdd.md"
+    includes:
+      - "Planner Handoff"
+      - "planner-handoff:v1"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Recommended Scope block carries the need profile line (need → product reasoning persisted)"
+    path: "vendor-onboarding-orchestration-sdd.md"
+    includes:
+      - "Recommended Scope"
+      - "Need profile"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Integrated Components reference the two published components from the PDD"
+    path: "vendor-onboarding-orchestration-sdd.md"
+    includes:
+      - "SanctionsCheck"
+      - "SAP_VendorMasterEntry"
+    weight: 1.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 16
+  # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
+  # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
+  # turn_timeout for the long authoring turn.
+  task_timeout: 2700
+  turn_timeout: 1800

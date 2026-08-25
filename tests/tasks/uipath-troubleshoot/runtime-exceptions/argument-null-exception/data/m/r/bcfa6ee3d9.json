@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-b98b-59af3439c595",
+      "TraceId": "0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "ParentId": null,
+      "Name": "Robot Job 0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "StartTime": "2026-05-13T08:42:11.4796773Z",
+      "EndTime": "2026-05-13T08:42:11.5741896Z",
+      "Attributes": "{\"Exception\":\"System.ArgumentNullException: Value cannot be null. (Parameter 'path')\\r\\n   at System.ArgumentNullException.Throw(String paramName)\\r\\n   at System.IO.DirectoryInfo..ctor(String path)\\r\\n   at UiPath.Core.Activities.CopyFile.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"}",
+      "Status": 2,
+      "OrganizationId": "1215ce35-89a9-4dff-9f40-19c57da7689e",
+      "TenantId": "bcae8058-3f3b-4ec2-9550-517007673698",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "b16092a1-0c68-436c-bf3a-147ab53b6762",
+      "JobKey": "0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-05-13T08:42:12.8439788Z",
+      "AgentVersion": null,
+      "Context": null,
+      "Attachments": null
+    }
+  ]
+}

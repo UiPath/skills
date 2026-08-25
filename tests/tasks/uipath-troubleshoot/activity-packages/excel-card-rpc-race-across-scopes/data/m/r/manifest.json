@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Use Excel File multi-quarter report scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "3dec41f0e2.json"},
+    {"match": "or folders list --output json", "file": "3dec41f0e2.json"},
+    {"match": "or jobs list --folder-key \"f00ccccc-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "2aaed5f64d.json"},
+    {"match": "or jobs list --folder-key f00ccccc-3333-4444-5555-666677778888 --state Faulted --output json", "file": "2aaed5f64d.json"},
+    {"match": "or jobs get \"aa222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "e562530d9a.json"},
+    {"match": "or jobs get aa222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "e562530d9a.json"},
+    {"match": "or jobs history \"aa222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "7c3905943b.json"},
+    {"match": "or jobs history aa222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "7c3905943b.json"},
+    {"match": "or jobs logs \"aa222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "7a13867de5.json"},
+    {"match": "or jobs logs aa222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "7a13867de5.json"}
+  ]
+}

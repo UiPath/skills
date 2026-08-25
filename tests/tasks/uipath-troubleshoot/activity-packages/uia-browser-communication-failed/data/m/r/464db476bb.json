@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "7d2e5a10-9c34-4f62-b18a-3e6f0c9d2b47",
+    "StartTime": "2026-07-19T02:15:04.110Z",
+    "EndTime": "2026-07-19T02:15:41.870Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Use CustomerHub portal: Cannot communicate with the browser.\r\n\r\nin Main.xaml\r\n    at NApplicationCard \"Use CustomerHub portal\"\r\n    at Sequence \"Main Sequence\"\r\n    at DynamicActivity \"Main\"\r\n\r\nUiPath.UIAutomationNext.Exceptions.UiAutomationExecutionException: Cannot communicate with the browser.\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.<ExecuteAsync>d__.MoveNext()",
+    "CreationTime": "2026-07-19T02:15:04.110Z",
+    "ReleaseName": "CustomerHubSync",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\svc_robot",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-19T02:15:41.870Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "7d2e5a109c344f62b18a3e6f0c9d2b47",
+    "Id": 66540211
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T10:41:20.150Z",
+      "Message": "[Read CSV] The CSV file format for 'data\\feed.csv' is invalid."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T10:41:20.220Z",
+      "Message": "Read CSV: The CSV file format for 'data\\feed.csv' is invalid.\r\nin Main.xaml\r\n    at ReadCsvFile \"Read CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "HumanReviewEscalation",
+    "kind": "app",
+    "type": "workflow Action",
+    "apiVersion": "apps.uipath.com/v1",
+    "projectKey": "27abdfdb-a42b-4f19-9001-d62011329cc3",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "HumanReviewEscalation",
+        "kind": "appVersion"
+      },
+      {
+        "name": "HumanReviewEscalation",
+        "kind": "process"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "HumanReviewEscalation",
+      "description": null,
+      "type": "workflow Action",
+      "version": null,
+      "appSystemName": null,
+      "appVersionRef": {
+        "key": "64fb2600-20f2-48e0-ab27-a90eaa09da8d"
+      },
+      "codeBehindProcess": {
+        "key": "647cfa3e-9c55-4c67-89aa-28063c5922dd"
+      },
+      "actionSchema": null,
+      "manualActivationActions": null
+    },
+    "locks": [],
+    "key": "015c7ff1-b251-4043-a4d4-3ebf68eeacc2"
+  }
+}

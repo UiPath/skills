@@ -1,0 +1,181 @@
+task_id: skill-case-run-once-envelope
+description: >
+  Regression: the task envelope's `shouldRunOnlyOnce` is read from the SDD, not
+  inferred from task type. One stage, three built-in wait-for-timer tasks whose
+  SDD rows say Yes, No, and unspecified. The Yes row catches a blanket flip to
+  false; the unspecified row catches the stale `true` default the plugin
+  impl-json contracts used to carry. Built-in timer tasks only, so the build is
+  hermetic — no registry resolution, no tenant resources, no debug run.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node]
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1500
+
+initial_prompt: |
+  Create a UiPath Case Management solution named "RunOnceEnvelopeCase"
+  containing a project also named "RunOnceEnvelopeCase", so the case file lands
+  at RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json.
+
+  Use this sdd.md as the sole source of truth — write it to sdd.md first, then
+  build from it. Author exactly what it states and nothing more: do not add,
+  redesign, or fill in fields the document leaves unspecified.
+
+  ```
+  # SDD — RunOnceEnvelopeCase
+
+  Single-stage retention hold. A snapshot is frozen once, a reminder pings the
+  owner on every pass through the stage, and an escalation hold runs on the
+  timing the operations team has not settled yet.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | RunOnceEnvelopeCase |
+  | Case Description | Holds a record under retention review with a frozen snapshot, a recurring reminder, and an escalation hold. |
+  | Case Identifier | Prefix: RO, Type: constant |
+  | Case-Level SLA | - |
+  | SLA Type | - |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Hold (`hold`)
+  **Type:** Stage
+  **Description:** Keeps the record under retention hold while the reminder and escalation clocks run.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Freeze Snapshot | wait-for-timer | Yes | Yes | system | — |
+  | 2 | Reminder Ping | wait-for-timer | No | No | system | — |
+  | 3 | Escalation Hold | wait-for-timer | No | — | system | — |
+
+  ##### Task 1.1: Freeze Snapshot (`hold.freezeSnapshot`)
+  **Type:** wait-for-timer
+  **Description:** Holds for 5 seconds while the immutable retention snapshot is taken. The snapshot is written once and never retaken.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Time Duration | PT5S |
+
+  ##### Task 1.2: Reminder Ping (`hold.reminderPing`)
+  **Type:** wait-for-timer
+  **Description:** Holds for 10 seconds before nudging the record owner. Runs again on every pass through the stage.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Time Duration | PT10S |
+
+  ##### Task 1.3: Escalation Hold (`hold.escalationHold`)
+  **Type:** wait-for-timer
+  **Description:** Holds for 15 seconds before the escalation path opens.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Time Duration | PT15S |
+  ```
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step (Phase 0, post-tasks.md, or Phase 2a→2b).
+  - Do NOT run `uip maestro case debug`.
+  - The task is NOT complete until `uip maestro case validate` has passed.
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json was created at the conventional path"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Graded on behavior: the run-once flag is honored where the SDD states it, and neither the
+  # No row nor the unspecified row comes out run-once. `!= true` treats an omitted key the same
+  # as false — omitting a falsy default is a serialization choice (and it varies run to run),
+  # while re-running or not is the behavior this PR changed.
+  - type: json_check
+    description: "shouldRunOnlyOnce is read from the SDD: Yes stays true; No and the unspecified row are not run-once"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    assertions:
+      - expression: "length(nodes[].data.tasks[][] | [?displayName=='Freeze Snapshot' && shouldRunOnlyOnce==`true`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][] | [?displayName=='Reminder Ping' && shouldRunOnlyOnce!=`true`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][] | [?displayName=='Escalation Hold' && shouldRunOnlyOnce!=`true`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][] | [?shouldRunOnlyOnce==`true`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][])"
+        operator: equals
+        expected: 3
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory. implementation.md says to WRITE the default rather than omit it; a run that omits
+  # the falsy key still behaves correctly, so this is recorded, not gated.
+  - type: json_check
+    description: "Advisory: the non-run-once tasks emit shouldRunOnlyOnce explicitly instead of omitting it"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    assertions:
+      - expression: "nodes[].data.tasks[][] | [?displayName=='Reminder Ping'] | [0].shouldRunOnlyOnce"
+        operator: equals
+        expected: false
+      - expression: "nodes[].data.tasks[][] | [?displayName=='Escalation Hold'] | [0].shouldRunOnlyOnce"
+        operator: equals
+        expected: false
+    weight: 1.0
+    pass_threshold: 0

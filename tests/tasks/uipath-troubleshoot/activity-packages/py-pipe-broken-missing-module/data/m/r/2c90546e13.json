@@ -1,0 +1,38 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+    "StartTime": "2026-06-18T09:15:02.110Z",
+    "EndTime": "2026-06-18T09:15:08.640Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \"Invoke Python Method: extract_total\"\r\n   at UiPath.Python.Service.PythonClient.InvokeMethod(PythonObject instance, String method, IList`1 args)\r\n   at UiPath.Python.Activities.InvokeMethod.<>c__DisplayClass.<ExecuteAsync>b__0()\r\n   at UiPath.Python.Activities.InvokeMethod.OnExecuteAsync(NativeActivityContext context)\r\n",
+    "CreationTime": "2026-06-18T09:15:01.900Z",
+    "ReleaseName": "PythonInvoiceParser",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OrganizationUnitId": 6020001,
+    "FolderKey": "fa111111-2222-3333-4444-555566667777",
+    "Reference": "InvoiceRunA",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\AUTOMATION1",
+    "OrchestratorUserIdentity": "automation1",
+    "LastModificationTime": "2026-06-18T09:15:08.640Z",
+    "JobError": {
+      "ErrorCode": "Activity",
+      "Type": "RemoteException",
+      "ActivityName": "InvokeMethod_1",
+      "ActivityDisplayName": "Invoke Python Method: extract_total",
+      "WorkflowFilePath": "Main.xaml"
+    },
+    "ErrorCode": "Activity",
+    "TraceId": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+    "Id": 680078101
+  }
+}

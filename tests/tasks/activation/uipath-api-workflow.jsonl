@@ -1,0 +1,48 @@
+{"id": "uipath-api-workflow-001", "prompt": "Create a new API workflow that calls the catfacts API and returns the fact", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-002", "prompt": "Build an API workflow that fetches the 10 most recent pull requests from a GitHub repo via the GitHub connection", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-003", "prompt": "Add an If activity to my API workflow that branches on the order total", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-004", "prompt": "Add a ForEach loop to my Workflow.json that iterates over the line items", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-005", "prompt": "My api-workflow run fails with 'currentItem is not defined' \u2014 fix the expression", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-006", "prompt": "Validate my API workflow with uip api-workflow validate", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-007", "prompt": "Run my API workflow locally with --no-auth", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-008", "prompt": "Add a Response activity that returns an object with tier and count", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-009", "prompt": "Add a Gmail Send Email connector activity to my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-010", "prompt": "Wrap the loop in my API workflow in a TryCatch so one bad item doesn't kill the batch", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-011", "prompt": "Add an Outlook Get Newest Email activity to the workflow via registry resolve", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-012", "prompt": "Create an API workflow (Type: Api) that hits a public weather endpoint and returns the temperature", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-013", "prompt": "Add a DoWhile loop to my API workflow that retries until the status is done", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-014", "prompt": "My Response comes back as a literal expression string after saving in Studio Web \u2014 fix it", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-015", "prompt": "My multi-key Assign loses a variable after Studio Web save \u2014 split it into separate Assign activities", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-016", "prompt": "Add a JavaScript activity to my Workflow.json that transforms the prior Assign's output", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-017", "prompt": "Package my API workflow project into a deployable zip and publish it", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-018", "prompt": "How do I read a workflow input from a non-first activity in an API workflow?", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-019", "prompt": "Add a Wait activity that pauses 30 seconds before the next call in my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-020", "prompt": "Add a Slack Send Message activity to my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-021", "prompt": "Add a Break inside the ForEach in my Workflow.json when a match is found", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-022", "prompt": "Edit my Workflow.json to add a second HTTP Request after the first", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-023", "prompt": "Stub a GitHub Search Issues activity for my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-024", "prompt": "Build an API workflow that loops over a list of records and posts each to an HTTP endpoint", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-025", "prompt": "Why does my connector activity render as a block icon in Studio Web for my API workflow?", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-026", "prompt": "Add nested control flow: an If inside a ForEach in my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-027", "prompt": "Set up the variables schema in my API workflow document", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-028", "prompt": "My uip api-workflow run returns (no output) \u2014 what's wrong with my Response task?", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-029", "prompt": "Add an HTTP Request activity that POSTs a JSON body to our internal API", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-030", "prompt": "Create an API workflow that validates an input, classifies it, and falls back on error", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-031", "prompt": "Publish my Api project to the alpha tenant", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-032", "prompt": "Add a TryCatch around my whole API workflow with an error response", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-033", "prompt": "How do I reference $context.outputs from a connector activity in my API workflow?", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-034", "prompt": "Build an API workflow that fetches stock prices for a list of tickers and returns them", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-035", "prompt": "Add a multi-way If chain with 3 outcomes to my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-036", "prompt": "My API workflow connector activity 401s even though the connection is Enabled \u2014 debug it", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-037", "prompt": "Add a GitHub create-issue connector activity to my Workflow.json", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-038", "prompt": "Walk me through authoring an Integration Service connector activity in an API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-039", "prompt": "Add HTTP retry config to the requests in my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-040", "prompt": "Create an API workflow that reads a list and aggregates a sum with a DoWhile", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-041", "prompt": "Fix my API workflow \u2014 validate says Unknown activityType 'http'", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-042", "prompt": "Add an Assign activity that sets a PLATINUM tier string literal in my API workflow", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-043", "prompt": "Build an API workflow that pulls data from a vendor API and returns a filtered subset", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-044", "prompt": "My API workflow has duplicate activity keys \u2014 how do I make them unique?", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-045", "prompt": "Run my API workflow with auth so it makes the real Integration Service calls", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-046", "prompt": "Add a Response that marks the job as failed when validation fails", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-047", "prompt": "Create an API workflow from scratch that sends an email when a condition is met", "expected_skill": "uipath-api-workflow"}
+{"id": "uipath-api-workflow-048", "prompt": "Edit my existing API workflow to add a connector activity that sends a Teams message", "expected_skill": "uipath-api-workflow"}

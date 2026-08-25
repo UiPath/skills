@@ -1,0 +1,108 @@
+task_id: skill-flow-ixp-invoice-extraction-simulated
+description: >
+  Invoice-processing flow (SharePoint trigger → IxP extraction → HTTP POST to
+  SAP), driven by a simulated non-technical AP clerk who describes the outcome
+  but withholds the folder, fields, model, and destination until asked. Tests
+  whether the agent elicits the IxP model / extraction fields / downstream
+  endpoint before building. Validate-only — IxP + SharePoint need a live tenant.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:ixp, connector, feature:http, simulation]
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
+  max_turns: 80
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical accounts-payable clerk. You process vendor invoices
+    all day and know your process well, but you have never built a flow and you
+    speak in plain English, never in code. You are friendly but impatient: if the
+    agent dithers, prod it to just build something. You cannot read or write
+    code — if the agent shows you code, say "I trust you, just make it work."
+
+  goal: |
+    You want a UiPath Flow that automatically processes the vendor invoices
+    landing in your SharePoint folder and pushes the data into SAP.
+
+    OPENING MESSAGE: open the way you would to a colleague — a short paragraph
+    covering the outcome you want plus the details that matter to you: it
+    should kick in by itself whenever a new PDF invoice arrives in your
+    SharePoint folder; the invoice number, vendor, invoice date, total amount
+    and line items all need to come off each invoice; and once they are read
+    they get sent over to SAP by posting them to a web address IT gave you —
+    plain posting to that address, nothing fancier. Say that it has to be
+    built as a UiPath Maestro Flow — not an API workflow, not a standalone
+    script — and that you want it validated before you sign off. Say plainly
+    that IT has not hooked up the SharePoint or SAP accounts in this
+    environment yet, so nothing here can actually run: you want it built and
+    wired up correctly and validated, ready to go once IT flips the switch,
+    and the agent should not go hunting for live accounts or wait on IT. Do
+    not name files or paths and do not use technical wording. Close by
+    inviting the agent to ask you anything it needs before it starts
+    building. Keep the withheld items below to yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "InvoiceProcessing".
+      - The SharePoint folder is called "New Vendor".
+      - HOW to read the invoice data / which model: the IxP (intelligent
+        document processing) "Invoice Model".
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'IxP', 'connector', 'trigger', 'model', or 'node' unless the agent brings them up first."
+    - "Do not reveal the folder name 'New Vendor' unless asked where the invoices come from."
+    - "Do not reveal the IxP 'Invoice Model' unless asked how to read/extract the invoice data."
+    - "Do not reveal the project name 'InvoiceProcessing' unless asked what to name it."
+    - "If the agent says it cannot finish because a live SharePoint or SAP account is missing, or asks you to go back to IT for one, repeat that nothing is connected yet and that you still want every step built and wired up: it should pick the closest thing available and carry on rather than stopping."
+    - "If the agent offers to leave the SAP hand-off out, or as a placeholder or stand-in step, say no — you want the real step that posts the invoice data to that web address sitting in the flow, even though it cannot be exercised yet."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Mirrors the skills-repo ixp greenfield grep checks: an IxP extraction node
+  # (or core.logic.mock fallback), a SharePoint trigger/connector, an HTTP action
+  # node, and a $vars. reference consuming the extraction output downstream.
+  - type: run_command
+    description: "Flow has IxP extraction + SharePoint + HTTP nodes and a $vars downstream reference"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; txt=open(flows[0]).read(); low=txt.lower(); f=json.loads(txt); types=[str(n.get('type','')).lower() for n in f.get('nodes',[])]; assert 'uipath.ixp' in low or 'core.logic.mock' in low,'no IxP extraction node (or mock fallback)'; assert 'sharepoint' in low,'no SharePoint trigger/connector'; assert any('http' in t for t in types),'no HTTP action node'; assert (chr(36)+'vars.') in txt,'no vars downstream reference to extraction output'; print('OK')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named InvoiceProcessing (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/InvoiceProcessing.flow',recursive=True) else 'expected a flow named InvoiceProcessing.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

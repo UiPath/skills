@@ -1,13 +1,11 @@
 ---
 name: uipath-tasks
-description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For authoring HITL nodes in flows/agents→uipath-human-in-the-loop. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+description: "UiPath Action Center human-in-the-loop tasks via `uip tasks`: list, assign, complete, plus task catalogs, comments, labels, metadata, and task data (get/save). For authoring HITL nodes in flows/agents→uipath-human-in-the-loop. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
 when_to_use: "User says 'approve task', 'pending approval', 'pending action item', 'review action', 'list my tasks', 'reassign task' in an Orchestrator/Action Center context. NOT for TaskCreate/TaskUpdate (general session-task tracking) or Document Understanding validation."
 user-invocable: true
 ---
 
 # UiPath Tasks (Action Center) — Agent Skill
-
-> **Preview** — skill is under active development; surface and behavior may change.
 
 Action Center is UiPath's human-in-the-loop platform. Tasks represent work items
 that require human input — form approvals, document validation, data labeling, and more.
@@ -35,8 +33,8 @@ When switching is required:
 # Check current environment, org, and tenant
 uip login status --output json
 
-# Login to Alpha with a specific tenant
-uip login --authority https://alpha.uipath.com --tenant MyTenant
+# Login to a specific environment (production cloud is the default)
+uip login --authority https://cloud.uipath.com --tenant MyTenant
 
 # List all available tenants (after login)
 uip login tenant list --output json
@@ -56,6 +54,11 @@ uip login tenant set MyTenant
 - Assigning, reassigning, or unassigning tasks to users
 - Completing tasks with action outcomes and data payloads
 - Querying which users have task permissions in a folder
+- Managing task catalogs (list, get, create, update) and their retention policy
+- Reading and adding task comments
+- Setting task labels
+- Editing task metadata (title, priority, catalog association)
+- Getting and saving task data
 
 > **Not in scope:** Orchestrator queues or queue items (use `uip or`), Document Understanding model training, or Action Center app development (use `uip codedapp`).
 
@@ -121,17 +124,25 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 
 2. **Task IDs are numeric.** Unlike other UiPath services that use GUIDs, Action Center uses numeric task IDs. Use `tasks list` to discover task IDs.
 
-3. **Folder ID is required for complete.** Tasks are scoped to folders. Use `--folder-id` when completing tasks.
+3. **Folder scope comes in three interchangeable forms.** Folder-scoped commands accept `--folder-id <numeric-id>`, `--folder-path <path>`, or `--folder-key <guid>` (mutually exclusive). Path and key are exactly what `uip or folders list` prints (it has no numeric ID column), so prefer them when the folder came from folder discovery; the numeric id still works when a task row gave you `folderId`.
 
 4. **Complete requires `--type`.** The API routes to different endpoints per task type. Always include `--type` when completing a task. Use `tasks get` to check the task type first.
 
 5. **FormTask and AppTask require `--action` and `--data` for completion.** Other task types allow optional action and data.
 
-6. **Assign accepts `--user-id` or `--user` (email).** Use `tasks users <folder-id>` to discover assignable users and their IDs.
+6. **Assign accepts `--user-id` or `--user` (email).** Use `tasks users <folder-id>` (or `tasks users --folder-path <path>` / `--folder-key <guid>`) to discover assignable users and their IDs.
 
 7. **Always discover before acting.** Use `tasks list` or `tasks get` to inspect task state before performing assign/complete operations.
 
 8. **Do not complete already-completed tasks.** Check the task `status` field — if it is `Completed`, inform the user.
+
+9. **Folder scope for complete/catalogs/comments/labels/metadata/data.** These commands need a folder. Pass one of `--folder-id`/`--folder-path`/`--folder-key`, or omit all three on an interactive terminal to pick from a list. A folder option is required in non-interactive runs (agents, CI) — the command fails with `A folder is required` otherwise, so always pass one explicitly there.
+
+10. **Retention actions are `Delete` or `Archive`.** `Archive` also needs `--retention-bucket-id`. `--encrypted` is create-only and cannot be changed on update.
+
+11. **Labels replace the full set.** `tasks labels --labels` overwrites all labels on the task — include every label to keep, and pass `[]` to clear them all.
+
+12. **`data save` takes no type flag.** The command resolves the task type itself; pass the task ID, a folder option (`--folder-id`/`--folder-path`/`--folder-key`), and `--data` (a JSON object).
 
 ---
 
@@ -141,6 +152,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 |------|----------------|
 | List all tasks | `tasks list` |
 | List tasks in a folder | `tasks list --folder-id <id>` |
+| List tasks in a folder by path/key | `tasks list --folder-path "<path>"` or `tasks list --folder-key <guid>` |
 | List tasks as admin | `tasks list --as-admin` |
 | Get task details | `tasks get <task-id>` |
 | Get task with type hint | `tasks get <task-id> --task-type FormTask --folder-id <id>` |
@@ -150,7 +162,17 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 | Unassign a task | `tasks unassign <task-id>` |
 | Complete a task | `tasks complete <task-id> --type <type> --folder-id <id>` |
 | Complete with action | `tasks complete <task-id> --type FormTask --folder-id <id> --action "Approve" --data '{...}'` |
-| List assignable users | `tasks users <folder-id>` |
+| List assignable users | `tasks users <folder-id>`, `tasks users --folder-path "<path>"`, or `tasks users --folder-key <guid>` |
+| List task catalogs | `tasks catalogs list --folder-id <id>` |
+| Get a catalog | `tasks catalogs get <catalog-id> --folder-id <id>` |
+| Create a catalog | `tasks catalogs create --name <name> --folder-id <id>` |
+| Update a catalog | `tasks catalogs update <catalog-id> --folder-id <id>` |
+| List task comments | `tasks comments list <task-id> --folder-id <id>` |
+| Add a comment | `tasks comments add <task-id> --text <text> --folder-id <id>` |
+| Set task labels | `tasks labels <task-id> --labels '[{"name":"region","displayName":"Region","displayValue":"EMEA"}]' --folder-id <id>` |
+| Edit task metadata | `tasks metadata <task-id> --folder-id <id> [--title --priority --catalog-id]` |
+| Get task data | `tasks data get <task-id> --folder-id <id>` |
+| Save task data | `tasks data save <task-id> --data '{...}' --folder-id <id>` |
 
 ---
 
@@ -195,6 +217,10 @@ uip tasks get <task-id> --output json
 | Completion fails | Wrong `--type` | Use `tasks get` to check the actual task type |
 | Completion fails for FormTask | Missing `--action` or `--data` | FormTask and AppTask require both `--action` and `--data` |
 | Cannot assign | User lacks permissions in folder | Run `tasks users <folder-id>` to list eligible users |
+| `A folder is required` | Non-interactive run without a folder option | Pass `--folder-id`, `--folder-path`, or `--folder-key` |
+| `Folder not found: '<value>'.` | The path/key doesn't match a folder this login can access | Run `uip or folders list` and use a listed `Path` or `Key` |
+| `Invalid --folder-key: <value>` | The key is not a UUID | Use the GUID from the `Key` column of `uip or folders list` |
+| `Error resolving folder path/key '<value>'` | The folder lookup itself failed (permissions or network) | Check the error detail in `Instructions`; verify access with `uip or folders list` |
 
 ---
 
@@ -205,4 +231,7 @@ For deeper guidance, read these files only when needed:
 - `references/task-lifecycle.md` — Listing and getting tasks, type-hint endpoint routing, and the full discover→assign→complete workflow
 - `references/task-completion.md` — Completion endpoint routing, required fields per task type
 - `references/task-assignment.md` — Assign, reassign, unassign patterns and user discovery
+- `references/task-catalogs.md` — Task catalog list/get/create/update and retention policy
+- `references/task-metadata.md` — Editing task metadata, plus task comments and labels
+- `references/task-data.md` — Getting and saving task data, and save type routing
 - `references/action-center-urls.md` — Canonical Action Center URL patterns; **read this before constructing or sharing any task deep-link** (the portal-UI misclassifies tenant-less URLs as "Orchestrator not enabled")

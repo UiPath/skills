@@ -1,0 +1,6 @@
+{
+  "Name": "ReportPdfGen",
+  "ProjectType": "Process",
+  "Description": "Opens a Word report document and exports it to a PDF file in the reports output folder.",
+  "MainFile": "Main.xaml"
+}

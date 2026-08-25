@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T13:55:30.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T13:55:31.060Z",
+      "Message": "[Download Daily Export] Requested daily-export.csv from the reporting API"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T13:55:31.640Z",
+      "Message": "[Read CSV] Reading data\\daily-export.csv (Delimiter=Comma, AddHeaders=True)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T13:55:32.020Z",
+      "Message": "[Read CSV] Could not find file 'C:\\ProgramData\\UiPath\\Packages\\CsvFetcher\\data\\daily-export.csv'."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T13:55:32.090Z",
+      "Message": "Read CSV: Could not find file 'C:\\ProgramData\\UiPath\\Packages\\CsvFetcher\\data\\daily-export.csv'.\r\nin Main.xaml\r\n    at ReadCsvFile \"Read CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T13:55:32.150Z",
+      "Message": "Execution ended in: 00:00:01"
+    }
+  ]
+}

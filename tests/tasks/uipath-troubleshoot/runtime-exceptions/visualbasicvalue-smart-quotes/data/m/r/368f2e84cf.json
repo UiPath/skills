@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "StartTime": "2026-06-24T09:14:08.117Z",
+    "EndTime": "2026-06-24T09:14:08.992Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Expression Activity type 'VisualBasicValue`1' requires compilation in order to run.\r\n\r\nin Main.xaml\r\n    at Assign \"Build Greeting\"\r\n    at Sequence \"Notify Customer\"\r\n\r\nSystem.NotSupportedException: Expression Activity type 'VisualBasicValue`1' requires compilation in order to run.\r\n   at System.Activities.Expressions.CompiledExpressionInvoker.InvokeExpression(ActivityContext activityContext)\r\n   at Microsoft.VisualBasic.Activities.VisualBasicValue`1.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\r\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\r\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)",
+    "CreationTime": "2026-06-24T09:14:08.117Z",
+    "ReleaseName": "InvoiceNotifier",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "ReleaseVersionId": 10204,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 28927,
+    "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+    "ProcessType": "Process",
+    "ErrorCode": "Robot",
+    "TraceId": "a1b2c3d4e5f64a7b8c9d0e1f2a3b4c5d",
+    "Id": 4019338
+  }
+}

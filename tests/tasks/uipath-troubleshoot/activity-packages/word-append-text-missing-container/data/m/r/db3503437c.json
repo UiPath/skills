@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8",
+      "State": "Faulted",
+      "ProcessName": "AppendNotes",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-15",
+      "MachineKey": "",
+      "StartTime": "2026-06-17T10:20:01.330Z",
+      "EndTime": "2026-06-17T10:20:02.210Z",
+      "CreationTime": "2026-06-17T10:20:01.100Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

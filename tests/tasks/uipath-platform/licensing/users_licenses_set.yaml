@@ -1,0 +1,84 @@
+task_id: skill-platform-licensing-users-licenses-set
+description: >
+  Smoke test: agent uses the uipath-platform skill to assign two user bundles
+  (Attended Named User + Automation Developer Named User) to a specific user.
+  Verifies (1) the agent fetches the docs page to resolve product names to
+  codes, (2) writes a JSON input file containing the resolved codes, and
+  (3) calls `uip platform users licenses set <user> --input <path>
+  --output json`. CLI auth failure is expected; this validates command shape
+  only — no live write.
+tags: [uipath-platform, smoke, licensing, users]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Assign two licenses to user `dan.dinu@uipath.com`:
+  - Attended Named User
+  - Automation Developer Named User
+
+  Fetch the UiPath docs license-codes page and save the mappings you use as
+  `license-codes-evidence.json` in the current directory. Include the source
+  URL and the resolved friendly-name/code pairs you used.
+
+  Save the input JSON file as `user-licenses.json` in the current directory,
+  then run the assignment command.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Resolve product names to codes from the UiPath docs license-codes page
+    before writing the input file.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote web-resolution evidence at license-codes-evidence.json"
+    path: "license-codes-evidence.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Evidence file records the docs source URL and the resolved bundle codes"
+    path: "license-codes-evidence.json"
+    includes:
+      [
+        "docs.uipath.com",
+        "ATTUNU",
+        "RPADEVPRONU"
+      ]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the input file at user-licenses.json"
+    path: "user-licenses.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Input JSON contains the resolved ATTUNU and RPADEVPRONU codes"
+    path: "user-licenses.json"
+    includes: ["ATTUNU", "RPADEVPRONU"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent ran `uip platform users licenses set` with --input (.uip-cmdlog shim log)"
+    command: "grep -E 'uip platform users licenses set [^ ]+' .uip-cmdlog | grep -Eq -- '--input[= ][^ ]+'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

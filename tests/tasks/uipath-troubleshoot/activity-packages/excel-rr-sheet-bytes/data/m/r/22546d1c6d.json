@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc333377-001",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333377-002",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333377-003",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — executing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333377-004",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:01.612Z",
+      "Message": "Get Workbook Sheets — executing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333377-005",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.812Z",
+      "Message": "[ExcelDailyImport] Available sheets in workbook: [\"Sheet1\", \"Quarterly Data\", \"Summary\"]",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333377-006",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:02.512Z",
+      "Message": "Read Range: Quarterly Data!A1 — executing (SheetName='Quarterly Data')",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333377-007",
+      "JobKey": "cc333333-7777-8888-9999-000011112222",
+      "Level": "Error",
+      "Timestamp": "2026-05-19T08:00:02.802Z",
+      "Message": "Read Range: Quarterly Data!A1 — UiPath.Excel.BusinessException: The sheet with the name 'Quarterly Data' does not exist.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

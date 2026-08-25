@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelReconExport",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Recon' sheet from the daily reconciliation workbook at C:\\Robot\\Data\\recon-daily.xlsx into a DataTable via Read Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

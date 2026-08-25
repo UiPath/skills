@@ -8,6 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 from _shared.flow_check import (  # noqa: E402
+    _get_ci,
     assert_flow_has_node_type,
     find_project_dir,
     run_debug,
@@ -40,11 +41,13 @@ def main():
 
     payload = run_debug()
 
-    # Verify the terminate node actually killed the delay branch
-    executions = payload.get("elementExecutions") or []
-    terminated = [e for e in executions if e.get("status") == "Terminated"]
+    # Verify the terminate node actually killed the delay branch. Read the
+    # runtime payload case-insensitively so a CLI that PascalCases --output json
+    # keys (PR #2266) does not make `elementExecutions` unreadable → empty.
+    executions = _get_ci(payload, "elementExecutions", "ElementExecutions") or []
+    terminated = [e for e in executions if _get_ci(e, "status", "Status") == "Terminated"]
     if not terminated:
-        statuses = [(e.get("elementId"), e.get("status")) for e in executions]
+        statuses = [(_get_ci(e, "elementId", "ElementId"), _get_ci(e, "status", "Status")) for e in executions]
         sys.exit(f"FAIL: No element was Terminated — terminate node didn't kill the delay branch. Statuses: {statuses}")
 
     print(f"OK: Terminate + Delay nodes present; {len(terminated)} element(s) terminated")

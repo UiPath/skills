@@ -1,0 +1,6 @@
+{
+  "Name": "OrderReconciliation",
+  "ProjectType": "Process",
+  "Description": "REFramework unattended process that reconciles orders transaction by transaction.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the python-scope-path-is-file scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    { "match": "or folders list", "file": "6ed334f24b.json" },
+    { "match": "or jobs list", "file": "348d600ec1.json" },
+    { "match": "or jobs get", "file": "b402d7b9ea.json" },
+    { "match": "or jobs history", "file": "12ead3e479.json" },
+    { "match": "or jobs logs", "file": "9a87aba928.json" }
+  ]
+}

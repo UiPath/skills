@@ -1,0 +1,45 @@
+task_id: skill-admin-authz-list-roles-smoke
+description: >
+  Smoke test (outcome-graded): agent retrieves the organization's authorization
+  roles and saves the JSON. Graded on the role records read back from the live
+  tenant (Id + Name + role shape), not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  List all authorization roles in my UiPath organization — both built-in and
+  custom. Save the complete JSON result to ./roles.json so it can be reviewed.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "roles.json holds real role records retrieved from the tenant (Id + Name + role shape)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('roles.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      rows = data if isinstance(data, list) else next((L for L in lists(data) if L and isinstance(L[0], dict)), None)
+      assert isinstance(rows, list) and len(rows) >= 1, f'expected a list of roles; got {type(rows).__name__}'
+      r = rows[0]
+      assert 'Id' in r and 'Name' in r, f'role record missing Id/Name; keys={list(r)[:10]}'
+      types = {str(x.get('Type') or x.get('type')).lower() for x in rows}
+      assert types & {'builtin', 'custom'}, f'no BuiltIn/Custom role Type on any record; types seen={sorted(types)}'
+      assert any((x.get('ScopeType') or x.get('scopeType')) for x in rows), 'no ScopeType on any record — not a real role listing'
+      print(f'OK: {len(rows)} roles retrieved; sample keys={list(r)[:8]}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

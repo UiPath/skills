@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobHealingData",
+  "Data": {
+    "JobKey": "d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff",
+    "FileName": "",
+    "Size": 22,
+    "ExportId": 11659,
+    "_doc": "HA produced no recovery data — the on-disk ZIP at the agent's -o path would be 22 bytes (end-of-central-directory record only, zero entries). The mock does not materialize the file; the agent should rely on Size=22 here AND the 'No available license' Error log line from `or jobs logs --level Error` for the deterministic empty-ZIP signal per healing-agent-no-license.md step 3."
+  }
+}

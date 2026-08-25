@@ -1,0 +1,123 @@
+task_id: skill-aops-pipeline-create-e2e
+description: >
+  End-to-end test: agent walks the full uipath-aops pipeline workflow —
+  connection discovery → source discovery (solutions or projects) →
+  repository lookup → published process selection → DTO composition →
+  pipeline create. Verifies the agent invokes the skill, calls the expected
+  `uip aops` commands, and ends with a `pipeline create --file` invocation
+  against a well-formed camelCase PipelineDto.
+
+  Platform note: runs without an authenticated tenant — commands will fail
+  with auth errors. That is acceptable; what matters is correct command
+  invocation and a well-formed PipelineDto JSON.
+tags: [uipath-aops, e2e, mode:build, lifecycle:setup]
+
+max_iterations: 2
+
+initial_prompt: |
+  Create a UiPath CICD pipeline that targets the "DummyPipeline" published
+  Orchestrator process on my StudioAdmin tenant. Persist the resulting
+  PipelineDto to `./pipeline.json` before invoking pipeline create so the
+  test can inspect it.
+
+  Important:
+  - The `uip` CLI is available but the AOps subcommands may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do NOT pause between planning and implementation.
+  - Before starting, load the uipath-aops skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-aops skill"
+    skill_name: "uipath-aops"
+    expected: "yes"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed SourceControl connections via uip aops"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+connection\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed solutions or standalone projects on the connection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+connection\s+(solutions|projects)\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed repositories on the connection (needed for RemoteId)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+connection\s+repos\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed published Orchestrator processes"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+pipeline\s+processes\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked pipeline create or save-and-run with a --file argument"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+pipeline\s+(create|save-and-run)\s+.*--file\s+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Composed DTO uses repositoryType git, an empty projectName, and binds a process"
+    path: "pipeline.json"
+    includes:
+      - '"repositoryType": "git"'
+      - '"projectName": ""'
+      - '"processIdentifier"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Composed DTO uses camelCase input keys, not the PascalCase of CLI output"
+    path: "pipeline.json"
+    excludes:
+      - '"RepositoryType"'
+      - '"ProjectName"'
+      - '"ProcessIdentifier"'
+      - '"ConnectionIdentifier"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not fall back to the retired `uip sc` tool"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+sc\s+'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not fall back to the retired `uip cicd` tool"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+cicd\s+'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consistently used --output json on uip aops calls"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0

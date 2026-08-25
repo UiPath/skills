@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f7a2e5c8-9d31-4b62-a074-6c1e3f9b2d58",
+      "State": "Faulted",
+      "ProcessName": "InvoicePortalSubmit",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-20T08:03:11.410Z",
+      "EndTime": "2026-07-20T08:03:14.980Z",
+      "CreationTime": "2026-07-20T08:03:11.410Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

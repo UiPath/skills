@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-19T02:15:41.700Z",
+      "Message": "Use CustomerHub portal: Cannot communicate with the browser.\r\nin Main.xaml\r\n    at NApplicationCard \"Use CustomerHub portal\"\r\n    at Sequence \"Main Sequence\"\r\n    at DynamicActivity \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.UIAutomationNext.Exceptions.UiAutomationExecutionException: Cannot communicate with the browser.\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.<ExecuteAsync>d__.MoveNext()"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-19T02:15:05.020Z",
+      "Message": "CustomerHubSync started"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-07-19T02:15:04.510Z",
+      "Message": "CustomerHubSync execution started"
+    }
+  ]
+}

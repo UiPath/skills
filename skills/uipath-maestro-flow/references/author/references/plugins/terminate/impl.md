@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.terminate --output json
 ```
 
-Confirm: input port `input`, no output ports.
+Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
 
 ## JSON Structure
 
@@ -18,7 +18,7 @@ Confirm: input port `input`, no output ports.
 {
   "id": "abortOnError",
   "type": "core.logic.terminate",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Abort" },
   "inputs": {}
 }
@@ -31,11 +31,14 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 ## Common Pattern — Error Handler
 
 ```text
-HTTP Request -> Decision (error?) -> true -> Log Error (Script) -> Terminate
-                                  -> false -> Process -> End
+HTTP Request
+  |-- default -> Process -> End
+  |-- error   -> Log Error (Script) -> Terminate
 ```
 
-The Decision node checks `$vars.httpCall.error`, routes to a Script that logs the error, then Terminate aborts the flow.
+Wire the action node's implicit `error` source port straight to the handler; the Script logs `$vars.httpCall.error`, then Terminate aborts the flow. Do **not** put a Decision downstream to test for an error — a failing node has already faulted the flow before execution reaches it.
+
+Add this pattern only when the requirements state what a failure should do. With no error edge the failure faults the flow on its own, which is the correct default — and never set `inputs.errorHandlingEnabled: true` without the edge. See [file-format.md — Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ## Debug
 

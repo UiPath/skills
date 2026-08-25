@@ -126,7 +126,7 @@ evaluations/eval-sets/
 ```json
 "mockingStrategy": {
   "type": "mockito",
-  "behaviors": [
+  "config": [
     {
       "function": "external_api_call",
       "arguments": {
@@ -143,6 +143,10 @@ evaluations/eval-sets/
   ]
 }
 ```
+
+- Behaviors key is `config` (SDK alias; `behaviors` also accepted).
+- `function` matches the `@mockable`-decorated function's `__name__` (bare name, not qualified). Decorate the target in `main.py` with `@mockable` for the mock to bind.
+- `arguments` optional — omit to match any call.
 
 **Mock Behavior Types:**
 - `type: "return"` - Return a value

@@ -1,0 +1,52 @@
+{"id": "uipath-connector-builder-001", "prompt": "Build a new Integration Service connector for the Stripe REST API", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-002", "prompt": "Scaffold a connector from these vendor API docs: init, auth, activities, then validate", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-003", "prompt": "uip is connectors builder init --name Acme --organization myorg --base-url https://api.acme.com", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-004", "prompt": "Create a periodic-design connector for a custom internal REST API", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-005", "prompt": "Set up OAuth2 authorization code auth on my connector with token and authorize URLs", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-006", "prompt": "Configure OAuth2 PKCE on the connector I'm building", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-007", "prompt": "Switch this connector's authentication to client credentials", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-008", "prompt": "Add API key header auth to my connector using auth set", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-009", "prompt": "Set up basic auth (username + password) on the connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-010", "prompt": "Configure JWT OAuth with the signing claims for this connector's auth", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-011", "prompt": "Set up AWS Signature v4 auth on my Integration Service connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-012", "prompt": "Use First Party Service (FPS) auth for this connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-013", "prompt": "Configure the connector with no auth (public API)", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-014", "prompt": "Define the OAuth scopes and preselected scopes for my connector's auth", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-015", "prompt": "Add a Contacts activity with GET, POST, PATCH and DELETE methods to my connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-016", "prompt": "Add a GetById activity for /orders/{id} to the connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-017", "prompt": "Create a List Invoices activity that does a GET search on /invoices", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-018", "prompt": "Add a write-only 'Send Notification' action activity (POST only, no by-id path)", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-019", "prompt": "uip is connectors builder activity create for a Create Ticket resource", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-020", "prompt": "Define the request and response fields for the Contacts activity from the vendor schema", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-021", "prompt": "Add fields to my activity with a --fields-file so it's not just a raw JSON body", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-022", "prompt": "Add a single email field to the Create Contact activity", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-023", "prompt": "Add a query parameter 'status' and a path param to this activity", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-024", "prompt": "My activity shows up in Studio Web as a raw JSON body with no typed inputs — add the field schema", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-025", "prompt": "Write a JavaScript request hook that reshapes the payload before the vendor call", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-026", "prompt": "Add a response hook to flatten the nested JSON the API returns", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-027", "prompt": "Fix my connector hook — it isn't calling done() on the error path", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-028", "prompt": "The hook needs to make a secondary axios call to enrich the record — help me write it", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-029", "prompt": "Wire a polling trigger on the List Tickets activity", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-030", "prompt": "Add a webhook trigger to my connector for new-record events", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-031", "prompt": "Run builder validate on my connector and fix whatever it reports", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-032", "prompt": "validate is warning about a fieldless activity — how do I fix it?", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-033", "prompt": "Inspect this connector and show me its auth, activities, hooks and triggers", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-034", "prompt": "Why is my connector's activity failing validation on the standard-resource link?", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-035", "prompt": "I have a periodic-uipath-acme-billing repo — add a Refunds activity to it", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-036", "prompt": "Edit element.json to add another method to an existing resource", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-037", "prompt": "Update the standard-resources JSON for my Orders activity", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-038", "prompt": "Change a field type in element-metadata.json for this connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-039", "prompt": "The base, token and authorize URLs all share a per-connection instance name — surface one templated {instance} config", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-040", "prompt": "Make the datacenter a fixed COMBO dropdown instead of a free-text field on my connector", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-041", "prompt": "Add an auth-system resource that needs no standard-resource file", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-042", "prompt": "Validate then import my connector to the tenant", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-043", "prompt": "Publish the connector I just built to Integration Service", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-044", "prompt": "Download the design connector from my tenant so I can edit it locally", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-045", "prompt": "Pull the design-myorg-acme connector down, add an activity, re-import it", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-046", "prompt": "state query the Contacts activity entry, change one field, and patch it back", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-047", "prompt": "Build a connector end to end: init, auth set oauth2, activities with fields, validate, import, publish", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-048", "prompt": "Author an IS connector for a REST API that returns JSON — start from init", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-049", "prompt": "Add CRUD activities for the Products resource to my connector and define their fields", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-050", "prompt": "Set the primary key and by-id path param on my GetById activity", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-051", "prompt": "My connector has element.json and standard-resources — help me add pagination handling in a hook", "expected_skill": "uipath-connector-builder"}
+{"id": "uipath-connector-builder-052", "prompt": "Change the connector's authentication from API key to OAuth2 and rewire the token refresh", "expected_skill": "uipath-connector-builder"}

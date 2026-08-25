@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "5b05c3d4-e5f6-4071-9b05-000000000005",
+      "State": "Faulted",
+      "ProcessName": "JiraTicketCloser",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-16T15:40:02.110Z",
+      "EndTime": "2026-06-16T15:40:03.860Z",
+      "CreationTime": "2026-06-16T15:40:01.700Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

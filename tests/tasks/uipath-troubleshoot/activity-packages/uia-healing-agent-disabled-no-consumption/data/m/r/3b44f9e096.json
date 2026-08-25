@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T07:31:36.167Z",
+      "Message": "BlankProcess2 execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T07:31:35.595Z",
+      "Message": "Click 'I'm Feeling Lucky': Could not find the user-interface (UI) element for this action.\r\n\r\nPossible solutions:\r\n \u2022  Ensure application is opened and the UI element is visible on the screen at execution time\r\n \u2022  Edit the Target of the UI activity and use Validation to debug the issue.\r\n \u2022  If needed, re-indicate the element as its properties might have changed\r\n \u2022  Use \"Check state\" activity to check the application state before executing the action\r\n \u2022  Increase the \"Delay before\" value to allow time to the application to render entirely and become responsive\r\nin Main.xaml\r\n    at NClick \"Click 'I'm Feeling Lucky'\"\r\n    at Sequence \"Do\"\r\n    at NApplicationCard \"Edge Google\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T07:31:03.605Z",
+      "Message": "Healing agent is disabled for the current job."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T07:31:02.682Z",
+      "Message": "BlankProcess2 execution started"
+    }
+  ]
+}

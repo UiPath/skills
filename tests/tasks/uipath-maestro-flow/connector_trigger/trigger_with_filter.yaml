@@ -1,0 +1,33 @@
+task_id: skill-flow-trigger-with-filter
+description: >
+  Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree.
+  Without this, UI drops the filter silently on first open.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  You are authoring a UiPath Flow triggered by an Outlook email whose subject contains "good day" and sent from
+  abc@xyz.com.
+  Do NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure
+  the trigger against a live connection.
+  Instead, write to `trigger_detail.json` the exact JSON object you would pass to
+  `uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure that trigger.
+  Use placeholders for any connection/folder/event ids you cannot resolve offline.
+
+
+success_criteria:
+  # `check_trigger_filter.py` locates trigger_detail.json (root or nested in the
+  # flow project dir) and asserts it is the --detail object: valid JSON, no
+  # top-level filterExpression (MST-8802 guard), and a `filter` tree as a
+  # TOP-LEVEL key (numeric groupOperator + non-empty filters) with at least one
+  # leaf referencing `subject` via the PascalCase `Contains` operator. A filter
+  # wrapped under detail/inputs fails — that is not the --detail object.
+  - type: run_command
+    description: "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression"
+    command: "python3 $TASK_DIR/check_trigger_filter.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

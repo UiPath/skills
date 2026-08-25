@@ -1,10 +1,14 @@
 # Project Setup Guide
 
-Complete workflow for creating a new IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+
+> **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
 ## Step 1 — Create the Project
 
 If the user provides a name, use it. If not, generate a temporary name (e.g., `ixp_project_NNNN` with a random number) — the project will be renamed in Step 3 after the taxonomy reveals the document type.
+
+`<folder-path>` is filtered to supported document files — see [CLI Reference § Supported document files](cli-reference.md#supported-document-files).
 
 **Option A — Auto-suggest taxonomy (default):**
 
@@ -32,7 +36,7 @@ uip ixp projects import-taxonomy <project-name> <taxonomy-file> --output json
 The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
 
 - `{ "field_types": [...], "label_group": {...} }` — use when importing a taxonomy suggested by a previous `project create` run
-- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project (exported via `uip ixp projects get-taxonomy`)
+- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
@@ -51,7 +55,7 @@ uip ixp documents list <project-name> --output json
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
 ```
 
-View with the **Read tool**, then decide:
+View with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively). Then decide:
 
 | Document characteristics | Pre-processing | Model |
 |--------------------------|---------------|-------|
@@ -66,11 +70,10 @@ Apply the configuration:
 uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
-  --attribution model \
   --output json
 ```
 
-**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini --attribution model` — works well for most invoice/document types.
+**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini` — works well for most invoice/document types.
 
 ## Step 3 — Name the Project
 

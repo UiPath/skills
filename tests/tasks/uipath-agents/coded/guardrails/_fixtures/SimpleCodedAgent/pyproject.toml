@@ -1,0 +1,15 @@
+[project]
+name = "simple-coded-agent"
+version = "0.0.1"
+description = "Simple coded agent for testing guardrail addition"
+authors = [{ name = "Test User", email = "test@example.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "uipath-langchain>=0.9.26",
+    "uipath>2.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "uipath-dev",
+]

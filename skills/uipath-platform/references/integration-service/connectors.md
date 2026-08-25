@@ -44,7 +44,7 @@ The HTTP connector supports generic HTTP requests (GET, POST, PUT, PATCH, DELETE
 The HTTP connector has a single resource: `http-request`.
 
 ```bash
-uip is resources execute create "uipath-uipath-http" "http-request" \
+uip is resources run create "uipath-uipath-http" "http-request" \
   --connection-id "<id>" \
   --body '{"method": "GET", "url": "https://api.example.com/v2/resource"}' \
   --output json

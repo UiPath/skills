@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerQuery",
+  "ProjectType": "Process",
+  "Description": "Queries customers by running a SELECT of CustomerId and Name from the Customers table via Execute Query into a DataTable.",
+  "MainFile": "Main.xaml"
+}

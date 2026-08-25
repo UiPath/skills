@@ -40,7 +40,9 @@ Start a job when a new item is added to the specified queue.
 
 ## Notes
 
-- **New Item Added to Queue** is a trigger scope/container activity. Place the transaction processing logic inside its body.
+- **Type: integration trigger.** `uip rpa activities find` returns `isTrigger: true, triggerType: "integration"` (Orchestrator-native queue subscription — no IS `ConnectionId` required, though the robot must be connected to Orchestrator at runtime).
+- **Placement: strict.** Place `New Item Added to Queue` as the first activity in the workflow's root `Sequence`. Do **NOT** wrap in `ui:TriggerScope`. The handler — the transaction processing logic — is the rest of the `Sequence` that follows. When the package is published to Orchestrator, this trigger is detected and a Queue Trigger can be created from it.
+- See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md) for the full placement contract.
 - Requires an active Orchestrator connection. The robot must be connected to Orchestrator and the specified queue must exist in the configured folder.
 - `TransactionItem` gives access to the full `QueueItem` object including all metadata, `ExtractedQueueItem` gives direct access to the item's specific data.
 - The `FolderPath` property supports Orchestrator modern folder paths (e.g., `Finance/Invoices`).

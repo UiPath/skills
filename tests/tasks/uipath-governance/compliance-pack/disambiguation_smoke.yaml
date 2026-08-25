@@ -1,0 +1,79 @@
+task_id: skill-governance-compliance-disambiguation
+description: >
+  Skill-guided: the canonical ambiguous prompt "block ChatGPT for my finance team"
+  (disambiguation-guide.md worked example) matches both Branch A (AOps: block the
+  model at the AI Trust Layer / Studio) and Branch B (Access: block agents/flows
+  wrapping ChatGPT from being invoked by finance). The skill must ask the numbered
+  disambiguation question and NOT run any governance mutations before the user replies.
+
+  This tests the most fragile routing path — wrong silent routing here produces
+  a real artifact on the wrong branch.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, feature:compliance]
+
+sandbox:
+  python: {}
+
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
+# fails this test (silently routes and creates a policy) really mutates the
+# tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+run_limits:
+  max_turns: 5
+
+initial_prompt: |
+  Block ChatGPT for my finance team in UiPath.
+
+success_criteria:
+  - type: llm_judge
+    description: "Agent asks the disambiguation question instead of silently picking a branch"
+    include_agent_output: true
+    prompt: |
+      The user asked: "Block ChatGPT for my finance team in UiPath."
+
+      This request is ambiguous — it maps to two different governance layers:
+      1. Blocking the ChatGPT model itself at the AI Trust Layer / Studio for the
+         finance team (AOps product policy)
+      2. Blocking the finance team from invoking agents/flows that wrap ChatGPT
+         as a tool (Access ToolUsePolicy)
+
+      Correct behavior: the agent asks the user which layer they mean BEFORE
+      committing to one, ideally as a numbered choice.
+
+      IMPORTANT — grading scope:
+      - Whether the agent executed any CLI command is verified by SEPARATE
+        deterministic criteria. Do NOT infer from any descriptive text that the
+        agent ran, created, or deployed anything. Describing what each option
+        WOULD do — even naming example commands — is expected and good, NOT a
+        violation.
+      - Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response presents a choice between at least two distinct
+        governance interpretations (numbered or clearly enumerated) and asks the
+        user to pick before proceeding.
+      Score 0.5 if it asks a clarifying question but blends the two paths or does
+        not clearly enumerate them.
+      Score 0.0 only if it silently commits to one interpretation with no
+        clarifying question.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_not_executed
+    description: "Agent does NOT run any aops-policy create before disambiguation"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent does NOT run any compliance-packs state commands before disambiguation"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent does NOT run any access-policy mutations before disambiguation"
+    command_pattern: 'uip\s+gov\s+access-policy\s+(create|update|delete|activate)'
+    weight: 2.0
+    pass_threshold: 1.0

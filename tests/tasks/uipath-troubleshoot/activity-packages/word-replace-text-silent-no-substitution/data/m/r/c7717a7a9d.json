@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T09:02:01.560Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T09:02:03.180Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T09:02:04.420Z",
+      "Message": "[Word Application Scope] Document 'data\\OfferTemplate.docx' opened"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T09:02:05.610Z",
+      "Message": "[Replace Text] Executed. Replaced 0 occurrence(s) of '[Name]'."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T09:02:06.910Z",
+      "Message": "Execution ended in: 00:00:05"
+    }
+  ]
+}

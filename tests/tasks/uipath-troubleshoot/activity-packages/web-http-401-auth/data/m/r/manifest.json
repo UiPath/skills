@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Faithful-style replay of job 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90 (folder Shared). Scrubbed (host->MOCK-HOST, account->UIPATH\\AUTOMATION1).",
+  "rules": [
+    {
+      "match": "or jobs logs 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90 --level Error",
+      "file": "e48ed14d9c.json"
+    },
+    {
+      "match": "or jobs logs 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
+      "file": "d58013be1e.json"
+    },
+    {
+      "match": "or jobs get 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
+      "file": "edca15bc40.json"
+    },
+    {
+      "match": "or jobs history 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
+      "file": "11f937a7a8.json"
+    },
+    {
+      "match": "or jobs traces 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
+      "file": "95f84294b4.json"
+    },
+    {
+      "match": "traces spans get --job-key 9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
+      "file": "a1c297b882.json",
+      "exit_code": 1
+    },
+    {
+      "match": "or jobs list --folder-key e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b --state Faulted",
+      "file": "44bc28b771.json"
+    },
+    {
+      "match": "or jobs list --folder-key e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b",
+      "file": "d9b9bd77e6.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "75949d659e.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "ee2628e6b6.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": {
+      "Result": "Success",
+      "Code": "Empty",
+      "Data": []
+    },
+    "exit_code": 0,
+    "_doc": "Empty result for any unmatched read-only uip query."
+  }
+}

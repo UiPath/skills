@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T13:05:04.090Z",
+      "Message": "[Transition Issue] Response status code does not indicate success: 400 (Bad Request). Transition id '31' is not valid for issue OPS-1421 in its current status."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T13:05:04.170Z",
+      "Message": "UiPath.Jira.Activities.JiraException: Transition id '31' is not valid for issue OPS-1421 in its current status.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at TransitionIssue \"Transition Issue\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

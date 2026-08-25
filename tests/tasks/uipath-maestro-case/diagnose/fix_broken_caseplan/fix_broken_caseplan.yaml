@@ -1,0 +1,79 @@
+task_id: skill-case-diagnose-fix-broken-caseplan
+description: >
+  Diagnose mode — a LinearThreeStages case (Intake → Review → Decision) is
+  staged on disk with two deliberate defects that `uip maestro case validate`
+  reports: Decision's stage-entry condition references a non-existent stage
+  (unreachable / dangling reference) and Intake's task carries an invalid
+  `type: "wait-for-event"` outside the closed 9-value enum (Rule 16). Exercises
+  the skill's validate → read-structured-errors → fix → re-validate loop on a
+  pre-broken caseplan.json. Local-only (validate, no debug) — the agent must
+  fix the actual root causes, not delete stages to silence the validator.
+tags: [uipath-maestro-case, e2e, mode:diagnose, lifecycle:edit, shape:multi-node, feature:conditions]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its case definition
+  (LinearThreeStages/LinearThreeStages/caseplan.json) currently FAILS
+  `uip maestro case validate` — someone left the file in a broken state.
+
+  Diagnose and repair it so it validates cleanly, keeping the intended design:
+  three regular stages, Intake → Review → Decision, chained linearly behind the
+  manual trigger.
+
+  Use the uipath-maestro-case skill's validate → fix loop: run
+  `uip maestro case validate` to surface the structured errors, read them, fix
+  each root cause directly in caseplan.json, and re-validate until it passes.
+
+  - Fix the ACTUAL defects. Do NOT delete stages, tasks, conditions, the
+    trigger, or the case-exit rule to make errors disappear — all three stages
+    must survive and Decision must remain reachable in the chain.
+  - Do NOT run `uip maestro case debug` — validation is the bar here.
+  - Do NOT ask for approval, confirmation, or feedback. Work end-to-end in a
+    single pass and finish with `uip maestro case validate` passing on
+    LinearThreeStages/LinearThreeStages/caseplan.json.
+
+  Before starting, load the uipath-maestro-case skill and follow its
+  troubleshooting / validate-loop workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the validate → fix loop (validate at least twice: read errors, then confirm the fix)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+validate'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the repaired caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both root causes fixed (valid task type + rewired Decision entry, no dangling ref), all 3 stages preserved and Decision reachable — not silenced by deletion"
+    command: "python3 $TASK_DIR/check_fix_broken_caseplan.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

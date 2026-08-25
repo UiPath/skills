@@ -1,60 +1,49 @@
 task_id: skill-flow-hitl-smoke-node-placed
 description: >
   Smoke test: agent builds a simple invoice approval flow containing an inline
-  HITL node (uipath.human-in-the-loop). Verifies the node is written directly
+  HITL node (uipath.human-in-the-loop.quick-form). Verifies the node is written directly
   into the .flow file as JSON and the flow validates.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, lifecycle:generate, shape:single-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
+run_limits:
+  expected_turns: 21
   max_turns: 80
-  turn_timeout: 900
-
-sandbox:
-  driver: tempdir
-  python: {}
-
+  turn_timeout: 600
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that:
   1. Starts with a manual trigger
   2. Pauses for a finance manager to review and approve an invoice (human-in-the-loop)
   3. Ends after the review is complete
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop),
-  not an external app. The node must show the reviewer: invoice ID and amount.
+  The reviewer's form should be rendered inline — no separate deployed app.
+  The node must show the reviewer: invoice ID and amount.
   The reviewer clicks Approve or Reject.
 
-  Wire the completed handle to an End node.
+  Wire the flow to continue to an End node after the review is complete.
 
   Validate the flow after building it.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Flow contains the inline HITL node type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop"'
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Flow uses quickform schema type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"type": "quick"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Flow contains the inline HITL node type"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+
+  - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

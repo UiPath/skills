@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-15T06:00:02.520Z",
+      "Message": "JiraWeeklyReport execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T06:00:03.610Z",
+      "Message": "Jira Scope: session opened to https://acme.atlassian.net/secure/Dashboard.jspa (Authentication Type: Api Token)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T06:00:04.730Z",
+      "Message": "Search Issues: sending request (JQL: project = OPS AND created >= -7d)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T06:00:04.980Z",
+      "Message": "[Search Issues] Response was not recognized as JSON."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T06:00:05.060Z",
+      "Message": "UiPath.Jira.Activities.JiraException: Response was not recognized as JSON.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at SearchIssues \"Search Issues\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-15T06:00:05.110Z",
+      "Message": "JiraWeeklyReport execution ended"
+    }
+  ]
+}

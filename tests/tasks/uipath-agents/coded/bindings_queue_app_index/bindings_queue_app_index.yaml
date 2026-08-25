@@ -1,0 +1,46 @@
+task_id: skill-agents-bindings-queue-app-index
+description: >
+  Bindings sync covering five resource types in one project —
+  queue, app, index, connection, mcpServer. The agent runs the
+  bindings-sync workflow over a hand-authored project; the check
+  verifies one binding entry per resource with the right key
+  construction (`<name>.<folder_path>` for most, bare
+  `<connection_key>` for connections) and metadata fields.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+
+run_limits:
+  expected_turns: 11
+  turn_timeout: 1200
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/bindings_queue_app_index/_fixtures/five-bindings/. ."
+    timeout: 10
+
+initial_prompt: |
+  I have a hand-authored UiPath coded agent project in the current
+  directory. Its `main.py` makes five resource calls — a
+  queue, an app (Action Center), an index (Context Grounding), a
+  connection (Integration Service), and an mcpServer — and its
+  `bindings.json` is currently empty.
+
+  Set up the project, then sync `bindings.json` so it reflects all
+  five resource calls. Each resource must produce one binding entry:
+  queue, app, index, connection, mcpServer.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All five bindings present with correct keys, value blocks, and metadata"
+    command: "python3 $TASK_DIR/check_bindings_queue_app_index.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

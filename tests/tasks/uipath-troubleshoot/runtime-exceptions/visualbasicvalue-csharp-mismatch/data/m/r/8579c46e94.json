@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "bb22cc33-dd44-ee55-ff66-778899001122",
+    "StartTime": "2026-06-25T13:02:41.305Z",
+    "EndTime": "2026-06-25T13:02:42.110Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Expression Activity type 'VisualBasicValue`1' requires compilation in order to run.\r\n\r\nin Main.xaml\r\n    at Assign \"Build Route Key\"\r\n    at Sequence \"Route Order\"\r\n\r\nSystem.NotSupportedException: Expression Activity type 'VisualBasicValue`1' requires compilation in order to run.\r\n   at System.Activities.Expressions.CompiledExpressionInvoker.InvokeExpression(ActivityContext activityContext)\r\n   at Microsoft.VisualBasic.Activities.VisualBasicValue`1.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\r\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\r\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)",
+    "CreationTime": "2026-06-25T13:02:41.305Z",
+    "ReleaseName": "OrderRouter",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "ReleaseVersionId": 10502,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 28927,
+    "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+    "ProcessType": "Process",
+    "ErrorCode": "Robot",
+    "TraceId": "bb22cc33dd44ee55ff66778899001122",
+    "Id": 4019502
+  }
+}

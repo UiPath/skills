@@ -2,7 +2,9 @@
 
 `uip maestro flow eval run *` — start, monitor, inspect, and compare evaluation runs. All run commands require `uip login` and a Flow solution that already exists in Studio Web.
 
+<!--skill-flavor:upload-safety-guide-gate:start-->
 > **Before running any of these:** read [upload-safety.md](upload-safety.md). The skill must NOT auto-run `uip solution upload` to satisfy the "solution must be in Studio Web" prerequisite. If the solution isn't in Studio Web, ask the user.
+<!--skill-flavor:upload-safety-guide-gate:end-->
 
 ## Start a Run
 
@@ -23,7 +25,9 @@ uip maestro flow eval run start \
 
 The CLI auto-resolves these from project metadata in the working tree (typically `SolutionStorage.json` and the parent `.uipx`). Pass `--solution-id` or `--project-id` explicitly only when the working tree does not have those IDs (e.g., a freshly scaffolded local project that has never been uploaded).
 
+<!--skill-flavor:upload-safety-resolution-failure:start-->
 If the auto-resolution fails AND you have not passed explicit IDs, the start command will error. Do NOT respond by running `uip solution upload` automatically — see [upload-safety.md](upload-safety.md) for the right action.
+<!--skill-flavor:upload-safety-resolution-failure:end-->
 
 ### `--folder-key`
 
@@ -46,7 +50,7 @@ Polling cadence is not part of the public CLI contract — do not depend on a sp
 
 ```json
 {
-  "Code": "MaestroFlowEvalRunStarted",
+  "Code": "FlowEvalRunStarted",
   "Data": {
     "EvalSetRunId": "a1b2c3d4-...",
     "EvalSetName": "Smoke Tests",
@@ -71,7 +75,7 @@ uip maestro flow eval run status <eval_set_run_id> \
 
 ```json
 {
-  "Code": "MaestroFlowEvalRunStatus",
+  "Code": "FlowEvalRunStatus",
   "Data": {
     "EvalSetRunId": "a1b2c3d4-...",
     "Status": "Completed",
@@ -150,7 +154,7 @@ Output:
 
 ```json
 {
-  "Code": "MaestroFlowEvalRunComparison",
+  "Code": "FlowEvalRunComparison",
   "Data": {
     "RunA": { "Id": "...", "Score": 0.86, "Status": "Completed" },
     "RunB": { "Id": "...", "Score": 0.80, "Status": "Completed" },
@@ -173,7 +177,9 @@ Use `compare` after each prompt or flow change to verify the change improved sco
 ## Workflow Example
 
 ```bash
+<!--skill-flavor:upload-safety-recipe-comment:start-->
 # 1. Verify the solution is in Studio Web (do NOT auto-upload — see upload-safety.md)
+<!--skill-flavor:upload-safety-recipe-comment:end-->
 #    If unsure, list runs first; absence of any error here implies the solution exists.
 uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 
@@ -208,7 +214,9 @@ Use `--only-failed` to filter to these rows. Use `--verbose` to read the justifi
 
 ## Anti-patterns
 
+<!--skill-flavor:upload-safety-guide-antipattern:start-->
 - **Don't auto-run `uip solution upload`** when `eval run start` errors with a missing-solution error. Stop and ask the user — see [upload-safety.md](upload-safety.md).
+<!--skill-flavor:upload-safety-guide-antipattern:end-->
 - **Don't depend on `--wait`'s polling cadence.** Treat as a black-box block.
 - **Don't compare runs from different eval sets.** `compare` aligns by data point name; cross-set deltas are meaningless.
 - **Don't rely on aggregate `Score` alone.** Inspect per-evaluator scores. A 0.86 aggregate can mask a high-similarity-but-wrong-trajectory failure.

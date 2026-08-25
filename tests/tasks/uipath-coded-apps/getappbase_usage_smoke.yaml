@@ -1,0 +1,45 @@
+task_id: skill-coded-apps-getappbase-usage-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to build a RUNTIME request
+  URL via `getAppBase()` from `@uipath/uipath-typescript` instead of a
+  hard-coded `/`-rooted path. Verifies Rule #10 — runtime-built absolute URLs
+  (fetch paths, router basename) need `getAppBase()` or they 404 after deploy at
+  a non-root prefix. Uses a `fetch` path (not a bundled asset): a bundled asset
+  would be `import`ed per Rule #9, so a fetch keeps `getAppBase()` the required
+  tool and avoids overlap with the import-time path.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, write `src/loadConfig.ts` at the sandbox root —
+  a function `loadConfig()` that `fetch`es `config.json` served alongside your
+  deployed app (at the app's own static root, not an external API). The request
+  URL must resolve both locally and once deployed at a non-root prefix in
+  UiPath Cloud.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "Module file was created"
+    path: "src/loadConfig.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/loadConfig.ts builds the request URL with getAppBase from the SDK (Rule #10)"
+    path: "src/loadConfig.ts"
+    includes:
+      - "getAppBase"
+      - "@uipath/uipath-typescript"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/loadConfig.ts has NO hard-coded /-rooted fetch path in executable code (Rule #10 — these 404 after deploy; comments are allowed)"
+    command: "sed 's|//.*||' src/loadConfig.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"fetch\\(['\\\"]/[a-zA-Z]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0

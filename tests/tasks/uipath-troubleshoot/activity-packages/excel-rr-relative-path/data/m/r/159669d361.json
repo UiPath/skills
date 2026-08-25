@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc333399-001",
+      "JobKey": "cc333333-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-002",
+      "JobKey": "cc333333-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading workbook at Data\\sales-2026-05.xlsx (relative to CWD)",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-003",
+      "JobKey": "cc333333-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: Data\\sales-2026-05.xlsx — opening workbook (WorkbookPath='Data\\sales-2026-05.xlsx', resolved against CWD='C:\\Users\\automation1\\AppData\\Local\\UiPath\\Packages\\ExcelDailyImport\\1.0.0\\')",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-004",
+      "JobKey": "cc333333-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:01.802Z",
+      "Message": "Use Excel File: Data\\sales-2026-05.xlsx — System.IO.DirectoryNotFoundException: Could not find a part of the path 'C:\\Users\\automation1\\AppData\\Local\\UiPath\\Packages\\ExcelDailyImport\\1.0.0\\Data\\sales-2026-05.xlsx'.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

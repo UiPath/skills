@@ -48,7 +48,7 @@ Requires `uip login`. Only published processes from your tenant appear.
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.

@@ -1,0 +1,260 @@
+task_id: skill-test-integration-release-readiness-qa-lead
+description: >
+  Integration test: agent uses the uipath-test skill to produce a pre-release
+  readiness summary for a QA Lead. Exercises the full release-validation
+  chain that the skill teaches against a live tenant — project lookup by
+  filter, test-set inventory, test cases per suite, full project test-case
+  inventory (needed to derive the regression coverage gap), executions
+  list scoped by `--test-set-id`, testcase-log drill-down to surface
+  pass/fail/skipped/restricted breakdown, and a persona-tailored release
+  manager report written to disk using the skill's filename convention.
+  Asserts the agent (a) checks auth, (b) discovers the Banking project
+  via `--filter`, (c) walks the testsets + testcases hierarchy, (d) lists
+  the regression executions and their testcase logs with `--output json`,
+  (e) writes `test-report-release-<TODAY>.md`, and (f) the report body
+  covers the required release-readiness sections (pass/fail breakdown,
+  coverage gap, go/no-go signoff). Requires a fixture project in the
+  tenant — see references at the bottom of this file.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:generate, feature:test-case, feature:compliance]
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the EVFX- contract.
+#
+# BANK is referenced by this task and no other, so it is already collision-free
+# and the fixture keeps its discoverable names — the task grades the agent's
+# ability to FIND the active regression suite, so renaming it to EVFX-* would
+# remove the thing under test.
+#
+# What drifted is history, not naming: the 2026-08-05 nightly reported "the
+# active regression suite has 10 tests but no recorded execution", so the
+# testcaselogs drill-down had no execution to open and the report had no real
+# result data to cite. Seed one finished execution with mixed results, once —
+# the guard means every later run finds it and creates nothing.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P = "BANK"
+      # Exactly the distribution this file documents below: 10 logs as
+      # 5 Passed / 2 Failed / 1 Restricted / 2 None. Cycling a shorter list
+      # produced 4/2/2/2 and exposed a different readiness profile from the
+      # one maintainers and the evaluation are told to expect.
+      SUITE = "Active Regression Suite"
+      RESULTS = (["Passed"] * 5) + (["Failed"] * 2) + ["Restricted"] + (["None"] * 2)
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      sets = call("sets", "tm", "testsets", "list", "--project-key", P).get("Data") or []
+      if not sets:
+          fail(f"no test sets in {P}")
+      # Resolve the documented suite by EXACT name and stop unless there is
+      # exactly one. A substring match on "regression" could select a
+      # different suite than the one the task queries, seeding history into
+      # the wrong set while the intended fixture stays empty; sets[0] was
+      # worse still, writing into whatever happened to come back first.
+      matches = [t for t in sets if (t.get("Name") or "") == SUITE]
+      if len(matches) != 1:
+          fail(f"expected exactly one {SUITE!r} in {P}, found {len(matches)}; "
+               f"refusing to guess. Sets present: "
+               f"{[t.get('Name') for t in sets][:8]}")
+      ts = matches[0]
+      print(f"FIXTURE: target suite {ts.get('Name')!r} ({ts.get('TestSetKey')})", flush=True)
+
+      done = sorted((e for e in call("ex", "tm", "executions", "list", "--project-key", P,
+                                     "--test-set-id", ts["Id"]).get("Data") or []
+                     if e.get("Status") == "Finished"),
+                    key=lambda e: e.get("Created") or "", reverse=True)
+
+      def results_of(eid):
+          return [l.get("Result") for l in
+                  call("logs", "tm", "executions", "testcaselogs", "list",
+                       "--project-key", P, "--execution-id", eid).get("Data") or []]
+
+      # Presence of SOME finished execution is not the property the task reads.
+      # Exiting on that alone let a stale or partial execution -- 0 logs, or a
+      # different result mix -- satisfy the guard while the readiness profile
+      # differed from the one this file documents. Verify the distribution, and
+      # repair the newest execution in place rather than appending a new one.
+      eid = done[0]["Id"] if done else None
+      if eid and sorted(results_of(eid)) == sorted(RESULTS):
+          print(f"FIXTURE: {eid} already matches the documented distribution")
+          raise SystemExit(0)
+
+      if not eid:
+          r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+                   "--execution-type", "manual")
+          eid = (r.get("Data") or {}).get("ExecutionId")
+          if not eid:
+              fail("could not start a manual execution")
+
+      logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      if len(logs) != len(RESULTS):
+          fail(f"execution {eid} has {len(logs)} logs, expected {len(RESULTS)} "
+               f"(suite {SUITE!r} should hold {len(RESULTS)} test cases)")
+      for i, l in enumerate(logs):
+          res = RESULTS[i]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+
+      got = results_of(eid)
+      if sorted(got) != sorted(RESULTS):
+          fail(f"execution {eid} closed as {got}, expected {RESULTS}")
+      print(f"FIXTURE: execution {eid} carries {got}", flush=True)
+      EOF
+    timeout: 280
+
+initial_prompt: |
+  I'm a QA Lead. We're deploying new loan-approval workflows tonight, but a
+  UAT tester reported inconsistent approval behavior for the same customer
+  profile. Before the signoff meeting starts, I need a release-readiness
+  summary for our **"Banking"** project (project key prefix `BANK`)
+  covering:
+
+  - The regression suites in the project and the test cases they include.
+  - The latest test execution on our active regression suite — what passed,
+    what failed, what was skipped or didn't run.
+  - Any test cases that exist in the project but aren't covered by the
+    active regression suite (regression coverage gaps).
+  - A go/no-go signoff recommendation based on the above.
+
+  Save the report in the current working directory using the skill's
+  default filename convention for a **release manager** persona report.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule #1 + #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent looked up the Banking project with `project list --filter`"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+tm\s+project\s+list\s+.*--filter\s+\S*bank|uip\s+tm\s+project\s+list\s+.*--filter\s+\S*bank'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets scoped to the project (`testsets list --project-key`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets\s+list\s+.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent enumerated test cases in a test set (`testsets list-testcases --test-set-key`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets\s+list-testcases\s+.*--test-set-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent enumerated the full project's test cases (`testcases list --project-key`) — needed to compute the coverage gap"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases\s+list\s+.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions for the regression suite (`executions list --project-key --test-set-id` — all three flags must appear; SKILL.md documents `--project-key` as required)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key)(?=.*--test-set-id)uip\s+tm\s+executions\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent drilled into test case logs of an execution (`executions testcaselogs list --execution-id --project-key`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id)(?=.*--project-key)uip\s+tm\s+executions\s+testcaselogs\s+list'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Release manager persona report file written today (test-report-release-<TODAY-UTC>.md)"
+    command: "test -f \"test-report-release-$(date -u +%Y-%m-%d).md\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Release readiness report body covers required signoff sections AND cites real fixture data (BANK:N test case keys, UUIDs from API responses, pass/fail breakdown, coverage gap, go/no-go verdict)"
+    command: |
+      python3 -c "
+      import datetime, re, sys
+      path = f\"test-report-release-{datetime.datetime.utcnow().strftime('%Y-%m-%d')}.md\"
+      try:
+          body = open(path, encoding='utf-8', errors='replace').read()
+      except FileNotFoundError:
+          sys.stderr.write(f'{path} not found' + chr(10))
+          sys.exit(2)
+      lower = body.lower()
+      checks = {
+          'markdown header anchor': re.search(r'(?m)^#{1,3}\s+\S', body) is not None,
+          'banking project referenced': re.search(r'(?i)banking|\\bBANK\\b', body) is not None,
+          'pass/fail breakdown': all(t in lower for t in ['passed', 'failed']),
+          'regression coverage gap section': re.search(r'(?im)coverage|gap|missing|not\\s+(?:in|covered|assigned)', body) is not None,
+          'go/no-go or signoff verdict': re.search(r'(?i)go[- /]?no[- /]?go|sign[- ]?off|recommend|ready|risk', body) is not None,
+          # Data-grounded signals — the agent must have actually retrieved fixture data,
+          # not just generated plausible prose from the prompt alone.
+          'cites at least one BANK:N test case key': re.search(r'\\bBANK:\\d+\\b', body) is not None,
+          'cites at least one UUID (execution / test case / test set id)': re.search(r'\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b', body, re.IGNORECASE) is not None,
+      }
+      missing = [k for k, ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+# ---------------------------------------------------------------------------
+# Tenant fixture this task expects to exist (Path 1 / persistent shared
+# fixture pattern — see tests/tasks/uipath-platform/data-fabric/integration_preseeded_entity.yaml:189-190).
+#
+#   Tenant: codereval / DefaultTenant
+#   Project: BANK ("Banking — Loan Approvals")
+#   Test cases: 12 under BANK (loan/credit/approval-themed names)
+#   Test sets:
+#     - "Active Regression Suite"  (BANK:13)  — 10 test cases assigned
+#     - "Smoke Suite"              (BANK:14)  — 4 test cases assigned
+#   Coverage-gap signal: BANK:11 + BANK:12 exist in the project but are NOT
+#     in the Active Regression Suite. The agent's set-diff between
+#     `testcases list --project-key BANK` and
+#     `testsets list-testcases --test-set-key BANK:13` should surface them.
+#   Executions:
+#     - 1 manual execution on Active Regression Suite, with 10 testcaselogs
+#       finished as 5 Passed / 2 Failed / 1 Restricted / 2 None (unrun).
+#     - 1 manual execution on Smoke Suite (no logs populated).
+#
+# The fixture is created once and persists; no pre_run/post_run cleanup.
+# ---------------------------------------------------------------------------
+
+run_limits:
+  expected_turns: 14
+  max_turns: 60

@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "AuditTenantSources",
+  "_doc": "Minimal sources discovery payload. Real responses include many more sources; this stub lists only the ones relevant to job-stop investigations so the agent has plausible GUIDs if it filters by --source.",
+  "Data": [
+    {
+      "id": "33333333-aaaa-4444-bbbb-555555555555",
+      "name": "Orchestrator",
+      "targets": [
+        {
+          "id": "44444444-cccc-5555-dddd-666666666666",
+          "name": "Job"
+        }
+      ],
+      "types": [
+        {
+          "id": "55555555-eeee-6666-ffff-777777777777",
+          "name": "Job stopped"
+        }
+      ]
+    }
+  ]
+}

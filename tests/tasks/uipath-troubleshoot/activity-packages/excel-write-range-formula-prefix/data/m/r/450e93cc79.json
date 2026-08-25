@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {"Key": "ee333333-cccc-dddd-eeee-ffffaaaabbbb", "State": "Pending", "Timestamp": "2026-05-26T08:00:01.005Z"},
+    {"Key": "ee333333-cccc-dddd-eeee-ffffaaaabbbb", "State": "Running", "Timestamp": "2026-05-26T08:00:01.300Z"},
+    {"Key": "ee333333-cccc-dddd-eeee-ffffaaaabbbb", "State": "Faulted", "Timestamp": "2026-05-26T08:00:04.812Z"}
+  ]
+}

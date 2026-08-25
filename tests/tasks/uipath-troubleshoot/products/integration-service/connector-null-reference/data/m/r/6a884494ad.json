@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-19T18:27:41.903Z",
+      "Message": "For Each contact: Object reference not set to an instance of an object.\r\nin ContactImport.xaml\r\n    at ForEach<Object> \"For Each contact\"\r\n    at Sequence \"ContactImport\"\r\n\r\n--- .NET stack trace ---\r\nSystem.NullReferenceException\r\n   at UiPath.Core.Activities.ForEachBase`1.ContinueExecuting(NativeActivityContext context)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\r\n--- faulted activity: UiPath.Core.Activities.ForEach`1[[UiPath.IntegrationService.Activities.SWEntities.C5D2F5448FB_executeQuery_List_2M9G3QJHWZK66VJ7LPVRC5298DLOP51.Bundle.executeQuery_List, C5D2F5448FB_executeQ.Tm4Yc2tDOTF1jVNpA3ZT8gl2, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] ---"
+    }
+  ]
+}

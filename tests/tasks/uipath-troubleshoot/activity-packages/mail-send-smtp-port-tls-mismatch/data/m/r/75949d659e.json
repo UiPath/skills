@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "b6c7d8e9-0415-4d26-8f70-8192a3b4c5d6",
+      "State": "Faulted",
+      "ProcessName": "WeeklyReportDispatcher",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-06T06:00:00.170Z",
+      "EndTime": "2026-06-06T06:00:35.480Z",
+      "CreationTime": "2026-06-06T05:59:59.900Z"
+    }
+  ],
+  "Pagination": { "Returned": 1, "Limit": 50, "Offset": 0, "HasMore": false }
+}

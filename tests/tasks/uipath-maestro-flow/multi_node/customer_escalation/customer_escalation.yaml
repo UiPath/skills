@@ -9,21 +9,11 @@ description: >
   notes).
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  expected_turns: 73
+  task_timeout: 2400
   max_turns: 120
   turn_timeout: 1200
-
-task_timeout: 2400
-
-sandbox:
-  driver: tempdir
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/cli@0.1.21"
 
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
@@ -46,14 +36,11 @@ initial_prompt: |
   planning and implementation. Build the complete flow end-to-end in a
   single pass.
 
-  Before starting, load the uipath-maestro-flow skill. Read and follow its
-  workflow steps exactly.
-
 success_criteria:
   # ── Flow file validity ────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate CustomerEscalation/CustomerEscalation/CustomerEscalation.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -72,4 +59,3 @@ success_criteria:
     weight: 10.0
     pass_threshold: 1.0
 
-max_iterations: 1

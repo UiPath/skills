@@ -105,6 +105,8 @@ Verify that the solution has proper environment isolation for safe deployment.
 
 Score each principle on a 1-5 scale. Report scores in the review.
 
+> Score these six principles for any project type to inform the optimization review (Step 4). They do **not** feed the agent letter grade — that is computed from finding counts in [agent-grading-rubric.md](agents/agent-grading-rubric.md). Exclude a principle only when it genuinely does not apply (e.g. queue-style Scalability for a single agent) and state the exclusion.
+
 ### Modularity (1-5)
 
 | Score | Criteria |

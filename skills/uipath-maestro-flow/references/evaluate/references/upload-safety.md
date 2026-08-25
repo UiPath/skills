@@ -1,3 +1,4 @@
+<!--skill-flavor:upload-safety-content:start-->
 # Upload Safety: Do Not Auto-Run `uip solution upload`
 
 The eval run requires the Flow solution to exist in Studio Web. The temptation, when an eval run errors with a missing-solution or missing-IDs error, is to "fix" it with `uip solution upload`. **Don't.**
@@ -9,7 +10,7 @@ The eval run requires the Flow solution to exist in Studio Web. The temptation, 
 This applies regardless of whether:
 
 - The local project was created via `uip maestro flow init` and never uploaded.
-- The local project was downloaded from Studio Web via `uip agent pull` and edited locally.
+- The local project was downloaded from Studio Web via `uip solution download` and edited locally.
 - The user is working in a VS Code-authored solution / personal workspace and the project may not match what is on Studio Web.
 - The CLI errors with `solution-id could not be resolved` or any variant.
 
@@ -80,3 +81,4 @@ Even with explicit consent, do not chain `solution upload` automatically into th
 - **Don't auto-retry an eval run after a failed solution-resolution by attempting `uip solution upload` and re-running.** That doubles down on the wrong action.
 - **Don't run `uip solution upload` while another user might be editing the solution on Studio Web.** Even with explicit consent, warn the user that overwriting concurrent edits is a possible outcome.
 - **Don't combine `flow debug` and `eval run` in the same session against the same solution.** Each carries its own Studio Web debug session; mixing them confuses run IDs and may trigger unexpected uploads.
+<!--skill-flavor:upload-safety-content:end-->

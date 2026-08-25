@@ -1,0 +1,74 @@
+# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
+# prompt; v1-weighted intersection criteria plus report-only offline advisories;
+# paired limit envelope. Cross-arm parity is enforced by the sync gate.
+# IxP completion RCA (Tao, 2026-08-13): removed the arm-specific registry
+# lookup per the neutral-prompt ruling; validation now gates completion in both
+# arms so the prompt has one explicit acceptance bar.
+task_id: skill-flow-ixp-e2e-invoice-extraction-greenfield
+description: |
+  E2E (greenfield): SharePoint trigger → IxP extraction → HTTP POST. Tests end-to-end authoring of a real invoice-processing flow that monitors a SharePoint folder, extracts structured invoice fields, and forwards the result to a downstream system over HTTP.
+  Validate-only: no `uip maestro flow debug`. IxP runtime + SharePoint connector both require a tenant deployment which CI does not have; e2e verifies offline structural correctness only (`uip maestro flow validate` exit 0 on the generated flow).
+tags:
+  - uipath-maestro-flow
+  - e2e
+  - mode:build
+  - lifecycle:generate
+  - shape:multi-node
+  - node:ixp
+  - connector
+  - feature:http
+initial_prompt: |
+  Build a UiPath Flow that monitors a SharePoint folder for new vendor PDF
+  invoices, extracts the structured data (invoice number, vendor, invoice
+  date, total amount, line items), and posts the result to SAP through an
+  HTTP request.
+
+  - SharePoint connector: configured (use a connector trigger node against
+    any document library the connection exposes)
+  - SAP: HTTP POST to https://sap.example.com/api/invoices, sending the
+    extracted invoice fields as the request body
+
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+success_criteria:
+  - type: run_command
+    description: uip maestro flow validate passes on the generated flow file
+    command: f=$(find . -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: Generated flow contains an IxP extraction node or core.logic.mock fallback
+    command: grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+# Case-insensitive: SharePoint is the product capitalization, and an earlier
+# case-sensitive check failed an otherwise-correct generated connector.
+  - type: run_command
+    description: Generated flow contains a SharePoint trigger or connector node
+    command: grep -rqiE "sharepoint" --include="*.flow" .
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: Generated flow contains an HTTP action node (core.action.http)
+    command: grep -rqE "core\.action\.http|\"type\"[[:space:]]*:[[:space:]]*\"[^\"]*http[^\"]*\"" --include="*.flow" .
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: Generated flow references the IxP extraction output via $vars (downstream consumption)
+    command: grep -rqF '$vars.' --include="*.flow" .
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+run_limits:
+  # Heavy multi-connector e2e: the completed baseline used 882s / 71 turns.
+  # 1500s and 120 turns retain measured headroom on the slower Bedrock route
+  # without changing the campaign's pre-run envelope (RE-12529).
+  max_turns: 120
+  turn_timeout: 1200
+  task_timeout: 1500

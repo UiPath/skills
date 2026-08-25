@@ -7,7 +7,7 @@ These actions may contact UiPath services or external systems.
 
 > **Where you came from / where to go next.** Operate is downstream of Author (model-authored BPMN plus CLI
 > validation/enrichment) and upstream of Diagnose (runtime faults and state inspection).
-> BPMN source work lives in [author/CAPABILITY.md](../author/CAPABILITY.md);
+> BPMN source work lives in [registry-workflow.md](../registry-workflow.md);
 > post-run investigation lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
 > **Inherits universal rules from [SKILL.md](../../SKILL.md).** In particular: BPMN XML is source, generated package
@@ -32,7 +32,7 @@ These actions may contact UiPath services or external systems.
    migrate, and cursor movement require a clear user decision for that action.
 3. **Validate before operate** - do not upload, publish, debug, or run until Author validation is complete or the user
    explicitly accepts known draft warnings.
-4. **Refresh or regenerate package metadata before cloud actions** - stale `bindings_v2.json`, `entry-points.json`,
+4. **Refresh or regenerate package metadata before cloud actions** - run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to check drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate. Stale `bindings_v2.json`, `entry-points.json`,
    `operate.json`, or `package-descriptor.json` can break import or runtime even when the BPMN source is correct.
 5. **Keep source and package ownership clear** - fix process structure, variables, mappings, events, and documented non-IS
    extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.
@@ -86,6 +86,6 @@ These actions may contact UiPath services or external systems.
 ### Cross-capability
 
 - [shared/project-layout.md](../shared/project-layout.md) - package files and content
-- [shared/cli-conventions.md](../shared/cli-conventions.md) - side effects, login, JSON output
-- [author/validation.md](../author/references/validation.md) - pre-operate validation
+- [shared/cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
+- [author/validation.md](../structural-bpmn.md) - pre-operate validation
 - [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) - failure investigation

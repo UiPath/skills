@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceExtractor",
+  "ProjectType": "Process",
+  "Description": "Unattended worker that extracts all invoices into a DataTable and returns it as an output argument.",
+  "MainFile": "Main.xaml"
+}

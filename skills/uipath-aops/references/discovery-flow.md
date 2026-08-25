@@ -301,7 +301,7 @@ Proceed to [pipeline-dto-guide.md](pipeline-dto-guide.md) for field-by-field com
 
 | Failure | Recovery |
 |---|---|
-| `Unknown tool '@uipath/aops-tool'` | CLI registry index is stale — `uip update`, then retry. Do not fall back to `uip sc` / `uip cicd` |
+| `Unknown tool '@uipath/aops-tool'` | CLI registry index is stale — `uip update`, then retry. Do not fall back to `uip sc` / `uip cicd` |  <!-- uip-check-skip -->
 | `connection list` returns 0 rows | Connections are UI-only — direct the user to the StudioAdmin web app to create one |
 | `connection solutions` AND `connection projects` both empty | Check `connection state --connection <id>`; offer `connection sync <id> --wait`. If sync still yields nothing, the connection is empty / misconfigured |
 | `--offset (N) must be a multiple of --limit (M)` | Client-side pagination guard. Use offsets of 0, M, 2M, … |

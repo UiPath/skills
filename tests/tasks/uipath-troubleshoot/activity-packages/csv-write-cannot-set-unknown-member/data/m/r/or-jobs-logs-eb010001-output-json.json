@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T08:20:11.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T08:20:12.610Z",
+      "Message": "Error initializing workflow 'Main.xaml': Cannot set unknown member 'UiPath.Core.Activities.WriteCsvFile.Encoding'."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T08:20:12.680Z",
+      "Message": "Cannot set unknown member 'UiPath.Core.Activities.WriteCsvFile.Encoding'.\r\nin Main.xaml\r\n    at WriteCsvFile \"Write CSV\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T08:20:12.740Z",
+      "Message": "Execution ended in: 00:00:01"
+    }
+  ]
+}

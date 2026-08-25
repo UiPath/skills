@@ -1,0 +1,59 @@
+task_id: skill-functions-python-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-functions skill when asked to
+  build a deterministic Python coded function with typed I/O that runs as a
+  UiPath job. Fans out over five direct "scaffold a coded function" requests
+  (one agent turn each, which forces an invoke-or-don't decision rather than a
+  prose answer) and grades the trigger RATE (recall.yes) so single-run LLM
+  routing nondeterminism doesn't flake the gate. Verifies the skill fires on
+  the Python Functions signal (no LLM reasoning) and is NOT routed elsewhere.
+tags: [uipath-functions, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  # One turn forces invoke-or-don't on the first response — the agent can't
+  # answer in prose and skip the Skill tool, and can't burn turns doing a full
+  # build. Mirrors the activation eval, where direct build prompts trigger
+  # functions reliably.
+  max_turns: 1
+
+dataset:
+  id_field: id
+  rows:
+    - id: csv-transform
+      prompt: |
+        Scaffold a UiPath Python coded function that takes a CSV of orders,
+        dedupes rows by order id, and returns the cleaned rows as a typed
+        output model. Deterministic, no LLM.
+    - id: api-custom-auth
+      prompt: |
+        Scaffold a UiPath Python coded function (typed input/output, no LLM)
+        that calls a third-party REST API with a custom HMAC auth header and
+        maps the response into typed output fields.
+    - id: shipping-cost
+      prompt: |
+        Scaffold a UiPath Python coded function that computes a shipping cost
+        from a package's weight, dimensions, and destination zone using fixed
+        rate tables, returning the cost and the rate tier. Deterministic, no LLM.
+    - id: invoice-validate
+      prompt: |
+        Scaffold a UiPath Python coded function that validates invoice fields
+        (number, vendor, total, currency) against business rules and returns
+        is_valid plus a list of errors. Deterministic, no LLM.
+    - id: business-days
+      prompt: |
+        Scaffold a UiPath Python coded function that, given a start date and a
+        count of business days, returns the resulting date — skipping weekends
+        and a provided holiday list. Deterministic, no LLM.
+
+initial_prompt: "${row.prompt}"
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-functions skill"
+    skill_name: "uipath-functions"
+    expected_skill: "uipath-functions"
+    weight: 3.0
+    # Rate-based gate across the 5 rows: tolerates one unlucky miss. recall.yes
+    # 0.66 → 4/5 (0.8) passes, 3/5 (0.6) fails. Rate-grading instead of a single
+    # run avoids n=1 routing-nondeterminism flake.
+    suite_thresholds: {recall.yes: 0.66}

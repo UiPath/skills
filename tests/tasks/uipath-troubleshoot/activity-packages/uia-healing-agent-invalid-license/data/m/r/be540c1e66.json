@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff",
+      "State": "Faulted",
+      "StartTime": "2026-05-15T17:09:44.470Z",
+      "EndTime": "2026-05-15T17:10:18.527Z",
+      "CreationTime": "2026-05-15T17:09:44.470Z",
+      "ReleaseName": "ERN",
+      "Type": "Attended",
+      "RuntimeType": "StudioPro",
+      "HostMachineName": "MOCK-HOST",
+      "EntryPointPath": "Google.xaml",
+      "OrganizationUnitId": 1500287,
+      "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "ErrorCode": "Robot",
+      "AutopilotForRobots": {
+        "Enabled": true,
+        "HealingEnabled": true
+      },
+      "Id": 64312253
+    }
+  ]
+}

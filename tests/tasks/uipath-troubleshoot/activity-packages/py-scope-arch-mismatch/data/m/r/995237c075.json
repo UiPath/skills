@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "StartTime": "2026-06-18T13:40:05.200Z",
+      "EndTime": "2026-06-18T13:40:07.900Z",
+      "State": "Faulted",
+      "ReleaseName": "PythonDataCruncher",
+      "Source": "Manual",
+      "Reference": "CrunchRunA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "fc333333-2222-3333-4444-555566667777",
+      "Info": "Python Scope: One or more errors occurred. (Error initializing the Python engine)",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

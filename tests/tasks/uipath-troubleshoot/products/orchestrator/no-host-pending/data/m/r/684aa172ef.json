@@ -1,0 +1,90 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "Data": [
+    {
+      "licenseKey": "605b37db-dc58-460f-99ed-93fcfb2f2062",
+      "name": "DanLaptopNew",
+      "description": "",
+      "type": "Template",
+      "scope": "Default",
+      "nonProductionSlots": 0,
+      "unattendedSlots": 1,
+      "headlessSlots": 0,
+      "testAutomationSlots": 0,
+      "hostingSlots": 0,
+      "appTestSlots": 0,
+      "performanceTestSlots": 0,
+      "agentSlots": 0,
+      "automationCloudSlots": 0,
+      "automationCloudTestAutomationSlots": 0,
+      "key": "b8d82bd0-1d19-4a23-8b34-fc26927d4cfa",
+      "endpointDetectionStatus": "NotAvailable",
+      "robotVersions": [],
+      "robotUsers": [],
+      "automationType": "Any",
+      "targetFramework": "Any",
+      "tags": [],
+      "id": 1890824
+    },
+    {
+      "licenseKey": "78d93cb4-23ae-4d30-9f56-2640d6584221",
+      "name": "[Default] Cloud Robots - Serverless",
+      "description": "Automatically generated for use in Personal Workspaces",
+      "type": "Template",
+      "scope": "Serverless",
+      "nonProductionSlots": 0,
+      "unattendedSlots": 0,
+      "headlessSlots": 0,
+      "testAutomationSlots": 0,
+      "hostingSlots": 0,
+      "appTestSlots": 0,
+      "performanceTestSlots": 0,
+      "agentSlots": 0,
+      "automationCloudSlots": 0,
+      "automationCloudTestAutomationSlots": 0,
+      "key": "3b82fc7a-8154-4c17-ac05-60f026904b8b",
+      "endpointDetectionStatus": "NotAvailable",
+      "robotVersions": [],
+      "robotUsers": [],
+      "automationType": "Any",
+      "targetFramework": "Portable",
+      "tags": [],
+      "id": 1104780
+    },
+    {
+      "name": "original_email@test.com's workspace machine",
+      "type": "Template",
+      "scope": "PersonalWorkspace",
+      "nonProductionSlots": 0,
+      "unattendedSlots": 1,
+      "headlessSlots": 0,
+      "testAutomationSlots": 0,
+      "hostingSlots": 0,
+      "appTestSlots": 0,
+      "performanceTestSlots": 0,
+      "agentSlots": 0,
+      "automationCloudSlots": 0,
+      "automationCloudTestAutomationSlots": 0,
+      "key": "6f12f3e7-75f5-475e-aa34-3f5bd5c564e1",
+      "endpointDetectionStatus": "NotAvailable",
+      "robotVersions": [
+        {
+          "count": 1,
+          "version": "26.0.193-cloud.23059"
+        }
+      ],
+      "robotUsers": [],
+      "automationType": "Any",
+      "targetFramework": "Any",
+      "tags": [],
+      "id": 961460
+    }
+  ],
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

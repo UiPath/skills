@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelCustomerProcess",
+  "ProjectType": "Process",
+  "Description": "Cleans up the customer list workbook by deleting a legacy range, then re-reads the sheet to confirm an expected customer record is still present.",
+  "MainFile": "Main.xaml"
+}

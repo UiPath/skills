@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Execution logs end abruptly mid-Delay after exactly 10 minutes — no Job Completed line. Robot Service logs the auto-cancel trigger fire and the abrupt exit. The kill source is recorded as the trigger name.",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-19T08:10:00.875Z",
+      "Message": "Job 'c3c0b2c3-d4e5-4678-9012-3456789ccccc' (ReleaseName=LongRunningProcess) ended with unexpected exit code 0x40010004. The executor was terminated externally; no graceful shutdown was performed."
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-05-19T08:10:00.020Z",
+      "Message": "[Robot] Stop request received for job 'c3c0b2c3-d4e5-4678-9012-3456789ccccc' (strategy=Kill, source=Trigger:kill-after-10min, reason=TimeBudgetExceeded). Terminating executor process."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-19T08:00:00.520Z",
+      "Message": "[LongRunningProcess] Starting long-running work — 5 minute delay simulates a slow inference or batch step."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-19T08:00:00.510Z",
+      "Message": "Job 'c3c0b2c3-d4e5-4678-9012-3456789ccccc' (ReleaseName=LongRunningProcess) entering Running state on MOCK-HOST."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-19T08:00:00.310Z",
+      "Message": "Job 'c3c0b2c3-d4e5-4678-9012-3456789ccccc' created. Source=Schedule, ReleaseName=LongRunningProcess, RequiresUserInteraction=False."
+    }
+  ]
+}

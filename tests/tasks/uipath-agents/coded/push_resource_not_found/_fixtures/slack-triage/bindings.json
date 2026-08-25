@@ -1,0 +1,11 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "slack-triage",
+      "value": { "ConnectionId": { "defaultValue": "11111111-1111-1111-1111-111111111111" } },
+      "metadata": { "UseConnectionService": "True", "Connector": "uipath-salesforce-slack", "BindingsVersion": "2.2" }
+    }
+  ]
+}

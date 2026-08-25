@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-f493-d5c20a3c0ca5",
+      "TraceId": "37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "ParentId": null,
+      "Name": "Robot Job 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "StartTime": "2026-06-12T07:26:49.8092821Z",
+      "EndTime": "2026-06-12T07:27:30.482966Z",
+      "Attributes": "{\"Exception\":\"UiPath.CV.ElementNotFoundException: Element not found\\r\\n   at UiPath.Core.Activities.ObsoleteTaskAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at UiPath.CV.Activities.CvClickWithDescriptor.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.CV.Activities.CVScope.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"}",
+      "Status": 2,
+      "OrganizationId": "c81daadb-3ad3-4681-9fd8-627e57742f4b",
+      "TenantId": "3ea4784c-f5f9-4c9f-9cd9-a81c64569726",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "b4a18188-e61d-4786-9f5f-3dc4b8f2c111",
+      "JobKey": "37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-06-12T07:27:30.7782589Z",
+      "AgentVersion": null,
+      "Context": null,
+      "Attachments": null
+    }
+  ]
+}

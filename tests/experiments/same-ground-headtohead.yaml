@@ -1,0 +1,55 @@
+experiment_id: same-ground-headtohead
+description: "Campaign-only same-ground harness overlay; nightly.yaml remains unchanged"
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:sg1
+      network: bridge
+      # Restrict the agent-visible environment to the model route plus the
+      # task/plugin paths. UiPath authentication comes only from the mounted
+      # campaign cache; package/build credentials are never forwarded.
+      env_passthrough:
+        - HOME
+        - API_BACKEND
+        - AWS_BEARER_TOKEN_BEDROCK
+        - AWS_REGION
+        - BEDROCK_MODEL
+        - CLAUDE_CODE_USE_BEDROCK
+        - ANTHROPIC_MODEL
+      env_passthrough_extra:
+        - FULLPATH_LIVE
+        - SKILLS_REPO_PATH
+        - UIPATH_CLI_DISABLE_VERSION_SYNC
+      extra_mounts:
+        # Same login destination nightly.yaml uses. Deeper target wins, so
+        # .skills still shadows.
+        - ${SG_UIPATH_HOME}:/.uipath:rw
+        - ${SG_EMPTY_SKILLS}:/.uipath/.skills:ro
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: eu.anthropic.claude-sonnet-5
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    claude_settings:
+      outputStyle: Proactive
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  post_run:
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default

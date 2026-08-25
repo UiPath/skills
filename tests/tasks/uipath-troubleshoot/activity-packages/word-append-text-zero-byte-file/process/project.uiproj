@@ -1,0 +1,6 @@
+{
+  "Name": "ReportAppender",
+  "ProjectType": "Process",
+  "Description": "Opens a Word report document and appends the latest run notes to it.",
+  "MainFile": "Main.xaml"
+}

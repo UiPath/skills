@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-23T17:36:34.901Z",
+      "Message": "CallService execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-23T17:36:33.952Z",
+      "Message": "HTTP Request: No such host is known. (service-endpoint-unavailable.invalid:80)\r\nin Wf_CallService.xaml\r\n    at HttpClient \"HTTP Request\"\r\n    at Sequence \"Call Service\"\r\n    at Wf_CallService \"Wf_CallService\"\r\n\r\n--- .NET stack trace ---\r\nSystem.Net.WebException\r\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-23T17:36:33.747Z",
+      "Message": "CallService execution started"
+    }
+  ]
+}
+

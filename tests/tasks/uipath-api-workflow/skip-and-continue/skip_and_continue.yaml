@@ -1,0 +1,100 @@
+task_id: skill-api-workflow-skip-and-continue
+description: >
+  Build: TryCatch INSIDE a loop body so one bad element is skipped and the batch
+  completes — pattern 7 of references/control-flow-patterns.md, plus a nested If
+  (pattern 1) to classify each surviving element.
+
+  The distinction that matters and had no coverage: nested_control_flow wraps
+  TryCatch AROUND the loop, which aborts the whole batch on the first bad element.
+  Pattern 7 puts it inside the body. Same two activities, opposite behaviour.
+
+  Every graded input contains a non-numeric element, so the skip path is exercised
+  rather than merely present: a workflow with no TryCatch inside the loop faults on
+  that element and fails every behavioral criterion. An earlier revision graded
+  only all-numeric inputs, which a variant with the TryCatch deleted passed.
+
+  Local-only.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop, node:decision]
+
+sandbox:
+  python: {}
+
+run_limits:
+  expected_turns: 14
+  max_turns: 35
+
+initial_prompt: |
+  Create an API workflow project `RobustBatch` that takes a `values` array whose
+  elements may be numbers or junk, and processes the batch WITHOUT letting one bad
+  element stop it.
+
+  For each element: if it is a positive number count it as `processed`; if it is a
+  negative number count it as `rejected`; anything that is not a number is an
+  error — raise on it, then catch it, skip that element and carry on.
+
+  Return { "processed": <n>, "rejected": <n> }.
+
+  Validate and run it locally to confirm a mixed batch completes.
+
+success_criteria:
+  - type: run_command
+    description: "TryCatch sits INSIDE the loop body, not wrapped around the loop (pattern 7)"
+    command: python3 $TASK_DIR/check_trycatch_in_loop.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A loop and a TryCatch are both present"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      grep -qE '"activityType": "(ForEach|DoWhile)"' "$WF"
+      && grep -q '"activityType": "TryCatch"' "$WF"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: a batch containing junk completes — the skip actually fires"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow run "$WF" --no-auth --input-arguments '{"values":[5,-3,"oops",7,-1,2]}'
+      --output json | grep -qiE '"processed":[ ]*3'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: rejected counter correct on the same run"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow run "$WF" --no-auth --input-arguments '{"values":[5,-3,"oops",7,-1,2]}'
+      --output json | grep -qiE '"rejected":[ ]*2'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: different batch, still correct — not hardcoded"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow run "$WF" --no-auth --input-arguments '{"values":[1,"bad",2,-9]}'
+      --output json | grep -qiE '"processed":[ ]*2'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow validates"
+    command: >-
+      WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
+      uip api-workflow validate "$WF" --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

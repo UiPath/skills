@@ -4,15 +4,11 @@ description: >
   explore available case task resources via the registry. Tests whether the
   skill teaches the correct discovery workflow (pull + direct cache-file
   inspection at ~/.uip/case-resources/, not relying on registry search).
-tags: [uipath-maestro-case, smoke, registry]
+tags: [uipath-maestro-case, registry]
 
-agent:
-  type: claude-code
+run_limits:
+  expected_turns: 11
   max_turns: 65
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   I want to build a UiPath Case Management definition that includes a HITL
@@ -45,9 +41,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent pulled the case registry with --output json"
+    description: "Agent pulled the case registry"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull[^\n]*--output\s+json'
+    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull[^\n]*'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

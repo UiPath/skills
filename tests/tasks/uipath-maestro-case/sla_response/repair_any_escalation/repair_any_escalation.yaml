@@ -1,0 +1,52 @@
+task_id: skill-case-sla-repair-any-escalation
+description: >
+  T4 of the SLA-response battery — diagnose mode. The staged caseplan's SLA lane entry
+  still carries the Case Designer's `escalationId: "any"` sentinel — a frontend-only
+  placeholder that must not ship in an exported caseplan.json, whether or not
+  `uip maestro case validate` currently flags it. The correct repair is to drop the key,
+  because a breach rule references the SLA alone. The tempting wrong repair — inventing an
+  escalation so the reference resolves — also turns validate green, so the checker fails it
+  explicitly.
+tags: [uipath-maestro-case, smoke, mode:diagnose, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ./templates
+
+initial_prompt: |
+  The SLA lane in `SlaResponse/SlaResponse/caseplan.json` has an `sla-status-change` entry
+  rule left over from the Case Designer with `escalationId: "any"`. Diagnose whether that's
+  safe to ship and fix it. `uip maestro case validate` may already report the file Valid —
+  that alone does not mean there is nothing to fix.
+
+  The Escalation Review lane and the fact that it is entered on a case-SLA event are both
+  intentional — do not restructure the case, and do not delete the lane or its entry rule.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback — fix it end-to-end in a single pass and finish with
+  `uip maestro case validate` passing.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the repaired caseplan.json"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The \"any\" sentinel is gone and the lane's entry is a plain breach rule (slaId, no escalationId); the lane and its single sla-status-change entry survive, and no escalation was invented to make the reference resolve"
+    command: "python3 $TASK_DIR/check_repair_any_escalation.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

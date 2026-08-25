@@ -1,0 +1,6 @@
+{
+  "Result": "Error",
+  "Code": "JobHealingData",
+  "Message": "Healing Agent is not enabled for this job. No recovery data is available.",
+  "Data": null
+}

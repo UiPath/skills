@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T06:22:41.510Z",
+      "EndTime": "2026-06-20T06:22:43.980Z",
+      "ReleaseName": "SapOrderSync",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 50607233
+    }
+  ]
+}

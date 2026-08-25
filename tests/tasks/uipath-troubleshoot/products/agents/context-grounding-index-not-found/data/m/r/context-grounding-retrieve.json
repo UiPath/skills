@@ -1,0 +1,6 @@
+{
+  "Result": "Failure",
+  "Code": "ContextGroundingIndexRetrieve",
+  "Message": "Context Grounding index not found",
+  "Instructions": "No index named support-kb-prod exists in folder Shared/Agents. Recreate the index or relink the agent resource to an existing active index."
+}

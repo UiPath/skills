@@ -45,7 +45,7 @@ Requires `uip login`. Only published flows from your tenant appear.
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished flows in sibling projects within the same solution.

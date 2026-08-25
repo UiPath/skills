@@ -1,0 +1,136 @@
+task_id: skill-test-junit-export
+description: >
+  Integration test: agent uses the uipath-test skill to export test execution
+  results as a JUnit XML report. Asserts that the agent (a) checks login
+  status with --output json, (b) lists executions with --project-key +
+  --output json to resolve the execution ID, and (c) downloads results via
+  `uip tm result download` with --execution-id + --output json. The skill
+  — not the prompt — must teach the result download command and distinguish
+  it from the attachment download command.
+tags: [uipath-test, integration, mode:operate, lifecycle:report, feature:execution]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the EVFX- contract.
+#
+# This task is a PURE READER of "the latest execution", which makes it hostage
+# to whatever sits at the head of a shared suite's list. When the newest
+# execution of CLAIM's "UAT Smoke Suite" was still Pending, the agent blocked
+# on `uip tm wait` and never reached `result download`.
+#
+# That suite accumulated Pending executions because execution_rerun's post_run
+# used to sweep them, and that hook was removed when execution_rerun stopped
+# owning the suite. Rather than restore a cross-task janitor -- one task
+# cleaning up after another is the coupling this contract exists to remove --
+# give this task its own set whose newest execution is always Finished.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-JUNIT-SET"
+      CASES = ["EVFX-JUNIT-TC1", "EVFX-JUNIT-TC2", "EVFX-JUNIT-TC3"]
+      RESULTS = ["Passed", "Failed", "Passed"]
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]} err={err[:140]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if len(keys) != len(CASES):
+          fail(f"expected {len(CASES)} test cases, resolved {len(keys)}: {keys}")
+      if keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+               "--test-case-keys", *keys)
+
+      # One-time only. This task is a pure reader, so a single finished
+      # execution serves it forever -- seeding on every run would add one
+      # execution per nightly and grow without bound.
+      done = [e for e in call("ex", "tm", "executions", "list", "--project-key", P,
+                              "--test-set-id", ts["Id"]).get("Data") or []
+              if e.get("Status") == "Finished"]
+      if done:
+          print(f"FIXTURE: {len(done)} finished execution(s) present - nothing to seed")
+          raise SystemExit(0)
+
+      r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+               "--execution-type", "manual")
+      eid = (r.get("Data") or {}).get("ExecutionId")
+      if not eid:
+          fail("could not start a manual execution")
+      logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      if len(logs) != len(CASES):
+          fail(f"execution {eid} has {len(logs)} logs, expected {len(CASES)}")
+      for i, l in enumerate(logs):
+          res = RESULTS[i % len(RESULTS)]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      print(f"FIXTURE: seeded finished execution {eid} with {len(logs)} logs", flush=True)
+      EOF
+    timeout: 280
+
+initial_prompt: |
+  Export the results of the latest execution of my test set 'EVFX-JUNIT-SET' in UiPath Test
+  Manager project CLAIM as a JUnit report XML.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions with --project-key to resolve execution ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+list\s+.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded JUnit results with --execution-id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+result\s+download\s+.*--execution-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

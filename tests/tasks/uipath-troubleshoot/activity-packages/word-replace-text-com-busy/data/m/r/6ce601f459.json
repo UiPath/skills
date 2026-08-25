@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "a2b3c4d5-e6f7-4193-8a9b-0c1d2e3f4051",
+      "Name": "Doc Batch",
+      "Path": "Doc Batch",
+      "Description": "Production folder for batch document generation.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

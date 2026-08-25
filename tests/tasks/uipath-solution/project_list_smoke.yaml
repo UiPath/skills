@@ -1,0 +1,47 @@
+task_id: skill-solution-project-list
+description: >
+  Smoke test: agent uses the uipath-solution skill to create a solution and
+  list its registered projects via `uip solution project list`. Runs entirely
+  in the sandbox tempdir — no tenant interaction.
+tags: [uipath-solution, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  Create a new UiPath solution called "ProjectListDemo" and then tell me
+  what projects are registered in its manifest.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution via uip solution init (or pre-rename `new`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init|new)\s+.*ProjectListDemo'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Solution manifest was created on disk"
+    path: "ProjectListDemo/ProjectListDemo.uipx"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Final reply correctly states the project list is empty"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. A freshly created UiPath
+      solution has zero projects registered in its manifest.
+
+      Score 1.0 if the reply communicates this — e.g. "no projects",
+      "empty", "0 projects", "the list is empty", "none registered yet",
+      or equivalent phrasing. Both languages (English / Romanian) are
+      acceptable.
+
+      Score 0.0 if the reply lists fictional project names, claims
+      projects exist, dodges the question, or only shows raw command
+      output without an interpretation.
+    weight: 1.5
+    pass_threshold: 1.0
+

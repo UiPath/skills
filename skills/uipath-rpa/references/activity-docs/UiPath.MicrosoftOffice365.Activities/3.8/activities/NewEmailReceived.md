@@ -1,5 +1,7 @@
 # NewEmailReceived — Trigger on Incoming Email
 
+**Integration trigger** (`isTrigger: true, triggerType: "integration"` from `uip rpa activities find`; requires a `ConnectionId` to an O365 Outlook connection). **Placement: strict** — first activity of `Main.xaml`'s root `Sequence`, never inside `ui:TriggerScope`. Orchestrator + Integration Service subscribe externally and dispatch a fresh job per email. See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md).
+
 Trigger activity (`umamt:` prefix). Null attributes: `ConnectionAccountName`, `ContinueOnError`, `Filter`, `JobData`, `UiPathEvent`, `UiPathEventConnector`, `UiPathEventObjectId`, `UiPathEventObjectType`
 
 ```xml

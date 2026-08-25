@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T09:14:51.880Z",
+      "Message": "Salesforce: HTTP Request: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\r\nin OrderSync.xaml\r\n    at ConnectorHttpActivity \"Salesforce: HTTP Request\"\r\n    at Sequence \"OrderSync\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\r\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.ResolveConnectionAsync(AsyncCodeActivityContext context, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorHttpActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyBilling",
+  "ProjectType": "Process",
+  "Description": "Unattended nightly billing worker; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}

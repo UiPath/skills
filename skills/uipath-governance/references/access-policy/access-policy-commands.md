@@ -19,7 +19,7 @@ These flags work the same way on `uip gov access-policy list` and on every `uip 
 | `--output json` | **Always pass this in scripted flows.** Emits structured JSON for parsing. |
 | `--limit <N>` | Page size — max records to return (default varies per command). |
 | `--offset <N>` | Records to skip before the returned page, 0-based (default `0`). |
-| `--order-by <ORDER>` | OData sort expression — `<Field> <asc|desc>` (e.g. `Name asc`, `CreatedOn desc`). |
+| `--sort-by <ORDER>` | OData sort expression — `<Field> <asc|desc>` (e.g. `Name asc`, `CreatedOn desc`). |
 | `--login-validity <MINUTES>` | Override interactive-login token lifetime for this call. Rarely needed. |
 
 ---
@@ -68,7 +68,7 @@ Search for access policies with optional filters and pagination.
 uip gov access-policy list --output json
 ```
 
-**Subcommand-specific flags** (shared `--limit` / `--offset` / `--order-by` / `--login-validity` documented in [Common flags](#common-flags-shared-across-uip-list-commands) above):
+**Subcommand-specific flags** (shared `--limit` / `--offset` / `--sort-by` / `--login-validity` documented in [Common flags](#common-flags-shared-across-uip-list-commands) above):
 
 | Flag | Required | Description |
 |------|----------|-------------|
@@ -79,7 +79,7 @@ uip gov access-policy list --output json
 **Example:**
 
 ```bash
-uip gov access-policy list --filter "status in ('Active')" --order-by "Name asc" --output json
+uip gov access-policy list --filter "status in ('Active')" --sort-by "Name asc" --output json
 ```
 
 ---

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f",
+      "State": "Faulted",
+      "ProcessName": "OracleLedgerSync",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-21T08:15:02.118Z",
+      "EndTime": "2026-05-21T08:15:03.642Z",
+      "CreationTime": "2026-05-21T08:15:01.804Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

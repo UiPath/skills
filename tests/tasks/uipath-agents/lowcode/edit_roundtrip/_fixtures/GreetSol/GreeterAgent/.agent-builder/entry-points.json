@@ -1,0 +1,32 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/agent.json",
+      "uniqueId": "e43b6d2f-df8f-4d73-b279-89d5b536501e",
+      "type": "agent",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the person to greet"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "greeting": {
+            "type": "string",
+            "description": "A greeting addressed to the supplied name"
+          }
+        }
+      }
+    }
+  ]
+}

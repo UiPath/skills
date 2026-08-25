@@ -1,0 +1,51 @@
+task_id: skill-agents-bindings-multi-entrypoint
+description: >
+  Bindings sync over a project with two entrypoints. The prompt
+  pre-answers bindings-reference Step 4's disambiguation — the agent
+  is told to pick any declared entrypoint rather than ask — so the
+  run must reach Step 5 and write both bindings. The check accepts
+  either declared entrypoint (or an omitted entrypoint field); the
+  load-bearing assertion is that no binding ends up with a fabricated
+  `EntryPointUniqueId` that doesn't match either real entrypoint.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+
+run_limits:
+  expected_turns: 13
+  turn_timeout: 1200
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/bindings_multi_entrypoint/_fixtures/multi-ep/. ."
+    timeout: 10
+
+initial_prompt: |
+  I have a uipath coded agent in the current directory. Can you sync its
+  `bindings.json` so it reflects the resources the code uses?
+
+  The project has more than one entrypoint. Do not ask me which one to bind
+  each resource to — pick any of the declared entrypoints yourself. Any of
+  them is fine.
+
+  Do NOT publish, upload, or deploy. Complete the task end-to-end. Only stop
+  if there is a critical blocker you cannot resolve.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two bindings; any EntryPointUniqueId references a real entrypoint"
+    command: "python3 $TASK_DIR/check_bindings_multi_entrypoint.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

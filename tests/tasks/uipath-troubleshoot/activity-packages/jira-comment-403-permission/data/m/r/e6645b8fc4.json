@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-17T14:02:02.380Z",
+      "Message": "JiraCommentSync execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-17T14:02:03.090Z",
+      "Message": "Jira Scope: session opened to https://acme.atlassian.net (Authentication Type: Api Token)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-17T14:02:03.560Z",
+      "Message": "Add Comment: posting comment to issue OPS-1502 as rpa-bot@company.com"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T14:02:03.810Z",
+      "Message": "[Add Comment] Response status code does not indicate success: 403 (Forbidden). You do not have permission to comment on this issue."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T14:02:03.880Z",
+      "Message": "UiPath.Jira.Activities.JiraException: You do not have permission to comment on this issue.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at AddComment \"Add Comment\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-17T14:02:03.940Z",
+      "Message": "JiraCommentSync execution ended"
+    }
+  ]
+}

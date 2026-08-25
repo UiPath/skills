@@ -1,0 +1,44 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/excel" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Excel</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:LogMessage DisplayName="Log: starting write" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ExcelWriteCellProcess] Starting daily total — workbook C:\Robot\Data\sales-2026-05.xlsx&quot;]" />
+    <uix:UseExcelFile DisplayName="Use Excel File: sales-2026-05.xlsx" WorkbookPath="C:\Robot\Data\sales-2026-05.xlsx" ReferenceName="ExcelWorkbookScope" sap2010:WorkflowViewState.IdRef="UseExcelFile_1">
+      <uix:UseExcelFile.Body>
+        <ActivityAction x:TypeArguments="uix:IExcelWorkbookActivities">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uix:IExcelWorkbookActivities" Name="ExcelWorkbookScope" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <!-- ANTI-PATTERN: formula uses semicolon parameter separators.
+                 Excel COM requires COMMA separators regardless of the host's Windows regional setting.
+                 The Excel UI displays semicolons in non-US locales, but the COM API does not accept them.
+                 The workflow author copied this formula from Excel's UI (where it displays as =SUM(A1;A10)
+                 in Romanian/German/French regional settings) without converting to comma syntax. -->
+            <uix:WriteCell DisplayName="Write Cell: =SUM(A1;A10)" Range="D1" SheetName="Sales" Value="=SUM(A1;A10)" sap2010:WorkflowViewState.IdRef="WriteCell_1" />
+            <ui:LogMessage DisplayName="Log: write finished" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ExcelWriteCellProcess] Daily total written.&quot;]" />
+          </Sequence>
+        </ActivityAction>
+      </uix:UseExcelFile.Body>
+    </uix:UseExcelFile>
+  </Sequence>
+</Activity>

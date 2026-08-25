@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "AuditTenantEvents",
+  "_doc": "Audit query returns the Job.Stop event matching the failing job key. The actor is 'System' (no human/service account identity) — eventDetails references the auto-cancel trigger name and the time budget that was exceeded. clientInfo is absent (system action).",
+  "Data": {
+    "auditEvents": [
+      {
+        "id": "a6f1e62-3456-4cde-9def-3c4d5e6f7g8h",
+        "createdOn": "2026-05-19T08:10:00.105Z",
+        "organizationId": "11111111-2222-3333-4444-555555555555",
+        "organizationName": "Acme Corp",
+        "tenantId": "22222222-3333-4444-5555-666666666666",
+        "tenantName": "Acme-Prod",
+        "actorId": "00000000-0000-0000-0000-000000000000",
+        "actorName": "System",
+        "actorEmail": null,
+        "eventType": "Job stopped",
+        "eventSource": "Orchestrator",
+        "eventTarget": "Job",
+        "eventDetails": "{\"jobKey\":\"c3c0b2c3-d4e5-4678-9012-3456789ccccc\",\"processName\":\"LongRunningProcess\",\"strategy\":\"Kill\",\"origin\":\"Trigger\",\"folderKey\":\"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\"folderName\":\"KillScenarios\",\"actorType\":\"System\",\"triggerName\":\"kill-after-10min\",\"triggerType\":\"AutoCancel\",\"timeBudgetSeconds\":600,\"reason\":\"TimeBudgetExceeded\"}",
+        "eventSummary": "Job 'LongRunningProcess' (c3c0b2c3-d4e5-4678-9012-3456789ccccc) was stopped (strategy Kill) by auto-cancel trigger 'kill-after-10min' (time budget 600s exceeded)",
+        "status": 0
+      }
+    ],
+    "next": null,
+    "previous": null
+  }
+}

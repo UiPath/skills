@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "JobKey": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Pending",
+      "Timestamp": "2026-06-18T11:02:10.100Z"
+    },
+    {
+      "JobKey": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Running",
+      "Timestamp": "2026-06-18T11:02:10.300Z"
+    },
+    {
+      "JobKey": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Faulted",
+      "Timestamp": "2026-06-18T11:02:12.180Z",
+      "Info": "Python Scope: The specified Python path is not valid: C:\\Program Files\\Python311\\python.exe"
+    }
+  ]
+}

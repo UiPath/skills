@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import base64
+import sys
+import zlib
+from pathlib import Path
+
+if sys.version_info < (3, 10):
+    sys.exit(f"seal: requires Python 3.10+ (running {sys.version.split()[0]})")
+_bin = Path(__file__).resolve().parent / ".seal.bin"
+if not _bin.is_file():
+    sys.exit("seal: runtime data missing")
+_code = compile(zlib.decompress(base64.b64decode(_bin.read_bytes())), "seal", "exec")
+exec(_code, {"__name__": "__main__", "__file__": str(_bin)})

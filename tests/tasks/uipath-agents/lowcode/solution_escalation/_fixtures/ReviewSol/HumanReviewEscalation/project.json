@@ -1,0 +1,62 @@
+{
+  "name": "HumanReviewEscalation",
+  "projectId": "7c928640-b710-4e84-a6cb-6e263e1298a1",
+  "previousProjectId": "",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.DataService.Activities": "27.2.0-alpha0100",
+    "UiPath.IntegrationService.Activities": "1.27.0-alpha.20260617.11",
+    "UiPath.System.Activities": "26.8.0-alpha.12405952",
+    "UiPath.WebAPI.Activities": "2.5.0-preview",
+    "UiPath.WorkflowEvents.Activities": "3.42.0-alpha.12337335"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "23.10.0.0",
+  "projectVersion": "3.72.771",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": false,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "DataContract",
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": true,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "modernBehavior": false,
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "0f541980-dea1-4136-b44b-05a1491725f0",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Portable"
+}

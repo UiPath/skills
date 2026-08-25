@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T11:08:58.470Z",
+      "Message": "Salesforce: Create Record: One or more errors occurred. (Failed to retrieve connection. Consider using a different connection. - Bad Gateway Error code: DAP-GE-3000.)\r\nin LeadSync.xaml\r\n    at ConnectorActivity \"Salesforce: Create Record\"\r\n    at Sequence \"LeadSync\"\r\n\r\n--- .NET stack trace ---\r\nSystem.AggregateException: One or more errors occurred. (Failed to retrieve connection. Consider using a different connection. - Bad Gateway Error code: DAP-GE-3000.)\r\n ---> UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Failed to retrieve connection. Consider using a different connection. - Bad Gateway Error code: DAP-GE-3000.\r\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\r\n   --- End of inner exception stack trace ---"
+    }
+  ]
+}

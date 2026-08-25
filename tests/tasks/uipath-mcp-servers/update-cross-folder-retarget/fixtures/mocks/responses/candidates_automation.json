@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsCandidates",
+  "Data": {
+    "items": [
+      {
+        "id": "process-mock-invoice-01",
+        "name": "MockInvoiceProcess",
+        "displayName": "Mock Invoice Process",
+        "category": "automation",
+        "targetIdentifier": "process-mock-invoice-01",
+        "folderKey": "folder-mock-shared",
+        "folder": { "key": "folder-mock-shared", "name": "Shared" },
+        "description": "Mock automation process for skill regression tests."
+      },
+      {
+        "id": "process-mock-ops-01",
+        "name": "MockOpsProcess",
+        "displayName": "Mock Ops Process",
+        "category": "automation",
+        "targetIdentifier": "process-mock-ops-01",
+        "folderKey": "folder-mock-ops",
+        "folder": { "key": "folder-mock-ops", "name": "Ops" },
+        "description": "Mock ops automation living in the Ops folder."
+      }
+    ],
+    "total": 2,
+    "count": 2
+  }
+}

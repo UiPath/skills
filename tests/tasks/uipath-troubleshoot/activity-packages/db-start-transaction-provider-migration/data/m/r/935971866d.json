@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-30T06:20:00.730Z",
+      "Message": "InvoicePostingTxn execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-30T06:20:01.388Z",
+      "Message": "Start Transaction: opening transaction connection with ProviderName 'System.Data.SqlClient' and connection string 'Server=sqlfin01;Database=Invoices;Integrated Security=SSPI;Encrypt=true'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-30T06:20:01.441Z",
+      "Message": "Start Transaction: A database error occurred.\r\nSystem.TypeInitializationException: The type initializer for 'Microsoft.Data.SqlClient.SqlConnection' threw an exception.\r\n   at Microsoft.Data.SqlClient.SqlConnection.ctor(String connectionString)\r\n   at UiPath.Database.DatabaseConnection.Connect(String connectionString, String provider, Int32 timeout)\r\n   at UiPath.Database.DatabaseTransaction.BeginTransaction(String connectionString, String provider, Int32 timeout)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-30T06:20:01.460Z",
+      "Message": "Start Transaction: A database error occurred.\r\nin Main.xaml\r\n    at DatabaseTransaction \"Start Transaction\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

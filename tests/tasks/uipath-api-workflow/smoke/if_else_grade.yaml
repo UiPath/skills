@@ -1,0 +1,101 @@
+task_id: skill-api-workflow-if-else-grade
+description: >
+  Skill-guided evaluation: agent uses the uipath-api-workflow skill to author
+  a basic If/Else workflow that classifies a numeric score as PASS or FAIL.
+  Tests whether the skill teaches: WorkflowStart, the If wrapper pattern
+  (#Wrapper / #Then / #Else / then:exit), single-key Assigns, wrapped string
+  literals (${'PASS'} for StudioWeb roundtrip), and Response with then:end.
+tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate, feature:if-else]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `GradeCheck` (its workflow
+  file will be `GradeCheck/Workflow.json`) — that:
+  - Takes a numeric `score` input
+  - Returns { "grade": "PASS" } if score >= 50, else { "grade": "FAIL" }
+  - Uses an If activity for the branching
+
+  Test the workflow locally with score 75 and score 30, and confirm both runs
+  return Result: "Success" and the correct grade.
+
+  Important:
+  - The `uip` CLI is already available.
+  - The workflow must be StudioWeb-roundtrip-safe: single-key Assigns, string
+    literals wrapped as ${'literal'}, If branches end with then:"exit",
+    Response with then:"end".
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Has WorkflowStart system activity (rule 2)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "WorkflowStart" "$WF" && grep -q "isTransparent" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Uses If wrapper pattern with #Then and #Else branches (rule 7)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -qE "If_[A-Za-z0-9_]+#Wrapper" "$WF" && grep -qE "If_[A-Za-z0-9_]+#Then" "$WF" && grep -qE "If_[A-Za-z0-9_]+#Else" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Branches end with then:exit (rule 7)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q ''"then": "exit"'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Wraps string literals as expressions (rule 5 — StudioWeb roundtrip)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -qF "\${''PASS''}" "$WF" && grep -qF "\${''FAIL''}" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Response activity ends workflow with then:end (rule 15)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q ''"then": "end"'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow runs PASS path successfully (score=75 → grade=PASS)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"score":75}'' --output json | grep -q ''"PASS"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow runs FAIL path successfully (score=30 → grade=FAIL)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"score":30}'' --output json | grep -q ''"FAIL"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 9
+  max_turns: 30

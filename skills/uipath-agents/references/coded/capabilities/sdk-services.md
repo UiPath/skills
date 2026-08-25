@@ -145,9 +145,13 @@ sdk.entities.delete_records(entity_key="Customers", record_ids=["rec-123"])
 connections = sdk.connections.list(name="Salesforce")
 connection = sdk.connections.retrieve(key="conn-key-123")
 token = sdk.connections.retrieve_token(key="conn-key-123", token_type="direct")
-metadata = sdk.connections.metadata(element_instance_id=123, tool_path="/contacts")
+metadata = sdk.connections.metadata(element_instance_id=123, connector_key="uipath-salesforce", tool_path="/contacts")
 payload = sdk.connections.retrieve_event_payload(event_args=event_args)
+result = sdk.connections.invoke_activity(activity_metadata=meta, connection_id="conn-key-123", activity_input={"query": "site:uipath.com"})
+result = await sdk.connections.invoke_activity_async(activity_metadata=meta, connection_id="conn-key-123", activity_input={...})
 ```
+
+See [integration-service.md](integration-service.md) for the full discover-and-invoke flow.
 
 ## LLM
 

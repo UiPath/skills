@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-10T14:03:11.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-10T14:03:12.510Z",
+      "Message": "[Python Scope] Initializing Python engine (Target: x64, Path: C:\\Python311, Version: Auto)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T14:03:13.560Z",
+      "Message": "[Load Python Script] One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T14:03:13.600Z",
+      "Message": "One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\r\nin Main.xaml\r\n    at PythonScope \"Python Scope\"\r\n    at LoadScript \"Load Python Script\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-10T14:03:13.620Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

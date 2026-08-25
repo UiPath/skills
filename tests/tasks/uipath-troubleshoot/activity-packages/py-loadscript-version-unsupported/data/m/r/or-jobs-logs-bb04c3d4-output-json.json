@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T15:48:19.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-11T15:48:20.090Z",
+      "Message": "[Python Scope] Initializing Python engine (Target: x64, Path: C:\\Python313, Version: Auto -> detected 3.13)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T15:48:21.180Z",
+      "Message": "[Load Python Script] One or more errors occurred. ---> System.Exception: Error initializing the Python engine. The detected Python version 3.13 is not supported by UiPath.Python.Activities 1.8.1."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T15:48:21.260Z",
+      "Message": "One or more errors occurred. ---> System.Exception: Error initializing the Python engine. The detected Python version 3.13 is not supported by UiPath.Python.Activities 1.8.1.\r\nin Main.xaml\r\n    at PythonScope \"Python Scope\"\r\n    at LoadScript \"Load Python Script\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T15:48:21.330Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

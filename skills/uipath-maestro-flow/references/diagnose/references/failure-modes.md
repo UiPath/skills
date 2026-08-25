@@ -8,13 +8,17 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 | Pattern | Symptom | Cause |
 |---|---|---|
-| [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference |
-| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow tidy` not run before publish |
+| [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
+| [MST-9972](#mst-9972--variablesnodes-missing-vars-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
+| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
+| [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
-| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
+<!--skill-flavor:project-creation-recovery-index:start-->
+| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
+<!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
-| [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — see entry for triage path |
+| [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
 ---
 
@@ -22,7 +26,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 ### Symptom
 
-A connector, HTTP, or end node receives the literal string `"vars.X.output.Y"` as its input value at runtime instead of the resolved value. `flow validate` passes locally; the failure manifests only at `flow debug` or in deployed runs.
+A connector, HTTP, or end node receives the literal string `"vars.X.output.Y"` as its input value at runtime instead of the resolved value.
+
+`flow validate` flags this as an error today (cli-side `expression-prefix-validator`, emitted with a remediation hint pointing at the `=js:`-prefixed form). Pre-validator cli versions miss it and the failure surfaces only at `flow debug` or in deployed runs — if you see the symptom without a corresponding validate error, your cli is older than the fix.
 
 Example: input field set to literal `"vars.createEntityRecord1.output.Id"` instead of the entity's actual ID.
 
@@ -30,7 +36,7 @@ Example: input field set to literal `"vars.createEntityRecord1.output.Id"` inste
 
 The `=js:` prefix was omitted on a `$vars` / `$metadata` / `$self` reference inside a value field. The serializer rewrites `$vars` → `vars` whether or not the prefix is present, so a missing `=js:` yields a string that **looks like** an unevaluated expression but is actually a literal.
 
-There is also no `nodes.X.output.Y` syntax — that is an invented form that silently ships as a literal string.
+There is also no `nodes.X.output.Y` syntax — that is an invented form that silently ships as a literal string. `flow validate` flags this same way (rewriting the suggested fix to the `=js:$vars.X.output.Y` form).
 
 ### Fix
 
@@ -51,34 +57,75 @@ Do **not** add `=js:` to condition expressions (decision `expression`, switch ca
 
 ---
 
+## MST-9972 — `variables.nodes[]` missing → `$vars.X.output` resolves to undefined
+
+### Symptom
+
+A downstream script or expression reads `$vars.<sourceNodeId>.output` and gets `undefined` at runtime. Common shapes: `Cannot read property 'output' of undefined`, `Cannot read properties of undefined (reading '<field>')`, or a connector activity receiving an empty / undefined input that an upstream node should have populated. `uip maestro flow validate` accepts the file without complaint. The upstream node's own incident shows it ran successfully.
+
+### Cause
+
+The `.flow` file is missing `variables.nodes[]` entries for the upstream node. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs — without them, the activity's local `output` value has no process variable to flow into, and downstream `$vars` reads fail.
+
+This happens almost exclusively on **direct-authored** `.flow` files: `uip maestro flow node add` and the canvas / Studio Web save path both auto-populate `variables.nodes[]`. `Edit` / `Write` authoring does not, and pre-fix `uip maestro flow format` did not regenerate it either. Adding an `outputs` block on the action-node instance does **not** fix this — for action nodes the BPMN emitter reads the manifest's `outputDefinition`, not the instance block, so authoring the instance block has no runtime effect.
+
+### Fix
+
+Run `uip maestro flow format <ProjectName>.flow --output json`. Post-MST-9972 the format command regenerates `variables.nodes[]` from `nodes[]` + `definitions[]` (matching `node add` and canvas behavior). On older CLI versions, add the entries manually:
+
+```json
+"variables": {
+  "nodes": [
+    {
+      "id": "<nodeId>.output",
+      "type": "object",
+      "binding": { "nodeId": "<nodeId>", "outputId": "output" }
+    },
+    {
+      "id": "<nodeId>.error",
+      "type": "object",
+      "binding": { "nodeId": "<nodeId>", "outputId": "error" }
+    }
+  ]
+}
+```
+
+One entry per declared output (trigger nodes: `output` only; action nodes: `output` + `error`; end / terminate: none).
+
+### Reference
+
+[shared/file-format.md — Node outputs](../../shared/file-format.md#node-outputs), [author/CAPABILITY.md rule #14](../../author/CAPABILITY.md), [editing-operations-json.md — Pre-flight Checklist step 5–6](../../author/references/editing-operations-json.md#pre-flight-checklist).
+
+---
+
 ## MST-9061 — Misshapen rectangle nodes in Studio Web
 
 ### Symptom
 
-After publish or debug upload, Studio Web renders nodes as oblong rectangles (e.g., 200×80) instead of square tiles. Layout looks visually broken even though the flow runs correctly.
+After publish or debug upload, Studio Web renders nodes at the wrong dimensions for their shape — a square/circle node stretched into an oblong (e.g., 200×80), or an inline agent squashed to a 96×96 square instead of its 288×96 rectangle. Layout looks visually broken even though the flow runs correctly.
 
 ### Cause
 
-`uip maestro flow tidy` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
+`uip maestro flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with dimensions that don't match each node's shape remains in the `.flow` file and Studio Web renders it as-is.
 
 ### Fix
 
-Run tidy before any publish or debug operation:
+Run format before any publish or debug operation:
 
 ```bash
-uip maestro flow tidy <ProjectName>.flow --output json
+uip maestro flow format <ProjectName>.flow --output json
 ```
 
-Tidy:
+Format:
 
-- Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }`
+- Sets each node's `size` by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96)
 - Arranges nodes horizontally with ELK at `nodeSpacing: 96`
 - Recurses into subflows and rewrites `subflows[<id>].layout`
 - Preserves sticky note custom sizes
 
 ### Reference
 
-[author capability](../../author/CAPABILITY.md) — see "Always run `flow tidy` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow tidy](../../shared/cli-commands.md#uip-maestro-flow-tidy).
+[author capability](../../author/CAPABILITY.md) — see "Always run `flow format` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow format](../../shared/cli-commands.md#uip-maestro-flow-format).
 
 ---
 
@@ -99,6 +146,73 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 ### Reference
 
 [Author HITL plugin reference](../../author/references/plugins/hitl/impl.md) — full HITL node reference including port wiring requirements.
+
+---
+
+## Run reports `Completed` but the work never happened
+
+### Symptom
+
+`finalStatus` is `Completed` and no incident is raised, yet the flow's real effect is missing — the record was never created, the message never sent, the downstream node ran on empty or stale data. The flow "always looks successful," including on runs where a dependency was demonstrably down. Nothing shows up in `instance incidents` because, as far as the engine is concerned, nothing failed.
+
+### Cause
+
+The failing node has `inputs.errorHandlingEnabled: true`, which suppresses its fault instead of faulting the run. Two shapes:
+
+1. **Flag with no handler** — the flag is set on a node with no outgoing `sourcePort: "error"` edge. The node swallows the exception and execution continues down `default` with missing output.
+2. **Error path rejoins the happy path** — an `error` edge targets the next happy-path node, or reaches the same End node the success path reaches. The failure then runs the success path's output mappings against the failed node's empty output.
+
+Both pass `uip maestro flow validate` — it checks structure, never whether an error path is meaningful.
+
+### Fix
+
+Report every node carrying the flag, and where its error path ends:
+
+```bash
+python3 - "<ProjectName>.flow" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+E = d.get("edges", []); N = {n["id"]: n for n in d.get("nodes", [])}
+
+def targets(nid, port=None, exclude=None):
+    return [e["targetNodeId"] for e in E if e["sourceNodeId"] == nid
+            and (port is None or e.get("sourcePort") == port)
+            and (exclude is None or e.get("sourcePort") != exclude)]
+
+def terminals(start, seen=None):
+    seen = seen or set()
+    if start in seen: return set()
+    seen.add(start)
+    if (N.get(start) or {}).get("type") in ("core.control.end", "core.logic.terminate"):
+        return {start}
+    return set().union(*[terminals(t, seen) for t in targets(start)] or [set()])
+
+for nid, n in N.items():
+    if (n.get("inputs") or {}).get("errorHandlingEnabled") is not True: continue
+    err, ok = targets(nid, "error"), targets(nid, exclude="error")
+    if not err:
+        print(f"{nid}: flag set, NO error edge"); continue
+    ok_term = set().union(*[terminals(t) for t in ok]) if ok else set()
+    for t in err:
+        if t in ok: print(f"{nid}: error -> {t} REJOINS the happy path")
+        elif terminals(t) and terminals(t) <= ok_term:
+            print(f"{nid}: error -> {t} shares success terminal(s) {sorted(terminals(t))}")
+        else: print(f"{nid}: error -> {t} distinct terminal(s) {sorted(terminals(t))} - ok")
+PY
+```
+
+No output means no node has the flag set — the flow is clean. Otherwise act per line:
+
+- **`flag set, NO error edge`** (shape 1) — remove `inputs.errorHandlingEnabled` from that node. The failure then faults the run, which is the visible, correct outcome.
+- **`REJOINS the happy path`** / **`shares success terminal(s)`** (shape 2) — repoint the `error` edge at a terminal the caller can distinguish from success: a distinct End node mapping an error/status `out` variable, or `core.logic.terminate` when recovery is impossible.
+- **`distinct terminal(s) … - ok`** — this node's error handling is wired correctly; look elsewhere.
+
+Re-run `uip maestro flow validate` and `uip maestro flow format` after either fix.
+
+### Reference
+
+- [shared/file-format.md — Default: off](../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles) and [Do not swallow the failure](../../shared/file-format.md#do-not-swallow-the-failure)
+- [Author capability — rule #16](../../author/CAPABILITY.md#critical-rules)
 
 ---
 
@@ -133,29 +247,28 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ---
 
+<!--skill-flavor:project-creation-recovery:start-->
 ## Single-nested layout
 
 ### Symptom
 
-`uip solution upload` rejects the project. `flow init` returned without a `Data.SolutionRegistration` block (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none and skips silently). Studio Web upload fails with structural errors. Packaging fails.
-
-The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
+`uip solution upload` rejects the project. The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested). `flow init` returned `Data.SolutionRegistration.Status: "OptedOut"` (or `"NotInSolution"`). Studio Web upload fails with structural errors. Packaging fails.
 
 ### Cause
 
-`uip maestro flow init` was run from outside a solution directory — from a bare cwd, from the user's home directory, or from the parent of the solution.
+`uip maestro flow init` was run with `--skip-solution-registration`, which opts out of both auto-scaffold and registration and leaves a bare single-nested project. (Without that flag, `flow init` outside a solution now auto-scaffolds `<Project>Solution/<Project>/` and registers — `Status: Registered` — so this layout no longer happens by accident.)
 
 ### Fix
 
-Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
+Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution projects add` step is no longer needed.
 
 ```bash
-uip solution new "<SolutionName>" --output json
+uip solution init "<SolutionName>" --output json
 cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
-# Only if Status is "Skipped" / "Failed" do you need:
-#   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
+# Only if Status is "NotInSolution" / "Skipped" / "Failed" do you need:
+#   uip solution projects add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
 After running, verify the file exists at the double-nested path. The `cd <SolutionName>` above persists across Bash calls, so anchor the check with `$(pwd)` instead of repeating `<SolutionName>/`:
@@ -171,6 +284,7 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 ### Reference
 
 [Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+<!--skill-flavor:project-creation-recovery:end-->
 
 ---
 
@@ -210,21 +324,25 @@ Local `uip maestro flow validate` returns `Result: Success`. The same flow fails
 
 ### Cause
 
-Multiple. `flow validate` is a JSON schema + cross-reference check plus a small set of structural rules; it does not catch:
+Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expression-reference linting, and a small set of structural rules.
 
-- Missing `=js:` prefix → see [MST-9107](#mst-9107--js-prefix-missing)
+**Caught** (validate exits non-zero, with a precise field path and remediation hint):
+
+- Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107) — emitted by cli-side `expression-prefix-validator`
+- Invented `nodes.<id>.output.<...>` syntax (MST-9107 variant) — same validator, suggests `=js:$vars.<id>.output.<...>` as the fix
+- References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
+- Output-path walks that descend into a declared primitive (`type: "string"` etc.) or a schema closed with `additionalProperties: false` (`EXPR_INVALID_OUTPUT_PATH`) — flow-schema `expression-ref` rule
+- Missing End-node output mappings for declared `out` variables (`MISSING_OUTPUT_MAPPING`, **warning** severity) — flow-schema `output-mapping` rule
+- Connector `inputs.detail.configuration` missing, empty, missing the `essentialConfiguration` envelope, or containing invalid JSON inside the `=jsonString:` prefix — emitted with a shape hint pointing at `uip maestro flow node configure`. Re-run that command rather than hand-editing.
+
+**Not caught** — these still surface only at `flow debug` or in deployed runs:
+
 - Reused reference IDs → see [Reused reference ID](#reused-reference-id--cross-connection-id-leakage)
 - Missing top-level `bindings[]` entries on resource nodes → see [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node)
 - HITL `completed` port unwired → see [HITL `completed` port unwired](#hitl-completed-port-unwired)
 - Stale `layout` data → see [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) (cosmetic, not faulting)
-
-The structural rules **do** catch (validate exits non-zero, with a shape hint pointing at `uip maestro flow node configure` as the canonical authoring path):
-
-- Connector `inputs.detail.configuration` missing or empty
-- Connector `inputs.detail.configuration` decoded but lacking the `essentialConfiguration` envelope
-- Connector `inputs.detail.configuration` containing invalid JSON inside the `=jsonString:` prefix
-
-If you see one of those error titles, re-run `uip maestro flow node configure` rather than hand-editing.
+- Output-path walks against **open** output schemas — HTTP response bodies, script returns, free-text agent output. The deep-path walker is permissive by design: it skips when the producer's schema doesn't authoritatively declare the field's structure, so e.g. `=js:$vars.fetchWeather.output.body.current_weather` against an HTTP node that declares only `output: { type: "object" }` passes validate and faults only when the runtime response doesn't have that path.
+- Wrong-direction reads (reading an `out`-only variable) — currently a runtime concern; the direction discriminator isn't yet threaded into the validator context.
 
 ### Fix
 

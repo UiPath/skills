@@ -1,0 +1,253 @@
+{
+  "$resourceType": "tool",
+  "id": "62d07fbe-9d5a-415d-83cc-6fc711f17d90",
+  "type": "integration",
+  "location": "external",
+  "name": "Send message to channel",
+  "description": "Send a message to a Slack channel.",
+  "isEnabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "channel": {
+        "type": "string",
+        "title": "Channel name/ID",
+        "description": "Channel name/ID"
+      },
+      "messageToSend": {
+        "type": "string",
+        "title": "Message",
+        "description": "This is the main text that people will see in the message. It's also used for notifications and in places where rich formatting isn't supported."
+      },
+      "username": {
+        "type": "string",
+        "title": "Bot name",
+        "description": "Bot name"
+      },
+      "mrkdwn": {
+        "type": "boolean",
+        "title": "Mrkdwn"
+      },
+      "unfurl_links": {
+        "type": "boolean",
+        "title": "Unfurl links",
+        "description": "Whether to display the preview of the links mentioned in the text message?"
+      },
+      "link_names": {
+        "type": "boolean",
+        "title": "Link names",
+        "description": "Whether to link and mention all the user groups automatically if the respective names are mentioned in the text message?"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "channel",
+      "messageToSend"
+    ]
+  },
+  "outputSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "ok": {
+        "title": "Ok",
+        "type": "boolean"
+      },
+      "channel": {
+        "title": "Channel name/ID",
+        "type": "string",
+        "description": "Channel name/ID"
+      },
+      "ts": {
+        "title": "Message timestamp",
+        "type": "string",
+        "description": "The ID (timestamp) of the message sent"
+      },
+      "message.text": {
+        "title": "Message text",
+        "type": "string"
+      }
+    }
+  },
+  "iconUrl": "https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-salesforce-slack/image",
+  "settings": {},
+  "isPreview": false,
+  "properties": {
+    "toolPath": "/send_message_to_channel_v2",
+    "objectName": "send_message_to_channel_v2",
+    "toolDisplayName": "Send message to channel",
+    "toolDescription": "Send a message to a Slack channel.",
+    "method": "POST",
+    "bodyStructure": {
+      "contentType": "json"
+    },
+    "connection": {
+      "id": "a9174bb6-e808-4330-b182-c8578bc100b1",
+      "name": "andrei.petraru",
+      "elementInstanceId": 0,
+      "apiBaseUri": "",
+      "state": "enabled",
+      "isDefault": false,
+      "connector": {
+        "key": "uipath-salesforce-slack",
+        "name": "Slack",
+        "image": "https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-salesforce-slack/image",
+        "enabled": true
+      },
+      "folder": {
+        "key": "11451fd1-a693-44b9-b38d-5bc1a891dff0",
+        "path": "11451fd1-a693-44b9-b38d-5bc1a891dff0"
+      },
+      "solutionProperties": {
+        "resourceKey": "a9174bb6-e808-4330-b182-c8578bc100b1"
+      }
+    },
+    "parameters": [
+      {
+        "name": "send_as",
+        "displayName": "Send as",
+        "type": "string",
+        "fieldLocation": "query",
+        "value": "bot",
+        "description": "Whether to send the message as the App bot i.e. using Bot token or yourself i.e. using User token?",
+        "position": "primary",
+        "sortOrder": 1,
+        "required": true,
+        "fieldVariant": "static",
+        "isCascading": false,
+        "dynamic": false,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": true,
+        "dynamicBehavior": [],
+        "reference": {
+          "objectName": "available_tokens",
+          "lookupNames": [
+            "name",
+            "value"
+          ],
+          "lookupValue": "value",
+          "path": "/available_tokens"
+        }
+      },
+      {
+        "name": "channel",
+        "displayName": "Channel name/ID",
+        "type": "string",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "Channel name/ID",
+        "position": "primary",
+        "sortOrder": 2,
+        "required": true,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": true,
+        "dynamicBehavior": [],
+        "reference": {
+          "objectName": "curated_channels?types=public_channel,private_channel",
+          "lookupNames": [
+            "name",
+            "id"
+          ],
+          "lookupValue": "id",
+          "path": "/curated_channels?fields=id,name"
+        }
+      },
+      {
+        "name": "messageToSend",
+        "displayName": "Message",
+        "type": "string",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "This is the main text that people will see in the message. It's also used for notifications and in places where rich formatting isn't supported.",
+        "position": "primary",
+        "sortOrder": 3,
+        "required": true,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      },
+      {
+        "name": "username",
+        "displayName": "Bot name",
+        "type": "string",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "Bot name",
+        "position": "secondary",
+        "sortOrder": 4,
+        "required": false,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      },
+      {
+        "name": "mrkdwn",
+        "displayName": "Mrkdwn",
+        "type": "boolean",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "",
+        "position": "secondary",
+        "sortOrder": 5,
+        "required": false,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      },
+      {
+        "name": "unfurl_links",
+        "displayName": "Unfurl links",
+        "type": "boolean",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "Whether to display the preview of the links mentioned in the text message?",
+        "position": "secondary",
+        "sortOrder": 6,
+        "required": false,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      },
+      {
+        "name": "link_names",
+        "displayName": "Link names",
+        "type": "boolean",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "Whether to link and mention all the user groups automatically if the respective names are mentioned in the text message?",
+        "position": "secondary",
+        "sortOrder": 7,
+        "required": false,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      }
+    ]
+  },
+  "guardrail": {
+    "policies": []
+  }
+}

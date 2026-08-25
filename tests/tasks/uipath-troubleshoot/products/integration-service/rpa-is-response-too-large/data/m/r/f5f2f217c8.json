@@ -1,0 +1,25 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c3d4e5f6-3333-4444-5555-666677778888",
+      "State": "Faulted",
+      "ProcessName": "Data Export",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "D4E5F6A7-1000-2000-3000-400050006000",
+      "StartTime": "2026-06-30T02:15:41.512Z",
+      "EndTime": "2026-06-30T02:15:52.004Z",
+      "CreationTime": "2026-06-30T02:15:38.900Z",
+      "Id": 50301122
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

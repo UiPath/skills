@@ -1,0 +1,58 @@
+task_id: skill-planner-smoke-filesystem-routing
+description: >
+  Lane B filesystem-detection coverage: a vague "add a feature" request issued
+  inside an EXISTING single RPA project (project.json + .xaml present) must
+  route to the owning specialist (uipath-rpa) — NOT trigger multi-project
+  planning. Guards the planner's Non-PDD-lane filesystem routing: an existing
+  single project is the specialist's job, not the planner's.
+tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  This folder already contains a UiPath project (see `project.json` and the
+  `.xaml` file). I want to add one more feature to it: a step that writes the
+  processed rows to a CSV at the end.
+
+  Load the appropriate UiPath skill to decide which specialist should own this
+  edit. Do NOT build or edit anything yet. Do NOT author an SDD or a
+  multi-project plan.
+
+  Write exactly one line to `routing.txt`: the single skill that should own
+  this edit end-to-end (for example `uipath-rpa`). Output only the skill name —
+  no explanation, no punctuation, no quotes. Write `uipath-planner` ONLY if the
+  work genuinely spans multiple separately-built projects.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent produced routing.txt"
+    path: "routing.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Routed to the owning specialist for the existing RPA project (uipath-rpa)"
+    path: "routing.txt"
+    includes:
+      - "uipath-rpa"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Did NOT route a single existing-project edit to the multi-project planner"
+    command: "! grep -qi planner routing.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Did not over-plan — no planner plan/tasks/SDD artifact was produced"
+    command: "! find . \\( -name '*-tasks.md' -o -name '*-plan.md' -o -name '*-sdd.md' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

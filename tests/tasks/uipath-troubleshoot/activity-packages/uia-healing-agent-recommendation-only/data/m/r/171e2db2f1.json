@@ -1,0 +1,15 @@
+{
+    "Result": "Success",
+    "Code": "JobHistory",
+    "Data": [
+        {
+            "Key": "d5fed611-e740-406c-a1b0-3c6de3371f17",
+            "State": "Faulted",
+            "CreationTime": "2026-05-12T08:13:00.720Z",
+            "StartTime": "2026-05-12T08:13:00.720Z",
+            "EndTime": "2026-05-12T08:14:11.487Z",
+            "HostMachineName": "MOCK-HOST",
+            "Reason": "NodeNotFoundException"
+        }
+    ]
+}

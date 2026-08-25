@@ -1,0 +1,42 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "510ef231-2b59-4468-8808-141c9e6ce8bf",
+      "Name": "original_email@test.com",
+      "ConnectorKey": "uipath-google-drive",
+      "ConnectorName": "Google Drive",
+      "State": "Enabled",
+      "Owner": "original_email@test.com",
+      "IsDefault": "Yes",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 7714201,
+      "Folder": "Shared",
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "Created": "2026-04-02T09:14:22.110Z",
+      "Updated": "2026-06-10T11:48:03.921Z"
+    },
+    {
+      "Id": "b03d73b7-611a-4e0e-b109-a85c10be40c8",
+      "Name": "original_email@test.com",
+      "ConnectorKey": "uipath-google-sheets",
+      "ConnectorName": "Google Sheets",
+      "State": "Enabled",
+      "Owner": "original_email@test.com",
+      "IsDefault": "Yes",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 7714202,
+      "Folder": "Shared",
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "Created": "2026-04-02T09:15:01.554Z",
+      "Updated": "2026-06-10T11:48:31.207Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,211 @@
+task_id: skill-datafabric-integration-large-pagination
+description: >
+  Integration test: agent paginates through a pre-seeded 500-record entity —
+  complete walk (limit=60 → 9 pages, 500 unique IDs), offset jump to a specific
+  page (matches the complete-walk slice), filterGroup walk on Active=true
+  (5 pages, 300 IDs), and a short record CRUD sequence. Brownfield: pre_run
+  seeds the 500 records once via `seed_entity.py` and post_run restores the
+  fixture. Bulk-import coverage lives in integration_csv_import.
+tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:discover]
+run_limits:
+  expected_turns: 35
+  max_turns: 60
+  turn_timeout: 900
+
+pre_run:
+  - command: >-
+      cp
+      $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/extract_page_ids.py
+      $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_pagination.py
+      .
+    timeout: 10
+    fail_on_error: true
+
+  # Restore CE_LargePaginationTest to its canonical schema and 500 records.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json
+    timeout: 300
+    fail_on_error: true
+
+initial_prompt: |
+  There's an existing UiPath Data Fabric entity `CE_LargePaginationTest` with 500 rows already in
+  it. Each row has a `Name` (Record-001 through Record-500), a `Score` (the
+  row number, 1-500), and an `Active` flag (yes for rows 1-300, no for
+  rows 301-500). I'd like you to paginate through it three different ways.
+
+  It's a tenant-level entity (no folder). I approve the temporary-row
+  inserts, updates, and deletes described below — proceed without asking for
+  confirmation, and don't change any other entities or rows.
+
+  Three walks:
+
+  1) Walk all 500 rows, 60 per page. Tell me how many pages and unique
+     rows you saw, plus any duplicates or gaps.
+
+  2) Jump straight to rows 181-240 — page size 60, start position 180. One
+     page only. Confirm it matches the same slice from the full walk.
+
+  3) Walk only Active=yes rows, 60 per page. Tell me the page and unique-row
+     totals, plus any duplicates or gaps.
+
+  Keep the collected row IDs in `walk_ids.txt`, `offset_page_ids.txt`, and
+  `active_ids.txt`, respectively, so I can verify the three results afterward.
+
+  After those reads, exercise the same list rather than creating another one:
+
+  - Add three temporary rows in one batch: `Smoke-WriteTests` (score 501),
+    `Smoke-ReviewPR` (score 502), and `Smoke-Deploy` (score 503), all active.
+  - Pull `Smoke-WriteTests` back up by its row ID.
+  - Mark all three temporary rows inactive in one batch.
+  - Delete those three temporary rows when finished.
+  - Keep the three temporary row IDs in `temp_row_ids.txt`, one per line.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the three pagination outcomes coherently"
+    include_agent_output: true
+    prompt: |
+      The seeded entity has 500 rows. A full walk at 60 per page should
+      produce 9 pages and 500 unique IDs; the direct slice should represent
+      rows 181-240; filtering Active=true should produce 5 pages and 300
+      unique IDs. The agent should report duplicates or gaps for both walks.
+      Score 1 if all three outcomes are covered without contradiction. Grade
+      the reported outcome only; command criteria separately verify execution,
+      so do not require files, screenshots, logs, or other artifacts here.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Full walk contains exactly 500 unique record IDs"
+    command: "python3 ./verify_pagination.py --mode walk --file walk_ids.txt --count 500"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Offset page exactly matches rows 181-240 from the full walk"
+    command: "python3 ./verify_pagination.py --mode offset --file offset_page_ids.txt --against walk_ids.txt --start 180 --stop 240"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Active-only walk contains exactly 300 unique record IDs"
+    command: "python3 ./verify_pagination.py --mode walk --file active_ids.txt --count 300"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT combine --offset and --cursor on the same command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(list|query)(?=[^;&|\n]*--cursor)(?=[^;&|\n]*(-o\s+\d+|--offset\s+\d+))'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried Active=true records with filterGroup"
+    tool_name: "Bash"
+    command_pattern: '(?is)(?=.*(?:uip\s+df\s+records\s+query|["'']records["'']\s*,\s*["'']query["'']))(?=.*filterGroup)(?=.*Active)(?=.*true)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact across runs (brownfield)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted all three named temporary rows in one batch"
+    tool_name: "Bash"
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+insert)(?=.*Smoke-WriteTests)(?=.*Smoke-ReviewPR)(?=.*Smoke-Deploy)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved a temporary row by ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent batch-updated three record IDs to inactive"
+    tool_name: "Bash"
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+update)(?=.*(?:Active.{0,20}false|--file\s+\S+))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted three record IDs in one operation, not the entity"
+    tool_name: "Bash"
+    command_pattern: '(?is)(?=.*uip\s+df\s+records\s+delete)(?=.*(?:(?:[0-9a-f]{8}-[0-9a-f-]{27}.*){3}|temp_row_ids\.txt))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The CRUD sequence captured exactly three unique temporary row IDs"
+    command: "python3 ./verify_pagination.py --mode walk --file temp_row_ids.txt --count 3"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not use CSV import for the temporary CRUD sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: CE_LargePaginationTest is back to the canonical 500 records"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_LargePaginationTest --expected 500"
+    timeout: 240
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.records.json
+    timeout: 300

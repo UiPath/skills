@@ -21,17 +21,14 @@ description: >
   Use a folded scalar (>) for multi-line; YAML strips the newlines.
 tags: [<uipath-skill-name>, <tier>, <feature-or-modifier>]
 
+# Inherits agent: and sandbox: defaults from tests/experiments/default.yaml.
+# Only declare fields here when overriding a default — empty blocks just add
+# noise. See scripts/prune-task-defaults.py for what counts as redundant.
+#
 # Optional — uncomment and tune for e2e tests that need longer runs:
 # max_iterations: 1
-# agent:
-#   type: claude-code
-#   permission_mode: acceptEdits
-#   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+# run_limits:
 #   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Goal-oriented prompt — describe what to build, not how. Let the skill

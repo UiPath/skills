@@ -1,0 +1,71 @@
+task_id: skill-agent-coded-openai-agents-handoff
+description: >
+  OpenAI Agents coded agent zero-to-running with a multi-agent
+  handoff. Verifies the agent scaffolds an OpenAI Agents project
+  (`uip codedagent new` → `openai_agents.json` + `main.py`
+  exporting an `Agent` factory function), uses the factory
+  function pattern (a function returning `Agent`, any name — e.g.
+  `def main() -> Agent`) so `UiPathChatOpenAI` and
+  `_openai_shared.set_default_openai_client` are deferred
+  (Critical Rule C4 — module-level setup breaks
+  `uip codedagent init`), and runs the triage agent end-to-end.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents]
+
+run_limits:
+  expected_turns: 33
+  turn_timeout: 1200
+
+initial_prompt: |
+  I want an OpenAI Agents UiPath coded agent called `triage-agent` that
+  sits in front of two specialists. A triage agent reads the customer's
+  message and hands off to a `billing-agent` for invoice and payment
+  questions, or to a `technical-agent` for product and feature questions.
+  All three should run on the UiPath LLM gateway, not the public OpenAI
+  API.
+
+  Register the triage agent's factory as the entry point under the key
+  `agent`. It should also take the customer's ID as typed context
+  alongside their message — model that context as a `CustomerInput`
+  with a single `customer_id` field (the message itself travels as the
+  standard `messages` input, not inside the context) — so the
+  specialists know who they're helping.
+
+  Build it end-to-end, and before you call it done, run it locally on a
+  sample billing question to confirm the handoff actually fires.
+
+  It's all local — no UiPath Cloud sign-in, and nothing to publish or
+  deploy. Take it all the way through in one pass without stopping to
+  check in.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the agent locally with uip codedagent run agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+agent'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OpenAI Agents project shape, factory pattern, handoff wiring"
+    command: "python3 $TASK_DIR/check_openai_agents_handoff.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

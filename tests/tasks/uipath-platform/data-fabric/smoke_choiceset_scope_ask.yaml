@@ -1,0 +1,40 @@
+task_id: skill-datafabric-smoke-choiceset-scope-ask
+description: >
+  Smoke test for data-fabric.md Rule 19 (mandatory scope-prompt flow) applied to `choice-sets create`.
+  When the user names a choice set + values but does NOT specify tenant vs folder scope, the agent
+  MUST raise an AskUserQuestion-style scope prompt BEFORE invoking `uip df choice-sets create`.
+  Silently defaulting to tenant level (or to personal workspace) is a Rule 19 violation. None of
+  the bypass clauses apply here — the prompt does not say "do not ask", does not name a folder,
+  does not state tenant, and does not derive a folder GUID.
+tags: [uipath-platform, smoke, data-fabric, complex-fields, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 12
+
+initial_prompt: |
+  Create a choice set called "Demo45" with two values: A and B.
+  I have not decided whether it belongs at tenant level or in a folder.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent must NOT invoke a real `choice-sets create` before scope is confirmed (--help lookups OK)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+create\s+(?!--help)\S'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent paused and asked the user to choose tenant or folder scope"
+    include_agent_output: true
+    prompt: |
+      The user asked to create a Data Fabric choice set but said its scope
+      was undecided. Score 1.0 if the response pauses without creating
+      anything and asks the user to choose tenant or folder scope. Also score
+      1.0 if a same-name choice set was discovered and the response safely
+      asks whether to reuse the tenant-level set or create/select a
+      folder-scoped set. Score 0.0 if it creates or silently selects a scope.
+    weight: 3.0
+    pass_threshold: 1.0

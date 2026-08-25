@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-23T08:00:01.300Z",
+      "EndTime": "2026-05-23T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelCustomerProcess",
+      "Source": "Schedule",
+      "Reference": "CustomerCleanupA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0044444-3333-4444-5555-666677778888",
+      "Info": "System.Exception: Customer CUST-9001 missing from post-delete data",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

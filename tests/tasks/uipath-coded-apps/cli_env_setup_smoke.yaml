@@ -1,0 +1,94 @@
+task_id: skill-coded-apps-cli-env-setup-smoke
+description: >
+  Smoke test (mode:build): agent authors the environment-setup script the
+  skill teaches for coded-app deploys — install `@uipath/codedapp-tool`
+  and `@uipath/orchestrator-tool` via `uip tools install` (checking
+  `uip tools list` first), and resolve a user-provided folder NAME to the
+  folder KEY via `uip or folders list --output json` (match on `Name`,
+  read `Key`) per Critical Rule #11. Covers the 2 `uip tools install`
+  components and promotes the folders-list name→key resolution from
+  Indirect to Direct — none of these had a covering test.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Write the one-time environment-setup script a CI pipeline runs before
+  deploying UiPath Coded Apps. Author `setup.sh` at the sandbox root.
+  The script must:
+
+  1. Check which uip tools are already installed.
+  2. Install the coded-apps CLI tool and the Orchestrator CLI tool (the
+     Orchestrator tool is required later to resolve folder names — look
+     up the exact `uip tools install` package names in the skill).
+  3. Define a shell function `resolve_folder_key <FOLDER_NAME>` that
+     resolves an Orchestrator folder NAME to its folder KEY (GUID) using
+     the documented `uip or ...` command with JSON output, matching on
+     the `Name` field of the output rows and printing the `Key` field.
+     (This is what makes `uip codedapp deploy --folder-key <GUID>` run
+     non-interactively when the user only knows the folder name.)
+
+  Write the script only — do NOT execute it, and do NOT run any `uip` or
+  `npm` commands yourself.
+
+success_criteria:
+  - type: file_exists
+    description: "setup.sh was created"
+    path: "setup.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+    # Decoupled checks: agents legitimately wrap the binary in a variable
+    # (`"${UIP}" tools install …`) or factor installs into a loop
+    # (`uip tools install "${pkg}"` with the package names in a list), so the
+    # command verb and the package name may never share a line. Grade each
+    # ingredient separately: a `tools install` invocation exists + each
+    # required package name is present somewhere in the script.
+  - type: run_command
+    description: "setup.sh contains a `tools install` invocation and names the coded-apps tool package (@uipath/codedapp-tool)"
+    command: "grep -qE 'tools\\s+install' setup.sh && grep -qF '@uipath/codedapp-tool' setup.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "setup.sh names the Orchestrator tool package (@uipath/orchestrator-tool) — required for folder name→key resolution per Rule #11"
+    command: "grep -qF '@uipath/orchestrator-tool' setup.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "setup.sh checks installed tools first via `… tools list` (Rule #11 — check before installing)"
+    command: "grep -E 'tools\\s+list' setup.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "setup.sh resolves folder name→key via `… or folders list --output json` (Rule #11 — the documented non-interactive resolution path; binary may be a variable)"
+    command: "grep -E 'or\\s+folders\\s+list\\b.*--output\\s+json' setup.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "resolve_folder_key matches on the Name field and extracts the Key field (the documented output-row contract: { Key, Name, Path, ... })"
+    command: "grep -qE '\\bName\\b' setup.sh && grep -qE '\\bKey\\b' setup.sh && grep -qE 'resolve_folder_key' setup.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "setup.sh is valid bash syntax (bash -n parse check)"
+    command: "bash -n setup.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

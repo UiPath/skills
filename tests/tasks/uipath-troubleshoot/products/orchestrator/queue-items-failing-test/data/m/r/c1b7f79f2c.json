@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "3dffc6c6-c2f8-4432-af59-babc0e648595",
+      "State": "Stopped",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-14T12:06:21.083Z",
+      "EndTime": "2026-05-14T12:06:36.000Z",
+      "CreationTime": "2026-05-14T12:06:21.083Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

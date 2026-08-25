@@ -1,0 +1,38 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Name": "DataExport",
+      "ID": 3010001,
+      "Key": "a1b2c3d4-1111-2222-3333-444455556666",
+      "Path": "Shared/integration-sync/DataExport",
+      "Type": "Solution",
+      "Description": ""
+    },
+    {
+      "Name": "integration-sync",
+      "ID": 3009980,
+      "Key": "b2c3d4e5-2222-3333-4444-555566667777",
+      "Path": "Shared/integration-sync",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "Finance",
+      "ID": 2901921,
+      "Key": "fbb6bcb1-11a3-44e4-87b1-9e77b04f25ed",
+      "Path": "Finance",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "Shared",
+      "ID": 2892900,
+      "Key": "c23e5354-4c28-4a8d-ab8e-d63844b35926",
+      "Path": "Shared",
+      "Type": "Standard",
+      "Description": ""
+    }
+  ]
+}

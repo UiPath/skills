@@ -1,0 +1,64 @@
+task_id: skill-test-link-automation-and-run
+description: >
+  Integration test: agent uses the uipath-testcloud skill to link a published
+  automation to a Test Manager testcase and trigger an automated execution.
+  Asserts that the agent (a) checks login status with --output json, (b) discovers
+  the folder key via `uip or folders list -n <folder-name> --all`,
+  (c) probes available test entry points with `uip tm testcases list-automations`
+  before linking, (d) links via `uip tm testcases link-automation` with the required
+  flags, and (e) runs the testcase with `uip tm testcases run` using --test-case-id
+  (UUID, not --test-case-key) and --execution-type automated. The skill -- not the
+  prompt -- must teach the discover-before-link pattern, the `folders list -n <folder-name> --all`
+  folder lookup, and the UUID vs ObjKey distinction for the run command.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:link-automation]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 35
+
+initial_prompt: |
+  Link the testcase "TestCase1" from the orchestrator package "Testcases.with.parameters" published to the Orchestrator folder "uipath-test-folder-feed" to the Test Manager testcase
+  "Claim Approval - Manager Escalation" in the project CLAIM. Then trigger an automated execution of
+  that testcase — name the execution "Eval Link Run - Manager Escalation"
+  and set the execution type to automated.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered folder key with `folders list -n|--name <folder-name> --all`"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(-n|--name)\s+\S)uip\s+(or|orchestrator)\s+folders\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent probed available test entry points via list-automations before linking (Critical Rule #8)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked automation using link-automation with --project-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation\s+.*--project-key'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the testcase with --test-case-id (UUID), --execution-type automated, and the requested execution name"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+(["\x27])Eval Link Run - Manager Escalation\1)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0

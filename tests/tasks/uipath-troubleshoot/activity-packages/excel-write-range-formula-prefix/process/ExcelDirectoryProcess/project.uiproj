@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDirectoryProcess",
+  "ProjectType": "Process",
+  "Description": "Scrapes the HR system to build an employee directory and writes it to the directory workbook via Write Range.",
+  "MainFile": "Main.xaml"
+}

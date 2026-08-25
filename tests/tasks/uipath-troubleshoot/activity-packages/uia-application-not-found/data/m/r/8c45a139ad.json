@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+      "StartTime": "2026-05-12T02:00:02.140Z",
+      "EndTime": "2026-05-12T02:00:04.620Z",
+      "State": "Faulted",
+      "Source": "Schedule",
+      "SourceType": "Schedule",
+      "ReleaseName": "ExpenseImporter",
+      "Type": "Unattended",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2",
+      "Info": "UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetAppNotFoundExceptionAsync\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ProcessAppNotFoundAsync\r\n\r\nin Main.xaml\r\n    at NApplicationCard \"Use AcmeBooks accounting app\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"",
+      "Id": 671012845
+    }
+  ]
+}

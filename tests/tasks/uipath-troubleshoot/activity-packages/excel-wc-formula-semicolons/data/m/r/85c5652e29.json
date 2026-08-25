@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-22bb2222-001",
+      "JobKey": "22bb2222-2222-3333-4444-555566667777",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-22bb2222-002",
+      "JobKey": "22bb2222-2222-3333-4444-555566667777",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelWriteCellProcess] Starting daily total — workbook C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-22bb2222-003",
+      "JobKey": "22bb2222-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — workbook opened (Modern scope, OpenXML provider)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-22bb2222-004",
+      "JobKey": "22bb2222-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.110Z",
+      "Message": "Write Cell: =SUM(A1;A10) — attempting to write formula to Sales!D1",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-22bb2222-005",
+      "JobKey": "22bb2222-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.310Z",
+      "Message": "Write Cell: =SUM(A1;A10) — Excel formula parser rejected input",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-22bb2222-006",
+      "JobKey": "22bb2222-2222-3333-4444-555566667777",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Write Cell: =SUM(A1;A10) — UiPath.Excel.BusinessException: The data you want to write has a wrong format, or Excel is busy.",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

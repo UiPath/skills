@@ -7,7 +7,7 @@ Interact with external services through UiPath Integration Service — discover 
 ## Prerequisites
 
 - `uip` must be authenticated (`uip login`)
-- Correct folder context must be set if using folder-scoped connections (`--folder`)
+- Correct folder context must be set if using folder-scoped connections (`--folder-key`)
 
 ## Core Principles
 
@@ -33,6 +33,7 @@ Interact with external services through UiPath Integration Service — discover 
 | Step 4: discover activities | [activities.md](activities.md) | Activity discovery, trigger activities, activities vs resources |
 | Steps 4–6: resources | [resources.md](resources.md) | Describe, execute CRUD, pagination, vendor error recovery |
 | Step 5: resolve references | [reference-resolution.md](reference-resolution.md) | Simple refs, dependency chains, inferring, required field validation |
+| Managed HTTP Request authoring | [http-request.md](http-request.md) | Concept, two modes (connector / manual), `http-request` CLI helper, worked example |
 | Trigger metadata | [triggers.md](triggers.md) | Trigger objects, trigger field metadata, trigger workflow |
 
 ---

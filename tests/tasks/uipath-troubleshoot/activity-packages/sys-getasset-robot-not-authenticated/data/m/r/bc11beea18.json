@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T13:24:18.580Z",
+      "Message": "[Get Credential] Status code: 401 (Unauthorized). Orchestrator response: \r\nYou are not authenticated! Error code: 0"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T13:24:18.594Z",
+      "Message": "You are not authenticated! Error code: 0\r\nin Main.xaml\r\n    at GetRobotCredential \"Get Credential\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

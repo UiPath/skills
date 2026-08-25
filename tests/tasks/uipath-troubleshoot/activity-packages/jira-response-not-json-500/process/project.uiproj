@@ -1,0 +1,6 @@
+{
+  "Name": "JiraWeeklyReport",
+  "ProjectType": "Process",
+  "Description": "JiraWeeklyReport automation project.",
+  "MainFile": "Main.xaml"
+}

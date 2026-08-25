@@ -1,0 +1,51 @@
+task_id: skill-admin-identity-troubleshoot-access-denied-smoke
+description: >
+  Diagnose smoke: agent investigates why a user cannot access a resource by
+  running the effective-access (check-access PDP) diagnostic on a real user
+  resolved from the directory. Graded on the access decision read back from the
+  tenant, not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, troubleshoot]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  A user in our organization reports they cannot publish automations to a
+  folder. Use the effective-access diagnostic to determine what a user can
+  actually do: resolve a real user from the directory, run the access check on
+  that user, and save the raw JSON output of that access-check command verbatim
+  to ./access.json (do not summarize, wrap, or reformat it).
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "access.json holds a real effective-access decision retrieved from the PDP"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('access.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'check-access not successful: Result={res}'
+      # The check-access decision may be the raw {Result,Data} envelope, the
+      # unwrapped Data, or nested inside an agent-authored wrapper — search
+      # anywhere for the decision's signature: a RoleAssignments field.
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      allkeys = [k.lower().replace('_', '') for k in keys(d)]
+      # A real check-access PDP decision carries RoleAssignments AND granted-*
+      # metadata (GrantedServicesMetadata / GrantedRolesMetadata). Requiring both
+      # rejects a bare {Result,Data} envelope that merely has a RoleAssignments key.
+      assert any('roleassignment' in k for k in allkeys), f'no RoleAssignments field; keys seen={list(keys(d))[:20]}'
+      assert any('granted' in k and 'metadata' in k for k in allkeys), f'no Granted*Metadata — not a real effective-access decision; keys seen={list(keys(d))[:20]}'
+      print('OK: effective-access decision retrieved (RoleAssignments + granted metadata present)')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

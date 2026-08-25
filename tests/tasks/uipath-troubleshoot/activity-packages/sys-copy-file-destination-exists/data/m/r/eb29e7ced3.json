@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c7e0a2b4-9d1f-4e63-8a5c-2b3d4e5f6a71",
+      "State": "Faulted",
+      "ProcessName": "LedgerConsolidation",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-24T11:20:05.900Z",
+      "EndTime": "2026-06-24T11:20:07.100Z",
+      "CreationTime": "2026-06-24T11:20:05.640Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

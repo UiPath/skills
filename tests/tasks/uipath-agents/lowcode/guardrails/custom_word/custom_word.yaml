@@ -1,0 +1,62 @@
+task_id: skill-agent-guardrail-custom-word
+description: >
+  Custom guardrail with a word rule and block action (low-code). A pre-built
+  Web Research Briefing Agent is seeded with no guardrails. Its "Create Issue"
+  (Jira) tool files an issue from a `summary` field. Add a custom
+  (deterministic) guardrail that blocks the tool call whenever its input
+  contains the word "CONFIDENTIAL". Verifies a Tool-scoped custom guardrail
+  with $ruleType "word" (operator "contains", exact literal value), a block
+  action, and a UUID id. Targets a named tool so the request stays satisfiable
+  under the skill's Tool-scope-only rule for custom deterministic rules.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+max_iterations: 1
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/WebResearchBriefingSolution
+
+initial_prompt: |
+  I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
+  It uses the "Create Issue" tool to file a Jira issue from a `summary` field.
+  I want to block that tool call whenever the word "CONFIDENTIAL" appears in
+  its input, with the message "Forbidden term detected." Add a guardrail on
+  the "Create Issue" tool that does this, and validate when you are done.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Custom word-rule guardrail with block action on Create Issue"
+    command: "python3 $TASK_DIR/check_custom_word.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 24
+  max_turns: 40
+  turn_timeout: 1200

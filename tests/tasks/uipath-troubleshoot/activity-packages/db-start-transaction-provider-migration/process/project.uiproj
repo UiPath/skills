@@ -1,0 +1,6 @@
+{
+  "Name": "InvoicePostingTxn",
+  "ProjectType": "Process",
+  "Description": "Posts invoices inside a Start Transaction scope, writing invoice updates to the database within a single transaction.",
+  "MainFile": "Main.xaml"
+}

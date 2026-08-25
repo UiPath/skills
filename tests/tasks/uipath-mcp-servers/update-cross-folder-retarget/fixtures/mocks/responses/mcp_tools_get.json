@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpToolsGet",
+  "Data": {
+    "id": "tool-mock-invoice-001",
+    "type": 0,
+    "processType": "automation",
+    "name": "Run Mock Invoice Process",
+    "mcpName": "runMockInvoiceProcess",
+    "description": "Runs the mock invoice automation.",
+    "targetIdentifier": "process-mock-invoice-01",
+    "targetFolderKey": "folder-mock-shared",
+    "serverId": "mcp-mock-uipath-01",
+    "inputSchema": "{\"type\":\"object\",\"properties\":{\"invoiceId\":{\"type\":\"string\",\"title\":\"Invoice ID\"}},\"required\":[\"invoiceId\"],\"additionalProperties\":false}",
+    "outputSchema": "{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"}}}",
+    "metadata": "{\"resource\":{\"category\":\"automation\"}}"
+  }
+}

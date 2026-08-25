@@ -99,12 +99,12 @@ Typed handle to a specific IS connector + connection. Constructed by the auto-ge
    # → copy the "Id" field of the target connection
    ```
 
-### Step 1 — Resolve metadata using the uipath-platform skill
+### Step 1 — Resolve connector metadata
 
-Before writing the coded workflow, resolve the connector metadata using the `uipath-platform` skill. The full CLI commands and output interpretation are covered in those reference files:
+Before writing the coded workflow, resolve the connector metadata with the `uip is` CLI (drill into flags with `uip is <group> --help`; when the `uipath-platform` skill is available, delegate deep Integration Service questions to it):
 
-- **Find connector key and list connections:** [connectors.md](../../../uipath-platform/references/integration-service/connectors.md) and [connections.md](../../../uipath-platform/references/integration-service/connections.md)
-- **Discover activities/resources and run describe:** [activities.md](../../../uipath-platform/references/integration-service/activities.md) and [resources.md](../../../uipath-platform/references/integration-service/resources.md)
+- **Find connector key and list connections:** `uip is connectors list --output json`, then `uip is connections list <connector-key> --output json`
+- **Discover activities/resources and run describe:** `uip is activities list <connector-key> --output json`, `uip is resources list <connector-key> --output json`, `uip is resources describe <connector-key> <object-name> --operation <Op> --output json`
 
 The describe response tells you:
 
@@ -144,7 +144,7 @@ cat "<METADATA_FILE_PATH>" | python3 -c "import json,sys; d=json.load(sys.stdin)
 If the describe output has `referenceFields`, resolve each one before calling `ExecuteAsync`:
 
 ```bash
-uip is resources execute list "<CONNECTOR_KEY>" "<REFERENCED_OBJECT>" \
+uip is resources run list "<CONNECTOR_KEY>" "<REFERENCED_OBJECT>" \
   --connection-id "<CONNECTION_ID>" --output json
 # Pick the correct id from the results
 ```
@@ -257,7 +257,8 @@ var response = await conn.ExecuteAsync(config, request);
 Run `uip rpa validate` on the written workflow file until 0 errors. Cap at 5 fix attempts.
 
 ```bash
-uip rpa validate --file-path "<WORKFLOW_FILE>" --project-dir "<PROJECT_DIR>" --output json```
+uip rpa validate --file-path "<WORKFLOW_FILE>" --project-dir "<PROJECT_DIR>" --output json
+```
 
 ---
 
@@ -451,8 +452,8 @@ namespace MyProject
             //   → object: curated_create_issue, MethodName: POST, Path: /curated_create_issue
             // Reference fields (project, issuetype, reporter) are nested objects.
             // Resolve their ids/keys via:
-            //   uip is resources execute list "uipath-atlassian-jira" "project" --connection-id <id>
-            //   uip is resources execute list "uipath-atlassian-jira" "issuetype" --connection-id <id>
+            //   uip is resources run list "uipath-atlassian-jira" "project" --connection-id <id>
+            //   uip is resources run list "uipath-atlassian-jira" "issuetype" --connection-id <id>
             var createConfig = new CodedConnectorConfiguration(
                 connection:   jiraConn,
                 objectName:   "curated_create_issue",

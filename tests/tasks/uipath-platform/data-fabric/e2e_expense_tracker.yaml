@@ -1,0 +1,283 @@
+task_id: skill-datafabric-e2e-expense-tracker
+description: >
+  E2E: parent Employee + child Expense entity exercising RELATIONSHIP,
+  CHOICE_SET_SINGLE / _MULTIPLE, FILE, and DECIMAL constraints. Seeds 6
+  employees + 12 expenses, runs filterGroup queries by relationship and
+  choice, and does an Engineering department aggregation. Grading via
+  assert_record_count + verify_field_binding + inline UUID check on a
+  live record + llm_judge on the aggregate walk-through.
+tags: [uipath-platform, data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 60
+  max_turns: 100
+  turn_timeout: 900
+
+initial_prompt: |
+  Build an expense tracker for Finance in UiPath Data Fabric — two linked entities.
+
+  Use the existing tenant-level dropdowns `CE_E2EExpenseCategories` for
+  category and `CE_E2EExpenseTags` for tags. Keep both test entities at tenant
+  level. I explicitly approve creating `CE_E2EEmployee` and `CE_E2EExpense`
+  and inserting the requested test records. Proceed without another
+  confirmation and do not mutate choice sets or unrelated resources.
+  When an expense shows its submitter, display the employee's name.
+
+  `CE_E2EEmployee`:
+    - name — required, up to 200 chars
+    - email — unique, up to 255 chars
+    - department — required, up to 100 chars
+
+  `CE_E2EExpense` (each expense belongs to an employee):
+    - `amount` — the dollar amount; required, cents allowed, $0 to $100,000
+    - `submitter` — required, links to an employee
+    - description — long text, up to 2000 chars
+    - `Receipt` — attachment slot for a PDF
+    - category — pick from `CE_E2EExpenseCategories`
+    - tags — pick one-or-more from `CE_E2EExpenseTags`
+
+  Seed:
+    - 6 employees — 3 Engineering, 3 Sales
+    - 12 expenses — 2 per employee, amounts $25 to $1200. Vary
+      categories; add 1-2 tags on about half.
+
+  Answer with FRESH queries (not counts from earlier responses):
+    - how many expenses one specific employee has
+    - how many expenses are in each category
+    - total dollars of expenses from Engineering employees (find the
+      3 Engineering employees first, then sum)
+
+  Open one expense and confirm the employee link, category, and tags
+  were stored and resolve correctly.
+
+  Then walk me through:
+    - the per-employee expense count for one specific employee,
+    - the per-category breakdown,
+    - the Engineering total (three employee IDs + summed amount),
+    - what you saw when you opened one expense for submitter,
+      category, and tags.
+
+  We'll wire receipt uploads up later — just get the column in place.
+  Don't author or change any dropdowns.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed choice sets to discover available picklists"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the parent Employee entity"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_E2EEmployee'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the child Expense entity (quoted or unquoted name accepted)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+"?CE_E2EExpense'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: Employee and Expense field constraints match the requested schemas"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --ignore-field-case --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'description.lengthLimit=2000,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=100000,Receipt.Name=FILE'"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 9.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt `uip df files upload` because this scenario requests only the Receipt schema slot"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT write an email / non-UUID into the submitter relationship"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"[Ss]ubmitter\"\s*:\s*\"[^\"]*@'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered expenses by the relationship (submitter UUID)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:filterGroup.*[Ss]ubmitter|--file\s+\S+)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a query / list against the Employee entity to find the Engineering employees"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(query|list)\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a query / list against the Expense entity to compute the Engineering total"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified record shape with records get or query"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(get|query)\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt to create / update / delete a choice set via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+(create|update|delete)'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT write a choice display label (string) into a choice field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"category\"\s*:\s*\"[A-Za-z]'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): 6 Employee records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EEmployee --expected 6"
+    timeout: 240
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): 12 Expense records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EExpense --expected 12"
+    timeout: 240
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema (deterministic): `submitter` RELATIONSHIP field on CE_E2EExpense is correctly bound to CE_E2EEmployee"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_E2EExpense --field-name submitter --target-entity-name CE_E2EEmployee"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stored form (deterministic): a live Expense record's `submitter` value is a UUID (not an email / name)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_record_field.py --entity-name CE_E2EExpense --field-name submitter --value-regex '^[0-9a-fA-F-]{8,}'"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The category dropdown has the expected values and is bound to the expense schema"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py --name CE_E2EExpenseCategories --required travel,meals,lodging --bound-entity-name CE_E2EExpense"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The tags dropdown has the expected values and is bound to the expense schema"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py --name CE_E2EExpenseTags --required urgent,billable,reimbursable --bound-entity-name CE_E2EExpense"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent's walk-through covers the per-employee count, per-category breakdown, and Engineering total (3 employees + summed amount) accurately"
+    include_agent_output: true
+    prompt: |
+      The agent built two linked entities (CE_E2EEmployee with 6 rows —
+      3 Engineering, 3 Sales — and CE_E2EExpense with 12 rows, 2 per
+      employee, amounts $25-$1200) and was asked to answer three
+      questions with FRESH queries after seeding:
+
+        Q1. How many expenses does one specific employee have? (Should
+            be 2, since 2 expenses per employee.)
+        Q2. How many expenses per category?
+        Q3. Total dollar amount of expenses from the 3 Engineering
+            employees — first identify the 3 Engineering IDs, then sum
+            those employees' expense amounts.
+
+      Read the agent's final walk-through. Did the agent report:
+        - Q1: a plausible per-employee count (any positive integer OK
+          if the reasoning shows one specific employee's expenses)?
+        - Q2: a category breakdown?
+        - Q3: exactly 3 Engineering employee IDs identified AND a
+          numeric total dollar amount summed from their expenses?
+        - Stored-form observation: submitter as UUID, category as
+          integer (if used), tags as list of integers (if used)?
+
+      Score 1.0 if all four are reported clearly and correctly.
+      Score 0.5 if 2-3 are correct.
+      Score 0.0 if 2+ are wrong or skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Sweep leftover state from prior crashed runs. Child first, then parent.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --name CE_E2EExpenseCategories --display-name 'E2E Expense Categories' --values travel,meals,lodging"
+    timeout: 180
+    fail_on_error: true
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --name CE_E2EExpenseTags --display-name 'E2E Expense Tags' --values urgent,billable,reimbursable"
+    timeout: 180
+    fail_on_error: true
+
+post_run:
+  # Cleanup order matters: child (CE_E2EExpense) must be deleted BEFORE
+  # parent (CE_E2EEmployee) because Expense has a RELATIONSHIP FK pointing
+  # at Employee. CLI delete on Employee would otherwise fail with an FK
+  # constraint.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
+    timeout: 60

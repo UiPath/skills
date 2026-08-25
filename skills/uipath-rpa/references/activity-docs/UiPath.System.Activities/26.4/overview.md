@@ -8,6 +8,12 @@ Core general-purpose activities for every UiPath workflow. Covers file and folde
 
 - [XAML Activities Reference](activities/) — Per-activity documentation for XAML workflows
 
+## Triggers in this package
+
+This package ships three **integration triggers** ([`TimeTrigger`](activities/TimeTrigger.md), [`QueueTrigger`](activities/QueueTrigger.md), [`RuntimeContext`](activities/RuntimeContext.md) — Manual Trigger). All three return `isTrigger: true, triggerType: "integration"` from `uip rpa activities find`. The subscription is Orchestrator-native (scheduler, queue service, user-initiated start), so no `ConnectionId` is required. Place each as the first activity of the workflow's root `Sequence`; do **NOT** wrap in `ui:TriggerScope`. The handler is the rest of the `Sequence` that follows.
+
+The package also ships **local triggers** (`RepeatTrigger`, `GlobalVariableChangedTrigger`, `FileChangeTriggerV3`) and the `TriggerScope` container. Local triggers have flexible placement — first activity of the root `Sequence`, or wrapped inside `<ui:TriggerScope.Triggers>`. See [trigger-pattern-guide.md](../../../trigger-pattern-guide.md) for the full pattern.
+
 ## Activities
 
 ### Workflow
@@ -178,7 +184,7 @@ Core general-purpose activities for every UiPath workflow. Covers file and folde
 | [Set Transaction Progress](activities/SetTransactionProgress.md) | `SetTransactionProgress.md` | Updates the progress notes on a transaction item. |
 | [Set Transaction Status](activities/SetTransactionStatus.md) | `SetTransactionStatus.md` | Marks a transaction item as Successful, Failed, or a Business Exception. |
 | [Wait Queue Item](activities/WaitQueueItem.md) | `WaitQueueItem.md` | Waits for a specific queue item (by reference) to become available. |
-| [New Item Added to Queue](activities/QueueTrigger.md) | `QueueTrigger.md` | Trigger scope that fires when a new item is added to a queue. |
+| [New Item Added to Queue](activities/QueueTrigger.md) | `QueueTrigger.md` | Integration trigger that starts a fresh job when a new item is added to a queue. Place at workflow root, not inside `ui:TriggerScope`. |
 
 ### Orchestrator — Assets & Credentials
 
@@ -231,8 +237,10 @@ Core general-purpose activities for every UiPath workflow. Covers file and folde
 
 ### Triggers
 
+All three are **integration triggers** (`isTrigger: true, triggerType: "integration"`): place at the root of the workflow's `Sequence`, never inside `ui:TriggerScope`. See [trigger-pattern-guide.md](../../../trigger-pattern-guide.md).
+
 | Activity | File | Description |
 |----------|------|-------------|
-| [Manual Trigger](activities/RuntimeContext.md) | `RuntimeContext.md` | Trigger scope that fires on manual job start. |
-| [Time Trigger](activities/TimeTrigger.md) | `TimeTrigger.md` | Trigger scope that fires on a cron schedule or simplified time interval. |
-| [New Item Added to Queue](activities/QueueTrigger.md) | `QueueTrigger.md` | Trigger scope that fires when a new item is added to a queue. |
+| [Manual Trigger](activities/RuntimeContext.md) | `RuntimeContext.md` | Integration trigger that fires on manual job start. |
+| [Time Trigger](activities/TimeTrigger.md) | `TimeTrigger.md` | Integration trigger that fires on a cron schedule or simplified time interval. |
+| [New Item Added to Queue](activities/QueueTrigger.md) | `QueueTrigger.md` | Integration trigger that fires when a new item is added to a queue. |

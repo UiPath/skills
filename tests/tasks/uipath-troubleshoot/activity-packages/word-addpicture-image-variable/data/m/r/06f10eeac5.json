@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0044444-2222-3333-4444-555566667777",
+      "DisplayName": "Shared",
+      "FullyQualifiedName": "Shared",
+      "Description": "Default shared automation folder.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6040001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

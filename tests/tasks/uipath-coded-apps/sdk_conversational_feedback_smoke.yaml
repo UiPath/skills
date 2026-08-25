@@ -1,0 +1,141 @@
+task_id: skill-coded-apps-sdk-conversational-feedback-smoke
+description: >
+  Smoke test (mode:build): agent authors a service module using two SDK
+  services documented in the skill but with no other test coverage —
+  `ConversationalAgent` (from the `conversational-agent` subpath, starts
+  chat sessions with a deployed conversational agent) and `Feedback`
+  (from the `feedback` subpath, submits ratings/comments on AI agent
+  responses). Each via subpath import + constructor DI, with
+  `uipath.json` scope coverage.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  # The one task in this family that cannot finish inside the smoke default of
+  # 40. Measured on run 32182757902: it reaches its first Write at tool-call
+  # #48 and finishes at 57 turns. Capped at 40 (run 32184723921) it produced no
+  # files at all and scored 0.11. The rest of the family stays on the default.
+  #
+  # 200, matching nightly.yaml, NOT a snug 60: run_limits apply to every
+  # experiment, so a per-task override tuned for smoke silently *downgrades*
+  # the nightly budget. At 60 this task hit the ceiling under nightly
+  # (run 32226795313, 65 turns). In smoke the effective bound is turn_timeout.
+  max_turns: 200
+  turn_timeout: 1200
+  task_timeout: 1200
+
+# Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
+sandbox:
+  node:
+    env_packages:
+      - "@uipath/uipath-typescript"
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/agent-support.ts` exporting
+  two functions covering the conversational + feedback SDK surface:
+
+  1. `startConversation(agentId: string): Promise<{ conversationId: string }>`
+     — uses the `ConversationalAgent` service to start a chat session
+     with a deployed conversational agent (returns the conversation ID).
+
+  2. `submitFeedback(agentResponseId: string, rating: 'positive' | 'negative',
+     comment?: string): Promise<void>` — uses the `Feedback` service to
+     submit a rating (and optional comment) on an AI agent response.
+
+  Also write `uipath.json` — the skill's single SDK config source
+  (`clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, `redirectUri`).
+  Fill `scope` with the ACTUAL scope values these two services require
+  (look them up in the skill's conversational-agent and feedback
+  references — Feedback needs one scope on every method; starting a
+  conversational session needs its own scope family). Do not leave the
+  scope empty or as a placeholder; the scope string is part of what this
+  exercise verifies.
+
+  Use subpath imports (`@uipath/uipath-typescript/conversational-agent`
+  and `@uipath/uipath-typescript/feedback`). Use constructor DI
+  (`new ConversationalAgent(sdk)`, `new Feedback(sdk)`). Do NOT run `uip`
+  or `npm` commands.
+
+  Construct the SDK and every service instance INSIDE the module —
+  exported functions take ONLY the data arguments shown above; do NOT
+  accept service instances as parameters.
+
+  Write both files first from the skill's references, then refine. Do not
+  spelunk the SDK's generated `.d.ts` for exact response type names — the
+  return types are not graded.
+
+success_criteria:
+  - type: file_exists
+    description: "src/agent-support.ts was created"
+    path: "src/agent-support.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "uipath.json was created"
+    path: "uipath.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/agent-support.ts imports ConversationalAgent via the /conversational-agent subpath (Anti-pattern #1)"
+    path: "src/agent-support.ts"
+    includes:
+      - "@uipath/uipath-typescript/conversational-agent"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/agent-support.ts imports Feedback via the /feedback subpath"
+    path: "src/agent-support.ts"
+    includes:
+      - "@uipath/uipath-typescript/feedback"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/agent-support.ts constructs both services via DI: new ConversationalAgent, new Feedback"
+    command: "grep -E 'new\\s+ConversationalAgent\\(' src/agent-support.ts && grep -E 'new\\s+Feedback\\(' src/agent-support.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "startConversation function exists in src/agent-support.ts"
+    command: "grep -E '\\bstartConversation\\b' src/agent-support.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "submitFeedback function exists in src/agent-support.ts"
+    command: "grep -E '\\bsubmitFeedback\\b' src/agent-support.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/agent-support.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` import is allowed because it's the SDK class itself."
+    command: "sed 's|//.*||' src/agent-support.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uipath.json scope references Traces.Api (Rule #16 — Feedback needs Traces.Api on every method)"
+    command: "python3 -c \"import json,sys; sys.exit(0 if 'Traces.Api' in str(json.load(open('uipath.json')).get('scope','')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uipath.json scope references ConversationalAgents (Rule #16 — required for startSession)"
+    command: "python3 -c \"import json,sys; sys.exit(0 if 'ConversationalAgents' in str(json.load(open('uipath.json')).get('scope','')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

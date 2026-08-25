@@ -7,137 +7,213 @@ description: >
   See README.md for coverage notes.
 tags: [activation, classification]
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 dataset:
   paths:
+    - uipath-admin.jsonl
     - uipath-agents.jsonl
+    - uipath-api-workflow.jsonl
+    - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
-    - uipath-data-fabric.jsonl
-    - uipath-diagnostics.jsonl
+    - uipath-functions.jsonl
+    - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
-    - uipath-interact.jsonl
-    - uipath-llm-configuration-byo-connections.jsonl
+    - uipath-insights.jsonl
+    - uipath-ixp.jsonl
     - uipath-maestro-bpmn.jsonl
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
+    - uipath-mcp-servers.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
+    - uipath-process-mining.jsonl
     - uipath-review.jsonl
     - uipath-rpa.jsonl
-    - uipath-rpa-legacy.jsonl
-    - uipath-solution-design.jsonl
+    - uipath-solution.jsonl
     - uipath-tasks.jsonl
     - uipath-test.jsonl
+    - uipath-connector-builder.jsonl
     - negative.jsonl
 
 initial_prompt: "${row.prompt}"
 
-# 20 skill_triggered criteria — one per skill. Each derives expected internally
-# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
+# 24 skill_triggered criteria — one per skill. Each derives expected internally
+# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
+  - type: skill_triggered
+    description: "uipath-admin activation"
+    skill_name: uipath-admin
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-agents activation"
     skill_name: uipath-agents
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-api-workflow activation"
+    skill_name: uipath-api-workflow
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-automation-discovery activation"
+    skill_name: uipath-automation-discovery
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-coded-apps activation"
     skill_name: uipath-coded-apps
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
-    description: "uipath-data-fabric activation"
-    skill_name: uipath-data-fabric
+    description: "uipath-functions activation"
+    skill_name: uipath-functions
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
-    description: "uipath-diagnostics activation"
-    skill_name: uipath-diagnostics
+    description: "uipath-troubleshoot activation"
+    skill_name: uipath-troubleshoot
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-feedback activation"
     skill_name: uipath-feedback
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-governance activation"
     skill_name: uipath-governance
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-human-in-the-loop activation"
     skill_name: uipath-human-in-the-loop
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
-    description: "uipath-interact activation"
-    skill_name: uipath-interact
+    description: "uipath-insights activation"
+    skill_name: uipath-insights
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
-    description: "uipath-llm-configuration-byo-connections activation"
-    skill_name: uipath-llm-configuration-byo-connections
+    description: "uipath-ixp activation"
+    skill_name: uipath-ixp
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-maestro-bpmn activation"
     skill_name: uipath-maestro-bpmn
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-maestro-case activation"
     skill_name: uipath-maestro-case
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-maestro-flow activation"
     skill_name: uipath-maestro-flow
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-mcp-servers activation"
+    skill_name: uipath-mcp-servers
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-planner activation"
     skill_name: uipath-planner
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-platform activation"
     skill_name: uipath-platform
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-process-mining activation"
+    skill_name: uipath-process-mining
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-review activation"
     skill_name: uipath-review
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-rpa activation"
     skill_name: uipath-rpa
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
-    description: "uipath-rpa-legacy activation"
-    skill_name: uipath-rpa-legacy
+    description: "uipath-solution activation"
+    skill_name: uipath-solution
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-solution-design activation"
-    skill_name: uipath-solution-design
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-tasks activation"
     skill_name: uipath-tasks
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
   - type: skill_triggered
     description: "uipath-test activation"
     skill_name: uipath-test
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-connector-builder activation"
+    skill_name: uipath-connector-builder
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop

@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Start Transaction scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "8bbecf54cd.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"d3a6c4e9-5f70-4c8d-9eaf-3a4b5c6d7e8f\" --state Faulted --output json",
+      "file": "eccb1e2c4b.json"
+    },
+    {
+      "match": "or jobs list --folder-key d3a6c4e9-5f70-4c8d-9eaf-3a4b5c6d7e8f --state Faulted --output json",
+      "file": "eccb1e2c4b.json"
+    },
+    {
+      "match": "or jobs get \"e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90\" --output json",
+      "file": "08cd4b790c.json"
+    },
+    {
+      "match": "or jobs get e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90 --output json",
+      "file": "08cd4b790c.json"
+    },
+    {
+      "match": "or jobs logs \"e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90\" --level Error --output json",
+      "file": "cd27f132ef.json"
+    },
+    {
+      "match": "or jobs logs e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90 --level Error --output json",
+      "file": "cd27f132ef.json"
+    },
+    {
+      "match": "or jobs logs \"e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90\" --output json",
+      "file": "935971866d.json"
+    },
+    {
+      "match": "or jobs logs e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90 --output json",
+      "file": "935971866d.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

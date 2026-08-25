@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "b2c3d4e5-f6a7-4193-8809-3c4d5e6f7081",
+      "Name": "Branded Docs",
+      "Path": "Branded Docs",
+      "Description": "Production folder for branded document generation.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

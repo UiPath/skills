@@ -1,15 +1,15 @@
 ---
 name: uipath-aops
-description: "UiPath StudioAdmin AOps (`uip aops`) — SourceControl discovery plus CICD pipelines. Drives `aops connection` / `repo` / `project` / `solution` to resolve a GitHub or Azure source binding, `aops pipeline processes` to pick an already-published Orchestrator process, then composes a PipelineDto for `pipeline create` / `save-and-run` and follows runs via `aops execution logs --follow`. Replaces the retired `uip sc` and `uip cicd` tools. For AOps governance policies (`uip gov aops-policy`)→uipath-governance. For `uip solution pack/publish/deploy`→uipath-platform. For workflow authoring (.xaml/.cs)→uipath-rpa."
-when_to_use: "User wants to discover StudioAdmin SourceControl state or create, run, or edit a UiPath CICD pipeline that builds source from an SC-synced Studio Solution or standalone project and binds it to an already-published Orchestrator process. Triggers: 'create a pipeline for X process', 'set up CI/CD for this solution', 'build + run my pipeline', 'list my source control connections', `uip aops`, `uip sc`, `uip cicd`, StudioAdmin SourceControl, PipelineDto."
+description: "UiPath StudioAdmin AOps (`uip aops`) — SourceControl discovery plus CICD pipelines. Drives `aops connection` / `repo` / `project` / `solution` to resolve a GitHub or Azure source binding, `aops pipeline processes` to pick an already-published Orchestrator process, then composes a PipelineDto for `pipeline create` / `save-and-run` and follows runs via `aops execution logs --follow`. Replaces the retired `uip sc` and `uip cicd` tools. For AOps governance policies (`uip gov aops-policy`)→uipath-governance. For `uip solution pack/publish/deploy`→uipath-platform. For workflow authoring (.xaml/.cs)→uipath-rpa."  # <!-- uip-check-skip -->
+when_to_use: "User wants to discover StudioAdmin SourceControl state or create, run, or edit a UiPath CICD pipeline that builds source from an SC-synced Studio Solution or standalone project and binds it to an already-published Orchestrator process. Triggers: 'create a pipeline for X process', 'set up CI/CD for this solution', 'build + run my pipeline', 'list my source control connections', `uip aops`, `uip sc`, `uip cicd`, StudioAdmin SourceControl, PipelineDto."  # <!-- uip-check-skip -->
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath StudioAdmin AOps — Source Control + CICD Pipelines
 
-> **Preview** — Under active development. Surface and behavior may change. Depends on the `@uipath/aops-tool` CLI plugin; install via `uip tools install @uipath/aops-tool` before using.
+Depends on the `@uipath/aops-tool` CLI plugin; install via `uip tools install @uipath/aops-tool` before using.
 
-> **Tool migration.** `@uipath/sc-tool` (`uip sc`) and `@uipath/cicd-tool` (`uip cicd`) were unified into `@uipath/aops-tool` (`uip aops`). `@uipath/cicd-tool` is gone from npm. Every `uip sc <verb>` and `uip cicd <verb>` becomes `uip aops <verb>` — the verb trees merged without renaming any subcommand. See [migration-guide.md](references/migration-guide.md).
+> **Tool migration.** `@uipath/sc-tool` (`uip sc`) and `@uipath/cicd-tool` (`uip cicd`) were unified into `@uipath/aops-tool` (`uip aops`). `@uipath/cicd-tool` is gone from npm. Every `uip sc <verb>` and `uip cicd <verb>` becomes `uip aops <verb>` — the verb trees merged without renaming any subcommand. See [migration-guide.md](references/migration-guide.md).  <!-- uip-check-skip -->
 
 Build a StudioAdmin CICD pipeline that binds two independent things:
 
@@ -281,7 +281,7 @@ Every verb, grouped by subject. Details in the references.
 
 | I need to... | Read |
 |---|---|
-| **Translate an old `uip sc` / `uip cicd` command** | [migration-guide.md](references/migration-guide.md) |
+| **Translate an old `uip sc` / `uip cicd` command** | [migration-guide.md](references/migration-guide.md) |  <!-- uip-check-skip -->
 | **Full discovery sequence with example outputs** | [discovery-flow.md](references/discovery-flow.md) |
 | **Every PipelineDto field + where to source it** | [pipeline-dto-guide.md](references/pipeline-dto-guide.md) |
 | **Create + run + follow logs in one flow** | [save-and-run-guide.md](references/save-and-run-guide.md) |
@@ -298,7 +298,7 @@ After a successful create / save-and-run, report:
 
 ## Anti-patterns
 
-1. **Running `uip sc …` or `uip cicd …`.** Both tools are retired; `@uipath/cicd-tool` no longer exists on npm. Every verb lives under `uip aops`.
+1. **Running `uip sc …` or `uip cicd …`.** Both tools are retired; `@uipath/cicd-tool` no longer exists on npm. Every verb lives under `uip aops`.  <!-- uip-check-skip -->
 2. **Feeding stdout JSON back into `--file`.** Stdout `Data` keys are PascalCased. `pipeline update` rejects such a file outright (ValidationError, exit 3) rather than applying it as a partial wipe. Use `pipeline get <id> --for-update --output-file <path>`, which writes the raw camelCase DTO.
 3. **Reading a local `*.sln` / `*.uipx` / `project.json` from disk.** The CICD API needs SourceControl-side identifiers (`connectionIdentifier`, `remoteId`, project UUIDs) local files don't expose.
 4. **Filtering source projects by `Type`.** All Studio project types (`Process`, `Library`, `TestCase`, etc.) are valid source bindings.

@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay of staging job 419a6787-6cc6-4b93-bae4-ba985bf6fe67 (folder Shared). Real uip CLI evidence, scrubbed (host->MOCK-HOST, account->UIPATH\\AUTOMATION1).",
+  "rules": [
+    {
+      "match": "or jobs logs 419a6787-6cc6-4b93-bae4-ba985bf6fe67 --level Error",
+      "file": "b4a7bc912e.json"
+    },
+    {
+      "match": "or jobs logs 419a6787-6cc6-4b93-bae4-ba985bf6fe67",
+      "file": "a94430b3db.json"
+    },
+    {
+      "match": "or jobs get 419a6787-6cc6-4b93-bae4-ba985bf6fe67",
+      "file": "174d4cb2fe.json"
+    },
+    {
+      "match": "or jobs history 419a6787-6cc6-4b93-bae4-ba985bf6fe67",
+      "file": "6f91432585.json"
+    },
+    {
+      "match": "or jobs traces 419a6787-6cc6-4b93-bae4-ba985bf6fe67",
+      "file": "9e4929c4d3.json"
+    },
+    {
+      "match": "traces spans get --job-key 419a6787-6cc6-4b93-bae4-ba985bf6fe67",
+      "file": "bf6714348f.json",
+      "exit_code": 1
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Faulted",
+      "file": "24f7fc4512.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "file": "24f7fc4512.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "24f7fc4512.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "aa608d720c.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": {
+      "Result": "Success",
+      "Code": "Empty",
+      "Data": []
+    },
+    "exit_code": 0,
+    "_doc": "Empty result for any unmatched read-only uip query."
+  }
+}

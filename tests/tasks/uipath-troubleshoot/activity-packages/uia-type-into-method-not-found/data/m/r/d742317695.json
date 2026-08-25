@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-20T08:03:14.870Z",
+      "Message": "InvoicePortalSubmit execution ended with an error: Enter invoice number: Method not found: 'Void UiPath.UIAutomationNext.Activities.NTypeInto.set_DelayBetweenKeys(System.Activities.InArgument`1<System.Int32>)'."
+    }
+  ]
+}

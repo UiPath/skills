@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerAlertSender",
+  "ProjectType": "Process",
+  "Description": "Sends customer alert emails via Send SMTP Mail Message on an unattended Robot session.",
+  "MainFile": "Main.xaml"
+}

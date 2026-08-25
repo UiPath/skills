@@ -1,0 +1,335 @@
+# Audit Investigation Workflow Guide
+
+Four canonical investigations the `uipath-audit` skill should drive. Each starts from a natural-language question and produces a reproducible answer using `uip admin audit` — typically `sources` (discover) → `events` (filter) → `export` (capture).
+
+> Every command below assumes the user has run `uip login` and the active token includes the `Audit.Read` scope. Every command should pass `--output json` so the agent can parse the envelope.
+
+> **Use `uip admin audit`, never `uip or audit-logs`.** Every org/tenant audit request — including generic phrasings like "audit logs", "export the audit trail", "login history", "who did what" — is answered with `uip admin audit <scope>` (`sources`/`events`/`export`). `uip or audit-logs` is the *Orchestrator-operational* audit surface (different schema, `--export` yields a CSV; `uipath-platform` skill) and is the wrong tool here even when the wording is generic. When asked **what** events/sources exist, run `uip admin audit <scope> sources` and report the live catalog — don't describe it from memory.
+
+## Audit scope disambiguation — route by user phrasing
+
+Pick `org` vs `tenant` BEFORE any `audit` call. They hit different basePaths and surface different events. Use this table to route a user query (SKILL.md Critical Rule 23 is the contract; this is the decision tool):
+
+| User says... | Likely scope | Why |
+|---|---|---|
+| "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit", **"failed/successful logins"**, **"login history for user X"**, **"who's been signing in"** | **org** | Org-level events (memberships, license, tenant lifecycle, **Identity Server / IdP authentication including User Login**) live under `/orgaudit_`. |
+| "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity" | **tenant** | Tenant-scoped events (Orchestrator, Action Center, Apps, AgentHub, Document Understanding, Integration Service, Test Manager, Data Fabric, Process Mining, Relay, Hypervisor, tenant-side Admin) live under `/{tenantId}/tenantaudit_`. Note: governance/AOps policies, source control, and pipelines are **org**-scoped despite the AOps name. |
+| "everything everywhere" | **both** — run the same flow once per scope and present combined results. |
+
+If the prompt is **vague about scope** AND no prior turn has established it, **stop and ask** (one yes/no question, two clarifications max). Don't assume `tenant` just because it's the more common case.
+
+---
+
+## Investigation 1 — "Who did X to resource Y?"
+
+**User asks:** "Who deleted the `Sales-Reports` folder last Tuesday?" / "Who edited the production governance policy this week?" / "Who removed jane.doe from the organization yesterday?"
+
+**Approach:** Discover the source/target IDs that match the resource, narrow `events` by source + target + time window, then format actor + timestamp.
+
+### Step 1 — Discover sources at the right scope
+
+The "what changed" determines scope. Orchestrator-managed entities (folders, queues, assets, processes) and tenant-service activity (Action Center, Apps, Document Understanding, Integration Service, Test Manager, Data Fabric) are **tenant** scope. Identity / authentication, org membership, license, governance policies, and tenant lifecycle are **org** scope.
+
+```bash
+uip admin audit tenant sources --output json > /tmp/sources.json
+```
+
+### Step 2 — Locate the matching source/target
+
+Find a source whose `Name` matches the broad product area, then drill into its `EventTargets[]` for the specific entity type, and `EventTypes[]` for the verb. Names come straight from the `event-metadata/definitions/{org,tenant}/*.json` set published by the Audit Service.
+
+For "deleted folder" (tenant scope):
+
+- Source: `Orchestrator`
+- Target: `Folders`
+- Type: `Delete folder`
+
+Other realistic mappings to keep in mind:
+
+- "edited a governance policy" → **org** scope, Source `Governance`, Target `Policy management`, Type `Edited policy`
+- "removed a user from the org" → **org** scope, Source `Organization Management`, Target `Org Membership`, Type `User Manually Removed From An Org`
+- "created an Orchestrator queue/asset/process" → **tenant** scope, Source `Orchestrator`, with the matching `EventTarget`
+
+The agent should grep the JSON for these names to extract the GUIDs:
+
+```bash
+jq -r '.Data[] | select(.name == "Orchestrator") | .id' /tmp/sources.json
+jq -r '.Data[] | select(.name == "Orchestrator") | .eventTargets[] | select(.name == "Folders") | .id' /tmp/sources.json
+jq -r '.Data[] | select(.name == "Orchestrator") | .eventTargets[] | select(.name == "Folders") | .eventTypes[] | select(.name == "Delete folder") | .id' /tmp/sources.json
+```
+
+> The CLI returns lowerCamelCase keys (`name`, `id`, `eventTargets`, `eventTypes`) over the `Name`/`Id`/`EventTargets`/`EventTypes` shape in the metadata JSON. Use lowerCamelCase in `jq` selectors against the CLI response.
+
+### Step 3 — Query events with filters
+
+```bash
+uip admin audit tenant events \
+  --source <ORCHESTRATOR_SOURCE_GUID> \
+  --target <FOLDERS_TARGET_GUID> \
+  --type   <DELETE_FOLDER_TYPE_GUID> \
+  --from-date   2026-05-11T00:00:00Z \
+  --to-date     2026-05-18T00:00:00Z \
+  --limit  50 \
+  --output json
+```
+
+> **Need more than 50 results?** Bump `--limit` directly — the CLI paginates internally for `--limit > 200` (server clamps each individual call to 200; the tool follows `previous` automatically). Do **not** loop on `--from-date` / `--to-date` or chase cursor flags from the agent.
+
+### Step 4 — Present
+
+For each `auditEvent` in `Data.auditEvents`, surface:
+
+- `createdOn` (UTC)
+- `actorName` (fall back to `actorEmail` or `actorId`)
+- `eventDetails` — parse the JSON-encoded string for the resource-specific fields (e.g., folder name)
+- `status` — translate `0`→`Success`, `1`→`Failure`
+
+If `Data.previous` is non-null, mention "older results available — extend the window with `--from-date <earlier>` to see more."
+
+### Step 5 — When nothing matches, say so
+
+**A "who did it" question with no matching event has exactly one correct answer: "no such event was found."** This is an audit trail — the answer is evidence, and naming the wrong person is worse than returning nothing.
+
+- Report the negative result plainly, state what you searched (scope, source/target/type, window), and offer the next step (widen the window, try the other scope, check whether the resource ever existed).
+- **Never** put forward an actor drawn from an adjacent event — a different resource, a different event type, or a broad `--search` hit — as if it answered the question. If a search for `Sales-Reports` returns nothing but a search for `Sales` returns 13 unrelated events, the answer is still "no `Sales-Reports` deletion found", and any actor named in those 13 events is **not** a candidate.
+- Do not keep broadening filters until something comes back and then present that as the culprit. Two or three well-targeted queries that come up empty are a complete, correct investigation — stop there and report it.
+- Only name an actor when the event you are citing actually matches the resource and the verb the user asked about; quote the `createdOn` and the identifying field from `eventDetails` so the user can verify the match themselves.
+
+---
+
+## Investigation 2 — "Show me logins for user X"
+
+**User asks:** "Show me failed logins for jane.doe@example.com this month." / "When did Bob last log in?" / "Was anyone logging in from outside the US last week?"
+
+**Scope: `org`.** Org-level audit events are everything that's not scoped to a single tenant — anything emitted by services that operate at the organization or cross-tenant level. The broad categories live under `/orgaudit_`:
+
+- **Identity Server / IdP authentication** — `User Login`, password changes, MFA setup, federation events, SSO bindings
+- **Membership** — users joining/leaving the org, role assignments, invitations, group changes at org scope
+- **License & billing** — license assignments, plan changes, seat allocation, billing events
+- **Tenant lifecycle** — tenant create/suspend/delete/restore, region moves
+- **Org settings** — admin role changes, branding/identity provider settings, org-wide policy changes
+- **Robot accounts & external apps** — when managed at org level (vs tenant-bound)
+
+If the user's question maps to anything in those categories — and `User Login` does — query `org` scope. Anything scoped to a single tenant (Orchestrator runs, asset/queue/folder edits, Action Center task changes, Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity) is `tenant` scope instead. Querying `tenant events` for org-level events returns nothing useful because the events don't live under `/{tenantId}/tenantaudit_`. Note that **AOps governance policies, pipelines, and source control are org-scoped** despite the AOps naming — `Governance`, `Pipelines`, and `Source Control` are sources in `org sources`, not tenant.
+
+**Approach:** Audit events store actor identity in indexed top-level columns (`actorId`, `actorName`, `actorEmail`), not inside `clientInfo`/`eventDetails`. So filter by `--user-id <GUID>`, not by `--search <email>` — the audit-events `--search` flag is a `contains` scan over `ClientInfo` (which holds `ipAddress`/`ipCountry`) and `EventDetails` (which holds event-type-specific payload like `Authentication` provider for logins). Neither contains the email, so searching for an email returns zero login events.
+
+To resolve `email → actorId`, use the **Identity Server** (`uip admin users list --search <email>`), not the audit API. The user-list endpoint searches the proper user-name/email columns and returns the GUID you plug into `--user-id`.
+
+### Step 1 — Resolve the user's `actorId`
+
+```bash
+uip admin users list \
+  --search "jane.doe@example.com" \
+  --limit 5 \
+  --output json \
+  --output-filter "Data[0].id"
+```
+
+`uip admin users list --search` matches against the Identity Server's name/email columns (different from audit's `--search`, which is what you want for this lookup). The returned `id` is the user GUID — identical to the `actorId` you'll see in audit events for that user.
+
+### Step 2 — Find the User Login type GUID
+
+Discover from `org sources` (not tenant — login event metadata lives org-side):
+
+```bash
+uip admin audit org sources --output json > /tmp/sources.json
+jq -r '.Data[] | select(.name == "Identity") | .eventTargets[] | select(.name == "Authentication") | .eventTypes[] | select(.name == "User Login") | .id' /tmp/sources.json
+```
+
+The `Identity` → `Authentication` → `User Login` path matches the Audit Service event metadata (`event-metadata/definitions/org/identity.json`). Adjacent types under the same target — `Robot Login`, `External App Login`, `User Logout` — work the same way and are useful when the question is about non-user sign-ins. If `jq` returns empty, list the candidate names with `jq -r '.Data[].name'` and `.eventTargets[].name` and pick the closest match (names can drift across cloud regions/versions).
+
+### Step 3 — Query
+
+> **MANDATORY:** if the question names a specific user (by email, name, or username), the events call **must** include `--user-id <GUID>` from Step 1. Querying by `--type <USER_LOGIN_GUID>` and dates alone returns login events for **every** user in the org — that's a wrong answer, not a degraded one. Do not skip `--user-id` because Step 1 felt redundant or because the date window seemed narrow enough.
+
+For "all logins for jane.doe@example.com this month":
+
+```bash
+uip admin audit org events \
+  --user-id   <USER_GUID> \
+  --type      <USER_LOGIN_TYPE_GUID> \
+  --from-date 2026-04-01T00:00:00Z \
+  --to-date   2026-04-29T23:59:59Z \
+  --limit     200 \
+  --output    json
+```
+
+For "failed logins only" add `--status Failure`:
+
+```bash
+uip admin audit org events \
+  --user-id   <USER_GUID> \
+  --type      <USER_LOGIN_TYPE_GUID> \
+  --status    Failure \
+  --from-date 2026-04-01T00:00:00Z \
+  --to-date   2026-04-29T23:59:59Z \
+  --output    json
+```
+
+**Only** if Step 1 cannot be completed (Identity Server returns 4xx/5xx, the user truly isn't in this org, or the sandbox blocks the call) is it acceptable to skip `--user-id`. In that case, query by `--type <USER_LOGIN_GUID>` + dates, then post-filter the result client-side on `actorEmail`/`actorName`. State explicitly in your reply that this fallback was used and why — the answer is approximate.
+
+When to use audit `--search` instead: useful when filtering by something that *does* live in `clientInfo`/`eventDetails` — e.g., a specific IP address (`--search "20.200.233.203"`), country code, authentication provider name, or session ID. Not useful for users.
+
+### Step 4 — Present
+
+For each event:
+
+- `createdOn`
+- `clientInfo.ipAddress` / `clientInfo.ipCountry` (parse from `clientInfo` field)
+- `eventDetails` — typically contains `AuthenticationProvider` and session info
+
+---
+
+## Investigation 3 — "Give me an audit dump for January"
+
+**User asks:** "Export everything for compliance for Q4." / "I need the full audit log for January for the security review." / "Pull last month's events for tenant X as JSON files."
+
+**Approach:** `export` straight to disk. Default (`json`) writes a **folder** of day-wise JSON files; add `--file-format csv` for a single merged CSV when the user wants a flat, spreadsheet/Excel-friendly dump. No need to query `events` first unless the user wants a preview. Pass `--output-path` a **base directory** — the CLI creates a uniquely-named `audit_<from>_<to>_<generated-at>` folder (`json`) or `.csv` (`csv`) inside it; don't hand-craft the per-export name.
+
+### Step 1 — Confirm scope and window
+
+If the user is ambiguous about scope, ask once. For compliance reviews, **both** scopes are typically needed (separately).
+
+Resolve relative window phrases ("yesterday", "past week", "last month") against the **actual current UTC date** — e.g. `date -u +%F`, `date -u -d 'yesterday' +%F` (macOS/BSD: `date -u -v-1d +%F`) — never guess dates, and echo the resolved bounds in your reply. Export bounds are **whole UTC days, inclusive on both ends**: "yesterday" is the same date for both `--from-date` and `--to-date`; "the past week" is 7 days ago through yesterday (or today, accepting that the trailing day may lag — see gotchas).
+
+If the user named a destination folder, pass it verbatim as `--output-path` — no confirmation needed. Only when they didn't say where should you propose a default (e.g. `./audit-exports`) and confirm once.
+
+### Step 2 — Export
+
+```bash
+# Tenant scope — most events (default json: a uniquely-named folder of day-wise JSON files under the base dir)
+uip admin audit tenant export \
+  --from-date 2026-01-01 \
+  --to-date   2026-01-31 \
+  --output-path ./audit-exports \
+  --output json
+
+# Tenant scope as a single merged CSV (flat, Excel-friendly)
+uip admin audit tenant export \
+  --from-date 2026-01-01 \
+  --to-date   2026-01-31 \
+  --file-format csv \
+  --output-path ./audit-exports \
+  --output json
+
+# Org scope — admin events (memberships, license, tenant lifecycle)
+uip admin audit org export \
+  --from-date 2026-01-01 \
+  --to-date   2026-01-31 \
+  --output-path ./audit-exports \
+  --output json
+```
+
+The CLI issues one HTTP call per UTC day under the hood, then creates a uniquely-named `audit_<from>_<to>_<generated-at>` output under `--output-path`: `json` writes a folder of one JSON file per UTC day; `csv` parses the same daily JSON and merges every event into one `.csv`. The result's `Path` is the generated folder/file (and `GeneratedAt` its timestamp); `Days`/`NonEmptyDays` say how many calendar days had data; `json` reports `Files`, `csv` reports `Events`.
+
+### Step 3 — Verify the export
+
+**JSON (default)** — the export created a generated folder under the base dir; list its per-day files:
+
+```bash
+ls ./audit-exports/*/        # the generated audit_<from>_<to>_<generatedAt>/ folder
+```
+
+Typical layout (the base dir holds one generated folder; one file per UTC day with events):
+
+```
+audit-exports/
+└── audit_2026-01-01_2026-01-31_20260617T112630/
+    ├── 2026-01-01.json
+    ├── ...
+    └── 2026-01-31.json
+```
+
+Each `.json` file is a JSON array of audit events with **LTS-schema** keys (`Identifier`, `DateCreatedUtc`, `OrganizationId`, `ActorId`, `User`, `Action`, …) — different from the camelCase shape returned by the live `events` endpoint. Note this in the user's hand-off if they're going to feed the dump into other tooling.
+
+**CSV** — find the generated file, then inspect the header and row count:
+
+```bash
+csv=$(ls ./audit-exports/audit_*.csv | head -1)   # the generated audit_<from>_<to>_<generatedAt>.csv
+head -1 "$csv"                                      # shared header (LTS-schema columns)
+python3 -c "import csv,sys; print(sum(1 for _ in csv.reader(open(sys.argv[1]))) - 1, 'rows')" "$csv"
+```
+
+One header row, then every event across all days as a data row (same LTS-schema column names as the JSON files' keys). The row count should match `Events` in the result envelope.
+
+Edge cases the CLI handles automatically — surface in your hand-off only if they appear:
+
+- **Nested ZIPs**: when a single day's server response is itself a ZIP-of-ZIPs, inner files are flattened into the folder as `<inner>_<outer>.json` rather than collapsed.
+- **Same-name collisions**: duplicate basenames across days get an `_<YYYY-MM-DD>` suffix (and `_<YYYY-MM-DD>_2`, `_3`, … if needed) to keep filenames unique.
+
+### Step 4 — Hand off
+
+Report:
+
+- The absolute path written
+- Total bytes
+- `Days` requested vs `NonEmptyDays`
+- Whether the user wants the agent to also run an org export (if they only asked for tenant)
+
+If `Days > 365` or the export failed mid-stream, suggest narrowing to monthly chunks: the daily-chunked downloader is robust to multi-month windows but a single bad day in a multi-year export forces a full re-run.
+
+---
+
+## Investigation 4 — "What's been happening at the org / tenant level?"
+
+**User asks:** "Show me the most recent admin activity in our org." / "What's happened on tenant T this past week?" / "I'm new — give me the audit history overview."
+
+**Approach:** Run both scopes, fetch a bounded recent window with no filters, summarize event-type frequencies.
+
+### Step 1 — Recent events at each scope
+
+```bash
+uip admin audit org    events --from-date 2026-04-22 --to-date 2026-04-29 --limit 100 --output json > /tmp/org-events.json
+uip admin audit tenant events --from-date 2026-04-22 --to-date 2026-04-29 --limit 100 --output json > /tmp/tenant-events.json
+```
+
+### Step 2 — Group by event type/source
+
+```bash
+jq -r '.Data.auditEvents | group_by(.eventType) | map({eventType: .[0].eventType, count: length}) | sort_by(-.count)' /tmp/org-events.json
+jq -r '.Data.auditEvents | group_by(.eventType) | map({eventType: .[0].eventType, count: length}) | sort_by(-.count)' /tmp/tenant-events.json
+```
+
+### Step 3 — Present
+
+- Top 5 event types per scope
+- Most active actors (group by `actorName`)
+- Time distribution (events per day)
+
+If the user wants more depth on any one event type, drill in with Investigation 1's pattern (filter by `--source` and `--type`).
+
+---
+
+## Picking the right investigation
+
+| User intent signal | Investigation |
+|---|---|
+| "who" / "did" + a verb on a resource | **1** — Who did X to Y |
+| "logged in" / "login" / "authenticated" / a user's email | **2** — Login history |
+| "export" / "dump" / "JSON" / "CSV" / a date range | **3** — Date-range dump |
+| "overview" / "what's happening" / "recent activity" / "audit summary" | **4** — Overview |
+
+Two or more signals? Run them in sequence and stitch the results in the final report. Don't make the user re-ask.
+
+## Common gotchas
+
+- **`tenant` events without an active tenant fail loudly.** If `uip login` has no tenant selected, every tenant-scoped command throws. Either re-`uip login` and pick a tenant, or pass `--tenant-id <guid>` on every call.
+- **`events` cursor pagination is chronologically reversed from intuition.** `next` = newer (often null), `previous` = older (the typical "load more"). The CLI tool follows `previous` automatically when you bump `--limit > 200` — don't re-implement this in the agent.
+- **On `events`, date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
+- **On `export`, both bounds are whole UTC days, inclusive** — the server truncates times to the calendar day. All of January is `--from-date 2026-01-01 --to-date 2026-01-31`; a single day is the same date for both bounds. Do NOT carry the `events` next-day trick over to `export` — it exports an extra full day.
+- **The long-term store lags live `events`** (typically up to ~24–48 h). An export window that includes today/yesterday succeeds but the trailing days may come back empty even though `events` shows data. Mention this when the user's window is that recent; offer to re-run later or end the window 2 days back if completeness matters.
+- **Resolve relative dates against the real UTC clock** (`date -u +%F`, `date -u -d 'yesterday' +%F`; macOS/BSD `date -u -v-1d +%F`) and echo the resolved window — never guess what "yesterday" is.
+- **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into a generated subfolder under `--output-path`, with **LTS-schema** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same LTS-schema field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInformation` is a JSON-stringified cell.
+- **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
+
+## Output Etiquette — after an audit query or export
+
+After every `events` or `export` call, surface the following before waiting for the user's next-step choice. Do not chain mutations.
+
+1. **Operation & result** — e.g. `Found 47 audit events on tenant T in the last 7 days`, `Wrote 27 JSON files (123,456 bytes) to /path/to/audit-jan/ (31 days, 27 non-empty)`, or for CSV `Wrote 98,765 bytes to /path/to/audit.csv (1,234 events across 31 days, 27 non-empty)`.
+2. **Scope used** (`org` or `tenant`) and any `--tenant-id` override.
+3. **Time window** — explicit ISO bounds, even if they came from a relative phrase ("last 7 days").
+4. **Filters applied** — sources, types, users, status.
+5. **Cursor state** — for `events`, mention whether `Data.previous` is null (start of audit history) or populated (more older events available — re-run with a larger `--limit`).
+6. **Next step** — "Want me to widen the window?", "Want me to export this slice?", "Want me to filter by user X?". Wait for the user's choice — **unless the user's original message already asked for the follow-on steps** (e.g. "show me the sources, preview recent events, then export the week"): finish the full requested sequence first, then hand off. These are read-only queries; pausing mid-way to re-confirm work the user already asked for is noise, not safety.

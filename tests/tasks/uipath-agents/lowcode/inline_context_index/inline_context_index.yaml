@@ -1,0 +1,132 @@
+task_id: skill-agent-inline-context-index
+description: >
+  Context grounding tools for flow inline agents. End-to-end test:
+  scaffold a flow project with an inline low-code agent that grounds
+  its answers in an external semantic index. Verifies the context
+  resource.json under the inline agent's UUID subdirectory uses
+  `$resourceType: "context"`, `contextType: "index"`, a valid
+  retrievalMode, and that a `uipath.agent.resource.context.index` flow
+  node is wired to the autonomous agent node's `context` handle.
+  Indexes always live externally to the solution.
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow, context-grounding]
+
+run_limits:
+  expected_turns: 90
+  turn_timeout: 1200
+
+# Explicitly mentioning "autonomous" here since the "question"/"answer" prompt may
+# cause the coding agent to assume the conversational low-code agent variant.
+initial_prompt: |
+  Create a UiPath Flow project "KnowledgeFlow" that runs an autonomous inline 
+  low-code agent which answers a user's `question` (string) and returns an `answer`
+  (string). It should base its answers on our existing
+  "UiPathAgentsProductKnowledge" knowledge index — which is already set up in
+  our tenant — instead of answering from general knowledge. Wire it into the
+  flow. The solution should be named "KnowledgeFlowSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  - type: command_executed
+    description: "Agent scaffolded the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory, non-gating: inline agents can discover the index identity via the
+  # flow registry (uip maestro flow registry search/get) instead of solution
+  # resources list, so don't gate on it here. Standalone agents (context_index)
+  # have no flow registry and keep this gating.
+  - type: command_executed
+    description: "Advisory: agent discovered the index identity with uip solution resources list (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+list\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent fetched the index configuration with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent searched the flow registry for the context index manifest"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+search\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the context index node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.context\.index\.'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "KnowledgeFlowSol/KnowledgeFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "KnowledgeFlowSol/KnowledgeFlow/KnowledgeFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline context index: resource.json shape + context.index flow node + context-handle edge"
+    command: "python3 $TASK_DIR/check_inline_context_index.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

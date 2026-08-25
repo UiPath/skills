@@ -1,0 +1,57 @@
+task_id: skill-agent-coded-eval-trajectory-empty-history
+description: >
+  Diagnose-mode coverage. Quickstart Step 7 documents that
+  `uipath-llm-judge-trajectory-similarity` scores 0.0 on plain
+  `StateGraph` agents because `AgentRunHistory` is empty — the agent
+  may run fine end-to-end while the trajectory eval reports total
+  failure. This seeds the exact failure state (working agent +
+  trajectory evaluator + eval-results.json showing all 0.0) and
+  expects the skill to guide the agent to diagnose the root cause
+  and apply one of the two documented fixes: (a) switch to an
+  output-based evaluator, or (b) add `@traced()` from `uipath.tracing`
+  to emit AgentRunHistory spans. Runs offline.
+tags: [uipath-agents, e2e, coded, mode:diagnose, feature:eval, feature:framework-langgraph]
+max_iterations: 1
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_trajectory_empty_history/_fixtures/ticket-router ."
+    timeout: 10
+  - command: "bash -c 'cd ticket-router && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
+
+initial_prompt: |
+  I have a LangGraph coded agent project at `ticket-router/`. It
+  routes support tickets between `billing` and `technical` queues
+  and works locally — `uip codedagent run` returns the correct
+  category every time. But the smoke eval set scores 0.0 on every
+  case (see the seeded `ticket-router/eval-results.json` from the
+  last `uip codedagent eval` run). Diagnose why and fix it.
+
+  For this classifier, the trace-history check the evaluator does
+  isn't useful — there's nothing interesting in the trajectory.
+  All I need is for the eval to fail when the agent picks the
+  wrong category. A simple "did the right keyword end up in the
+  output" check would tell me everything I need.
+
+  Do NOT call `uip login` or run `uip codedagent eval`. Diagnose
+  from the on-disk project files and fix it. Complete it in a
+  single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "Seeded project preserved (main.py)"
+    path: "ticket-router/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Trajectory-on-plain-StateGraph trap diagnosed and one of the two documented fixes applied"
+    command: "python3 $TASK_DIR/check_eval_trajectory_empty_history.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 18
+  turn_timeout: 1200

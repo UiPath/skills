@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "_doc": "Execution logs end abruptly mid-Delay — no Job Completed line. Last user-workflow line is the start of the long-running step. The Robot Service logs the kill request and abrupt exit. Kill request source is recorded as API.",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-19T08:03:01.255Z",
+      "Message": "Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (ReleaseName=LongRunningProcess) ended with unexpected exit code 0x40010004. The executor was terminated externally; no graceful shutdown was performed."
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-05-19T08:03:00.005Z",
+      "Message": "[Robot] Stop request received for job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (strategy=Kill, source=API). Terminating executor process."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-19T08:00:00.520Z",
+      "Message": "[LongRunningProcess] Starting long-running work — 5 minute delay simulates a slow inference or batch step."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-19T08:00:00.510Z",
+      "Message": "Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (ReleaseName=LongRunningProcess) entering Running state on MOCK-HOST."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-19T08:00:00.310Z",
+      "Message": "Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' created. Source=Schedule, ReleaseName=LongRunningProcess, RequiresUserInteraction=False."
+    }
+  ]
+}

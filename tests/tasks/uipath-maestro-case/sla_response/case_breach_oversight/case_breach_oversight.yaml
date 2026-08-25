@@ -1,0 +1,59 @@
+task_id: skill-case-sla-case-breach-oversight
+description: >
+  T5b of the SLA-response battery, and the test for the secondary-stage Interrupting
+  carve-out. Same case-SLA breach requirement as case_breach_takeover with one clause
+  changed — the case team keeps working while the lane runs — so the correct answer flips
+  to isInterrupting false. The lane must stay stageType secondary and isRequired false:
+  promoting it to a regular stage to dodge the "every secondary entry is interrupting" rule
+  would make it required for case completion. validate accepts either isInterrupting value
+  on an sla-status-change entry (probed on uip 1.198.0-preview.102), so the requirement's
+  wording is the only thing that decides it.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The SlaResponse case solution already exists on disk under SlaResponse/. Its case
+  definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
+  Decision) and a 10-day case SLA.
+
+  Ops wants this: when a case blows the full 10 days, a "Case SLA Oversight" lane opens so
+  a director can track it to the finish. The case team keeps working the case the entire
+  time — nothing pauses, no work is handed over to the director, and the case is not
+  rerouted. The lane runs alongside whatever is in progress, and a case does not need the
+  director's oversight to finish normally.
+
+  Model the director's work as one placeholder task in that lane — no action app or agent
+  is resolvable on this tenant, so leave its identity unresolved per the skill's rules and
+  do NOT query the tenant registry, connections, or users.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback — make the change end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One sla-status-change entry on a NON-interrupting lane: slaId alone (no escalationId) on the root SLA, isInterrupting false, and the lane stays stageType secondary with isRequired false rather than being promoted to a regular stage; 4 stages total"
+    command: "python3 $TASK_DIR/check_case_breach_oversight.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

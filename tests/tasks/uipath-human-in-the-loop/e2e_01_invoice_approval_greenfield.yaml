@@ -7,16 +7,13 @@ description: >
   approval flow from scratch — detecting write-back + approval gate signals,
   designing schema, adding HITL node, wiring all handles, and validating the
   authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
-tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
+  Does not deploy or run the flow.
+tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga]
 
-agent:
-  type: claude-code
-  max_turns: 40
-  turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  expected_turns: 19
+  max_turns: 60
+  turn_timeout: 2400
 
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that extracts invoice data
@@ -24,57 +21,50 @@ initial_prompt: |
   needs to review and approve each invoice before it is posted — we cannot
   write to SAP without human sign-off.
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
   Show the finance manager the relevant invoice fields, give them Approve and
-  Reject outcomes, and wire the completed handle to the downstream SAP step.
-  Use $vars.<hitl-node-id>.output downstream to access the manager's decision.
+  Reject outcomes, and wire the review step to the downstream SAP posting step.
 
   Validate the flow when you're done.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created at the expected path"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the inline HITL node type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Flow uses the quickform schema type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"type": "quick"'
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
+  - type: run_command
     description: "Flow exposes Approve and Reject outcomes"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - "Approve"
-      - "Reject"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval 'Approve' 'Reject'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow wires the completed handle"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"completed"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval 'completed'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: run_command
     description: "Downstream step references $vars.<hitl-node-id>.output"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    pattern: '\$vars\.[A-Za-z0-9_-]+\.output'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval --regex '\\$vars\\.[A-Za-z0-9_-]+\\.output'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -88,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

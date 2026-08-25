@@ -201,7 +201,7 @@ When the user asks for a scope-limited rule:
 
 - "Apply to one user only" → deploy at **user** level. Overrides group and tenant for that user.
 - "Apply to the X team / group" → deploy at **group** level. Overrides tenant for group members.
-- "Apply to everyone in this tenant" → deploy at **tenant** level (with a `(product, licenseType)` key). Base-layer default.
+- "Apply to everyone in this tenant" → deploy at **tenant** level (with a `(product, license type)` key). Base-layer default.
 - "Exception for team X that ignores the tenant rule" → deploy a different policy at group level; tenant-level rule still applies to non-members.
 
 Order of effective resolution: **User > Group > Tenant > (no policy)**. See [aops-policy-deploy-guide.md — Deployment precedence](./aops-policy-deploy-guide.md#deployment-precedence) for the decision flow.

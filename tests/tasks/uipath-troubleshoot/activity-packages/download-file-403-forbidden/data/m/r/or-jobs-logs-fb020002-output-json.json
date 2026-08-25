@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T10:02:19.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-16T10:02:20.260Z",
+      "Message": "[Download File from URL] Requesting https://portal.example.com/reports/q3-summary.xlsx"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T10:02:21.330Z",
+      "Message": "[Download File from URL] The remote server returned an error: (403) Forbidden. (https://portal.example.com/reports/q3-summary.xlsx)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T10:02:21.400Z",
+      "Message": "Download File from URL: The remote server returned an error: (403) Forbidden.\r\nin Main.xaml\r\n    at DownloadFileFromUrl \"Download File from URL\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T10:02:21.450Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

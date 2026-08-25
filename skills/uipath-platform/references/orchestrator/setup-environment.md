@@ -13,7 +13,7 @@ Create folders, assign users with roles, provision machines, and configure licen
 
 ## Prerequisites
 
-1. Authenticated: `uip login`
+1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. Tenant selected: `uip login tenant set <tenant-name>`
 3. Sufficient permissions: tenant-level admin or folder-create rights.
 
@@ -24,7 +24,7 @@ Create folders, assign users with roles, provision machines, and configure licen
 ```mermaid
 graph LR
     A[folders create] --> B[roles create]
-    B --> C[roles edit<br/>add permissions]
+    B --> C[roles update<br/>add permissions]
     C --> D[users import]
     D --> E[users assign<br/>to folder + role]
     E --> F[machines create]
@@ -50,6 +50,10 @@ Key options:
 - `--parent <key-or-path>` -- Nest inside an existing folder (GUID key or path like `"Shared"`).
 - `--description <text>` -- Human-readable description.
 - `--permission-model <model>` -- `FineGrained` (default, per-folder RBAC) or `InheritFromTenant`.
+- `--feed-type <type>` -- Package feed scope. The names don't describe the behavior, read them as:
+  - `Processes` (default) -- folder shares the **tenant-level** processes feed.
+  - `FolderHierarchy` -- folder has its **own folder-scoped** feed, inherited by sub-folders.
+  - `Libraries` -- folder is backed by the tenant libraries feed (libraries instead of processes).
 
 Save the `Key` from the response -- you will use it as `--folder-path` or `--folder-key` in later steps.
 
@@ -88,7 +92,7 @@ uip or folders delete "Finance/Invoicing" --output json
 uip or folders delete <folder-key-guid> --output json
 ```
 
-The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`). Without `--all`, only folders the current user is assigned to are returned.
+The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, only folders the current user is assigned to are returned.
 
 `folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
@@ -96,12 +100,14 @@ The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top
 
 Roles group permissions and are scoped to either the tenant or a folder. Create the role first (it starts with zero permissions), then add permissions to it.
 
+> **⚠️ `uip or roles` is the Orchestrator RBAC catalog — a different store from Identity/organization authorization roles (`uip admin authorization roles`, see [uipath-admin](/uipath:uipath-admin)). The two are disjoint: a role created with `admin authorization roles` does NOT appear in `uip or roles list`, and vice versa.** Both have Tenant-scoped roles, so "a tenant-level role" alone doesn't tell you which one. For any Orchestrator role/permission lifecycle — create, add/remove permissions, assign to users/folders — use `uip or roles`. Reach for `admin authorization roles` only for org-level Identity roles that span services.
+
 ```bash
 # Create a folder-scoped role
 uip or roles create --name "FinanceOperator" --type Folder --output json
 
 # Add permissions to the role
-uip or roles edit <role-key> \
+uip or roles update <role-key> \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View" \
   --output json
 ```
@@ -112,6 +118,8 @@ Role types:
 
 - **Tenant** — Applies across the entire tenant. Assigned via `uip or users assign-roles`.
 - **Folder** — Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
+
+> **⚠️ All three role-assign commands are destructive.** `users assign-roles`, `users assign`, and `roles assign` each **replace** the user's role list at their respective scope (tenant or per-folder). Roles not in `--role-keys` are removed silently. Always read the current roles first with `uip or roles user-roles list <user-key> --output json` and pass the full desired union. For purely additive *user* membership on a single role, use `uip or roles users <role-key> --add-users <user-key>` — that command does NOT replace the role's other assignees.
 
 #### Inspect / Audit / Delete Roles
 
@@ -138,26 +146,56 @@ uip or roles delete <role-key> --output json
 
 `roles user-permissions` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles` is the inverse — given a user, which role assignments exist.
 
-### Step 4: Import Users from Identity Service
-
-Principals are managed in Identity Service (IS), not in Orchestrator. `users import` references an existing IS principal so the tenant can grant it folder access. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)
+For the forward lookup — "who holds this role" — use `roles users list`:
 
 ```bash
-uip or users import --username "jane.doe@example.com" --output json
+# Principals assigned to a role (users, groups, robots, external apps)
+uip or roles users list <role-key> --output json
 ```
 
-Key options:
+`Pagination.Total` is the role's full membership count, so a role with no assignees returns `Data: []` and `Total: 0`. Auditing a whole tenant is therefore one call per role, not a directory sweep per principal.
 
-- `--directory-id <id>` — Use the IS directory identifier (OIDC subject) instead of `--username`. Pass exactly one of the two.
-- `--domain <domain>` — IS directory domain. Defaults to `default`. List configured domains via `GET /api/DirectoryService/GetDomains` if your tenant uses on-prem AD or a non-default IS realm.
-- `--type <type>` — IS principal type. Four supported:
-  - `DirectoryUser` (default) — a real human user.
+### Step 4: Import Users from Identity Service
+
+Principals are managed in Identity Service (IS), not in Orchestrator. `users import` is the **single integration point** between IS and the tenant: it references an existing IS principal and provisions the matching tenant user record. Everything downstream (`users assign`, `users assign-roles`, `roles assign`, etc.) takes the resolved Orchestrator user-key — no further IS round-trips. (The legacy `users create` / `users delete` commands are gone — they called endpoints reserved for `ProvisionType=Manual`, which is not how cloud or IS-backed users are managed.)
+
+```bash
+# Human user (cloud SSO or AD)
+uip or users import --username "jane.doe@example.com" --type DirectoryUser --domain "uipath" --output json
+
+# Robot account — requires --directory-id (the IS UUID)
+uip admin robot-accounts create "InvoiceRunner" --output json   # capture .Data.id
+uip or users import --directory-id <id-from-above> --type DirectoryRobot --domain autogen --output json
+
+# External application — requires --directory-id (the IS UUID)
+uip admin external-apps list --search "MyApp" --output json   # capture .id
+uip or users import --directory-id <id-from-above> --type DirectoryExternalApplication --domain autogen --output json
+```
+
+Required options:
+
+- `--type <type>` — **Required**, no default. The CLI refuses to guess what kind of principal you're importing (otherwise a robot might silently land as a DirectoryUser in the tenant). Four values:
+  - `DirectoryUser` — a real human user.
   - `DirectoryGroup` — a directory group; folder grants apply to every member.
-  - `DirectoryRobot` — a **robot account** in IS. This is the standard way to give a folder an unattended robot identity. The robot account is created in IS first (separate flow); `users import --type DirectoryRobot` brings it into the tenant so it can be assigned to a folder and licensed for unattended execution. Without an imported `DirectoryRobot` (or a `DirectoryUser` with unattended permissions), `jobs start` returns `HTTP 409: Couldn't find any user with unattended robot permissions in the current folder.`
-  - `DirectoryExternalApplication` — an IS-registered external app (client credentials principal). Used for service-to-service tenants; folder grants apply to whoever holds the client secret.
-- `--folder-path <path>` / `--folder-key <key>` + `--role-keys <guids>` — Optional one-shot. Imports the principal **and** assigns folder roles in a single call. Both must be present together; pass neither for an import-only call. The next step covers folder assignment as a separate flow.
+  - `DirectoryRobot` — a **robot account** in IS. Standard way to give a folder an unattended robot identity. Without it (or a `DirectoryUser` with unattended permissions), `jobs start` returns `HTTP 409: Couldn't find any user with unattended robot permissions in the current folder.`
+  - `DirectoryExternalApplication` — an IS-registered external app (client-credentials principal) for service-to-service flows.
 
-Save the `UserName` from the response and look up the `Key` via `users list` for the next step.
+- `--domain <domain>` — IS directory domain. `autogen` for `DirectoryRobot` / `DirectoryExternalApplication`. For `DirectoryUser` / `DirectoryGroup`, the tenant's IS directory domain (typically the cloud org slug or the on-prem AD domain).
+
+Principal identifier — provide exactly one of:
+
+- `--username <name>` — IS principal name. Works for `DirectoryUser` / `DirectoryGroup` when the principal resolves as `<domain>\<name>` in IS (on-prem AD setups, classic IS configurations). For cloud SSO users this lookup typically fails — use `--directory-id` instead.
+- `--directory-id <uuid>` — IS UUID. **Required for `DirectoryRobot` and `DirectoryExternalApplication`** — the server-side `UserService.CreateAsync` rejects these types with HTTP 400 unless the tenant user-record `Key` matches the IS identifier, and `Key` is only populated when `--directory-id` is set. Find the UUID via:
+  - `uip admin robot-accounts create <name>` — returns the new robot's `.Data.id`.
+  - `uip admin robot-accounts list --search <name>` — `.Data[].id` of an existing robot.
+  - `uip admin external-apps list` — `.Data[].appId` for IS-registered external apps.
+  - `uip admin users list --search <name>` — `.Data[].id` for human users (when you'd prefer the UUID over `--username`).
+
+Optional one-shot folder assignment:
+
+- `--folder-path <path>` / `--folder-key <key>` + `--role-keys <guids>` — Imports the principal **and** assigns folder roles in a single call. Pass both together; pass neither for an import-only call.
+
+Save the `Key` from the response (returned via `users list --username "<imported-name>"` once import succeeds) — that's the **Orchestrator user-key** you'll use in `users assign`, `users assign-roles`, `roles assign`, and similar commands.
 
 ### Step 4b: Inspect / Edit / Unassign / Remove Users
 
@@ -172,7 +210,7 @@ uip or users get <user-key-guid> --output json
 uip or users list-available --folder-path "Finance" --search "jane" --output json
 
 # Edit principal-level flags (this is the only place to grant unattended on a DirectoryUser)
-uip or users edit <user-key-guid> \
+uip or users update <user-key-guid> \
   --allow-unattended \
   --license-type Unattended \
   --unattended-username "DOMAIN\\jane.doe" --unattended-password "<secret-or-cred-store-name>" \
@@ -182,14 +220,16 @@ uip or users edit <user-key-guid> \
 uip or users unassign <user-key-guid> --folder-path "Finance" --output json
 ```
 
-Key flags on `users edit`:
+Key flags on `users update`:
 
 - **License toggles** (mutually exclusive pairs): `--allow-unattended`/`--deny-unattended`, `--allow-attended`/`--deny-attended`, `--allow-login`/`--deny-login`, `--allow-personal-workspace`/`--deny-personal-workspace`, `--active`/`--inactive`.
 - `--license-type <Attended|Unattended|...>` — assigned license profile.
 - `--unattended-username <user>` and `--unattended-password <pass>` — Windows account + secret used for unattended execution. Required by the API as a pair when first toggling `--allow-unattended` on a `DirectoryUser`. Username typically `DOMAIN\\name` format. Password may be a literal secret or the name of an entry in a credential store (paired with `--credential-store-key <guid>`).
 - `--credential-store-key <guid>` — credential store backing `--unattended-password` when the secret is stored externally.
 
-`DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users edit --license-type Unattended` on the robot key to set the license profile.
+`DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users update --license-type Unattended` on the robot key to set the license profile.
+
+> **`users update` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users <role-key> --add-users/--remove-users` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — updating them via `users update` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
 
 ### Step 5: Assign Users to Folders
 
@@ -207,6 +247,8 @@ Key details:
 - `--role-keys` is optional. Users can be assigned to a folder without roles (the API's `RoleId` is nullable). They will have access to the folder but no specific permissions until roles are added.
 - Use `--folder-path` (e.g., `"Finance"` or `"Finance/Invoicing"`) or `--folder-key` (GUID).
 - To verify: `uip or users list-in-folder --folder-path "Finance" --output json`.
+
+> **⚠️ Destructive — REPLACE semantics.** `users assign` (and the equivalent `roles assign`) **replaces** the user's folder-level role list in the target folder with whatever you pass in `--role-keys`. Roles not in the payload are removed silently. To **add** a role without dropping others, first read the existing folder roles with `uip or roles user-roles list <user-key> --output json`, then pass the full desired union to `--role-keys`. The same applies to `users assign-roles` for tenant-level roles.
 
 ### Step 6: Create Machines
 
@@ -245,7 +287,7 @@ Verify: `uip or machines list --folder-path "Finance" --output json`.
 uip or machines get <machine-key-guid> --output json
 
 # Edit slots, name, description (PATCH semantics — only provided fields change)
-uip or machines edit <machine-key-guid> \
+uip or machines update <machine-key-guid> \
   --unattended-slots 4 --headless-slots 2 \
   --name "finance-runner-01-renamed" --output json
 
@@ -253,17 +295,19 @@ uip or machines edit <machine-key-guid> \
 uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
 
 # Delete the machine template entirely (tenant-level)
-uip or machines delete <machine-key-guid> --output json
+uip or machines delete <machine-key-guid> --yes --output json
 
 # Bulk delete
-uip or machines delete <key1> <key2> --output json
+uip or machines delete <key1> <key2> --yes --output json
 ```
 
 Notes:
 
-- `machines edit` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed.
+- `machines update` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed. `machines update` echoes the new name when you rename.
+- Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
+- `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
 - Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
-- `machines list` defaults to all machines visible to the user. With `--folder-path` it lists only machines assigned to that folder. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.).
+- `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
 
 ### Step 8: Configure Licenses
 
@@ -301,13 +345,13 @@ uip or folders create "Finance" -d "Finance department automations" --output jso
 uip or roles create --name "FinanceOperator" --type Folder --output json
 # Response: { "Data": { "Key": "r1r2r3r4-..." } }
 
-uip or roles edit r1r2r3r4-... \
+uip or roles update r1r2r3r4-... \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View,Processes.View" \
   --output json
 
-# 4. Import a user from Identity Service
-uip or users import --username "jane.doe@example.com" --output json
-# (Look up the assigned Key with: uip or users list --search "jane.doe")
+# 4. Import a user from Identity Service (--type is required; --directory-id required for Robot/ExtApp)
+uip or users import --username "jane.doe@example.com" --type DirectoryUser --domain "uipath" --output json
+# (Look up the assigned Key with: uip or users list --username "jane.doe@example.com")
 
 # 5. Assign user to folder with role
 uip or users assign \
@@ -337,9 +381,9 @@ uip or machines list --folder-path "Finance" --output json
 
 ## Variations and Gotchas
 
-### Folder edit uses `edit`, not `update`
+### The mutation verb is `update` (`edit` is a deprecated alias)
 
-The verb is `edit` for both folders and machines: `uip or folders edit <key>`, not `update`.
+All five admin nouns use `update`: `uip or folders update <key>`, `machines update`, `processes update`, `roles update`, `users update`. The old `edit` spelling still works as a hidden alias for backward compatibility, but new scripts should use `update`.
 
 ### Users can be assigned without roles
 
@@ -365,7 +409,9 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 ### `--all` flag on folders list enables filtering
 
-Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
+Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
+
+`folders list --all` rows also include `FeedType` (e.g. `FolderHierarchy`, `Processes`); the plain `folders list` does not (the current-user folders API doesn't return it). Use `--all` or `folders get` when you need `FeedType`.
 
 ### Personal workspaces are flat
 
@@ -376,4 +422,4 @@ Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`) on
 ## Related
 
 - [Run Jobs](run-jobs.md) — After setup, deploy packages and start jobs in the folder.
-- Create assets, queues, and buckets in the folder → [`uipath-resources`](../resources/resources.md)
+- Create assets, queues, and buckets in the folder → [resources.md](resources.md)

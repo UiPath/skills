@@ -1,0 +1,166 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-33cc3333-001",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-002",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelWriteCellProcess] Per-row status update — workbook C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-003",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — workbook opened (Modern scope, OpenXML provider)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-004",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.812Z",
+      "Message": "Read Range: A1:F313 — completed, 312 rows read into Rows",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-005",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.110Z",
+      "Message": "For Each Row in Rows — iteration 1 of 312",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-006",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.312Z",
+      "Message": "Write Cell: row N status — iteration 1: wrote 'Normal' to Sales!E2",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-007",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.512Z",
+      "Message": "Write Cell: row N status — iteration 2: wrote 'High' to Sales!E3",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-008",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:12.310Z",
+      "Message": "Write Cell: row N status — iteration 50: wrote 'Normal' to Sales!E51 (~200ms/iter avg)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-009",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:22.418Z",
+      "Message": "Write Cell: row N status — iteration 100: wrote 'High' to Sales!E101 (~210ms/iter avg)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-010",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:01:18.512Z",
+      "Message": "Write Cell: row N status — iteration 150: wrote 'Normal' to Sales!E151 (~270ms/iter avg, perf degrading)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-011",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:02:31.812Z",
+      "Message": "Write Cell: row N status — iteration 200: wrote 'High' to Sales!E201 (~440ms/iter avg, perf degrading)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-012",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:04:02.312Z",
+      "Message": "Write Cell: row N status — iteration 245: wrote 'Normal' to Sales!E246 (~860ms/iter avg, perf degrading)",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-013",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:04:06.118Z",
+      "Message": "Write Cell: row N status — iteration 246: wrote 'High' to Sales!E247",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-014",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:04:09.910Z",
+      "Message": "Write Cell: row N status — iteration 247: wrote 'Normal' to Sales!E248",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-015",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:04:13.610Z",
+      "Message": "For Each Row in Rows — iteration 248 of 312",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-33cc3333-016",
+      "JobKey": "33cc3333-2222-3333-4444-555566667777",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:04:18.402Z",
+      "Message": "Write Cell: row N status — iteration 248: UiPath.Excel.BusinessException: The data you want to write has a wrong format, or Excel is busy.",
+      "ProcessName": "ExcelWriteCellProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

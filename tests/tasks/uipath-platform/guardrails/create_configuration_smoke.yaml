@@ -1,0 +1,114 @@
+task_id: skill-platform-guardrails-byog-create
+description: >
+  Smoke test: agent uses the uipath-platform skill to register a
+  bring-your-own guardrail (BYOG) configuration on the tenant. A selective
+  `uip` shim (mock_template/mocks/uip) answers the BYOG and Integration
+  Service connection commands — every other uip command passes through to
+  the real CLI — so the prompt can be what an admin would actually ask,
+  with no "commands will fail, run them anyway" coaching. Verifies the
+  agent does the pre-flight the skill prescribes (list existing
+  configurations, since ValidatorName is tenant-unique; list IS
+  connections to resolve --connection-id) instead of fabricating a GUID,
+  builds the create call with the requested name, type and fallback flag,
+  does not reach for a `get <id>` verb (there isn't one), and tells the
+  user that the platform probed the connection before saving. The shim
+  enforces the probe: a made-up --connection-id fails with
+  ByoGuardrailProbeFailed and persists nothing, exactly like the real CLI.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, guardrail]
+
+run_limits:
+  expected_turns: 12
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: mock_template}
+
+initial_prompt: |
+  Our security team wants agent PII checks to run through our own Azure AI
+  Content Safety instance instead of the UiPath built-in one.
+
+  Set that up on this tenant: register it as a bring-your-own guardrail
+  configuration named `byog-smoke-pii` for the `pii_detection` validator
+  type, calling through our `Azure AI Content Safety - Prod` connection.
+  If our provider is ever unreachable at runtime the check should fall
+  back to the UiPath built-in guardrail rather than failing outright.
+
+  Then tell me one thing: when the configuration was saved, did the
+  platform actually check that the connection works, or do I need to
+  verify that myself?
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-platform skill"
+    skill_name: "uipath-platform"
+    expected_skill: "uipath-platform"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed existing BYOG configurations before creating (ValidatorName is tenant-unique) — `list`, not `list-validators`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+list(?![\w-])'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed Integration Service connections to resolve --connection-id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+connections\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked byo-configurations create with the discovered connection id (literal or captured in a variable), the requested validator name and type, and the fallback flag"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+create(?=[\s\S]*--connection-id[= ]\s*["'']?(18fb337c-29b7-4162-a9e8-0c05b01cf4df|\$))(?=[\s\S]*--validator-name[= ]\s*["'']?byog-smoke-pii)(?=[\s\S]*--validator-type[= ]\s*["'']?pii_detection)(?=[\s\S]*--fallback-on-ui-path)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not invent a `byo-configurations get` verb — there is none; inspect by filtering `list`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+get\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent told the user the platform probed the connection before saving, rather than leaving verification to them"
+    include_agent_output: true
+    prompt: |
+      The user asked, after registering a BYO guardrail (BYOG)
+      configuration, whether the platform actually checked that the
+      underlying Integration Service connection works when it saved the
+      configuration, or whether they need to verify that themselves.
+
+      The true answer: the platform DID check. `uip guardrails
+      byo-configurations create` always probes the connection/validator
+      pair server-side before the record is saved, and there is no skip
+      flag — a failed probe aborts the create and nothing is persisted
+      (surfacing as `Code: ByoGuardrailProbeFailed`). The probe asks the
+      connector for its validators and evaluates a benign test input, so
+      it confirms both that the connection is reachable and that the
+      service actually serves the requested validator type. So a create
+      that succeeded is proof the pair was verified, and no separate
+      manual verification is needed.
+
+      Score 1.0 if the response conveys that the platform DID
+      validate/probe the connection before saving — equivalently, that
+      the successful create means the pair was already verified, or that
+      a bad connection would have been rejected rather than saved.
+
+      Score 0.0 if the response claims or implies the configuration was
+      saved WITHOUT server-side validation (for example telling the user
+      to go and verify the connection themselves, or calling the saved
+      configuration unverified), or says nothing about validation at all.
+    weight: 2.0
+    pass_threshold: 1.0

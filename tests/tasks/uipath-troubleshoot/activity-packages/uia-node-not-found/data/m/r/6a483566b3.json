@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "a14788df-5ff8-4564-a212-1898fd5e8b61",
+    "text": "Use **Check App State** when the UI can be in *one of two states* (e.g., \u201cloading spinner visible\u201d vs \u201ccontent loaded\u201d), and you want to run different actions depending on which state you detect.\n\nUse **wait-for-element**\u2013type activities when you just need to ensure a specific element is ready before clicking.\n\nFrom the docs:\n\n- **[Check App State](https://docs-staging.uipath.com/activities/other/latest/ui-automation/n-check-state)**  \n  - Verifies if an element appears or disappears.  \n  - Can monitor an entire app for changes.  \n  - Lets you define:\n    - \u201cTarget appears\u201d branch (element found)\n    - \u201cTarget not appears\u201d branch (element not found)  \n  - Can be used inside or outside **Use Application/Browser** and as a condition for **Retry Scope**.\n\n- **Classic wait/exists activities** (from *UI Automation \u2013 UI Synchronization*):  \n  - [Element Exists](https://docs-staging.uipath.com/activities/docs/ui-element-exists), [Find Element](https://docs-staging.uipath.com/activities/docs/wait-ui-element-appear), [Wait Element Vanish](https://docs-staging.uipath.com/activities/docs/wait-ui-element-vanish), etc.  \n  - Designed to \u201cwait for the desired application state before other interactions\u201d.\n\n**For a dynamic content drawer not rendered yet:**\n- If you only care that the drawer\u2019s button/field is present before clicking \u2192 use **Find Element / Element Exists** as a wait step.  \n- If you need logic for both \u201cdrawer loaded\u201d and \u201cdrawer not loaded / still loading\u201d \u2192 use **Check App State** and handle both branches.\n\n---\n",
+    "sources": [
+      "https://docs-staging.uipath.com/activities/other/latest/ui-automation/n-check-state",
+      "https://docs-staging.uipath.com/studio/standalone/latest/user-guide/ui-automation"
+    ],
+    "disclaimers": [],
+    "followups": [
+      "How do I configure a Check App State activity for a loading spinner vs loaded content?",
+      "Which properties should I set on Element Exists or Find Element to reliably wait for my drawer element?",
+      "Can you show a small workflow pattern combining Check App State with Retry Scope for unstable UIs?"
+    ]
+  }
+}

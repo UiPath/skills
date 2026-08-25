@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T03:00:05.190Z",
+      "Message": "[Move Outlook Mail Message] The operation failed."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T03:00:05.231Z",
+      "Message": "The operation failed.\r\nin Main.xaml\r\n    at MoveOutlookMessage \"Move Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Runtime.InteropServices.COMException: The operation failed. (Exception from HRESULT: 0x800706BA (RPC_S_SERVER_UNAVAILABLE))"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f00ccccc-3333-4444-5555-666677778888",
+      "DisplayName": "QuarterlyReports",
+      "FullyQualifiedName": "QuarterlyReports",
+      "Description": "Folder for quarterly comparison-report automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6120001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

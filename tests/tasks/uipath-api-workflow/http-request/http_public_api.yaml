@@ -1,0 +1,77 @@
+task_id: skill-api-workflow-http-public-api
+description: >
+  Skill-guided e2e: agent authors a unified HTTP Request (Http kind) activity
+  against a public REST API via `uip api-workflow registry resolve` + `stub`,
+  then runs it locally. Tests the connector-discovery flow and the single most
+  common connector regression — emitting `call: "http"` (deprecated, renders as
+  a block icon) instead of `call: "UiPath.Http"`.
+  REQUIRES cloud auth: `registry resolve`/`stub` query the tenant-scoped
+  StudioWeb TypeCache + IS Elements, so this runs under a cloud-auth experiment,
+  NOT the no-auth smoke gate. The final `run --no-auth` works because Http kind
+  uses connectionId "ImplicitConnection".
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:http, feature:registry]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `CatFact` (its workflow file
+  will be `CatFact/Workflow.json`) — that calls the public Cat Facts API
+  (GET https://catfact.ninja/fact) and returns the fact text as
+  { "fact": "<fact>" }.
+
+  Build the HTTP Request activity through the skill's connector discovery flow
+  (not hand-authored) so it renders in StudioWeb's designer. Validate and run
+  it locally to confirm it returns a fact.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the registry discovery flow (resolve / stub)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+registry\s+(resolve|stub)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Uses the unified HTTP kind (call: UiPath.Http)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "UiPath.Http" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Does NOT use the deprecated simple form call:\"http\" (anti-pattern)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF" && ! grep -q ''"call": "http"'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow runs locally (--no-auth, ImplicitConnection) and returns a fact"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --output json | grep -qi ''fact'''
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

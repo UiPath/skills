@@ -6,24 +6,17 @@ description: >
   exercises greenfield BPMN source authoring, diagram requirements, and local
   package-file consistency without cloud-side effects.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:hitl", "feature:approval-gate"]
-max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  expected_turns: 25
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a new local Maestro BPMN Process Orchestration project named
   InvoiceExceptionTriage. The project must be fully synthetic and public-safe.
 
@@ -79,5 +72,9 @@ success_criteria:
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, or deploy
-      commands. Fail if tool calls or the final answer show any cloud-side
-      lifecycle mutation or any request to perform one.
+      commands. Exactly these commands are always acceptable and must NOT
+      fail this check: `uip maestro bpmn validate` (offline validation of
+      local files), `uip maestro bpmn registry list/get/pull/search`
+      (read-only catalog fetches), and `--help` invocations. Fail only if
+      tool calls or the final answer show a cloud-side lifecycle mutation or
+      a request to perform one.

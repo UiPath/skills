@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "plan": {
+      "ops": [
+        { "verb": "PUT", "target": "/api/servers/test-mcp-skill/tools/tool-mock-invoice-001" }
+      ],
+      "parentType": "uipath",
+      "resolved": {
+        "targetIdentifier": "process-mock-ops-01",
+        "targetFolderKey": "folder-mock-ops"
+      }
+    }
+  }
+}

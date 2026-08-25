@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "AssetList",
+  "Data": [
+    {
+      "Key": "e2f3a4b5-c6d7-8901-defa-2345678901cd",
+      "Name": "MyCyberArkSecret",
+      "ValueType": "Credential",
+      "ValueScope": "Global",
+      "Description": "Credential asset backed by the Production CyberArk Store. Value is held in CyberArk, not in Orchestrator's database.",
+      "CredentialStoreId": "a3e7b2c5-4d8f-49a1-b6c2-8e7d1f3a5b9c",
+      "ExternalName": "ProductionDB-ServiceAccount"
+    },
+    {
+      "Key": "b2c3d4e5-f6a7-8901-bcde-f01234567890",
+      "Name": "RemoteDebuggingEndpoint",
+      "ValueType": "Text",
+      "ValueScope": "Global",
+      "Description": "HTTPS endpoint used by remote debugging fixtures.",
+      "CredentialStoreId": null,
+      "ExternalName": null
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

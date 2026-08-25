@@ -11,7 +11,7 @@
   "displayName": "Run Vendor Onboarding Sub-Case",
   "elementId": "Stage_aB3kL9-tZ8rMn4Vp",
   "isRequired": true,
-  "shouldRunOnlyOnce": true,
+  "shouldRunOnlyOnce": false,
   "data": {
     "name": "=bindings.bG0SraLpg",
     "folderPath": "=bindings.bH1iJK2lm",
@@ -22,6 +22,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Procedure
@@ -36,14 +37,13 @@ Fallback: planning-captured schema from tasks.md. If unavailable, placeholder pe
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
-| `propertyAttribute` | `resource` | `resourceSubType` | `default` |
-|---|---|---|---|
-| `"name"` | `"process"` | `"CaseManagement"` | `name` from tasks.md |
-| `"folderPath"` | `"process"` | `"CaseManagement"` | `folder-path` from tasks.md |
+- `resource`: `"process"`
+- `resourceSubType`: `"CaseManagement"`
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime.
 
-Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 
@@ -51,7 +51,9 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 2. **Recursion guard** — confirm the sub-case `entityKey` from tasks.md does NOT match the current case's own entityKey (direct recursion) and does not appear as an ancestor in already-written `case-management` tasks (transitive recursion). If either check fails, flag for user review.
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
-5. Append to target stage's `tasks[laneIndex][]`
+
+   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
+5. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
@@ -63,3 +65,5 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - No circular self-reference
 - `id` captured in `id-map.json`
+
+<!-- END: impl-json.md -->

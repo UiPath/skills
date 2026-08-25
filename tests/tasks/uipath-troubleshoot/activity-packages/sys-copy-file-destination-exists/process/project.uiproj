@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerConsolidation",
+  "ProjectType": "Process",
+  "Description": "Consolidates the daily ledger and archives it to the ledger archive folder.",
+  "MainFile": "Main.xaml"
+}

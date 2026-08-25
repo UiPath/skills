@@ -1,0 +1,62 @@
+task_id: skill-api-workflow-javascript-transform
+description: >
+  Skill-guided evaluation: agent authors a JavaScript (JsInvoke) activity that
+  transforms a string input and returns the result. Tests whether the skill
+  teaches that scripts read $context/$workflow/$input as globals (NOT
+  arguments[0]) and MUST return a value (rule 14).
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:transform]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `Shout` (its workflow file
+  will be `Shout/Workflow.json`) — that:
+  - Takes a `name` string input
+  - Uses a JavaScript activity to upper-case it
+  - Returns { "shout": "<UPPERCASED NAME>" }  (e.g. "bob" → "BOB", "ada" → "ADA")
+
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Uses a JavaScript activity that returns a value"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "return" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Transforms 'bob' -> 'BOB'"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"name":"bob"}'' --output json | grep -q ''BOB'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Transforms 'ada' -> 'ADA' (proves it reads the input, not a constant)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"name":"ada"}'' --output json | grep -q ''ADA'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 9
+  max_turns: 30

@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceImporter",
+  "ProjectType": "Process",
+  "Description": "Runs the invoice-processing VBA macro against the Invoices workbook via Invoke VBA inside an Excel Process Scope.",
+  "MainFile": "Main.xaml"
+}

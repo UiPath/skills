@@ -1,0 +1,708 @@
+"""Shared helpers for uipath-maestro-case single-node e2e checks.
+
+Locates the generated `caseplan.json`, runs ``uip maestro case validate``,
+and asserts that a task of the expected ``type`` exists somewhere in the
+case definition. ``case-management`` tasks are allowed to land as skeletons
+(empty ``data``) when the referenced sub-case isn't published on the tenant
+— the test only cares that the task ``type`` was written correctly.
+
+For tasks whose referenced resource is published on the tenant (e.g. the
+RPA / Agent / API-workflow single-node tests), this module also provides
+``run_debug``: runs ``uip solution resources refresh`` then
+``uip maestro case debug`` and returns the parsed JSON payload so callers
+can assert on declared output values. Mirrors the uipath-maestro-flow
+``flow_check.run_debug`` shape.
+"""
+
+from __future__ import annotations
+
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+from typing import Any, Iterable, NoReturn, Sequence
+
+
+def find_caseplan(pattern: str = "**/caseplan.json") -> str:
+    matches = sorted(
+        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+    )
+    if not matches:
+        _fail(f"No caseplan.json found matching {pattern}")
+    if len(matches) > 1:
+        joined = "\n  - ".join(matches)
+        _fail(f"Multiple caseplan.json files match {pattern!r}:\n  - {joined}")
+    return matches[0]
+
+
+def read_caseplan(path: str | None = None) -> dict:
+    p = path or find_caseplan()
+    with open(p) as f:
+        return json.load(f)
+
+
+def iter_tasks(plan: dict):
+    """Yield every task dict from every Stage node (and legacy ExceptionStage).
+
+    Secondary stages are now ``case-management:Stage`` nodes with
+    ``data.stageType == "secondary"``; the legacy ``case-management:ExceptionStage``
+    node type is still yielded for back-compat with un-migrated fixtures.
+
+    Tolerates a mis-nested FLAT ``data.tasks`` (``Task[]`` instead of the schema's
+    ``Task[][]`` lanes) so callers don't crash on it — use ``assert_tasks_nested``
+    to reject that shape explicitly.
+    """
+    for node in plan.get("nodes") or []:
+        node_type = node.get("type") or ""
+        if not node_type.endswith("Stage") and "Stage" not in node_type:
+            continue
+        lanes = ((node.get("data") or {}).get("tasks")) or []
+        for lane in lanes:
+            if isinstance(lane, dict):  # flat (mis-nested) task — yield directly
+                yield lane
+            elif isinstance(lane, list):
+                for task in lane:
+                    if isinstance(task, dict):
+                        yield task
+
+
+def assert_tasks_nested(plan: dict) -> None:
+    """Fail unless every stage's ``data.tasks`` is a 2D ``Task[][]`` (lanes).
+
+    A FLAT ``Task[]`` (a task object where a lane array is expected) silently
+    passes ``uip maestro case validate`` — the CLI reads each task dict as an
+    empty lane, so it reports 0 tasks / 0 warnings — yet it is not a buildable
+    case plan. Reject it explicitly so the test can't false-pass.
+    """
+    bad = []
+    for node in plan.get("nodes") or []:
+        if "Stage" not in (node.get("type") or ""):
+            continue
+        tasks = (node.get("data") or {}).get("tasks") or []
+        for i, lane in enumerate(tasks):
+            if not isinstance(lane, list):
+                label = (node.get("data") or {}).get("label") or node.get("id")
+                bad.append(f"{label} (tasks[{i}] is {type(lane).__name__}, not a lane)")
+                break
+    if bad:
+        sys.exit(
+            "FAIL: data.tasks must be a 2D array Task[][] (outer=lanes, "
+            "inner=tasks); these stages have a FLAT tasks array: "
+            + "; ".join(bad)
+            + ". A flat tasks array silently passes `validate` with 0 tasks "
+            "detected and is not a buildable case plan."
+        )
+
+
+def find_tasks_of_type(plan: dict, task_type: str) -> list[dict]:
+    return [t for t in iter_tasks(plan) if t.get("type") == task_type]
+
+
+def assert_validate_passes(caseplan_path: str, *, timeout: int = 60) -> None:
+    cmd = ["uip", "maestro", "case", "validate", caseplan_path, "--output", "json"]
+    r = _run(cmd, timeout=timeout, what="uip maestro case validate")
+    if r.returncode != 0:
+        _fail(
+            f"uip maestro case validate exit {r.returncode}\n"
+            f"stdout: {r.stdout}\nstderr: {r.stderr}"
+        )
+
+
+def assert_task_type_present(task_type: str, *, caseplan_path: str | None = None) -> dict:
+    plan = read_caseplan(caseplan_path)
+    matches = find_tasks_of_type(plan, task_type)
+    if not matches:
+        types_seen = sorted({t.get("type", "?") for t in iter_tasks(plan)})
+        _fail(
+            f"No task with type={task_type!r} found in caseplan. "
+            f"Task types seen: {types_seen}"
+        )
+    return matches[0]
+
+
+def task_is_skeleton(task: dict) -> bool:
+    """True when the task's resource hasn't been wired into ``data``.
+
+    Caseplan markers for a populated task:
+    - ``execute-connector-activity`` / ``wait-for-connector``:
+        Phase 2 / graceful-degradation shape: ``data.typeId`` AND ``data.connectionId``
+        Phase 3 fully-populated shape: ``data.context`` non-empty (CLI-authoritative array
+        from ``case spec``; always has ≥1 entry when the connector resolved)
+    - ``action``: ``data.inputs`` present (bare ``taskTitle`` / ``priority`` is still skeleton-equivalent)
+    - everything else (``process`` / ``agent`` / ``rpa`` / ``api-workflow`` / ``case-management``):
+      ``data.name`` AND ``data.folderPath`` (both as ``=bindings.<id>`` refs)
+    """
+    data = task.get("data") or {}
+    if not data:
+        return True
+    task_type = task.get("type")
+    if task_type in {"execute-connector-activity", "wait-for-connector"}:
+        # Phase 2 / graceful-degradation: typeId + connectionId set, no context yet
+        if data.get("typeId") and data.get("connectionId"):
+            return False
+        # Phase 3 fully-populated: context array from case spec (no typeId/connectionId in this shape)
+        if isinstance(data.get("context"), list) and data["context"]:
+            return False
+        return True
+    if task_type == "action":
+        return "inputs" not in data
+    return not (data.get("name") and data.get("folderPath"))
+
+
+# ── Schema-aware structural helpers ─────────────────────────────────────────
+#
+# Case-level metadata lives at the top level alongside a `metadata` block — the
+# flat schema introduced in v20 and inherited through v27. Node internals are
+# stable across those versions except the trigger node, which v24 rewired from
+# `case-management:Trigger` to `uipath.case.trigger` (see find_triggers).
+
+
+def assert_count(actual: int, expected: int, what: str) -> None:
+    if actual != expected:
+        _fail(f"expected {expected} {what}, got {actual}")
+
+
+def iter_nodes_of_type(plan: dict, node_type: str):
+    for node in plan.get("nodes") or []:
+        if node.get("type") == node_type:
+            yield node
+
+
+def find_stages(plan: dict, *, include_exception: bool = False) -> list[dict]:
+    """Return stage nodes from a caseplan.
+
+    All stages are now ``case-management:Stage`` nodes; a secondary (formerly
+    "exception") stage is marked by ``data.stageType == "secondary"`` rather than a
+    distinct node type. BACK-COMPAT: a legacy ``case-management:ExceptionStage`` node
+    is also treated as a secondary stage.
+
+    - ``include_exception=False`` (default): primary-only — stage nodes whose
+      ``data.stageType != "secondary"`` and which are not legacy ExceptionStage nodes.
+    - ``include_exception=True``: all stage nodes — ``case-management:Stage`` OR legacy
+      ``case-management:ExceptionStage``.
+    """
+    def _is_stage_node(n: dict) -> bool:
+        return n.get("type") in {"case-management:Stage", "case-management:ExceptionStage"}
+
+    def _is_secondary(n: dict) -> bool:
+        return (
+            (n.get("data") or {}).get("stageType") == "secondary"
+            or n.get("type") == "case-management:ExceptionStage"
+        )
+
+    nodes = plan.get("nodes") or []
+    if include_exception:
+        return [n for n in nodes if _is_stage_node(n)]
+    return [n for n in nodes if _is_stage_node(n) and not _is_secondary(n)]
+
+
+def find_triggers(plan: dict) -> list[dict]:
+    # v24 renamed the trigger node type `case-management:Trigger` -> `uipath.case.trigger`.
+    # BACK-COMPAT: accept the legacy type for pre-v24 fixtures.
+    return [
+        n
+        for n in (plan.get("nodes") or [])
+        if n.get("type") in {"uipath.case.trigger", "case-management:Trigger"}
+    ]
+
+
+def find_node_by_label(plan: dict, label: str) -> dict:
+    for node in plan.get("nodes") or []:
+        if (node.get("data") or {}).get("label") == label:
+            return node
+    labels = [(n.get("data") or {}).get("label") for n in plan.get("nodes") or []]
+    _fail(f"no node with data.label={label!r}; available labels: {labels}")
+
+
+def stage_transitions(plan: dict) -> list[dict]:
+    """Stage→stage transitions derived from entry/exit conditions.
+
+    Edges are retired — ``plan["edges"]`` always stays ``[]`` — so reachability
+    lives entirely in the conditions. A transition ``{"source": X, "target": Y}``
+    exists when EITHER:
+
+    - ``Y``'s ``entryConditions`` carries a ``selected-stage-completed`` /
+      ``selected-stage-exited`` rule with ``selectedStageId == X``, OR
+    - ``X``'s ``exitConditions`` carries ``exitToStageId == Y``.
+
+    ``case-entered`` entries are NOT transitions — their source is the case
+    start, not a stage. Both encodings are unioned so a caller need not know
+    which convention an SDD used to wire a given hop. Mirrors the connector
+    graph the frontend now derives from conditions.
+    """
+    # Secondary stages are now `case-management:Stage` nodes carrying
+    # `data.stageType == "secondary"`; the legacy `case-management:ExceptionStage`
+    # type is kept here so this works pre/post v22 migration.
+    stage_types = {"case-management:Stage", "case-management:ExceptionStage"}
+    pairs: set[tuple[str, str]] = set()
+    for node in plan.get("nodes") or []:
+        if node.get("type") not in stage_types:
+            continue
+        nid = node.get("id")
+        for cond in iter_stage_entry_conditions(node):
+            for group in cond.get("rules") or []:
+                for rule in group or []:
+                    src = (rule or {}).get("selectedStageId")
+                    if src:
+                        pairs.add((src, nid))
+        for cond in iter_stage_exit_conditions(node):
+            dst = cond.get("exitToStageId")
+            if dst:
+                pairs.add((nid, dst))
+    return [{"source": s, "target": t} for s, t in sorted(pairs)]
+
+
+def find_transitions(
+    plan: dict, *, source: str | None = None, target: str | None = None
+) -> list[dict]:
+    """Condition-derived stage transitions, filterable by ``source``/``target``.
+
+    Replaces the retired ``find_edges``. Returns ``{"source", "target"}`` dicts
+    so existing graph walks that read ``.get("target")`` keep working unchanged.
+    """
+    out: list[dict] = []
+    for tr in stage_transitions(plan):
+        if source is not None and tr["source"] != source:
+            continue
+        if target is not None and tr["target"] != target:
+            continue
+        out.append(tr)
+    return out
+
+
+def first_rule_of_condition(cond: dict | None) -> dict | None:
+    """Return the first rule of a DNF condition: ``cond.rules[0][0]``."""
+    if not cond:
+        return None
+    rules = cond.get("rules") or []
+    if not rules:
+        return None
+    first_group = rules[0] or []
+    if not first_group:
+        return None
+    return first_group[0]
+
+
+RETURN_TO_ORIGIN_COMPLETION_RULES = frozenset(
+    {"required-tasks-completed", "wait-for-connector"}
+)
+
+
+def partition_return_to_origin_conditions(
+    conditions: Iterable[dict],
+    *,
+    allowed_rules: frozenset[str] = RETURN_TO_ORIGIN_COMPLETION_RULES,
+) -> tuple[list[dict], list[dict]]:
+    """Return all return lanes and the subset with an invalid completion pairing."""
+    returns = [
+        condition
+        for condition in conditions
+        if condition.get("type") == "return-to-origin"
+    ]
+    invalid = []
+    for condition in returns:
+        rules = condition.get("rules")
+        has_single_rule = (
+            isinstance(rules, list)
+            and len(rules) == 1
+            and isinstance(rules[0], list)
+            and len(rules[0]) == 1
+            and isinstance(rules[0][0], dict)
+        )
+        rule = rules[0][0].get("rule") if has_single_rule else None
+        if condition.get("marksStageComplete") is not True or rule not in allowed_rules:
+            invalid.append(condition)
+    return returns, invalid
+
+
+def iter_stage_entry_conditions(node: dict):
+    for cond in (node.get("data") or {}).get("entryConditions") or []:
+        yield cond
+
+
+def iter_stage_exit_conditions(node: dict):
+    for cond in (node.get("data") or {}).get("exitConditions") or []:
+        yield cond
+
+
+def get_variables(plan: dict) -> dict:
+    """Return ``{inputs, outputs, inputOutputs}`` from the top-level ``variables`` block."""
+    return plan.get("variables") or {}
+
+
+def get_bindings(plan: dict) -> list[dict]:
+    return plan.get("bindings") or []
+
+
+def get_case_exit_conditions(plan: dict) -> list[dict]:
+    """Case exit rules from ``metadata.caseExitRules``."""
+    return (plan.get("metadata") or {}).get("caseExitRules") or []
+
+
+def get_sla_rules(target: dict) -> list[dict]:
+    """Return ``slaRules[]`` from a plan (case-level ``metadata.slaRules``) or a
+    stage node (``node.data.slaRules``).
+    """
+    if "nodes" in target and isinstance(target.get("nodes"), list):
+        return (target.get("metadata") or {}).get("slaRules") or []
+    return ((target.get("data") or {}).get("slaRules")) or []
+
+
+def get_default_sla(target: dict) -> dict | None:
+    rules = get_sla_rules(target)
+    if not rules:
+        return None
+    last = rules[-1]
+    return last if (last or {}).get("expression") == "=js:true" else None
+
+
+def _stringify(v: Any) -> str:
+    return json.dumps(v, default=str)
+
+
+def _fail(msg: str) -> NoReturn:
+    sys.exit(f"FAIL: {msg}")
+
+
+def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
+    """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
+
+    ``TimeoutExpired`` carries partial output as bytes even under ``text=True``,
+    so decode defensively.
+    """
+    try:
+        return subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
+    except subprocess.TimeoutExpired as e:
+        out, err = (
+            s.decode("utf-8", "replace") if isinstance(s, bytes) else (s or "")
+            for s in (e.stdout, e.stderr)
+        )
+        _fail(f"{what} timed out after {timeout}s\nstdout: {out}\nstderr: {err}")
+
+
+def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
+    """Case-insensitively read the first present candidate key from ``mapping``.
+
+    The ``uip maestro case debug --output json`` RUNTIME payload uses camelCase
+    keys by Studio Web convention (``finalStatus``, ``variables``, ``outputs``,
+    ``value``). A CLI that PascalCases ``--output json`` keys (PR #2266) would
+    turn those into ``FinalStatus``/``Variables``/… and silently break every
+    lowercase read. Routing runtime-payload reads through this accessor tolerates
+    either casing and any future CLI normalization. Use it ONLY for the debug
+    RUNTIME payload — NOT for ``caseplan.json`` SOURCE readers, whose camelCase
+    keys are stable and intentional.
+
+    Candidates are tried in order; the first whose lowercased form matches a key
+    in ``mapping`` (also lowercased) wins. Returns ``default`` if ``mapping`` is
+    not a dict or no candidate matches.
+    """
+    if not isinstance(mapping, dict):
+        return default
+    lowered = {k.lower(): k for k in mapping.keys() if isinstance(k, str)}
+    for candidate in candidate_keys:
+        actual = lowered.get(candidate.lower())
+        if actual is not None:
+            return mapping[actual]
+    return default
+
+
+# ── Debug helpers ───────────────────────────────────────────────────────────
+
+
+def find_project_dir(pattern: str = "**/project.uiproj") -> str:
+    """Return the directory holding the Case `project.uiproj`. Filters by
+    ``ProjectType`` so a sibling Agent / RPA / Coded project in the same
+    solution does not collide with the Case project we want to debug.
+    """
+    candidates = sorted(
+        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+    )
+    if not candidates:
+        _fail(f"No project.uiproj found matching {pattern}")
+    case_projects = [p for p in candidates if _is_case_project(p)]
+    if not case_projects:
+        joined = "\n  - ".join(candidates)
+        _fail(
+            f"No Case project.uiproj found matching {pattern} — "
+            f"candidates exist but none declare ProjectType=\"CaseManagement\":"
+            f"\n  - {joined}"
+        )
+    if len(case_projects) > 1:
+        joined = "\n  - ".join(case_projects)
+        _fail(
+            f"Multiple Case projects match {pattern!r} — refusing to guess:"
+            f"\n  - {joined}"
+        )
+    return os.path.dirname(case_projects[0])
+
+
+def find_solution_dir(pattern: str = "**/*.uipx") -> str:
+    """Return the directory holding the ``*.uipx`` solution manifest.
+    Used as ``--solution-folder`` for ``uip solution resources refresh``.
+    """
+    matches = sorted(
+        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+    )
+    if not matches:
+        _fail(f"No solution manifest found matching {pattern}")
+    if len(matches) > 1:
+        joined = "\n  - ".join(matches)
+        _fail(f"Multiple solution manifests match {pattern!r}:\n  - {joined}")
+    return os.path.dirname(matches[0])
+
+
+def run_debug(
+    *,
+    timeout: int = 540,
+    project_glob: str = "**/project.uiproj",
+    solution_glob: str = "**/*.uipx",
+    refresh_timeout: int = 120,
+) -> dict:
+    """Locate the case project, refresh solution resources, run
+    ``uip maestro case debug --output json``, and return the parsed
+    ``Data`` payload. Exits on any step failing or ``finalStatus`` not
+    being ``Completed``.
+
+    Resource refresh is mandatory per the maestro-case skill: without it
+    Studio Web cannot resolve connector resources and the debug call
+    surfaces a "Resource is not configured" warning instead of running.
+    """
+    payload = start_debug(
+        timeout=timeout,
+        project_glob=project_glob,
+        solution_glob=solution_glob,
+        refresh_timeout=refresh_timeout,
+    )
+    status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
+    if status != "Completed" and status != "Successful":
+        _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
+    return payload
+
+
+def start_debug(
+    *,
+    timeout: int = 540,
+    project_glob: str = "**/project.uiproj",
+    solution_glob: str = "**/*.uipx",
+    refresh_timeout: int = 120,
+) -> dict:
+    """Like ``run_debug`` but does NOT require ``finalStatus == Completed``.
+
+    Use for multi-stage cases whose tasks intentionally suspend (wait-for-timer,
+    wait-for-connector, wait-for-user, SLA) and therefore never reach a
+    Completed status in a single debug run. Returns the parsed ``Data``
+    payload so callers can assert structural debug progress.
+
+    Exits if the debug command fails to launch / does not return parseable
+    JSON. A non-Completed ``finalStatus`` is NOT a failure here.
+    """
+    project_dir = find_project_dir(project_glob)
+    solution_dir = find_solution_dir(solution_glob)
+
+    refresh_cmd = [
+        "uip", "solution", "resources", "refresh",
+        "--solution-folder", solution_dir,
+        "--output", "json",
+    ]
+    already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
+    r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
+    if r.returncode != 0:
+        # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
+        # output fails with "Node already added to the graph" (RetryWillNotFix).
+        # When the agent already refreshed, the resource docs are on disk and debug
+        # can proceed; only that exact re-refresh failure is tolerated.
+        duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
+        if not (already_refreshed and duplicate_node):
+            _fail(
+                f"solution resources refresh exit {r.returncode}\n"
+                f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            )
+
+    debug_cmd = [
+        "uip", "maestro", "case", "debug", project_dir,
+        "--log-level", "debug", "--output", "json",
+    ]
+    r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
+    if r.returncode != 0:
+        _fail(
+            f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"
+        )
+    data = _parse_json(r.stdout)
+    if data is None:
+        _fail(f"Could not parse JSON from case debug\n{r.stdout}")
+    payload = data.get("Data") if isinstance(data, dict) and "Data" in data else data
+    if not isinstance(payload, dict):
+        _fail(f"case debug payload is not a JSON object: {type(payload).__name__}\n{r.stdout[:1000]}")
+    return payload
+
+
+def payload_contains(
+    payload: dict, *needles: str, require_all: bool = True
+) -> None:
+    """Assert that each needle appears (case-insensitive) somewhere in the
+    stringified debug payload. Use this for structure-agnostic checks that a
+    given stage / task / variable was referenced by the debug run.
+    """
+    haystack = json.dumps(payload, default=str).lower()
+    missing = [n for n in needles if n.lower() not in haystack]
+    if require_all and missing:
+        _fail(
+            f"debug payload missing references: {missing}\n"
+            f"Payload (first 2000 chars): {haystack[:2000]}"
+        )
+    if not require_all and len(missing) == len(needles):
+        _fail(
+            f"debug payload missing all of: {list(needles)}\n"
+            f"Payload (first 2000 chars): {haystack[:2000]}"
+        )
+
+
+# Keys that hold runtime metadata, not task outputs. Excluded from
+# output extraction so GUID / timestamp / status digits do not falsely
+# match small expected values (e.g. an integer in [0, 120] would match
+# any 1-3 digit chunk of an instanceId UUID).
+_METADATA_KEYS = frozenset({
+    "jobKey", "instanceId", "runId", "solutionId", "finalStatus",
+    "status", "studioWebUrl", "createdAt", "startedAt", "endedAt",
+    "elementId", "id", "uniqueId", "projectId", "tenantId", "folderId",
+    "uipathActivityTypeId", "taskTypeId", "elementInstanceId",
+    "timestamp", "occurredAt",
+})
+
+# Lowercased mirror so metadata keys are excluded regardless of the CLI's
+# key casing (a PascalCasing CLI would emit `FinalStatus`/`InstanceId`/…).
+_METADATA_KEYS_LOWER = frozenset(k.lower() for k in _METADATA_KEYS)
+
+
+def collect_outputs(payload: dict) -> list[Any]:
+    """Return the declared output values from a case debug payload.
+
+    The case runtime exposes outputs under a few paths depending on
+    schema version — we walk all of them and ignore well-known metadata
+    keys. Nested dicts/lists are flattened to leaf values.
+    """
+    out: list[Any] = []
+
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
+        out.extend(_leaves(val))
+    for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        value = _get_ci(v, "value", "Value")
+        if value is not None:
+            out.extend(_leaves(value))
+    for section_keys in (("outputs", "Outputs"), ("inputOutputs", "InputOutputs")):
+        for v in _get_ci(variables, *section_keys) or []:
+            value = _get_ci(v, "value", "Value")
+            if value is not None:
+                out.extend(_leaves(value))
+
+    for task in _iter_runtime_tasks(payload):
+        for out_var in _get_ci(task, "outputs", "Outputs") or []:
+            value = _get_ci(out_var, "value", "Value")
+            if value is not None:
+                out.extend(_leaves(value))
+
+    return out
+
+
+def _iter_runtime_tasks(payload: dict):
+    """Yield runtime task execution dicts from anywhere in the payload.
+
+    Case debug nests task executions under stage / lane structures. We
+    walk defensively so changes to the runtime shape don't silently
+    break the output extraction.
+    """
+    seen_ids: set[int] = set()
+    stack: list[Any] = [payload]
+    while stack:
+        node = stack.pop()
+        if id(node) in seen_ids:
+            continue
+        seen_ids.add(id(node))
+        if isinstance(node, dict):
+            keys_ci = {k.lower() for k in node.keys() if isinstance(k, str)}
+            if "outputs" in keys_ci and (
+                "displayname" in keys_ci or "tasktypeid" in keys_ci or "type" in keys_ci
+            ):
+                yield node
+            stack.extend(node.values())
+        elif isinstance(node, (list, tuple)):
+            stack.extend(node)
+
+
+def _leaves(v: Any):
+    if isinstance(v, dict):
+        for k, nested in v.items():
+            if isinstance(k, str) and k.lower() in _METADATA_KEYS_LOWER:
+                continue
+            yield from _leaves(nested)
+    elif isinstance(v, (list, tuple)):
+        for item in v:
+            yield from _leaves(item)
+    else:
+        yield v
+
+
+def assert_outputs_contain(
+    payload: dict, needles: str | Sequence[str], *, require_all: bool = True
+) -> None:
+    """Assert the stringified outputs contain the given needle(s)."""
+    if isinstance(needles, str):
+        needles = [needles]
+    haystack = _stringify_leaves(collect_outputs(payload))
+    present = [n for n in needles if n.lower() in haystack]
+    missing = [n for n in needles if n.lower() not in haystack]
+    ok = len(missing) == 0 if require_all else len(present) > 0
+    if not ok:
+        mode = "all of" if require_all else "any of"
+        _fail(
+            f"Outputs missing {mode} {list(needles)}; present={present}; "
+            f"missing={missing}\nOutputs: {haystack[:1000]}"
+        )
+
+
+def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
+    """Assert at least one integer in [lo, hi] appears in the outputs.
+
+    Pulls integers from output values only (metadata keys excluded by
+    ``collect_outputs``), so GUIDs in jobKey / instanceId can't satisfy
+    the range.
+    """
+    haystack = _stringify_leaves(collect_outputs(payload))
+    hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
+    if not hits:
+        _fail(
+            f"No integer in [{lo}, {hi}] found in outputs\n"
+            f"Outputs: {haystack[:1000]}"
+        )
+    return hits[0]
+
+
+def _stringify_leaves(values: Iterable[Any]) -> str:
+    return json.dumps(list(values), default=str).lower()
+
+
+def _parse_json(stdout: str) -> dict | None:
+    try:
+        return json.loads(stdout)
+    except json.JSONDecodeError:
+        for i, line in enumerate(stdout.split("\n")):
+            if line.strip().startswith("{"):
+                try:
+                    return json.loads("\n".join(stdout.split("\n")[i:]))
+                except json.JSONDecodeError:
+                    continue
+    return None
+
+
+def _is_case_project(path: str) -> bool:
+    try:
+        with open(path, encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return False
+    return manifest.get("ProjectType") == "CaseManagement"

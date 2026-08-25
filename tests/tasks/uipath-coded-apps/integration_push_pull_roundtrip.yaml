@@ -1,0 +1,147 @@
+task_id: skill-coded-apps-integration-push-pull-roundtrip
+description: >
+  Integration test (mode:operate, cloud auth required): Studio Web file
+  sync roundtrip via `uip codedapp push` and `uip codedapp pull`. Agent
+  scaffolds a minimal app, pushes it to Studio Web (`push` auto-creates
+  the project on first run and saves `UIPATH_PROJECT_ID`), corrupts a
+  local source file, then pulls back from Studio Web to confirm the
+  remote-of-record overwrites the local modification. Verifies the
+  `O3 push / pull roundtrip` operate archetype documented in the
+  skill's file-sync reference.
+tags: [uipath-coded-apps, integration, mode:operate, lifecycle:setup]
+run_limits:
+  expected_turns: 18
+  max_turns: 90
+  turn_timeout: 900
+  task_timeout: 900
+
+# Persistent Studio Web fixture (codereval/DefaultTenant, alpha):
+#   project "test-webapp"  02c993ea-e366-4ee5-b389-e12166e6dc2a  (inlined in the prompt below)
+#   solution               c05e7fad-1eb1-420d-02cc-08ded767500a
+# The CLI derives the solution from the project ID at runtime; the solution ID
+# is recorded here only for fixture maintenance — recreating a deleted fixture
+# project requires creating it inside this solution.
+initial_prompt: |
+  Run a Studio Web push / pull roundtrip against the currently-active
+  UiPath tenant.
+
+  **You are NOT done until BOTH push (step 5) AND pull (step 7) have
+  run.** The whole point is to prove pull restores the Studio Web
+  version-of-record over a locally-corrupted file. Pushing without
+  pulling fails this test.
+
+  Do NOT scaffold a Vite app. Do NOT run `npm install`, `npm run build`,
+  or `uip codedapp pack/publish/deploy` — those are tested elsewhere.
+
+  Steps (all seven required):
+
+  1. `uip login status --output json` — verify login, do NOT re-login.
+
+  2. Write `.env` at the sandbox root with the persistent test-fixture
+     project ID (this makes push non-interactive):
+     ```
+     echo "UIPATH_PROJECT_ID=02c993ea-e366-4ee5-b389-e12166e6dc2a" > .env
+     ```
+
+  3. Write these two files at the sandbox root exactly as shown:
+
+     `package.json`:
+     ```
+     { "name": "test-webapp", "version": "0.1.0", "type": "module" }
+     ```
+
+     `src/App.tsx`:
+     ```
+     // roundtrip-marker:v1
+     export default function App() { return null; }
+     ```
+
+  4. Stub `dist/` (push needs a build-output folder):
+     ```
+     mkdir -p dist && echo "<html></html>" > dist/index.html
+     ```
+
+  5. Push: `uip codedapp push --output json`. If push fails (e.g.
+     `423 Locked` — the project is open in a Studio Web session),
+     retry ONCE at most, then continue with the remaining steps
+     anyway and report the push error at the end — pull works even
+     while the project is locked. Do NOT keep retrying push.
+
+  6. Corrupt `src/App.tsx` — change the marker line from
+     `// roundtrip-marker:v1` to `// roundtrip-marker:LOCAL-CORRUPTED`.
+     Save it.
+
+  7. Pull: `uip codedapp pull --overwrite --output json`. The
+     `--overwrite` flag is required. After pull, `src/App.tsx` must
+     contain the `:v1` marker again — that's the roundtrip signal
+     this test grades. You are not done until this step runs.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp push` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+push\b.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pull` (the outcome — file restored to v1 — is graded separately by the marker assertions below)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pull\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT pack/publish/deploy (out of scope for push/pull test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "src/App.tsx exists after roundtrip"
+    path: "src/App.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/App.tsx still contains the v1 marker — pull restored the Studio Web version of record over the local corruption"
+    command: "grep -F 'roundtrip-marker:v1' src/App.tsx"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/App.tsx does NOT contain the LOCAL-CORRUPTED marker — confirms the corruption was overwritten, not preserved"
+    command: "grep -F 'LOCAL-CORRUPTED' src/App.tsx"
+    timeout: 5
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "UIPATH_PROJECT_ID was persisted somewhere (push records it for subsequent pulls; usually .env)"
+    command: "grep -shE 'UIPATH_PROJECT_ID\\s*=' .env .env.local 2>/dev/null | grep -q ."
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A `.env` (or `.env.local`) file exists — push wrote it directly (Direct grading of the .env config-file component, not just Indirect via UIPATH_PROJECT_ID content check)"
+    command: "test -f .env -o -f .env.local"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

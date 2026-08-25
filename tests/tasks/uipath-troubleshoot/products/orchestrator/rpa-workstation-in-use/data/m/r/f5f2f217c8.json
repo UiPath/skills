@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "a1710001-1111-4111-8111-111111111111",
+      "State": "Faulted",
+      "ProcessName": "DailyExtract",
+      "ReleaseName": "DailyExtract",
+      "StartTime": "2026-07-19T06:00:03.100Z",
+      "EndTime": "2026-07-19T06:00:03.900Z",
+      "CreationTime": "2026-07-19T06:00:02.500Z",
+      "HostMachineName": "WS-CLIENT-07",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    }
+  ]
+}

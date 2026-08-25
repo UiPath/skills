@@ -3,18 +3,11 @@ description: >
   Quality test: agent correctly maps a business description to a quickform
   schema — right field directions (input/output/inOut), correct outcomes,
   and priority. Tests C1 (field design) and C2 (outcome design).
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
+run_limits:
+  expected_turns: 29
   max_turns: 75
-  turn_timeout: 900
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "VendorPOReview" for purchase order review:
 
@@ -28,7 +21,7 @@ initial_prompt: |
       - Approve → Script node that logs "PO approved"
       - Reject  → End node
 
-  Use the inline quickform node (uipath.human-in-the-loop).
+  Use the inline quickform node (uipath.human-in-the-loop.quick-form).
   Set priority to High.
   Wire completed → decision node.
   Validate the flow after building.
@@ -36,42 +29,41 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate VendorPOReview/VendorPOReview/VendorPOReview.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has input-direction fields (read-only context for reviewer)"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - '"direction": "input"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"input\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has output-direction fields (reviewer fills in)"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - '"direction": "output"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"output\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow has Approve and Reject outcomes"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - "Approve"
-      - "Reject"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview 'Approve' 'Reject'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Priority is set to High"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - '"High"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"High\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

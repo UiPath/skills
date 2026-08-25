@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c3d4e5f6-7081-4a92-9b3c-4d5e6f708293",
+      "State": "Faulted",
+      "ProcessName": "PayablesInvoiceReader",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T07:10:00.150Z",
+      "EndTime": "2026-06-04T07:10:02.410Z",
+      "CreationTime": "2026-06-04T07:09:59.900Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "DashboardSnapshotBot",
+  "ProjectType": "Process",
+  "Description": "Unattended worker that captures a dashboard screenshot; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T08:10:01.670Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T08:10:03.910Z",
+      "Message": "[For Each recipient] Iteration 1 (Ava Stone): opened 'data\\OfferTemplate.docx'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T08:10:05.140Z",
+      "Message": "[Replace Text in Document] Iteration 1: Replaced 1 occurrence(s) of '[Name]'."
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T08:10:07.520Z",
+      "Message": "[For Each recipient] Iteration 2 (Ben Cole): opened 'data\\OfferTemplate.docx'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T08:10:08.730Z",
+      "Message": "[Replace Text in Document] Iteration 2: Replaced 0 occurrence(s) of '[Name]'."
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T08:10:11.050Z",
+      "Message": "[Replace Text in Document] Iteration 3: Replaced 0 occurrence(s) of '[Name]'."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T08:10:12.450Z",
+      "Message": "Execution ended in: 00:00:10"
+    }
+  ]
+}

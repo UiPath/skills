@@ -1,0 +1,79 @@
+task_id: skill-platform-traces-feedback-comment-file
+description: >
+  Smoke test: agent files reviewer write-ups that live outside the command line —
+  one already on disk (`--comment-file <path>`), one arriving on stdin from a
+  script (`--comment-file -`) — and applies two category tags to the same record
+  (`--category` is repeatable). Mutual-exclusion rule 2 from feedback.md is
+  graded structurally: both records must be filed with neither create carrying an
+  inline `--comment`. None of these flags are reached by any existing traces test.
+  Auth/404 responses are acceptable outcomes — the graded behavior is command shape.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
+
+pre_run:
+  - command: "sh $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_feedback_notes.sh"
+    timeout: 15
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Two reviewer write-ups to file as thumbs-down feedback, both in folder key
+  `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`:
+
+  1. Trace `7d3a91e0f5c24b8ea0c6d219bb47f0a3` — the write-up is already sitting in
+     `review-note.md`. The feedback comment should be that file's text verbatim,
+     and the record needs to carry both the "Output" and "Agent Error" tags.
+  2. Trace `a18b4c7d2e934f60b5c81d3a6f9e2077` — its write-up is printed on stdout
+     by `./gen-note.sh`. Get that text onto the feedback record without staging it
+     in a temp file first.
+
+  Both trace IDs come from a review export and may not resolve against this
+  tenant — that is expected. File both records anyway and report what comes back.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent sourced the first comment from review-note.md rather than retyping it"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file[\s=]+["'']?(?:\$?\S*/)?review-note\.md)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied both category tags on one record (--category is repeatable)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--category[\s=]["'']?Output)(?=[\s\S]*--category[\s=]["'']?Agent\s+Error)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent piped the generated write-up in on stdin (--comment-file -)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file[\s=]+-(\s|$))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # min_count: 1 (not 2) x2, scoped per trace-id. command_executed counts matching
+  # Bash events, not command occurrences within an event — an agent that chains both
+  # creates into ONE Bash call registers only 1 match, so a single min_count: 2
+  # criterion caps at 0.5 for correct behavior. Mirrors the min_count:1 convention
+  # in reconfigure_different_connection.yaml.
+  - type: command_executed
+    description: "Trace 7d3a91e0f5c24b8ea0c6d219bb47f0a3 was filed via --comment-file, never inline --comment"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?7d3a91e0f5c24b8ea0c6d219bb47f0a3)(?=[\s\S]*--comment-file)'
+    exclude_pattern: '--comment[\s=]'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Trace a18b4c7d2e934f60b5c81d3a6f9e2077 was filed via --comment-file, never inline --comment"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?a18b4c7d2e934f60b5c81d3a6f9e2077)(?=[\s\S]*--comment-file)'
+    exclude_pattern: '--comment[\s=]'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,60 @@
+task_id: skill-agent-guardrail-coded-byog-decorator
+description: >
+  Decorator-style bring-your-own guardrail (BYOG) for a coded agent. A simple
+  LangGraph customer support agent is seeded with no guardrails; it already has a
+  create_support_agent() factory. The tenant has a BYOG configuration registered
+  (admin-side); the user asks to route the agent's PII checks through it using the
+  decorator style. Verifies the agent stacks @guardrail with ByoValidator — pinned
+  to the configuration by its validator name, blocking on violations — over a real
+  factory function rather than reaching for the built-in PII validator.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:edit, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  # Disallow the subagent-dispatch tool. It is NOT gated by allowed_tools, and a
+  # dispatched subagent carries none of this skill's context. For BYO the failure
+  # is especially subtle: `ByoValidator` really does live in
+  # uipath.platform.guardrails, so a subagent recommending that import is
+  # technically right about the module and still wrong for a LangChain agent
+  # (Rule 8 — the no-op path that skips adapter registration). Force inline
+  # research where the loaded skill's import rule still applies.
+  disallowed_tools: ["Task"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py that handles customer support questions.
+  The agent is built in a create_support_agent() factory function.
+
+  Our admin has registered a bring-your-own guardrail configuration on the tenant
+  called `byog-smoke-agent-pin` — it's PII detection served by our own external
+  provider, and we want the agent's PII checks to go through it rather than the
+  UiPath built-in one. Add it at Agent scope using the decorator style, and block
+  on violations.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BYOG decorator guardrail correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_byog_decorator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  turn_timeout: 1200

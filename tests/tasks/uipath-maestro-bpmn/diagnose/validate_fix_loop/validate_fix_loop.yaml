@@ -1,0 +1,90 @@
+task_id: skill-bpmn-diagnose-validate-fix-loop
+description: >
+  Diagnose-and-repair loop for the uipath-maestro-bpmn skill. A pre-broken
+  Maestro BPMN file ships two blocking defects (an exclusive-gateway branch with
+  no condition expression, and a condition expression that references an
+  undeclared variable). The agent runs `uip maestro bpmn validate`, reads the
+  reported findings, fixes the root causes in BPMN source, and re-validates
+  until the file is clean. Pure local — no cloud or mocked CLI.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+# Guard: the whole diagnose scenario is only meaningful if the CLI's validate
+# actually detects the two seeded structural defects. If the installed CLI
+# predates the structural rules (cli#3135), it reports the pristine broken
+# fixture as Valid and the task would pass vacuously. Assert the OPPOSITE here,
+# before the agent runs: the untouched fixture must FAIL validation with a real
+# validation-failure envelope. A plain non-zero exit is not enough — a missing
+# `uip` or an unknown `validate` subcommand also exits non-zero, and that must
+# abort (not silently proceed), so require `"Result": "Failure"` in the output.
+pre_run:
+  - command: >
+      out=$(uip maestro bpmn validate ExpenseApproval.bpmn --output json 2>&1);
+      if [ $? -eq 0 ]; then
+      echo "CLI reported the seeded-broken fixture as VALID — the installed uip likely predates the BPMN structural rules (needs cli#3135). Update the CLI."; exit 1;
+      fi;
+      if printf '%s' "$out" | grep -q '"Result": "Failure"'; then exit 0; fi;
+      echo "uip maestro bpmn validate did not run as expected (missing command or not cli#3135?). Output: $out"; exit 1
+    timeout: 60
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A Maestro BPMN file `ExpenseApproval.bpmn` is in the working directory. It does
+  NOT currently pass validation.
+
+  Diagnose and repair it:
+  - Run `uip maestro bpmn validate ExpenseApproval.bpmn --output json` to see the
+    findings.
+  - Read the reported errors and fix the ROOT CAUSE of each in the BPMN source —
+    every non-default exclusive-gateway branch needs its own condition
+    expression, and every condition expression must reference a declared
+    process variable.
+  - Re-run `uip maestro bpmn validate` and keep fixing until it reports success
+    (exit 0).
+
+  Make a surgical edit: preserve element ids, the uipath:* variable declarations,
+  and the diagram. Do not add a default flow to sidestep a missing condition —
+  give each branch a real condition. Do not upload, publish, deploy, debug, run,
+  or pack anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "The BPMN file is still present after the repair"
+    path: "ExpenseApproval.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip maestro bpmn validate on the BPMN file"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Repaired file carries an explicit condition on the previously bare branch"
+    path: "ExpenseApproval.bpmn"
+    includes:
+      - "conditionExpression"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro bpmn validate now reports the BPMN file valid (exit 0)"
+    command: "uip maestro bpmn validate ExpenseApproval.bpmn --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

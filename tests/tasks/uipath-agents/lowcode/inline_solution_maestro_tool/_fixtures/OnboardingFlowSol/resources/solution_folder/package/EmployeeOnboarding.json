@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmployeeOnboarding",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c907a6e7-9780-4719-89e4-31ab175a7356",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "EmployeeOnboarding",
+      "description": null
+    },
+    "locks": [],
+    "key": "1da69484-8fb4-4185-beac-05bc93577c8d"
+  }
+}

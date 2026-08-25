@@ -137,7 +137,7 @@ uip maestro flow eval set list --path ./MySolution/MyFlow --output json
 
 - **Don't pass `--type` in PascalCase.** `ExactMatch` fails; only `exact-match` is accepted.
 - **Don't omit `--model` on `llm-judge-*`.** The cloud worker fail-fasts before calling the LLM gateway; the resulting 500 is unhelpful.
-- **Don't hand-write evaluator refs unless you are repairing an eval set.** Use `eval set add --evaluators <id_or_file_base>` or omit `--evaluators` so the CLI links all current evaluators.
+- **Don't hand-write evaluator refs unless you are repairing an eval set.** Omit `--evaluators` so the CLI links all current evaluators, or use `eval set add --evaluators <generated_id_or_file_base>`. Do not pass the evaluator display name.
 - **Don't copy evaluator JSON across projects without regenerating UUIDs.** `id` collisions silently corrupt resolution.
 - **Don't use deterministic evaluators (`exact-match`, `json-similarity`, `contains`) for natural-language outputs.** They will fail almost every test that paraphrases.
 - **Don't mix trajectory and output evaluators on the same data point unless the data point provides both `--expected` and `--expected-agent-behavior`.** Otherwise one of them scores against an empty placeholder.

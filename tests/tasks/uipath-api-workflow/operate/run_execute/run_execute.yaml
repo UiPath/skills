@@ -1,0 +1,82 @@
+task_id: skill-api-workflow-operate-run-execute
+description: >
+  Operate (execute) a pre-seeded, already-valid API workflow — the score->grade
+  evaluator in ./Workflow.json — for two inputs and report the grade each returns.
+  mode:operate: the artifact is correct; the graded behavior is running it via
+  `uip api-workflow run` and getting the right output, NOT authoring or repairing.
+  Complements the build-mode authoring tasks and the diagnose-mode repair tasks
+  with the third scorecard mode (running live). Graded on side effects: the agent
+  invoked the runner once per input and saved each run's raw output to its own
+  file (run_85.json grades PASS, run_40.json grades FAIL). Behavioral credit thus
+  depends on real CLI output the agent captured — the valid seed cannot earn it,
+  and the answer cannot be satisfied by transcribing a grade from the prompt.
+tags: [uipath-api-workflow, integration, mode:operate, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/operate/run_execute/seed_valid_workflow.py"
+    timeout: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json is a score->grade evaluator: it takes a
+  numeric `score` input and returns a `grade` of "PASS" (score >= 60) or "FAIL".
+  It is already valid — do not rewrite it.
+
+  Execute it locally twice and save each run's full output to its own file:
+    - score 85 -> save the run output to ./run_85.json
+    - score 40 -> save the run output to ./run_40.json
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent executed the workflow with the local runner, once per input (the operate action)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent captured the score-85 run output (proves it ran, did not just report)"
+    path: "run_85.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent captured the score-40 run output"
+    path: "run_40.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: the captured score-85 run output grades PASS"
+    command: 'grep -q ''"PASS"'' run_85.json'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: the captured score-40 run output grades FAIL"
+    command: 'grep -q ''"FAIL"'' run_40.json'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory sanity anchor: the seed itself must run correctly. Weight 0 so it
+  # never awards score for grader-side execution the agent didn't perform.
+  - type: run_command
+    description: "Sanity: seeded workflow routes correctly (not an agent signal)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"score":85}'' --output json | grep -q ''"PASS"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 0
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20

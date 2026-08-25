@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "22222222-2222-2222-2222-222222222222",
+      "Name": "uipath_is_test",
+      "ConnectorKey": "uipath-salesforce-slack",
+      "ConnectorName": "Slack",
+      "State": "Enabled",
+      "IsDefault": "Yes",
+      "ElementInstanceId": 100001,
+      "Folder": "Shared",
+      "FolderKey": "33333333-3333-3333-3333-333333333333"
+    }
+  ]
+}

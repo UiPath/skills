@@ -1,0 +1,40 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T08:13:00.720Z",
+      "EndTime": "2026-05-12T08:14:11.487Z",
+      "CreationTime": "2026-05-12T08:13:00.720Z"
+    },
+    {
+      "Key": "8d7828fe-941f-4e53-8f9c-beea54a05346",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T07:22:23.770Z",
+      "EndTime": "2026-05-12T07:22:24.613Z",
+      "CreationTime": "2026-05-12T07:22:23.770Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

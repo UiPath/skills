@@ -1,0 +1,6 @@
+{
+  "Name": "ResumePhotoStamp",
+  "ProjectType": "Process",
+  "Description": "Opens a resume draft document and inserts the candidate photo image into it via Word activities.",
+  "MainFile": "Main.xaml"
+}

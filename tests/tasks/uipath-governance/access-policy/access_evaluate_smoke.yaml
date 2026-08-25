@@ -1,0 +1,62 @@
+task_id: skill-gov-access-policy-evaluate-smoke
+description: >
+  Smoke test (outcome-graded): the agent asks the Policy Decision Point to
+  resolve a request context. Graded on the decision the service returned — the
+  PolicyEvaluated response code plus an enforcement value from the real enum.
+  The service requires the complete context (resource type and id AND actor
+  process type and id); any subset is rejected with HTTP 400, so a decision
+  document can only exist if the agent supplied all four.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, access-policy, evaluate]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Ask the policy decision point whether the current access policies would let a
+  Flow invoke an RPA workflow, for this request context:
+
+  - Resource type: `RPAWorkflow`
+  - Resource ID: `9f1c77aa-1111-4222-8333-0000000000a1`
+  - Actor process type: `Flow`
+  - Actor process ID: `9f1c77aa-1111-4222-8333-0000000000b2`
+
+  The actor identity is the account this CLI is logged in as. Save the raw JSON
+  of the decision verbatim to ./decision.json.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "decision.json is a real PDP decision (service response code + enforcement from the enum)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('decision.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'the evaluation did not succeed: Result={res}'
+      code = d.get('Code') if isinstance(d, dict) else None
+      assert code in (None, 'PolicyEvaluated'), f'unexpected response code {code!r}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rec = next((x for x in dicts(d) if x.get('Enforcement')), None)
+      assert rec, 'saved JSON carries no Enforcement — this is not a decision document'
+      enf = rec.get('Enforcement')
+      assert enf in ('Allow', 'Deny', 'NoOp'), f'enforcement {enf!r} is not a PDP verdict'
+      assert 'EffectivePolicies' in rec or 'EvaluationDetails' in rec, 'decision has neither EffectivePolicies nor EvaluationDetails'
+      print(f'OK: PDP returned enforcement {enf} for the requested context')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "a dry-run evaluation must not author or change any policy"
+    tool_name: "Bash"
+    command_pattern: 'access-policy\s+(create|update|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

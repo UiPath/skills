@@ -1,0 +1,119 @@
+task_id: skill-agent-external-apiworkflow-tool
+description: >
+  Add API workflow tool (external resource). End-to-end test:
+  scaffold a standalone low-code agent that calls an EXTERNAL API
+  workflow living OUTSIDE this solution (already deployed to
+  Orchestrator as "WeatherAPI" in the
+  "Shared/uipath-agents/WeatherAPI" folder).
+  Verifies the tool resource.json uses `type: "api"`, `location:
+  "external"`, the deployed `folderPath`, and a UUID-shaped
+  `referenceKey` fetched via `uip solution resources list`. Also
+  verifies that `uip agent validate` emits a `resource: "process"`
+  binding (api workflows share the process binding kind) pinned to
+  the deployed name + folder.
+tags: [uipath-agents, e2e, mode:build, low-code]
+
+run_limits:
+  expected_turns: 22
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code agent "WeatherAgent" that takes a required
+  `location` (string) and returns a number `temperature`. WeatherAgent
+  shouldn't figure out the temperature itself — the value should come from our
+  existing "WeatherAPI" workflow, which is already deployed in our tenant. The
+  solution should be named "WeatherSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the API workflow identity with uip solution resources list --kind Process"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+Process'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the API workflow configuration with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "WeatherSol/WeatherSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources with uip solution resources refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "WeatherAgent/agent.json was created"
+    path: "WeatherSol/WeatherAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "WeatherAPI external API workflow tool resource.json was created"
+    path: "WeatherSol/WeatherAgent/resources/WeatherAPI/resource.json"
+    weight: 2.5
+    pass_threshold: 1.0
+
+
+  - type: run_command
+    description: "External API workflow tool resource shape, deployed folderPath/referenceKey, and bindings sync"
+    command: "python3 $TASK_DIR/check_external_apiworkflow_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

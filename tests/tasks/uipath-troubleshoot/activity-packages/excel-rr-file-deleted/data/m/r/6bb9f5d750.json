@@ -1,0 +1,58 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "aa111111-8888-9999-aaaa-bbbbccccdddd",
+      "StartTime": "2026-05-20T08:00:01.300Z",
+      "EndTime": "2026-05-20T08:00:01.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": "System.IO.FileNotFoundException: Could not find file 'C:\\Robot\\Data\\sales-2026-05.xlsx'.",
+      "ErrorCode": "Activity"
+    },
+    {
+      "Key": "bb222222-8888-9999-aaaa-bbbbccccdddd",
+      "StartTime": "2026-05-20T07:00:00.500Z",
+      "EndTime": "2026-05-20T07:00:08.105Z",
+      "State": "Successful",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": null,
+      "ErrorCode": null
+    },
+    {
+      "Key": "cc333333-8888-9999-aaaa-bbbbccccdddd",
+      "StartTime": "2026-05-20T06:00:00.500Z",
+      "EndTime": "2026-05-20T06:00:07.205Z",
+      "State": "Successful",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": null,
+      "ErrorCode": null
+    },
+    {
+      "Key": "dd444444-8888-9999-aaaa-bbbbccccdddd",
+      "StartTime": "2026-05-20T05:00:00.500Z",
+      "EndTime": "2026-05-20T05:00:06.412Z",
+      "State": "Successful",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": null,
+      "ErrorCode": null
+    }
+  ]
+}

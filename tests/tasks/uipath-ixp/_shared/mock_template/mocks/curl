@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Offline `curl` mock for the uipath-ixp shape-only smoke tasks.
+
+The `uip` mock PATH-shadows the CLI, but a smoke task (e.g. negative_guards)
+may hint at a raw `curl` against the REST API — a path the agent is graded for
+REFUSING. If it disobeys, a real `curl` would bypass the `uip` mock and, with
+the live token the smoke harness injects, reach the cloud. Shadow `curl` too so
+no smoke task can make a real network call regardless of agent behavior.
+
+Records to the same two sinks as `uip` (see ../README.md § Call log), tagged
+`"tool": "curl"`. One deliberate difference from the sh mock this replaced: CR
+and LF in arguments are folded to spaces on the flat line, as the `uip` mock
+already did. The sh `curl` mock did not, so a multi-line argument could split
+one invocation across several flat-log lines and corrupt neighbouring records.
+"""
+
+import json
+import os
+import sys
+import time
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")
+JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
+
+STDERR_MESSAGE = "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+EXIT_CODE = 1
+
+
+def record(tool, args, exit_code):
+    """Append this invocation to both sinks. Best-effort — a failed write never
+    breaks the agent's command, matching the sh mock's `|| true`."""
+    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    try:
+        with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as f:
+            f.write(flat + "\n")
+    except OSError:
+        pass
+
+    call = {
+        "ts": round(time.time(), 3),
+        "tool": tool,
+        "argv": list(args),
+        "exit": exit_code,
+    }
+    try:
+        with open(JSON_LOG, "a", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(call) + "\n")
+    except OSError:
+        pass
+
+
+def main(argv):
+    record("curl", argv[1:], EXIT_CODE)
+    sys.stderr.write(STDERR_MESSAGE)
+    return EXIT_CODE
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

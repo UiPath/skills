@@ -2,32 +2,37 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
+<!--skill-flavor:flow-init-command:start-->
 ## uip maestro flow init
 
-Scaffold a new Flow project directory. **Always create a solution first** (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `<ProjectName>Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
 
 ```bash
-# 1. Create solution first
-uip solution new "<SolutionName>" --output json
+# 1. Create solution first (for naming control)
+uip solution init "<SolutionName>" --output json
 
 # 2. Init the flow project inside the solution folder.
-#    When run from inside a solution directory, `flow init` auto-registers
-#    the project with the parent `.uipx` — no manual `solution project add`
-#    is required. Confirm via `Data.SolutionRegistration.Status` in the
-#    response (`Registered` or `AlreadyRegistered`).
+#    Inside a solution directory, `flow init` auto-registers the project with
+#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+#    `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project in it,
+#    and adds `Data.AutoCreatedSolution` to the response. Either way confirm via
+#    `Data.SolutionRegistration.Status` (`Registered` or `AlreadyRegistered`).
+#    `--skip-solution-registration` opts out of both (Status `OptedOut`).
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
-# 3. (Fallback only) Wire the project manually if auto-registration was
-#    `Skipped` or `Failed` — typically because init was run outside the
-#    solution dir and produced a single-nested layout.
-uip solution project add \
+# 3. (Fallback only) Wire the project manually if registration was
+#    `Skipped` / `Failed` (ambiguous discovery or `.uipx` write error), or the
+#    rare `NotInSolution`. (`OptedOut` means `--skip-solution-registration` was
+#    passed and the skip was intentional.)
+uip solution projects add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
 Creates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.
+<!--skill-flavor:flow-init-command:end-->
 
 ## uip maestro flow validate
 
@@ -56,18 +61,18 @@ Exit code 0 = valid, 1 = invalid.
 
 Validates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.
 
-## uip maestro flow tidy
+## uip maestro flow format
 
-Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without tidy, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
+Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
 
 ```bash
-uip maestro flow tidy <path/to/file.flow>
-uip maestro flow tidy <path/to/file.flow> --output json
+uip maestro flow format <path/to/file.flow>
+uip maestro flow format <path/to/file.flow> --output json
 ```
 
-Tidy:
+Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
-- Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
+- Sets each node's `size` to match its canvas shape — inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }`; sticky-note custom sizes are preserved
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each
 - Backfills missing `position`/`size` entries
 - Does not modify node logic, edges, definitions, or variables — only layout coordinates
@@ -79,25 +84,56 @@ JSON output (`--output json`) reports counts in `Data`: `NodesTotal`, `EdgesTota
 Pack a Flow project into a `.nupkg` for Orchestrator deployment.
 
 ```bash
-uip maestro flow pack <ProjectDir> <OutputDir>
-uip maestro flow pack <ProjectDir> <OutputDir> --version 2.0.0
-uip maestro flow pack <ProjectDir> <OutputDir> --output json
+uip maestro flow pack <project-path> <OutputDir>
+uip maestro flow pack <project-path> <OutputDir> --version 2.0.0
+uip maestro flow pack <project-path> <OutputDir> --output json
 ```
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
+<!--skill-flavor:upload-pack-note:start-->
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
+<!--skill-flavor:upload-pack-note:end-->
 
-## uip solution resource refresh
+## uip solution resources refresh
 
+<!--skill-flavor:upload-refresh-prereq:start-->
 Re-scan all projects in the solution and sync resource declarations (connections, processes, queues, etc.) from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. **Always run this before `uip solution upload` or `uip maestro flow debug`.**
+<!--skill-flavor:upload-refresh-prereq:end-->
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
-The argument is the solution directory (containing the `.uipx` file). Defaults to the current directory if omitted.
+<!--skill-flavor:upload-solution-dir-note:start-->
+`<SolutionDir>` is the solution directory (containing the `.uipx` file). The command has no positional solution argument; omit `--solution-folder` only when the current directory is already the solution root.
+<!--skill-flavor:upload-solution-dir-note:end-->
 
+## uip solution resources add / remove / edit
+
+Atomic single-resource mutations. Use these when you need to add, delete, or change one resource and don't want to scan every project's bindings the way `refresh` does — for example, when a flow needs a new local queue but no `bindings_v2.json` change is involved yet.
+
+```bash
+# Local virtual stub (offline, no auth)
+uip solution resources add --source local --kind Queue --name InvoiceQueue --output json
+
+# Import an existing Orchestrator resource
+uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
+
+# Delete one resource by key
+uip solution resources remove <KEY> --output json
+
+# Patch an existing resource's spec by key (JSON object is the only input)
+uip solution resources edit <KEY> --patch '{"maxNumberOfRetries":5}' --output json
+uip solution resources edit <KEY> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
+
+# Read the patch from stdin
+echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output json
+```
+
+`add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.
+
+<!--skill-flavor:upload-command-section:start-->
 ## uip solution upload
 
 Upload a solution directly to Studio Web. **Requires `uip login`.**
@@ -106,27 +142,48 @@ Upload a solution directly to Studio Web. **Requires `uip login`.**
 uip solution upload <SolutionDir> --output json
 ```
 
-`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Use the exact solution root path (or `.` from inside the solution root). If your shell is inside a nested project folder, pass the absolute solution root path or `..`; do not pass the solution name again. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
 
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
+<!--skill-flavor:upload-command-section:end-->
 
 ## uip maestro flow debug
 
 Debug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.**
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 
 # Pass input arguments to the flow
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable).
+# Replace <variableId> and <localPath> with your own values.
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+  --attachment <variableId>=<localPath> \
+  --attachment <variableId>=<localPath>
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. Always run `uip maestro flow validate` first.
 
 Use `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).
 
-Run `uip maestro flow debug --help` to discover additional options.
+Use `--attachment <variableId>=<localPath>` to upload a local file and bind it to a file-typed input variable. Repeat the flag for multiple files. The `<variableId>` (left of `=`) is required and must match the `id` of an entry in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [Pre-flight](#attachment-preflight). A bare path with no `<variableId>=` prefix is rejected.
+
+<a id="attachment-preflight"></a>
+
+#### Pre-flight: `--attachment` binding
+
+The CLI does not validate `<variableId>` — a mismatch uploads successfully then faults at runtime when the binding resolves to undefined.
+
+1. Read `<flow>.flow` (it is plain JSON) and inspect `variables.globals[]`. Valid `<variableId>` values are entries where `direction` is `"in"` and `type` is `"file"`.
+2. Confirm each `<variableId>` passed to `--attachment` appears in that list.
+3. If none exist, add one to `variables.globals[]`: `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`.
+
+> **Reading the bound file in a Script node.** A `file` variable hydrates at runtime as an object; read the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
+
+Run `uip maestro flow debug --help` for other options.
 
 ### Reporting the run back to the user
 
@@ -148,9 +205,23 @@ Manage deployed Flow processes in Orchestrator. **Requires `uip login`.**
 ```bash
 uip maestro flow process list --output json
 uip maestro flow process run <process-key> <folder-key> --output json
+
+# Pass input arguments (JSON or @file.json)
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --inputs '{"numberA": 5, "numberB": 7}'
+
+# Bind local files to file-typed input variables (repeatable).
+# Replace <variableId> and <localPath> with your own values.
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --attachment <variableId>=<localPath>
 ```
 
-Run `uip maestro flow process --help` for all subcommands and options.
+`--attachment <variableId>=<localPath>` uploads a local file and binds it to a file-typed input variable. The `<variableId>` must match the `id` of an entry in `variables.globals[]` with `direction:"in"` and `type:"file"` — see [Pre-flight](#attachment-preflight). Repeat the flag for multiple files. Two `flow process run`-specific behaviors:
+
+- **Precedence on key collision:** when `--inputs` and `--attachment` both supply the same key, `--attachment` wins and the CLI logs an override warning.
+- **`--validate` accepts pre-uploaded attachment references** for file-typed slots — the flag's JSON-schema check passes even though the slot's nominal type is `string`.
+
+Run `uip maestro flow process --help` for other subcommands.
 
 ## uip maestro flow job
 
@@ -223,7 +294,7 @@ uip maestro flow hitl add <path/to/file.flow> \
 ### Success output
 
 ```json
-{ "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop", "Label": "Invoice Review", "DefinitionAdded": true } }
+{ "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop.quick-form", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
 After adding, wire the `completed` port to the next node — an unwired `completed` blocks the flow indefinitely. See the [Author HITL plugin reference](../author/references/plugins/hitl/impl.md) for edge format.
@@ -234,11 +305,14 @@ See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-
 
 ## uip maestro flow node / uip maestro flow edge
 
-See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow eval
 
-Evaluation surface — evaluator CRUD, eval set CRUD, data point CRUD, Studio Web run start/status/results/list/compare. Local CRUD requires no login; `eval run *` requires `uip login` and a Flow solution that already exists in Studio Web. **Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/references/upload-safety.md).
+Evaluation surface — evaluator CRUD, eval set CRUD, data point CRUD, Studio Web run start/status/results/list/compare. Local CRUD requires no login; `eval run *` requires `uip login` and a Flow solution that already exists in Studio Web.
+<!--skill-flavor:upload-safety-eval-surface-note:start-->
+**Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/references/upload-safety.md).
+<!--skill-flavor:upload-safety-eval-surface-note:end-->
 
 ```bash
 # Data points (test cases) — inline inside eval set JSON
@@ -274,10 +348,31 @@ Manage the local node type cache. No auth required for OOTB nodes; login for ten
 uip maestro flow registry pull                             # refresh local cache (expires after 30 min)
 uip maestro flow registry list --output json               # list all cached node types
 uip maestro flow registry search <keyword> --output json   # search by name, tag, or category
-uip maestro flow registry get <nodeType> --output json     # get full schema for a node type
+uip maestro flow registry get <node-type> --output json     # get full schema for a node type
 ```
 
-The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array.
+`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <node-type>` (and later `node add`).
+
+```json
+{ "Data": [
+  {
+    "NodeType": "uipath.connector.uipath-salesforce-sfdc.list-records",
+    "Category": "connector.196536",
+    "DisplayName": "List Records",
+    "Description": "(Salesforce) List records in Salesforce",
+    "Version": "1.0.0",
+    "Tags": "connector, activity",
+    "AvailableOnTenant": true
+  }
+] }
+```
+
+`AvailableOnTenant` is a usability gate, not extra metadata to ignore:
+
+- `true` — the tenant registry can return this node; it is valid to continue with `registry get <NodeType>` or `node add <NodeType>`.
+- `false` — the SDK knows about this node type, but the current tenant registry did not return it. Treat it as not enabled or not available for this tenant. Do **not** try nonexistent flags such as `--include-unavailable`; they are not supported. Choose an enabled alternative, use `--local` for in-solution resources, or report the feature/resource as unavailable.
+
+The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array. Unlike `registry search` (PascalCase summary), `registry get` returns the definition **verbatim** — its keys keep the manifest's own casing, predominantly **camelCase** (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`), exactly as they must appear in the `.flow`. Filter it with that casing (`--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`).
 
 Run `uip maestro flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
 

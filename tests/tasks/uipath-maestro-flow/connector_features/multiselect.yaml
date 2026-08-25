@@ -1,57 +1,39 @@
 task_id: skill-flow-ipe-multiselect
 description: >
-  Tests the multiselect IS feature — configures a connector node with a
-  multiselect field on the Act! 365 connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+  Tests the multiselect IS feature — configures a Slack group direct message
+  node whose members field takes multiple values, using an existing tenant
+  connection.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, ipe, mode:build]
 
-task_timeout: 1500
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  expected_turns: 37
+  task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
-    env_packages:
-      - "@uipath/cli@0.1.21"
 initial_prompt: |
-  Create a new Flow project called "MultiselectTest" with a manual trigger.
-  You need a flow that creates a new contact in Act! 365 and assigns the contact
-  to several groups at once. Discover the create-contact operation and populate
-  the multi-select groups field with multiple values.
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "Multiselect test failed".
-  Route success to a final action that logs "Multiselect test passed".
-  Validate the final flow file.
+  Create a flow file to create a group direct message between
+  Coder Evals, IS-sandboxes@uipath.com and E2E-testing.
+  Use the connection present in Shared/uipath-maestro-flow.
 
 success_criteria:
+  # Name-agnostic: the prompt doesn't fix a project name.
   - type: run_command
-    description: "Flow file exists and is valid JSON"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/MultiselectTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
+    description: "A .flow file exists and is valid JSON with nodes and edges"
+    command: "python3 -c \"import json,glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow found') if not flows else None; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; print('OK: %d nodes, %d edges'%(len(f['nodes']),len(f['edges'])))\""
     timeout: 10
     expected_exit_code: 0
-    weight: 3.0
+    weight: 1.5
     pass_threshold: 1.0
 
+  # Core check: Slack connector node present and the users multiselect
+  # field has exactly 3 entries (the three group-DM recipients).
   - type: run_command
-    description: "Flow has a connector node referencing uipath-act-act365"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/MultiselectTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-act-act365' in content, 'Connector key not found'; print('OK: connector key present')\""
-    timeout: 10
+    description: "Slack group-DM node present with 3 entries in the users multiselect"
+    command: "python3 $TASK_DIR/check_multiselect_flow.py"
+    timeout: 15
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/MultiselectTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -62,4 +44,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-max_iterations: 1

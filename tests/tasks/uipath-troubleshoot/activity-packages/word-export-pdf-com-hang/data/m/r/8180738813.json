@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T06:00:09.810Z",
+      "Message": "Export to PDF: The call was rejected by callee. (Exception from HRESULT: 0x80010001 (RPC_E_CALL_REJECTED))\r\nin Main.xaml\r\n    at WordExportToPdf \"Export to PDF\"\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

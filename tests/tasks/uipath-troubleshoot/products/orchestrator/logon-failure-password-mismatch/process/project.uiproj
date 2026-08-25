@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceIngestor",
+  "ProjectType": "Process",
+  "Description": "Background unattended worker; logs activity and exits. Used as the failing process for the logon-failure-password-mismatch scenario (stale Orchestrator credential after AD password rotation).",
+  "MainFile": "Main.xaml"
+}

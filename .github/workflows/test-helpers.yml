@@ -3,18 +3,25 @@ name: Test Helpers
 on:
   pull_request:
     paths:
-      - 'tests/tasks/uipath-maestro-flow/_shared/**'
+      - 'tests/tasks/uipath-maestro-flow/**'
+      - 'tests/tasks/uipath-maestro-case/**'
+      - 'tests/tasks/uipath-planner/**'
+      - 'tests/tasks/uipath-agents/**'
+      - 'tests/tasks/uipath-admin/**'
+      - 'tests/scripts/**'
+      - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
+      - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
 jobs:
   pytest-flow-check:
-    runs-on: ubuntu-latest
-    name: flow_check.py unit tests
+    runs-on: uipath-ubuntu-latest
+    name: maestro-flow checker unit tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
@@ -22,4 +29,135 @@ jobs:
         run: pip install pytest
 
       - name: Run pytest
-        run: pytest tests/tasks/uipath-maestro-flow/_shared/ -v
+        run: pytest tests/tasks/uipath-maestro-flow/ -v
+
+  pytest-admin-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-admin verify negative controls
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # These are the negative controls for the uipath-admin verify scripts: they
+      # assert each verify FAILS on wrong tenant state, and that a degenerate seed
+      # fails loudly instead of skipping. Without this job the harness silently
+      # drifted from the verify scripts it guards — a synthetic payload shape kept
+      # 29/29 green while the real parser read nothing (see PR #2667).
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-admin/_shared/ -v
+
+  pytest-case-check:
+    runs-on: uipath-ubuntu-latest
+    name: maestro-case checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-maestro-case/ -v
+
+  # Covers the case-design eval checkers migrated from uipath-maestro-case
+  # (planner-sole-SDD-author) plus the sdd_check twin-sync guard.
+  pytest-planner-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-planner checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-planner/ -v
+
+  pytest-agents-check:
+    runs-on: uipath-ubuntu-latest
+    name: uipath-agents checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-agents/ -v
+
+  runtime-payload-casing-guard:
+    runs-on: uipath-ubuntu-latest
+    name: runtime-payload key-casing contract guard
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Fails if any checker reads a runtime-only debug key (finalStatus /
+      # elementExecutions) by a hard-coded lowercase .get() instead of the
+      # case-insensitive _get_ci accessor — the CLI #2266 PascalCase break.
+      - name: Run contract guard
+        run: pytest tests/scripts/test_runtime_payload_key_casing.py -v
+
+  catalog-build-guards:
+    runs-on: uipath-ubuntu-latest
+    name: catalog build integrity guards
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Guards the verb-count floor / max-drop logic that stops a broken
+      # refresh from overwriting the catalog with a base-CLI-only snapshot
+      # (see #1203).
+      - name: Run catalog guard tests
+        run: pytest tests/scripts/test_catalog_build_guards.py -v
+
+  telemetry-hook-tests:
+    runs-on: uipath-ubuntu-latest
+    name: telemetry hook contract guard
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Runs BOTH twins of each hook (.sh under bash, .ps1 under pwsh — both
+      # preinstalled on ubuntu runners) against the same assertions, enforcing
+      # the twin keep-in-sync rule: send-telemetry with a stubbed uip
+      # (eventName mapping, lifecycle fields, drop paths) and set-session-env
+      # against a temp CLAUDE_ENV_FILE (export line, host-wins, idempotence,
+      # sanitization).
+      - name: Run telemetry hook tests
+        run: pytest tests/scripts/test_send_telemetry_hook.py tests/scripts/test_set_session_env_hook.py -v

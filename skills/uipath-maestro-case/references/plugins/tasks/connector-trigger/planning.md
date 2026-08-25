@@ -2,7 +2,7 @@
 
 A connector-based trigger **inside a stage** — waits for an external event before continuing.
 
-The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).
+The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-planning.md](../../../connector-trigger-planning.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).
 
 ## When to Use
 
@@ -20,9 +20,11 @@ Distinguish from:
 
 ## Resolution Pipeline
 
-Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
+Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
 
 ## tasks.md Entry Format
+
+Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list).
 
 ```markdown
 ## T<n>: Add connector-trigger task "<display-name>" to "<stage>"
@@ -34,8 +36,12 @@ Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../
 - event-mode: <polling|webhooks>
 - input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
+- outputs:                            # optional; omit only when the SDD declares none
+  - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
+- activation-mode: event-triggered   # required; normally event-triggered for a connector event wait
+- entry-rule: wait-for-connector   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
 - order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct event parameters
@@ -43,9 +49,13 @@ Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../
 
 ## Unresolved Fallback
 
+Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-planning.md § 1 No-match](../../../connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-planning.md § Resolve the connection](../../../connector-trigger-planning.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
+
 > **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` and `filter:`
 - Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)
+
+<!-- END: planning.md -->

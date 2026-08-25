@@ -1,0 +1,13 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.04.0",
+  "SolutionId": "3dc663bf-89de-4b84-9477-08dece0ec312",
+  "Projects": [
+    {
+      "Type": "WebApp",
+      "ProjectRelativePath": "HumanReviewEscalation/project.uiproj",
+      "Id": "27abdfdb-a42b-4f19-9001-d62011329cc3"
+    }
+  ],
+  "AutomationHubIdeaUrl": null
+}

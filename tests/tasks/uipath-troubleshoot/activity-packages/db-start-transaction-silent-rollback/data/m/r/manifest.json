@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Start Transaction scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "20f04b8eac.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\" --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\" --state Successful --output json",
+      "file": "c8a70192d7.json"
+    },
+    {
+      "match": "or jobs list --folder-key b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d --state Successful --output json",
+      "file": "c8a70192d7.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\" --output json",
+      "file": "c8a70192d7.json"
+    },
+    {
+      "match": "or jobs list --folder-key b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d --output json",
+      "file": "c8a70192d7.json"
+    },
+    {
+      "match": "or jobs get \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\" --output json",
+      "file": "34b6d8b8eb.json"
+    },
+    {
+      "match": "or jobs get c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e --output json",
+      "file": "34b6d8b8eb.json"
+    },
+    {
+      "match": "or jobs logs \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\" --output json",
+      "file": "5f66406f9d.json"
+    },
+    {
+      "match": "or jobs logs c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e --output json",
+      "file": "5f66406f9d.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

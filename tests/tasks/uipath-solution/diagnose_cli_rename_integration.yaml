@@ -1,0 +1,52 @@
+task_id: skill-solution-diagnose-cli-rename
+description: >
+  Integration test (diagnose mode): agent root-causes an "unknown command"
+  on `uip solution new` as the pre/post-rename CLI surface change and
+  prescribes the renamed verb. Covers Critical Rule "probe the CLI surface /
+  translate renamed verbs". Local reasoning task — no tenant interaction.
+
+  Ground truth verified against SKILL.md Critical Rules + fallback table:
+  `uip solution new` was renamed to `uip solution init`; probe with
+  `uip solution init --help` (Success = post-rename CLI; "unknown command"
+  = pre-rename) and use the canonical `init` verb.
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I'm following an older runbook for UiPath solutions. When I run:
+
+      uip solution new MyAutomation
+
+  the CLI fails with "unknown command 'new'". The `uip` CLI is installed and
+  other commands work.
+
+  Why is this failing, and what should I run instead to create the solution?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent identifies the new->init rename and prescribes uip solution init"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: the `uip solution`
+      CLI was renamed — `uip solution new` became `uip solution init`. An
+      "unknown command 'new'" means the installed CLI is the post-rename
+      version. The fix is to use `uip solution init <name>` (optionally
+      probing the surface first with `uip solution init --help`).
+
+      Score 1.0 if the reply identifies the verb rename / that `new` is no
+      longer valid AND prescribes `uip solution init` as the replacement.
+      English or Romanian both fine; naming `init` is required, mentioning
+      the `--help` probe is a plus.
+
+      Score 0.0 if it blames a broken install, a missing plugin, an auth
+      problem, or tells the user to reinstall / retry `new` unchanged.
+    weight: 3.0
+    pass_threshold: 0.7

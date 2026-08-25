@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerUpsert",
+  "ProjectType": "Process",
+  "Description": "Upserts a customer record into the Customers table of a SQL Server database via Execute Non Query.",
+  "MainFile": "Main.xaml"
+}

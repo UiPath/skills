@@ -1,0 +1,126 @@
+task_id: skill-coded-apps-ui-action-center-embed-smoke
+description: >
+  Smoke test (mode:build): agent authors the Action Center task embed
+  pattern from `patterns.md §Embedding Action Center Tasks (HITL)` —
+  the `apiToCloudUrl` mapping helper (api.uipath.com → cloud.uipath.com,
+  staging.api → staging, alpha.api → alpha) and a task-embed URL
+  builder that inserts `embed_/` after the origin. Covers the trap
+  documented explicitly in the skill: naive string replace
+  (`baseUrl.replace('api.', 'cloud.')`) breaks for staging/alpha and
+  is forbidden. Zero test covers HITL task embedding today.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, implement the Action Center task
+  embedding pattern documented in the skill's `patterns.md` §Embedding
+  Action Center Tasks.
+
+  Author `src/utils/formatters.ts` at the sandbox root with two
+  exported helpers:
+
+  1. `apiToCloudUrl(apiBaseUrl: string): string` — maps an API base URL
+     to the corresponding cloud UI URL. The mapping is NOT a naive
+     `.replace('api.', 'cloud.')` (that would produce
+     `staging.cloud.uipath.com` — wrong). Required mappings:
+       - `https://api.uipath.com`         → `https://cloud.uipath.com`
+       - `https://staging.api.uipath.com` → `https://staging.uipath.com`
+       - `https://alpha.api.uipath.com`   → `https://alpha.uipath.com`
+
+  2. `buildTaskEmbedUrl(apiBaseUrl: string, orgName: string,
+     tenantName: string, taskId: string): string` — returns the embed
+     URL for a specific Action Center task. Format:
+     `<cloudOrigin>/embed_/<orgName>/<tenantName>/actions_/current-task/tasks/<taskId>`
+     — note the `embed_/` segment right after the origin.
+
+  Do NOT use `str.replace('api.', 'cloud.')` — that's the anti-pattern
+  the skill explicitly forbids. Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/utils/formatters.ts was created"
+    path: "src/utils/formatters.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "apiToCloudUrl is exported from formatters.ts"
+    command: "grep -E 'export\\s+(function|const)\\s+apiToCloudUrl\\b' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "buildTaskEmbedUrl is exported from formatters.ts"
+    command: "grep -E 'export\\s+(function|const)\\s+buildTaskEmbedUrl\\b' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts does NOT use the forbidden `.replace('api.', 'cloud.')` shortcut in executable code (breaks staging/alpha per patterns.md). JSDoc/`//` comments referencing the anti-pattern are allowed."
+    command: "grep -v -E '^\\s*(/\\*|\\*/|\\*)' src/utils/formatters.ts | sed 's|//.*||' | grep -E \"\\.replace\\(\\s*['\\\"]api\\.['\\\"]\\s*,\\s*['\\\"]cloud\\.\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts embed URL includes the `embed_/` segment (patterns.md §Embed URL format)"
+    command: "grep -qE 'embed_/' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "formatters.ts references the actions_/current-task/tasks path segment"
+    command: "grep -qE 'actions_/current-task/tasks' src/utils/formatters.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    # Test BEHAVIOR, not source text. The old check grepped the source for the
+    # literals `staging`/`alpha`, which false-failed a correct GENERAL transform
+    # (strip `.api.uipath.com`, rebuild `<env>.uipath.com`, special-case
+    # api→cloud) — the exact non-shortcut solution the `.replace` guard above
+    # asks for. formatters.ts is self-contained (only `new URL`), so strip the
+    # TS types, eval, and assert all three prod/staging/alpha mappings resolve.
+    # Falls back to a structural check if the eval can't run.
+    description: "apiToCloudUrl maps api→cloud AND staging/alpha API hosts to their cloud hosts (behavioral)"
+    command: |
+      node -e "
+        const fs = require('fs');
+        const src = fs.readFileSync('src/utils/formatters.ts', 'utf-8');
+        const strip = s => s
+          .replace(/\bexport\b/g, '')
+          .replace(/:\s*[A-Za-z_\$][\w\$<>\[\].| ]*(?=\s*[,)])/g, '')
+          .replace(/\)\s*:\s*[A-Za-z_\$][\w\$<>\[\].| ]*(?=\s*\{)/g, ')');
+        let fn = null;
+        try { fn = (new Function(strip(src) + '; return apiToCloudUrl;'))(); } catch (e) { fn = null; }
+        if (typeof fn === 'function') {
+          const cases = [
+            ['https://api.uipath.com', 'cloud.uipath.com'],
+            ['https://staging.api.uipath.com', 'staging.uipath.com'],
+            ['https://alpha.api.uipath.com', 'alpha.uipath.com'],
+          ];
+          for (const [inp, exp] of cases) {
+            let out; try { out = fn(inp); } catch (e) { console.error('threw for', inp); process.exit(1); }
+            if (!String(out).includes(exp)) { console.error('bad mapping', inp, '->', out, 'want', exp); process.exit(1); }
+          }
+          process.exit(0);
+        }
+        const base = /cloud\.uipath\.com/.test(src);
+        const envs = /\.api\.uipath\.com/.test(src) || (/staging/.test(src) && /alpha/.test(src));
+        process.exit(base && envs ? 0 : 1);
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

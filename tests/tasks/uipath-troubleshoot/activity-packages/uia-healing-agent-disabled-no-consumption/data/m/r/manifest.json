@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "_doc": "Replay of a Healing-Agent 'is this expected / did it consume units' investigation. Matches are plain substrings (first match wins) and intentionally UNQUOTED so they match whether or not the agent quotes the job/folder key. jobs-get / jobs-list / jobs-logs fixtures were repopulated from the recorded raw responses (the generator's compound-command backfill produced stubs).",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "525de3e550.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "file": "4fd33df393.json"
+    },
+    {
+      "match": "or jobs get ",
+      "file": "0f27502236.json"
+    },
+    {
+      "match": "or jobs logs ",
+      "file": "3b44f9e096.json"
+    },
+    {
+      "match": "or jobs healing-data ",
+      "file": "53cb28700c.json"
+    },
+    {
+      "match": "or licenses info",
+      "file": "a728a49add.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore without aborting."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "1dc1992a-7f84-40bf-b61d-75b50f861170",
+      "State": "Faulted",
+      "ProcessName": "ReadConfig",
+      "ReleaseName": "ReadConfig",
+      "StartTime": "2026-06-23T17:38:05.180Z",
+      "EndTime": "2026-06-23T17:38:06.663Z",
+      "CreationTime": "2026-06-23T17:36:34.407Z",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}

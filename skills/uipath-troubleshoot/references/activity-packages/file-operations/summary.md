@@ -1,0 +1,10 @@
+# File Operations Activities Playbooks
+
+**Overview:** [overview.md](./overview.md) — `UiPath.Activities.System.FileOperations` (System > File) activities in `UiPath.System.Activities`; `Download File from URL` execution model and common failure patterns
+
+| Issue | Confidence | Description | Playbook |
+|-------|:---:|-------------|----------|
+| Download File from URL — "This instance has already started one or more requests" (in a loop) | Medium | `DownloadFileFromUrl` inside a `For Each` reuses/disposes its internal HTTP client across iterations. Fix: instantiate a fresh `System.Net.Http.HttpClient` per iteration, or force release with `GC.Collect()` / `GC.WaitForPendingFinalizers()` after the download | [download-file-httpclient-reused-in-loop.md](./playbooks/download-file-httpclient-reused-in-loop.md) |
+| Download File from URL — HTTP 403 (Forbidden) / 401 (Unauthorized) | Medium | The server rejects the native download because it needs authentication / cookies / a browser session the activity doesn't carry (or a blocked `User-Agent`). Fix: set `UserAgentHeader` / authenticate, or download through a UI browser session (Click + Wait for Download) for portal-gated files | [download-file-403-401-auth.md](./playbooks/download-file-403-401-auth.md) |
+| Download File from URL — file stuck as .tmp | Medium | The activity finishes but downstream steps fail because the saved file is left as `*.tmp` (the download/finalize raced). Fix: wrap in a Retry Scope with a File Exists check validating the real target extension (not `.tmp`) | [download-file-stuck-tmp.md](./playbooks/download-file-stuck-tmp.md) |
+| Download File from URL — "Don't know about such a host" (DNS / firewall) | Medium | DNS cannot resolve the host, or an enterprise firewall / SSL-inspection proxy blocks the automated outbound connection. Fix: have the network team whitelist the endpoint for the robot/user-agent; verify connectivity from the robot host | [download-file-host-not-found.md](./playbooks/download-file-host-not-found.md) |

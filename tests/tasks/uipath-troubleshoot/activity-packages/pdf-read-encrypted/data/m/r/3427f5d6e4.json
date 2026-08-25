@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T07:55:14.400Z",
+      "Message": "Read document text: The password is incorrect.\r\nException Type: UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException\r\nin Main.xaml\r\n    at ReadPDFText \"Read document text\"\r\n    at Sequence \"Read document text\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.\r\n   at UiPath.PDF.PdfReader..ctor(String filepath, String password)\r\n   at UiPath.PDF.Activities.ReadPDFText.GetFileReader(String fileName, String password)\r\n   at UiPath.PDF.Activities.ReadTextBase.Execute(CodeActivityContext context)"
+    }
+  ]
+}

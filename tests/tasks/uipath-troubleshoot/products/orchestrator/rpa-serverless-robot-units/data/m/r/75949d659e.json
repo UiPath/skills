@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "c3930001-3333-4333-8333-333333333333",
+      "State": "Faulted",
+      "ProcessName": "InvoiceParse",
+      "ReleaseName": "InvoiceParse",
+      "StartTime": "2026-07-19T14:22:11.000Z",
+      "EndTime": "2026-07-19T14:22:11.300Z",
+      "CreationTime": "2026-07-19T14:22:10.700Z",
+      "HostMachineName": null,
+      "Type": "Unattended",
+      "RuntimeType": "Serverless",
+      "Source": "Manual",
+      "Priority": null
+    }
+  ]
+}

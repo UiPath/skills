@@ -16,11 +16,23 @@ Before upload, publish, deploy, or debug:
    and package consistency.
 3. Confirm Integration Service enrichment is complete for executable connector elements.
    If enrichment tooling is unavailable, keep the project as a draft and do not operate it as executable.
-4. Regenerate or refresh package metadata with the supported CLI path.
+4. Regenerate or refresh package metadata:
+
+   ```bash
+   uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
+   uip maestro bpmn update-metadata <file.bpmn>             # regenerate
+   ```
+
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
-   CLI contract says otherwise. Use
-   [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for the local drift
+   CLI contract says otherwise. See
+   [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
+   When the BPMN references external Orchestrator processes, `uip solution
+   resource refresh` expects a versioned `bindings_v2.json` object with a
+   `resources` array. Process resources should be generated or fixture-backed
+   entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
+   `resourceSubType`, and `propertyAttribute` for name/folder-path pairs, not
+   an unwrapped array or unversioned placeholder.
 5. Confirm login for cloud actions:
 
    ```bash
@@ -35,7 +47,7 @@ Before upload, publish, deploy, or debug:
 Package when the user wants a local `.nupkg`, pre-deploy artifact, or package-shape verification:
 
 ```bash
-uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+uip maestro bpmn pack <project-path> <OutputDir> --output json
 ```
 
 Use `--name` and `--version` only when the user provides a public-safe package identity.
@@ -54,6 +66,9 @@ uip solution upload <SolutionDir> --output json
 
 If the solution has resource declarations, refresh them with the supported solution tooling in the local CLI.
 Do not invent a `solution resource` command path; verify the installed CLI help before documenting a refresh step.
+When the project declares resource dependencies, verify that refresh produced
+matching generated resource files and debug overwrite metadata. An empty
+`resources` array is valid only for projects with no generated dependencies.
 
 Report the Studio Web URL or solution ID when the CLI returns one.
 If the upload succeeds but returns no URL, say `<not returned by CLI>` instead of omitting the field.
@@ -66,7 +81,7 @@ Confirm package identity, target folder/context, feed/package expectations, and 
 Typical path:
 
 ```bash
-uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
+uip maestro bpmn pack <project-path> <OutputDir> --output json
 uip solution pack <SolutionDir> <OutputDir> --output json
 uip solution publish <PackageZip> --output json
 ```

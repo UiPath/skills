@@ -1,0 +1,70 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "The name of the person to greet"
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "greeting": {
+        "type": "string",
+        "description": "A greeting addressed to the supplied name"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are GreeterAgent. Create one concise, friendly greeting for the supplied person. Address the person by name, and return only the greeting in the greeting output field.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are GreeterAgent. Create one concise, friendly greeting for the supplied person. Address the person by name, and return only the greeting in the greeting output field."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Name: {{input.name}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.name"
+        }
+      ]
+    }
+  ],
+  "projectId": "502db9fa-1193-4e1f-bbf6-ecdbe551860d",
+  "id": "502db9fa-1193-4e1f-bbf6-ecdbe551860d",
+  "name": "GreeterAgent",
+  "resources": [],
+  "features": []
+}

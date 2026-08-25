@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelWriteCellProcess",
+  "ProjectType": "Process",
+  "Description": "Writes a SUM total formula into cell D1 of the 'Sales' sheet in the sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx via Write Cell inside a Use Excel File scope.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "WeeklyReportDispatcher",
+  "ProjectType": "Process",
+  "Description": "Emails the weekly summary report via Send SMTP Mail Message on an unattended Robot session.",
+  "MainFile": "Main.xaml"
+}

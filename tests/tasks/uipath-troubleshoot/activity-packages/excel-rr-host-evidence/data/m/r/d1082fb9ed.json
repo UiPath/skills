@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "TriggersList",
+  "Data": [
+    {
+      "Key": "t1111111-aaaa-bbbb-cccc-ddddeeeeffff",
+      "Name": "HourlySalesA",
+      "Enabled": true,
+      "ProcessKey": "5680101",
+      "ProcessName": "ExcelDailyImport",
+      "Cron": "0 0/30 * * * ?",
+      "CronSummary": "Every 30 minutes",
+      "TimeZoneId": "UTC",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "FolderName": "ExcelImports",
+      "StartProcessCron": "0 0/30 * * * ?",
+      "StartProcessCronSummary": "Every 30 minutes",
+      "StartProcessCronDetails": "Minutes: 0,30; Seconds: 0; Anchor: 2026-05-01T00:00:00Z",
+      "JobsCount": 1,
+      "RuntimeType": "Unattended"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "a4b5c6d7-8293-4c04-9d5e-6f7081920415",
+      "State": "Faulted",
+      "ProcessName": "AutomatedBillingNotifier",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-05T05:00:00.180Z",
+      "EndTime": "2026-06-05T05:00:03.010Z",
+      "CreationTime": "2026-06-05T04:59:59.910Z"
+    }
+  ],
+  "Pagination": { "Returned": 1, "Limit": 50, "Offset": 0, "HasMore": false }
+}

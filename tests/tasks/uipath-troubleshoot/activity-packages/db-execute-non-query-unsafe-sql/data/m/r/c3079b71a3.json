@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-01T11:20:00.940Z",
+      "Message": "CustomerUpsert execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-01T11:20:01.290Z",
+      "Message": "Execute Non Query: executing INSERT INTO Customers (Name, City) VALUES ('O'Brien', 'Austin') against connection 'Server=sqlsales01;Database=CRM'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-01T11:20:01.389Z",
+      "Message": "Execute Non Query: A database error occurred.\r\nMicrosoft.Data.SqlClient.SqlException: Unclosed quotation mark after the character string ')'.\r\nIncorrect syntax near 'Brien'."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-01T11:20:01.406Z",
+      "Message": "Execute Non Query: A database error occurred.\r\nin Main.xaml\r\n    at ExecuteNonQuery \"Execute Non Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

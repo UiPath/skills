@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63",
+      "State": "Faulted",
+      "ProcessName": "OrderEntryAssistant",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-07-21T14:02:11.310Z",
+      "EndTime": "2026-07-21T14:02:13.640Z",
+      "CreationTime": "2026-07-21T14:02:10.980Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

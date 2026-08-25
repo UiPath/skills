@@ -1,0 +1,61 @@
+task_id: skill-flow-ipe-jira-search-triage
+description: >
+  E2E live Jira coverage of a JQL-search-driven triage flow: a manual-trigger
+  Flow that searches for issues matching a seeded JQL and, for each match, adds
+  a triage comment. pre_run seeds two real issues carrying a unique tag; grading
+  runs the flow (`flow debug`) and asserts both seeded issues come back carrying
+  the triage comment.
+
+  Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
+  `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project, with
+  issue-search scope. Targets live in `jira_is.py`.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
+
+run_limits:
+  expected_turns: 45
+  task_timeout: 2400
+  max_turns: 120
+  turn_timeout: 900
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_search_triage/seed_jira.py"
+    timeout: 90
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_search_triage/teardown_jira.py"
+    timeout: 120
+
+initial_prompt: |
+  Create a new Flow project called "JiraSearchTriage" with a manual trigger.
+
+  Read `seed.json` in the current directory for the `jql` query and the
+  `processed_comment` body.
+
+  Build a flow that:
+    1. Searches Jira for issues matching `jql`, using the Atlassian Jira
+       "Search Issues by JQL" connector activity.
+    2. Loops over the returned issues and adds a comment to each whose body is
+       `processed_comment` (pass it verbatim), using the "Add Comment" activity.
+
+  Use the Atlassian Jira connection available in the `Shared/uipath-maestro-flow`
+  folder. If the Atlassian Jira connector isn't available in your registry, stop
+  rather than falling back to a generic HTTP request.
+
+  Validate the final flow file.
+
+success_criteria:
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JiraSearchTriage checks: valid flow with a JQL search feeding a loop of Add-Comment, debug completes, and both seeded issues carry the triage comment"
+    command: "python3 $TASK_DIR/check_jira_search_triage.py"
+    timeout: 1200
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

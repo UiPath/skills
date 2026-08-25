@@ -1,0 +1,93 @@
+task_id: skill-agent-guardrail-lowcode-llm-as-judge
+description: >
+  Built-in LLM as Judge guardrail (low-code). End-to-end test: scaffold a
+  standalone low-code agent and add a builtInValidator guardrail for
+  llm_as_judge at Agent scope with a block action. Verifies the skill
+  discovers a model via `uip agent guardrails llm-as-judge-models` (the
+  model Options come back empty from `guardrails list`), then writes the
+  correct shape: $guardrailType builtInValidator, validatorType
+  llm_as_judge, an `enum` model parameter with a non-empty value, a `text`
+  guardrailText parameter, and PascalCase scope values.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+initial_prompt: |
+  Create a UiPath low-code agent "JudgeAgent" that answers customer support questions
+  about their accounts. Add an LLM as Judge guardrail at Agent scope with a block action
+  and the message "Response violated the judge rule." The judge rule is: "The agent must
+  only provide factual account information and must never offer refunds or price
+  negotiation." The solution should be named "JudgeGuardSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the LLM-as-judge models via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+llm-as-judge-models'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "JudgeGuardSol/JudgeGuardSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "JudgeAgent/agent.json was created"
+    path: "JudgeGuardSol/JudgeAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "LLM as Judge guardrail shape (builtInValidator, llm_as_judge, enum model, text guardrailText, PascalCase)"
+    command: "python3 $TASK_DIR/check_llm_as_judge.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 30
+  turn_timeout: 1200

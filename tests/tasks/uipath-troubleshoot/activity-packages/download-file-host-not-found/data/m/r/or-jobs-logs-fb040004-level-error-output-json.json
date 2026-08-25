@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T14:26:53.150Z",
+      "Message": "[Download File from URL] Don't know about such a host. (feeds.partner-portal.example:443)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T14:26:53.220Z",
+      "Message": "Download File from URL: Don't know about such a host. (feeds.partner-portal.example:443)\r\nin Main.xaml\r\n    at DownloadFileFromUrl \"Download File from URL\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

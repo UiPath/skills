@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "_doc": "Mock dispatch table. Only docsai is proxied to the real CLI; any other uip call returns an empty array. This is a design-time Studio validation error with no Orchestrator job/log/trace, so no job fixtures exist. Matching is plain substring (first match wins); patterns are quote-agnostic.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore without aborting."
+  }
+}

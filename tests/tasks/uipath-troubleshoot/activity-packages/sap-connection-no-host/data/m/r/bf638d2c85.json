@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T06:22:43.700Z",
+      "Message": "SAP Application Scope: Not any kind of host is specified\r\nException Type: SAP.Middleware.Connector.RfcConfigurationException\r\nin Main.xaml\r\n    at SapApplicationScope \"SAP Application Scope\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSAP.Middleware.Connector.RfcConfigurationException: Not any kind of host is specified\r\n   at SAP.Middleware.Connector.RfcDestination.CheckConfiguration()\r\n   at UiPath.SAP.BAPI.ConnectionService.SapConnectionService.SapConnectionService.Connect(SapConnection sapConnection)\r\n   at UiPath.SAP.BAPI.Activities.SapApplicationScope.Execute(NativeActivityContext context)"
+    }
+  ]
+}

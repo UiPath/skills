@@ -1,0 +1,48 @@
+task_id: skill-agents-bindings-asset-subtypes
+description: >
+  Asset SubType inference from Python type annotations. The agent
+  scans a project where three different `sdk.assets.retrieve_async`
+  call sites are annotated as `str`, `int`, and `bool` respectively.
+  The bindings sync should produce three `asset` entries — and where
+  the inference is high-confidence, emit `metadata.SubType` matching
+  the type annotation (`stringAsset` / `integerAsset` /
+  `booleanAsset`).
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+
+run_limits:
+  expected_turns: 11
+  turn_timeout: 1200
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/bindings_asset_subtypes/_fixtures/asset-subtypes/. ."
+    timeout: 10
+
+initial_prompt: |
+  I have a UiPath coded agent project in the current directory. Its `main.py`
+  has three `sdk.assets.retrieve_async` call sites, each annotated with a
+  different concrete type (`str`, `int`, `bool`), and its bindings.json is
+  currently empty.
+
+  Set up the project, then sync `bindings.json` so it reflects all three
+  asset retrieves. Each one must produce a separate binding entry. Where
+  the type annotation lets you infer the SubType with high confidence,
+  emit `metadata.SubType` accordingly. If a SubType cannot be inferred
+  cleanly, omitting it is acceptable per the bindings reference.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Three asset bindings, correct keys, SubType either matches the annotation or is omitted"
+    command: "python3 $TASK_DIR/check_bindings_asset_subtypes.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

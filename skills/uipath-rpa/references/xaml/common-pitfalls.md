@@ -2,6 +2,12 @@
 
 Common pitfalls that cause validation errors or runtime failures.
 
+Moved topical catalogs — one pointer each, content lives with its domain:
+
+- IS `ConnectorActivity` gotchas: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
+- Flowchart/StateMachine/ProcessDiagram node wiring (`x:Reference` / `__ReferenceID`): [canvas-layout-guide.md](canvas-layout-guide.md)
+- CLI usage pitfalls: [../cli-reference.md](../cli-reference.md)
+
 ## Container/Scope Requirements
 
 These activities **must** be placed inside a specific parent scope:
@@ -117,6 +123,29 @@ Some properties are only required when another property has a specific value:
 **Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
 
 See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
+
+## NTypeInto `Text` with literal `[k(...)]` special-key tokens
+
+When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
+
+**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
+
+**Correct:**
+```xml
+<uix:NTypeInto ...>
+  <uix:NTypeInto.Text>
+    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
+  </uix:NTypeInto.Text>
+</uix:NTypeInto>
+```
+
+Alternatives:
+- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
+- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
+
+## UIA `N*` Activities Carry a `Version` — Never Strip It
+
+Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
 
 ## ActivityAction/ActivityFunc Initialization
 
@@ -247,7 +276,7 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 2. Use the correct argument direction: `InArgument` for `in_*`, `OutArgument` for `out_*`, `InOutArgument` for `io_*`
 3. The `x:TypeArguments` must match the callee's argument type
 4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
-5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
+5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#respect-expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
 
 ### OutArgument Bindings Must Be Variable References
 
@@ -321,19 +350,68 @@ Or attribute form with explicit literal:
 
 Or omit `Default` entirely if the variable is assigned before its first read.
 
+## InvokeCode Code Property — Attribute Form Only
+
+Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for newlines). A bare text or CDATA child element (`<ui:InvokeCode.Code>…</ui:InvokeCode.Code>`) passes `validate` AND `build` but deserializes as empty code — the activity runs as a silent no-op (`hasErrors: false`, none of the code's effects happen).
+
+**Correct:**
+```xml
+<ui:InvokeCode Language="CSharp" DisplayName="Process rows"
+               Code="var total = 0m;&#xA;ProcessRows(total);" />
+```
+
+**Silent no-op (passes validate + build):**
+```xml
+<ui:InvokeCode Language="CSharp" DisplayName="Process rows">
+  <ui:InvokeCode.Code><![CDATA[var total = 0m; ProcessRows(total);]]></ui:InvokeCode.Code>
+</ui:InvokeCode>
+```
+
+**Detection:** run reports success but the code's outputs are absent (0 rows processed, no files written). No validate/build diagnostic catches it — verify effects after the first run.
+
 ## InvokeCode Language Property
 
 The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
 
-**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` — it is not a valid `NetLanguage` value. `"CSharp"` is the same in both.
+**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` or `"VB"` — neither is a valid `NetLanguage` value. `"CSharp"` is the same in both.
 
-**What happens:** Using `Language="VisualBasic"` passes Studio validation but fails at runtime:
+**What happens:** `Language="VisualBasic"` (or `"VB"`) passes Studio validation but fails at runtime:
 ```
 Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `../activity-docs/UiPath.System.Activities/` for full details.
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` or `"CSharp"`.
+
+## C# XAML Expressions Compile as Expression Trees
+
+Each C# expression in a XAML workflow compiles as a lambda expression tree, which forbids constructs a normal method body allows:
+
+- **No optional-argument overloads** — `line.Split(',', StringSplitOptions.None)` fails with `CS0854: An expression tree may not contain a call ... that uses optional arguments`. Pass every argument explicitly: `line.Split(new char[]{ ',' })`.
+- **No `out` variables** — `int.TryParse(s, out var n)` cannot appear in an expression. Validate with a format guard short-circuited before `int.Parse(s, CultureInfo.InvariantCulture)`, or move the logic into `Invoke Code`.
+- **No statements** — no assignments, loops, or multi-statement blocks inside one expression.
+
+When a transform hits these limits, use `Invoke Code` — see [data-manipulation-guide.md](../data-manipulation-guide.md) for the escalation path.
+
+## XAML Expressions Cannot Reference Coded Source File Types
+
+XAML expressions (C# or VB) cannot call types defined in the project's coded source files (`.cs`) — the expression compiler does not reference the coded-workflows assembly. `validate` and `build` fail with `CS0103` / `BC30451` on the type name.
+
+**Fix:** inline the logic in `InvokeCode`, or invoke a coded workflow via `InvokeWorkflowFile`. Helpers shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+
+## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
+
+`WriteTextFile` with `Encoding="utf-8"` maps to .NET `Encoding.UTF8` **with preamble** — output starts with a BOM, which strict JSON parsers reject. Omitting the `Encoding` property writes BOM-less UTF-8.
+
+**Rule:** for machine-consumed output (JSON, or CSV for downstream parsers), omit `Encoding`. If explicit encoding control is required, write via `InvokeCode`: `File.WriteAllText(path, content, new UTF8Encoding(false))`.
+
+## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
+
+`Chr(n)` / `Asc(c)` go through ANSI code page 1252, which .NET 6+ does not register. For `n ≥ 128` they throw `System.NotSupportedException: No data is available for encoding 1252` at runtime — after passing both `validate` and `build`. Use `ChrW(n)` / `AscW(c)` (Unicode, no code page) instead, or the BCL `Convert.ToChar(n)` / `CInt(c)`.
+
+`Chr`/`ChrW`/`Asc`/`AscW` live in `Microsoft.VisualBasic`, which is not auto-imported — `BC30451: 'ChrW' is not declared` means you must add `Microsoft.VisualBasic` to both `NamespacesForImplementation` and `ReferencesForImplementation`. The `Convert.*` BCL forms avoid this.
+
+`ContinueOnError=True` silently swallows the runtime exception (workflow looks successful, output is wrong/empty) — set it to `False` while debugging.
 
 ## HTTP Request Activity Complexity
 
@@ -349,6 +427,10 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - **Retry policies**: Complex interaction between `RetryPolicyType`, `RetryCount`, `PreferRetryAfterValue`, and `MaxRetryAfterDelay`
 - **Default timeout**: 10,000ms (10 seconds)
 
+**Studio re-expansion injects default expressions that need imports (CLI-clean, Studio-red).** `validate`/`build` accept a minimally-authored `NetHttpRequest`. When the file is later opened in Studio / Studio Web, Studio re-serializes the activity with its full default property set — including default expressions for `FormDataParts` (`New List(Of FormDataPart) From {New FileFormDataPart(), New BinaryFormDataPart(), New TextFormDataPart()}`) and `RetryStatusCodes`. `FormDataParts` names types from `UiPath.Web.Activities.Http.Models`, so Studio reports `BC30002: Type 'FormDataPart' is not defined` though the CLI was clean — even when `RequestBodyType="None"`. **Fix:** add `UiPath.Web.Activities.Http.Models` to `TextExpression.NamespacesForImplementation`. A type referenced by simple name in a VB expression must be **imported** there; an `xmlns:` prefix on the root element only resolves element/attribute type names, not expression compilation.
+
+**Two related Studio Web round-trip behaviors to author for.** On save, Studio Web (a) rewrites child-element argument bindings to attribute form — e.g. `<Throw.Exception><InArgument x:TypeArguments="s:Exception">[…]</InArgument></Throw.Exception>` becomes `Exception="[…]"` — and (b) prunes unused root `xmlns` declarations. Prefer attribute-form bindings where they work; it keeps round-trip diffs minimal and matches the shape Studio Web will produce anyway.
+
 ## Connection Service Pattern (Office 365, GSuite, IS Connectors)
 
 - `ConnectionId` is marked `[Browsable(false)]` — it won't appear in the Properties panel, but it is **required** when `UseConnectionService=True`
@@ -356,72 +438,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - Missing `ConnectionId` when `UseConnectionService=True` → validation error about missing account/connection name
 - Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
 
-**Connection lifecycle with CLI:**
-- **Discover connections**: `uip is connections list [connector-key] --output json` — find existing connection GUIDs
-- **Verify connection health**: `uip is connections ping <connection-id>` — check if a connection is still active
-- **Create new connection**: `uip is connections create <connector-key>` — opens OAuth flow for user to authenticate
-- **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
-- If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user they must configure the connection in Studio
-
-## IS `ConnectorActivity` Gotchas
-
-Full authoring flow: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md).
-
-### JIT `OutArgument` from Studio Designer Breaks Fresh Loads
-
-When Studio's designer touches an IS `ConnectorActivity`, it can inject a JIT-typed `OutArgument` on the `Jit_<operation>` `FieldObject`:
-
-```xml
-<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument">
-  <isactr:FieldObject.Value>
-    <OutArgument x:TypeArguments="uiascb:send_message_to_channel_v2_Create" />
-  </isactr:FieldObject.Value>
-</isactr:FieldObject>
-```
-
-The `uiascb:` namespace points at a Studio-session-local dynamically-compiled assembly (e.g. `C35283077FA_send_mes.<hash>`). On any **fresh load** (new Studio session, Helm, CI), that assembly doesn't exist, compile fails with:
-
-```
-[Error] Unable to create activity builder for <workflow>.xaml.
-Reason was 'Cannot create unknown type '{...}OutArgument({...}<op>_Create)'.'
-```
-
-**Fix** — strip the injected `OutArgument` back to bare form:
-
-```xml
-<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument" />
-```
-
-Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` element if no other reference uses it. Tracked as PILOT-4812.
-
-### Field Names Come From the Schema, Not Memory
-
-`FieldObject Name` values are connector-specific and schema-driven. Never guess. Always read:
-
-```bash
-uip is resources describe <connector-key> <operation-name> --operation Create --output json
-cat ~/.uipath/cache/integrationservice/<connector-key>/_static/<operation>.Create.json
-```
-
-Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually expects connector-specific names) trigger a `Configuration contains a breaking change` runtime error.
-
-### `Configuration` Attribute Is Opaque
-
-The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`.
-
-### `FieldObject.Value` Attribute Does Nothing
-
-Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" Value="hello" />` — is silently ignored. The runtime only reads the element form:
-
-```xml
-<isactr:FieldObject Name="channel" Type="FieldArgument">
-  <isactr:FieldObject.Value>
-    <InArgument x:TypeArguments="x:String">
-      <CSharpValue x:TypeArguments="x:String">"hello"</CSharpValue>
-    </InArgument>
-  </isactr:FieldObject.Value>
-</isactr:FieldObject>
-```
+- Connection lifecycle CLI (list / ping / create / edit) and the placeholder-GUID fallback when no connection exists: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
 
 ## Deprecated Activities (Do Not Use)
 
@@ -439,6 +456,10 @@ Activity tag names rarely match Studio display names. Guessing the tag from the 
 |--------------|-------------|-------------|
 | Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
 | Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
+
+### `InvokeProcess` vs `StartProcess`
+
+To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (property `FileName` + `Arguments`). `ui:InvokeProcess` runs an Orchestrator process/package (property `ProcessName`) and has **no `FileName`** — reaching for one means you picked the wrong activity. Don't work around it with `Shell()`, `Process.Start`, or `InvokeCode`; for PowerShell use `InvokePowerShell<T>`.
 
 ### Tag Verification Gate
 
@@ -501,9 +522,42 @@ Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — 
 
 ## DataTable Activity Gotchas
 
+Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/group/join/diff, RegEx, DateTime, collections, JSON) see [data-manipulation-guide.md](../data-manipulation-guide.md).
+
 - **LookupDataTable column resolution**: When multiple column identifiers are set (shouldn't happen due to OverloadGroups), only the first non-null is used: `LookupColumnIndex ?? LookupColumnName ?? LookupDataColumn`
 - **FilterDataTable**: Column must exist AND be type-compatible with the filter operator. Filtering a DateTime column with "Contains" fails at CacheMetadata validation.
 - **BuildDataTable**: Uses a security-related allowed types list. DataTables with certain .NET types may fail to serialize/deserialize.
+- **BuildDataTable — `TableInfo` is designer-only.** The required `TableInfo` property is a serialized string with no documented format; activity docs say "configure through the designer instead". **Cannot be authored in agent-written XAML.** Skip the activity. Build the DataTable inline with `Assign` + `InvokeMethod` instead. Requires the standard `sd` namespace alias (matches the rest of the activity-docs corpus — see `ForEachRow.md` and `AddDataRow.md`) and `xmlns:s`.
+
+  **VB XAML** (`expressionLanguage: VisualBasic` — bracket shorthand `[expr]`, `New T()`, `GetType(T)`):
+  ```xml
+  <!-- Modern (Windows/Portable):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" -->
+  <!-- Legacy (.NET Framework 4.6.1):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=mscorlib" -->
+  <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
+  ...
+  <InvokeMethod MethodName="Add">
+    <InvokeMethod.TargetObject>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+    </InvokeMethod.TargetObject>
+    <InArgument x:TypeArguments="x:String">Name</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
+  </InvokeMethod>
+  <InvokeMethod MethodName="Add">
+    <InvokeMethod.TargetObject>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+    </InvokeMethod.TargetObject>
+    <InArgument x:TypeArguments="x:String">Amount</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
+  </InvokeMethod>
+  ```
+  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
+  **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
+
+  Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
 - **GetRowItem**: Must specify at least one of `Column`, `ColumnIndex`, or `ColumnName` — all three empty causes validation error.
 
 ## Testing Activity Gotchas
@@ -517,7 +571,7 @@ Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — 
 Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `validate` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `validate` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
 
 1. Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
-2. Always run `uip rpa build` after `validate` clears — it is the only validator that catches invalid enum identifiers (see [../validation-guide.md § Validation Iteration Loop](../validation-guide.md#validation-iteration-loop)).
+2. Always run `uip rpa build` after `validate` clears — it is the only validator that catches invalid enum identifiers (see [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop)).
 
 ## Package Version Changes Break XAML
 
@@ -556,14 +610,10 @@ Every XAML file must use the same expression language as the project (`expressio
 - VB uses `OrElse`/`AndAlso` (short-circuit) vs `Or`/`And` (non-short-circuit) — different behavior in XAML expressions
 
 **C#-specific gotchas:**
-- Expressions must use explicit `<CSharpValue>` / `<CSharpReference>` elements inside `<InArgument>` / `<OutArgument>` — do NOT use `[bracket]` shorthand (brackets create VB expression nodes)
-- String interpolation (`$"..."`) is NOT supported in XAML expressions — use string concatenation
+- Expressions must use explicit `<CSharpValue>` / `<CSharpReference>` elements inside `<InArgument>` / `<OutArgument>` — do NOT use `[bracket]` shorthand (brackets create VB expression nodes). String interpolation (`$"..."`) is NOT supported — concatenate.
+- Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` are specific to **XAML projects with `expressionLanguage: CSharp`** — NOT to coded workflows (`.cs` files), which are plain C# and never use `CSharpValue`/`CSharpReference`: [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 **Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
-
-### C# expression pitfalls — separate file
-
-Applies only to XAML projects with `expressionLanguage: CSharp` — not to VB XAML, and not to coded workflows (`.cs` files). Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have root causes specific to that configuration. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 ## Missing Assembly References
 
@@ -592,14 +642,6 @@ Cannot create unknown type '{http://schemas.microsoft.com/netfx/2009/xaml/activi
 ```
 
 **Root cause:** Workflow arguments (In/Out/InOut) must be declared in `<x:Members>` with `<x:Property>` children — both prefixed with `x:` (the XAML language schema, `http://schemas.microsoft.com/winfx/2006/xaml`). Writing `<Activity.Properties>` with bare `<Property>` elements resolves `Property` against the **default** xmlns (the activities namespace), where no such type exists — so the file fails to load entirely.
-
-**Wrong** — Studio cannot open the workflow:
-```xml
-<Activity.Properties>
-  <Property Name="in_Username" Type="InArgument(x:String)" />
-  <Property Name="out_LoginSuccess" Type="OutArgument(x:Boolean)" />
-</Activity.Properties>
-```
 
 **Correct:**
 ```xml
@@ -657,6 +699,7 @@ The error occurs because the XAML language schema does not register `DateTime`, 
 | `x:Guid` | `s:Guid` | — |
 | `x:Uri` | `s:Uri` | — |
 | `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
+| `x:Type` | `s:Type` | `<InArgument x:TypeArguments="x:Type">` silently resolves to `System.Activities.XamlIntegration.TypeExtension`, NOT `System.Type`. Passing `[GetType(System.String)]` fails with `BC30311: Value of type 'Type' cannot be converted to 'TypeExtension'`. Required by `InvokeMethod` calls into APIs that take `System.Type` (e.g. `DataColumnCollection.Add(name, type)`). |
 
 For types outside of `System`, add the matching CLR namespace alias. Examples:
 ```xml
@@ -679,23 +722,56 @@ xmlns:ss="clr-namespace:System.Security;assembly=System.Private.CoreLib"
 <OutArgument x:TypeArguments="ss:SecureString">[var_SecurePass]</OutArgument>
 ```
 
-**Fix example:**
-
-Wrong — causes `Cannot create unknown type` at load time:
-```xml
-<Variable x:TypeArguments="x:DateTime" Name="startTime" />
-<Variable x:TypeArguments="x:DateTimeOffset" Name="reminderTime" />
-```
-
-Correct — requires `xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`:
-```xml
-<Variable x:TypeArguments="s:DateTime" Name="startTime" />
-<Variable x:TypeArguments="s:DateTimeOffset" Name="reminderTime" />
-```
-
 The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Variable`, `InArgument`, `OutArgument`, `CSharpValue`, `CSharpReference`, `ActivityAction`, `DelegateInArgument`, etc.
 
 ---
+
+## Array Types in `Variable` Declarations
+
+The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
+
+**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
+
+- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
+- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
+
+Wrong:
+```xml
+<Variable x:TypeArguments="x:String[]" Name="paths" />
+```
+
+Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
+```xml
+<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
+```
+
+Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
+
+```xml
+<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
+  <InArgument x:TypeArguments="x:String">Alice</InArgument>
+  <InArgument x:TypeArguments="x:Int32">42</InArgument>
+</InvokeMethod>
+```
+
+This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
+
+---
+
+## Generic Type Arguments Cannot Wrap Array Types
+
+`<Variable x:TypeArguments="scg:List(x:Object[])">` fails with *"Cannot create unknown type … List(Object[])"*. The XAML type system refuses to construct `List<Object[]>` — an array element type nested inside a generic. Same for `<InArgument x:TypeArguments="scg:IEnumerable(x:Object[])">` on `ForEach.Values`. This blocks the natural shape for projecting LINQ rows into `AddDataRow.ArrayRow` (which is `InArgument<Object[]>`).
+
+**Fix — box each row as `Object` so the collection's element type is non-array:**
+
+- Variable: `<Variable x:TypeArguments="scg:List(x:Object)" Name="rows" />`
+- Producing LINQ: `… .Select(Function(g) DirectCast(New Object(){g.Key, mean}, Object)).ToList()`
+- `ForEach`: `<ForEach x:TypeArguments="x:Object">` over `scg:IEnumerable(x:Object)`
+- Consumer cast: `<ui:AddDataRow ArrayRow="[CType(row, Object())]" …>`
+
+The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly because `CType(row, Object())` unboxes it.
 
 ## Variable Scope and "Not Declared" Errors
 
@@ -720,70 +796,6 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 
 **Fix:** Find the activity with the empty expression in the XAML and either set a valid expression or remove the empty argument element.
 
-## x:Reference / __ReferenceID Naming
-
-Flowcharts, State Machines, and Long Running Workflows (ProcessDiagram) use `x:Name="__ReferenceID0"` and `<x:Reference>__ReferenceID0</x:Reference>` to link nodes.
-
-### Where `<x:Reference>` Goes
-
-`<x:Reference>` is used ONLY inside property elements to create cross-references between nodes:
-
-| Property Element | Container | Purpose |
-|-----------------|-----------|---------|
-| `Flowchart.StartNode` | Flowchart | Points to the first node |
-| `FlowStep.Next` | Flowchart | Links to the next node |
-| `FlowDecision.True` / `.False` | Flowchart | Branch targets |
-| `Transition.To` | State Machine | Transition destination state |
-| `StateMachine.InitialState` | State Machine | Starting state (attribute form: `{x:Reference ...}`) |
-| `ProcessDiagram.StartNode` | ProcessDiagram | Points to start event |
-| `EventNode.Next` / `TaskNode.Next` | ProcessDiagram | Links to next node |
-| `DecisionNode.True` / `.False` | ProcessDiagram | Branch targets |
-
-### Node Registration Rule
-
-All nodes in a Flowchart/ProcessDiagram must be registered as children of the container element. Two scenarios:
-
-1. **Direct children** of the container (e.g., `<FlowStep>` directly under `<Flowchart>`) — already registered. Do NOT also add a trailing `<x:Reference>`.
-2. **Inline definitions** inside property elements (e.g., `<FlowStep>` inside `<FlowDecision.True>`) — MUST add a trailing `<x:Reference>` entry as a direct child of the container.
-
-**Correct — inline node registered with trailing `<x:Reference>`:**
-```xml
-<Flowchart>
-  <Flowchart.StartNode>
-    <x:Reference>__ReferenceID0</x:Reference>
-  </Flowchart.StartNode>
-  <FlowDecision x:Name="__ReferenceID0">        <!-- direct child — no trailing ref -->
-    <FlowDecision.True>
-      <FlowStep x:Name="__ReferenceID1">         <!-- inline definition -->
-        ...
-      </FlowStep>
-    </FlowDecision.True>
-  </FlowDecision>
-  <x:Reference>__ReferenceID1</x:Reference>      <!-- register inline node -->
-</Flowchart>
-```
-
-**Wrong — re-listing a direct child:**
-```xml
-<Flowchart>
-  <FlowStep x:Name="__ReferenceID0">             <!-- direct child -->
-    ...
-  </FlowStep>
-  <x:Reference>__ReferenceID0</x:Reference>      <!-- WRONG — already a direct child -->
-</Flowchart>
-```
-
-The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `EndNode`, `BoundaryNode`).
-
-### Other Gotchas
-
-- `__ReferenceID` values must be unique within the entire XAML file — duplicate IDs cause deserialization errors
-- When copy-pasting FlowStep/FlowDecision nodes, duplicate `__ReferenceID` values will be created — Studio auto-renumbers, but manual XAML editing doesn't
-- When copying from flowchart to sequence, elements may be ordered backwards due to node ordering in XAML
-- `x:Reference` can only refer to elements with `x:Name` in the same XAML file — cross-file references are not supported
-
-**When editing manually:** If adding new FlowStep/FlowDecision nodes, use a `__ReferenceID` number higher than any existing one in the file.
-
 ## XAML File Size and Performance
 
 - XAML files over **5 MB** cause significant Studio slowdowns
@@ -807,20 +819,6 @@ The same registration rules apply to `<upa:ProcessDiagram>` and its node types (
 
 **Fix:** Prefix with the XAML escape sequence `{}` to indicate a literal string: `Search="{}{FullName}"`
 
-## Selector Special Characters
-
-When writing selectors in XAML, XML special characters must be escaped:
-
-| Character | XAML Escape | Notes |
-|-----------|------------|-------|
-| `&` | `&amp;` | Most common issue — `&` in window titles/URLs |
-| `<` | `&lt;` | Rare in selectors |
-| `>` | `&gt;` | Rare in selectors |
-| `"` | `&quot;` | Inside attribute values |
-| `'` | `&apos;` | Inside single-quoted attributes |
-
-**Double-encoding gotcha:** If a selector value goes through both XML escaping and UiPath's own escaping, you may get `&amp;amp;` instead of `&amp;`. Use `SecurityElement.Escape()` in C# expressions for dynamic selectors.
-
 ## ViewState Section Corruption
 
 The `<sap2010:WorkflowViewState.ViewStateManager>` section can become corrupted:
@@ -843,34 +841,7 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 **Fix:** Use the `Read` tool to read it one more time only. If this also fails, then read the project structure.
 
-## CLI-Specific Pitfalls
-
-### `validate --file-path` requires relative paths
-
-The `--file-path` parameter of `uip rpa validate` must be a path **relative to the project directory**:
-- Correct: `--file-path "Workflows/SendEmail.xaml"`
-- Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
-
-Using an absolute path will result in a "file not found" error even if the file exists.
-
-### `--project-dir` defaults to CWD
-
-All `uip rpa` commands default to the current working directory as the project root. If you are running commands from a parent directory or monorepo root, every command will silently target the wrong location. Always verify the CWD contains `project.json`, or pass `--project-dir` explicitly.
-
-### Studio IPC connection failures
-
-`uip rpa` commands communicate with Studio over IPC. By default this is a **headless Studio** that auto-launches from a NuGet package — no Studio Desktop required. Recovery steps when commands fail with connection errors:
-
-1. **Re-run the command.** Headless Studio relaunches automatically on the next call; transient pipe errors clear on retry.
-2. **Raise the timeout for the first call.** Cold NuGet restore of the headless Studio package can take 30–90 s — `uip rpa --timeout 600 <command>`.
-3. **`uip rpa project open --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
-4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa instances list --output json` and run `uip rpa studio start --project-dir "..."` if no instance is up.
-
-### CLI output format for parsing
-
-Always use `--output json` when you need to parse CLI output programmatically. The default `table` format is human-readable but unreliable for parsing (column alignment varies, long values may be truncated). JSON output is structured and unambiguous.
-
-### DataTable.Select numeric comparisons on Excel-sourced data
+## DataTable.Select numeric comparisons on Excel-sourced data
 
 When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
 

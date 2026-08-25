@@ -1,0 +1,6 @@
+{
+  "Name": "DelimitedExport",
+  "ProjectType": "Process",
+  "Description": "DelimitedExport automation project.",
+  "MainFile": "Main.xaml"
+}

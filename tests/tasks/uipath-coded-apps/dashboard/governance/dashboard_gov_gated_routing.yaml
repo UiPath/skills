@@ -1,0 +1,52 @@
+task_id: uipath-coded-apps-dashboard-gov-gated-routing
+description: >
+  Gate-OPEN path for governance-violation insights. When the user explicitly
+  asks about runtime compliance / standards / rule violations (e.g. ISO 42001
+  runtime rules), the skill must route to the AgentTraces runtime-governance
+  methods (getGovernanceDecisions / getGovernanceSummary, SDK 1.5.1). Guards
+  that the explicit-runtime-compliance signal opens the gate to the family
+  documented in sdk/governance-traces.md.
+tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build, lifecycle:generate]
+
+sandbox:
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build me a dashboard of ISO 42001 runtime rule violations across my agents,
+  broken down per agent.
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Gate open: SDK 1.5.1 AgentTraces governance methods. "getGovernance" is the
+  # shared prefix of getGovernanceDecisions/getGovernanceSummary (whichever the
+  # agent legitimately picks) and matches no other SDK method; span-scan parsing
+  # must not appear.
+  - type: run_command
+    description: "Metric module calls an AgentTraces governance method (getGovernanceDecisions/getGovernanceSummary); no span-scan parsing"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --require-substr "getGovernance"
+      --forbid-substr "parseGovernanceSpans" --forbid-substr "governance-scan"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

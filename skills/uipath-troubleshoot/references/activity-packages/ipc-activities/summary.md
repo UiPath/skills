@@ -1,0 +1,9 @@
+# IPC Activities Playbooks
+
+**Overview:** [overview.md](./overview.md) — `UiPath.IPC.Activities` package, channel / named-pipe execution model, and common failure patterns
+**Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for IPC Activities investigations
+
+| Issue | Confidence | Description | Playbook |
+|-------|:---:|-------------|----------|
+| Broadcast Message — `System.TimeoutException` (no channel / receiver found) | Medium | `Broadcast Message` / `Send Message` faults with `Timeout of <N> ms has passed and no channel was found to send the message to.` — no live Message Receiver Trigger was found on the channel before the `Timeout` expired. Causes: the receiver process was not running in parallel (not launched, launched too late, still initializing, or exited), the `Channel` string does not match (case-sensitive) between sender and receiver, or `Timeout` is too low for the receiver to come up. Fix: launch the receiver in parallel first, match the channel string exactly, raise `Timeout` (5000–10000 ms) | [broadcast-message-timeout.md](./playbooks/broadcast-message-timeout.md) |
+| Broadcast Message — `System.UnauthorizedAccessException` (pipe / session boundary) | Medium | `Broadcast Message` / `Send Message` faults with `Access to the path is denied.` / a named-pipe access-denied on the channel endpoint. IPC is confined to the same robot, user, and session; the pipe ACL rejects a peer in a different Windows user session, under a different user account, or at a different elevation level (one process elevated, the other not). Fix: run both processes on the same robot / user / session / elevation | [broadcast-message-unauthorized-access.md](./playbooks/broadcast-message-unauthorized-access.md) |

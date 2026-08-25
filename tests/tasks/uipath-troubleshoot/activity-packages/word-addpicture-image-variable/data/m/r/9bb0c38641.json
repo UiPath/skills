@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "dd444444-9999-aaaa-bbbb-ccccddddeeee",
+      "StartTime": "2026-05-22T09:15:02.140Z",
+      "EndTime": "2026-05-22T09:15:04.302Z",
+      "State": "Faulted",
+      "ReleaseName": "WordReportImage",
+      "Source": "Manual",
+      "Reference": "MonthlyReportRun",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0044444-2222-3333-4444-555566667777",
+      "Info": "System.IO.FileNotFoundException: Could not find file 'C:\\Users\\automation1\\AppData\\Local\\UiPath\\Packages\\WordReportImage\\1.0.0\\UiPath.Core.Image'.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

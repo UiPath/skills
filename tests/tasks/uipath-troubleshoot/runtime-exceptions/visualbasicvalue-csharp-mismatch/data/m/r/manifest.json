@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the expression-language-mismatch branch of the 'VisualBasicValue`1 requires compilation' runtime-exceptions playbook. The OrderRouter project is expressionLanguage CSharp / targetFramework Windows, but the Assign 'Build Route Key' value is a VisualBasicValue node (VB '&' concatenation) left over from a paste out of a VB project. Modern .NET runtime JIT is disabled, so the stray VB expression cannot compile at run. Decisive evidence: project.json expressionLanguage=CSharp combined with the <mva:VisualBasicValue> node in process/Main.xaml. Expected chain: folders list -> jobs get <key> -> jobs logs <key> --level Error -> read process/project.json + Main.xaml.",
+  "rules": [
+    { "match": "or folders list", "file": "46ac4679cc.json" },
+    { "match": "or jobs get bb22cc33-dd44-ee55-ff66-778899001122", "file": "8579c46e94.json" },
+    { "match": "or jobs logs bb22cc33-dd44-ee55-ff66-778899001122", "file": "267d18282a.json" }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched above returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    { "pattern": "or folders list", "min": 1, "description": "Agent enumerates folders to locate the Shared folder where the faulted job lives." },
+    { "pattern": "or jobs get bb22cc33-dd44-ee55-ff66-778899001122", "min": 1, "description": "Agent fetches the faulted job to read the 'requires compilation' error and the stack frame pointing at the Assign 'Build Route Key'." },
+    { "pattern": "or jobs logs bb22cc33-dd44-ee55-ff66-778899001122", "min": 0, "description": "OPTIONAL - error-level logs corroborate the error; the job-get Info already carries it." }
+  ]
+}

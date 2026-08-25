@@ -1,0 +1,6 @@
+{
+  "Name": "JiraEscalation",
+  "ProjectType": "Process",
+  "Description": "JiraEscalation automation project.",
+  "MainFile": "Main.xaml"
+}

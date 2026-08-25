@@ -4,20 +4,15 @@ description: >
   outputs from 'nice day' / 'bring a jacket' to 'amazing day' / 'go home'.
   Exercises script-node update without restructuring the flow.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:decision]
-max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  expected_turns: 11
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
-      path: "../templates/initial_flow"
+      path: ../templates/initial_flow
 
 initial_prompt: |
   Update the flow to ensure if temperature is greater than 60F returns a summary with a message field 'amazing day',
@@ -25,13 +20,12 @@ initial_prompt: |
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -45,3 +39,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

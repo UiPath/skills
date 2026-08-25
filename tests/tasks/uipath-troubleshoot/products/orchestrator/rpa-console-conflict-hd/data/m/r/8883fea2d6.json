@@ -1,0 +1,47 @@
+{
+  "Result": "Success",
+  "Code": "MachineList",
+  "Data": [
+    {
+      "licenseKey": "605b37db-dc58-460f-99ed-93fcfb2f2702",
+      "name": "HD-BOT-POOL",
+      "description": "High-density robot host (multiple robot users).",
+      "type": "Template",
+      "scope": "Default",
+      "nonProductionSlots": 0,
+      "unattendedSlots": 5,
+      "headlessSlots": 0,
+      "testAutomationSlots": 0,
+      "hostingSlots": 0,
+      "appTestSlots": 0,
+      "performanceTestSlots": 0,
+      "agentSlots": 0,
+      "automationCloudSlots": 0,
+      "automationCloudTestAutomationSlots": 0,
+      "key": "beef2001-2222-4333-8444-555566667702",
+      "endpointDetectionStatus": "Available",
+      "robotVersions": [
+        {
+          "count": 4,
+          "version": "24.10.4"
+        }
+      ],
+      "robotUsers": [
+        { "userName": "UIPATH\\SVC_HD1" },
+        { "userName": "UIPATH\\SVC_HD2" },
+        { "userName": "UIPATH\\SVC_HD3" },
+        { "userName": "UIPATH\\SVC_HD4" }
+      ],
+      "automationType": "Any",
+      "targetFramework": "Windows",
+      "tags": [],
+      "id": 1990702
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

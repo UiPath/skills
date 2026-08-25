@@ -36,3 +36,5 @@ Position is NOT a T-entry input. It is auto-computed at execution time following
 ```
 
 Both `display-name` and `description` are carried through to execution. `description` is always emitted into `caseplan.json.nodes[].data.description` (deliberate divergence from CLI which emits conditionally — the LLM ensures the key is present on every skill run so downstream tooling can rely on it).
+
+<!-- END: planning.md -->

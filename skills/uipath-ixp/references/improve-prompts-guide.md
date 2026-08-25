@@ -17,16 +17,16 @@ Before starting, understand the limits of prompt iteration:
 - **OCR quality issues** — if the OCR consistently garbles a field's text, no instruction will fix it. However, during the review step, OCR-mangled predictions can be corrected using `labelling confirm --corrections` (keeps the reference, fixes the text). If many fields are OCR-mangled across multiple documents, report this to the user as a data quality issue rather than burning prompt iterations.
 - **Missing fields** — if a field simply doesn't exist in the documents, no instruction will conjure it.
 
-## How update-prompts Works
+## How prompt updates work
 
-`update-prompts` supports two levels of instruction updates:
+Prompts live at two levels and are edited by two separate commands:
 
-- **`--fields`** (required): per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field name.
-- **`--groups`** (optional): field group instructions (label_defs like "Invoice", "Line Items"). Match by label_def name.
+- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field name.
+- **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
 
-Both can be used together in a single call. The CLI fetches the taxonomy, merges changes, and sends updates per label_def — preserving all fields and definitions you didn't change.
+Each command sends one server-side call; the server matches by name and writes per affected label_def, preserving every definition you didn't change. To update both field and group instructions in the same iteration, run the two commands back-to-back.
 
-**Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model also sees alongside per-field instructions. If the group instruction says "Extract only fields visible on the first page" but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `--groups` if it contradicts.
+**Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model sees alongside per-field instructions. If the group instruction says "Extract only fields visible on the first page" but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` if it contradicts.
 
 ## Before Starting
 
@@ -38,16 +38,34 @@ The user may specify a max number of iterations (default: 3). Track:
 
 Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle. This assumes no one modifies the taxonomy or documents externally during the loop. If the user mentions changes were made in the web UI, re-fetch the taxonomy and document list before continuing.
 
+## Waiting for retrain
+
+Every change to model inputs — labellings, instructions, document upload/delete, taxonomy edits — triggers a full retrain. Metrics read mid-retrain are *pre*-change scores and corrupt every downstream comparison, so wait before each metrics read.
+
+**Bounded wait. Poll on a fixed interval; never poll indefinitely:**
+
+1. Record `ModelVersion` from the last metrics read BEFORE the change.
+2. Wait 2 minutes, then read `uip ixp projects get-metrics <project-name> --output json`.
+3. `ModelVersion` **greater than** the recorded value → retrain is done, proceed. Any increment counts. Do NOT wait for a specific number: queued input changes can bump the version by more than one, so waiting for exactly *N*+1 polls until the budget dies when the server jumps straight to *N*+2.
+4. Otherwise repeat step 2 — **2 minutes between checks, 5 checks in total** (10 minutes). Do NOT use a single long sleep, and do NOT escalate or shorten the interval between checks.
+5. Still unchanged after the 5th check → **stop polling** and report that the retrain did not complete. Metrics you carry forward predate the change: label them as such, never present them as the post-change measurement, and never roll back instructions on a comparison against them.
+
+A read that fails counts against the budget like any other attempt, and never restarts it.
+
 ## Step 1 — Setup (once, before the loop)
 
 ### 1a. Get baseline metrics
+
+If documents were just labelled (or uploaded, or the taxonomy was edited), wait out the resulting retrain before reading metrics — apply the bounded wait in [Waiting for retrain](#waiting-for-retrain).
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp projects get-metrics <project-name> --output json
 ```
 
-Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
+Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
+
+Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
 **Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `field` entries:
 
@@ -64,7 +82,6 @@ If many fields have low scores across the board, the model configuration may be 
 uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
-  --attribution model \
   --output json
 ```
 
@@ -76,9 +93,9 @@ See the [Project Setup Guide](project-setup-guide.md) Step 2 for the decision ta
 uip ixp projects get-taxonomy <project-name> --output json
 ```
 
-Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. This includes `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
+Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
 
-The field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `update-prompts --fields`.
+The field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `fields update-prompts --updates`.
 
 ### 1d. Read sample documents (2-3 documents)
 
@@ -89,11 +106,11 @@ uip ixp documents list <project-name> --output json
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
 ```
 
-The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** (handles PDF, PNG, JPG, etc.). Files persist across sessions — check for existing files before downloading.
+The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively for PDF/PNG/JPG). Files persist across sessions — check for existing files before downloading.
 
 ### 1e. Check for unlabelled documents
 
-Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents-guide.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
+Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents-guide.md), then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before starting the loop.
 
 ---
 
@@ -132,7 +149,7 @@ For each REFINE field with **Recall < 0.5**, check whether the problem is a bad 
    - If yes, the model may have predicted it correctly but it wasn't confirmed in a previous round → re-fetch predictions and review those fields again
    - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
 
-**If you find previously skipped predictions that are actually correct**, confirm them now using `labelling confirm --fields` for those specific documents and fields. Wait ~2 minutes for retrain and re-fetch metrics before continuing.
+**If you find previously skipped predictions that are actually correct**, confirm them now using `labelling confirm --fields` for those specific documents and fields, then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before continuing.
 
 **If no labelling gaps are found**, proceed directly to writing instructions.
 
@@ -181,21 +198,25 @@ cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 ]
 FIELDS_EOF
 
+uip ixp fields update-prompts <project-name> \
+  --updates "$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)" \
+  --output json
+
+# If group instructions also need updating, run a second command.
 cat > /tmp/ixp/<project-name>/prompts/group_updates.json << 'GROUPS_EOF'
 [
   {"name": "Invoice", "instructions": "General invoice header fields including number, dates, payment terms, and totals."}
 ]
 GROUPS_EOF
 
-uip ixp projects update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)" \
-  --groups "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
+uip ixp groups update-prompts <project-name> \
+  --updates "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
   --output json
 ```
 
-`--groups` is optional — omit it if the group instructions don't need changing.
+The second call is optional — skip it if the group instructions don't need changing.
 
-**Post-update verification:** After `update-prompts`, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
+**Post-update verification:** After the update, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
 
 ```bash
 uip ixp projects get-taxonomy <project-name> --output json > /tmp/ixp/<project-name>/taxonomies/v<N>.json
@@ -205,17 +226,17 @@ Compare the number of fields in each updated label_def against the previous vers
 
 ### 2d. Review and confirm predictions for all documents
 
-Wait ~2 minutes for the model to retrain with the updated instructions, then review predictions for all documents using the [Label Documents Guide](label-documents-guide.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
+Wait out the retrain triggered by the updated instructions ([Waiting for retrain](#waiting-for-retrain)), then review predictions for all documents using the [Label Documents Guide](label-documents-guide.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
 
 ### 2e. Wait and get new metrics
 
-Wait ~2 minutes for the model to retrain with the new labellings, then:
+Wait out the retrain triggered by the new labellings ([Waiting for retrain](#waiting-for-retrain)), then:
 
 ```bash
 uip ixp projects get-metrics <project-name> --output json
 ```
 
-If `ModelVersion` hasn't advanced since the last check, wait another 60 seconds and retry.
+If `ModelVersion` hasn't advanced since the last check, keep re-reading under that same bounded budget. When the budget runs out, record the metrics you have and move on to step 2f — do NOT stall the iteration waiting for a version bump.
 
 ### 2f. Compare and decide
 
@@ -234,12 +255,12 @@ cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
 [{"name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
-uip ixp projects update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/<project-name>/prompts/rollback.json)" \
+uip ixp fields update-prompts <project-name> \
+  --updates "$(cat /tmp/ixp/<project-name>/prompts/rollback.json)" \
   --output json
 ```
 
-Wait ~2 minutes for retrain. On the next iteration, try a **different approach** for the regressed fields only (different wording, shorter instruction, fewer examples).
+Wait out the retrain ([Waiting for retrain](#waiting-for-retrain)). On the next iteration, try a **different approach** for the regressed fields only (different wording, shorter instruction, fewer examples).
 
 **Rollback caveat:** Rollback restores the previous instructions but the model needs to retrain. Expect only **partial recovery** — prefer small-scope iterations (few fields at a time).
 

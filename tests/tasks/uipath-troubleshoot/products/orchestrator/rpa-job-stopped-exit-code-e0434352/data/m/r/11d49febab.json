@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-22T06:00:39.860Z",
+      "Message": "Job 'aacc44ee-55ff-66aa-77bb-88cc99001122' faulted. System.Exception: Job stopped with an unexpected exit code: 0xE0434352"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-22T06:00:39.700Z",
+      "Message": "[Robot] Executor process exited with code 0xE0434352 (CLR unhandled managed exception). Inspect execution traces for the managed exception detail."
+    }
+  ]
+}

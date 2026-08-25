@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay fixtures for a captured VendorPortalSync faulted job (Download File from URL \u2014 DNS/transport failure). Names/paths/keys/timestamps scrubbed; exception text + activity class preserved verbatim.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "e282487c93.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\" --state Faulted --output json",
+      "file": "4b06f34d03.json"
+    },
+    {
+      "match": "or jobs list --folder-key 4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f --state Faulted --output json",
+      "file": "4b06f34d03.json"
+    },
+    {
+      "match": "or jobs list --process-name VendorPortalSync",
+      "file": "4b06f34d03.json"
+    },
+    {
+      "match": "or jobs list --folder-path Finance",
+      "file": "4b06f34d03.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Finance\"",
+      "file": "4b06f34d03.json"
+    },
+    {
+      "match": "or jobs get \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\" --output json",
+      "file": "945dc30a46.json"
+    },
+    {
+      "match": "or jobs get 8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34 --output json",
+      "file": "945dc30a46.json"
+    },
+    {
+      "match": "or jobs logs \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\" --level Error --output json",
+      "file": "96eb565046.json"
+    },
+    {
+      "match": "or jobs logs 8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34 --level Error --output json",
+      "file": "96eb565046.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

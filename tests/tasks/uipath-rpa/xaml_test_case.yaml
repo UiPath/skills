@@ -1,0 +1,118 @@
+task_id: skill-rpa-xaml-test-case
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to add an XAML
+  test case to a Tests project, with the canonical Given-When-Then sub-
+  Sequence structure, a Verify activity in the Then branch, and a
+  fileInfoCollection entry in project.json (NOT entryPoints). Mirrors
+  coded_test_case.yaml for the XAML mode that the skill historically
+  under-served. See PILOT-5327.
+tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
+
+run_limits:
+  expected_turns: 36
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
+
+initial_prompt: |
+  I need a UiPath XAML test project called "LoginTests" with a first XAML
+  test case that asserts a trivial expression.
+
+  The working directory starts empty. Scaffold the project with
+  `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
+  Studio Desktop is NOT available — skip any CLI commands that require
+  a running Studio Desktop instance.
+
+  Requirements:
+  - Create one XAML test case at `LoginTests/TestLoginSuccess.xaml` that
+    asserts a trivial Boolean expression (e.g. `1 = 1`) via a Verify
+    activity from `UiPath.Testing.Activities`. This task exercises the
+    test case SHAPE, not real browser automation.
+  - Register the test case in `project.json` so it shows up in the test
+    runner.
+  - The generated test must validate cleanly:
+    `uip rpa validate --file-path TestLoginSuccess.xaml --project-dir LoginTests --output json`
+    (`--file-path` is relative to `--project-dir`).
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Use `--output json` on any uip commands you run.
+  - Do NOT execute the test (`uip rpa run`): validation is enough proof,
+    and execution is slow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked uip rpa init for the Tests project"
+    command_pattern: 'uip\s+rpa\s+init.*TestAutomationProjectTemplate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "XAML test case file was created"
+    path: "LoginTests/TestLoginSuccess.xaml"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Test case uses the Given-When-Then sub-sequence structure (with or without the '... ' prefix)"
+    path: "LoginTests/TestLoginSuccess.xaml"
+    patterns:
+      - pattern: 'DisplayName="[^"]*\bGiven\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bWhen\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bThen\b'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case has a Verify activity from UiPath.Testing.Activities"
+    path: "LoginTests/TestLoginSuccess.xaml"
+    includes:
+      - "UiPath.Testing.Activities"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json registers the test case in fileInfoCollection"
+    path: "LoginTests/project.json"
+    includes:
+      - "TestLoginSuccess"
+      - "testCaseType"
+      - "testCaseId"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "project.json does NOT register the test case as an entryPoint"
+    path: "LoginTests/project.json"
+    excludes:
+      - '"filePath": "TestLoginSuccess.xaml"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip rpa validate on the test case"
+    command_pattern: 'uip\s+rpa\s+validate.*TestLoginSuccess\.xaml'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Grades the validate OUTCOME, not the agent's claim about it: the
+  # command_executed check above only proves the command was typed (a run that
+  # failed on a bad --file-path and then succeeded on a retry still matches).
+  # `--file-path` resolves relative to `--project-dir`, hence the bare filename.
+  # coder_eval's `run_command` runs through subprocess(shell=True) → cmd.exe on
+  # Windows, /bin/sh on Linux; the Python wrapper resolves the project path via
+  # os.path.abspath and the `uip` shim via shutil.which (Windows `uip.cmd`
+  # PATHEXT resolution).
+  - type: run_command
+    description: "uip rpa validate exits 0 against the agent's test case"
+    command: |-
+      python3 -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; sys.exit(subprocess.call([uip, 'rpa', 'validate', '--file-path', 'TestLoginSuccess.xaml', '--project-dir', os.path.abspath('LoginTests'), '--output', 'json']))"
+    expected_exit_code: 0
+    timeout: 180
+    weight: 2.0
+    pass_threshold: 1.0

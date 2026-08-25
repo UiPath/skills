@@ -1,0 +1,53 @@
+task_id: skill-agent-coded-deploy-folder-and-rebump
+description: >
+  Verifies the agent knows to bump the version in pyproject.toml
+  before redeploying to the tenant package feed. Project is pre-seeded at
+  version 0.0.1 (already deployed once); agent must bump and redeploy.
+  Any bump past 0.0.1 passes — leftover feed versions from earlier runs
+  legitimately force the agent higher than 0.0.2. post_run sweeps the
+  uploaded versions back off the tenant feed.
+  Targets --tenant, not --folder: `codedagent deploy --folder` matches
+  folder-scoped package feeds by name, and the run tenant's Shared folder
+  has no dedicated feed, so a folder deploy always fails at feed lookup.
+tags: [uipath-agents, integration, mode:build, coded, lifecycle:deploy, feature:deploy]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 100
+  task_timeout: 600
+  turn_timeout: 300
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/deploy_folder_and_rebump/_fixtures/acme-echo ."
+    timeout: 10
+  - command: "bash -c 'cd acme-echo && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 120
+
+initial_prompt: |
+  I've updated my `acme-echo` agent and need to redeploy it to the
+  tenant package feed in Orchestrator. The project is already set up
+  locally.
+
+  Bump the version and attempt the deploy — if the deploy fails due to a
+  cloud error, that's fine, just move on. Do NOT scaffold a new project.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent deployed to the tenant package feed"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*(--tenant\b|\s-t\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "pyproject.toml version bumped past 0.0.1 before redeployment"
+    command: "python3 $TASK_DIR/check_deploy_folder_and_rebump.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/deploy_folder_and_rebump/cleanup_deploy_folder_and_rebump.py"
+    timeout: 120

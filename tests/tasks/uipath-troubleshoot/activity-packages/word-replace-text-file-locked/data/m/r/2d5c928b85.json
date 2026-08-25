@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T13:30:02.750Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T13:30:04.260Z",
+      "Message": "[For Each recipient] Iteration 1: opened 'data\\MasterContract.docx'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T13:30:06.540Z",
+      "Message": "[For Each recipient] Iteration 1: Auto Save writing 'data\\MasterContract.docx'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T13:30:08.110Z",
+      "Message": "[For Each recipient] Iteration 2: opened 'data\\MasterContract.docx'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T13:30:09.380Z",
+      "Message": "The process cannot access the file 'C:\\UiPath\\Contracts Batch\\data\\MasterContract.docx' because it is being used by another process.\r\nin Main.xaml\r\n    at ReplaceTextInDocument \"Replace Text in Document\"\r\n    at WordApplicationCard \"Use Word File\"\r\n    at ForEach<String> \"For Each recipient\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T13:30:09.440Z",
+      "Message": "Execution ended in: 00:00:06"
+    }
+  ]
+}

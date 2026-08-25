@@ -1,0 +1,42 @@
+task_id: skill-ixp-pick-capable-model-smoke
+description: >
+  Smoke: faced with long, inference-heavy documents and low Flash F1, the
+  agent switches to a more capable model (Gemini Pro).
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, the documents are 150-page
+  filings with many inferred fields, and the current Flash model's F1 is low.
+  Switch to a more capable model.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The skill maps 100+ page docs to gemini_2_5_pro, which the 150-page prompt
+  # triggers (so gpt_4o would be wrong here).
+  - type: cli_called
+    description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
+    verb: "ixp projects configure-model"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      model: "gemini_2_5_pro"
+    weight: 3.0
+    pass_threshold: 1.0

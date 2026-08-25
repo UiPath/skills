@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    { "Level": "Info", "TimeStamp": "2026-06-05T05:00:00.220Z", "Message": "Execution started" },
+    { "Level": "Trace", "TimeStamp": "2026-06-05T05:00:01.020Z", "Message": "[Send SMTP Mail Message] Connecting to smtp.office365.com:587 (SecureConnection=StartTls)" },
+    { "Level": "Trace", "TimeStamp": "2026-06-05T05:00:01.640Z", "Message": "[Send SMTP Mail Message] STARTTLS negotiated; authenticating as svc-billing@contoso-test.com (Basic Auth / AUTH LOGIN)" },
+    { "Level": "Error", "TimeStamp": "2026-06-05T05:00:02.760Z", "Message": "[Send SMTP Mail Message] Server rejected authentication: 535 5.7.139 Authentication unsuccessful, the request did not meet the criteria to be authenticated successfully. Contact your administrator. [basic authentication is disabled]" },
+    { "Level": "Error", "TimeStamp": "2026-06-05T05:00:02.900Z", "Message": "Send SMTP Mail Message: Failure sending mail.\r\nin Main.xaml\r\n    at SmtpSendMail \"Send SMTP Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 535 5.7.139 Authentication unsuccessful ... [basic authentication is disabled]" },
+    { "Level": "Info", "TimeStamp": "2026-06-05T05:00:02.990Z", "Message": "Execution ended in: 00:00:03" }
+  ]
+}

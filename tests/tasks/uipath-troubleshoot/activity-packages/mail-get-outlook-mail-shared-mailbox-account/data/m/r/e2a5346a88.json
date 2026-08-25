@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:10:00.190Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:10:01.020Z",
+      "Message": "[Get Outlook Mail Messages] Attached to running Outlook instance under UIPATH\\ROBOTUSER1"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-04T07:10:01.640Z",
+      "Message": "[Get Outlook Mail Messages] No Account specified; resolving folder 'Invoices' against the default profile store (robotuser1@test.com)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-04T07:10:02.190Z",
+      "Message": "[Get Outlook Mail Messages] Could not find folder 'Invoices' under the default profile store (robotuser1@test.com); stores available to this profile: robotuser1@test.com, accounts-payable@test.com"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T07:10:02.360Z",
+      "Message": "Get Outlook Mail Messages: The specified folder does not exist.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:10:02.400Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

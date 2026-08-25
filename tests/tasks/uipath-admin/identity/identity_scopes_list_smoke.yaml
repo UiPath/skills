@@ -1,0 +1,42 @@
+task_id: skill-admin-identity-scopes-list-smoke
+description: >
+  Smoke test: agent retrieves the available OAuth2 scopes and saves the JSON.
+  Graded on the scope catalog read back from the tenant, not the command string.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, identity]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Show me all available OAuth2 scopes I can use for external apps
+  and personal access tokens. Save the complete JSON result to
+  ./scopes.json so it can be reviewed.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "scopes.json holds the OAuth2 scope catalog retrieved from the tenant"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('scopes.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      rows = data if isinstance(data, list) else next((L for L in lists(data) if L and isinstance(L[0], dict)), None)
+      assert isinstance(rows, list) and len(rows) >= 10, f'expected the OAuth2 scope catalog; got {type(rows).__name__} len={len(rows) if isinstance(rows, list) else None}'
+      assert 'Name' in rows[0], f'scope record missing Name; keys={list(rows[0])[:8]}'
+      nm = rows[0].get('Name')
+      print(f'OK: {len(rows)} scopes retrieved; sample={nm}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

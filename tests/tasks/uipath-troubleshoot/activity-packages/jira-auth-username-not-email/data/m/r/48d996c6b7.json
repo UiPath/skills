@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T09:12:04.780Z",
+      "Message": "[Jira Scope] Authentication information is invalid. Please check your credentials and try again."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T09:12:04.860Z",
+      "Message": "UiPath.Jira.Activities.JiraException: Authentication information is invalid. Please check your credentials and try again.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

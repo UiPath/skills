@@ -1,0 +1,82 @@
+task_id: skill-insights-smoke-all-commands
+description: >
+  Smoke test: agent uses the uipath-insights skill to discover and run all
+  available uip insights jobs subcommands. The prompt is goal-oriented —
+  the agent must discover the full command surface from the skill, not from
+  the prompt. Auth errors are expected (no live tenant).
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I want a complete picture of my job monitoring data from Insights. Run every
+  available uip insights jobs subcommand for the last 24 hours.
+
+  Use --output json on every command. The CLI is not connected to a live tenant,
+  so commands will fail with auth errors — that's expected. Run each command
+  once and move on. Do NOT retry or attempt to login.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran jobs summary"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran completed-timeline"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+completed-timeline'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uncompleted-timeline"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+uncompleted-timeline'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran top-failures"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+top-failures'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failures-by-reason"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran process-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+process-details'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failure-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failure-details'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

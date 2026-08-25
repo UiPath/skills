@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc335599-001",
+      "JobKey": "cc335555-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-23T14:20:02.180Z",
+      "Message": "Execution started.",
+      "ProcessName": "WordTemplateFill",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc335599-002",
+      "JobKey": "cc335555-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-23T14:20:02.402Z",
+      "Message": "[WordTemplateFill] Filling offer-letter template — inserting signature logo at the LogoAnchor bookmark.",
+      "ProcessName": "WordTemplateFill",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc335599-003",
+      "JobKey": "cc335555-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T14:20:03.640Z",
+      "Message": "Use Word File: offer-letter.docx — document opened (Path='C:\\Robot\\Templates\\offer-letter.docx').",
+      "ProcessName": "WordTemplateFill",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc335599-004",
+      "JobKey": "cc335555-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T14:20:04.110Z",
+      "Message": "Add Picture — resolving insertion point relative to bookmark 'LogoAnchor'.",
+      "ProcessName": "WordTemplateFill",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc335599-005",
+      "JobKey": "cc335555-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Error",
+      "Timestamp": "2026-05-23T14:20:04.290Z",
+      "Message": "Add Picture: UiPath.Word.BusinessException: The bookmark 'LogoAnchor' was not found in the document.",
+      "ProcessName": "WordTemplateFill",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

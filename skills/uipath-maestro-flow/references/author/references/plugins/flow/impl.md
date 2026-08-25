@@ -15,7 +15,7 @@ uip maestro flow registry search "uipath.core.flow" --output json
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 ## Registry Validation
@@ -56,21 +56,17 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
   "display": { "label": "Validate Data" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the flow",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the flow fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
+
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 

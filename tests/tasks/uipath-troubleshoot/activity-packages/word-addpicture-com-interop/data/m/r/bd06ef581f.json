@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "bb222222-9999-aaaa-bbbb-ccccddddeeee",
+      "StartTime": "2026-05-21T11:05:02.140Z",
+      "EndTime": "2026-05-21T11:05:05.118Z",
+      "State": "Faulted",
+      "ReleaseName": "WordContractStamp",
+      "Source": "Manual",
+      "Reference": "ContractStampRun",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0022244-2222-3333-4444-555566667777",
+      "Info": "System.InvalidCastException: Unable to cast COM object of type 'Microsoft.Office.Interop.Word.ApplicationClass' to interface type 'Microsoft.Office.Interop.Word._Application'. ... (Exception from HRESULT: 0x8002801D (TYPE_E_LIBNOTREGISTERED)).",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

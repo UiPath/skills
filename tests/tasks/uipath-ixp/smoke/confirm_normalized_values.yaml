@@ -1,0 +1,98 @@
+task_id: skill-ixp-confirm-normalized-values-smoke
+description: >
+  Smoke: predictions for `Date` and `Monetary Quantity` fields come back in
+  the type's normalized form, not the page's literal text. The agent must
+  confirm them as-is (Rule 8) — not reformat via `--corrections`, and not
+  improvise a conversion script to reconcile the two.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
+initial_prompt: |
+  Review the IXP model's predictions for document `doc-inv-778` on
+  project `my_invoices-f1afa9ef-ixp` and record your verdict in the
+  labelling system.
+
+  Document content (verbatim from the invoice):
+
+      TAX INVOICE     17377703
+      INVOICE DATE:   21-JUN-22
+      TOTAL AMOUNT    114.91
+
+  Taxonomy field types:
+  - Invoice Number (field id `f-101`): Exact Text
+  - Invoice Date (field id `f-102`): Date
+  - Total Amount (field id `f-103`): Monetary Quantity
+
+  IXP model predictions:
+  - Invoice Number (field id `f-101`): `17377703`
+  - Invoice Date (field id `f-102`): `2022-06-21T00:00:00Z`
+  - Total Amount (field id `f-103`): `114.91 AUD`
+
+  Compare each prediction to the document and record your verdict.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-inv-778["']?\s+.*--fields)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "--fields includes f-102 (normalized Date confirmed as-is)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-102).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "--fields includes f-103 (normalized Monetary Quantity confirmed as-is)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-103).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent did NOT use --corrections to restore the page's formatting"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--corrections).*)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent did NOT mark the normalized fields missing"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+mark-missing\b.*)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT improvise a script to convert or compare date/number formats"
+    tool_name: "Bash"
+    command_pattern: '\b(python3?|node|perl)\b.*(strptime|datetime|dateutil|Date\.parse|toISOString|parseFloat)'
+    weight: 2.0
+    pass_threshold: 1.0

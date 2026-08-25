@@ -1,0 +1,157 @@
+task_id: skill-tasks-e2e-catalogs-annotations
+description: >
+  E2E write test: agent uses the uipath-tasks skill to run the new command
+  areas against a live Action Center tenant — a self-contained task catalog
+  lifecycle (list, create with a retention policy, get, update) and, when a task
+  is discovered, its annotation commands (get/save data, list/add comment, set
+  labels, edit metadata). Discovers its own folder and task from `tasks list`;
+  conditional steps are skipped cleanly when the tenant has no tasks. Exercises
+  the real Orchestrator endpoints, not fake IDs.
+tags: [uipath-tasks, e2e, mode:operate, lifecycle:setup, catalogs, annotations]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 40
+
+initial_prompt: |
+  Exercise the Action Center task catalog and annotation commands against the
+  live tenant using the uipath-tasks skill. Produce JSON output, and target an
+  explicit folder on every command (this is a non-interactive run, so a folder
+  cannot be picked interactively). Task and catalog IDs are numeric.
+
+  Steps (run in order):
+
+  1. Confirm you are logged in and note the active organization and tenant. Do
+     not re-login — use the active session as-is.
+
+  2. Discover a folder to work in: list the tasks and take the folder of the
+     first task returned. Record it as FOLDER, and record that task's id as TASK
+     and its type. If no task is returned, list tasks as an admin and use a
+     folder from there. If you still cannot determine a folder, stop here.
+
+  3. Exercise the task catalog lifecycle in FOLDER:
+       a. List the catalogs in the folder.
+       b. Create a catalog with a short unique name, a Delete retention action,
+          and a 30-day retention period. Record the new catalog id as CATALOG.
+       c. Read that catalog back by its id.
+       d. Update the catalog's description.
+
+  4. Only if a TASK was discovered in step 2, annotate it in FOLDER (these are
+     safe, non-completing writes):
+       a. Read the task's data.
+       b. List the task's comments, then add a new comment to it.
+       c. Set a label on the task.
+       d. Record an edit note on the task's metadata.
+       e. Save a small JSON data payload to the task.
+       f. Associate the task with the CATALOG created in step 3, then remove
+          that association.
+
+  Rules:
+  - Do NOT ask for approval or pause between steps.
+  - Do NOT re-login. Use the active session as-is.
+  - Do NOT complete, assign, reassign, or unassign the task.
+  - Retention actions are only Delete or Archive.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed tasks to discover a folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed task catalogs in the folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+list\s+.*--folder-id\s+\d+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a catalog with a Delete retention policy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+create\s+.*--name\s+.*--retention-action\s+Delete'
+    min_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent got the created catalog by ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+get\s+\d+\s+.*--folder-id\s+\d+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+update\s+\d+\s+.*--folder-id\s+\d+'
+    min_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read task data (when a task was discovered)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+data\s+get\s+\d+\s+.*--folder-id\s+\d+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent saved task data (when a task was discovered)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+data\s+save\s+\d+\s+.*--data\s+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed comments (when a task was discovered)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+comments\s+list\s+\d+\s+.*--folder-id\s+\d+'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent edited metadata (when a task was discovered)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+metadata\s+\d+\s+.*--folder-id\s+\d+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a comment (when a task was discovered)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+comments\s+add\s+\d+\s+.*--text\s+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent set labels (when a task was discovered)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+labels\s+\d+\s+.*--labels\s+'
+    min_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not complete or reassign the task"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+(complete|assign|reassign|unassign)\s'
+    weight: 1.0
+    pass_threshold: 1.0

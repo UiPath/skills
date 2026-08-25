@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-20T08:15:03.602Z",
+      "Message": "ConfigSyncProcess execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-20T08:15:04.110Z",
+      "Message": "Connect to Database: connection opened (Provider=Microsoft.Data.SqlClient)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-20T08:15:04.450Z",
+      "Message": "[Build SQL from config row] dt_Config row count: 0"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-20T08:15:04.470Z",
+      "Message": "About to run Execute Non Query. SQL: ''"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-20T08:15:04.560Z",
+      "Message": "Execute Non Query: A database error occurred. CommandText property has not been initialized."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-20T08:15:04.580Z",
+      "Message": "CommandText property has not been initialized.\r\nin Main.xaml\r\n    at ExecuteNonQuery \"Execute Non Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

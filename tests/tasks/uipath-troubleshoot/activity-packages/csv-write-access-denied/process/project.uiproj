@@ -1,0 +1,6 @@
+{
+  "Name": "CsvPublish",
+  "ProjectType": "Process",
+  "Description": "CsvPublish automation project.",
+  "MainFile": "Main.xaml"
+}

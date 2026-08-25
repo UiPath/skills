@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    { "Level": "Info", "TimeStamp": "2026-06-07T04:30:00.220Z", "Message": "Execution started" },
+    { "Level": "Trace", "TimeStamp": "2026-06-07T04:30:01.020Z", "Message": "[Send SMTP Mail Message] Connecting to smtp.office365.com:587 (SecureConnection=StartTls)" },
+    { "Level": "Trace", "TimeStamp": "2026-06-07T04:30:01.760Z", "Message": "[Send SMTP Mail Message] STARTTLS negotiated; authenticated as svc-billing@contoso-test.com" },
+    { "Level": "Trace", "TimeStamp": "2026-06-07T04:30:02.410Z", "Message": "[Send SMTP Mail Message] MAIL FROM:<noreply@marketing-partner.com>; RCPT TO:<customer-updates@contoso-test.com>" },
+    { "Level": "Error", "TimeStamp": "2026-06-07T04:30:03.980Z", "Message": "[Send SMTP Mail Message] Server rejected the message: 550 5.7.60 SMTP; Client does not have permissions to send as this sender (authenticated as svc-billing@contoso-test.com, From noreply@marketing-partner.com)" },
+    { "Level": "Error", "TimeStamp": "2026-06-07T04:30:04.060Z", "Message": "Send SMTP Mail Message: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\r\nin Main.xaml\r\n    at SmtpSendMail \"Send SMTP Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Net.Mail.SmtpException: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender." },
+    { "Level": "Info", "TimeStamp": "2026-06-07T04:30:04.200Z", "Message": "Execution ended in: 00:00:04" }
+  ]
+}

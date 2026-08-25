@@ -1,0 +1,54 @@
+task_id: skill-agent-guardrail-coded-user-prompt-attacks-middleware
+description: >
+  Middleware-style user prompt attacks guardrail for a coded agent. A simple
+  LangGraph customer support agent is seeded with no guardrails. Use the skill
+  to add a user_prompt_attacks detection guardrail using the MIDDLEWARE style
+  at LLM scope — adversarial inputs should be blocked before they reach the
+  LLM. Verifies UiPathUserPromptAttacksMiddleware is imported from
+  uipath_langchain.guardrails and spread into create_agent(), uses LLM scope,
+  PRE stage, and a BlockAction — and that it is NOT done in decorator style.
+  Complements the existing decorator-style test by covering the middleware path.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  # Disallow subagent dispatch — Critical Rule 13: a context-less subagent reports
+  # the module where symbols physically live (uipath.platform.guardrails), the
+  # no-op import path for LangChain agents. Force inline authoring where the
+  # skill's import-source rule (uipath_langchain.guardrails) still applies.
+  disallowed_tools: ["Task"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded UiPath LangGraph agent in graph.py. It handles customer support
+  questions. I want to add a UiPath user prompt attacks guardrail using the
+  middleware style at LLM scope — adversarial / jailbreak inputs should be
+  blocked before they reach the LLM.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "User prompt attacks middleware guardrail correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_user_prompt_attacks_middleware.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  turn_timeout: 1200

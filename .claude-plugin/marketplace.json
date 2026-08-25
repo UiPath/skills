@@ -8,8 +8,8 @@
     {
       "name": "uipath",
       "source": "./",
-      "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
-      "version": "0.0.26",
+      "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath troubleshoot",
+      "version": "1.202.0",
       "author": {
         "name": "UiPath"
       },
@@ -26,7 +26,7 @@
         "ui-testing",
         "desktop",
         "browser",
-        "diagnostics"
+        "troubleshoot"
       ]
     }
   ]

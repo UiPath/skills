@@ -1,0 +1,54 @@
+task_id: skill-platform-licensing-tenant-allocation-set
+description: >
+  Smoke test: agent uses the uipath-platform skill to allocate runtime license
+  units (UNATT, RU) to a tenant. Verifies (1) the agent writes a JSON input
+  file containing the runtime codes with quantities, and (2) the agent calls
+  `uip platform tenants licenses set <key> --input <path> --output json`.
+  CLI auth failure is expected; this validates command shape only.
+tags: [uipath-platform, smoke, licensing, tenants]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Allocate 5 Unattended Robots and 10 Robot Units to tenant
+  `c0ffee00-0000-0000-0000-000000000001`. Save the input JSON file as
+  `tenant-allocation.json` in the current directory, then apply it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote the input file at tenant-allocation.json"
+    path: "tenant-allocation.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Input JSON contains the UNATT and RU codes"
+    path: "tenant-allocation.json"
+    includes: ["UNATT", "RU"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent ran `uip platform tenants licenses set` with --input (.uip-cmdlog shim log)"
+    command: "grep -E 'uip platform tenants licenses set [^ ]+' .uip-cmdlog | grep -Eq -- '--input[= ][^ ]+'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

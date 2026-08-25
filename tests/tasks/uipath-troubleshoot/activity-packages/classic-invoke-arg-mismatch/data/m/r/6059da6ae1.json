@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "4e9d2a71-6c05-4f38-9b12-8a3f0e7c1d59",
+      "State": "Faulted",
+      "ProcessName": "PaymentValidation",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-16T14:41:08.220Z",
+      "EndTime": "2026-07-16T14:41:09.010Z",
+      "CreationTime": "2026-07-16T14:41:08.220Z"
+    },
+    {
+      "Key": "9b0e4c22-1a76-4d38-8f05-2c7a1e9b6d43",
+      "State": "Successful",
+      "ProcessName": "PaymentValidation",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-10T11:20:33.140Z",
+      "EndTime": "2026-07-10T11:20:41.660Z",
+      "CreationTime": "2026-07-10T11:20:33.140Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

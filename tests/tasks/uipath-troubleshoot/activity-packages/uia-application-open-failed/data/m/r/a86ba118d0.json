@@ -1,0 +1,18 @@
+HIST_EXIT=0
+===HISTORY===
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "State": "Faulted",
+      "Timestamp": "2026-06-05T07:34:56.183Z",
+      "JobId": 66152281
+    },
+    {
+      "State": "Running",
+      "Timestamp": "2026-06-05T07:34:54.750Z",
+      "JobId": 66152281
+    }
+  ]
+}

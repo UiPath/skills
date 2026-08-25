@@ -1,0 +1,45 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "spanId": "ctx-0001",
+      "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "name": "SupportKnowledge",
+      "spanType": "contextGroundingTool",
+      "SPANTYPE": "contextGroundingTool",
+      "attributes": {
+        "error": "Unexpected Error Details: An unexpected error occurred during agent execution, please try again later or contact your Administrator. Error Details: ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR",
+        "indexName": "support-kb-prod",
+        "folderPath": "Shared/Agents",
+        "contextResourceName": "SupportKnowledge"
+      },
+      "ATTRIBUTES": {
+        "error": "Unexpected Error Details: An unexpected error occurred during agent execution, please try again later or contact your Administrator. Error Details: ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR",
+        "indexName": "support-kb-prod",
+        "folderPath": "Shared/Agents",
+        "contextResourceName": "SupportKnowledge"
+      }
+    },
+    {
+      "spanId": "run-0001",
+      "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "name": "agentRun",
+      "spanType": "agentRun",
+      "attributes": {
+        "state": "Faulted"
+      }
+    }
+  ],
+  "spans": [
+    {
+      "name": "SupportKnowledge",
+      "spanType": "contextGroundingTool",
+      "attributes": {
+        "error": "ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR",
+        "indexName": "support-kb-prod",
+        "folderPath": "Shared/Agents"
+      }
+    }
+  ]
+}

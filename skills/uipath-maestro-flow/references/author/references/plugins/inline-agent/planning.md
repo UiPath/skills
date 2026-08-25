@@ -63,32 +63,53 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
 
+The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts — both are placeholders. During Phase 2 you MUST override the model (`uip agent model list` → newest GA per task) and author a robust system prompt + typed `outputSchema` per the obligations in [impl.md § Configure `agent.json`](impl.md#configure-agentjson). The skeleton, model-discovery command, and production checklist live in the `uipath-agents` skill's `model-selection-guide.md` and `agent-prompting-guide.md` (source of truth).
+
 For agent.json configuration (prompts, model, schemas) and resource file authoring (tools, contexts, escalations), see the `uipath-agents` skill (`lowcode/agent-definition.md` and `lowcode/capabilities/`).
 
-## Tools — Flow Registry Discovery
+## Resource Nodes
 
-The autonomous agent's `tool` artifact port accepts inline tool resource nodes. **External RPA process tools** are the primary supported case. Discovery uses the flow registry:
+The autonomous agent attaches resource nodes to its three artifact ports: tools (external or built-in) on `tool` (bottom), context on `context` (bottom), escalation on `escalation` (top). Decide which the agent needs at planning time. Full wiring — node JSON, edges, refresh, a single matrix covering all kinds — is in [impl.md § Adding Resource Nodes](impl.md#adding-resource-nodes); `resource.json` bodies are owned by the `uipath-agents` skill (`lowcode/capabilities/`).
+
+- **External tool** (`tool` port) — agent calls a deployed automation. Four kinds; discover via the registry below. Needs `uip solution resources refresh`.
+- **Built-in tool** (`tool` port) — platform-shipped tool, e.g. analyze-attachments. `registry get uipath.agent.resource.tool.builtin.<toolType>`. Self-contained — no bindings, no solution-level files, no `uip solution resources refresh`.
+- **Context** (`context` port) — RAG retrieval from a Context Grounding index. `registry search "uipath.agent.resource.context"`, then `get` the matching `NodeType`. Needs `uip solution resources refresh`.
+- **Escalation** (`escalation` port) — human-in-the-loop approval/review mid-run via a deployed Action Center app. `registry get uipath.agent.resource.escalation`. Needs `uip solution resources refresh`.
+
+### External tools — registry discovery
+
+The four external tool kinds share discovery, `resource.json` shape, and refresh — only the `type` field and the schema flavor differ (see § Subtypes in `process.md`). Pick the prefix per kind:
+
+| Kind | Registry-search prefix | `resource.json.type` | What it calls |
+|------|------------------------|----------------------|---------------|
+| RPA process | `uipath.agent.resource.tool.process` | `process` | RPA workflow (XAML / coded) |
+| Agent | `uipath.agent.resource.tool.agent` | `agent` | Low-code or coded agent |
+| API workflow | `uipath.agent.resource.tool.api` | `api` | Coded API workflow |
+| Process Orchestration | `uipath.agent.resource.tool.processorchestration` | `processOrchestration` | Agentic / orchestrated process |
 
 ```bash
-uip maestro flow registry search "uipath.agent.resource.tool.process" --output json
+uip maestro flow registry search "<prefix>" --output json
 ```
 
-Filter rows where `NodeType` starts with `uipath.agent.resource.tool.process.` and `DisplayName` matches. The `Description` field disambiguates same-named processes by folder. Fetch the full manifest:
+Filter rows where `NodeType` starts with `<prefix>.` and `DisplayName` matches. The `Description` field disambiguates same-named resources by folder. Fetch the full manifest:
 
 ```bash
 uip maestro flow registry get "<NodeType>" --output json
 ```
 
-For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/TestRPA)` → `"Shared/TestRPA"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the process at runtime.
+For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resources get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resources refresh` from resolving the tool at runtime.
 
 ### Anti-pattern
 
-Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resource refresh` materialize the solution-level files.
+Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resources refresh` materialize the solution-level files.
 
 ## Planning Annotation
 
 In the architectural plan:
 
 - `inline-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow` runs
-- `inline-agent-tool: <ToolName> (rpa, external) → <process-name> in <folder-path>` — one line per tool
+- `inline-agent-tool: <ToolName> (<kind>, solution|external) → <name> in <folder-path>` — one line per external tool. `<kind>` is one of `process` | `agent` | `api` | `processOrchestration`.
+- `inline-agent-escalation: <EscalationName> → <AppName> in <folder-path>` — one line per escalation (Action Center HITL).
+- `inline-agent-context: <ContextName> (index) → <IndexName> in <folder-path>` — one line per context resource.
+- `inline-agent-builtin-tool: <ToolName> (<toolType>)` — one line per built-in tool; no folder (self-contained).
 - If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) annotation instead

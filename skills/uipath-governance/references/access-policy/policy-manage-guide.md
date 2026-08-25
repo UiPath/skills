@@ -32,7 +32,7 @@ If `Data.results` is empty, inform the user that no policies were found. Offer `
 
 - `--filter "status in ('Active')"` — only active policies
 - `--filter "contains(name, 'Production')"` — substring match on name
-- `--order-by "CreatedOn desc"` + `--limit 5` — newest first
+- `--sort-by "CreatedOn desc"` + `--limit 5` — newest first
 - `--limit 10 --offset 20` — page 3 at page size 10
 
 ---

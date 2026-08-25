@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d",
+      "State": "Faulted",
+      "ProcessName": "CustomerLedgerSync",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-29T09:14:00.402Z",
+      "EndTime": "2026-05-29T09:14:01.623Z",
+      "CreationTime": "2026-05-29T09:14:00.190Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

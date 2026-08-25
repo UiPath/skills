@@ -1,0 +1,91 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Recent jobs in UnattendedDemo (broader history). RobotUser1 fails every attempt with the same 'Logon failed' error since 2026-05-12T10:55Z. RobotUser2 succeeded on the same machine (MOCK-HOST) at 2026-05-12T11:20Z — proves the machine itself is fine and isolates the problem to user RobotUser1's credential.",
+  "Data": [
+    {
+      "Key": "aabb1122-3344-5566-7788-99aabbccdd00",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:30:00.412Z",
+      "EndTime": "2026-05-12T11:30:01.118Z",
+      "CreationTime": "2026-05-12T11:30:00.190Z"
+    },
+    {
+      "Key": "bbcc2233-4455-6677-8899-aabbccddee22",
+      "State": "Successful",
+      "ProcessName": "OrderExporter",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:20:00.001Z",
+      "EndTime": "2026-05-12T11:20:12.880Z",
+      "CreationTime": "2026-05-12T11:19:59.812Z"
+    },
+    {
+      "Key": "aabb1100-3344-5566-7788-99aabbccdd11",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:15:00.211Z",
+      "EndTime": "2026-05-12T11:15:00.987Z",
+      "CreationTime": "2026-05-12T11:14:59.980Z"
+    },
+    {
+      "Key": "aabb1099-3344-5566-7788-99aabbccdd22",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T11:05:00.155Z",
+      "EndTime": "2026-05-12T11:05:00.901Z",
+      "CreationTime": "2026-05-12T11:04:59.880Z"
+    },
+    {
+      "Key": "aabb1088-3344-5566-7788-99aabbccdd33",
+      "State": "Faulted",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T10:55:00.302Z",
+      "EndTime": "2026-05-12T10:55:01.040Z",
+      "CreationTime": "2026-05-12T10:54:59.991Z"
+    },
+    {
+      "Key": "ddee4455-6677-8899-aabb-ccddee001122",
+      "State": "Successful",
+      "ProcessName": "InvoiceIngestor",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-12T08:45:00.105Z",
+      "EndTime": "2026-05-12T08:45:07.211Z",
+      "CreationTime": "2026-05-12T08:44:59.821Z"
+    }
+  ]
+}

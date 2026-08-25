@@ -1,0 +1,74 @@
+task_id: skill-agent-coded-hitl-create-task-with-app
+description: >
+  Coded-agent HITL via `interrupt(CreateTask(...))` — the regular
+  Action Center task pattern (NOT escalation). Distinct from
+  `hitl_create_task` (which targets `CreateEscalation`) and from
+  `hitl_wait_task` (which monitors an existing task). Verifies the
+  agent imports `CreateTask` from `uipath.platform.common`, wires
+  `interrupt(CreateTask(app_name=..., app_folder_path=..., title=...,
+  data={...}, assignee=...))` into a graph node, and emits the
+  matching `app` resource binding.
+  Prompt is deliberately outcome-independent: a plain CreateTask
+  resume delivers ONLY the task's `data` (the app's inOut fields —
+  for RefundReviewApp, just `Comment`), never `task.action`. The
+  scenario therefore treats the review as a sign-off gate that
+  carries the reviewer's comment forward. Do NOT reword it to require
+  acting on the approve/reject outcome — that would need
+  CreateEscalation semantics and push agents to the wrong pattern.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
+max_iterations: 1
+
+initial_prompt: |
+  Can you build me a uipath coded agent in LangGraph for handling refunds?
+
+  Call it refund-gate, put it in a refund-gate folder. The idea: anything
+  over $500 has to be signed off by a person before it goes through. Open a
+  review task for the Compliance team (compliance@example.com) in their
+  RefundReviewApp app, deployed to the Orchestrator folder
+  Shared/uipath-agents/RefundReviewSol - it's a normal Action Center review
+  task, not an escalation - show them the customer, the amount, and why the
+  refund's being asked for.
+
+  The submitted task itself is the sign-off: once they submit, the refund
+  is cleared to proceed - just pick up whatever comment they left and carry
+  it into the agent's output for the audit trail. Anything $500 or under
+  just goes through without a sign-off.
+
+  No need to run or deploy it, just build it. Run it all the way through
+  and only stop if you hit something you genuinely can't get past.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated schemas from the code"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "LangGraph config, interrupt(CreateTask) shape (not CreateEscalation), correct app targeting, RefundReviewApp app binding in Shared/uipath-agents/RefundReviewSol"
+    command: "python3 $TASK_DIR/check_hitl_create_task_with_app.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 7.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 36
+  turn_timeout: 1200

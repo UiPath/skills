@@ -6,10 +6,10 @@ from __future__ import annotations
 import glob
 import json
 import sys
-from typing import Any
+from typing import Any, NoReturn
 
 
-def _fail(message: str) -> None:
+def _fail(message: str) -> NoReturn:
     sys.exit(f"FAIL: {message}")
 
 
@@ -81,11 +81,25 @@ def _check_query_params(flow: dict[str, Any]) -> None:
     )
 
 
+def _check_enum(flow: dict[str, Any]) -> None:
+    _require_all(
+        _http_fallback_text(flow),
+        [
+            "gmail.googleapis.com",
+            "method",
+            "post",
+            "importance",
+            "medium",
+        ],
+        "Gmail send-mail enum HTTP fallback",
+    )
+
+
 def main() -> None:
     if len(sys.argv) != 4:
         _fail(
             "usage: check_managed_http_fallback.py <flow_glob> <connector_key> "
-            "<generate_schema|path_params|query_params>"
+            "<generate_schema|path_params|query_params|enum>"
         )
 
     flow = _load_flow(sys.argv[1])
@@ -101,6 +115,7 @@ def main() -> None:
         "generate_schema": _check_generate_schema,
         "path_params": _check_path_params,
         "query_params": _check_query_params,
+        "enum": _check_enum,
     }
     check = checks.get(check_name)
     if check is None:

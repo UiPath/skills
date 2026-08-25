@@ -488,7 +488,7 @@ Used by `ResponseOptions.FileOverwrite`.
 ## Related Activity Mappings
 
 - `Deserialize JSON` activity is not exposed as a dedicated coded API service method; use `Newtonsoft.Json.JsonConvert.DeserializeObject<T>(...)` in coded workflows.
-- `HTTP Request (Legacy)` is not exposed in coded workflows; use the `http` service (`IHttpService`) with `SendRequestAsync` instead. For behavioral differences versus the legacy activity, see [docs/activities/NetHttpRequest.md](UiPath.Web.Activities.Package.Design/docs/activities/NetHttpRequest.md).
+- `HTTP Request (Legacy)` is not exposed in coded workflows; use the `http` service (`IHttpService`) with `SendRequestAsync` instead. For behavioral differences versus the legacy activity, see [NetHttpRequest Activity](../activities/NetHttpRequest.md).
 - `Deserialize JSON Array` activity is not exposed as a dedicated coded API service method; use `Newtonsoft.Json.Linq.JArray.Parse(...)` in coded workflows.
 - `Serialize JSON` activity is not exposed as a dedicated coded API service method; use `Newtonsoft.Json.JsonConvert.SerializeObject(...)` in coded workflows.
 - `Deserialize XML` activity is not exposed as a dedicated coded API service method; use `System.Xml.Linq.XDocument.Parse(...)` in coded workflows.

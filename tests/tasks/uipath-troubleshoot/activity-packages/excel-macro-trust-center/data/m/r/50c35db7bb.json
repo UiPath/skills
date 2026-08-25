@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc3333cc-001",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333cc-002",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelMacroProcess] Starting daily import — running macro Module1.ProcessData on C:\\Robot\\Data\\sales-macro.xlsm",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333cc-003",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-macro.xlsm — workbook opened",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333cc-004",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.110Z",
+      "Message": "Execute Macro: Module1.ProcessData — enumerating VBA modules in workbook",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333cc-005",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.310Z",
+      "Message": "Execute Macro: Module1.ProcessData — VBA modules: ['Module1.ProcessData', 'Module2.UpdateReport']",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333cc-006",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.510Z",
+      "Message": "Execute Macro: Module1.ProcessData — dispatching macro via COM (Application.Run 'Module1.ProcessData')",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333cc-007",
+      "JobKey": "cc333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Execute Macro: Module1.ProcessData — System.Runtime.InteropServices.COMException: Cannot run the macro 'Module1.ProcessData'. The macro may not be available in this workbook or all macros may be disabled.",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

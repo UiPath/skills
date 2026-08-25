@@ -1,0 +1,12 @@
+{
+  "Result": "Failure",
+  "Code": "ConnectionPing",
+  "Message": "Could not obtain access token. (invalid_grant)",
+  "Data": {
+    "Id": "a7c3e1f9-4b6d-42a8-9c05-3e8f1d0b7a62",
+    "Name": "Workday - Finance",
+    "ConnectorKey": "uipath-workday",
+    "IsActive": false,
+    "State": "AuthenticationFailed"
+  }
+}

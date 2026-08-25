@@ -1,0 +1,6 @@
+{
+  "Name": "JiraIssueSync",
+  "ProjectType": "Process",
+  "Description": "JiraIssueSync automation project.",
+  "MainFile": "Main.xaml"
+}

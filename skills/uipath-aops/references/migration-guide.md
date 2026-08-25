@@ -1,12 +1,12 @@
-# Migration — `uip sc` + `uip cicd` → `uip aops`
+# Migration — `uip sc` + `uip cicd` → `uip aops`  <!-- uip-check-skip -->
 
 `@uipath/sc-tool` (prefix `sc`) and `@uipath/cicd-tool` (prefix `cicd`) were unified into a single plugin, `@uipath/aops-tool` (prefix `aops`). `@uipath/cicd-tool` no longer exists on npm.
 
 The merge kept every subcommand name. The rewrite is mechanical: replace the tool prefix, keep the rest.
 
 ```bash
-uip sc   connection list --output json     →  uip aops connection list --output json
-uip cicd pipeline create --file p.json     →  uip aops pipeline create --file p.json
+uip sc   connection list --output json     →  uip aops connection list --output json  <!-- uip-check-skip -->
+uip cicd pipeline create --file p.json     →  uip aops pipeline create --file p.json  <!-- uip-check-skip -->
 ```
 
 ## Install
@@ -25,23 +25,20 @@ Known failure modes:
 | `Unknown tool '@uipath/aops-tool'` | The installed CLI's registry index predates the tool | Update the CLI first (`uip update`), then retry the install. Report the CLI version (`uip --version`) to the user if it still fails. |
 | `Unsupported URL Type "workspace:"` when installing `@uipath/sc-tool` | The last published `sc-tool` is a stale build with unresolved workspace dependencies | Do not install `sc-tool`. It is retired — install `aops-tool`. |
 
-Do not fall back to `uip sc` / `uip cicd` when `aops` is unavailable. Report the install failure to the user instead.
+Do not fall back to `uip sc` / `uip cicd` when `aops` is unavailable. Report the install failure to the user instead.  <!-- uip-check-skip -->
 
 ## Verb map
 
-Both old trees merged without collision — no verb was renamed, dropped, or moved to a different subject.
+Both old trees merged without collision — no verb was renamed, dropped, or moved to a different subject. Swap the prefix and keep everything to its right.
 
-| Old | New |
-|---|---|
-| `uip sc connection list \| state \| sync \| delete` | `uip aops connection list \| state \| sync \| delete` |
-| `uip sc connection repos \| repos-bulk \| projects \| solutions \| azure-projects` | `uip aops connection repos \| repos-bulk \| projects \| solutions \| azure-projects` |
-| `uip sc repo branches \| project-files` | `uip aops repo branches \| project-files` |
-| `uip sc project list \| get \| files \| content \| commits \| commit` | `uip aops project list \| get \| files \| content \| commits \| commit` |
-| `uip sc solution get \| commits` | `uip aops solution get \| commits` |
-| `uip cicd pipeline list \| state \| processes \| process \| repos \| get \| search` | `uip aops pipeline list \| state \| processes \| process \| repos \| get \| search` |
-| `uip cicd pipeline create \| update \| delete \| run \| save-and-run` | `uip aops pipeline create \| update \| delete \| run \| save-and-run` |
-| `uip cicd pipeline executions \| executions-bulk` | `uip aops pipeline executions \| executions-bulk` |
-| `uip cicd execution get \| logs \| details \| stop` | `uip aops execution get \| logs \| details \| stop` |
+| Subject | Old prefix | New prefix | Verbs under it |
+|---|---|---|---|
+| `connection` | `sc` | `aops` | `list`, `state`, `sync`, `delete`, `repos`, `repos-bulk`, `projects`, `solutions`, `azure-projects` | <!-- uip-check-skip -->
+| `repo` | `sc` | `aops` | `branches`, `project-files` | <!-- uip-check-skip -->
+| `project` | `sc` | `aops` | `list`, `get`, `files`, `content`, `commits`, `commit` | <!-- uip-check-skip -->
+| `solution` | `sc` | `aops` | `get`, `commits` | <!-- uip-check-skip -->
+| `pipeline` | `cicd` | `aops` | `list`, `state`, `processes`, `process`, `repos`, `get`, `search`, `create`, `update`, `delete`, `run`, `save-and-run`, `executions`, `executions-bulk` | <!-- uip-check-skip -->
+| `execution` | `cicd` | `aops` | `get`, `logs`, `details`, `stop` | <!-- uip-check-skip -->
 
 ## Behavior changes beyond the rename
 

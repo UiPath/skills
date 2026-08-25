@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-26T08:12:04.880Z", "Message": "Job 'ddff7788-99aa-00bb-11cc-22dd33445566' failed to start. The remote server returned an error: (503) Server Unavailable."},
+    {"Level": "Warn", "TimeStamp": "2026-06-26T08:12:04.100Z", "Message": "[Robot] Received HTTP 503 from Orchestrator gateway while requesting job start; upstream service temporarily unavailable."}
+  ]
+}

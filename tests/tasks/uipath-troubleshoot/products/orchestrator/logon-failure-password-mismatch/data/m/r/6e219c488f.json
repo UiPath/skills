@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T11:30:01.110Z",
+      "Message": "Job 'aabb1122-3344-5566-7788-99aabbccdd00' failed to start. Could not start executor. Logon failed for user UIPATH\\USER1. The user name or password is incorrect. (0x0000052E). Last error: 131092. RDP connection failed.\r\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\r\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T11:30:00.988Z",
+      "Message": "[Robot] Windows logon attempt for UIPATH\\USER1 on MOCK-HOST rejected by LSA. NTSTATUS=0xC000006D (STATUS_LOGON_FAILURE). Sub-status=0xC000006A (wrong password). Account is NOT locked. Caller: UiPath Robot service (unattended)."
+    }
+  ]
+}

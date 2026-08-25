@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""MultiTrigger: manual + infinite-hourly + bounded-scheduled timer triggers, each → Run."""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import (  # noqa: E402
+    _get_ci,
+    assert_count,
+    find_node_by_label,
+    find_triggers,
+    first_rule_of_condition,
+    iter_stage_entry_conditions,
+    read_caseplan,
+    start_debug,
+)
+
+
+def main():
+    plan = read_caseplan()
+
+    triggers = find_triggers(plan)
+    assert_count(len(triggers), 3, "trigger node(s)")
+
+    service_types = []
+    for t in triggers:
+        uipath = ((t.get("data") or {}).get("inputs")) or {}
+        service_types.append(uipath.get("serviceType"))
+
+    # Manual trigger accepts either form: no data.inputs key (serviceType None)
+    # OR an explicit serviceType "None". See triggers/manual/impl-json.md.
+    manual_count = sum(1 for s in service_types if s in (None, "None"))
+    if manual_count != 1:
+        sys.exit(
+            f"FAIL: expected exactly 1 manual trigger (no data.inputs key or "
+            f"serviceType='None'); got {service_types}"
+        )
+    timer_count = sum(1 for s in service_types if s == "timer")
+    if timer_count != 2:
+        sys.exit(
+            f"FAIL: expected 2 timer triggers (serviceType='timer'); "
+            f"got {timer_count} ({service_types})"
+        )
+
+    timer_cycles = [
+        ((t.get("data") or {}).get("inputs") or {}).get("timeCycle")
+        for t in triggers
+        if ((t.get("data") or {}).get("inputs") or {}).get("serviceType")
+        == "timer"
+    ]
+
+    if "R/PT1H" not in timer_cycles:
+        sys.exit(
+            f"FAIL: missing infinite-hourly timer (timeCycle='R/PT1H'); "
+            f"got cycles {timer_cycles}"
+        )
+    bounded_cycle = next(
+        (c for c in timer_cycles if c and c.startswith("R5/") and "/P1D" in c),
+        None,
+    )
+    if not bounded_cycle:
+        sys.exit(
+            f"FAIL: missing bounded scheduled timer (expected timeCycle starting "
+            f"'R5/' and containing '/P1D'); got cycles {timer_cycles}"
+        )
+    if "2026-04-26T09:00:00" not in bounded_cycle:
+        sys.exit(
+            f"FAIL: bounded timer should include explicit start time "
+            f"'2026-04-26T09:00:00'; got {bounded_cycle!r}"
+        )
+
+    # Edges retired: no TriggerEdges. Any of the 3 triggers starts the case via
+    # the first stage's case-entered entry condition.
+    run_stage = find_node_by_label(plan, "Run")
+    run_entry = list(iter_stage_entry_conditions(run_stage))
+    run_rules = {(first_rule_of_condition(c) or {}).get("rule") for c in run_entry}
+    if "case-entered" not in run_rules:
+        sys.exit(
+            f"FAIL: 'Run' must carry a case-entered entry condition — the edgeless "
+            f"case-start signal shared by all {len(triggers)} triggers; got entry "
+            f"rules {sorted(r for r in run_rules if r)}"
+        )
+
+    run_lanes = (run_stage.get("data") or {}).get("tasks") or []
+    run_tasks = [t for lane in run_lanes for t in (lane or [])]
+    rpa_tasks = [t for t in run_tasks if t.get("type") == "rpa"]
+    if len(rpa_tasks) != 1:
+        types_seen = [t.get("type") for t in run_tasks]
+        sys.exit(
+            f"FAIL: expected exactly 1 rpa task in 'Run'; got {len(rpa_tasks)} "
+            f"(task types in Run: {types_seen})"
+        )
+
+    payload = start_debug(timeout=540)
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
+
+    print(
+        "OK: 3 triggers (manual + infinite hourly R/PT1H + bounded daily "
+        "R5/2026-04-26T09:00:00.000Z/P1D) all starting the case via Run's "
+        "case-entered entry (edges retired); Run carries 1 rpa task; "
+        f"debug payload returned (status={status})"
+    )
+
+
+if __name__ == "__main__":
+    main()

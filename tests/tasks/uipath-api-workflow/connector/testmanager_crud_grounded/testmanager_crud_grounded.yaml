@@ -1,0 +1,92 @@
+# PROTOTYPE — data-grounded on the API Workflow surface. skip:true.
+# Unlike the IS CLI (which executes create/get directly), here the agent must
+# BUILD a create->get data-flow workflow AND RUN it (`uip api-workflow run`) to
+# produce the retrieved value — then record the round-trip. Needs the codereval
+# TM connection + the agent reliably authoring multi-activity data flow (today it
+# does not, hence skip:true). This is the reusable data-grounded pattern for the
+# workflow surfaces; flip skip:false when the agent reliably builds+runs it.
+task_id: skill-api-workflow-testmanager-crud-grounded
+description: >
+  Data-grounded (API Workflow): agent authors an API Workflow that creates a Test
+  Case via the uipath-uipath-testmanager connector with a unique seeded name, gets
+  it back by id, and responds with the retrieved name; runs the workflow; records
+  the round-trip. Graded on the discovery/build/run flow AND on retrieved == created
+  (real data through the connector, executed — not just authored).
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector]
+skip: true
+
+sandbox:
+  python: {}
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/connector/testmanager_crud_grounded/seed.py"
+    timeout: 30
+
+initial_prompt: |
+  Build a UiPath API Workflow — in a project named `TMCrud` (its workflow file
+  will be `TMCrud/Workflow.json`) — that uses the UiPath Test Manager
+  Integration Service connector.
+
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test case with that exact name under that project.
+  2. Read it back so the create and read actually execute, and capture the name that comes back.
+  3. Record result.json with `created_name` (the name you sent), `retrieved_name` (the name returned), and `id`.
+
+  The task is not complete until validation passed for the workflow.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Discovered connector activities via the registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+resolve\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Stubbed connector activities with a connection id (create + get)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+stub[\s\S]+?--connection-id'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Validated the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Ran the workflow (`uip api-workflow run`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — real data round-tripped through the executed workflow"
+    command: "python3 $TASK_DIR/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

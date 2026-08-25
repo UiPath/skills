@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "d4a40001-4444-4444-8444-444444444444",
+    "StartTime": "2026-07-19T01:30:04.200Z",
+    "EndTime": "2026-07-19T01:31:12.600Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 50,
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Job faulted due to service shutdown or disconnect.",
+    "CreationTime": "2026-07-19T01:30:03.700Z",
+    "ReleaseName": "NightlyPost",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": "BATCH-BOT-02",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "FolderKey": "f4a40004-0000-4000-8000-000000000004",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\SVC_BATCH",
+    "OrchestratorUserIdentity": "svc_batch",
+    "LastModificationTime": "2026-07-19T01:31:12.600Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "d4a40001444444448444444444444444",
+    "Id": 671660404
+  }
+}

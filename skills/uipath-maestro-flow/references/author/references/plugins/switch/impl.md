@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.switch --output json
 ```
 
-Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, required input `cases`.
+Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, required input `cases`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
 
 ## JSON Structure
 
@@ -18,7 +18,7 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
 {
   "id": "routeByPriority",
   "type": "core.logic.switch",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Route by Priority" },
   "inputs": {
     "cases": [

@@ -30,9 +30,9 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 
 - `name` MUST exactly match the parent folder name
 - `description` MUST be under 1024 characters. Claude Code truncates `description` + `when_to_use` at 1,536 chars in the skill listing ([source](https://code.claude.com/docs/en/skills.md)); 1024 is the repo cap to keep descriptions focused and leave headroom
-- `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters — the first ~100 chars carry the most matching signal
+- `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`) within the first ~100 characters — the first ~100 chars carry the most matching signal
 - `description` MUST start with the brand or domain identity (e.g., `UiPath`, `UiPath RPA`, `UiPath Maestro Flow`). Do NOT prefix with metadata tags like `[PREVIEW]`, `[BETA]`, etc. — those displace high-value matching tokens and semantically de-prioritize the skill
-- Preview / beta status MUST be indicated in the SKILL.md body (e.g., a `> **Preview**` callout under the H1), NOT in the frontmatter description
+- Lifecycle status (Stable / Preview / In-development) MUST be recorded ONLY in [`assets/skill-status.json`](../../assets/skill-status.json) — the single source of truth. Do NOT put status markers in the frontmatter `description` OR the body (no `> **Preview**` callouts). See [Lifecycle Status](#lifecycle-status) below
 - `description` MUST include compact redirects for commonly confused sibling skills using `→` notation (e.g., `For XAML→uipath-rpa`)
 - `description` MUST NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — these waste characters and get truncated. Use `→` redirects for sibling disambiguation instead
 - All frontmatter fields (`allowed-tools`, `user-invocable`, etc.) MUST be at the top level — NOT nested under a `metadata:` key (Claude Code only reads top-level fields)
@@ -49,6 +49,24 @@ The markdown body SHOULD follow this order:
 5. **Reference Navigation** — links to files in `references/`
 6. **Anti-patterns** (optional) — "What NOT to Do" section
 
+## Lifecycle Status
+
+Every skill has a maturity status recorded in [`assets/skill-status.json`](../../assets/skill-status.json) — the single source of truth. There is NO status marker in SKILL.md (frontmatter or body). Keeping status in one machine-readable file lets agents and the generated README table report it consistently, and keeps status changes out of frontmatter (so they don't trigger the `activation-gate.yml` recall-eval gate).
+
+| Status | Meaning |
+|--------|---------|
+| `stable` | Stable, production-ready surface; safe for production. |
+| `preview` | Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change. |
+| `in-development` | Skill itself is incomplete or unstable; coverage is partial. |
+
+When adding or changing a skill, set its entry under `skills` in the manifest to one of these values, then regenerate the README table:
+
+```bash
+python3 scripts/check-skill-status.py --write-readme
+```
+
+`scripts/check-skill-status.py` (run in CI by `validate-skill-status.yml`) enforces that every skill has a manifest entry with a valid status, that the README table is current, and that no status markers leak into SKILL.md frontmatter or body.
+
 ## Naming Conventions
 
 | Item | Pattern | Example |
@@ -61,8 +79,21 @@ The markdown body SHOULD follow this order:
 
 ## Content Rules
 
-- Skills MUST be self-contained — no references to other skills
+- Skills MUST be self-contained — no importing, inlining, or reading another skill's files, and each MUST function when sibling skills are absent. Runtime delegation to a same-plugin sibling skill (e.g., spawning a subagent that delegates the edit to the artifact's owning domain skill) IS allowed when the delegating skill degrades gracefully without it
 - CLI commands MUST include `--output json` when output is parsed programmatically
 - All file links MUST use relative paths from the SKILL.md location
 - All file links MUST point to files that actually exist in the repo
 - No secrets, tokens, credentials, or personal filesystem paths
+
+## Flavor-Aware Skill Edits
+
+When `skill-flavors/` exists, inspect the matching sparse override before
+changing any canonical Markdown passage enclosed by a `skill-flavor` block.
+Flavors inherit canonical edits outside replaced blocks, but they do not
+inherit edits inside a block they replace.
+
+- Use the compact `<!--skill-flavor:<name>:start|end-->` form with no internal, leading, or trailing whitespace; keep required Markdown indentation on the enclosed content.
+- Keep shared tables, lists, and navigation outside replacement blocks.
+- For host-only additions, prefer an empty canonical `<name>-extra` block that the flavor fills additively.
+- If one existing row or item differs, mark only that item rather than replacing the complete shared section.
+- Read `.claude/skills/manage-skill-flavors/SKILL.md` before authoring or changing any flavor boundary or override.

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "AssetList",
+  "Data": [
+    {
+      "Key": "d4e5f6a7-b8c9-0123-defa-1234567890bc",
+      "Name": "MyPerRobotConfig",
+      "ValueType": "Text",
+      "ValueScope": "PerRobot",
+      "Description": "Per-robot configuration value. Each robot is expected to have its own entry in the per-robot value table."
+    },
+    {
+      "Key": "b2c3d4e5-f6a7-8901-bcde-f01234567890",
+      "Name": "RemoteDebuggingEndpoint",
+      "ValueType": "Text",
+      "ValueScope": "Global",
+      "Description": "HTTPS endpoint used by remote debugging fixtures."
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

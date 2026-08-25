@@ -1,0 +1,43 @@
+{
+  "$resourceType": "tool",
+  "id": "3b37ac83-8e45-4f41-86ca-5b11b345dc04",
+  "type": "process",
+  "location": "external",
+  "name": "Count Sources",
+  "description": "Adds two integers together. Use this to count the total number of sources by summing the number of web search results and the number of web summary citations.",
+  "isEnabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "a": {
+        "type": "integer",
+        "description": "First number (e.g. count of web search results)"
+      },
+      "b": {
+        "type": "integer",
+        "description": "Second number (e.g. count of web summary citations)"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "sum": {
+        "type": "integer",
+        "description": "Total count (a + b)"
+      }
+    }
+  },
+  "settings": {},
+  "properties": {
+    "processName": "A_Plus_B",
+    "folderPath": "solution_folder",
+    "exampleCalls": []
+  },
+  "referenceKey": "3a53b879-c1f7-4041-ac33-cdb2ad2207eb",
+  "argumentProperties": {}
+}

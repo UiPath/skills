@@ -1,0 +1,406 @@
+# tests/tasks/uipath-troubleshoot — Test Scenario Generator
+
+This directory contains faithful-replay test scenarios for the `uipath-troubleshoot` skill. Each scenario replays a real troubleshooting investigation against a `uip` CLI mock so the agent's reasoning is exercised without hitting a real UiPath tenant. A scenario for a new failure class is new acceptance coverage when first added; once committed and green it serves as a regression guard against future skill/playbook changes.
+
+This file tells you (Claude or a contributor) how to **add a new scenario** from a real session you just resolved.
+
+## When to use this guide
+
+Trigger:
+
+- You ran the `uipath-troubleshoot` skill against a real failing job, reached a verified resolution, and want to lock the case in as a faithful-replay scenario (a regression guard going forward).
+- A user reports a new failure class not yet covered by an existing scenario.
+
+Skip:
+
+- Tweaking an existing scenario's manifest or fixtures — edit them directly, no generation pass needed.
+- Adding tests for *other* skills — use `.claude/commands/generate-tasks.md` instead.
+
+## Inputs
+
+A new scenario needs four sources. Three are mandatory; the fourth is optional.
+
+| Input | Required | Source |
+|-------|----------|--------|
+| `--investigation <dir>` | yes | The `.local/investigations/` directory written by the troubleshooting skill: `raw/` (verbatim CLI responses — the backfill source) and `notes.md` (investigation log). |
+| `--project <dir>` | no | The UiPath project source that was failing. Snapshotted into the new scenario's `process/`. Omit when the troubleshooting is purely CLI-driven (no project source available). |
+| `--transcript <path>` | yes | A `.jsonl` file or a directory. Directory mode walks `*.jsonl` recursively and treats files under `subagents/` as sub-agent transcripts (their `uip` calls count, their final text is ignored). Source of truth for `uip` calls + presenter output. |
+| `--resolution <file>` | no | Pre-written `RESOLUTION.md`. If omitted, the generator extracts the presenter's final assistant message from the transcript. |
+| `--scenario-name <name>` | no | Folder name for the new scenario. If omitted, inferred from project name + failing job key. |
+| `--group <group>` | yes | Group folder — e.g. `activity-packages`, `products/orchestrator`, `runtime-exceptions`, `cross-system`. Sets placement, the depth-correct `_shared` path, and the default domain tag. Activity packages are flat under `activity-packages/`; the `--scenario-name` carries the package token (`db-`, `word-`, …). See [Scenario grouping](#scenario-grouping). |
+
+## Workflow — ask before writing
+
+The generator runs in two passes. **Always preview before applying.**
+
+### 1. Preview
+
+```bash
+python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
+  --investigation <path> \
+  --project <path> \
+  --transcript <path> \
+  [--resolution <path>] \
+  [--scenario-name <name>] \
+  --group <group> \
+  --dry-run
+```
+
+`--group` is the group folder the scenario belongs to (see [Scenario grouping](#scenario-grouping)). It sets three things at once: where the scenario folder is written, the depth-correct `_shared` path inside `task.yaml`, and the default product/domain tag. Pass it for every new scenario — omitting it falls back to flat placement at the suite root (deprecated).
+
+Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the manifest rules extracted, and any scrub substitutions that would be applied.
+
+### 2. Confirm with the user
+
+Show the preview. Ask:
+
+- Is the scenario name correct?
+- Are the manifest rules complete (every `uip` arg signature the agent ran)?
+- Does the extracted `RESOLUTION.md` match the agent's final answer? (Or should they supply one explicitly?)
+- Are the scrub substitutions correct (placeholders mapped to the right real values)?
+
+Do not proceed without explicit user confirmation.
+
+### 3. Apply
+
+```bash
+python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
+  ... same flags as preview ... \
+  --apply
+```
+
+Writes the scenario folder. Prints the path. Exits.
+
+### 4. Verify
+
+After write:
+
+1. Run the smoke test pattern to confirm the mock dispatcher resolves:
+   ```bash
+   cd tests
+   .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
+   ```
+2. The first run should score 1.0 — the test was generated from a known-good resolution.
+3. Confirm every expected call was hit from the run artifact's call log (sealed runs encode each record):
+   ```bash
+   python tests/tasks/uipath-troubleshoot/_shared/scripts/coverage_report.py --dump <artifact>/m/.log
+   ```
+
+## Mandatory scrub list
+
+Before writing any file, the generator MUST replace:
+
+| Pattern | Replacement |
+|---------|-------------|
+| Personal Windows paths (`D:\...`, `C:\Users\...`, etc.) | Strip prefix → relative path, OR generic description |
+| Real internal email addresses (`<name>@uipath.com`) | `original_email@test.com` (resource owner), `replacement_email@test.com` (runner) |
+| Real first names used as identifiers | `original_user`, `replacement_user` |
+| Filenames containing real emails | Renamed to placeholder |
+| Hostnames matching `DESKTOP-*`, `<surname>-*` | `MOCK-HOST` |
+
+Scrub applies to: every fixture JSON, every Markdown body, every YAML field, every filename in the `process/` snapshot.
+
+The generator MUST surface its scrub-substitution table during the dry-run preview so the user can verify mappings before write.
+
+## Scenario grouping
+
+Scenarios sit in group folders. Do NOT add a scenario at the flat suite root — pick its group folder. Tests within a group are NOT sub-grouped further; they sit flat inside the group.
+
+**Activity-package scenarios are FLAT under `activity-packages/`** — there is no per-package subfolder. The package is encoded as a short prefix on the scenario name (`db-`, `cv-`, `excel-`, `gsuite-`, `mail-`, `o365-`, `py-`, `sys-`, `uia-`, `web-`, `word-`, `classic-`). This keeps installed file paths under the Windows 260-char `MAX_PATH` limit (a per-package subfolder added ~20 wasted chars to every path).
+
+```
+tests/tasks/uipath-troubleshoot/
+├── _shared/                     # shared mock dispatcher + scripts (never a scenario)
+├── smoke-manifest-commands/     # the sole smoke task (stays at root)
+├── activity-packages/           # FLAT — scenarios named <token>-<slug>
+│   ├── db-execute-query-timeout-expired/      data/m/r/ …
+│   ├── excel-rr-sheet-bytes/                   data/m/r/ …
+│   ├── uia-node-not-found/  word-replace-text-file-locked/  …
+├── products/
+│   ├── orchestrator/            <scenario>/ …
+│   ├── integration-service/     <scenario>/ …
+│   ├── agents/                  <scenario>/ …
+│   └── maestro/                 <scenario>/ …
+├── runtime-exceptions/          <scenario>/ …
+└── cross-system/                <scenario>/ …   # root cause spans ≥2 systems
+```
+
+**Pick the group + package token by where the failure's playbook lives:**
+
+| Failure surface | Group | Scenario prefix |
+|---|---|---|
+| An activity package (Word, Excel, Python, Mail/Outlook, O365, GSuite, Web, CV, System, UI Automation, Classic, Database) | `activity-packages` | `word-` `excel-` `py-` `mail-` `o365-` `gsuite-` `web-` `cv-` `sys-` `uia-` `classic-` `db-` |
+| Orchestrator-only (job/robot/queue/licensing/logon state, no single activity) | `products/orchestrator` | — |
+| Integration Service connectors / connections | `products/integration-service` | — |
+| Agents runtime, agent definitions, agent capabilities | `products/agents` | — |
+| Maestro / BPMN instances | `products/maestro` | — |
+| Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` | — |
+| Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` | — |
+
+The `--group` flag wires up placement, the depth-correct `_shared` path, and the default tag. The `_shared` path depth follows the nesting: `activity-packages/<scenario>/`, `runtime-exceptions/<scenario>/`, and `cross-system/<scenario>/` are one level deep → `../../_shared/mock_template`; `products/<product>/<scenario>/` is two deep → `../../../_shared/mock_template`. For activity packages pass `--group activity-packages` and a `--scenario-name` that already carries the package token (e.g. `db-execute-query-timeout-expired`).
+
+## Scenario folder layout
+
+A single scenario (leaf) under its group folder:
+
+```
+tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
+├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
+├── reference/                   # directory-only reference (coder-eval >=0.11); never shown to the agent
+│   └── RESOLUTION.md            # ground truth for the LLM judge
+├── data/                        # short dir names keep Windows paths under MAX_PATH (260)
+│   └── m/
+│       └── r/
+│           ├── README.md        # what the original session uncovered — deleted by `m/seal`
+│           ├── manifest.json    # rules (canned + passthrough) + unmocked_default
+│           └── *.json           # canned stdout per rule with `file:` (name = sha1[:10] of args)
+└── process/                     # snapshot of the failing UiPath project (optional)
+    └── ...
+```
+
+`task.yaml` MUST set `sandbox.mock_path_dirs: ["m"]` and overlay the scenario's `data/` via a `template_dir` source — without it, bare `uip` resolves to the real CLI and the test will try to authenticate. (Dir names are single letters — `data/m/r/` — deliberately: verbose `fixtures/mocks/responses/` paths pushed the plugin's installed file paths past the Windows 260-char `MAX_PATH` limit.)
+
+## Mock dispatch precedence
+
+The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_src/uip.py` (the dispatcher's source; the template ships it as a compressed docstring-stripped blob). Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
+
+Each rule has one of:
+
+- `file: <path>` — return the canned response under `r/<file>`.
+- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
+
+When no rule matches:
+
+1. `unmocked_default` (if set) — return its `response` + `exit_code`.
+2. Otherwise, error on stderr.
+
+Test runs require valid `uip` auth on the host (set via `.env` or environment) for any rule with `passthrough: true` to succeed.
+
+## Task YAML requirements
+
+Every new scenario's `task.yaml` MUST satisfy the following.
+
+### `run_limits`
+
+```yaml
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+```
+
+Troubleshooting investigations span many turns and produce large intermediate outputs. Use `task_timeout: 5400` (90 min) and `turn_timeout: 3600` (60 min) so the full triage → hypothesis → tester → depth-check → presenter chain has headroom — proxy-mode runs cluster around 25–55 min wall, so a 30-min `task_timeout` clips right before the presenter spawn on the slow end of the distribution.
+
+`task_timeout`, `max_turns`, and `turn_timeout` belong inside the `run_limits:` block (the canonical location after the c/2026-05-12-unify-run-limits migration). Top-level placement still works via a grace shim but is deprecated; setting both top-level and `run_limits:` raises `ValueError` on the validator.
+
+### `tags`
+
+Tags MUST be lowercase kebab-case — the coder-eval schema rejects PascalCase or spaced names (e.g., `RPA` and `Integration Service` are invalid; use `rpa` and `integration-service`).
+
+Must include `uipath-troubleshoot` AND at least one product/domain tag from this list:
+
+| Tag | When to apply |
+|-----|---------------|
+| `rpa` | Anything touching an activity package or `.xaml` workflow. **Default for any activity-package-related failure.** Apply alongside other tags when the failure spans domains (e.g., a preflight that hits both System.Activities and IS connectors gets both `rpa` and `integration-service`). |
+| `flow` | Maestro Flow / flow-graph artifacts |
+| `bpmn`, `maestro` | BPMN-modelled processes (Maestro). Apply both. |
+| `case-management` | Case Management product |
+| `integration-service` | IS connectors, connections, connector activities |
+| `hitl` | Human-in-the-loop / Action Center / Tasks |
+| `agents` | Agent runtime, agent definitions |
+| `ixp` | Intelligent Xtraction and Processing |
+| `document-understanding` | Document Understanding (extraction models, classification, validation, projects) |
+| `llm-gateway` | LLM Gateway (model routing, BYO connections, product LLM configurations) |
+| `data-fabric` | Data Fabric tables, entities |
+| `api-workflow` | API workflow artifacts |
+| `orchestrator` | Orchestrator control-plane failures — job/robot lifecycle (pending, faulted, killed, foreground-slot), logon/credentials, queues, licensing, machine state — diagnosed via `uip or`. Not tied to a single activity package. Add `rpa` too when an RPA process's execution is directly involved (e.g. foreground-slot, job-killed). |
+
+**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/agents` → `agents`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
+
+**Multiple tags are encouraged.** A scenario that touches more than one domain carries a tag for each — this is required for `cross-system/` scenarios (e.g. an Excel activity faulting on an IS connection gets `rpa` AND `integration-service`). Add the extra tags by hand after generation; `--group` only seeds the primary one.
+
+### Tier tag: scenarios are `e2e`, NEVER `smoke`
+
+Every faithful-replay scenario is an end-to-end investigation — tag it **`e2e`**, never `smoke`.
+
+The PR smoke gate (`.github/workflows/smoke-skills.yml`) treats **any** change under `skills/uipath-troubleshoot/` as a skill-source change and runs that skill's **entire `smoke`-tagged set**. A `smoke`-tagged scenario therefore runs on every docs/playbook PR — each scenario is a multi-minute agent run, so the gate becomes slow, expensive, and exposes unrelated PRs to scenario flakiness and CI-infra blips (image-pull, judge variance). That is the wrong signal for a fast PR gate.
+
+**The ONLY troubleshoot task tagged `smoke` is [`smoke-manifest-commands`](./smoke-manifest-commands/task.yaml)** — a fast, deterministic fixture/manifest-command validation (no agent investigation). It is the sole troubleshoot smoke-gate check by design.
+
+Rules:
+
+1. New scenarios get `e2e` (+ product/domain tags) — **do NOT add `smoke`**.
+2. Do not add `smoke` to any scenario to "make it run in CI"; the e2e suite (`tests/experiments/e2e.yaml`) covers scenarios.
+3. The only file that may carry `smoke` is `smoke-manifest-commands/task.yaml`.
+
+### Investigation output location
+
+The skill writes investigation artifacts to `.local/investigations/` — NOT `.investigations/`. Every `file_exists` criterion path and every post-run script path MUST use `.local/investigations/...`.
+
+### `pre_run` — seal the mock store
+
+Every scenario MUST seal its fixtures before the agent starts:
+
+```yaml
+pre_run:
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+```
+
+`data/m/r/` is staged into the agent's working directory so the `m/uip` shim can resolve it — which also lets the agent `cat ./m/r/*.json` and read the recorded `uip` outputs, reaching the root cause without invoking `uip` or the skill at all. `m/seal` packs the manifest + every fixture into an opaque `m/.store` (zlib+base64) and deletes `r/`; the shim reads `.store` transparently. After sealing there is no readable fixture in the sandbox.
+
+The mock machinery itself is never readable in the sandbox — its source would otherwise tell the agent how the test evidence is kept (the dispatcher's docstring documents the manifest schema, the `.store` format, and the annotation-stripping pass). The sources live in `_shared/mock_src/` (`uip.py`, `seal.py`) and are NOT staged; the template ships them as compressed docstring-stripped blobs (`m/.uip.bin`, `m/.seal.bin` — AST-stripped source, zlib+base64, packed by `_shared/scripts/compile_mocks.py`) plus thin loaders at `m/uip` and `m/seal` that decode and exec the blob in memory. A blob shows a single base64 run to `cat`/`strings` (unlike bytecode, which keeps every string literal readable) and runs on ANY host CPython >= 3.10 — no version matrix, no PATH setup for local runs (the sandbox resolves `python` from the host PATH). After editing a source, repack with `uv run --python 3.13 tests/tasks/uipath-troubleshoot/_shared/scripts/compile_mocks.py` (3.13 keeps the output byte-stable) and commit the regenerated blobs. The dispatcher's call log (`m/.log`) is written zlib+base64-encoded on sealed runs — plain records name the matched rule and fixture file, proof the CLI is mocked. Decode it with `coverage_report.py --dump`.
+
+`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
+
+The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
+
+`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
+
+Sealing also removes the scenario's `README.md`, which lives at `data/m/r/README.md` for exactly that reason — `seal` deletes the whole `r/` directory, so the write-up describing the root cause never reaches the agent even though `data/` is staged. Keep it there; a README at the task root sits in the task dir that coder-eval bind-mounts read-only into the container (`$TASK_DIR`), and one at `data/` root lands in the agent's working directory unsealed.
+
+### `docsai` mocking
+
+Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: true`. Query strings vary between runs and canned responses go stale immediately; the dispatcher caches passthrough responses per query for in-run reuse.
+
+```json
+{
+  "match": "docsai ask",
+  "passthrough": true
+}
+```
+
+### `success_criteria`
+
+Every scenario MUST include exactly TWO criteria, and ONLY these two:
+
+1. **`skill_triggered`** — verify `uipath-troubleshoot` activated. Without this, the agent can fake an answer by reading fixture files directly and bypassing the skill entirely (we have seen this happen).
+2. **`llm_judge`** — grade whether the agent reached the correct conclusion against `RESOLUTION.md`.
+
+**Do NOT add any other criterion type.** Specifically forbidden across the whole troubleshoot suite:
+
+- ❌ `file_exists` — testing whether `.local/investigations/notes.md` (or any internal file) was written grades bookkeeping, not the deliverable. `skill_triggered` already verifies the skill ran.
+- ❌ `file_contains` — grading the shape of `notes.md` / `raw/` punishes correct skill behavior (multiple playbooks legitimately match; the fast path legitimately skips branches its evidence already rejects).
+- ❌ `command_executed` — encodes one investigation path; an agent reaching the right answer via a different (still valid) CLI route gets false-failed.
+
+Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded FAILURE solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
+
+Anything task-specific the test needs to verify goes in `RESOLUTION.md`. The judge reads it via the `files: [$REFERENCE_DIR/RESOLUTION.md]` entry and compares.
+
+#### Judge configuration — single canonical shape for every task
+
+Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prompt, the same flags, and the same description. Per-task customization lives in `RESOLUTION.md`, never in `task.yaml`.
+
+**Canonical `llm_judge` block** (copy verbatim into every new scenario):
+
+```yaml
+- type: llm_judge
+  description: "Agent's diagnosis matches RESOLUTION.md"
+  weight: 3.0
+  pass_threshold: 0.7
+  include_reference: false
+  files:
+    - $REFERENCE_DIR/RESOLUTION.md
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    Grade the agent's final answer against the attached RESOLUTION.md.
+
+    Score on whether the agent identifies the same root cause and
+    recommends the same fix as RESOLUTION.md:
+
+      1.0  Same root cause AND same fix (or equivalent).
+      0.8  Same root cause; fix is right area but vague.
+      0.5  Adjacent cause, missing a key specific.
+      0.2  Wrong direction; recognized surface only.
+      0.0  Misdiagnosed or blocked.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+```
+
+**What the judge sees:**
+
+- `include_reference: false` + `files: [$REFERENCE_DIR/RESOLUTION.md]` — passes **only** `reference/RESOLUTION.md`, not the whole `reference:` directory. (`include_reference: true` would inline the entire directory as a separate block, so anything else added to `reference/` later would silently reach the judge — and it would duplicate the file if combined with this `files:` entry.)
+- `include_dialog: true` — passes the full user<->agent dialog, every turn
+- `include_agent_output: true` — passes the agent's final user-facing response
+
+That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+
+`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. `scripts/check-judge-dialog.py` (CI: `judge-dialog-gate.yml`) blocks a PR that reintroduces it.
+
+**Forbidden on `llm_judge`:**
+
+- ❌ `files:` array (passing `notes.md`, `raw/` contents, or any internal artifact). The judge grades presentation, not bookkeeping.
+- ❌ Custom prompt language per task — no `DIMENSION A / DIMENSION B`, no `SCORING RUBRIC` clauses citing specific playbook names, no "Evidence sources" enumerations referencing `matched_playbooks` / `is_root_cause` / etc.
+- ❌ Per-task hedging notes ("Be substance-focused", "multiple playbooks may match", etc.). The lean rubric already encodes this.
+
+**Why:** the skill's internal state (`notes.md`, `raw/`) is bookkeeping for the investigation, not a deliverable. Multiple playbooks may legitimately match a signal; the fast path legitimately stops at the first branch its evidence confirms (see SKILL.md § Verification checklist). Grading on internal-state shape punishes correct skill behavior. What the agent **presents** is the contract.
+
+**Where task-specific guidance lives:** `RESOLUTION.md`. If the judge needs to know that a specific fix must name "AlterIfDisabled = True" or that "Test Heals pool" is wrong — that goes in `RESOLUTION.md` as the authoritative root cause + fix. The judge reads it via the `files: [$REFERENCE_DIR/RESOLUTION.md]` entry and grades against it.
+
+**Lean default for every new scenario:**
+
+```yaml
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
+    include_dialog: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+```
+
+## Anti-patterns
+
+- **Do not** add `command_executed` criteria. The lean contract is `skill_triggered + llm_judge` only — no `command_executed`, no `file_exists`, no `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
+- **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
+- **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
+- **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
+- **Do not** keep names that encode the diagnosis. The agent-visible surfaces — process / project / release names, workflow / `.xaml` filenames, `x:Class`, activity `DisplayName`, and the `initial_prompt` — MUST NOT broadcast the failure. Real sessions routinely carry such names (`ERN_O365_MailFolderNotFound`, activity `"Get Mail from nonexistent folder (expect ArgumentNullException)"`); left in, the agent passes by reading the name instead of investigating — or never invokes the skill at all. Neutralize them to realistic business names during generation, exactly like the PII scrub, keeping the fault ONLY in the retrieved log/exception text. A user pasting the *symptom* into the prompt (`faulted with System.IO.FileNotFoundException`) is fine; a *name* that states the cause is not.
+- **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<group>/<scenario>/`.
+- **Do not** create a scenario without a verified resolution. The LLM judge needs an authoritative ground truth; a half-baked `RESOLUTION.md` produces flaky scores.
+- **Do not** tag a scenario `smoke` — scenarios are `e2e`. The only troubleshoot task allowed the `smoke` tag is `smoke-manifest-commands` (see [Tier tag](#tier-tag-scenarios-are-e2e-never-smoke)).
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `_shared/scripts/extract_session.py` | Parse a Claude Code JSONL transcript → `{uip_calls, presenter_output, inferred_scenario_name}`. Pure parser, no file writes. Stdout JSON. |
+| `_shared/scripts/generate_scenario.py` | Orchestrate inputs → scenario folder. Two modes: `--dry-run` (default, prints plan) and `--apply` (writes files). Calls `extract_session.py`. Runs the scrub pass. |
+| `_shared/scripts/coverage_report.py` | (Existing.) Compare expected vs performed `uip` calls per replicate after a test run. |
+
+## When the user just asks "capture this as a test"
+
+If a user says "save this as a regression test" mid-session and provides no flags, infer:
+
+- `--investigation` → `.local/investigations/` in the cwd
+- `--project` → walk up from cwd looking for the nearest `project.json`
+- `--transcript` → most-recent JSONL under `~/.claude/projects/<slug>/sessions/`
+- `--resolution` → omit, extract from transcript
+- `--scenario-name` → infer from the failing job's `ReleaseName` + a short slug
+- `--group` → infer from the faulted activity's package / the investigated product, using the [Scenario grouping](#scenario-grouping) table (e.g. a `UiPath.Word.Activities` fault → `--group activity-packages` with a `word-`-prefixed scenario name; an Orchestrator-only job/robot issue → `products/orchestrator`; a root cause spanning ≥2 systems → `cross-system`)
+
+Then run `--dry-run`, show the plan, confirm.

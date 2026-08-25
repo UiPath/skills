@@ -27,13 +27,15 @@ uip codedagent push --ignore-resources
 ## Prerequisites
 
 - Authenticated session (see [authentication](../../authentication.md)).
-- `UIPATH_PROJECT_ID` set in `.env` (the CLI does not inject this one — it identifies the target project in Studio Web).
+- `UIPATH_PROJECT_ID` set in `.env` — verify by reading the file directly (`Read <project-dir>/.env`). The CLI reads this file at runtime; do not check `$UIPATH_PROJECT_ID` in the shell (env vars do not persist across Bash tool calls).
 
 ```env
 UIPATH_PROJECT_ID=12345
 ```
 
 `UIPATH_URL`, `UIPATH_ACCESS_TOKEN`, and org/tenant identifiers come from the `uip login` session automatically — do not add them to `.env`.
+
+`.env` may also hold the agent's own runtime environment variables, but it is **not** pushed (see [Files Involved](#files-involved)) — editing it does not change what a cloud run sees. For the store the cloud runtime reads, and for referencing an Orchestrator asset with `%ASSETS/<ASSET_NAME>%`, see [environment-variables.md](environment-variables.md).
 
 ## Pull
 
@@ -94,7 +96,7 @@ uip codedagent push --overwrite
 | `pyproject.toml`, `main.py`, `.py`, `.json`, `.yaml` | yes | Project source and metadata |
 | `uipath.json`, `entry-points.json`, `bindings.json` | yes | UiPath project configuration |
 | `uv.lock` | yes (skip with `--nolock`) | Dependency lockfile |
-| `__pycache__/`, `.git/`, `.uipath/`, `.env` | no | Build artifacts, VCS, secrets |
+| `__pycache__/`, `.git/`, `.uipath/`, `.env` | no | Build artifacts, VCS, secrets — for `.env` see [environment-variables.md](environment-variables.md) |
 
 Use `packOptions` in `uipath.json` to refine what gets included.
 

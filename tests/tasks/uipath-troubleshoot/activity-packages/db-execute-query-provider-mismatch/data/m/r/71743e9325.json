@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-28T07:32:12.804Z",
+      "Message": "Execute Query: A database error occurred.\r\nSystem.ArgumentException: Keyword not supported: 'Provider'.\r\n   at Microsoft.Data.SqlClient.SqlConnectionStringBuilder.GetIndex(String keyword)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-28T07:32:12.819Z",
+      "Message": "Execute Query: A database error occurred.\r\nin Main.xaml\r\n    at DatabaseConnect \"Connect to Database\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

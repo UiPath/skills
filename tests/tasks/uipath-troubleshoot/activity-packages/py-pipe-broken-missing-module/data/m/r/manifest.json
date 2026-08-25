@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_doc": "Canned uip responses for investigating a faulted Python Scope job (folders, jobs, job logs).",
+  "rules": [
+    { "match": "or folders list", "file": "ccbd9863b4.json" },
+    { "match": "or jobs list", "file": "da8db33dfd.json" },
+    { "match": "or jobs get", "file": "2c90546e13.json" },
+    { "match": "or jobs history", "file": "7ebce67886.json" },
+    { "match": "or jobs logs", "file": "79723a4720.json" }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-dd2222cc-001",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-22T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd2222cc-002",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-22T08:00:01.418Z",
+      "Message": "[ExcelQuarterlyProcess] Removing stale block A3:C5 from C:\\Robot\\Data\\quarterly-report.xlsx",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd2222cc-003",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T08:00:01.510Z",
+      "Message": "Excel Application Scope: quarterly-report.xlsx — workbook opened (Visible=False, AutoSave=True)",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd2222cc-004",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T08:00:02.010Z",
+      "Message": "Delete Range: drop stale block — resolved config Sheet='Q1' Range='A3:C5' ShiftCells=True ShiftOption=ShiftUp",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd2222cc-005",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T08:00:02.210Z",
+      "Message": "Delete Range: drop stale block — sheet 'Q1' merged regions adjacent to target: ['D5:D7'] (bottom edge of A3:C5 abuts merge anchor at D5)",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd2222cc-006",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T08:00:02.510Z",
+      "Message": "Delete Range: drop stale block — dispatching Excel COM Range.Delete(xlShiftUp) on Q1!A3:C5",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd2222cc-007",
+      "JobKey": "dd222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-22T08:00:02.802Z",
+      "Message": "Delete Range: drop stale block — System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.",
+      "ProcessName": "ExcelQuarterlyProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-bb2222bb-001",
+      "JobKey": "bb222222-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb2222bb-002",
+      "JobKey": "bb222222-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading named range MyDataRange from C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb2222bb-003",
+      "JobKey": "bb222222-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — workbook opened",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb2222bb-004",
+      "JobKey": "bb222222-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.812Z",
+      "Message": "[ExcelDailyImport] Available sheets in workbook: [\"Data\", \"Summary\", \"Archive\"]",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb2222bb-005",
+      "JobKey": "bb222222-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.412Z",
+      "Message": "Read Range: MyDataRange — resolving named range 'MyDataRange' (RefersTo: '#REF!'; resolved sheet: <null>; resolved address: <null>)",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb2222bb-006",
+      "JobKey": "bb222222-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Read Range: MyDataRange — System.NullReferenceException: Object reference not set to an instance of an object.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

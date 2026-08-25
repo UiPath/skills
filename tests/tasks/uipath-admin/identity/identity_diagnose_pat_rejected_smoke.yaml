@@ -1,0 +1,48 @@
+task_id: skill-admin-pat-not-working-smoke
+description: >
+  Diagnose smoke: agent troubleshoots a PAT rejection (403) by retrieving the
+  user's PATs and inspecting expiration and scope coverage. Graded on the PAT
+  records read back from the tenant (Expiration + Scopes present), not the
+  command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, pat]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  One of my personal access tokens might be expired or have the wrong scopes —
+  it's getting 403 on Orchestrator folder listings. Retrieve my PATs so their
+  expiration dates and scope coverage can be reviewed, and save the complete
+  JSON result to ./pats.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "pats.json holds real PAT records with the fields needed to diagnose expiry/scope (Expiration, Scopes)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('pats.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'PAT retrieval not successful: Result={res}'
+      data = d['Data'] if isinstance(d, dict) and 'Data' in d else d
+      def lists(o):
+          if isinstance(o, list):
+              yield o
+              for v in o: yield from lists(v)
+          elif isinstance(o, dict):
+              for v in o.values(): yield from lists(v)
+      coll = data if isinstance(data, list) else next((L for L in lists(data)), None)
+      assert coll is not None, f'no PAT collection found; saved type={type(d).__name__}'
+      # A given user may legitimately have zero PATs; when present, records carry
+      # the expiry/scope fields the 403 diagnosis inspects.
+      if coll:
+          r = coll[0]
+          assert isinstance(r, dict) and 'Expiration' in r and 'Scopes' in r, f'PAT record missing Expiration/Scopes; keys={list(r)[:10]}'
+      print(f'OK: PAT collection retrieved; count={len(coll)}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

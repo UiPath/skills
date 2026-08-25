@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90213",
+      "State": "Faulted",
+      "ProcessName": "InvoiceLetters",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-02",
+      "MachineKey": "",
+      "StartTime": "2026-06-09T14:03:01.220Z",
+      "EndTime": "2026-06-09T14:03:02.060Z",
+      "CreationTime": "2026-06-09T14:03:00.980Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

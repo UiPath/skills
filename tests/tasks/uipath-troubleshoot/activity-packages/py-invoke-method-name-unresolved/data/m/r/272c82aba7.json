@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T08:21:42.780Z",
+      "Message": "[Invoke Python Method] One or more errors occurred. ---> Python.Runtime.PythonException: AttributeError : module 'transform' has no attribute 'clean_records'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-11T08:21:42.820Z",
+      "Message": "One or more errors occurred. ---> Python.Runtime.PythonException: AttributeError : module 'transform' has no attribute 'clean_records'\r\nin Main.xaml\r\n    at PythonScope \"Python Scope\"\r\n    at InvokeMethod \"Invoke Python Method\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

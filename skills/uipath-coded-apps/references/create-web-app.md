@@ -2,31 +2,23 @@
 
 Scaffold a new UiPath Coded Web Application using Vite + React + TypeScript with the `@uipath/uipath-typescript` SDK.
 
+Order matters: the project is scaffolded and the SDK **installed before scopes are determined**, so the scope decision reads the per-method scope table shipped inside the installed package (version-exact) instead of relying on memorized tables.
+
 ## Pre-flight: Collect Required Information
 
 **CRITICAL: You do NOT know these values. You CANNOT infer or assume them. Ask the user and wait for their reply before writing any files.**
 
-### Step 1 — Determine required scopes first
+### Step 1 — Ask the user for setup info
 
-**Before asking the user any setup questions**, figure out what the app needs:
-
-1. From the user's **request**, identify which UiPath services the app will use (e.g., Entities, Tasks, Processes, Maestro, Conversational Agent, Buckets, etc.).
-2. Read [oauth-scopes.md](oauth-scopes.md) and collect the exact scopes required for every method those services expose.
-3. Compose the full deduplicated space-separated scopes string.
-
-You need these scopes **before** Step 2 so you can tell the user exactly what scopes to configure on their Client ID.
-
-### Step 2 — Ask the user for setup info
-
-Output the following text directly (replace `<scopes>` with the actual scopes from Step 1). **Do NOT call any tools yet — just output this text and wait for the user's reply.**
+Output the following text directly. **Do NOT call any tools yet — just output this text and wait for the user's reply.**
 
 ---
 
-Here's what your app needs:
+Here's how OAuth will be set up:
 
-**OAuth scopes:** `<scopes>`
+**Redirect URI:** `http://localhost:5173` (the local dev URL — stored as `redirectUri` in `uipath.json` and injected as the `uipath:redirect-uri` meta tag; the platform injects the production URI automatically at deploy)
 
-**Redirect URI:** `http://localhost:5173` (computed automatically at runtime — works in both local dev and production)
+**OAuth scopes:** determined after the project is scaffolded — I'll read the exact per-method requirements from the installed SDK and configure them on the OAuth client in Step 4.
 
 Please answer these questions to continue:
 
@@ -41,43 +33,35 @@ Please answer these questions to continue:
 
 **4. Tenant name** — your UiPath tenant (often `DefaultTenant`)
 
-**5. Client ID** — do you have an existing OAuth External Application client ID with the scopes above?
-   - If yes, paste it
-   - If no, say **"create one"** and I'll set it up via browser automation
+**5. Client ID** — do you have an existing OAuth External Application client ID you want to reuse?
+   - If yes, paste it — I'll tell you the exact scopes it needs (and can add missing ones via the `uip admin external-apps` CLI) once they're determined in Step 4
+   - If no, say **"create one"** and I'll set it up via the `uip admin external-apps` CLI with the right scopes
+
+**6. Default UI styling** — apply UiPath's Apollo Vertex design system (`@uipath/apollo-wind` components, semantic tokens, and a light/dark theme toggle out of the box)?
+   - `yes` *(recommended)* — apollo-wind + `next-themes` on top of Tailwind: Apollo Vertex design system, light/dark theme toggle out of the box
+   - `no` — Tailwind only; bring your own component library
 
 ---
 
 **Wait for the user's reply before proceeding.**
 
-### Step 2.5 — Ensure Playwright CLI is available (only if user said "create one")
-
-Before running browser automation, check if Playwright is installed:
-
-```bash
-npx playwright --version 2>/dev/null
-```
-
-If the command fails or returns no output, follow [oauth-client-setup.md Step 2 (Setup B)](oauth-client-setup.md#step-2-ensure-playwright-is-available) to install Playwright into `~/.uipath-skills/playwright/`. Do **not** install into the user's app.
-
-Once confirmed available, read [oauth-client-setup.md](oauth-client-setup.md) and follow it exactly to create the External Application with the scopes from Step 1 and redirect URI `http://localhost:5173`. That reference has all the browser automation details.
-
-### Step 3 — Resolve org name (if not provided)
+### Step 2 — Resolve org name (if not provided)
 
 If the user typed their org name, use it. If they said "find from browser", navigate to the UiPath cloud host for their environment and extract the org name from the URL path (first segment after the domain).
 
 ---
 
-## Step 4 — Scaffold the Project
+## Step 3 — Scaffold the Project
 
-Once you have all values (app name, org, tenant, client ID, environment, scopes), execute the steps below in order. All steps after Step 4.2 run from inside the new project directory.
+Once you have the answers (app name, environment, org, tenant, styling), execute the steps below in order. All steps after Step 3.2 run from inside the new project directory.
 
 > **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install` or `npm create vite` — these can take several minutes and the default 2-minute timeout is not enough.
 
-### 4.1 — Resolve the base URL
+### 3.1 — Resolve the base URL
 
-Map the `<environment>` answer from Step 2 to a base URL using the table in [SKILL.md](../SKILL.md) (Production → `https://api.uipath.com`, Staging → `https://staging.api.uipath.com`, Alpha → `https://alpha.api.uipath.com`). If the user gave a custom URL, use that verbatim. Store as `<base-url>`.
+Map the `<environment>` answer from Step 1 to a base URL using the table in [SKILL.md](../SKILL.md) (Production → `https://api.uipath.com`, Staging → `https://staging.api.uipath.com`, Alpha → `https://alpha.api.uipath.com`). If the user gave a custom URL, use that verbatim. Store as `<base-url>`.
 
-### 4.2 — Create the Vite project
+### 3.2 — Create the Vite project
 
 ```bash
 npx --yes create-vite@latest <app-name> --template react-ts
@@ -85,53 +69,119 @@ npx --yes create-vite@latest <app-name> --template react-ts
 
 Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 
-### 4.3 — Install dependencies
+### 3.3 — Install dependencies
 
-Run these as **two separate commands** in order. The `--@uipath:registry` flag binds only to the first command (the SDK install) — do not apply it to the second, and do not run a bare `npm install` with the flag.
+Run these as **separate commands** in order. The `--@uipath:registry` flag binds only to commands installing `@uipath/*` packages — do not apply it to the others, and do not run a bare `npm install` with the flag.
+
+**Common (always run):** both Q6 paths use `new UiPath()` (no config) — the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags injected by `@uipath/coded-apps-dev` (locally) or by the platform (in production). Tailwind is shared too.
 
 ```bash
-# 1. UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
+# UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 
-# 2. Remaining runtime + Tailwind dependencies
-npm install path-browserify tailwindcss@3 postcss autoprefixer
+# coded-apps-dev Vite plugin — injects <meta name="uipath:*"> tags from
+# uipath.json so `new UiPath()` (no config) works in local dev
+npm install -D @uipath/coded-apps-dev --@uipath:registry=https://registry.npmjs.org
+
+# Tailwind — shared across both Q6 paths
+npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
 ```
 
-> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/uipath-typescript` to install from the public npm registry.
+> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/*` packages to install from the public npm registry.
 
-### 4.4 — Remove Vite defaults that will be overwritten
+**Then branch on the Q6 styling answer for the component layer only:**
 
-`npx create-vite` ships default versions of three files we replace in Step 4.5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message.
+- **If `default styling = yes`** *(recommended)* — apollo-wind brings Apollo Vertex tokens, dark-mode toggle, and React components:
+
+  ```bash
+  # apollo-wind + apollo-core (UiPath design system, public on npm)
+  npm install @uipath/apollo-wind @uipath/apollo-core --@uipath:registry=https://registry.npmjs.org
+
+  # Theme toggle deps
+  npm install next-themes lucide-react
+  ```
+
+- **If `default styling = no`** — keep the SDK + Tailwind baseline above and bring your own component library. No extra dependencies needed.
+
+### 3.4 — Remove Vite defaults that will be overwritten
+
+`npx create-vite` ships default versions of files we replace in Step 5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message.
+
+- **`default styling = yes`** — also overwrites `src/main.tsx` to wrap `<App>` in the theme provider:
+
+  ```bash
+  rm vite.config.ts src/App.tsx src/index.css src/main.tsx
+  ```
+
+- **`default styling = no`**:
+
+  ```bash
+  rm vite.config.ts src/App.tsx src/index.css
+  ```
+
+---
+
+## Step 4 — Determine Scopes & Configure the OAuth Client
+
+The SDK is now installed, so the version-exact scope reference is on disk.
+
+### 4.1 — Determine required scopes
+
+1. From the user's **request**, identify which UiPath services the app will use (e.g., Entities, Tasks, Processes, Maestro, Conversational Agent, Buckets, etc.).
+2. Start from the **Common Scope Bundles** table in [oauth-scopes.md](oauth-scopes.md) — bundles grant the service family, not just today's methods, so the app has headroom as it evolves.
+3. For services or methods outside the bundles — and to verify write/action methods — read the per-method table shipped in the package: `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md`. If the installed SDK predates that file, use the fallback in [oauth-scopes.md](oauth-scopes.md).
+4. If the app embeds a `@uipath/ui-widgets-*` component, add the widget scopes from [oauth-scopes.md](oauth-scopes.md) § Widgets.
+5. Compose the full deduplicated space-separated scopes string. Store as `<scopes>` — Step 5 writes it into `uipath.json`.
+
+### 4.2 — Create or verify the External Application
+
+**If the user said "create one":** create it with the `uip admin external-apps` CLI — read [oauth-client-setup.md](oauth-client-setup.md) for prerequisites and full flags. Confirm `uip` is authenticated (`uip login status --output json`), then:
 
 ```bash
-rm vite.config.ts src/App.tsx src/index.css
+uip admin external-apps create "<app name>" \
+  --non-confidential \
+  --user-scope "<scopes>" \
+  --redirect-uri "http://localhost:5173,http://localhost:5173/" \
+  --output json
 ```
 
-### 4.5 — Write project files from templates
+Parse `id` from the response — that is the Client ID. If the CLI returns `403` (no admin permission) or can't authenticate, use the [Manual portal fallback](oauth-client-setup.md#manual-portal-fallback).
+
+**If the user pasted an existing Client ID:** show them `<scopes>` and ask whether the External Application already has all of them. If scopes are missing, offer to add them via the `add-scopes` operation in [oauth-client-setup.md](oauth-client-setup.md), or let the user update the app manually. A missing scope at the External Application means the token request is rejected entirely; a scope granted to the app but missing from `uipath.json` causes silent `401`/`403` on first call.
+
+---
+
+## Step 5 — Write Project Files
+
+### 5.1 — Write project files from templates
 
 All file content lives in [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md). For each row below, copy the named section from that file verbatim into the path shown, applying the listed substitutions. Create `src/hooks/` first; the rest of the directories already exist from `create-vite`.
 
-| Path | Template section | Substitutions |
-|------|------------------|---------------|
-| `vite.config.ts` | `## vite.config.ts` | none |
-| `uipath.json` | `## uipath.json` | `{{SCOPES}}`, `{{CLIENT_ID}}` |
-| `.env` | `## .env` | `{{CLIENT_ID}}`, `{{SCOPES}}`, `{{ORG_NAME}}`, `{{TENANT_NAME}}`, `{{BASE_URL}}` |
-| `.env.example` | `## .env.example` | none |
-| `src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | none |
-| `src/App.tsx` | `## src/App.tsx` | none |
-| `tailwind.config.js` | `## tailwind.config.js` | none |
-| `postcss.config.js` | `## postcss.config.js` | none |
-| `src/index.css` | `## src/index.css` | none |
+**Pick the template-section column based on the Q6 styling answer.** When the column says `—`, skip that row entirely (the file isn't needed on that path). `uipath.json` and `useAuth.tsx` are shared verbatim — the same SDK init (`new UiPath()` no config) runs on both paths.
 
-### 4.6 — Append `.env` to `.gitignore`
+| Path | Template section — `default styling = yes` | Template section — `default styling = no` | Substitutions |
+|------|---|---|---|
+| `vite.config.ts` | `## vite.config.ts` | `## vite.config.ts` | none |
+| `uipath.json` | `## uipath.json` | `## uipath.json` | `{{CLIENT_ID}}`, `{{SCOPES}}`, `{{ORG_NAME}}`, `{{TENANT_NAME}}`, `{{BASE_URL}}` |
+| `src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | none |
+| `src/components/Theme.tsx` | `## src/components/Theme.tsx (Q6 = yes only)` | — | none |
+| `src/main.tsx` | `## src/main.tsx (Q6 = yes only)` | — | none |
+| `src/App.tsx` | `## src/App.tsx` → `### Q6 = yes (apollo-wind)` | `## src/App.tsx` → `### Q6 = no (bare Tailwind)` | none |
+| `postcss.config.js` | `## postcss.config.js` → `### Q6 = yes (apollo-wind)` | `## postcss.config.js` → `### Q6 = no (bare Tailwind)` | none |
+| `src/index.css` | `## src/index.css` → `### Q6 = yes (apollo-wind)` | `## src/index.css` → `### Q6 = no (bare Tailwind)` | none |
 
-```bash
-echo ".env" >> .gitignore
-```
+> **No `tailwind.config.js` on either path** — Tailwind configuration lives directly in `src/index.css`. No `.env` file either — `uipath.json` (committed) is the single config source for the SDK.
 
-### 4.7 — Verify the scaffold
+### 5.2 — `.gitignore`
 
-First, confirm all files exist: `vite.config.ts`, `uipath.json`, `.env`, `.env.example`, `tailwind.config.js`, `postcss.config.js`, `src/hooks/useAuth.tsx`, `src/App.tsx`, `src/index.css`. If any are missing, re-run the corresponding row from Step 4.5.
+Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored — it is covered by `npx create-vite`'s default plus `uip codedapp`'s conventions. Verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
+
+### 5.3 — Verify the scaffold
+
+First, confirm all expected files for your Q6 branch exist. If any are missing, re-run the corresponding row from Step 5.1.
+
+- **`default styling = yes`:** `vite.config.ts`, `uipath.json`, `postcss.config.js`, `src/index.css`, `src/hooks/useAuth.tsx`, `src/components/Theme.tsx`, `src/main.tsx`, `src/App.tsx`
+- **`default styling = no`:** `vite.config.ts`, `uipath.json`, `postcss.config.js`, `src/index.css`, `src/hooks/useAuth.tsx`, `src/App.tsx`
 
 Then run `npm run build` to verify the scaffold compiles and SDK imports resolve:
 
@@ -157,7 +207,7 @@ const { sdk } = useAuth();
 export const assets = new Assets(sdk);
 ```
 
-See the **SDK Module Imports** table in `SKILL.md` for all subpath imports. The `useAuth` hook implementation and the SDK methods it uses internally are documented in the `## src/hooks/useAuth.tsx` section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md).
+Subpaths and classes are discovered from the installed package — see the lookup protocol in [sdk/imports.md](sdk/imports.md). The `useAuth` hook implementation and the SDK methods it uses internally are documented in the `## src/hooks/useAuth.tsx` section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md).
 
 ---
 
@@ -173,7 +223,19 @@ const items = await assets.getAll({ folderId: 123 }); // replace 123 with your O
 const records = await entities.getAllRecords('<entity-id>'); // entity ID is a UUID — look it up via entities.getAll() or the Data Fabric portal (not the friendly name)
 ```
 
-See [oauth-scopes.md](oauth-scopes.md) for the full list of methods and their required scopes.
+Method signatures come from the installed types (`node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts`); per-method scopes from the shipped `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md` — see [oauth-scopes.md](oauth-scopes.md) for bundles and the lookup protocol.
+
+If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). Required scope: `OR.Buckets` (plus `OR.Tasks` if the widget completes an Action Center task on save). Add to the `scope` field in `uipath.json` during Step 4.
+
+More prebuilt `@uipath/ui-widgets-*` components — prefer these over hand-rolled UI, and add each widget's scopes to `uipath.json` during Step 4 ([oauth-scopes.md](oauth-scopes.md) § Widgets):
+
+| Widget | Use for | Guide |
+|--------|---------|-------|
+| Conversational Agent chat | Chat UI over a conversational agent (streaming, attachments, history) | [widgets/conversational-agent-chat.md](widgets/conversational-agent-chat.md) |
+| DataTable | CRUD grid over a Data Fabric entity | [widgets/datatable.md](widgets/datatable.md) |
+| Multi-file upload | Upload files to a storage bucket | [widgets/multi-file-upload.md](widgets/multi-file-upload.md) |
+| PDF viewer | Display PDFs from buckets, entity attachments, or URLs | [widgets/pdf-viewer.md](widgets/pdf-viewer.md) |
+| External auth | Sign-in buttons for external IdPs (Google/SAML) — NOT UiPath login | [widgets/external-auth.md](widgets/external-auth.md) |
 
 When implementing specific SDK services, read the corresponding reference:
 

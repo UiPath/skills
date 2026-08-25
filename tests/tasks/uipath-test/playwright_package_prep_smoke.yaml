@@ -1,0 +1,66 @@
+# Passes on the currently published CLI and stays valid after the external-package
+# commands ship: it grades the preparation work and the capability check the skill
+# prescribes, not the packaging call itself. Everything happens in the sandbox
+# working directory (no tenant state), so nothing needs cleaning up afterwards.
+task_id: skill-test-playwright-package-prep-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to get a Playwright suite ready
+  for UiPath external test packaging and to report whether this CLI can package
+  it. Asserts the agent produces a project meeting the skill's stated
+  prerequisites (a @playwright/test dependency, a lockfile, a playwright
+  config), checks the CLI's packaging capability instead of guessing, and never
+  reaches for the Studio/RPA link-automation pipeline.
+tags: [uipath-test, smoke, mode:build, lifecycle:generate, feature:test-case]
+
+initial_prompt: |
+  I have a Playwright suite I want to run through UiPath Test Manager. Set up a
+  minimal one in ./pw-suite with two passing tests, get it ready for UiPath
+  packaging, and tell me whether this CLI can package it.
+
+success_criteria:
+  - type: run_command
+    description: "Playwright config present in the prepared project (any supported extension)"
+    command: "find pw-suite -maxdepth 1 -name 'playwright.config.*' | grep -q ."
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project declares @playwright/test (pack prerequisite)"
+    command: "grep -q '@playwright/test' pw-suite/package.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Lockfile committed next to package.json (pack prerequisite)"
+    command: "ls pw-suite/ | grep -qE 'package-lock.json|yarn.lock|pnpm-lock.yaml|bun.lock'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two Playwright tests were written"
+    command: "[ \"$(grep -rho 'test(' pw-suite/tests | wc -l | tr -d ' ')\" -ge 2 ]"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked the CLI's packaging capability instead of assuming it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+pack\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach for the Studio/RPA pipeline (link-automation is wrong for external packages)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation'
+    weight: 1.0
+    pass_threshold: 1.0

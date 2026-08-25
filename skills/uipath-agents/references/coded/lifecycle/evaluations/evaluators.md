@@ -198,27 +198,99 @@ Validates tool call outputs.
 
 ## Custom Evaluators
 
-Create custom Python evaluators in `evaluations/custom_evaluators/`:
+Two commands — run in order:
 
-```python
-from uipath.eval.evaluators import BaseEvaluationCriteria, BaseEvaluatorConfig, BaseEvaluator
+```bash
+# 1. Scaffold the evaluator class at evaluations/evaluators/custom/<name>.py
+uip codedagent add evaluator <EVALUATOR_NAME>
 
-class MyEvaluationCriteria(BaseEvaluationCriteria):
-    my_field: str
-
-class MyEvaluatorConfig(BaseEvaluatorConfig[MyEvaluationCriteria]):
-    name: str = "MyCustomEvaluator"
-
-class MyCustomEvaluator(BaseEvaluator[MyEvaluationCriteria, MyEvaluatorConfig, ...]):
-    @classmethod
-    def get_evaluator_id(cls) -> str:
-        return "MyCustomEvaluator"
-
-    async def evaluate(self, agent_execution, evaluation_criteria) -> EvaluationResult:
-        pass
+# 2. Generate the evaluator JSON spec from the Python class
+uip codedagent register evaluator <EVALUATOR_NAME>.py
 ```
 
-Config JSON references the Python file: `"evaluatorSchema": "file://my_evaluator.py:MyCustomEvaluator"`
+`add` scaffolds `evaluations/evaluators/custom/<name>.py`. Edit it, then run `register` to generate `evaluations/evaluators/<name>-evaluator.json`. The spec references the Python file via `"evaluatorSchema": "file://<name>.py:<ClassName>"`.
+
+### Criteria class requirements
+
+The criteria class holds per-test-case data:
+
+```python
+class MyEvaluationCriteria(BaseEvaluationCriteria):
+    expected_value: str = ""          # field with default — required
+```
+
+Criteria with no fields (`pass`) causes **"No evaluation criteria provided"** at runtime.
+
+### evaluationCriterias per-case values
+
+| Value | Behavior |
+|-------|----------|
+| `"MyEvaluator": { "expectedValue": "x" }` | Run with these criteria, overriding `defaultEvaluationCriteria` from the spec |
+| `"MyEvaluator": null` | Run using `defaultEvaluationCriteria` from the evaluator spec |
+| evaluator id absent / `evaluationCriterias: {}` | Skip the evaluator for this test case |
+
+### defaultEvaluationCriteria
+
+`register` generates `"defaultEvaluationCriteria": null`. Set it manually in the spec so tests that omit criteria in the eval set still run:
+
+```json
+"evaluatorConfig": {
+  "name": "MyEvaluator",
+  "defaultEvaluationCriteria": { "expectedValue": "" }
+}
+```
+
+JSON uses camelCase — `expected_value` → `expectedValue`.
+
+### Wiring into an eval set
+
+Reference the evaluator `id` from the spec in `evaluatorRefs`, then key each test case's `evaluationCriterias` on that same id:
+
+```json
+{
+  "version": "1.0",
+  "id": "my-eval-set",
+  "name": "My Eval Set",
+  "evaluatorRefs": ["MyEvaluator"],
+  "evaluations": [
+    {
+      "id": "test-1",
+      "name": "test-1",
+      "inputs": { "param": "value" },
+      "evaluationCriterias": {
+        "MyEvaluator": { "expectedValue": "value" }
+      }
+    }
+  ]
+}
+```
+
+### Evaluating trace spans
+
+Custom evaluators receive `agent_execution.agent_trace` — a list of OpenTelemetry `ReadableSpan` objects from the agent run. Use this to evaluate execution behavior that output-based evaluators cannot: timing, call order, named operations.
+
+Add `@traced(name="<span-name>")` to any function in the agent to emit a named span, then match by `span.name` in the evaluator. Always use explicit names — it keeps span lookup clean and unambiguous. See [tracing.md](../../capabilities/tracing.md) for the full decorator API.
+
+```python
+# In the agent
+from uipath.tracing import traced
+
+@traced(name="my-operation")
+def my_function(input):
+    ...
+```
+
+```python
+# In the evaluator
+async def evaluate(self, agent_execution, criteria):
+    spans = agent_execution.agent_trace
+    named = [s for s in spans if s.name == "my-operation"]
+    if not named:
+        return NumericEvaluationResult(score=0.0, details="span not found")
+    duration_ms = (named[0].end_time - named[0].start_time) / 1_000_000
+    passed = duration_ms <= criteria.max_ms
+    return NumericEvaluationResult(score=1.0 if passed else 0.0, details=f"{duration_ms:.2f}ms")
+```
 
 ---
 

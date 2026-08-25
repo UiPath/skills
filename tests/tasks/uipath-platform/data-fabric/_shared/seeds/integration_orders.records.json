@@ -1,0 +1,6 @@
+[
+  { "Code": "ORD-001", "Value": 100.00, "Status": "Pending" },
+  { "Code": "ORD-002", "Value": 500.00, "Status": "Active"  },
+  { "Code": "ORD-003", "Value": 250.00, "Status": "Active"  },
+  { "Code": "ORD-004", "Value": 750.00, "Status": "Closed"  }
+]

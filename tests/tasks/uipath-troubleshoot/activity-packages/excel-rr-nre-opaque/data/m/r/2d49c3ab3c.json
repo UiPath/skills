@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc3333bb-001",
+      "JobKey": "cc333333-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333bb-002",
+      "JobKey": "cc333333-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx (generated nightly by upstream Python script)",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333bb-003",
+      "JobKey": "cc333333-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — workbook opened (no sensitivity label detected; encryption: not enabled)",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333bb-004",
+      "JobKey": "cc333333-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.412Z",
+      "Message": "Read Range: Sheet1 (used range) — executing (SheetName='Sheet1'; Range='' [used range])",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc3333bb-005",
+      "JobKey": "cc333333-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Read Range: Sheet1 (used range) — System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation. ---> System.NullReferenceException: Object reference not set to an instance of an object.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

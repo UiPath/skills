@@ -1,0 +1,18 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.04.0",
+  "SolutionId": "5ab2febe-58fb-4d7b-4dfd-08decb1dd663",
+  "Projects": [
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "Agent/project.uiproj",
+      "Id": "a942c61a-5209-4897-b5ef-00c1cd0d5f28"
+    },
+    {
+      "Type": "WebApp",
+      "ProjectRelativePath": "SimpleApprovalApp/project.uiproj",
+      "Id": "73e751a0-b1aa-48be-a4aa-b824bdaaffab"
+    }
+  ],
+  "AutomationHubIdeaUrl": null
+}

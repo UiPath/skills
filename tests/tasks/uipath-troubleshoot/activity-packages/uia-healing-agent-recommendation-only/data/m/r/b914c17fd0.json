@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-39e2-d2e24e1a2cc2",
+      "TraceId": "d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "ParentId": null,
+      "Name": "Robot Job d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "StartTime": "2026-05-12T08:13:00.3726258Z",
+      "EndTime": "2026-05-12T08:14:10.2930246Z",
+      "Attributes": "{\"Exception\":\"UiPath.UIAutomationNext.Exceptions.NodeNotFoundException: Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n •  If needed, re-indicate the element as its properties might have changed\\r\\n •  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n •  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit' />\\n\\r\\nThe closest selector matches found are:\\r\\n[94%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[82%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[69%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[57%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>)\\r\\n   at UiPath.UIAutomationNext.Activities.Services.RuntimeActivityMonitorService.ActivityFaultedAsync(String activityInstanceId, Exception ex, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"}",
+      "Status": 2,
+      "OrganizationId": "1215ce35-89a9-4dff-9f40-19c57da7689e",
+      "TenantId": "bcae8058-3f3b-4ec2-9550-517007673698",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "b16092a1-0c68-436c-bf3a-147ab53b6762",
+      "JobKey": "d5fed611-e740-406c-a1b0-3c6de3371f17",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-05-12T08:14:11.3129343Z",
+      "AgentVersion": null,
+      "Context": null,
+      "Attachments": null
+    }
+  ]
+}

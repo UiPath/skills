@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {"Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c", "Name": "original_email@test.com's workspace", "Path": "original_email@test.com's workspace", "Type": "Personal", "ParentKey": ""},
+    {"Key": "a7e7f8a9-b0c1-2345-6789-abcdef012345", "Name": "MonitoringOps", "Path": "MonitoringOps", "Description": "Folder hosting the DashboardSnapshotBot unattended process.", "Type": "Standard", "ParentKey": ""},
+    {"Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a", "Name": "Shared", "Path": "Shared", "Type": "Standard", "ParentKey": ""}
+  ]
+}

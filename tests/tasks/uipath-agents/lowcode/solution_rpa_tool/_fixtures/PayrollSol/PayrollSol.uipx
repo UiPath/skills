@@ -1,0 +1,13 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.04.0",
+  "SolutionId": "3caf7a11-143f-4715-9ea7-08dec6631570",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "CalculatePay/project.uiproj",
+      "Id": "52c177a6-1423-4e0b-b7ee-a145b8a5eea2"
+    }
+  ],
+  "AutomationHubIdeaUrl": null
+}

@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-18T13:31:50.711Z",
+      "Message": "RPA Workflow execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T13:31:50.662Z",
+      "Message": "Create Ticket: Request failed with error: \nProviderMessage : code - access_denied, message - You are not authorized to perform this action.\nProviderErrorCode : 403\nRequestId : 6a33f346e4b089c6407a42a2\nMessage : Forbidden\n\r\nStatus code: Forbidden. Error code: DAP-RT-1101.\nin Main.xaml\n    at ConnectorActivity \"Create Ticket\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException\n   at UiPath.IntegrationService.Activities.Runtime.Services.RuntimeClientService.SendCUDRequestClientAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, ICollection`1 jitInputs, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.ExecuteOperationAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, Dictionary`2 telemetryUsedProperties, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-18T13:31:47.931Z",
+      "Message": "RPA Workflow execution started"
+    }
+  ]
+}

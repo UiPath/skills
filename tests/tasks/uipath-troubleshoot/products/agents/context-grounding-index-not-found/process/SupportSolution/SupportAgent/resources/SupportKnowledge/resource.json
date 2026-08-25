@@ -1,0 +1,25 @@
+{
+  "$resourceType": "context",
+  "id": "33333333-3333-4333-8333-333333333333",
+  "referenceKey": null,
+  "name": "SupportKnowledge",
+  "description": "",
+  "contextType": "index",
+  "folderPath": "Shared/Agents",
+  "indexName": "support-kb-prod",
+  "settings": {
+    "retrievalMode": "semantic",
+    "query": {
+      "variant": "dynamic",
+      "description": "Support question"
+    },
+    "folderPathPrefix": {
+      "variant": "static"
+    },
+    "fileExtension": {
+      "value": "All"
+    },
+    "threshold": 0,
+    "resultCount": 3
+  }
+}

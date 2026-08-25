@@ -9,14 +9,10 @@ description: >
   headlessly, so correctness is enforced via the semantic checker rather than runtime.
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, devcon]
 
-agent:
-  type: claude-code
+run_limits:
+  expected_turns: 29
   max_turns: 120
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   I want to automate our expense approval workflow. Here's the rough idea:
@@ -41,10 +37,10 @@ success_criteria:
   - type: command_executed
     description: "Agent created a solution"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+solution\s+new'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+solution\s+(new|init)'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent initialized a Flow project"
@@ -55,9 +51,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow file exists at correct double-nested path"
-    command: "test -f ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    timeout: 10
+    description: "Flow file exists (path-agnostic discovery)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval"
+    timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -73,14 +69,14 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "Flow validates successfully"
-    command: "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

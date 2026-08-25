@@ -1,0 +1,15 @@
+logs exit=0
+=== traces ===
+traces exit=1
+=== healing-data ===
+healing exit=0
+{
+  "Result": "Success",
+  "Code": "JobHealingData",
+  "Data": {
+    "JobKey": "f215a846-a117-4c56-be2a-28a2d6894cac",
+    "FileName": ".local/investigations/raw/triage-healing-data.zip",
+    "Size": 22,
+    "ExportId": 11702
+  }
+}

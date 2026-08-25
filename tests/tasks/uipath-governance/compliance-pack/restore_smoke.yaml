@@ -1,0 +1,76 @@
+task_id: skill-governance-compliance-restore
+description: >
+  Skill-guided: "reset my ISO 42001 settings back to what the standard recommends"
+  must check current compliance standard state first (restore is active-pack-only),
+  then call state restore. Must NOT call state disable (that removes settings, the
+  opposite operation) and must NOT drop to aops-policy create.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
+
+sandbox:
+  python: {}
+
+# Precondition: the shared tenant is mutable and the compliance-pack cleanup
+# DISABLES the pack, so ISO 42001 is often already inactive when this task runs.
+# Restore is active-pack-only — a correct agent that checks state first then
+# sees Active:false rightly stops with "enable it first", never emitting
+# `state restore` and failing through no fault of its own (seen in CI run
+# 30455293977). Enable the pack first, same as disable_smoke. Tolerant of
+# no-auth (always exits 0), so local runs are unaffected.
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''setup_enable_compliance_pack.py''))"'
+    timeout: 120
+
+# Safety net: smoke sandboxes have live tenant auth in CI — the agent's
+# `state restore` only resets an active pack to its suggested values, but a
+# wrong-direction run (state disable / aops-policy create) really mutates the
+# tenant. Clean up after.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+initial_prompt: |
+  I changed some of the ISO 42001 policies on my tenant by hand — reset them back to the values the standard recommends.
+
+  Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI is not connected to a live tenant - auth errors expected.
+  - Run each command once, capture output, move on. Do NOT retry or login.
+  - Always pass --output json.
+  - Do NOT prompt for confirmation - this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked current pack state before restoring (restore is active-pack-only)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called state restore to reset the standard to its suggested values"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+restore\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Restore flow does NOT call state disable (removes settings, wrong direction)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+disable'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Restore flow does NOT drop to aops-policy create (wrong path)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

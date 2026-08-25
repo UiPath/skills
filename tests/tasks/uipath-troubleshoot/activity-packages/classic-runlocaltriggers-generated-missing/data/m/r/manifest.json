@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored fixtures for a runtime fault of a trigger-based attended automation (job 7e2a9c14, process OrderEntryAssistant, folder Operations). The job Faults ~2s after start: the project uses Run Local Triggers, whose read-only generated workflow .local\\generated\\Triggers.Generated.xaml is missing (the .local design-time cache was not present when the package was built — cloned/shared without it / stale after a Studio-Assistant version bump), so at run time Run Local Triggers cannot load the generated trigger workflow. The Error log is DELIBERATELY GENERIC ('the invoked workflow could not be loaded / a referenced workflow file was not found' at RunLocalTriggers.Execute -> GeneratedWorkflowLoader.Load) and does NOT name the file, so the diagnosis cannot be one-shot from the log: the agent must combine the faulting activity + the absent .local generated workflow + playbook knowledge (Run Local Triggers loads an auto-generated trigger workflow), and resist the Invoke-Workflow-File red herring. The process/ snapshot deliberately has NO .local folder (that missing artifact IS the cause). Matching is token-aware with plain-substring fallback (first match wins).",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "ee2628e6b6.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "75949d659e.json"
+    },
+    {
+      "match": "or jobs get 7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63",
+      "file": "0061763428.json"
+    },
+    {
+      "match": "or jobs logs 7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63 --level Error",
+      "file": "4d0407f78c.json"
+    },
+    {
+      "match": "or jobs logs 7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63",
+      "file": "6c3e3e03c3.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

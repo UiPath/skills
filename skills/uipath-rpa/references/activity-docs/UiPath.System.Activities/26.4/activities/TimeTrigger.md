@@ -122,7 +122,9 @@ Set `Frequency` to `CronExpression`. Configure:
 
 ## Notes
 
-- **Time Trigger** is a scope/container activity. Place the automation logic to execute on each scheduled firing inside its body.
-- The `Result` output provides a `CurrentJobInfo` object accessible within the trigger body for runtime context.
+- **Type: integration trigger.** `uip rpa activities find` returns `isTrigger: true, triggerType: "integration"` (Orchestrator-native subscription via the platform scheduler — no IS `ConnectionId` required, unlike Mail/GSuite/O365 integration triggers).
+- **Placement: strict.** Place `Time Trigger` as the first activity in the workflow's root `Sequence`. Do **NOT** wrap in `ui:TriggerScope`. The handler — the work to execute on each scheduled firing — is the rest of the `Sequence` that follows. When the package is published to Orchestrator, this trigger is detected and a Time Trigger can be created from it.
+- See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md) for the full placement contract.
+- The `Result` output provides a `CurrentJobInfo` object usable in handler activities for runtime context.
 - `TimeZone` accepts standard IANA time zone identifiers (e.g., `America/New_York`) or Windows time zone names (e.g., `Eastern Standard Time`).
 - Cron expressions follow the Quartz scheduler format with seven fields. The default `"0 0 12 ? * MON-FRI *"` fires at 12:00 noon every weekday.

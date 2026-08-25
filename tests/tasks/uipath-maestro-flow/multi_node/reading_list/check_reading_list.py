@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
-    assert_flow_has_node_type,
+    assert_flow_has_exact_node_type,
     assert_outputs_contain,
     run_debug,
 )
@@ -30,8 +30,10 @@ EXPECTED_AUTHORS = ["axler", "gelman", "mackay"]
 
 
 def main():
-    # Must use a transform node — substring matches all four variants
-    assert_flow_has_node_type(["core.action.transform"])
+    # Must use the GENERIC chained transform node — the prompt requires a
+    # single core.action.transform that chains filter then map. Exact match
+    # rejects the standalone .filter / .map / .group-by variants.
+    assert_flow_has_exact_node_type(["core.action.transform"])
 
     payload = run_debug(timeout=240)
 

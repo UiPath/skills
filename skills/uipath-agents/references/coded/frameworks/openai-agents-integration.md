@@ -4,6 +4,8 @@ A lightweight integration for running OpenAI Agents SDK agents on the UiPath pla
 
 > **Note:** This is a streamlined integration focused on agent execution and streaming. It does **not** support Human-in-the-Loop (HITL), state persistence/checkpointing, or UiPath process invocation from within agents. For workflows that need those features, use the [LangGraph](langgraph-integration.md) or [LlamaIndex](llamaindex-integration.md) integrations instead.
 
+> **STOP — input shape decides framework fit.** OpenAI Agents accept **only** a `messages` conversation input ([Input](#input) § CONSTRAINT). When the requested input is not a conversation, do NOT map it onto `messages` and proceed — STOP before scaffolding, tell the user, and let them choose another framework (e.g. [LangGraph](langgraph-integration.md)).
+
 ## Scaffolding a New Project
 
 If there is **no existing agent code**, scaffold an OpenAI Agents project with:
@@ -261,7 +263,9 @@ Then in `openai_agents.json`:
 
 ### Input
 
-All OpenAI Agents accept a `messages` field (for the LLM conversation) **plus** context fields from the Pydantic model:
+> **CONSTRAINT — `messages` is mandatory and cannot be removed.** The OpenAI Agents runner only accepts conversation input: a string (treated as a user message) or a list of message objects in the OpenAI Responses API format ([SDK docs — The agent loop](https://openai.github.io/openai-agents-python/running_agents/)). UiPath surfaces this as the `messages` field, so `uip codedagent init` ALWAYS emits `messages` as a **required** property in the entry-point input schema — every OpenAI Agents agent carries it, with or without a context model. Context fields from `Agent[ContextType]` are added **alongside** `messages`, never instead of it. There is no way to produce an OpenAI Agents input contract without `messages`. If the agent must accept a strict structured input with no `messages` field, OpenAI Agents cannot express it — pick a different framework (see [build.md](../lifecycle/build.md) § framework selection).
+
+OpenAI Agents accept the required `messages` field (the LLM conversation) **plus** optional context fields from the Pydantic model:
 
 ```json
 {"messages": "What is the weather?", "location": "New York"}

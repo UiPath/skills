@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T09:14:02.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T09:14:02.612Z",
+      "Message": "[Excel Process Scope] Opening workbook reports\\Q3Pivot.xlsx"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T09:14:04.220Z",
+      "Message": "[Use Excel File] Workbook opened successfully"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T09:14:05.241Z",
+      "Message": "[Invoke VBA] Programmatic access to Visual Basic Project is not trusted (HRESULT: 0x800AC472)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T09:14:05.288Z",
+      "Message": "Programmatic access to Visual Basic Project is not trusted\r\nin Main.xaml\r\n    at InvokeVBAX \"Invoke VBA\"\r\n    at ExcelApplicationCard \"Use Excel File\"\r\n    at ExcelProcessScope \"Excel Process Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T09:14:05.305Z",
+      "Message": "Execution ended in: 00:00:03"
+    }
+  ]
+}

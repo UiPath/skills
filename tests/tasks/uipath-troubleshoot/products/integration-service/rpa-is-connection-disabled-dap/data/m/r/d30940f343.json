@@ -1,0 +1,64 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "2524b63d-0730-4feb-9e5a-fc9a7f7a23f1",
+      "State": "Successful",
+      "ProcessName": "TokenRefreshFailedJob",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "C1ED99D1-5381-4F00-C7BD-0B49C96798C9",
+      "StartTime": "2026-06-19T12:21:56.340Z",
+      "EndTime": "2026-06-19T12:22:02.817Z",
+      "CreationTime": "2026-06-19T12:21:53.570Z",
+      "Id": 50251460
+    },
+    {
+      "Key": "3baa335d-8cd1-44cf-936c-df8c013c99df",
+      "State": "Faulted",
+      "ProcessName": "TokenRefreshFailedJob",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "B6818817-9380-4F00-6A5A-0B49C962BBA9",
+      "StartTime": "2026-06-19T11:49:55.423Z",
+      "EndTime": "2026-06-19T11:50:00.733Z",
+      "CreationTime": "2026-06-19T11:49:52.263Z",
+      "Id": 50250322
+    },
+    {
+      "Key": "0a2e8a22-ccb4-4953-9356-151d32a7e851",
+      "State": "Faulted",
+      "ProcessName": "TokenRefreshFailedJob",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "8A852950-F07E-4F00-AC73-0B49C95A9A71",
+      "StartTime": "2026-06-19T10:51:37.240Z",
+      "EndTime": "2026-06-19T10:51:45.237Z",
+      "CreationTime": "2026-06-19T10:51:32.910Z",
+      "Id": 50248422
+    },
+    {
+      "Key": "2c0c44a4-364c-4cd8-934d-7c73bb3ff354",
+      "State": "Successful",
+      "ProcessName": "TokenRefreshFailedJob",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "15117404-EA7A-4F00-444C-0B49C94419E8",
+      "StartTime": "2026-06-19T08:07:56.780Z",
+      "EndTime": "2026-06-19T08:08:03.683Z",
+      "CreationTime": "2026-06-19T08:07:45.107Z",
+      "Id": 50242038
+    }
+  ],
+  "Pagination": {
+    "Returned": 4,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

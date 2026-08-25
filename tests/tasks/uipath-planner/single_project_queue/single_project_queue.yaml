@@ -1,0 +1,115 @@
+task_id: skill-sdd-integration-single-project-queue
+description: >
+  Skill-guided evaluation: agent uses the uipath-planner skill on a PDD for a
+  SINGLE RPA project that consumes an EXISTING Orchestrator queue owned by an
+  upstream team. Tests that queue design is independent of decomposition: the
+  SDD must stay single-project (no Master Project fan-out, no Solution
+  overview) yet still carry §12 Queue Architecture (configuration + item
+  schema) and the independent Attendance/Initiation project-mode dimensions.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+initial_prompt: |
+  Analyze the following Process Design Document and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
+  UiPath Automation Cloud as the delivery model.
+
+  For any [SME REVIEW] items, use industry-standard defaults and proceed.
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Payment Exception Rework
+
+  ## Process Overview
+  - **Process Name:** Payment Exception Rework
+  - **Department:** Finance Operations
+  - **Objective:** Rework failed payment records queued by the upstream
+    payments platform, correcting them in the ERP desktop client.
+  - **Volume:** ~150 exception items per day
+
+  ## Trigger & Input
+  - The upstream payments platform (owned by the Payments team) already
+    pushes one item per failed payment into the existing Orchestrator queue
+    **PaymentExceptions** (fields: payment ID, vendor ID, failure code,
+    amount, currency).
+  - This automation must start whenever new items arrive in that queue.
+  - Do NOT build a dispatcher — the queue is filled by the upstream team.
+
+  ## Process Steps
+  1. Take the next item from the PaymentExceptions queue.
+  2. Look up the payment in the ERP desktop client (UI only — no API).
+  3. Apply the correction rule for the item's failure code (fixed mapping
+     table maintained by Finance).
+  4. Resubmit the payment in the ERP and capture the new payment reference.
+  5. Update the queue item outcome with the new payment reference.
+
+  ## Exceptions
+  | Scenario | Action |
+  |----------|--------|
+  | Failure code not in mapping table | Business exception — no retry, notify Finance |
+  | ERP session timeout | System error — re-login and retry the item |
+
+  ## Applications
+  | Application | Type | Access |
+  |-------------|------|--------|
+  | LegacyERP 6.2 | Desktop application | UI only — no API available |
+  | Orchestrator queue `PaymentExceptions` | Existing queue | Owned by Payments team |
+
+  --- END PDD ---
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD file was created"
+    path: "payment-exception-rework-sdd.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Single project still carries §12 queue design (queue architecture is independent of decomposition)"
+    path: "payment-exception-rework-sdd.md"
+    includes:
+      - "Queue Configuration"
+      - "Queue Item Schema"
+      - "Unique reference"
+      - "PaymentExceptions"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Project Mode Decision separates attendance from initiation"
+    path: "payment-exception-rework-sdd.md"
+    includes:
+      - "Project Mode Decision"
+      - "Attendance"
+      - "Initiation"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Scope stayed single-product: no Solution overview SDD was written"
+    command: "test -z \"$(find . -maxdepth 1 -name '*-solution-sdd.md' -print -quit)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No dispatcher project was invented (queue is filled upstream)"
+    command: "! grep -qi 'PaymentExceptionRework_Dispatcher\\|_Dispatcher |' payment-exception-rework-sdd.md"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 16
+  # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
+  # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
+  # turn_timeout for the long authoring turn.
+  task_timeout: 2700
+  turn_timeout: 1800

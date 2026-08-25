@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceLetters",
+  "ProjectType": "Process",
+  "Description": "Generates invoice letters by opening a letter document and replacing the recipient placeholder with the recipient name via Word activities.",
+  "MainFile": "Main.xaml"
+}

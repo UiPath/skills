@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay fixtures for a captured InvoiceIntake faulted job (Extract/Unzip Files \u2014 corrupt archive). Names/paths/keys/timestamps scrubbed; exception text + activity class preserved verbatim.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "e282487c93.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\" --state Faulted --output json",
+      "file": "bd6f752385.json"
+    },
+    {
+      "match": "or jobs list --folder-key 4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f --state Faulted --output json",
+      "file": "bd6f752385.json"
+    },
+    {
+      "match": "or jobs list --process-name InvoiceIntake",
+      "file": "bd6f752385.json"
+    },
+    {
+      "match": "or jobs list --folder-path Finance",
+      "file": "bd6f752385.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Finance\"",
+      "file": "bd6f752385.json"
+    },
+    {
+      "match": "or jobs get \"3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c\" --output json",
+      "file": "8dc1b36d84.json"
+    },
+    {
+      "match": "or jobs get 3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c --output json",
+      "file": "8dc1b36d84.json"
+    },
+    {
+      "match": "or jobs logs \"3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c\" --level Error --output json",
+      "file": "29cb52f76a.json"
+    },
+    {
+      "match": "or jobs logs 3e9a1c74-5b2d-4e8f-a1c6-7d9e0f2a3b4c --level Error --output json",
+      "file": "29cb52f76a.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "cedeff5a-ba9b-4ff5-80c2-b79b5662f59b",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-18T12:48:38.730Z",
+      "EndTime": "2026-05-18T12:49:13.423Z",
+      "CreationTime": "2026-05-18T12:48:38.730Z"
+    },
+    {
+      "Key": "d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-15T17:09:44.470Z",
+      "EndTime": "2026-05-15T17:10:18.527Z",
+      "CreationTime": "2026-05-15T17:09:44.470Z"
+    },
+    {
+      "Key": "7bb415a6-f17f-47e5-a43f-d1d38082eb8d",
+      "State": "Faulted",
+      "ProcessName": "ERN",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-11T10:56:42.527Z",
+      "EndTime": "2026-05-11T10:56:43.227Z",
+      "CreationTime": "2026-05-11T10:56:42.527Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

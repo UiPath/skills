@@ -1,0 +1,44 @@
+{
+  "name": "uipath-marketplace",
+  "owner": {
+    "name": "UiPath",
+    "email": "support@uipath.com"
+  },
+  "interface": {
+    "displayName": "UiPath Marketplace"
+  },
+  "plugins": [
+    {
+      "name": "uipath",
+      "source": {
+        "source": "local",
+        "path": "./plugins/uipath"
+      },
+      "description": "UiPath plugin for Codex - custom skills for UiPath workflows, UI automation, UI testing, and UiPath troubleshooting.",
+      "version": "0.0.36",
+      "author": {
+        "name": "UiPath"
+      },
+      "homepage": "https://github.com/UiPath/skills",
+      "repository": "https://github.com/UiPath/skills",
+      "license": "MIT",
+      "keywords": [
+        "uipath",
+        "automation",
+        "rpa",
+        "code",
+        "workflow",
+        "ui-automation",
+        "ui-testing",
+        "desktop",
+        "browser",
+        "troubleshoot"
+      ],
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

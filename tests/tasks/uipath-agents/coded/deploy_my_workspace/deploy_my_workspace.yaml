@@ -1,0 +1,68 @@
+task_id: skill-agent-coded-deploy-my-workspace
+description: >
+  Coded-agent deploy lifecycle. Verifies the skill guides the agent
+  to package and run `uip codedagent deploy --my-workspace` (the
+  combined pack + publish path) and produce a deployable `.nupkg`.
+  Runs against a real tenant: grades that the deploy command ran and
+  the package was built — a "version already exists" publish conflict
+  does not fail the task. Exercises the production packaging path the
+  rest of the suite never reaches.
+  The summarizer is deliberately LLM-backed (free-form paraphrase per
+  run): deterministic no-LLM logic is a Coded Function and the skill
+  redirects it to uipath-functions, whose lifecycle has no
+  `uip codedagent deploy`. Do not reword the prompt back to a
+  deterministic echo, and keep it free of implementation hints (no
+  framework or node mechanics).
+tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
+
+run_limits:
+  expected_turns: 43
+  task_timeout: 1800
+  turn_timeout: 1200
+  max_turns: 40
+
+initial_prompt: |
+  I want a small UiPath coded agent called `deploy-smoke`. Given a
+  short text `message`, it should reply with a one-sentence summary
+  in its own words — the wording should adapt to whatever the message
+  says, not follow a fixed template. Input: `message` (string).
+  Output: `summary` (string).
+
+  Build it, then deploy it to my personal workspace. No local test
+  run needed — packaging and deploying are the goal. The test harness
+  has UiPath auth pre-configured. The workspace may already hold this
+  package from an earlier run — if the deploy reports the version
+  already exists, that is expected; consider the deploy step done and
+  do not re-deploy.
+
+  Do NOT pause between planning and implementation. Complete
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent packed and published to my-workspace (deploy or pack+publish)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--my-workspace'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Critical Rule CQ10 — `uip codedagent deploy` is the packaging/publishing
+  # path; `pack` / `publish` are filtered and must not be driven directly. The
+  # positive criterion above accepts `deploy|publish` for historical reasons, so
+  # deploy-only was never actually enforced; this asserts the rule additively
+  # without changing what already passes.
+  - type: command_not_executed
+    description: "Agent used codedagent deploy, not a raw pack/publish pair (Critical Rule CQ10)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+pack\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Deploy artifacts present and pyproject.toml is well-formed for packaging"
+    command: "python3 $TASK_DIR/check_deploy_my_workspace.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

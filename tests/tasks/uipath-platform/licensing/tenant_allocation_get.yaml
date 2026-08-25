@@ -1,0 +1,40 @@
+task_id: skill-platform-licensing-tenant-allocation-get
+description: >
+  Smoke test: agent uses the uipath-platform skill to inspect a tenant's
+  current license unit allocation. Verifies the agent calls
+  `uip platform tenants licenses get <tenant-key> --output json`. CLI auth
+  failure is expected in this offline environment.
+tags: [uipath-platform, smoke, licensing, tenants]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Show me the current license unit allocation for tenant
+  `c0ffee00-0000-0000-0000-000000000001`.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: run_command
+    description: "Agent ran `uip platform tenants licenses get` (.uip-cmdlog shim log)"
+    command: "grep -Eq 'uip platform tenants licenses get [^ ]+' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

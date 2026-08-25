@@ -4,18 +4,11 @@ description: >
   Decision node condition using the exact runtime path
   $vars.<nodeId>.output.<fieldName>. Tests field-level variable access
   and that both Decision branches are wired to distinct downstream nodes.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
+run_limits:
+  expected_turns: 33
   max_turns: 110
-  turn_timeout: 900
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Build a UiPath Flow named "VendorApproval" for vendor onboarding:
 
@@ -31,44 +24,41 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Decision → (two branches) → End
 
-  The Decision node condition MUST use the exact field-level runtime variable
-  path — not just $vars.<nodeId>.output but specifically the approved field.
+  The Decision node condition MUST use $vars.<nodeId>.output.approved —
+  the exact field-level runtime path where <nodeId> is the HITL node's id.
 
   Validate the flow after building.
 
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
-    command: "uip maestro flow validate VendorApproval/VendorApproval/VendorApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has a boolean output field"
-    path: "VendorApproval/VendorApproval/VendorApproval.flow"
-    includes:
-      - '"boolean"'
-      - '"direction": "output"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '\"boolean\"' '\"direction\": \"output\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Decision node condition references field-level HITL output"
-    path: "VendorApproval/VendorApproval/VendorApproval.flow"
-    includes:
-      - "$vars."
-      - ".output.approved"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '$vars.' '.output.approved'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Both Decision branches wired (true and false handles)"
-    path: "VendorApproval/VendorApproval/VendorApproval.flow"
-    includes:
-      - '"true"'
-      - '"false"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '\"true\"' '\"false\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

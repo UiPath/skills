@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Get Outlook Mail Messages scenario; mock dispatcher only -- do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "4934670a0f.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d\" --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d\" --state Successful --output json",
+      "file": "f726908bac.json"
+    },
+    {
+      "match": "or jobs list --folder-key a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d --state Successful --output json",
+      "file": "f726908bac.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d\" --output json",
+      "file": "f726908bac.json"
+    },
+    {
+      "match": "or jobs list --folder-key a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d --output json",
+      "file": "f726908bac.json"
+    },
+    {
+      "match": "or jobs get \"b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e\" --output json",
+      "file": "23530aca3d.json"
+    },
+    {
+      "match": "or jobs get b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e --output json",
+      "file": "23530aca3d.json"
+    },
+    {
+      "match": "or jobs logs \"b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e\" --level Error --output json",
+      "file": "38786cca77.json"
+    },
+    {
+      "match": "or jobs logs b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e --level Error --output json",
+      "file": "38786cca77.json"
+    },
+    {
+      "match": "or jobs logs \"b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e\" --output json",
+      "file": "eb539026d9.json"
+    },
+    {
+      "match": "or jobs logs b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e --output json",
+      "file": "eb539026d9.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

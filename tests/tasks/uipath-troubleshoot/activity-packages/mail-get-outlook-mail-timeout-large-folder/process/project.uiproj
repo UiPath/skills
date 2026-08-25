@@ -1,0 +1,6 @@
+{
+  "Name": "ArchiveMailScanner",
+  "ProjectType": "Process",
+  "Description": "Scans the Outlook 'Archive' folder with Get Outlook Mail Messages to read its messages for downstream processing.",
+  "MainFile": "Main.xaml"
+}

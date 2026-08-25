@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-30T02:15:51.940Z",
+      "Message": "Data Export execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-30T02:15:51.880Z",
+      "Message": "List Incidents: Response content too large.\nin Main.xaml\n    at ConnectorActivity \"List Incidents\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException: Response content too large.\n   at UiPath.IntegrationService.Activities.Runtime.Services.RuntimeClientService.SendRequestClientAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, ICollection`1 jitInputs, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.ExecuteOperationAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, Dictionary`2 telemetryUsedProperties, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-30T02:15:48.220Z",
+      "Message": "List Incidents: Executing connector operation 'List' on object 'incident'."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-30T02:15:44.010Z",
+      "Message": "Data Export execution started"
+    }
+  ]
+}

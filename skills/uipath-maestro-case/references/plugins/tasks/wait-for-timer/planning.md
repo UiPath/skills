@@ -23,6 +23,7 @@ Distinguish from:
 | Either `timeDuration` (`--every`) OR `timeCycle` OR `timeDate` (`--at`) | sdd.md timer semantics | At least one required |
 | `repeat` | sdd.md (optional) | Number of repetitions — omit for infinite |
 | `isRequired` | sdd.md (default `true`) | |
+| `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 
 ## Registry Resolution
 
@@ -64,7 +65,12 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 - repeat: 5                       # optional
 - time-cycle: R/PT1H              # optional (overrides above)
 - isRequired: true
+- runOnlyOnce: false
+- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
+- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
 - order: after T<m>
-- lane: <n>  # FE layout coordinate; increment per task within the stage
+- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```
+
+<!-- END: planning.md -->

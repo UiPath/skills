@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "StartTime": "2026-05-19T07:30:02.115Z",
+      "EndTime": "2026-05-19T07:30:03.061Z",
+      "State": "Faulted",
+      "ReleaseName": "WordLogoStamp",
+      "Source": "Manual",
+      "Reference": "LogoStampRun",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011144-2222-3333-4444-555566667777",
+      "Info": "System.InvalidOperationException: The 'Add Picture' activity must be used inside a 'Use Word File' or 'Word Application Scope' activity. No Word document is open in the current scope.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

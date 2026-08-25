@@ -1,0 +1,6 @@
+{
+  "Name": "PortalFetch",
+  "ProjectType": "Process",
+  "Description": "Downloads a quarterly report file from the company portal.",
+  "MainFile": "Main.xaml"
+}

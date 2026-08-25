@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "UserGet",
+  "Data": {
+    "Key": "bb22cc33-dd44-ee55-ff66-778899aabbcc",
+    "UserName": "svcmonitor",
+    "DomainName": "UIPATH",
+    "FullName": "Service Account Monitoring",
+    "Type": "User",
+    "UnattendedRobot": {
+      "ExecutionSettings": {"LoginToConsole": true, "RunOnlyOneJobAtATime": false, "ResolutionWidth": 1920, "ResolutionHeight": 1080, "ResolutionDepth": 32},
+      "UserName": "UIPATH\\SVCMON",
+      "CredentialStoreId": null,
+      "CredentialType": "Default",
+      "PasswordLastSet": "2026-06-01T09:00:00Z"
+    },
+    "TenantId": 1,
+    "Id": 7510
+  }
+}

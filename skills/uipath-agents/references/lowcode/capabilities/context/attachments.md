@@ -25,6 +25,7 @@ For other context variants, see [context.md](context.md).
   "description": "",
   "contextType": "attachments",
   "indexName": "<ContextName>",          // same as name for attachments
+  "folderPath": "solution_folder",
   "attachments": {
     "description": "Array of files, documents, images to process."
   },
@@ -45,7 +46,7 @@ None. No solution-level file is produced — attachments are runtime-only.
 
 ## Gotchas
 
-`contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
+`contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
 ## References
 

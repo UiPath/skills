@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    { "Level": "Info", "TimeStamp": "2026-06-06T06:00:00.210Z", "Message": "Execution started" },
+    { "Level": "Trace", "TimeStamp": "2026-06-06T06:00:01.020Z", "Message": "[Send SMTP Mail Message] Opening connection to smtp.office365.com:465 (SecureConnection=StartTls)" },
+    { "Level": "Trace", "TimeStamp": "2026-06-06T06:00:01.640Z", "Message": "[Send SMTP Mail Message] TCP connected; sending EHLO then STARTTLS command on port 465" },
+    { "Level": "Warn", "TimeStamp": "2026-06-06T06:00:16.220Z", "Message": "[Send SMTP Mail Message] No SMTP greeting/response to STARTTLS on port 465; the server appears to expect implicit TLS on this port. Retrying/holding the socket" },
+    { "Level": "Error", "TimeStamp": "2026-06-06T06:00:35.360Z", "Message": "[Send SMTP Mail Message] Transport connection dropped during TLS negotiation on smtp.office365.com:465" },
+    { "Level": "Error", "TimeStamp": "2026-06-06T06:00:35.420Z", "Message": "Send SMTP Mail Message: Failure sending mail.\r\nin Main.xaml\r\n    at SmtpSendMail \"Send SMTP Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host" },
+    { "Level": "Info", "TimeStamp": "2026-06-06T06:00:35.470Z", "Message": "Execution ended in: 00:00:35" }
+  ]
+}

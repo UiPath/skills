@@ -1,0 +1,89 @@
+task_id: skill-ixp-list-model-options-smoke
+description: >
+  Smoke: the `configure-model --model` catalog (gemini_2_5_flash, gemini_2_5_pro,
+  gpt_4o_2024_05_13) is skill knowledge — no `uip` verb returns it, as the CLI
+  validates `--model` server-side. Trap: the near-name `projects list-models`
+  returns a project's TRAINED VERSIONS, not the selectable models, so an agent
+  keying on "list" + "model" runs it (inventing a project name, since the ask
+  names none) while one that knows the distinction answers from the skill.
+
+  `model_options.md` is not a self-report — it carries ground truth the agent must
+  retrieve, not a claim about work performed. The guard reads the invocation log
+  rather than Bash text because a correct answer quotes `configure-model --model
+  <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
+  No `uip` call is guaranteed in a correct run, so the guard carries no positive
+  control and asserts none. It forbids the trap verb only, never every invocation —
+  correct runs DO call other verbs while orienting. A re-pointed sink cannot read as
+  "never ran": the log is seeded by the harness, and a missing one errors.
+
+  Distinct from pick_capable_model / change_model_variant: both mutate a project
+  via configure-model; this enumerates the catalog and mutates nothing.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  expected_turns: 4
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  List available model options for IXP extraction, and write them to
+  `model_options.md`.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in this
+    environment. Commands will fail with auth errors — that is expected. Run each
+    command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The identifiers wrap public model names, so recall alone could produce them.
+  - type: skill_triggered
+    description: "Agent invoked the uipath-ixp skill"
+    skill_name: "uipath-ixp"
+    expected_skill: "uipath-ixp"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced the requested catalog artifact"
+    path: "model_options.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # snake_case as the CLI accepts them — a vendor-marketing form (gpt-4o) fails.
+  - type: file_contains
+    description: "Catalog lists the three documented model identifiers"
+    path: "model_options.md"
+    includes:
+      - "gemini_2_5_flash"
+      - "gemini_2_5_pro"
+      - "gpt_4o_2024_05_13"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Catalog names the command that consumes these identifiers, so the list is actionable"
+    path: "model_options.md"
+    includes: ["configure-model"]
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
+  # is not. A `--help` probe would be exemptable (`flags: {help: {absent: true}}`);
+  # left off, since a max_count 0 guard wants the fewest facets and none has been
+  # observed.
+  - type: cli_called
+    description: "Agent did NOT mistake the catalog for version listing: no executed `projects list-models`"
+    verb: "ixp projects list-models"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0

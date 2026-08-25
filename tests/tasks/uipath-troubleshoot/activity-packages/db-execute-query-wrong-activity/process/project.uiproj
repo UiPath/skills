@@ -1,0 +1,6 @@
+{
+  "Name": "StagingCleanup",
+  "ProjectType": "Process",
+  "Description": "Cleans up the staging area by removing aged rows from the TempStaging table and continuing with the cleaned data set.",
+  "MainFile": "Main.xaml"
+}

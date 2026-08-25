@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-21T09:14:02.401Z",
+      "Message": "Connect to Database: execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-21T09:14:02.512Z",
+      "Message": "Connect to Database: execution ended (connection opened; assigned to variable 'dbConnection' scoped to Sequence 'Open Connection')"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-21T09:14:02.540Z",
+      "Message": "Sequence 'Open Connection': execution ended (scope closed; 'dbConnection' disposed and out of scope)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-21T09:14:02.585Z",
+      "Message": "Execute Query: execution started (ExistingDbConnection bound to 'dbConnection')"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:02.640Z",
+      "Message": "Execute Query: Object reference not set to an instance of an object."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:02.690Z",
+      "Message": "System.NullReferenceException: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

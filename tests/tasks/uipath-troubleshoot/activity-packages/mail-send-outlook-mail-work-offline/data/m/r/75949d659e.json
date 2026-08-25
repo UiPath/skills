@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d1e2f3a4-5b6c-4d7e-9f80-1a2b3c4d5e6f",
+      "State": "Faulted",
+      "ProcessName": "NightlyStatementMailer",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-03T02:30:00.160Z",
+      "EndTime": "2026-06-03T02:30:30.740Z",
+      "CreationTime": "2026-06-03T02:29:59.920Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

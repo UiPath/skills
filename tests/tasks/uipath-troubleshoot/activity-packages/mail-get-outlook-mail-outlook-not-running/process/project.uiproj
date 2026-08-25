@@ -1,0 +1,6 @@
+{
+  "Name": "QueueMailIntake",
+  "ProjectType": "Process",
+  "Description": "Reads Inbox messages with Get Outlook Mail Messages on an unattended Robot to feed an intake queue.",
+  "MainFile": "Main.xaml"
+}

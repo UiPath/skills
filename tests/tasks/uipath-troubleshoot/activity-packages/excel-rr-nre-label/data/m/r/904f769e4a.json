@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa1111bb-001",
+      "JobKey": "aa111111-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111bb-002",
+      "JobKey": "aa111111-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111bb-003",
+      "JobKey": "aa111111-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — workbook opened (sensitivity label: 'Confidential\\Limited Access'; encryption: enabled; access principal: UIPATH\\AUTOMATION1; decision: AccessDenied)",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111bb-004",
+      "JobKey": "aa111111-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.412Z",
+      "Message": "Read Range: Data — executing (SheetName='Data')",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111bb-005",
+      "JobKey": "aa111111-bbbb-cccc-dddd-eeeeffffaaaa",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — System.NullReferenceException: Object reference not set to an instance of an object.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

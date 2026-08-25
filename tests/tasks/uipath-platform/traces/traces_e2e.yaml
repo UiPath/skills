@@ -1,0 +1,49 @@
+task_id: skill-platform-traces-e2e
+description: >
+  E2E test: agent uses the uipath-platform skill to start a pre-published
+  traces-smoke-agent job, wait for completion, fetch LLM trace spans, and
+  confirm at least one span is returned. Unlike traces_fetch.yaml (smoke),
+  this exercises the full round-trip against a real job and real traces.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, traces]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+run_limits:
+  expected_turns: 21
+
+initial_prompt: |
+  Start a new job for the published agent at process key `bf544b24-9133-41b5-9361-4f9f75c64467` and wait for it to finish. Then verify the run produced LLM trace spans and save the raw spans output to spans.json.
+
+  Use `--output json` on all uip commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent started the job with --wait-for-completion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+jobs\s+start.*--wait-for-completion'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched spans using uip traces spans get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+traces\s+spans\s+get(\s+\S+|\s+.*--job-key)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "spans.json (raw CLI output) was written to the sandbox root"
+    path: "spans.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "span_count >= 1 — the real gate the smoke test lacks"
+    command: "python3 $TASK_DIR/check_traces_e2e.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

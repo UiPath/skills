@@ -1,0 +1,59 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/excel" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Excel</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sd:DataTable" Name="salesData" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log: starting Excel import" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ExcelDailyImport] Starting daily sales import — reading C:\Robot\Data\sales-2026-05.xlsx&quot;]" />
+    <TryCatch DisplayName="Try: open + read workbook (errors are logged and swallowed)" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <uix:ExcelApplicationScope DisplayName="Excel Application Scope: sales-2026-05.xlsx" WorkbookPath="C:\Robot\Data\sales-2026-05.xlsx" Visible="True" AutoSave="True" ContinueOnError="True" sap2010:WorkflowViewState.IdRef="ExcelApplicationScope_1">
+          <uix:ExcelApplicationScope.Body>
+            <ActivityAction x:TypeArguments="uix:WorkbookApplication">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="uix:WorkbookApplication" Name="ExcelWorkbookScope" />
+              </ActivityAction.Argument>
+              <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
+                <uix:ExcelReadRange DisplayName="Read Range: Sheet1!A1" SheetName="Sheet1" Range="" DataTable="[salesData]" sap2010:WorkflowViewState.IdRef="ExcelReadRange_1" />
+                <ui:LogMessage DisplayName="Log: rows imported" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;[ExcelDailyImport] Imported {0} rows.&quot;, salesData.Rows.Count)]" />
+              </Sequence>
+            </ActivityAction>
+          </uix:ExcelApplicationScope.Body>
+        </uix:ExcelApplicationScope>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch_1">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <ui:LogMessage DisplayName="Log: caught exception (not re-thrown)" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Warn" Message="[String.Format(&quot;[ExcelDailyImport] Caught {0}: {1} — continuing&quot;, exception.GetType().FullName, exception.Message)]" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <ui:LogMessage DisplayName="Log: import step finished" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;[ExcelDailyImport] Import step finished (errors, if any, were logged).&quot;]" />
+  </Sequence>
+</Activity>

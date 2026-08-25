@@ -1,0 +1,6 @@
+{
+  "Name": "AssetLookupRunner",
+  "ProjectType": "Process",
+  "Description": "Retrieves a credential asset from Orchestrator and logs the result.",
+  "MainFile": "Main.xaml"
+}

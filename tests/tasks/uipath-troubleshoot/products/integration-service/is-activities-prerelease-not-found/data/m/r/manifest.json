@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored design-time (no-job) scenario. Only docsai ask is proxied; any other uip command returns an empty array.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting. This is a design-time issue — there is no Orchestrator job to query."
+  }
+}

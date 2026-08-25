@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T08:42:12.922Z",
+      "Message": "ERN execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T08:42:11.563Z",
+      "Message": "Copy File: Value cannot be null. (Parameter 'path')\r\nin Main.xaml\r\n    at CopyFile \"Copy File\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.ArgumentNullException\r\n   at System.ArgumentNullException.Throw(String paramName)\r\n   at System.IO.DirectoryInfo..ctor(String path)\r\n   at UiPath.Core.Activities.CopyFile.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T08:42:11.520Z",
+      "Message": "ERN execution started"
+    }
+  ]
+}

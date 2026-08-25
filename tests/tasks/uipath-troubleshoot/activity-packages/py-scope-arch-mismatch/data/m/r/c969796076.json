@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "JobKey": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Pending",
+      "Timestamp": "2026-06-18T13:40:05.000Z"
+    },
+    {
+      "JobKey": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Running",
+      "Timestamp": "2026-06-18T13:40:05.200Z"
+    },
+    {
+      "JobKey": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Faulted",
+      "Timestamp": "2026-06-18T13:40:07.900Z",
+      "Info": "Python Scope: One or more errors occurred. (Error initializing the Python engine)"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "Result": "Failure",
+  "Code": "ScenarioDebugCommandDenied",
+  "Message": "This scenario is diagnose-only.",
+  "Instructions": "Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead."
+}

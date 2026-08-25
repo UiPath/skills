@@ -1,0 +1,53 @@
+task_id: skill-admin-external-app-oauth-failing-smoke
+description: >
+  Diagnose smoke: agent diagnoses an external-app OAuth2 failure where a
+  client_credentials grant is denied for requesting User scopes. No clean
+  read-back target (the referenced app is hypothetical), so the agent's
+  conclusion is graded (llm_judge) on identifying the root cause — not the
+  command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, external-app]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Our CI/CD pipeline uses an external app with a client_credentials grant, but
+  it's failing with "not allowed to access User scopes". Explain what is causing
+  this and how it should be fixed.
+
+  This is a diagnosis only — do NOT create, modify, or delete any app or its
+  secrets/credentials; just explain the cause and the recommended fix.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: llm_judge
+    description: "Agent identifies client_credentials cannot use User-delegated scopes and recommends application scopes"
+    include_agent_output: true
+    prompt: |
+      The user's external app uses a client_credentials (application) OAuth2 grant
+      and fails with "not allowed to access User scopes".
+
+      Correct root cause: a client_credentials grant is app-to-app and cannot use
+      User-delegated scopes; the app must instead be configured with APPLICATION
+      scopes (e.g. OR.* application scopes). A fix may also involve
+      re-creating/reconfiguring the external app's scopes.
+
+      Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response clearly identifies that a client_credentials grant
+        cannot use User scopes (the grant-type / scope-type mismatch) AND
+        recommends using application scopes.
+      Score 0.5 if it identifies a scope misconfiguration but not the
+        grant-type/scope-type mismatch specifically.
+      Score 0.0 if it misdiagnoses (blames credentials/expiry/network) or gives
+        no root cause.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Advisory (recorded, not gated): the diagnosis should be read-only — agent should not create/modify/delete external apps. The referenced app is hypothetical so any such call is harmless; agents occasionally probe with one. The llm_judge above is the gating signal."
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+(create|update|delete|generate-secret|delete-secret|federated-credentials\s+(create|update|delete))'
+    weight: 1.0
+    pass_threshold: 0

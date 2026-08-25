@@ -1,0 +1,6 @@
+{
+  "Name": "MailboxTriageMover",
+  "ProjectType": "Process",
+  "Description": "Triages mailbox messages by moving them into the Inbox\\Processed folder with Move Outlook Mail Message on an unattended robot.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,66 @@
+task_id: skill-agent-coded-eval-custom-evaluator
+description: >
+  Custom evaluator lifecycle. Verifies the skill guides the agent to scaffold
+  a custom evaluator with `uip codedagent add evaluator`, implement it, and
+  register it with `uip codedagent register evaluator` to generate the JSON
+  spec. The evaluator must be wired into an eval set and run successfully.
+  The greeter is deliberately non-deterministic (varied greeting phrasing per
+  run): deterministic no-LLM logic is a Coded Function and the skill redirects
+  it to uipath-functions, which has no eval lifecycle. Non-determinism is what
+  makes this an agent workload that needs evals — do not reword the prompt
+  back to "pure deterministic Python", and keep the prompt free of
+  implementation hints (no framework, node, or randomness mechanics).
+tags: [uipath-agents, smoke, coded, lifecycle:validate, feature:eval]
+
+run_limits:
+  expected_turns: 65
+  turn_timeout: 1200
+  task_timeout: 1800
+  max_turns: 90
+
+initial_prompt: |
+  I want a small UiPath coded agent called `greeter` — given a name
+  it should politely greet that person back. Mix up the phrasing a
+  bit so it doesn't sound canned.
+
+  Once it's running locally, I want a custom evaluator for it that
+  flags whether the agent responds quickly enough — say, under about
+  half a second. Hook that evaluator up to an eval set with a couple
+  of test cases and run it locally — no cloud reporting — and write
+  the results out so I can review them.
+
+  Build it here. It's all local — no sign-in, nothing to publish or
+  deploy. Work straight through in one pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the custom evaluator with uip codedagent add evaluator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+add\s+evaluator'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent registered the evaluator with uip codedagent register evaluator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+register\s+evaluator'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Custom evaluator file, JSON spec, eval set, and results shape"
+    command: "python3 $TASK_DIR/check_eval_custom_evaluator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

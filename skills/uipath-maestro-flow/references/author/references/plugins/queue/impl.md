@@ -14,7 +14,7 @@ uip maestro flow registry get core.action.queue.create --output json
 uip maestro flow registry get core.action.queue.create-and-wait --output json
 ```
 
-Confirm: input port `input`, output port `success`.
+Confirm: input port `input`, output port `success`. Set each node instance's `typeVersion` to the `version` field from the matching response — do not hardcode it.
 
 ## JSON Structure
 
@@ -22,7 +22,7 @@ Confirm: input port `input`, output port `success`.
 {
   "id": "enqueueItem",
   "type": "core.action.queue.create",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Enqueue Invoice" },
   "inputs": {
     "queue": "InvoiceProcessingQueue",
@@ -33,16 +33,10 @@ Confirm: input port `input`, output port `success`.
     "dueDate": "2026-04-07T17:00:00Z"
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the queue operation",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the queue operation fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -61,23 +55,17 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 {
   "id": "processAndWait",
   "type": "core.action.queue.create-and-wait",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Process and Wait" },
   "inputs": {
     "queue": "InvoiceProcessingQueue",
     "itemData": "=js:JSON.stringify({ invoiceId: $vars.invoiceId })"
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the queue operation",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the queue operation fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }

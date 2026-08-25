@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T11:40:08.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T11:40:09.760Z",
+      "Message": "[Download File from URL] Completed download from https://files.example.com/exports/daily.csv"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-16T11:40:10.210Z",
+      "Message": "[Read CSV] Reading data\\daily.csv (Delimiter=Comma, AddHeaders=True); folder currently contains data\\daily.csv.tmp"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T11:40:10.870Z",
+      "Message": "[Read CSV] Could not find file 'C:\\ProgramData\\UiPath\\Packages\\ReportDownloader\\data\\daily.csv'. A partially-downloaded 'data\\daily.csv.tmp' is present."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T11:40:10.940Z",
+      "Message": "Read CSV: Could not find file 'C:\\ProgramData\\UiPath\\Packages\\ReportDownloader\\data\\daily.csv'.\r\nin Main.xaml\r\n    at ReadCsvFile \"Read CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T11:40:10.990Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

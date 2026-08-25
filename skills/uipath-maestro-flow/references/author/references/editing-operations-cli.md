@@ -2,7 +2,7 @@
 
 This is **not** a structural editing guide. Use direct `.flow` authoring via [editing-operations-json.md](editing-operations-json.md) for OOTB node/edge/variable CRUD, trigger swaps, output mapping, subflows, inline-agent node/wiring, non-connector resources, and in-place updates.
 
-> **When to use this file:** only for CLI-managed carve-outs documented by a plugin: connector activities, connector triggers, and managed HTTP configuration. If you landed here while adding/removing/wiring OOTB nodes, inline-agent nodes, non-connector resources, or other structural graph elements, go back to the Edit / Write guide.
+> **When to use this file:** only for CLI-managed carve-outs documented by a plugin: connector activities, connector triggers, and managed HTTP nodes (both `node add` and `node configure`). If you landed here while adding/removing/wiring OOTB nodes, inline-agent nodes, non-connector resources, or other structural graph elements, go back to the Edit / Write guide.
 
 The primitive commands below are support commands for carve-out workflows only. They are not an opt-in path for non-carve-out structural edits.
 
@@ -13,10 +13,11 @@ The primitive commands below are support commands for carve-out workflows only. 
 ### Add a node
 
 ```bash
-uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
+uip maestro flow node add <ProjectName>.flow <node-type> --output json \
   --input '<INPUT_JSON>' \
   --label "<LABEL>" \
-  --position <X>,<Y>
+  --position <X>,<Y> \
+  --parent <PARENT_NODE_ID>
 ```
 
 **What the CLI handles automatically:**
@@ -30,16 +31,17 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 |------|----------|-------------|
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
-| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow tidy` rewrites positions on save. |
+| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
+| `--parent` | No | ID of an existing container node (e.g. a `core.logic.loop`). Sets `parentId` on the new node, placing it inside that container. Required for every node in a loop body — see [loop/impl.md](plugins/loop/impl.md). |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
 
-### Delete a node
+### Remove a node
 
 ```bash
-uip maestro flow node delete <ProjectName>.flow <NODE_ID>
-uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
+uip maestro flow node remove <ProjectName>.flow <NODE_ID>
+uip maestro flow node remove <ProjectName>.flow <NODE_ID> --output json
 ```
 
 **What the CLI handles automatically:**
@@ -55,7 +57,7 @@ uip maestro flow node delete <ProjectName>.flow <NODE_ID> --output json
 uip maestro flow node list <ProjectName>.flow --output json
 ```
 
-Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or deleting nodes.
+Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or removing nodes.
 
 ### Add an edge
 
@@ -71,11 +73,11 @@ uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> -
 
 See each plugin's `planning.md` or [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type.
 
-### Delete an edge
+### Remove an edge
 
 ```bash
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID>
-uip maestro flow edge delete <ProjectName>.flow <EDGE_ID> --output json
+uip maestro flow edge remove <ProjectName>.flow <EDGE_ID>
+uip maestro flow edge remove <ProjectName>.flow <EDGE_ID> --output json
 ```
 
 ### List edges
@@ -148,9 +150,9 @@ These combine primitives only for workflows that are themselves carve-outs. Do n
 
 ### Replace manual trigger with connector trigger
 
-1. Delete the manual trigger (also removes its edges and orphaned definition):
+1. Remove the manual trigger (also removes its edges and orphaned definition):
    ```bash
-   uip maestro flow node delete <ProjectName>.flow start --output json
+   uip maestro flow node remove <ProjectName>.flow start --output json
    ```
 2. Add the connector trigger node:
    ```bash
@@ -177,7 +179,7 @@ These operations require the `Edit` tool. Use the [Edit / Write strategy guide](
 
 1. **Any non-carve-out structural edit** — node/edge CRUD, scheduled triggers, HITL QuickForm nodes, inline-agent nodes, non-connector resources, and graph rewiring
 2. **Node input updates** — the CLI does not have a `node update` command; use `Edit` to preserve node IDs and `$vars.{nodeId}` references
-3. **Workflow variables** — add/remove/update `variables.globals`
-4. **Variable updates** — add/modify `variables.variableUpdates` entries
+3. **Workflow variables while authoring** — updating `variables.globals` in place, and any `subType`/`schema`/`defaultValue` change. There *is* a CLI surface for declaring globals (`uip maestro flow variable add|list|remove`), but it is scoped to declaring eval inputs — see [variables-and-expressions.md § Variable Management via CLI](../../shared/variables-and-expressions.md#variable-management-via-cli)
+4. **Variable updates** — add/modify `variables.variableUpdates` entries. No CLI command exists for these
 5. **Output mapping on End nodes** — add `outputs` object with `source` expressions
 6. **Subflows** — create `subflows.{nodeId}` with nested nodes, edges, variables

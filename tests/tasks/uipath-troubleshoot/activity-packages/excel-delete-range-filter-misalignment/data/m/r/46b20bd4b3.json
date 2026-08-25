@@ -1,0 +1,96 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-dd3333cc-001",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-23T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-002",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-23T08:00:01.418Z",
+      "Message": "[ExcelCustomerProcess] Removing legacy test customers (rows 10-20) from C:\\Robot\\Data\\customer-list.xlsx",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-003",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T08:00:01.510Z",
+      "Message": "Use Excel File: customer-list.xlsx — workbook opened (OpenXML provider)",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-004",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T08:00:01.610Z",
+      "Message": "Use Excel File: customer-list.xlsx — workbook has active AutoFilter on sheet 'Customers' column 'Status' (hiding rows where Status='Archived')",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-005",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T08:00:01.810Z",
+      "Message": "Read Range: pre-delete snapshot (Customers!A1:Z100) — returned 47 rows (filtered view: 22 visible, 25 hidden including rows 15-22)",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-006",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T08:00:02.110Z",
+      "Message": "Delete Range: drop legacy customers (Customers!A10:D20 ShiftCells=True ShiftOption=ShiftCellsUp) — completed successfully (44 cells deleted across 11 rows, 0 errors)",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-007",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T08:00:02.410Z",
+      "Message": "Read Range: post-delete snapshot (Customers!A1:Z100) — returned 36 rows",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-008",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-23T08:00:02.610Z",
+      "Message": "For Each Row: scan for CUST-9001 — 36 iterations, CUST-9001 not encountered (found=False)",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd3333cc-009",
+      "JobKey": "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-23T08:00:02.802Z",
+      "Message": "Throw: missing customer — System.Exception: Customer CUST-9001 missing from post-delete data",
+      "ProcessName": "ExcelCustomerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

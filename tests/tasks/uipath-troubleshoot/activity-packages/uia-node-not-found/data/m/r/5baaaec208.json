@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "Id": "95eecd44d4e6203d",
+      "TraceId": "899a0c10d81b44ea9d29cecc00fd8976",
+      "ParentId": null,
+      "Name": "Robot Job 899a0c10-d81b-44ea-9d29-cecc00fd8976",
+      "StartTime": "2026-05-19T10:03:21.5009923Z",
+      "EndTime": "2026-05-19T10:04:04.1731647Z",
+      "Attributes": "{\"Exception\":\"UiPath.UIAutomationNext.Exceptions.NodeNotFoundException: Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n \u2022  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n \u2022  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n \u2022  If needed, re-indicate the element as its properties might have changed\\r\\n \u2022  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n \u2022  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl aaname='                   Creating a Doodle                 ' class='glue-header__link' parentid='glue-drawer-2465973' tag='A' />\\n\\r\\nThe closest selector matches found are:\\r\\n[39%] <webctrl aaname=' Cum func\u021bioneaz\u0103 C\u0103utarea ' class='pHiOh' parentid='' tag='A'/>\\n[38%] <webctrl aaname='Imagini' class='gb_4' parentid='gb' tag='A'/>\\n[38%] <webctrl aaname='Confiden\u021bialitate' class='pHiOh' parentid='' tag='A'/>\\n[38%] <webctrl aaname='Google Store' class='w5hRs' parentid='' tag='A'/>\\n[37%] <webctrl aaname='Datele tale din C\u0103utare' class='' parentid='' tag='A'/>\\n[37%] <webctrl aaname='Publicitate' class='pHiOh' parentid='' tag='A'/>\\n[36%] <webctrl aaname='Termeni' class='pHiOh' parentid='' tag='A'/>\\n[36%] <webctrl aaname='Companii' class='pHiOh' parentid='' tag='A'/>\\n[35%] <webctrl aaname='Caut\u0103 \u00een paginile de ajutor' class='' parentid='' tag='A'/>\\n[34%] <webctrl aaname='' class='gb_C' parentid='gbwa' tag='A'/>)\\r\\n   at UiPath.UIAutomationNext.Activities.Services.RuntimeActivityMonitorService.ActivityFaultedAsync(String activityInstanceId, Exception ex, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"}",
+      "Status": 2,
+      "OrganizationId": "c81daadb-3ad3-4681-9fd8-627e57742f4b",
+      "TenantId": "3ea4784c-f5f9-4c9f-9cd9-a81c64569726",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "2c983759-2712-4740-b643-df8336716510",
+      "JobKey": "899a0c10-d81b-44ea-9d29-cecc00fd8976",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-05-19T10:04:04.7969287Z",
+      "Attachments": null,
+      "PermissionStatus": 0,
+      "AgentVersion": null,
+      "Context": null
+    }
+  ]
+}

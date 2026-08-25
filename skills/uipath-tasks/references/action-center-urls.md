@@ -121,10 +121,9 @@ The `uip` CLI ships canonical builders in `@uipath/common`. If you're
 extending the CLI rather than constructing URLs by hand from a skill,
 import these:
 
-> **Availability:** these helpers ship in `@uipath/common` once the
-> companion CLI PR ([UiPath/cli#1565](https://github.com/UiPath/cli/pull/1565))
-> lands. If your `bun install` predates that merge, the imports below
-> will not resolve — pull a fresh `@uipath/common`, or hand-build the
+> **Availability:** these helpers ship in recent `@uipath/common`
+> versions. If the imports below do not resolve, your `bun install`
+> predates them — pull a fresh `@uipath/common`, or hand-build the
 > URL following the canonical patterns above (the runtime contract is
 > identical).
 
@@ -144,7 +143,7 @@ const taskUrl = buildActionCenterTaskUrl(uiHost, org, tenant, taskId);
 
 All three helpers throw if `tenant` (or `org` / `baseUrl`) is empty —
 this is the runtime backstop for the tenant-required contract. See
-`packages/common/src/orchestrator-urls.ts` in the [CLI repo](https://github.com/UiPath/cli).
+`packages/common/src/orchestrator-urls.ts` in the CLI source.
 
 ## Related
 

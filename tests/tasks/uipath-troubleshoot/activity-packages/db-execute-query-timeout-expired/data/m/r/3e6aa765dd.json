@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-22T11:02:38.689Z",
+      "Message": "Execute Query: Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding.\r\nMicrosoft.Data.SqlClient.SqlException: Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-22T11:02:38.712Z",
+      "Message": "Execute Query: Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -14,7 +14,6 @@ Pick the framework before starting. The package installed in the Workflow determ
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
-| Coded Function | `uipath` | `uipath.json` | [coded-function-agents.md](../frameworks/coded-function-agents.md) |
 | LangGraph | `"uipath-langchain"` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
 | LlamaIndex | `uipath-llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
 | OpenAI Agents | `uipath-openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |
@@ -26,7 +25,7 @@ Pick the framework before starting. The package installed in the Workflow determ
 | Empty directory | The Workflow below |
 | Existing UiPath agent (has `main.py` + `<framework>.json` + UiPath deps) | `source .venv/bin/activate`, then `uip codedagent setup --force && uip codedagent init` only |
 | Existing Python agent (has `main.py`, missing UiPath deps / framework config) | `source .venv/bin/activate`, `uv add <FRAMEWORK_PACKAGE>`, adapt `main.py` per the framework guide, then `uip codedagent setup --force && uip codedagent init` |
-| Studio Web Local Workspace solution (ancestor contains `.sw-path-marker` or `.local/folder.lock`) | Already scaffolded by Studio Web. One-time local-run prep: `uv venv --python 3.13`, activate, `uv sync`, `uip codedagent setup --force`. Do **not** run `uip codedagent new` or `init` (init only when input/output schemas change). See [local-workspace.md](local-workspace.md) for files-owned-by-SW and anti-patterns. |
+| Studio Web Local Workspace solution (ancestor contains `.sw-path-marker` or `.local/folder.lock`) | Already scaffolded by Studio Web. One-time local-run prep: `uv venv --python 3.13`, activate, `uv sync`, `uip codedagent setup --force`. Do **not** run `uip codedagent new`. Re-run `init` after every edit that adds/removes/renames/retypes a field on `Input`/`Output`/`State` or changes the entry-function signature — see [local-workspace.md](local-workspace.md) § Schema Sync After Edits for the full rule and anti-patterns. |
 
 ## Workflow
 
@@ -43,6 +42,8 @@ uip codedagent init
 ```
 
 `uipath-dev` is added to the dev dependency group during scaffold so `uip codedagent dev` works later without a second install pass. Skipping it causes `uip codedagent dev` to fail with *"The 'uipath-dev' package is required to use the dev command"*.
+
+**What `uip codedagent setup` does:** locates a Python that has `uipath` installed and caches its path, so later commands (`init`/`run`/`eval`/`pack`) can invoke the Python SDK. It searches PATH (`python3.x`, `python3`, `python`) and uses your `.venv` only when activated. So when using uv, always `uv sync` then activate the venv before the `setup` command.
 
 ## Coded Function Agents
 
@@ -92,7 +93,7 @@ Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` t
 ```
 
 **Key fields:**
-- **`runtimeOptions.isConversational`** - Set `true` for conversational/chat agents
+- **`runtimeOptions.isConversational`** - scaffold defaults to `false` (single-shot). Building a chat/conversational agent? Flip to `true` BEFORE `uip codedagent init` so `entry-points.json` gets the chat shape. See [conversational-agents](../capabilities/conversational-agents.md).
 - **`packOptions`** - Control which files are included when packaging for deployment
 - **`functions`** - Entrypoint mappings (format: `"file_path:function_name"`)
 

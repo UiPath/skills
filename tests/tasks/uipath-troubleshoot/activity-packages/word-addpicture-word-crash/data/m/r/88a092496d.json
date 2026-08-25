@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc333399-001",
+      "JobKey": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-05-22T09:14:02.360Z",
+      "Message": "Execution started.",
+      "ProcessName": "ResumePhotoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-002",
+      "JobKey": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-05-22T09:14:02.640Z",
+      "Message": "[ResumePhotoStamp] Inserting the candidate photo into the resume draft.",
+      "ProcessName": "ResumePhotoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-003",
+      "JobKey": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T09:14:04.210Z",
+      "Message": "Use Word File: resume-draft.docx — launching Word via Office Interop (Visible=False) for document 'C:\\Robot\\Resumes\\resume-draft.docx'. Document opened successfully.",
+      "ProcessName": "ResumePhotoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-004",
+      "JobKey": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T09:14:07.880Z",
+      "Message": "Add Picture: inserting image 'C:\\Robot\\Assets\\candidate-photo.jpg' relative to Document (Position=End).",
+      "ProcessName": "ResumePhotoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-005",
+      "JobKey": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "Level": "Warn",
+      "Timestamp": "2026-05-22T09:14:08.520Z",
+      "Message": "Word Application host process (WINWORD.EXE, PID 7864) exited unexpectedly while 'Add Picture' was inserting the image. The Word COM server is no longer available.",
+      "ProcessName": "ResumePhotoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333399-006",
+      "JobKey": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "Level": "Error",
+      "Timestamp": "2026-05-22T09:14:08.700Z",
+      "Message": "Add Picture: System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. ... The application called an interface that was marshalled for a different thread. (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)). Thrown from UiPath.Word.Activities.WordInteropActivity.EndExecute.",
+      "ProcessName": "ResumePhotoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

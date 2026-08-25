@@ -1,0 +1,6 @@
+{
+  "Name": "InboxCleanupBot",
+  "ProjectType": "Process",
+  "Description": "Retrieves Inbox messages with Get Outlook Mail Messages, processes each one in a per-item loop, and deletes it once handled.",
+  "MainFile": "Main.xaml"
+}

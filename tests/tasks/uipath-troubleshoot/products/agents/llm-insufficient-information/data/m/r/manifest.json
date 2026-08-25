@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "_doc": "Agents insufficient-information scenario. Covers trace parsing and command-shape coverage for uip agent debug without allowing live debug execution in diagnose-only mode.",
+  "rules": [
+    {
+      "match": "traces spans get cccccccccccccccccccccccccccccccc",
+      "file": "trace-insufficient-information.json"
+    },
+    {
+      "match": "agent debug process/MailerSolution/MailerAgent --inputs {\"task\":\"send update\"}",
+      "file": "debug-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent debug process/MailerSolution/MailerAgent --inputs {\"task\":\"send update\",\"recipient\":\"customer@example.com\"}",
+      "file": "debug-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent refresh process/MailerSolution/MailerAgent",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent validate process/MailerSolution/MailerAgent",
+      "file": "agent-validate.json"
+    },
+    {
+      "match": "solution upload .",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution pack . ./dist --version 1.0.1",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution publish ./dist/MailerSolution.1.0.1.zip",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution deploy run --name MailerAgent-prod --package-name MailerSolution --package-version 1.0.1 --folder-name Agents --parent-folder-path Shared",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for exploratory read-only commands."
+  },
+  "expected_calls": [
+    {
+      "pattern": "traces spans get cccccccccccccccccccccccccccccccc",
+      "min": 1,
+      "description": "Agent inspects trace spans for the completion error."
+    }
+  ]
+}

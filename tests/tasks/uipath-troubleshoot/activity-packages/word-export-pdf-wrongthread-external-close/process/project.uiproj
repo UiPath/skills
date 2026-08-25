@@ -1,0 +1,6 @@
+{
+  "Name": "ContractPdfExport",
+  "ProjectType": "Process",
+  "Description": "Opens a contract Word document and saves it as a PDF in the output folder.",
+  "MainFile": "Main.xaml"
+}

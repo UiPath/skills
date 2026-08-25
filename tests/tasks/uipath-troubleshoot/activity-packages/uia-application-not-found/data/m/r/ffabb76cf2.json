@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "State": "Pending",
+      "TimeStamp": "2026-05-12T02:00:01.890Z",
+      "PrincipalName": "TriggerService",
+      "Reason": "Triggered by schedule 'Nightly Expense Import'"
+    },
+    {
+      "State": "Running",
+      "TimeStamp": "2026-05-12T02:00:02.140Z",
+      "PrincipalName": "UIPATH\\FINANCE-ROBOT-01",
+      "Reason": "Picked up by robot"
+    },
+    {
+      "State": "Faulted",
+      "TimeStamp": "2026-05-12T02:00:04.620Z",
+      "PrincipalName": "UIPATH\\FINANCE-ROBOT-01",
+      "Reason": "UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application."
+    }
+  ]
+}

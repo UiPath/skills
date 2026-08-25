@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T09:25:02.281Z",
+      "Message": "[Get Outlook Mail Messages] Cannot parse condition. Error at \"VarSubject\"."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T09:25:02.310Z",
+      "Message": "Cannot parse condition. Error at \"VarSubject\". (Exception from HRESULT: 0x80020009 (DISP_E_EXCEPTION))\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

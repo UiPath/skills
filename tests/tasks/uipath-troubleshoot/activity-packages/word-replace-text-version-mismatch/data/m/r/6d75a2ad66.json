@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [],
+  "Pagination": {
+    "Returned": 0,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

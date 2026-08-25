@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0066666-3333-4444-5555-666677778888",
+      "DisplayName": "ReconReports",
+      "FullyQualifiedName": "ReconReports",
+      "Description": "Folder for the daily reconciliation export automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6110066,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

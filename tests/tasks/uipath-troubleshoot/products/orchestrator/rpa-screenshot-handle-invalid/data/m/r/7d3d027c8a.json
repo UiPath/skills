@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {"Level": "Error", "TimeStamp": "2026-06-29T03:30:09.200Z", "Message": "Take Screenshot: System.ComponentModel.Win32Exception (6): The handle is invalid. at System.Drawing.Graphics.CopyFromScreen(...)"},
+    {"Level": "Error", "TimeStamp": "2026-06-29T03:30:09.050Z", "Message": "[Robot] Screen capture requested but no active interactive desktop session is available for this unattended run. CopyFromScreen has no valid device context."},
+    {"Level": "Info", "TimeStamp": "2026-06-29T03:30:04.100Z", "Message": "[DashboardSnapshotBot] Capturing dashboard snapshot."}
+  ]
+}

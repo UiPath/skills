@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-12T08:20:03.150Z",
+      "Message": "[Word Application Scope] Could not find file 'C:\\Windows\\System32\\config\\systemprofile\\Output\\OfferLetter.docx'."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-12T08:20:03.190Z",
+      "Message": "Could not find file 'C:\\Windows\\System32\\config\\systemprofile\\Output\\OfferLetter.docx'.\r\nin Main.xaml\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

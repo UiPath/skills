@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Append Range payroll row append scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "cc5437bd31.json"},
+    {"match": "or folders list --output json", "file": "cc5437bd31.json"},
+    {"match": "or jobs list --folder-key \"f0088888-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "94432654a2.json"},
+    {"match": "or jobs list --folder-key f0088888-3333-4444-5555-666677778888 --state Faulted --output json", "file": "94432654a2.json"},
+    {"match": "or jobs get \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "986e159c31.json"},
+    {"match": "or jobs get ff111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "986e159c31.json"},
+    {"match": "or jobs history \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "8e3e382b94.json"},
+    {"match": "or jobs history ff111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "8e3e382b94.json"},
+    {"match": "or jobs logs \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "fcfc48a7ad.json"},
+    {"match": "or jobs logs ff111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "fcfc48a7ad.json"}
+  ]
+}

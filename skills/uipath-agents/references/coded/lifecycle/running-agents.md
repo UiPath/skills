@@ -9,7 +9,7 @@ Execute agents locally for testing or invoke published agents in UiPath Cloud.
 uip codedagent run <ENTRYPOINT> '{"query": "test"}'
 
 # Run with file input
-uip codedagent run <ENTRYPOINT> --file input.json
+uip codedagent run <ENTRYPOINT> --input-file input.json
 
 # Interactive dev loop (prompts for input, hot-reloads on changes)
 uip codedagent dev

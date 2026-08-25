@@ -1,0 +1,6 @@
+{
+  "Name": "BatchPdfConvert",
+  "ProjectType": "Process",
+  "Description": "Opens a Word contract document and exports it to a PDF file.",
+  "MainFile": "Main.xaml"
+}

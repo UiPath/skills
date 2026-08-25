@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "f5c8e6ab-7b92-4eaf-90c1-5c6d7e8f9012",
+      "Name": "Sales Operations",
+      "Path": "Sales Operations",
+      "Description": "Folder hosting the order settlement and reconciliation processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c4f1a983-6b2d-4e57-9a1c-3d8e0f5b7a26",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.GatewayBoundaryError",
-  "main": "gateway-boundary-error.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

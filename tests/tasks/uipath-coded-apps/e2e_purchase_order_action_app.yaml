@@ -1,0 +1,211 @@
+task_id: skill-coded-apps-e2e-purchase-order-action-app
+description: >
+  E2E scenario (cloud auth required): agent builds a complete Coded Action
+  App for finance to review purchase orders, from scratch. Given only a
+  business goal, the agent must design the action-schema data contract,
+  scaffold the Vite + React project from the action-app template, validate
+  the schema, build, pack, publish with `-t Action`, and deploy to a
+  fresh per-run Orchestrator folder (folder-key resolved at runtime, Rule
+  #11). Tests the full Action-app lifecycle that no smoke or integration
+  test covers end-to-end, including the bind-to-Action-Center handoff.
+  Deploys into an isolated `codedapp-e2e-*` folder so `post_run` can delete
+  it cleanly.
+tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
+run_limits:
+  expected_turns: 40
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath Coded Action App that finance reviewers will use to
+  approve or reject purchase orders submitted by Procurement.
+
+  Business requirements:
+
+  - Each PO comes with: a PO number, the vendor name, the total amount,
+    and the requesting department. These are read-only context for the
+    reviewer (they cannot change them).
+  - The reviewer adds an approval comment and selects a category for the
+    purchase (one of: Operations, Capital, Marketing, Other).
+  - The form submits with either Approve or Reject.
+  - When deployed, the form must bind to Action Center tasks (NOT a
+    standalone Web App).
+
+  Use the app name `PurchaseOrderApp_<EPOCH>` (Unix epoch seconds suffix —
+  e.g. `PurchaseOrderApp_1716163200`) with version `0.1.0`.
+
+  Deploy to a FRESH per-run Orchestrator folder — do NOT reuse `Shared`:
+    1. Create a new folder named `codedapp-e2e-po-<EPOCH>` via
+       `uip or folders create <name> --output json`. Capture the `Key`
+       from the response.
+    2. Pass that key to `uip codedapp deploy --folder-key <key>` — do NOT
+       let deploy go interactive.
+  This isolates the deployment so `post_run` cleanup can delete the
+  folder afterwards (folder delete cascades to the coded-app deployment).
+
+  When you finish, write `report.json` at the sandbox root with:
+    {
+      "app_name": "<the exact app name you used>",
+      "deployment_id": "<the deploymentId from .uipath/app.config.json (or its systemName if deploymentId is absent)>",
+      "app_url": "<the appUrl from .uipath/app.config.json>",
+      "folder": "<the codedapp-e2e-po-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — `post_run` reads it to clean up.
+
+  Use `--output json` on every `uip` command. Do not prompt for
+  confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands (Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a fresh per-run folder via `uip or folders create` (Rule #11 — non-interactive deploy, isolated for cleanup)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `npm run build` (Rule #3 — never skip the build step)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` with `-t Action` or `--type Action` (Rule #6 — Action apps MUST publish with the Action type)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+publish\b.*(?:-t\s+Action|--type\s+Action)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp deploy` with --folder-key (Rule #11 — non-interactive)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+deploy\b.*--folder-key'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json was authored (anywhere in the project tree)"
+    command: "find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json passes the skill's validator"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && node $SKILLS_REPO_PATH/skills/uipath-coded-apps/scripts/validate-action-schema.js \"$F\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json outcomes contain both approve-style and reject-style outcomes (the business spec requires both)"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; o=json.load(open('$F'))['outcomes']['properties']; n=[k.lower() for k in o.keys()]; sys.exit(0 if any('approv' in x for x in n) and any('reject' in x for x in n) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json property names cover all six business fields named in the spec (PO number, vendor, amount, department, comment, category). Substring match — accepts naming variants like poNumber/purchaseOrderNumber, vendor/supplier, amount/total, department/dept, comment/note. Replaces the older `>= 4 fields` count check, which let agents pass with four nameless fields."
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); keys=' '.join(k for s in ('inputs','outputs','inOuts') for k in d.get(s,{}).get('properties',{}).keys()).lower(); needed={'po':('po','purchase'),'vendor':('vendor','supplier'),'amount':('amount','total'),'department':('department','dept'),'comment':('comment','note'),'category':('category',)}; missing=[k for k,t in needed.items() if not any(x in keys for x in t)]; sys.exit(0 if not missing else 1)\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "publish wrote a .uipath/app.config.json somewhere in the project tree"
+    command: "find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json.appType == \"Action\" (proves -t Action took effect, not just the flag was passed)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('appType','').lower() == 'action' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json proves a tenant round-trip: deploymentId (fresh deploy) OR systemName (deploy retried after a transient 5xx lands on the CLI upgrade branch, which never writes deploymentId)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if (d.get('deploymentId') or d.get('systemName')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/uipath.ts was authored for SDK construction (anywhere in the project tree)"
+    command: "find . -path '*/src/uipath.ts' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 — Action apps use host-injected session, not PKCE OAuth; JSDoc/`//` comments allowed)"
+    command: "F=$(find . -path '*/src/uipath.ts' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -v -E '^\\s*(/\\*|\\*/|\\*)' \"$F\" | sed 's|//.*||' | grep -F '.initialize('"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written at the sandbox root so post-run cleanup can find the deployed app"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json contains app_name + deployment_id (proves the agent recorded what was deployed; app_url may be null until the app is activated)"
+    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if r.get('app_name') and r.get('deployment_id') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json captures the app_url key (presence required even if the value is null pending activation). Grades the agent's understanding of the post-deploy app.config.json contract — moves 'App URL generation' from Indirect to Direct coverage."
+    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if 'app_url' in r else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json records the codedapp-e2e-po-* folder name so post_run can clean it up"
+    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('codedapp-e2e-po-') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+    timeout: 60

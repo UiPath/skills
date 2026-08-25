@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GreeterAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bbdc32dc-adb5-45db-ae6b-fafe9d238cb7",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GreeterAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "GreeterAgent",
+      "package": {
+        "key": "e44a5360-1cd6-49dd-82fc-23af04fb75e5"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "1ad25eb5-7d5d-4410-8263-f2223de269a2",
+    "files": []
+  }
+}

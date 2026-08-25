@@ -1,0 +1,91 @@
+task_id: skill-pm-transform-fix-apply-not-reingest
+description: >
+  Critical Rules 3 + 4: after a transform-only failure the data is already
+  loaded, so fix the SQL and `transformations apply` — do NOT re-upload and
+  re-ingest. Exercises the `uipath.custom` `Cases.sql` optional-column gotcha
+  (the template references Case/Case_status/Case_type/Case_value, which a
+  minimal mapping never produces, giving dbt `000904 invalid identifier`) and
+  the fix loop the skill teaches: get → patch → update → apply.
+
+  The paired negative assertion is the point: re-ingesting after a transform-only
+  failure re-pushes the whole dataset for nothing. This is the mirror of the
+  mapping fix loop, where a re-ingest IS required — see mapping_fix_in_place.
+
+  Command-construction only — no live tenant. Commands fail with auth errors;
+  what matters is which commands the agent chooses.
+tags: [uipath-process-mining, integration, mode:diagnose, lifecycle:setup, transformations, custom]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+  turn_timeout: 600
+
+initial_prompt: |
+  My Process Mining app (app id 9c46289e) loaded its CSV fine — 466,737 rows —
+  but the transformation step then failed with:
+
+    Database Error in model Cases (models/Cases.sql)
+    000904 (42000): SQL compilation error: error line 3 at position 4
+    invalid identifier 'EVENT_LOG."Case"'
+
+  My mapping only maps Case_ID, Activity and Event_end. Fix it and get the
+  transformation to complete. Use the uipath-process-mining skill and follow
+  its workflow.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pulled the failing model instead of guessing its contents"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+get\b.*Cases\.sql'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pushed the patched model back"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+update\b.*Cases\.sql.*--file\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-transformed the already-loaded data with apply"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+apply\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT re-upload the CSV — the data is already loaded"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+files\s+upload\b'
+    weight: 2.5
+
+  - type: command_not_executed
+    description: "Agent must NOT re-ingest after a transform-only failure"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b'
+    weight: 2.5
+
+  - type: command_not_executed
+    description: "Agent must NOT delete or recreate the app to fix a SQL error"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+(delete|create)\b'
+    weight: 2.0

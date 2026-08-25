@@ -1,0 +1,6 @@
+{
+  "Name": "CatalogLookup",
+  "ProjectType": "Process",
+  "Description": "Looks up a catalog item in the catalog workbook with Lookup Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

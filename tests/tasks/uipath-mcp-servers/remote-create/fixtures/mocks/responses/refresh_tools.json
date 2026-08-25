@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpRefreshTools",
+  "Data": {
+    "slug": "mock-remote-api",
+    "status": "completed",
+    "httpStatus": 200,
+    "tools": [
+      { "id": "tool-mock-remote-01", "name": "search",  "description": "Search the mock API." },
+      { "id": "tool-mock-remote-02", "name": "fetch",   "description": "Fetch a document by id." }
+    ]
+  }
+}

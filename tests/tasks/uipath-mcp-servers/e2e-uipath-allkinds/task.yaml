@@ -1,0 +1,96 @@
+task_id: skill-mcp-servers-e2e-uipath-allkinds
+description: >
+  E2E (live DefaultTenant): create a `uipath`-type AgentHub MCP server and add one resource tool for
+  every UI-exposed resource category on the SAME server — automation, agent, agentic-process, and
+  api-workflow. Verify all four tools land on the live tenant, then the harness deletes the server.
+tags: [uipath-mcp-servers, e2e, mode:build]
+
+# No `sandbox:` block — inherits experiments/nightly.yaml (driver: docker, live DefaultTenant auth
+# via UIPATH_CLI_* env + ~/.uipath mount). Under default.yaml (tempdir, no tenant) this task is
+# expected to fail — it is an e2e/nightly task by design.
+run_limits:
+  max_turns: 90
+  turn_timeout: 900
+
+initial_prompt: |
+  Work autonomously — take this end to end; don't stop to ask me anything, and don't pause between
+  planning and building.
+
+  I'm building one uipath-type AgentHub MCP server that carries one tool from every resource
+  category we support, to smoke-test the resource surface in one place. Create it in the Shared
+  folder, name it "E2E All Kinds", with a unique slug (append the Unix epoch, e.g.
+  e2e-allkinds-<EPOCH>). Then put these four tools on it:
+
+    - automation       → the `e2e-stub-short` process (in Shared/uipath-platform-e2e)
+    - agent            → the `CountLetters` agent
+    - agentic-process  → `ProcurementProcess`
+    - api-workflow     → `NameToAgeFixed`
+
+  Once all four tools are on the server, write a report.json in the working dir so we can clean it
+  up: {"slug": "<the slug>", "folder_path": "Shared"}
+
+success_criteria:
+  - type: command_executed
+    description: "Created the uipath-type MCP server"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+uipath'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added an automation tool"
+    tool_name: "Bash"
+    command_pattern: '(?s)create-resource.*--category\s+"?automation'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added an agent tool"
+    tool_name: "Bash"
+    command_pattern: '(?s)create-resource.*--category\s+"?agent\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added an agentic-process tool"
+    tool_name: "Bash"
+    command_pattern: '(?s)create-resource.*--category\s+"?agentic-process'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added an api-workflow tool"
+    tool_name: "Bash"
+    command_pattern: '(?s)create-resource.*--category\s+"?api-workflow'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "uipath-mcp-servers skill auto-loaded (inferred from the task, not named in the prompt)"
+    skill_name: "uipath-mcp-servers"
+    expected_skill: "uipath-mcp-servers"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written so the harness can delete the server"
+    path: report.json
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live tenant: the MCP server has all 4 resource tools"
+    command: 'uip agenthub mcp-tools list --mcp "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e ".Data.Items | length >= 4"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-mcp-servers/_shared/cleanup_mcp_server.py"
+    timeout: 120

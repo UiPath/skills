@@ -5,11 +5,13 @@ description: >
   hooks plus a coded test case with Given-When-Then structure, testing-service
   assertions, and a project.json fileInfoCollection entry. Covers both the
   hooks pattern and the coded test case workflow in one task.
-tags: [uipath-rpa, smoke, coded, hooks, test-case]
+tags: [uipath-rpa, windows, smoke, coded, hooks, test-case]
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  expected_turns: 22
+  max_turns: 70
+  task_timeout: 2000
+  turn_timeout: 2000
 
 initial_prompt: |
   I have a UiPath coded test project called "LoginTests" that exercises a
@@ -17,9 +19,9 @@ initial_prompt: |
   a first coded test case that uses them.
 
   The working directory starts empty. Scaffold the project with
-  `uip rpa create-project --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
+  `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
-  --use-studio. Focus on generating the correct files and project.json updates.
+  a running Studio Desktop instance. Focus on generating the correct files and project.json updates.
 
   Use `UiPath.Testing.Activities` version `[25.4.1]` (newer 25.10.x
   releases synthesize a bootloader that breaks the build on this
@@ -47,20 +49,6 @@ initial_prompt: |
         / `testing.VerifyAreEqual` / etc.).
   - Update project.json so the test case shows up in fileInfoCollection
     with the correct testCaseType entry.
-
-  Write a `report.json` IMMEDIATELY after scaffolding the project (with
-  placeholder values) and update it as you complete each piece. Do not
-  leave it as the last step — previous runs got distracted by build
-  errors and never wrote it. Final shape:
-    {
-      "hooks_file": "CodedWorkflowHooks.cs",
-      "hooks_pattern": "partial_class",
-      "hooks_class_declaration": "<the class declaration line>",
-      "test_case_file": "TestLoginSuccess.cs",
-      "test_case_class": "TestLoginSuccess",
-      "base_class": "CodedWorkflow",
-      "assertions_used": ["<list of testing.Verify* methods used>"]
-    }
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -90,13 +78,19 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Test case has [TestCase] attribute and uses CodedWorkflow"
+  # Regex rather than substring includes: a bare "CodedWorkflow" match also
+  # accepts `: CodedWorkflowHooks`, a using, or a comment — it does not prove
+  # inheritance. The pattern anchors on the class declaration itself.
+  - type: file_check
+    description: "Test case declares [TestCase] Execute and inherits CodedWorkflow"
     path: "LoginTests/TestLoginSuccess.cs"
-    includes:
-      - "[TestCase]"
-      - "CodedWorkflow"
-      - "void Execute"
+    patterns:
+      - pattern: '\[TestCase\]'
+        must_match: true
+      - pattern: 'class\s+TestLoginSuccess\s*:\s*CodedWorkflow\b'
+        must_match: true
+      - pattern: 'void\s+Execute'
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -115,26 +109,4 @@ success_criteria:
       - "TestLoginSuccess"
       - "testCaseType"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms partial-class hooks + CodedWorkflow base class"
-    path: "report.json"
-    assertions:
-      - expression: "hooks_pattern"
-        operator: equals
-        expected: "partial_class"
-      - expression: "hooks_class_declaration"
-        operator: contains
-        expected: "partial class CodedWorkflow"
-      - expression: "base_class"
-        operator: contains
-        expected: "CodedWorkflow"
-    weight: 2.0
     pass_threshold: 1.0

@@ -1,0 +1,42 @@
+{
+  "Tables": [
+    {
+      "SourceName": "Event_log",
+      "TargetName": "Event_log",
+      "Source": "blob",
+      "SourceSettings": {
+        "Encoding": "utf-8",
+        "FieldDelimiter": ";",
+        "QuoteCharacter": "\""
+      },
+      "IsMandatory": true,
+      "ValidationType": "specificationOnly",
+      "Fields": [
+        {
+          "DataType": "text",
+          "SourceName": "Incident ID",
+          "TargetName": "Case_ID",
+          "IsMandatory": true,
+          "ValidationType": "specificationOnly"
+        },
+        {
+          "DataType": "text",
+          "SourceName": "IncidentActivity_Type",
+          "TargetName": "Activity",
+          "IsMandatory": true,
+          "ValidationType": "specificationOnly"
+        },
+        {
+          "DataType": "datetime",
+          "DataTypeSettings": {
+            "DateTimeFormatString": "mm-dd-yyyy hh:mm:ss"
+          },
+          "SourceName": "DateStamp",
+          "TargetName": "Event_end",
+          "IsMandatory": true,
+          "ValidationType": "specificationOnly"
+        }
+      ]
+    }
+  ]
+}

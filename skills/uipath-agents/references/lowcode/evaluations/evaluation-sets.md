@@ -143,11 +143,16 @@ Use these to expand test coverage without writing every input by hand.
 }
 ```
 
+Schema notes:
+
+- Test-case array is `evaluations[]` — **not** `testCases[]`. Read the key from the file or `uip agent eval list --set "<eval_set_name>" --path <agent_dir> --output json`; don't guess.
+- Studio Web names eval set files `evaluation-set-<unix-ms>.json` (e.g. `evaluation-set-1778230599547.json`); CLI-created sets may use readable names (`evaluation-set-default.json`). `fileName` mirrors the actual filename — match sets by `name` or `id`, not filename pattern.
+
 The `source` field indicates how the test case was created. CLI-added test cases are always `"manual"` (verified). Other observed values from Studio Web include `"debugRun"`, `"runtimeRun"`, `"simulatedRun"`, and `"autopilotUserInitiated"` — treat the `source` field as an enum but do not set it manually; the CLI and Studio Web own this value.
 
 ## Anti-patterns
 
 - **Don't hand-write `evalSetId` or test case `id` UUIDs.** Use `uip agent eval add` so the CLI keeps `evaluations[].evalSetId` consistent with the parent eval set's `id`.
-- **Don't add `--inputs` keys that are not in `entry-points.json`.** The runtime will reject the test case at execution time. Run `uip agent validate` to catch this before push.
+- **Don't add `--inputs` keys that are not in `entry-points.json`.** The runtime will reject the test case at execution time. Run `uip agent validate` to catch this before upload.
 - **Don't set `--expected '{}'` (empty) and `--expected-agent-behavior ""` together.** The semantic-similarity evaluator scores against an empty `{{ExpectedOutput}}`; the trajectory evaluator scores against an empty `{{ExpectedAgentBehavior}}`. Every run scores low for non-actionable reasons.
 - **Don't set the `source` field manually.** Owned by CLI and Studio Web; hand-edits may be overwritten on the next sync.

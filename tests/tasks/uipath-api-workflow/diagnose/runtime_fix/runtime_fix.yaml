@@ -1,0 +1,90 @@
+task_id: skill-api-workflow-diagnose-runtime-fix
+description: >
+  Diagnose + repair a workflow that PASSES `uip api-workflow validate` but FAILS
+  at runtime: a ForEach declares `for.each: "currentItem"` while the loop body
+  references the iterator as `currentItem` (no `$`) instead of `$currentItem`
+  (rule 11), so the run throws `currentItem is not defined`. Because static
+  validation reports Valid, the agent cannot rely on the validator — it must
+  RUN the workflow, read the runtime error, fix the binding, and re-run.
+  mode:diagnose. Complements diagnose/validate_fix (a *static* fault) by
+  exercising the *runtime* diagnose loop. Graded on behavior: after the fix the
+  workflow runs successfully and sums the input array.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/runtime_fix/seed_runtime_broken.py"
+    timeout: 30
+
+initial_prompt: |
+  The Workflow.json in the current directory is a UiPath API Workflow that PASSES
+  `uip api-workflow validate` but FAILS when you run it. Diagnose why and fix it so
+  the workflow runs successfully.
+
+  Preserve its intent: it takes a numeric array input `numbers` and returns their
+  sum as `total`.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present (agent repaired, not deleted, the seeded file)"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON after the fix"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Still a real loop/aggregation workflow — WorkflowStart + ForEach + Response survived"
+    path: "Workflow.json"
+    includes:
+      - "WorkflowStart"
+      - "For_Each_1"
+      - "Response_1"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the workflow to diagnose the runtime fault (run loop, not just validate)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Static validation still passes (structure was not broken by the fix)"
+    command: 'uip api-workflow validate ./Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: the once-broken run now succeeds and sums [1,2,3] -> 6"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[1,2,3]}'' --output json | grep -qiE ''"total":\s*6'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: a second input also sums correctly ([10,20,30,40] -> 100)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[10,20,30,40]}'' --output json | grep -qiE ''"total":\s*100'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25

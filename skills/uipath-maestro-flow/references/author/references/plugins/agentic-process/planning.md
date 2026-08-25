@@ -48,7 +48,7 @@ Requires `uip login`. Only published agentic processes from your tenant appear.
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished agentic processes in sibling projects within the same solution.

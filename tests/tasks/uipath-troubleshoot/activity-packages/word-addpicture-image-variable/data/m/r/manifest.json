@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Word Add Picture image-variable scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "06f10eeac5.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "9bb0c38641.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "ed194221a4.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "8c8e3fd166.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "a5e38effc8.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

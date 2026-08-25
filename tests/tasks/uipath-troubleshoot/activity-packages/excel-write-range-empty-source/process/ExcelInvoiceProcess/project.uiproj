@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelInvoiceProcess",
+  "ProjectType": "Process",
+  "Description": "Reads invoices from the source workbook, filters them to the overdue ones, and writes the result to the invoice report workbook via Write Range.",
+  "MainFile": "Main.xaml"
+}

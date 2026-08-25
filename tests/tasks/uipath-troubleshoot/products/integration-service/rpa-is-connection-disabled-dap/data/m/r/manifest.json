@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay dispatch table for the rpa-is-connection-disabled-dap scenario. Fixtures are verbatim uip CLI responses captured from the real session. Connection-state-dependent fixtures (ping / bound-folder list) reflect the PRE-FIX 'Failed' state at investigation time.",
+  "rules": [
+    {
+      "match": "--version",
+      "file": "02e8acc99f.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list --all --output json",
+      "file": "e919f3989b.json",
+      "exit_code": 3
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "2e37ebc77e.json"
+    },
+    {
+      "match": "or jobs list --folder-key eba26f86-ea3a-4955-a029-28c6e5006dab --output json",
+      "file": "d30940f343.json"
+    },
+    {
+      "match": "or jobs get 3baa335d-8cd1-44cf-936c-df8c013c99df --output json",
+      "file": "969f49689d.json"
+    },
+    {
+      "match": "or jobs logs 3baa335d-8cd1-44cf-936c-df8c013c99df --level Error --output json",
+      "file": "f0a4db5418.json"
+    },
+    {
+      "match": "or jobs history 3baa335d-8cd1-44cf-936c-df8c013c99df --output json",
+      "file": "5d05e6495f.json"
+    },
+    {
+      "match": "or jobs traces 3baa335d-8cd1-44cf-936c-df8c013c99df --output json",
+      "file": "23cb6207f5.json"
+    },
+    {
+      "match": "is connections list --folder-key eba26f86-ea3a-4955-a029-28c6e5006dab --output json",
+      "file": "081b84c7c0.json"
+    },
+    {
+      "match": "is connections list --folder-key b262689d-e2a9-4c1a-8e68-04382a7fff76 --output json",
+      "file": "f50db666cc.json"
+    },
+    {
+      "match": "is connections ping 989fd9d2-4b07-443e-86e3-ed6f1b00079b --output json",
+      "file": "4dc2cb914e.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}

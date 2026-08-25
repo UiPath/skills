@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelWriteCellProcess",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Sales' sheet from the sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx and writes a 'Done' status into cell D1 via Write Cell.",
+  "MainFile": "Main.xaml"
+}

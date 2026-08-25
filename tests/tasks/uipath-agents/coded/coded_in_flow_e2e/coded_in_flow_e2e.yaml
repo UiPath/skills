@@ -1,0 +1,116 @@
+task_id: skill-agent-coded-in-flow-e2e
+description: >
+  End-to-end test for the in-solution coded-agent + Flow pattern. Builds
+  a UiPath solution containing a Flow project and a sibling LangGraph
+  coded agent that calls an LLM. Verifies both projects register in the
+  .uipx, the coded agent has a local resource file under
+  `resources/solution_folder/process/agent/`, and the Flow contains a
+  `uipath.core.agent.<resourceKey>` node with a matching top-level
+  `bindings[]` entry — no duplicates per
+  `(resourceKey, propertyAttribute)` pair.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, shape:single-node, resource]
+
+run_limits:
+  max_turns: 80
+  expected_turns: 74
+  task_timeout: 1800
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build me a UiPath coded agent (LangGraph) called `InputProcessor` that
+  takes some user input and returns a short summary. Once the coded agent
+  itself is built and scaffolded, wrap it in a solution `GreeterSol` with a
+  flow `GreeterFlow` that runs the agent, and make sure the flow validates.
+
+  All local, nothing to publish or deploy. Complete the task end-to-end.
+  Only stop if there is a critical blocker you cannot resolve.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not uipath-planner/maestro-flow alone)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  - type: command_executed
+    description: "Agent scaffolded the coded agent project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent registered the coded agent in the solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+projects?\s+add\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0.0  # advisory: registration is outcome-checked via Projects[] below; init auto-registers (CLI #2470), so `project add` is optional
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent project exists (main.py)"
+    path: "GreeterSol/InputProcessor/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent has langgraph.json (LangGraph framework marker)"
+    path: "GreeterSol/InputProcessor/langgraph.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Local resource file for the coded agent"
+    path: "GreeterSol/resources/solution_folder/process/agent/InputProcessor.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "GreeterSol/GreeterFlow/GreeterFlow.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Solution registers both projects (flow + coded agent)"
+    path: "GreeterSol/GreeterSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow wires the coded agent as a `uipath.core.agent.<resourceKey>` node; bindings[] is deduplicated per (resourceKey, propertyAttribute); coded agent uses lazy LLM init"
+    command: "python3 $TASK_DIR/check_coded_in_flow_e2e.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,6 @@
+{
+  "Name": "PythonDataCruncher",
+  "ProjectType": "Process",
+  "Description": "Runs a Python data-processing script inside a Python Scope on the robot host.",
+  "MainFile": "Main.xaml"
+}

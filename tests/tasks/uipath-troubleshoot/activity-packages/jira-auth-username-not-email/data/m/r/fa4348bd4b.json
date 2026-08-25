@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "5b01c3d4-e5f6-4071-9b01-000000000001",
+      "State": "Faulted",
+      "ProcessName": "JiraIssueSync",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-15T09:12:03.110Z",
+      "EndTime": "2026-06-15T09:12:04.905Z",
+      "CreationTime": "2026-06-15T09:12:02.700Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

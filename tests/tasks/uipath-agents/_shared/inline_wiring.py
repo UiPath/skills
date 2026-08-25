@@ -7,7 +7,12 @@ Used by inline-agent tests that verify the combined shape of:
     handle (source) to the resource node's `input` handle (target), per
     `agent-flow-integration.md`,
   - a `resource.json` inside the inline agent's UUID subdirectory (pointed
-    to by `model.source` on the autonomous node).
+    to by `inputs.source` on the autonomous node).
+
+Source identity for every inline-agent-related node (autonomous agent +
+attached resource nodes) lives at `inputs.source`. There is no `model.source`
+fallback — checks fail loudly when the legacy location is used so authors
+regenerate the fixture.
 
 Import pattern in a check script:
 
@@ -19,6 +24,8 @@ Import pattern in a check script:
         find_autonomous_agent_node,
         find_resource_node,
         resolve_inline_agent_dir,
+        resolve_resource_source,
+        find_inline_resource,
         assert_edge,
     )
 """
@@ -90,17 +97,77 @@ def find_resource_node(
 
 
 def resolve_inline_agent_dir(flow_path: Path, agent_node: dict) -> Path:
-    """Return the inline agent's UUID subdirectory (from `model.source`)."""
-    source = (agent_node.get("model") or {}).get("source")
-    if not source:
-        sys.exit(f"FAIL: {AUTONOMOUS_NODE_TYPE} node has no model.source")
+    """Return the inline agent's UUID subdirectory.
+
+    Reads the projectId from `inputs.source` on the node instance. The
+    legacy `model.source` location is no longer accepted — fixtures using it
+    fail loudly so the author regenerates them with the current convention.
+    """
+    inputs = agent_node.get("inputs") or {}
+    source = inputs.get("source")
+    if not source or not isinstance(source, str):
+        sys.exit(
+            f"FAIL: {AUTONOMOUS_NODE_TYPE} node has no inputs.source"
+        )
     agent_dir = flow_path.parent / source
     if not agent_dir.is_dir():
         sys.exit(
-            f"FAIL: model.source {source!r} does not point to an existing "
+            f"FAIL: inputs.source {source!r} does not point to an existing "
             f"directory ({agent_dir})"
         )
     return agent_dir
+
+
+def resolve_resource_source(node: dict) -> str:
+    """Return the resource UUID from a resource node's `inputs.source`.
+
+    Resource nodes (`uipath.agent.resource.tool.*`,
+    `uipath.agent.resource.escalation`, `uipath.agent.resource.context.*`)
+    carry their `<RES_UUID>` at `inputs.source`, identical to the autonomous
+    agent. The legacy `model.source` location is no longer accepted.
+    """
+    inputs = node.get("inputs") or {}
+    source = inputs.get("source")
+    if not source or not isinstance(source, str):
+        node_type = node.get("type", "<unknown>")
+        sys.exit(
+            f"FAIL: {node_type} node has no inputs.source"
+        )
+    return source
+
+
+def find_inline_resource(
+    agent_dir: Path,
+    predicate,
+    *,
+    description: str,
+) -> tuple[Path, dict]:
+    """Locate a resource.json inside an inline agent's resources/ tree by content.
+
+    Inline agents use UUID-named resource subdirectories
+    (`resources/<RES_UUID>/resource.json` per inline-in-flow.md), so checks
+    cannot hardcode a directory name. This helper iterates every
+    `resources/**/resource.json` under `agent_dir` and returns the first one
+    whose loaded JSON satisfies `predicate(data) -> bool`.
+
+    On miss it exits with FAIL referencing the `description` (e.g.
+    "context index 'ProductKnowledge'").
+    """
+    resources_dir = agent_dir / "resources"
+    if not resources_dir.is_dir():
+        sys.exit(f"FAIL: {resources_dir} does not exist — no resources/ directory")
+    for path in sorted(resources_dir.rglob("resource.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if predicate(data):
+            return path, data
+    sys.exit(
+        f"FAIL: no resource.json matching {description} under {resources_dir} — "
+        "inline agents use UUID-named resource subdirectories, so the test "
+        "matches on content (not directory name)"
+    )
 
 
 def assert_edge(

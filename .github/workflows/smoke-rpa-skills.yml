@@ -14,45 +14,72 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Exempt the first-party `coder-eval` wheel from safe-chain's
+# minimum-package-age suppression so a same-day pin in
+# tests/.coder-eval-version still resolves — see smoke-skills.yml for the full
+# rationale. Workflow-level so any job added later inherits it.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
+
 jobs:
   detect:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Detect changed RPA skills
     outputs:
       task_globs: ${{ steps.detect.outputs.task_globs }}
       skip: ${{ steps.detect.outputs.skip }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0
 
-      - name: Detect changed RPA skills and map to test tasks
+      - name: Detect changed Windows-tagged skills and map to test tasks
         id: detect
         run: |
           BASE_REF="${{ github.base_ref }}"
           if [ -z "$BASE_REF" ]; then BASE_REF="main"; fi
           CHANGED=$(git diff --name-only origin/$BASE_REF...HEAD)
 
-          # Infra change → run all RPA + rpa-legacy smoke tasks
-          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-rpa-skills\.yml$'; then
-            echo "task_globs=tasks/uipath-rpa/**/*.yaml tasks/uipath-rpa-legacy/**/*.yaml" >> "$GITHUB_OUTPUT"
-            echo "Running all RPA smoke tests (test infrastructure changed)"
+          # Discover the set of Windows-tagged task files (tag = `windows` in the
+          # `tags:` line). Source of truth for "what runs on this Windows
+          # workflow" — adding/removing a `windows` tag is the opt-in/out.
+          WINDOWS_TASKS=$(grep -rEl '^tags:.*\bwindows\b' tests/tasks/ 2>/dev/null | sort -u)
+          if [ -z "$WINDOWS_TASKS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No tasks tagged 'windows' found — skipping"
             exit 0
           fi
 
+          # Skills that own at least one windows-tagged task. Used to map
+          # `skills/<X>/` changes to the right test set.
+          WINDOWS_SKILLS=$(echo "$WINDOWS_TASKS" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p' | sort -u)
+
+          # Globs are relative to the `tests/` working dir of the smoke job.
+          ALL_GLOBS=$(echo "$WINDOWS_TASKS" | sed 's|^tests/||' | tr '\n' ' ' | xargs)
+
+          # Infra change → run every windows-tagged task.
+          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-rpa-skills\.yml$'; then
+            echo "task_globs=$ALL_GLOBS" >> "$GITHUB_OUTPUT"
+            echo "Running all Windows smoke tasks (test infrastructure changed)"
+            exit 0
+          fi
+
+          # Skill-scoped change → run only that skill's windows-tagged tasks.
           GLOBS=""
-          if echo "$CHANGED" | grep -qE '^(skills/uipath-rpa/|tests/tasks/uipath-rpa/)'; then
-            [ -d "tests/tasks/uipath-rpa" ] && GLOBS="tasks/uipath-rpa/**/*.yaml"
-          fi
-          if echo "$CHANGED" | grep -qE '^(skills/uipath-rpa-legacy/|tests/tasks/uipath-rpa-legacy/)'; then
-            if [ -d "tests/tasks/uipath-rpa-legacy" ]; then
-              [ -n "$GLOBS" ] && GLOBS="$GLOBS tasks/uipath-rpa-legacy/**/*.yaml" || GLOBS="tasks/uipath-rpa-legacy/**/*.yaml"
+          for skill in $WINDOWS_SKILLS; do
+            if echo "$CHANGED" | grep -qE "^(skills/${skill}/|tests/tasks/${skill}/)"; then
+              for t in $WINDOWS_TASKS; do
+                case "$t" in
+                  "tests/tasks/${skill}/"*) GLOBS="$GLOBS ${t#tests/}";;
+                esac
+              done
             fi
-          fi
+          done
+          GLOBS=$(echo "$GLOBS" | xargs)
 
           if [ -z "$GLOBS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "No RPA skill changes detected — skipping"
+            echo "No Windows-tagged skill changes detected — skipping"
           else
             echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
             echo "Will test: $GLOBS"
@@ -61,40 +88,56 @@ jobs:
   smoke:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
-    runs-on: windows-latest
+    runs-on: uipath-windows-latest
     # RPA smoke tasks spin up Helm on each `uip rpa` call (30–60s each). A
     # typical 3-task smoke run with cold Helm + three tasks runs ~25–40
     # min; bump the ceiling so we don't cancel mid-task.
     timeout-minutes: 90
     name: Run RPA skill smoke tests (Windows)
+    # Disable uip CLI version-sync: tasks run in tempdir (no container) and
+    # share one host ~/.uipath / global uip, so a `uip login status` re-pin
+    # downgrades the CLI for later tasks. Mirrors daily.sh.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
+      # Pin coder_eval to tests/.coder-eval-version so RPA smoke runs the same
+      # engine as the skills smoke, ad-hoc, and nightly paths. shell: bash
+      # because windows-latest defaults to PowerShell (no `tr`).
+      - name: Resolve coder_eval pin
+        id: ceref
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: '20'
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1
         with:
           dotnet-version: '8.0.x'
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
+      #
+      # claude-agent-sdk 0.2.144 shipped without a win_amd64 wheel, so uv falls
+      # back to the sdist and nothing bundles claude.exe — every task here then
+      # dies at agent_crash ("Claude Code not found"). coder-eval asks for
+      # >=0.2.124 with no upper bound, so exclude that single release instead of
+      # capping: a later version that restores the wheel resolves normally.
       - name: Install coder-eval
-        working-directory: .coder_eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+        shell: bash
+        run: |
+          uv pip install --system \
+            "coder-eval==${{ steps.ceref.outputs.version }}" \
+            "claude-agent-sdk!=0.2.144"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -106,39 +149,66 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Install from public npm. The `--@uipath:registry=` flag forces
-      # the `@uipath` scope to public npm even if some `.npmrc` (runner
-      # image, user-level, or setup-node config) maps it elsewhere —
-      # notably the internal GitHub Packages feed, which carries
-      # divergent `1.0.0-alpha.*` prereleases under the same scope.
-      # Plain `--registry=` does NOT bypass scope mappings; only the
-      # scope-specific override does.
+      # Install from GitHub Packages `@dev` — the live prerelease train
+      # published on every push to `cli/main`. Public npm mirrors the same
+      # releases ~2 weeks later, so pulling `@latest` from public npm made
+      # RPA-Windows tasks exercise a stale CLI that could miss freshly
+      # renamed/added verbs. `@dev` keeps this runner in lockstep with the
+      # Linux smoke image, which builds from the same `@dev` tag (see
+      # smoke-skills.yml and tests/docker/Dockerfile).
       #
-      # Pin `@uipath/rpa-tool` to the `^0.9` line (currently 0.9.1) to
-      # avoid silently picking up `1.0.0-alpha.*` if `latest` ever
-      # shifts. `@uipath/cli` and `@uipath/rpa-legacy-tool` stay on
-      # `latest` (only the rpa-tool line has the alpha divergence).
+      # The `@uipath` scope is mapped to npm.pkg.github.com via a temp npmrc.
+      # Token is GH_PACKAGES_TOKEN (read:packages only), never the repo-write
+      # PAT: this workflow is `pull_request`-triggered, so anyone who can push
+      # a branch to this public repo can read the secret it is handed.
       #
-      # `npm install -g` runs from a fresh tempdir so any future
-      # workspace-aware `package.json` at the repo root cannot pull
-      # the install into a workspace context. `npm install -g` lands
-      # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
-      # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
-      # without triggering auto-install.
-      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
+      # EVERY package is pinned to the explicit `@dev` dist-tag: the same feed
+      # also carries a FROZEN `alpha` tag (1.197.0-alpha.*) and the public
+      # `latest` line — never rely on `latest`/unspecified here, which could
+      # resolve to a stale line. The npmrc is written and deleted inside this
+      # step so the token never lingers on the runner.
+      #
+      # Tools are installed with raw `npm install -g @uipath/<tool>@dev`, NOT
+      # `uip tools install`: on a `-dev` CLI the latter resolves the release
+      # channel to `stable` and fails to find `-dev` tool builds (cli PR #2650).
+      # uipcli's ToolManager then discovers them on disk under
+      # `<npm-prefix>/@uipath/`, so `uip rpa …` / `uip rpa-legacy …` resolve
+      # without triggering auto-install. Job-level UIPATH_CLI_DISABLE_VERSION_SYNC
+      # keeps a `-dev` CLI from trying to re-align tools through the (stable-only)
+      # channel path at runtime.
+      #
+      # `npm install -g` runs from a fresh tempdir so any future workspace-aware
+      # `package.json` at the repo root cannot pull the install into a workspace.
+      - name: Install uip CLI + RPA tools (GitHub Packages @dev)
         shell: bash
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
-          set -e
+          set -euo pipefail
+          if [ -z "${GH_PACKAGES_TOKEN:-}" ]; then
+            echo "::error::GH_PACKAGES_TOKEN is empty — cannot authenticate to the GitHub Packages @dev feed"
+            exit 1
+          fi
           install_dir="$(mktemp -d)"
           cd "$install_dir"
           echo "Installing from $install_dir (workspace-isolated)"
-          npm config get registry
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest \
-            "@uipath/rpa-tool@>=0.9" \
-            @uipath/rpa-legacy-tool@latest
+          npmrc="$install_dir/.npmrc"
+          {
+            echo "@uipath:registry=https://npm.pkg.github.com/"
+            echo "//npm.pkg.github.com/:_authToken=${GH_PACKAGES_TOKEN}"
+          } > "$npmrc"
+          export NPM_CONFIG_USERCONFIG="$npmrc"
+          npm install -g @uipath/cli@dev
           uip --version
+          for tool in @uipath/rpa-tool @uipath/rpa-legacy-tool; do
+            echo "Installing ${tool}@dev"
+            if ! npm install -g "${tool}@dev"; then
+              echo "::error::${tool}@dev failed to install — no build on the dev train?"
+              exit 1
+            fi
+          done
+          rm -f "$npmrc"
+          unset NPM_CONFIG_USERCONFIG
           echo "--- Installed @uipath/* packages ---"
           npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
           echo "--- uip tools list ---"
@@ -204,7 +274,7 @@ jobs:
       # post-mortem artifact even on success (baseline for comparison).
       - name: Upload auth-debug artifacts
         if: always() && steps.auth.outcome != 'skipped'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: auth-debug-${{ github.run_id }}
           path: ${{ github.workspace }}/auth-debug
@@ -217,6 +287,16 @@ jobs:
           mkdir -p /tmp/helm-warmup && cd /tmp/helm-warmup
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
+
+      # Model guard, deliberately its OWN step (mirror of smoke-skills.yml): the smoke
+      # step below carries continue-on-error, so a guard inside it is swallowed and the
+      # failure surfaces only as a downstream "no task.json" error. Fail here instead,
+      # named, before the run starts.
+      - name: Require an agent model
+        shell: bash
+        env:
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
 
       - name: Run RPA smoke tests
         env:
@@ -236,6 +316,11 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The gate's agent model, passed on the command line rather than pinned in
+          # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
+          # fallback: an unset variable fails the guard step above rather than gating a
+          # model nobody configured.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         shell: bash
@@ -247,7 +332,7 @@ jobs:
           shopt -s globstar nullglob
           overall_exit=0
           for task in ${{ needs.detect.outputs.task_globs }}; do
-            # TODO(rpa-legacy): Bedrock deprecated Opus 4.6 mid-2026-04
+            # TODO(rpa legacy): Bedrock deprecated Opus 4.6 mid-2026-04
             # and Opus 4.1 IDs return 400 'invalid model identifier'
             # on the EU regional inference profiles we have access to.
             # Sonnet trips Bedrock's content filter on the full legacy
@@ -256,7 +341,7 @@ jobs:
             # task YAML itself is still tracked for local runs and
             # for an eventual model fix.
             case "$task" in
-              *rpa-legacy*)
+              tasks/uipath-rpa/legacy/*)
                 echo "::warning::Skipping $task — pending Bedrock Opus model fix"
                 continue
                 ;;
@@ -275,7 +360,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/default.yaml --tags smoke -j 1 -v; then
+                  -e experiments/smoke-windows.yaml --model "$AGENT_MODEL" --tags smoke -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs (not on real
@@ -302,7 +387,7 @@ jobs:
       # crash.
       - name: Upload HTML / JSON eval report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: eval-report-${{ github.run_id }}
           path: |

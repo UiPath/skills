@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa111177-001",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111177-002",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111177-003",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — executing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111177-004",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:01.612Z",
+      "Message": "Get Workbook Sheets — executing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111177-005",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T08:00:01.812Z",
+      "Message": "[ExcelDailyImport] Available sheets in workbook: [\"Sheet1\", \"Data\", \"Summary\"]",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111177-006",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T08:00:02.512Z",
+      "Message": "Read Range: Datab!A1 — executing (SheetName='Datab')",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111177-007",
+      "JobKey": "aa111111-7777-8888-9999-000011112222",
+      "Level": "Error",
+      "Timestamp": "2026-05-19T08:00:02.802Z",
+      "Message": "Read Range: Datab!A1 — UiPath.Excel.BusinessException: The sheet with the name 'Datab' does not exist.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

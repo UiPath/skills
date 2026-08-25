@@ -1,0 +1,74 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4o-2024-11-20",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "SOP-based determination for the dispute (e.g. valid / invalid / needs-review)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Why this determination, citing the relevant SOP guidance"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Use the grounded Billing Dispute SOP knowledge to analyze the dispute and decide how it should be handled. Return a determination and a short rationale that cites the relevant SOP guidance.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Use the grounded Billing Dispute SOP knowledge to analyze the dispute and decide how it should be handled. Return a determination and a short rationale that cites the relevant SOP guidance."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Dispute: {{ $vars.start.output.disputeDescription }}\nInvoice number: {{ $vars.start.output.invoiceNumber }}\n\nAnalyze the dispute now.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Dispute: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.start.output.disputeDescription "
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": " $vars.start.output.invoiceNumber "
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nAnalyze the dispute now."
+        }
+      ]
+    }
+  ],
+  "projectId": "e5715a3f-0d31-4ad8-9c70-91df180760e6"
+}

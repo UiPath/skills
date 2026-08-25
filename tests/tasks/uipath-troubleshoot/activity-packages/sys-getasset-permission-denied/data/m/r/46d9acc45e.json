@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "AssetList",
+  "Data": [
+    {
+      "Key": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+      "Name": "myHiddenAsset",
+      "ValueType": "Credential",
+      "ValueScope": "Global",
+      "Description": "Credential asset used by Get Credential demos in the Remote Debugging folder."
+    },
+    {
+      "Key": "b2c3d4e5-f6a7-8901-bcde-f01234567890",
+      "Name": "RemoteDebuggingEndpoint",
+      "ValueType": "Text",
+      "ValueScope": "Global",
+      "Description": "HTTPS endpoint used by remote debugging fixtures."
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

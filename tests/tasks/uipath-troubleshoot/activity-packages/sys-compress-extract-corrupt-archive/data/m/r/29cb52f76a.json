@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T09:15:13.180Z",
+      "Message": "Extract/Unzip Files: Cannot extract data from archive \"C:\\AutomationData\\Invoices\\batch_2026.zip\"."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T09:15:13.210Z",
+      "Message": "Cannot extract data from archive \"C:\\AutomationData\\Invoices\\batch_2026.zip\".\r\nin Main.xaml\r\n    at ExtractFiles \"Extract/Unzip Files\"\r\n    at Sequence \"Main Sequence\"\r\n    at InvoiceIntake \"InvoiceIntake\"\r\n"
+    }
+  ]
+}

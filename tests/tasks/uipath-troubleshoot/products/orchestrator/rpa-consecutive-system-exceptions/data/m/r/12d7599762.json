@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "ccee6677-88ff-99aa-00bb-11cc22334455",
+      "State": "Faulted",
+      "ProcessName": "OrderReconciliation",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "RuntimeType": "Unattended",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-06-25T07:00:01.200Z",
+      "EndTime": "2026-06-25T07:02:14.880Z",
+      "CreationTime": "2026-06-25T07:00:01.000Z"
+    }
+  ]
+}

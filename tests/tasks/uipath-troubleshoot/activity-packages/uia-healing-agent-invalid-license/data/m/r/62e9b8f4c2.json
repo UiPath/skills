@@ -1,0 +1,60 @@
+{
+  "Result": "Success",
+  "Code": "Help",
+  "Data": {
+    "Command": "folders",
+    "Description": "Manage UiPath Orchestrator folders. Folders organize and scope resources (processes, jobs, assets, queues) with role-based access. Most commands require --folder-path or --folder-key to target a specific folder.",
+    "Usage": "uip or folders [options] [command]",
+    "Arguments": [],
+    "Options": [
+      {
+        "Flags": "-h, --help",
+        "Description": "display help for command"
+      }
+    ],
+    "Subcommands": [
+      {
+        "Name": "list [options]",
+        "Description": "List folders the current user has access to. Use --all to list all folders in the tenant (supports filtering and sorting)."
+      },
+      {
+        "Name": "create [options] <name>",
+        "Description": "Create a new folder. Folders scope processes, jobs, and resources with separate permissions. Use --parent to nest inside an existing folder."
+      },
+      {
+        "Name": "get [options] <folder-key-or-path>",
+        "Description": "Get folder details by key (GUID) or path. Returns display name, key (GUID), path, type, and permissions. Use 'folders list' to find folder keys."
+      },
+      {
+        "Name": "delete [options] <folder-key-or-path>",
+        "Description": "Delete a folder by key (GUID) or path. Fails if the folder contains entities or user associations. Move or remove contents before deleting."
+      },
+      {
+        "Name": "move [options] <folder-key-or-path>",
+        "Description": "Move a folder to a new parent in the folder hierarchy. Provide the target parent folder path or key. Use --root to move to the top level."
+      },
+      {
+        "Name": "edit [options] <folder-key-or-path>",
+        "Description": "Edit folder properties (display name, description). Use 'folders get' to see current values before editing."
+      },
+      {
+        "Name": "runtimes [options] <folder-key-or-path>",
+        "Description": "List runtime allocations for a folder. Shows how many runtime slots of each type (Unattended, Attended, NonProduction, etc.) are total, connected, and available in the specified folder. Useful for checking capacity before starting jobs."
+      },
+      {
+        "Name": "help [command]",
+        "Description": "display help for command"
+      }
+    ],
+    "GlobalOptions": [
+      {
+        "Flags": "--output <table|json|yaml|plain>",
+        "Description": "Output format (default: json)"
+      },
+      {
+        "Flags": "--output-filter <expression>",
+        "Description": "JMESPath expression to filter output"
+      },
+      {
+        "Flags": "--log-level <debug|info|warn|error>",
+        "Description": "Log level threshold (default: info)"

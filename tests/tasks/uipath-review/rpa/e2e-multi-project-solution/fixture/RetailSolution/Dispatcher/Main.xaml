@@ -1,0 +1,42 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="Main_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Dispatch Invoices" sap:VirtualizedContainerService.HintSize="898,600" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <uix:NApplicationCard AttachMode="ByInstance" DisplayName="Open Vendor Portal" sap:VirtualizedContainerService.HintSize="452,300" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" InteractionMode="Simulate" ScopeGuid="e2e2a1b2-0200-4c4d-9e5f-2a3b4c5d0200" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <uix:NClick DisplayName="Click Export" sap:VirtualizedContainerService.HintSize="416,150" sap2010:WorkflowViewState.IdRef="NClick_1" InteractionMode="Simulate" MouseButton="Left" ScopeIdentifier="e2e2a1b2-0200-4c4d-9e5f-2a3b4c5d0200" Version="V5">
+            <uix:NClick.Target>
+              <uix:TargetAnchorable BrowserURL="https://vendor-prod.acme.com/invoices?env=prod" ElementType="Button" FullSelectorArgument="&lt;webctrl tag='DIV' idx='6' /&gt;&lt;webctrl tag='A' idx='12' /&gt;" Guid="e2e2b2c3-0200-4d5e-8f60-3b4c5d6e0200" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+            </uix:NClick.Target>
+          </uix:NClick>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+    </uix:NApplicationCard>
+    <ui:AddQueueItem DisplayName="Enqueue Invoice" QueueName="InvoiceQueue" sap:VirtualizedContainerService.HintSize="450,120" sap2010:WorkflowViewState.IdRef="AddQueueItem_1">
+      <ui:AddQueueItem.Reference>
+        <InArgument x:TypeArguments="x:String">
+          <CSharpValue x:TypeArguments="x:String">"INV-001"</CSharpValue>
+        </InArgument>
+      </ui:AddQueueItem.Reference>
+    </ui:AddQueueItem>
+  </Sequence>
+</Activity>

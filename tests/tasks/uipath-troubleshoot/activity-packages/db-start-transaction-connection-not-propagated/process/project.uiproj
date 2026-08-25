@@ -1,0 +1,6 @@
+{
+  "Name": "OrderSettlementTxn",
+  "ProjectType": "Process",
+  "Description": "Settles orders inside a Start Transaction scope, running a SELECT of OrderId and Status from the Orders table within a single database transaction.",
+  "MainFile": "Main.xaml"
+}

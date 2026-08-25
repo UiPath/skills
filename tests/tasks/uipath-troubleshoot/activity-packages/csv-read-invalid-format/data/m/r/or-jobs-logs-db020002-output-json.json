@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T10:41:18.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-14T10:41:19.480Z",
+      "Message": "[Read CSV] Reading data\\feed.csv (Delimiter=Comma, AddHeaders=True)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T10:41:20.150Z",
+      "Message": "[Read CSV] The CSV file format for 'data\\feed.csv' is invalid."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T10:41:20.220Z",
+      "Message": "Read CSV: The CSV file format for 'data\\feed.csv' is invalid.\r\nin Main.xaml\r\n    at ReadCsvFile \"Read CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-14T10:41:20.270Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+task_id: skill-pm-add-table-queryable
+description: >
+  Critical Rule 1: to make a custom analytical dbt model queryable, register it
+  as a Case-linked data-model table with `apps data-model add-table` and RE-INGEST.
+  Tests the headline rule of the skill and the mistake it exists to prevent —
+  repurposing the pre-registered `Tags` / `Due_dates` entities to smuggle an
+  unrelated aggregate through, which corrupts those features and fights their
+  primary key.
+
+  Also pins the two halves agents drop: the Case foreign key (an unlinked table
+  registers but every query fails `UserError_TableIsDeleted`) and the re-ingest
+  (a data-model edit is inert until the next ingestion).
+
+  Command-construction only — no live tenant. Commands fail with auth errors;
+  what matters is which commands the agent chooses.
+tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, data-model, add-table]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+  turn_timeout: 600
+
+initial_prompt: |
+  My Process Mining app (app id 9c46289e) already has data loaded and a working
+  transformation layer. I wrote a new dbt model `models/Workload_weekly.sql`
+  that aggregates events per assignment group per week. It builds fine, but it
+  does not show up when I try to query it.
+
+  Make it queryable. Use the uipath-process-mining skill and follow its workflow.
+
+  Important:
+  - Write any data-model table definition you need to `./table.json` (this test
+    inspects that exact path).
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent registered the custom model as a data-model table"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+data-model\s+add-table\b.*--file\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-ingested, since a data-model edit is inert until the next ingestion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The registered table is Case-linked — an unlinked table fails every query"
+    path: "table.json"
+    includes:
+      - "foreignKeys"
+      - "Cases"
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT repurpose Tags.sql to smuggle the aggregate through"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+(update|create)\b.*Tags\.sql'
+    weight: 2.5
+
+  - type: command_not_executed
+    description: "Agent must NOT repurpose Due_dates.sql to smuggle the aggregate through"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+transformations\s+(update|create)\b.*Due_dates\.sql'
+    weight: 2.5

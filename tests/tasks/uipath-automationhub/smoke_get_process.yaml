@@ -1,0 +1,107 @@
+task_id: skill-ah-get-process-smoke
+description: >
+  Smoke test: agent uses the uipath-automationhub skill to read a business
+  process and its documents back from Automation Hub. The eval image ships an
+  `ah`-capable `uip`, so the skill's Step-0 preflight must route to the CLI
+  flows. The tenant is a smoke fixture and is NOT reachable, so every call
+  fails — that's expected. The test grades the COMMAND SHAPE, not live output:
+  the skill must (1) activate, (2) take the CLI transport (`uip ah …` — auth is
+  the CLI's job; the agent never handles a token), (3) issue the read pair —
+  `automations get {id}` then `documents list {id}` — (4) NEVER send the
+  admin-token header `x-ah-openapi-auth`, and (5) stay read-only (never create).
+tags: [uipath-automationhub, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Using the `uipath-automationhub` skill, fetch process `12345` from UiPath
+  Automation Hub and list its attached documents (PDD/SDD). You already have the
+  process id (`12345`) — fetch it DIRECTLY BY ID; do not search by name.
+
+  Authentication is provided via env-auth exactly as the UiPath Delegate
+  runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
+  `uip` CLI consumes it automatically. Do NOT run `uip login` and do NOT
+  handle a token yourself.
+
+  This is a command-shape smoke check against a fixture tenant that is NOT
+  reachable, so EVERY call will fail (non-200 / connection error) — that is
+  expected. Issue the skill's read sequence (fetch the process, then fetch its
+  documents) once each.
+
+  Important:
+  - Run each command once and move on. Do NOT retry and do NOT attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
+    skill authenticates with the user's cloud session, not an admin OpenAPI token.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only skill: agent NEVER wrote (no create via CLI or API)"
+    tool_name: "Bash"
+    command_pattern: '(?i)(automations create|idea-from-schema)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The eval image's uip has the ah surface, so the preflight must land on the
+  # CLI transport — every AH operation is a `uip ah …` command, and the agent
+  # never constructs auth headers itself.
+  - type: command_executed
+    description: "Agent took the CLI transport (ran uip ah commands)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah '
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the Step-0 preflight that selects the transport (uip ah --help)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah --help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the process by id (uip ah automations get …)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations get'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the process documents (uip ah documents list …) — best-effort: the fixture tenant is unreachable, so an agent may stop after the first failed call"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "CLI transport means no hand-built auth: agent never constructed an Authorization header"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    weight: 1.0
+    pass_threshold: 1.0

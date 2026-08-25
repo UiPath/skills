@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Write Cell status-update scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "de5ccf6656.json"},
+    {"match": "or folders list --output json", "file": "de5ccf6656.json"},
+    {"match": "or jobs list --folder-key \"f0022222-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "6e024aedde.json"},
+    {"match": "or jobs list --folder-key f0022222-2222-3333-4444-555566667777 --state Faulted --output json", "file": "6e024aedde.json"},
+    {"match": "or jobs get \"11aa1111-2222-3333-4444-555566667777\" --output json", "file": "ecd9fb418d.json"},
+    {"match": "or jobs get 11aa1111-2222-3333-4444-555566667777 --output json", "file": "ecd9fb418d.json"},
+    {"match": "or jobs history \"11aa1111-2222-3333-4444-555566667777\" --output json", "file": "cf0807f3dd.json"},
+    {"match": "or jobs history 11aa1111-2222-3333-4444-555566667777 --output json", "file": "cf0807f3dd.json"},
+    {"match": "or jobs logs \"11aa1111-2222-3333-4444-555566667777\" --output json", "file": "5b1b798a5a.json"},
+    {"match": "or jobs logs 11aa1111-2222-3333-4444-555566667777 --output json", "file": "5b1b798a5a.json"}
+  ]
+}

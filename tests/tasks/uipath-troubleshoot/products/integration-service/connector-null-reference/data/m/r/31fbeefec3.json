@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48",
+      "State": "Faulted",
+      "StartTime": "2026-06-19T18:27:40.512Z",
+      "EndTime": "2026-06-19T18:27:42.137Z",
+      "ReleaseName": "ContactImport",
+      "Source": "Agent",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 5039518
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Get Outlook Mail Messages shared-mailbox-Account sub-case (Branch 1 of get-outlook-mail-failures); mock dispatcher only -- do not treat as investigation evidence. The MailFolder ('Invoices') is a plain top-level folder that exists in a SHARED mailbox, but Account is blank so the activity resolves it against the default profile only and raises 'The specified folder does not exist'. docsai proxied to the real CLI; the --level Error logs rule precedes the generic logs rule. Matching is token-aware (first match wins); patterns are quote-agnostic.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "78f94b6048.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "6059da6ae1.json"
+    },
+    {
+      "match": "or jobs logs --level Error",
+      "file": "8f63dd2da5.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "e2a5346a88.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "464db476bb.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

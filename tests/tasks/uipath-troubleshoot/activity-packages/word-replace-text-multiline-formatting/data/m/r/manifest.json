@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Replace Text multiline-formatting scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "60027d23d5.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\" --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key d4e5f6a7-b8c9-4193-8a0b-5e6f70819203 --state Faulted --output json",
+      "file": "6d75a2ad66.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\" --state Successful --output json",
+      "file": "14a45eec9d.json"
+    },
+    {
+      "match": "or jobs list --folder-key d4e5f6a7-b8c9-4193-8a0b-5e6f70819203 --state Successful --output json",
+      "file": "14a45eec9d.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\" --output json",
+      "file": "14a45eec9d.json"
+    },
+    {
+      "match": "or jobs list --folder-key d4e5f6a7-b8c9-4193-8a0b-5e6f70819203 --output json",
+      "file": "14a45eec9d.json"
+    },
+    {
+      "match": "or jobs get \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\" --output json",
+      "file": "a529647073.json"
+    },
+    {
+      "match": "or jobs get e5f6a7b8-c9d0-4204-9b1c-6f7081920314 --output json",
+      "file": "a529647073.json"
+    },
+    {
+      "match": "or jobs logs \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\" --level Error --output json",
+      "file": "38786cca77.json"
+    },
+    {
+      "match": "or jobs logs e5f6a7b8-c9d0-4204-9b1c-6f7081920314 --level Error --output json",
+      "file": "38786cca77.json"
+    },
+    {
+      "match": "or jobs logs \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\" --output json",
+      "file": "e7231cf11e.json"
+    },
+    {
+      "match": "or jobs logs e5f6a7b8-c9d0-4204-9b1c-6f7081920314 --output json",
+      "file": "e7231cf11e.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

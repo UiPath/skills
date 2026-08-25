@@ -1,0 +1,83 @@
+task_id: skill-agent-context-prompt-reference
+description: >
+  Skill-guided evaluation: scaffold a low-code agent with an attachments
+  context resource and reference that context in a prompt message (system
+  or user) via the Studio expression syntax `@{contexts.<Name>}`, then
+  validate. Exercises
+  the `@{ }` -> `expression` contentToken path (Critical Rules 5 + 6) and
+  the rule that a context is a runtime-resolved resource, NOT an
+  inputSchema field. No existing task covers `@{ }` expression tokens —
+  every prior contentTokens test only exercises `{{input.X}}` variables.
+  Uses an attachments context (contextType "attachments") so the project is
+  fully self-contained: no solution-level files and no tenant binding.
+tags: [uipath-agents, smoke, mode:build, low-code]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 30
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code agent "DocAssistant" inside a solution named
+  "DocSol". The agent processes files the caller uploads at runtime and
+  retrieves relevant information from them (semantic retrieval over the
+  uploaded files — use a context resource named "Knowledge", not a plain
+  input field). Reference that context in the agent's prompt so the
+  model is told to use it. Make sure the agent validates successfully.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: file_exists
+    description: "DocAssistant/agent.json was created"
+    path: "DocSol/DocAssistant/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Knowledge context resource.json was created at the agent level"
+    path: "DocSol/DocAssistant/resources/Knowledge/resource.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A prompt message (system or user) references @{contexts.Knowledge} with a matching expression contentToken, content<->contentTokens stay in sync, context is NOT an inputSchema field, and the resource is an attachments context"
+    command: "python3 $TASK_DIR/check_context_prompt_reference.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

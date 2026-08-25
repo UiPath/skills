@@ -106,7 +106,7 @@ from uipath_llamaindex.llms import UiPathOpenAI, OpenAIModel
 llm = UiPathOpenAI(model=OpenAIModel.GPT_4O_2024_11_20)
 ```
 
-The enum is `OpenAIModel` (singular). `GeminiModel` and `BedrockModel` are also available from `uipath_llamaindex.llms` for non-OpenAI vendors. Use `sdk.agenthub.get_available_llm_models()` to list the models available in your tenant.
+The enum is `OpenAIModel` (singular). `GeminiModel` and `BedrockModel` are also available from `uipath_llamaindex.llms` for non-OpenAI vendors. Run `uip codedagent list-models` to list the models available in your tenant.
 
 ---
 
@@ -234,19 +234,75 @@ The entrypoint name comes from the key in `llama_index.json` `"workflows"`.
 
 ---
 
+## Conversational Agents
+
+For the cross-framework contract (the `isConversational` flag, local-run options), see `../capabilities/conversational-agents.md`.
+
+### In-Process Input
+
+Type the workflow's `StartEvent` with a single `user_msg: str` field — the runtime extracts the inline text from the wire envelope's `contentParts` and hands the workflow `user_msg: str`.
+
+```python
+from llama_index.core.workflow import StartEvent
+
+class ChatStartEvent(StartEvent):
+    user_msg: str
+```
+
+The wire envelope (see `../capabilities/conversational-agents.md` § Wire Envelope) is converted before your workflow sees it; the workflow does not handle `role` / `contentParts`.
+
+### Two Implementation Options
+
+Both are valid — pick based on the agent's needs:
+
+- **Prebuilt agent** — `AgentWorkflow.from_tools_or_functions(...)` from `llama_index.core.agent.workflow`. The `user_msg` input is wired in automatically; export the workflow instance from your entry point.
+- **Custom workflow** — any `Workflow` subclass whose first step accepts a `StartEvent` with `user_msg: str`. The first step can be fully deterministic (e.g. validation or routing) before any LLM call.
+
+### Local Run
+
+See `../capabilities/conversational-agents.md` § Running Locally for the `--keep-state-file` flag (required on every turn) and § Wire Envelope for the `turn1.json` shape.
+
+---
+
 ## UiPath Platform Integration
 
 ### Context Grounding (RAG)
 
-```python
-from uipath_llamaindex.query_engines import ContextGroundingQueryEngine
-from llama_index.core.tools import QueryEngineTool, ToolMetadata
+Two RAG primitives ship in `uipath-llamaindex`. Pick by workflow shape:
 
+| Primitive | Import | Use when |
+|-----------|--------|----------|
+| `ContextGroundingQueryEngine` | `uipath_llamaindex.query_engines` | Retrieval + LLM synthesis in one call, or exposing the index as a `QueryEngineTool` in an agentic workflow. Constructor REQUIRES `response_synthesizer` (no default). |
+| `ContextGroundingRetriever` | `uipath_llamaindex.retrievers` | Deterministic workflow RAG — retrieve raw passages in a `@step`, then synthesize the answer with your own prompt and LLM call. |
+
+The query engine wraps `ContextGroundingRetriever` + your synthesizer internally — use the retriever directly when the workflow already has its own synthesis step.
+
+> **Prefer using these primitives — not raw `sdk.context_grounding.search()` / `search_async()`.** They return LlamaIndex `NodeWithScore` objects that plug into synthesizers and tools, and declare `index_name` + `folder_path` at one call site — the exact shape of the `index` binding entry (see [../lifecycle/bindings-reference.md](../lifecycle/bindings-reference.md)). `index` bindings have no virtual fallback: the index must exist in Orchestrator before `uip codedagent push`.
+
+Both accept `index_name`, `folder_path` (or `folder_key`), and `number_of_results` (default 10). Always pass `folder_path`, even when the index lives in the execution folder resolved from your auth context — omitting it can leave the `index` binding incorrectly applied. Instantiate both inside a `@step` — never at module level (same lazy-client rule as LLMs, § UiPathOpenAI above).
+
+#### ContextGroundingQueryEngine
+
+Build the required `response_synthesizer` with `get_response_synthesizer(llm=UiPathOpenAI())` — omitting it raises a constructor error:
+
+```python
+from llama_index.core.response_synthesizers import get_response_synthesizer
+from uipath_llamaindex.llms import UiPathOpenAI
+from uipath_llamaindex.query_engines import ContextGroundingQueryEngine
+
+# Inside a @step:
 query_engine = ContextGroundingQueryEngine(
     index_name="my_knowledge_base",
     folder_path="Shared",
-    response_synthesizer=response_synthesizer,
+    response_synthesizer=get_response_synthesizer(llm=UiPathOpenAI()),
 )
+response = await query_engine.aquery(ev.question)
+```
+
+As an agent tool:
+
+```python
+from llama_index.core.tools import QueryEngineTool, ToolMetadata
 
 tools = [
     QueryEngineTool(
@@ -257,6 +313,42 @@ tools = [
         ),
     )
 ]
+```
+
+#### Workflow RAG with ContextGroundingRetriever
+
+```python
+from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step
+from uipath_llamaindex.llms import UiPathOpenAI
+from uipath_llamaindex.retrievers import ContextGroundingRetriever
+
+class QuestionEvent(StartEvent):
+    question: str
+
+class AnswerEvent(StopEvent):
+    answer: str
+
+class RagAgent(Workflow):
+    @step
+    async def answer(self, ev: QuestionEvent) -> AnswerEvent:
+        retriever = ContextGroundingRetriever(
+            index_name="my_knowledge_base",
+            folder_path="Shared",
+            number_of_results=5,
+        )
+        nodes = await retriever.aretrieve(ev.question)
+        if not nodes:
+            return AnswerEvent(answer="No relevant passages found in the knowledge base.")
+        passages = "\n\n".join(n.node.get_content() for n in nodes)
+        llm = UiPathOpenAI()
+        response = await llm.acomplete(
+            "Answer the question using ONLY the passages below. "
+            "If they do not answer it, say so.\n\n"
+            f"Passages:\n{passages}\n\nQuestion: {ev.question}"
+        )
+        return AnswerEvent(answer=str(response))
+
+workflow = RagAgent(timeout=60)
 ```
 
 ### Human-in-the-Loop

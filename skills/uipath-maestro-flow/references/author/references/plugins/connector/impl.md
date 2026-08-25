@@ -1,8 +1,8 @@
 # Connector Activity Nodes — Implementation
 
-How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are authored in the flow's top-level `bindings[]` — `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow's top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
 
-For generic node/edge add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
 
 ## How Connector Nodes Differ from OOTB
 
@@ -33,20 +33,21 @@ Connector nodes come in two flavors:
 
 To classify a node, read `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` from the `registry get` response, parse it as JSON, and check `activityType`. `"Generic"` → run Step 2a to discover `objectName` (and capture `operation` from the same marker for the `--operation` flag in Step 3). Anything else → skip Step 2a.
 
+
 ## Critical: Connector Definition Must Include `form`
 
-> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip maestro flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip maestro flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
+> Connector definitions in `definitions[]` are CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)) — `uip maestro flow node add` copies them verbatim from the registry, and you should never hand-write or hand-edit them. If `node configure` fails with `No instanceParameters found in definition`, the definition in `definitions[]` is missing the `form` field — typically because the local registry cache is stale (the definition was copied in before the CLI started emitting `form`). Recovery: `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, re-run `uip maestro flow node add <file> <node-type>` so the CLI re-copies the definition with `form`. Do not paste `form` in by hand — re-running `node add` is the supported path.
 
-## No-Live-Tenant / Planned Configuration Mode
+## No-Live-Tenant / Planned Configuration
 
-If the sandbox has no tenant connection, the prompt forbids `node configure`, or the user only asks you to plan the connector detail JSON, **still use the real registered connector node**:
+If you cannot run `node configure` (no live connection, sandbox forbids it, the user asked for planning only):
 
-1. Run `registry search` / `registry get` to confirm the connector operation exists.
-2. Add the real node type with `uip maestro flow node add <file> uipath.connector.<connector-key>.<operation> --output json`.
-3. Leave the connector node's `inputs` empty if you cannot run live configuration.
-4. Write the planned `--detail` payload to the requested artifact (for example, `where_detail.json`) and list any missing connection/folder values as placeholders or open questions.
+1. Confirm the connector operation exists: `uip maestro flow registry search <keyword>` and `registry get <node-type>` (see [cli-commands.md — registry](../../../../shared/cli-commands.md#uip-maestro-flow-registry) for the `search` output shape).
+2. Add the connector node with `uip maestro flow node add <file> <node-type> --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`. **Inside a loop body?** Add `--parent <LOOP_NODE_ID>` — see [loop/impl.md](../loop/impl.md).
+3. Write the planned `--detail` payload to a separate file (e.g. `<nodeId>.detail.json`) with placeholder values for missing connection/folder UUIDs. Do **not** put a partial `inputs.detail` on the node.
+4. **The node will not pass `flow validate` until `node configure` is run.** Surface this explicitly in your completion report under "Missing connections" or "Open questions" — do not let the user discover it via a validation failure later.
 
-Do **not** replace a registered connector operation with `core.logic.mock` just because connection binding or `node configure` cannot run. Mocks are only for genuinely unknown, unpublished, or not-yet-built non-connector resources. A real connector node with empty `inputs` validates locally and preserves the registered connector key that Studio Web, reviewers, and downstream tooling need.
+Do not replace a registered connector operation with `core.logic.mock` because configuration cannot run. Mocks are only for genuinely unknown, unpublished, or not-yet-built non-connector resources. A real connector node added via `node add` but unconfigured preserves the registered connector key that Studio Web, reviewers, and downstream tooling need.
 
 When piping `--output json` into `python`, `jq`, or another parser, do not merge stderr into stdout. The CLI may emit diagnostic lines such as "Tool factory already registered..." before the JSON on stderr; use `2>/dev/null` for parse-only probes or capture stderr separately.
 
@@ -56,28 +57,43 @@ Follow these steps for every connector node.
 
 ### Step 1 — Fetch and bind a connection
 
-For each connector, extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`) and fetch a connection.
+Extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`).
+
+Discovery call is **always**:
 
 ```bash
-# 1. List available connections
-uip is connections list "<connector-key>" --folder-key "<folder-key>" --output json
-
-# 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
-
-# 3. Verify the connection is healthy
-uip is connections ping "<connection-id>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
 
-**If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
+`connections list` returns `Data` as a flat array. Do **not** parse `Data.Connections` or `Data.Items`; those wrapper objects are not part of the CLI JSON contract. Read each candidate from `Data[]` and use PascalCase fields:
 
-**Read [/uipath:uipath-platform — Integration Service — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md) for connection selection rules** (default preference, `--refresh` retry on empty results, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
+```json
+{
+  "Data": [
+    {
+      "Id": "<connection-id>",
+      "Name": "<display-name>",
+      "State": "Enabled",
+      "IsDefault": "Yes",
+      "Folder": "<folder-name>",
+      "FolderKey": "<folder-key>"
+    }
+  ]
+}
+```
+
+Use `Data[i].Id` as the `--connection-id` value and `Data[i].FolderKey` as the `folderKey` value in `node configure --detail`.
+
+> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules (auto-select, personal workspace), BYOA filtering, empty-result recovery, ping verification.
+
+End state: a healthy connection `Id` + `FolderKey` for Step 2 (`registry get --connection-id`) and Step 6 (`node configure --detail`).
 
 ### Step 2 — Get enriched node definitions with connection
 
 Call `registry get` with `--connection-id` to fetch connection-aware metadata including custom fields:
 
 ```bash
-uip maestro flow registry get <nodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <node-type> --connection-id <connection-id> --output json
 ```
 
 This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
@@ -103,8 +119,12 @@ uip is resources list "<connector-key>" --connection-id "<connection-id>" --outp
 
 Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
 
+**Read `<objectName>` from the node definition in `definitions[]` (written by `node add`) — do not guess it from the node-type suffix.**
+
 ```bash
-# 1. Describe to trigger fetch + cache (extract the objectName from the connector node type)
+# 1. Describe to trigger fetch + cache (objectName = the activity's API object, NOT the node-type suffix)
+#    Read <objectName> from the node definition FIRST (see note below) — do not batch this
+#    call with `node add` / `registry get`; those calls PRODUCE the objectName this one consumes.
 uip is resources describe "<connector-key>" "<objectName>" \
   --connection-id "<id>" --operation Create --output json
 # -> response includes metadataFile path
@@ -113,9 +133,15 @@ uip is resources describe "<connector-key>" "<objectName>" \
 cat <metadataFile path from response>
 ```
 
+> **`<objectName>` is the activity's API object name, not the node-type's trailing segment — and NOT a case-conversion of it.** Read it from the node definition copied into `definitions[]` by `node add`: `model.context[]` entry `{name:"objectName", value:"…"}` (or the `objectName` field inside the `configuration` `=jsonString:` blob). Never derive it by transforming the node-type suffix — kebab→snake (`send-email` → `send_email`) and kebab→Pascal are both guesses and both 404. Example: node type `…google-gmail.send-email` has objectName `SendEmail` (not `send_email`); `…teams.send-bot-direct-message` has objectName `bot_direct_messages` (not `send-bot-direct-message`). A 404 means wrong objectName — re-read it from the definition and retry; do NOT treat the 404 as "describe unavailable" and skip the step. Skipping describe loses `requestFields[].reference.filterPattern` and other IS-level metadata that `registry get` does not carry (see Step 4).
+>
+> **Sequence, don't parallelize, the objectName-dependent calls.** `<objectName>` is an OUTPUT of `node add` (it lands in `definitions[]`). Read that value before calling `is resources describe` — do not place `describe` in the same parallel Bash batch as `node add` or `registry get`, or you'll have nothing to pass but a guess. This is the failure mode behind the snake-case 404 above.
+
+> **Pass `--operation` = the node definition's `model.context[].method` value verbatim** (from `registry get`, or `definitions[]` after `node add`). E.g. Jira `curated_get_issue` → `GETBYID` → `--operation GETBYID`; Data Service `QueryEntityRecordsCurated` → `POST` → `--operation POST`. Do NOT use `connectorMethodInfo.operation` or `connectorMethodInfo.method` — both can point at the wrong key and fail the lookup.
+
 The full metadata contains:
 - **`availableOperations[].method`** and **`availableOperations[].path`** — HTTP method and API endpoint path. Same value as `connectorMethodInfo.method` / `.path` from `registry get`.
-- **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
+- **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack). Parameters carry `reference` objects too — scan them in Step 4 exactly like body fields.
 - **`requestFields`** — body fields with `name`, `type`, `required`, `description`, and `reference` objects for ID resolution. Pair these field names with the `path` above (e.g. `messageToSend` for Slack `/send_message_to_channel_v2`).
 - **`responseFields`** — response schema
 
@@ -131,7 +157,9 @@ Run this before Step 5 (validate required fields) and reuse the same parent-fiel
 
 ### Step 4 — Resolve reference fields
 
-Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
+Check **BOTH `requestFields` AND `parameters`** from the metadata for entries with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
+
+> **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
@@ -142,9 +170,13 @@ uip is resources run list "uipath-salesforce-slack" "curated_channels?types=publ
 # -> { "id": "C1234567890", "name": "test-slack" }
 ```
 
-The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, present them via `AskUserQuestion` with one option per match plus **"Something else"** as the last option (see the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md)).
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, ask the user, with one option per match plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)).
 
-> **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
+> **Zero matches on a user-supplied value** — if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching a value the user provided, do NOT configure the node with it silently. Ask the user, presenting the closest candidates as options plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)). Proceed with the unverified value only if the user confirms it.
+
+> **Filter server-side before paginating.** If the field's `reference` carries a `filterPattern` (e.g. Teams `userId`: `"$filter=startswith(userPrincipalName,'{filter}')"`), substitute the search term for `{filter}` and pass the result as `--query` — one targeted call instead of walking a large directory. `filterPattern` appears only in `is resources describe` output; the flow `registry get` reference object strips it (keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`), so read it from the Step 3 describe metadata. Guessed params (`searchTerm=`/`where=`/`filter=`) are silently ignored. See [reference-resolution.md — Search References (filterPattern)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern).
+
+> **Paginate only when there is no `filterPattern`.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).
 
@@ -154,7 +186,7 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 1. Collect all required fields from the metadata (`requestFields` + `parameters`)
 2. For each required field, check if the user's prompt contains a value
-3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected. Free-form input is appropriate when the value space is open-ended (channel names, message bodies, IDs); when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
+3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected. Free-form input is appropriate when the value space is open-ended (channel names, message bodies, IDs); when a finite set of sensible values exists, present them as options per the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
 4. Only after all required fields are accounted for, proceed to building
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
@@ -207,19 +239,49 @@ For every match:
 - That parameter's `name` is the connector-specific filter input — most commonly `where`, sometimes `q` (Salesforce), sometimes another name. Do not assume `where`.
 - **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
 - **Do not pass a raw CEQL string under `--detail.queryParameters.<name>`.** It populates only the runtime half — debug runs succeed but the FilterBuilder UI shows `undefined` when the activity is reopened in SW. The CLI rejects this at configure time.
+- **A dynamic operand in the tree works**: `"value": {"value": "=js:$vars...", "isLiteral": false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.
+- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing. Copy-paste template, operator aliases, and the error→fix table → [Hand-authored CEQL strings](#hand-authored-ceql-strings) below.
 - Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
 
-**Dynamic-entity connectors (e.g. Dataservice V3) — fallback workflow.** When filterable fields are resolved at design time via an `actionType: "api"` action keyed off a parent field (V3's `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the CLI's `--detail.filter` validator rejects leaf field IDs not in static metadata. Symptom: `Failed to build filter for activity "...": Filter references field 'X' which is not present in trigger metadata`. The CLI also rejects raw `--detail.queryParameters.<filterParamName>` for FilterBuilder params.
+**Dynamic-entity connectors (e.g. Data Service).** Their FilterBuilder params take `--detail.filter` like every other connector. Always set the entity name in the same `node configure` call (`pathParameters.entityName` on Data Service) — the CLI runs the connector's schema-fetch action from it and resolves the entity's real fields. Field ids in the tree must match that schema exactly. Matching is case-sensitive: `InvoiceNumber` does not match `invoiceNumber`. Read the exact names from `uip df entities list --output json` (entity `Id`) plus `uip df entities get <entity-id> --output json` (field names). An unmatched leaf is dropped without an error — `node configure` reports Success and the filter is lost or malformed. See [Common Errors](#common-errors).
 
-Workaround:
+##### Hand-authored CEQL strings
 
-1. `node configure` with `bodyParameters` / `queryParameters` and `customFieldsRequestDetails` — omit `filter`.
-2. `Edit` the `.flow` file to inject both halves:
-   - Runtime: `inputs.detail.queryParameters.<filterParamName>` = compiled CEQL string (e.g. `"test = 'Active'"`)
-   - Design-time: `essentialConfiguration.savedFilterTrees.<filterParamName>` = structured tree (inside the `=jsonString:` blob)
-3. Validate. Both halves must be present or Studio Web round-trip shows an empty FilterBuilder.
+Preference order. Do not skip step 1.
+
+1. **`node configure --detail.filter`** — pass a structured tree. The CLI compiles the CEQL for you. Use this for every literal filter. It does not report a leaf whose field id the entity schema does not match — it drops that leaf (see Step 6a).
+2. **Hand-authored `=js:` string** — use only when a runtime value forces it, and only from the template below. Nothing validates the string: `flow validate` passes it through and IS faults at `flow debug` with `[102003]`.
+
+Canonical template for a dynamic value:
+
+```text
+=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
+```
+
+Single quotes delimit a value. Double quotes mark a column reference to the CEQL parser.
+
+**Anti-patterns.** Match the IS error text, then apply the corrected form.
+
+| Wrong form | IS error text | Corrected form |
+|---|---|---|
+| `'accountNumber' = 'ACC123'` — field name quoted | `Expected a field name expression but got 'StringValue'` | `accountNumber = 'ACC123'` |
+| `` =js:"accountNumber = \"" + String(v) + "\"" `` — value double-quoted | `Unsupported value expression 'Column' on field 'accountNumber'` | `` =js:"accountNumber = '" + String(v) + "'" `` |
+| `accountNumber eq 'ACC123'` — OData alias | `[102003] Integration Services bad request` | `accountNumber = 'ACC123'` |
+
+CEQL rejects OData aliases. Map them:
+
+| OData alias | CEQL operator |
+|---|---|
+| `eq` | `=` |
+| `ne` | `!=` |
+| `gt` | `>` |
+| `ge` | `>=` |
+| `lt` | `<` |
+| `le` | `<=` |
+
+Full operator table → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 #### Step 6b — Run configure
 
@@ -264,9 +326,35 @@ The `objectName` field is required for generic nodes (see "Generic vs Concrete A
 
 Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (`registry get`, concrete only) or `requestFields[].name` (`is resources describe`, both).
 
+> **Array fields — `[*]` indicates an array.** `[*]` in `requestFields[].name` (or `inputDefinition.fields[].name`) marks the field as an array; `dataType` identifies the element type. **Supported only when `[*]` is the name suffix.** Any name containing `[*].` (path segments after the `[*]`, e.g. `addresses[*].zipCode`, `contacts[*].emails[*]`) is not authorable — the canvas UI does not emit these shapes. The rule below covers `bodyParameters`, `queryParameters`, and `pathParameters`.
+>
+> | `requestFields[].name` | `dataType` | Authoring shape in `inputs.detail` |
+> |---|---|---|
+> | `fields.labels[*]` | `string` | `"fields.labels": "=js:(['shield', 'p0'])"` |
+> | `fields.components_arrayRemap_name[*]` | `string` | `"fields.components_arrayRemap_name": "=js:(['IS Runtime'])"` |
+> | `users[*]` | `string` | `"users": "=js:(['U123ABC', 'U456DEF'])"` |
+>
+> **Strip `[*]` from the key; pass a `=js:` expression returning the array.**  The runtime rejects any key containing the literal `[*]` substring as unknown (regardless of value shape), so pass the stripped form in your `node configure --detail` payload. **A literal JSON array (`"users": ["U123ABC", "U456DEF"]`) passes `node configure` and `flow validate` but does not bind — the field round-trips empty.** **Distinct from `customFieldsRequestDetails.parameterValues`**, where `[*]` is encoded as `_array` — see Step 6c.
+>
+> **Expression values.** The serializer is purely structural (dot-expansion only; no expression evaluation, no type coercion). Choose the authoring shape based on what the expression returns at runtime:
+>
+> | Expression resolves to | Authoring shape | Example |
+> |---|---|---|
+> | The whole array | `"<field>": "=<expr>"` | `"fields.labels": "=js:$vars.allTags"` |
+> | A single element to wrap | `"<field>": "=js:([<expr>])"` | `"fields.labels": "=js:([$vars.priorityTag])"` |
+
+> **Connector output shape — derive it from `connectorMethodInfo`, never from vendor-API intuition.**
+>
+> | `connectorMethodInfo.operation` | `output` at runtime | Loop / binding shape |
+> |---|---|---|
+> | `list` | bare **array**; `outputResponseDefinition.fields` describes one element | `"collection": "=js:$vars.<node>.output"` |
+> | anything else (`retrieve`, `create`, `update`, …) | single **object** matching those fields | `=js:$vars.<node>.output.<field>` |
+>
+> Ignore `outputDefinition.output.type` — it says `"object"` even for `list` operations, where the actual output type is an array.
+
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
-If you are inspecting or hand-authoring the resulting `.flow`, the folder field is named `connectionFolderKey` in `inputs.detail`. The CLI `--detail` input accepts `folderKey` for convenience, then serializes the `.flow` field expected by validation.
+When inspecting the resulting `.flow`, note that the folder field is named `connectionFolderKey` in `inputs.detail`. The CLI `--detail` input accepts `folderKey` for convenience, then serializes the `.flow` field expected by validation. Do not hand-edit this field — `inputs.detail` is CLI-owned (see [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node)); re-run `node configure` to change it.
 
 > **Do not use `filterExpression`** — that field is the trigger / JMESPath path. See [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees).
 
@@ -433,12 +521,12 @@ The CLI embeds the payload verbatim in `essentialConfiguration.customFieldsReque
 
 ```bash
 # Connections
-uip is connections list "<connector-key>" --folder-key "<folder-key>" --output json      # list connections for a connector
+uip is connections list "<connector-key>" --all-folders --output json      # discover connections (--all-folders is mandatory)
 uip is connections ping "<connection-id>" --output json      # verify connection health
 uip is connections create "<connector-key>"                  # create new connection (interactive)
 
 # Enriched node metadata (pass connection for custom fields)
-uip maestro flow registry get <nodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <node-type> --connection-id <connection-id> --output json
 
 # Resource description and metadata
 uip is resources describe "<connector-key>" "<objectName>" \
@@ -478,9 +566,11 @@ At BPMN emit time, the runtime rewrites each `<bindings.{name}>` placeholder to 
 
 > **Matching differs from resource nodes.** For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl), the definition's `model.bindings.resourceKey` is set to `<FolderPath>.<ResourceName>`, so placeholder matching is scoped by `(name, resourceKey)`. For connector nodes, `resourceKey` on the definition is typically unset, so matching is name-only — the `<CONNECTOR_KEY> connection` placeholder must be unique per connector in the flow. Don't confuse the two patterns.
 
-### Authoring top-level `bindings[]`
+### Top-level `bindings[]` shape (CLI-emitted; reference only)
 
-For every unique connection used in the flow, add **two entries** to top-level `bindings[]`:
+`uip maestro flow node configure` populates these entries — you do not author them by hand. The schema below is the shape the CLI emits, for **inspection** when debugging a flow's binding state and as the planned shape for the **No-Live-Tenant** flow's sidecar `<nodeId>.detail.json` (see § No-Live-Tenant / Planned Configuration above). Per the [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) rules, `bindings[]` is part of the CLI-owned envelope for connector / connector-trigger / managed HTTP nodes.
+
+For every unique connection used in the flow, `node configure` appends **two entries** to top-level `bindings[]`:
 
 ```json
 "bindings": [
@@ -508,7 +598,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | Field | Value |
 |-------|-------|
 | `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
-| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically. When adding bindings by hand, use `"<CONNECTOR_KEY> connection"` as a placeholder — it must match the definition's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix). |
+| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically — this is the supported path. The placeholder form `"<CONNECTOR_KEY> connection"` appears in the table for reference only (e.g. when inspecting a flow whose bindings have not yet been configured); it must match the definition's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix). |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
@@ -516,9 +606,9 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | `default` | Connection binding → connection UUID. Folder binding → folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
-The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and appends the two top-level `bindings[]` entries. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
+The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and writes the two top-level `bindings[]` entries — claiming the empty `ConnectionId` stub that `node add` hoisted (matched by name) and adding the `FolderKey` row. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
 
-> **CLI side-effect — duplicate empty bindings.** `node configure` currently appends placeholder entries with `resourceKey: ""` and no `default` alongside the resolved pair (4 entries per configure call instead of 2). Validate passes; they're harmless but verbose. Remove the empty pair via `Edit` after configure if you care about clean diffs.
+> **An empty-keyed Connection binding is a defect, not a cosmetic nit.** A `bindings[]` row with `resource: "Connection"`, `propertyAttribute: "ConnectionId"`, and `resourceKey: ""` faults Studio Web at runtime with `Value cannot be null. (Parameter 'Connection')`. `node add` hoists exactly one such stub (`name: "<connector-key> connection"`); `node configure` **claims it in place** (matching by that name), so a fully configured connector leaves no empty row — do not expect a "duplicate" empty pair, and never hand-edit `bindings[]` to remove one (it is CLI-owned). The only legitimate empty stub is the No-Live-Tenant / Planned Configuration case above, where the node is deliberately left unconfigured and the flow is known not to pass `flow validate` yet. An empty stub that survives a real `node configure` — or lingers after a connector node is removed — is a CLI bug to report, not something to paper over by hand.
 
 **Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two binding entries — do not add duplicates. Matching is by `name` only (the `<CONNECTOR_KEY> connection` placeholder is unique per connector), so any node whose definition resolves against `<bindings.<CONNECTOR_KEY> connection>` picks up the shared binding pair.
 
@@ -624,21 +714,28 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Reference field has display name instead of ID | `uip is resources run list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
 | Node faults at runtime with "resource not found" or similar after a clean build and validate | Reference field uses an ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a Slack channel ID from workspace A pasted into a node bound to workspace B's connection) | Re-run `uip is resources run list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `bodyParameters` / `queryParameters` in `--detail`, re-run `node configure`, re-debug. See Step 4 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |
 | Required field missing at runtime | Required input field not provided | Check metadataFile for all `required: true` fields in both `requestFields` and `parameters` |
+| `is resources describe ... -f` fails `No api-type ObjectAction matched for fields [...]` though the action exists in `registry get` | Wrong `--operation` — it scopes the lookup by the IS method label, and the value mapped to the wrong key. Both `connectorMethodInfo.operation` (Data Service query `List`→`GET`, action under `POST`) and `connectorMethodInfo.method` (Jira normalized `GET`, action under `GETBYID`) mislead. | Pass the node definition's `model.context[].method` value verbatim (the IS label): Jira get-by-id → `--operation GETBYID`; Data Service query → `--operation POST`. See Step 3. |
 | `$vars` expression unresolvable | Node outputs block missing or node not connected | Verify the node has edges and upstream outputs are correctly referenced |
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |
-| `bindings_v2.json` malformed or stale | It was hand-edited (the CLI overwrites edits on next debug/pack) | Never edit `bindings_v2.json` directly — author bindings in the top-level `.flow` `bindings[]` instead. Compare your top-level `bindings[]` against the schema and examples in the Bindings section above |
+| `bindings_v2.json` malformed or stale | It was hand-edited (the CLI overwrites edits on next debug/pack), or top-level `bindings[]` was mutated by hand | Never edit `bindings_v2.json` directly. Re-run `uip maestro flow node configure` on the affected connector node(s) so the CLI re-emits top-level `bindings[]`; `bindings_v2.json` is regenerated from those at the next debug/pack. Compare the emitted shape against the CLI-emitted reference in § Top-level `bindings[]` shape. |
 | Connector key not found | Wrong key name | Run `uip is connectors list --output json` — keys are often prefixed with `uipath-` |
 | FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
 | `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
+| Data Service query returns every record (or faults with malformed CEQL ending in `AND`) though a filter tree was configured; `node configure` reported Success | A filter-tree leaf's field id did not match the entity schema (matching is case-sensitive). The compiler drops unmatched leaves without an error — one bad leaf empties the query string, a bad leaf beside a good one leaves a dangling `AND`. | Compare the tree's field ids against the entity schema — `uip df entities list --output json` for the entity `Id`, then `uip df entities get <entity-id> --output json` for the field names. Re-run `node configure` with the exact ids. See Step 6a. |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` builds the expression for you; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Unsupported value expression 'Column' on field '<field>'"` — `flow validate` passed | Hand-authored CEQL double-quotes the **value**, typically from a concatenation with escaped quotes: `` =js:"accountNumber = \"" + String(v) + "\"" ``. CEQL reads a double-quoted token as a column reference, not a string literal. | Single-quote the value inside the concatenation: `` =js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'" ``. Or author via `--detail.filter`. See [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
+| Node faults `[102003] Integration Services bad request` and the filter uses `eq`, `ne`, `gt`, `ge`, `lt`, or `le` | OData aliases in a hand-authored CEQL string. CEQL accepts only symbol operators. | Replace with `=`, `!=`, `>`, `>=`, `<`, `<=`. See the alias table in [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
 | `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
+| Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key in your `--detail` payload, pass a `=js:` expression returning the array, and re-run `node configure`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
+| Array field round-trips empty after a clean `flow validate` | Literal JSON array authored for a `[*]` field — validates but does not bind | Author as `=js:` expression returning the array: `"users": "=js:(['U123ABC', 'U456DEF'])"`. See the array-fields table in Step 6b. |
 
 ### Debug Tips
 
-1. **Always check top-level `bindings[]` in the `.flow` file** — connector nodes silently fail if a binding is missing or malformed. Compare against the Authoring top-level `bindings[]` schema above. Do not inspect `bindings_v2.json` as ground truth; it is regenerated from the `.flow` on every debug/pack.
+1. **Always check top-level `bindings[]` in the `.flow` file** — connector nodes silently fail if a binding is missing or malformed. Compare against the CLI-emitted `bindings[]` shape documented above (§ Top-level `bindings[]` shape). Do not inspect `bindings_v2.json` as ground truth; it is regenerated from the `.flow` on every debug/pack.
 2. **Compare inputs against metadataFile** — the full metadata (from `is resources describe`) has every field with types, descriptions, and whether it's required
 3. **`flow validate` does NOT catch connector-specific issues** — validation only checks JSON schema and graph structure. Missing `inputs.detail` fields, wrong reference IDs, and expired connections are caught only at runtime (`flow debug`)
 4. **If a connector key doesn't work** — list all connectors: `uip is connectors list --output json`. Keys are often prefixed with `uipath-`
 5. **Query/path parameters** — some required parameters appear only in the metadataFile `parameters` section, not in `requestFields`. Check both.
-6. **`node configure` populates bindings automatically** — it appends the two top-level `bindings[]` entries and populates `inputs.detail`. The generated `bindings_v2.json` follows from these at debug/pack time. In Edit / Write mode, author the top-level `bindings[]` yourself (see Authoring section above).
+6. **`node configure` populates bindings automatically** — it appends the two top-level `bindings[]` entries and populates `inputs.detail`. The generated `bindings_v2.json` follows from these at debug/pack time. If you cannot run `node configure` (no live tenant, sandbox forbids it, planning-only request), record the planned binding entries in the sidecar `<nodeId>.detail.json` per the No-Live-Tenant flow above — do not author `bindings[]` directly on the `.flow` as a substitute, and note that the flow will not pass `flow validate` until a real `node configure` runs.

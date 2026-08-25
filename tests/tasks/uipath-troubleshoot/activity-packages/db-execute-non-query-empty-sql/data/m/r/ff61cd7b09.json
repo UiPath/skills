@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "2f8a4d6c-9b1e-4c3a-8d5f-6e7a8b9c0d1e",
+      "State": "Faulted",
+      "ProcessName": "ConfigSyncProcess",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-20T08:15:03.118Z",
+      "EndTime": "2026-05-20T08:15:04.602Z",
+      "CreationTime": "2026-05-20T08:15:02.901Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

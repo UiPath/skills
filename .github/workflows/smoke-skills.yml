@@ -14,41 +14,124 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Workflow-level, not per-job: every job that installs the pinned coder-eval
+# wheel needs this, and a job added later inherits it automatically instead of
+# silently regressing to "no version found".
+#
+# safe-chain's minimum-package-age check suppresses freshly published versions
+# during metadata resolution, so a same-day `coder-eval` pin in
+# tests/.coder-eval-version resolves to "no version found" and the install step
+# fails. coder_eval is a first-party internal package from the Azure Artifacts
+# feed, not public-registry supply-chain surface, so exclude it from the age
+# check only. Every other safe-chain check still applies.
+#
+# `anthropic` is excluded for the same reason, transitively: coder-eval >=0.11.1
+# pins anthropic>=1.0.0 (a fresh major), which the age gate suppresses — leaving
+# the resolver with only anthropic<=0.123.0 and "requirements are unsatisfiable"
+# until 1.0.0 ages out. The Anthropic SDK is the official first-party client, so
+# exempting it from the age check (only) is the same low-risk call as coder-eval.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
+
 jobs:
   detect:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Detect changed skills
     outputs:
       task_globs: ${{ steps.detect.outputs.task_globs }}
       skip: ${{ steps.detect.outputs.skip }}
       untested_skills: ${{ steps.detect.outputs.untested_skills }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0
 
       - name: Detect changed skills and map to test tasks
         id: detect
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+          MAX_SMOKE_TASKS: ${{ vars.SMOKE_MAX_TASKS || '40' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          BASE_REF="${{ github.base_ref }}"
+          BASE_REF="${BASE_REF:-main}"
+          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
 
-          # RPA + rpa-legacy skills run on the Windows workflow
+          # Per-PR smoke-task cap. No single PR runs more than MAX_SMOKE_TASKS
+          # smoke tasks: a `tests/_shared/` or smoke.yaml edit otherwise fans
+          # out to the whole tree (~250 tasks), which is too costly to pay on
+          # every PR. Over the cap we keep a deterministic pseudo-random sample
+          # seeded by the PR number (commit SHA on workflow_dispatch) so a
+          # re-run of the same commit selects the same set — a required check
+          # must not be a coin flip. Flat sample, NOT stratified by skill. The
+          # nightly full suite remains the coverage backstop for what's dropped.
+          SEED="$PR_NUMBER"
+          [ -z "$SEED" ] && SEED="$HEAD_SHA"
+
+          # apply_cap <space-separated glob/file tokens, relative to tests/>
+          # Echoes the token list unchanged when the eligible smoke-task count
+          # is at or under MAX_SMOKE_TASKS (preserves today's glob behavior).
+          # Over the cap, expands to smoke-tagged files, deterministically
+          # samples MAX_SMOKE_TASKS of them, and echoes explicit file paths
+          # (still relative to tests/). Smoke detection mirrors the repo's
+          # `^tags:` grep convention used elsewhere in this workflow.
+          apply_cap() {
+            shopt -s globstar nullglob
+            local tokens="$1" t f
+            local files=()
+            for t in $tokens; do
+              for f in tests/$t; do
+                [ -f "$f" ] || continue
+                grep -qE '^tags:.*\bsmoke\b' "$f" || continue
+                files+=("$f")
+              done
+            done
+            local uniq n
+            uniq=$(printf '%s\n' "${files[@]:-}" | grep -v '^$' | sort -u)
+            n=$(printf '%s\n' "$uniq" | grep -c . || true)
+            if [ "$n" -le "$MAX_SMOKE_TASKS" ]; then
+              echo "$tokens"
+              return
+            fi
+            echo "::notice::Smoke selection capped: $n eligible smoke task(s) -> $MAX_SMOKE_TASKS (seed=$SEED)" >&2
+            printf '%s\n' "$uniq" \
+              | while IFS= read -r p; do
+                  printf '%s %s\n' "$(printf '%s%s' "$SEED" "$p" | sha1sum | cut -c1-16)" "$p"
+                done \
+              | sort | head -n "$MAX_SMOKE_TASKS" | cut -d' ' -f2- \
+              | sed 's|^tests/||' | xargs
+          }
+
+          # Windows-tagged tasks run on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
           # the full lifecycle (`uip rpa` / `uip rpa-legacy` CLI) is
           # what's being exercised — so we skip those tasks here.
-          WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
+          # Source of truth: the `windows` tag in each task YAML, so adding
+          # a new Windows-only skill is just a tag, not a workflow edit.
+          WINDOWS_TASKS=$(grep -rEl '^tags:.*\bwindows\b' tests/tasks/ 2>/dev/null | sort -u)
+          WINDOWS_SKILLS=$(echo "$WINDOWS_TASKS" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p' | sort -u)
 
           # Opt-in benchmarks live alongside skill tests but are NOT smoke
           # tests — they're large/expensive and run via the dashboard
           # (`dashboard run --suite <name>`). Skip here so smoke stays cheap.
           BENCHMARK_DIRS="activation"
 
-          # Single source of truth for "skill dirs not smoke-eligible".
+          # Single source of truth for "task file not smoke-eligible on Linux".
           # Used by both the test-infra fan-out and the per-skill loop below.
+          # Accepts either a task-file path (matches the windows-task list
+          # exactly) or a `tests/tasks/<skill>/` directory prefix (matches the
+          # derived windows-skills / benchmark dirs).
           is_excluded_path() {
-            local dir="$1"
-            for skill in $WINDOWS_SKILLS $BENCHMARK_DIRS; do
-              [[ "$dir" == "tests/tasks/$skill/"* ]] && return 0
+            local path="$1"
+            for skill in $BENCHMARK_DIRS; do
+              [[ "$path" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            for skill in $WINDOWS_SKILLS; do
+              [[ "$path" == "tests/tasks/$skill/"* ]] && return 0
+            done
+            for t in $WINDOWS_TASKS; do
+              [[ "$path" == "$t" ]] && return 0
             done
             return 1
           }
@@ -56,12 +139,14 @@ jobs:
           # If test infrastructure changed, run all smoke tests except
           # the Windows-only ones and opt-in benchmarks.
           #
-          # We only fan out for the smoke config (default.yaml) — other
-          # experiment files (integration.yaml, e2e.yaml, activation.yaml,
-          # ...) drive their own jobs/dashboards and don't change smoke
-          # behavior, so editing them shouldn't trigger a 30-min full-suite
-          # run on every PR.
-          if echo "$CHANGED" | grep -qE '^tests/experiments/default\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$'; then
+          # We only fan out for the smoke config (smoke.yaml) — other
+          # experiment files (e2e.yaml, activation.yaml, ...) drive their
+          # own jobs/dashboards and don't change smoke behavior, so editing
+          # them shouldn't trigger a 30-min full-suite run on every PR.
+          SKIP_INFRA_TRIGGER=false
+          echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
+
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -69,34 +154,69 @@ jobs:
               GLOBS="$GLOBS ${f#tests/}"
             done
             GLOBS=$(echo "$GLOBS" | xargs)
+            GLOBS=$(apply_cap "$GLOBS")
             if [ -z "$GLOBS" ]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
               echo "No non-Windows smoke tasks to run."
             else
               echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
-              echo "Running all non-Windows smoke tests (test infrastructure changed)"
+              echo "Running non-Windows smoke tests (test infrastructure changed; capped at $MAX_SMOKE_TASKS)"
             fi
             exit 0
           fi
 
-          # Extract unique skill names from changed paths
-          SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u)
+          # Skill SOURCE changes → run that skill's FULL smoke suite. The
+          # skill's behavior may have changed, so broad coverage is warranted.
+          SRC_SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u | grep -v '^$' || true)
 
-          # Also include skills whose test tasks changed
-          TEST_SKILLS=$(echo "$CHANGED" | grep '^tests/tasks/' | sed 's|tests/tasks/\([^/]*\)/.*|\1|' | sort -u)
-          SKILLS=$(printf '%s\n%s' "$SKILLS" "$TEST_SKILLS" | sort -u | grep -v '^$' || true)
+          # Test-only changes → run just the affected task file(s), NOT the
+          # whole skill. Adding or editing a test must not re-run every other
+          # smoke task for that skill when the skill itself is unchanged.
+          # Resolve each changed path under tests/tasks/ to its owning task YAML:
+          #   - a changed *.yaml IS the task
+          #   - a changed fixture / check-script resolves to the nearest
+          #     ancestor directory that holds a *.yaml (the leaf task dir)
+          resolve_task_yaml() {
+            local path="$1"
+            if [[ "$path" == *.yaml ]]; then
+              echo "$path"
+              return
+            fi
+            local d
+            d=$(dirname "$path")
+            while [[ "$d" == tests/tasks/* ]]; do
+              local found
+              found=$(find "$d" -maxdepth 1 -name '*.yaml' 2>/dev/null)
+              if [ -n "$found" ]; then
+                echo "$found"
+                return
+              fi
+              d=$(dirname "$d")
+            done
+          }
 
-          if [ -z "$SKILLS" ]; then
+          CHANGED_TASKS=""
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            for y in $(resolve_task_yaml "$path"); do
+              CHANGED_TASKS="$CHANGED_TASKS"$'\n'"$y"
+            done
+          done < <(echo "$CHANGED" | grep '^tests/tasks/' || true)
+          CHANGED_TASKS=$(echo "$CHANGED_TASKS" | sort -u | grep -v '^$' || true)
+
+          if [ -z "$SRC_SKILLS" ] && [ -z "$CHANGED_TASKS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "No skill changes detected — skipping smoke tests"
+            echo "No skill or test changes detected — skipping smoke tests"
             exit 0
           fi
 
-          # Build task glob pattern for changed skills that have tests.
-          # Skip the Windows-only RPA skills — they run on smoke-rpa-skills.yml.
           GLOBS=""
           UNTESTED=""
-          for skill in $SKILLS; do
+
+          # 1) Whole-skill globs for skills whose SOURCE changed.
+          #    Skip skills whose tasks are all `windows`-tagged (they run on
+          #    smoke-rpa-skills.yml) or are opt-in benchmarks.
+          for skill in $SRC_SKILLS; do
             if echo "$WINDOWS_SKILLS" | grep -qw "$skill"; then
               echo "Skipping $skill (runs on Windows — see smoke-rpa-skills.yml)"
               continue
@@ -106,12 +226,8 @@ jobs:
               continue
             fi
             if [ -d "tests/tasks/$skill" ]; then
-              if [ -n "$GLOBS" ]; then
-                GLOBS="$GLOBS tasks/$skill/**/*.yaml"
-              else
-                GLOBS="tasks/$skill/**/*.yaml"
-              fi
-              echo "Will test: $skill"
+              GLOBS="$GLOBS tasks/$skill/**/*.yaml"
+              echo "Will test (skill source changed): $skill"
             else
               if [ -n "$UNTESTED" ]; then
                 UNTESTED="$UNTESTED, $skill"
@@ -122,13 +238,39 @@ jobs:
             fi
           done
 
+          # 2) Individual task files for test-only changes. Skip any task whose
+          #    skill is already covered by a whole-skill glob above, and any
+          #    Windows-only / benchmark path (those run elsewhere).
+          for task in $CHANGED_TASKS; do
+            skill=$(echo "$task" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p')
+            if echo "$SRC_SKILLS" | grep -qw "$skill"; then
+              continue  # already covered by the whole-skill glob
+            fi
+            # NOTE: is_excluded_path() internally loops `for t in $WINDOWS_TASKS`
+            # (non-local), so don't name this loop variable `t` — it would be
+            # clobbered by the call below.
+            if is_excluded_path "$task"; then
+              echo "Skipping $task (Windows-only or benchmark — not a Linux smoke task)"
+              continue
+            fi
+            GLOBS="$GLOBS ${task#tests/}"
+            echo "Will test (task changed): ${task#tests/}"
+          done
+
+          GLOBS=$(echo "$GLOBS" | xargs)
+          GLOBS=$(apply_cap "$GLOBS")
+
           if [ -n "$UNTESTED" ]; then
             echo "untested_skills=$UNTESTED" >> "$GITHUB_OUTPUT"
           fi
 
           if [ -z "$GLOBS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Changed skills have no smoke tests: $UNTESTED"
+            if [ -n "$UNTESTED" ]; then
+              echo "::warning::Changed skills have no smoke tests: $UNTESTED"
+            else
+              echo "No smoke-eligible tasks to run."
+            fi
           else
             echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
           fi
@@ -136,12 +278,12 @@ jobs:
   warn-untested:
     needs: detect
     if: needs.detect.outputs.untested_skills != ''
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Warn about untested skills
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
         with:
           script: |
             const skills = '${{ needs.detect.outputs.untested_skills }}';
@@ -173,89 +315,130 @@ jobs:
   e2e:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     # 18+ smoke tasks at ~1–2 min each + env setup. 60 min was getting
     # cancelled when the matrix grew + LLM reviewer was retrying on quota
     # exhaustion. 120 min covers worst-case reviewer-retry storms without
     # masking real hangs.
     timeout-minutes: 120
     name: Run skill smoke tests
+    # Disable uip CLI version-sync: a task's `uip login status` re-pins
+    # ~/.uipath/config.json to a stale line and, via smoke.yaml's shared
+    # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
+      # Single source of truth for the coder_eval version: the pin in
+      # tests/.coder-eval-version. Consumed as the wheel version (host CLI) and
+      # the agent image tag (sandbox) below -- no coder_eval source checkout.
+      - name: Resolve coder_eval pin
+        id: ceref
+        run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: '20'
 
+      - name: Verify Docker is available
+        run: docker info > /dev/null
+
+      # Host coder-eval CLI = pinned wheel from the Azure Artifacts `coder_eval`
+      # feed; its UiPath deps resolve from the ml-packages feed (both as extra
+      # indexes). No source checkout.
       - name: Install coder-eval
-        working-directory: .coder_eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
-      # Install from public npm at @latest. `--@uipath:registry=`
-      # forces the @uipath scope to public npm regardless of any
-      # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
-      # feed, which carries divergent 1.0.0-alpha.* prereleases). See
-      # smoke-rpa-skills.yml for the full rationale.
-      # NOTE: @uipath/admin-tool is not yet in a stable CLI release;
-      # uipath-admin smoke tests tolerate "unknown command 'admin'".
-      - name: Install uip CLI (public npm @latest)
+      # Pull the pinned agent image from GHCR (never built from source); the
+      # skills smoke image extends it below. Needs read:packages only —
+      # GH_PACKAGES_TOKEN, never the repo-write PAT: this workflow is
+      # `pull_request`-triggered, so anyone who can push a branch to this
+      # public repo can read the secret it is handed.
+      - name: Pull pinned coder-eval-agent image
         run: |
-          npm install -g \
-            --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest
-          uip --version
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
 
-      # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
-      # smoke tasks (orchestrator / integration-service / data-fabric / ...)
-      # have a logged-in CLI without the agent ever calling `uip login`.
-      # See smoke-rpa-skills.yml for the chain rationale; this Linux job
-      # doesn't go through Helm, but the same UIPATH_CLI_* env vars
-      # satisfy the JS CLI's general auth state too.
-      - name: Mint UiPath service-account token + enable env-auth
+      # Build custom smoke image extending coder-eval-agent with @uipath/cli and
+      # every whitelisted tool plugin from GitHub Packages @dev (see
+      # tests/docker/Dockerfile). Every push to `cli/main` publishes a
+      # `-dev.<run>` prerelease under the `dev` dist-tag (cli PR #2650 renamed the
+      # old `alpha` tag → `dev` on 2026-06-26), so smoke tracks main — not stale
+      # `latest` from public npm (which lags by ~2 weeks).
+      - name: Build skills smoke Docker image
         env:
-          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
-          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+          DOCKER_BUILDKIT: "1"
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          docker build \
+            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
+            --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
+            -t skills-image:latest \
+            -f tests/docker/Dockerfile \
+            .
+
+      # Authenticate as the existing Alpha bot user. Agent guardrail discovery
+      # is served by agentsruntime_ and requires user-only scopes such as
+      # StudioWebBackend; an External App client_credentials token can report a
+      # valid login while still receiving 401 from the guardrail endpoints.
+      #
+      # Reuse the same ROPC helper as the nightly workflow. It writes the
+      # standard ~/.uipath/.auth file that the smoke experiment mounts into
+      # every Docker sandbox.
+      - name: Mint UiPath Alpha bot token (ROPC)
+        env:
+          UIPATH_URL:               https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME: ${{ secrets.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:   ${{ secrets.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:       ${{ secrets.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:         ${{ secrets.UIPATH_TENANT_ID }}
+          CLIENT_ID:                ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: |
           set -euo pipefail
-          TOKEN=$(curl -fsS -X POST \
-            "https://alpha.uipath.com/identity_/connect/token" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=client_credentials" \
-            -d "client_id=$UIPATH_CLIENT_ID" \
-            -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
-            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-          echo "::add-mask::$TOKEN"
-          {
-            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
-            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
-            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
-            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
-            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
-            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
-            echo "TRACES_SMOKE_PROCESS_KEY=${{ secrets.TRACES_SMOKE_PROCESS_KEY }}"
-          } >> "$GITHUB_ENV"
-          UIPATH_CLI_ENABLE_ENV_AUTH=true \
-          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
-          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
-          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
-          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
-          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
-            uip login status --output json
+          bash .github/scripts/refresh-auth.sh
+
+          # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
+          # containers (reference anti-cheat), so container-root can no longer
+          # read the host-owned ~/.uipath extra_mount by capability. Widen it
+          # recursively via the "other" bits so the mounted .auth file (mode
+          # 600) is readable — mirrors coder-eval's own grant_container_access.
+          chmod -R o+rwX "$HOME/.uipath"
+
+          # Fail once at setup, with a direct error, rather than letting every
+          # guardrail task discover an unusable auth context independently.
+          docker run --rm \
+            -v "$HOME/.uipath:/.uipath:rw" \
+            --entrypoint /bin/sh \
+            skills-image:latest -lc '
+              set -eu
+              uip login status --output json
+              uip agent guardrails list --output json
+            '
+
+      # Model guard, deliberately its OWN step: "Run smoke tests" below carries
+      # continue-on-error, and the threshold steps treat zero tasks as a pass, so a
+      # guard inside the smoke step is swallowed and the gate goes green having
+      # evaluated nothing. Fail here instead, before any task runs.
+      - name: Require an agent model
+        env:
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
+
+      # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
+      # can no longer import the group-level _shared/ helper by walking up the
+      # tree. Co-locate a copy of each group's _shared into its task dirs first.
+      - name: Stage _shared grader helpers
+        run: bash tests/scripts/stage_shared.sh
 
       - name: Run smoke tests
         env:
@@ -276,21 +459,38 @@ jobs:
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
+          # The gate's agent model, passed explicitly on the command line rather than
+          # pinned in experiments/smoke.yaml — one repo variable moves every gate here,
+          # and the experiment file stays harness-agnostic (the nightly runs the same
+          # file under codex/antigravity with their own models). No literal fallback:
+          # gating on a model nobody configured reports a verdict about the wrong thing,
+          # so an unset variable fails the guard step above. NOT $BEDROCK_MODEL: that
+          # is the evaluation-side model (llm_judge + the simulated user), and reusing
+          # it here would move the grader with the agent.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         run: |
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
+          shopt -s globstar nullglob
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
+            -e experiments/smoke.yaml \
+            --model "$AGENT_MODEL" \
+            -j "$TASK_PARALLELISM" -v \
+            --run-dir /tmp/runs \
+            --tags smoke
         continue-on-error: true
+
+      - name: Fix permissions on /tmp/runs
+        if: always()
+        run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
 
       - name: Summarize results
         if: always()
-        working-directory: tests
         run: |
           # Find the most recent run directory (tests may not have produced
           # one on catastrophic install failures).
-          run_dir=$(ls -td runs/*/ 2>/dev/null | head -n 1)
+          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1)
           if [ -z "$run_dir" ]; then
             echo "::warning::No run directory found — nothing to summarize"
             exit 0
@@ -301,7 +501,7 @@ jobs:
           python - <<'PY'
           import json
           import pathlib
-          run_dir = sorted(pathlib.Path('runs').glob('*/'))[-1]
+          run_dir = sorted(pathlib.Path('/tmp/runs').glob('*/'))[-1]
           rows = []
           for p in sorted(run_dir.rglob('task.json')):
               d = json.loads(p.read_text(encoding='utf-8'))
@@ -324,24 +524,61 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
+      - name: Redact secrets from eval report
+        if: always()
+        env:
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+
+          names = (
+              "UIPATH_CLI_AUTH_TOKEN",
+              "AWS_BEARER_TOKEN_BEDROCK",
+              "ANTHROPIC_API_KEY",
+          )
+          values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
+          if not values:
+              raise SystemExit(0)
+
+          suffixes = {".html", ".json", ".log", ".md"}
+          for path in pathlib.Path("/tmp/runs").rglob("*"):
+              if not path.is_file() or path.suffix not in suffixes:
+                  continue
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              redacted = text
+              for value in values:
+                  redacted = redacted.replace(value, "***")
+              if redacted != text:
+                  path.write_text(redacted, encoding="utf-8")
+          PY
+
+      - name: Clean up artifacts (remove .venv and node_modules)
+        if: always()
+        run: |
+          find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
+
       - name: Upload HTML / JSON eval report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: eval-report-${{ github.run_id }}
           # Use ** so the pattern still matches the replicate-index segment
-          # that coder_eval adds to per-task run dirs (runs/<ts>/<variant>/<task>/<NN>/).
+          # that coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
-            tests/runs/*/experiment.html
-            tests/runs/*/experiment.md
-            tests/runs/*/experiment.json
-            tests/runs/*/experiment.log
-            tests/runs/*/*/variant.html
-            tests/runs/*/*/variant.md
-            tests/runs/*/*/variant.json
-            tests/runs/**/task.html
-            tests/runs/**/task.json
-            tests/runs/**/task.log
+            /tmp/runs/*/experiment.html
+            /tmp/runs/*/experiment.md
+            /tmp/runs/*/experiment.json
+            /tmp/runs/*/experiment.log
+            /tmp/runs/*/*/variant.html
+            /tmp/runs/*/*/variant.md
+            /tmp/runs/*/*/variant.json
+            /tmp/runs/**/task.html
+            /tmp/runs/**/task.json
+            /tmp/runs/**/task.log
+            /tmp/runs/**/artifacts
           if-no-files-found: warn
           retention-days: 14
 
@@ -354,7 +591,6 @@ jobs:
       # agent already recovered from without false-failing correct runs.
       - name: Enforce LLM reviewer score threshold (>= 0.7)
         if: always()
-        working-directory: tests
         env:
           REVIEWER_THRESHOLD: "0.7"
         # Single-quoted heredoc keeps Python literals intact. Threshold
@@ -363,7 +599,7 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          run_dirs = sorted(pathlib.Path('/tmp/runs').glob('*/'))
           if not run_dirs:
               print('::warning::No run directory — skipping reviewer threshold check')
               sys.exit(0)
@@ -392,8 +628,101 @@ jobs:
           print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
           PY
 
-      - name: Fail if tests failed
-        # Also catch `cancelled` (the job timeout firing) so a truncated
-        # run is not silently reported green.
-        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
-        run: exit 1
+      # Hard gate: fail the job if fewer than PASS_RATE_THRESHOLD of tasks
+      # passed deterministic criteria. Lets a small number of flakes /
+      # known-broken tasks through without blocking every PR, while still
+      # catching systemic regressions. Cancellation (120m timeout) is
+      # always a fail since a truncated run has no meaningful rate.
+      - name: Enforce pass-rate threshold (>= 95%)
+        if: always()
+        env:
+          PASS_RATE_THRESHOLD: "0.95"
+          # The smoke step carries continue-on-error, so its failure only reaches the
+          # job through this gate. Zero tasks AFTER a failed smoke step means the run
+          # died before producing anything (bad install, unusable config) — fail closed
+          # rather than reading an empty set as a clean sweep.
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+        run: |
+          if [ "${{ steps.smoke.outcome }}" = "cancelled" ]; then
+            echo "::error::Smoke step cancelled (timeout) — failing without rate check"
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os, pathlib, sys
+          threshold = float(os.environ['PASS_RATE_THRESHOLD'])
+          tasks = sorted(pathlib.Path('/tmp/runs').rglob('task.json'))
+          results = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
+          passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
+          n = len(results)
+          if n == 0:
+              if os.environ.get('SMOKE_OUTCOME') == 'failure':
+                  print('::error::Smoke step failed without producing a single task.json '
+                        '— failing closed instead of passing on an empty run')
+                  sys.exit(1)
+              print('No smoke-tagged tasks matched — skipping rate check')
+              sys.exit(0)
+          rate = passed / n
+          for d in results:
+              s = d.get('final_status')
+              if s != 'SUCCESS':
+                  print(f"::warning::{d.get('task_id')}: status={s}")
+          print(f'Pass rate: {rate:.1%} ({passed}/{n})')
+          if rate < threshold:
+              print(f'::error::Pass rate {rate:.1%} < threshold {threshold:.0%}')
+              sys.exit(1)
+          PY
+
+  # Advisory consistency gate. Does every task YAML in the repo still load
+  # under the pinned coder_eval's TaskDefinition schema (tests/.coder-eval-version
+  # — the same engine smoke/ad-hoc/nightly run)? This is the skills-side
+  # mirror of coder_eval's `validate-skills-yamls` gate: it catches the class
+  # of bug where a task YAML uses a criterion type/field coder_eval's schema
+  # doesn't accept, surfacing it here at authoring time instead of weeks later
+  # (and on the wrong repo) in coder_eval CI.
+  #
+  # Validates the WHOLE tree, not just changed files, so pre-existing drift is
+  # always visible. `continue-on-error` shows the job red for visibility but
+  # keeps the workflow conclusion green — non-blocking, like the coder_eval
+  # gate. Flip to a hard gate by removing `continue-on-error` once the tree is
+  # clean and the convention has bedded in.
+  validate-task-schema:
+    name: Validate task schema (advisory)
+    runs-on: uipath-ubuntu-latest
+    timeout-minutes: 8
+    continue-on-error: true
+    # Skip forks: the private-feed creds for the pinned coder-eval wheel aren't
+    # available to forked PRs (matches the e2e job's secret requirements).
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      # Pin coder_eval to tests/.coder-eval-version so schema validation runs
+      # against the same engine that actually executes the tasks.
+      - name: Resolve coder_eval pin
+        id: ceref
+        run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
+
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). `coder-eval plan` validates schemas on the runner -- no image.
+      - name: Install coder-eval
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+
+      - name: Validate every task YAML against the pinned coder_eval schema
+        # `coder-eval plan` exits non-zero if any file fails to load under the
+        # current TaskDefinition schema. Job-level continue-on-error keeps a
+        # failure here non-blocking.
+        run: |
+          set -uo pipefail
+          YAMLS=$(find tests/tasks -type f -name '*.yaml' | grep -v '/_shared/' | sort)
+          if [ -z "$YAMLS" ]; then
+            echo "No task YAMLs found under tests/tasks — checkout layout drift?"
+            exit 1
+          fi
+          echo "Validating $(printf '%s\n' "$YAMLS" | wc -l | xargs) task YAML(s) against coder_eval@main."
+          printf '%s\n' "$YAMLS" | tr '\n' '\0' | xargs -0 coder-eval plan

@@ -1,0 +1,12 @@
+{
+    "Result": "Success",
+    "Code": "JobHealingData",
+    "Message": "Healing recovery data zip for this job \u00e2\u20ac\u201d see project .uia/ artifacts. RecoverySuccessful=false, mode=recommendation-only.",
+    "Data": {
+        "JobKey": "d5fed611-e740-406c-a1b0-3c6de3371f17",
+        "HealingRecoveryAvailable": true,
+        "RecoverySuccessful": false,
+        "AnalysisMode": "RecommendationOnly",
+        "Note": "Recovery zip materialized into project at .uia/improve-NClick_1/. Use those files directly."
+    }
+}

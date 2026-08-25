@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "f5e5eaa8-ce88-482f-9506-01394caa3967",
+    "StartTime": "2026-06-22T14:06:20.220Z",
+    "EndTime": "2026-06-22T14:06:22.867Z",
+    "State": "Faulted",
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "BatchExecutionKey": "f5e5eaa8-ce88-482f-9506-01394caa3967",
+    "Info": "Failed to retrieve connection. Consider using a different connection. - The robot does not have the Connections.View permission in the folder where this connection lives. Ask your administrator to grant Connections.View on that folder, or move the connection to a folder where the robot has the required permission. (Folder: dea5d8d6-ca39-4dbf-b4a5-3516bad38866) Error code: DAP-GE-3000.\r\n\r\nin DriveSync.xaml\r\n    at ConnectorActivity \"Google Drive: Get File or Folder\"\r\n    at Sequence \"DriveSync\"\r\n    \r\n\r\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Failed to retrieve connection. Consider using a different connection. - The robot does not have the Connections.View permission in the folder where this connection lives. Ask your administrator to grant Connections.View on that folder, or move the connection to a folder where the robot has the required permission. (Folder: dea5d8d6-ca39-4dbf-b4a5-3516bad38866) Error code: DAP-GE-3000.\r\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)",
+    "CreationTime": "2026-06-22T14:06:19.183Z",
+    "ReleaseName": "DriveSync",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "ReleaseVersionId": 53490,
+    "EntryPointPath": "DriveSync.xaml",
+    "OrganizationUnitId": 28927,
+    "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\REPLACEMENT_USER",
+    "OrchestratorUserIdentity": "robot_account",
+    "LastModificationTime": "2026-06-22T14:06:22.867Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "f5e5eaa8ce88482f950601394caa3967",
+    "Id": 4015222
+  }
+}

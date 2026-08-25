@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:00:00.210Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:00:00.512Z",
+      "Message": "[Get Outlook Mail Messages] enumerating folder 'Archive' (approx. 18,420 items); Top=5000, OnlyUnreadMessages=False"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-03T02:00:12.004Z",
+      "Message": "[Get Outlook Mail Messages] retrieved 4,100 of 5,000 requested items so far"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-06-03T02:00:25.733Z",
+      "Message": "[Get Outlook Mail Messages] enumeration has been running for more than 25s; folder is large and TimeoutMS=30000 is about to be reached"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T02:00:30.541Z",
+      "Message": "[Get Outlook Mail Messages] The operation has timed out."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T02:00:30.602Z",
+      "Message": "The operation has timed out.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T02:00:30.615Z",
+      "Message": "Execution ended in: 00:00:30"
+    }
+  ]
+}

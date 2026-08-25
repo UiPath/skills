@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T09:40:06.630Z",
+      "Message": "Export to PDF: The export file path must specify a .pdf file. Value was 'C:\\Reports\\MonthlyReport'.\r\nin Main.xaml\r\n    at WordExportToPdf \"Export to PDF\"\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -11,18 +11,11 @@ description: >
   may route self-sends via inbox rules that bypass the connector's
   trigger lookback). Adding a debug E2E requires a dedicated service
   mailbox with no rules; tracked as follow-up.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector]
-max_iterations: 1
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector, mode:build, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  expected_turns: 61
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Create a UiPath Flow named "OutlookTriggerInbox" with a Microsoft Outlook 365
@@ -36,20 +29,15 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single pass.
 
-  Before starting, load the uipath-maestro-flow skill. Read and follow its
-  workflow steps exactly — in particular, follow the connector-trigger plugin's
-  Step 3 for resolving the `parentFolderId` reference field against the bound
-  connection. Do not reuse any folder ID you may have seen before.
+  Do not reuse any folder ID you may have seen before.
 
-  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
-  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
-  and pass `--folder-key <key>` on every `uip is connections list` call.
+  Use the connection in Shared/uipath-maestro-flow folder.
 
 success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate OutlookTriggerInbox/OutlookTriggerInbox/OutlookTriggerInbox.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -63,13 +51,31 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # ── Regression: reference-ID resolution (PR #348) ──────────────────────
+  - type: command_executed
+    description: "Advisory: agent queried trigger objects for the connector's EMAIL_RECEIVED operation (connector-trigger Step 1b)"
+    tool_name: "Bash"
+    command_pattern: '(?s)\A(?=.*uipath-microsoft-outlook365)(?=.*uip\s+is\s+triggers\s+objects).*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent described the trigger object for EMAIL_RECEIVED (connector-trigger Step 1b-2) — required event params (e.g. parentFolderId) live in describe's EventParameters, not in triggers objects' parameters[]"
+    tool_name: "Bash"
+    command_pattern: '(?s)\A(?=.*uipath-microsoft-outlook365)(?=.*uip\s+is\s+triggers\s+describe).*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
   - type: command_executed
     description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
     tool_name: "Bash"
     # `[\s\S]` matches across newlines — agents often split `uip` commands with
     # backslash line-continuation, which `.*` would miss.
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
+    # Verb alternation tolerates both the post-rename verb ("run", current)
+    # and the legacy "execute" verb that older CLIs in the sandbox PATH may
+    # still expose (MST-9674).
+    command_pattern: 'uip\s+is\s+resources\s+(?:run|execute)\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

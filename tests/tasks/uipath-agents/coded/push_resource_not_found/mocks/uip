@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""uip mock for push_resource_not_found eval.
+
+Stateful `codedagent push`: reads the project's bindings.json and resolves the
+`connection` binding by its ConnectionId (the connection's id) against the known
+catalog. If the id does not match the real connection, push prints the real CLI
+"was not found and will not be added to the solution" warning and exits 0
+(mirroring real push, which warns-and-skips non-virtual kinds but does not fail).
+Once the binding's ConnectionId is corrected to the real id, push reports success.
+
+`is connections list` returns the real connection (with its id) so the mismatch
+is discoverable by the agent.
+"""
+
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RESPONSES_DIR = SCRIPT_DIR / "responses"
+MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
+CALL_LOG_PATH = SCRIPT_DIR / ".calls.jsonl"
+
+REAL_CONNECTION_ID = "22222222-2222-2222-2222-222222222222"
+CONNECTOR = "uipath-salesforce-slack"
+
+
+def _log(args: str, rule_match, exit_code: int, note: str = "") -> None:
+    record = {"ts": time.time(), "args": args, "matched_rule": rule_match, "exit_code": exit_code}
+    if note:
+        record["note"] = note
+    try:
+        with CALL_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError:
+        pass
+
+
+def _find_project_dir() -> Path | None:
+    cwd = Path(os.getcwd())
+    for candidate in [cwd, cwd / "slack-triage", cwd.parent / "slack-triage"]:
+        if (candidate / "bindings.json").is_file():
+            return candidate
+    return None
+
+
+def _connection_id_from_bindings() -> str | None:
+    proj = _find_project_dir()
+    if proj is None:
+        return None
+    try:
+        data = json.loads((proj / "bindings.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    for res in data.get("resources", []):
+        if res.get("resource") == "connection":
+            return (
+                res.get("value", {})
+                .get("ConnectionId", {})
+                .get("defaultValue")
+            )
+    return None
+
+
+def _push(args: str) -> int:
+    conn_id = _connection_id_from_bindings()
+    if conn_id == REAL_CONNECTION_ID:
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "Result": "Success",
+                    "Message": "Project successfully pushed to Studio Web.",
+                    "ProjectId": "89852b5d-8559-4c57-b752-0e2b500902fc",
+                }
+            )
+            + "\n"
+        )
+        _log(args, "codedagent push", 0, note="push-ok")
+        return 0
+    # Real push behavior: warn-and-skip the non-virtual connection, exit 0.
+    sys.stdout.write("Uploading source files... done.\n")
+    sys.stdout.write(
+        f"Connection with key '{conn_id}' of type '{CONNECTOR}' was not found "
+        "and will not be added to the solution.\n"
+    )
+    sys.stdout.write(
+        "Resource import summary: 1 total resources - 0 created, 0 updated, "
+        "0 unchanged, 0 virtual-created, 0 virtual-existing, 1 not found\n"
+    )
+    _log(args, "codedagent push", 0, note="push-not-found")
+    return 0
+
+
+def _respond_file(rule: dict, args: str) -> int:
+    path = RESPONSES_DIR / rule["file"]
+    text = path.read_text(encoding="utf-8") if path.is_file() else "{}\n"
+    sys.stdout.write(text)
+    code = int(rule.get("exit_code", 0))
+    _log(args, rule.get("match"), code)
+    return code
+
+
+def main(argv: list[str]) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+    args = " ".join(argv[1:])
+
+    # Stateful push takes priority over the static manifest.
+    if "codedagent push" in args:
+        return _push(args)
+
+    if not MANIFEST_PATH.is_file():
+        sys.stderr.write(json.dumps({"error": "manifest.json missing"}) + "\n")
+        return 2
+
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    for rule in manifest.get("rules", []):
+        match = rule.get("match", "")
+        if match and match in args:
+            return _respond_file(rule, args)
+
+    default = manifest.get("unmocked_default")
+    if isinstance(default, dict):
+        sys.stdout.write(default.get("response", ""))
+        code = int(default.get("exit_code", 0))
+        _log(args, None, code, note="unmocked_default")
+        return code
+
+    sys.stderr.write(json.dumps({"error": "unmocked command", "args": args}) + "\n")
+    _log(args, None, 1, note="unmocked")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

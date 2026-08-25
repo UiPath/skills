@@ -1,0 +1,67 @@
+task_id: skill-agent-coded-existing-project-resume
+description: >
+  Coded-agent resume scenario for `project_state == existing-coded`
+  with `has_venv == false` AND `has_entry_points == false`. The
+  prompt seeds a LangGraph project on disk; the skill must detect
+  that scaffolding is already done, prep the missing venv,
+  regenerate the schema from the existing code, and edit `main.py`
+  in place — without ever running `uip codedagent new` (which
+  would clobber the existing project).
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:schema-sync]
+max_iterations: 1
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/existing_project_resume/_fixtures/mood-meter ."
+    timeout: 10
+  - command: "bash -c 'cd mood-meter && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
+
+initial_prompt: |
+  I've got a half-built UiPath coded agent under `mood-meter/` that
+  I started a while ago. Can you pick it up where I left off and
+  add one thing: besides the `mood` it already returns, I want a
+  `confidence` score between 0.0 and 1.0 saying how sure it is.
+  Nothing fancy for the scoring is fine.
+
+  Once it's working, run it locally on `{"text": "I really love how
+  great this is"}` and drop the output in `mood-meter/run_result.json`
+  so I can sanity-check it.
+
+  Just keep my existing project as-is — don't start it over from
+  scratch. No need to publish or deploy. Please take it all the way
+  through in one go.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent regenerated entry-points.json from the (now-edited) code"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the agent locally to verify the new feature"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+agent'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Run result captured for sanity-check"
+    path: "mood-meter/run_result.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Existing project preserved + feature added + venv prepped + schema regenerated"
+    command: "python3 $TASK_DIR/check_existing_project_resume.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 22
+  turn_timeout: 1200

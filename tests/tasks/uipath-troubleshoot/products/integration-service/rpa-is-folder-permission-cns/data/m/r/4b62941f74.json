@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "4b8a2c6d-1e3f-4a50-b7c9-d0e1f2a3b4c5",
+    "StartTime": "2026-07-07T06:00:12.170Z",
+    "EndTime": "2026-07-07T06:00:19.440Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "ResourceOverwrites": "{\"Connection.8d2f4a6b-3c5e-4710-92a4-b6c8d0e2f4a6\": {\"EntityDisplayName\": \"finance.ops@acmecorp.test\", \"Level\": 0, \"Properties\": {\"connectionId\": \"8d2f4a6b-3c5e-4710-92a4-b6c8d0e2f4a6\", \"folderKey\": \"7c9e1f22-5b3a-4d48-9e10-6a2b8c4d0e5f\", \"ConnectionId\": \"8d2f4a6b-3c5e-4710-92a4-b6c8d0e2f4a6\"}}}",
+    "Source": "Trigger",
+    "SourceType": "Schedule",
+    "Info": "Job faulted at activity 'Send Invoice Email': failed to retrieve connection (DAP-GE-3000)."
+  }
+}

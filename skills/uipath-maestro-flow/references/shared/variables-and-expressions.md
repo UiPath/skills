@@ -2,7 +2,33 @@
 
 Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
 
-> **Read this before** adding variables or writing expressions in any flow. Incorrect variable declarations cause silent runtime failures that `flow validate` does not catch.
+> **Read this before** adding variables or writing expressions in any flow.
+>
+> `flow validate` catches the structural expression-reference errors:
+>
+> - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+> - Invented `nodes.<id>.output` syntax
+> - References to unknown variables or node IDs
+> - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+>
+> Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+
+---
+
+## Table of contents
+
+- [Variables Overview](#variables-overview)
+- [Workflow Variables (`globals`)](#workflow-variables-globals)
+- [Node Variables (`nodes`)](#node-variables-nodes)
+- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+- [Expression System](#expression-system)
+- [Available Globals](#available-globals)
+- [Expression Contexts](#expression-contexts)
+- [Jint Engine Constraints](#jint-engine-constraints)
+- [Scoping Rules](#scoping-rules)
+- [Variable Management via CLI](#variable-management-via-cli)
+- [Complete Example](#complete-example)
 
 ---
 
@@ -46,14 +72,21 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 {
   id: string              // Unique identifier, used in expressions as $vars.{id}
   direction: "in" | "out" | "inout"
-  type?: string           // "string" (default), "number", "boolean", "object", "array"
+  type?: string           // "string" (default), "number", "boolean", "object", "array", "file"
   subType?: string        // Item type for arrays (e.g., "object", "string")
   schema?: object         // JSON Schema (draft-07) for complex types
   defaultValue?: unknown  // Initial value (must match type)
   description?: string    // Human-readable description
-  triggerNodeId?: string  // Trigger node this input is associated with (works in both root flows and subflows)
+  triggerNodeId?: string  // REQUIRED on `in` globals — see below (works in both root flows and subflows)
 }
 ```
+
+> **Set `triggerNodeId` on every `in` global** — omit it and the input is silently dropped from the packed entry point.
+>
+> - **What to set** — the `id` of the trigger that supplies the value; `"start"` in a single-trigger flow.
+> - **Why** — packaging reads the input contract from the trigger manifest's output schema when it declares one, and otherwise keeps only globals where `direction === "in"` and `triggerNodeId` matches the start node's `id`. Core triggers declare no output schema, so that second branch is the live one.
+> - **Failure mode** — `flow pack` emits an empty `input.properties` while `flow validate` and `flow format` both stay green, so nothing warns you.
+> - **Via CLI** — `uip maestro flow variable add --direction in` sets it for you.
 
 ### Examples
 
@@ -64,7 +97,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "direction": "in",
   "type": "string",
   "defaultValue": "Unknown",
-  "description": "Name of the customer to process"
+  "description": "Name of the customer to process",
+  "triggerNodeId": "start"
 }
 ```
 
@@ -106,7 +140,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
       }
     },
     "additionalProperties": false
-  }
+  },
+  "triggerNodeId": "start"
 }
 ```
 
@@ -117,7 +152,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "direction": "in",
   "type": "array",
   "subType": "string",
-  "defaultValue": ["admin@example.com"]
+  "defaultValue": ["admin@example.com"],
+  "triggerNodeId": "start"
 }
 ```
 
@@ -132,6 +168,26 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 ```
 Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node's output — NOT `$vars.{id}`).
 
+<a id="file-input"></a>
+**File input (`type: "file"`):**
+```json
+{
+  "id": "inputDoc",
+  "direction": "in",
+  "type": "file",
+  "description": "Document uploaded at trigger / bound via --attachment",
+  "triggerNodeId": "start"
+}
+```
+
+> **Runtime shape of a `file` variable.** At runtime a `file` variable is an **object** (the *Flow Attachment* object), not a string. A Script node reading `$vars.start.output.inputDoc` receives:
+>
+> ```json
+> { "ID": "<uuid>", "FullName": "report.pdf", "MimeType": "application/pdf", "Metadata": { "size": "1024" } }
+> ```
+>
+> The uploaded file's name is **`.FullName`**. Property access is **case-sensitive** at runtime — these exact casings resolve, others return `undefined`/`null`: `.ID` (uppercase, not `.Id`), `.FullName`, `.MimeType`, and the **nested `.Metadata.size`** (lowercase `size`, NOT `.Size`). `.name` / `.fileName` do **not** exist. Two layers: the `.flow` *declaration* is camelCase (`type`, `direction`); the *runtime* object carries the casing above. Do NOT write `"FullName"` into the `.flow` source. Bind the file with `uip maestro flow debug --attachment <id>=<path>` — see [cli-commands.md — Pre-flight](cli-commands.md#attachment-preflight).
+
 ### Type Reference
 
 | Type | Default Value | Notes |
@@ -141,6 +197,7 @@ Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is 
 | `boolean` | `false` | |
 | `object` | `{}` | Use `schema` for structured objects |
 | `array` | `[]` | Use `subType` for typed arrays |
+| `file` | — | Bound at runtime via `--attachment`; hydrates as an object — read `.FullName` (see [File input](#file-input) above) |
 
 ---
 
@@ -215,18 +272,38 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 ### Schema
 
+`expression` is an **object**, not a `=js:` string. This is the one expression site in the file format that is strictly typed — `nodes[].inputs`, `nodes[].outputs[].source`, and edge conditions still accept legacy `=js:` strings, but `variableUpdates` does not.
+
 ```typescript
 {
   "variableUpdates": {
     "{nodeId}": [
       {
-        "variableId": string,    // ID of the inout variable to update
-        "expression": string     // =js: expression to evaluate and assign
+        "variableId": string,          // ID of the inout variable to update
+        "expression": {
+          "type": "jsExpression",      // or "literal" for a static value
+          "expression": string,        // BARE JS body — NO "=js:" prefix
+          "fieldType": "number"        // the target variable's declared type
+        }
       }
     ]
   }
 }
 ```
+
+| Field | Value |
+| --- | --- |
+| `type` | `"jsExpression"` for an evaluated expression, `"literal"` for a static value |
+| `expression` | The JS body **without** the `=js:` prefix. For object-form expressions the prefix is *not* stripped, so `"=js:$vars.x"` here leaves `=js:` in the evaluated body. |
+| `fieldType` | Set it to the target variable's `type` from `variables.globals`, mapped `integer` → `number`. One of `array`, `boolean`, `null`, `number`, `object`, `string`. |
+
+> **The three keys are structurally required, but their *values* are not cross-checked.** `flow validate` rejects a missing or extra key (the object is strict), and rejects the legacy string form outright — but it accepts a `fieldType` that disagrees with the target variable, and accepts a stray `=js:` inside `expression`. Get these right by construction; validation will not tell you.
+
+> **Symptom of the legacy string form:** `uip maestro flow validate` fails with
+> `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression`
+> and `"Retry": "RetryWillNotFix"`. The string form was dropped in file-format version 1.3; `uip maestro flow init` scaffolds 1.9.
+
+> **There is no CLI command for variable updates.** Write them with `Edit` against the `.flow` file.
 
 ### Example
 
@@ -251,11 +328,19 @@ Variable updates assign new values to `inout` (state) variables at specific node
       "processItem": [
         {
           "variableId": "counter",
-          "expression": "=js:$vars.counter + 1"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.counter + 1",
+            "fieldType": "number"
+          }
         },
         {
           "variableId": "lastStatus",
-          "expression": "=js:$vars.processItem.output.status"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.processItem.output.status",
+            "fieldType": "string"
+          }
         }
       ]
     }
@@ -265,13 +350,15 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
 
-> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`).
+> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `$vars.bodyNode.output` as the object's `expression`).
 
 ---
 
 ## Output Mapping on End Nodes
 
 Workflow output variables (`direction: "out"`) must be mapped on End nodes. The End node's `outputs` object maps each output variable ID to a source expression.
+
+`inout` variables are mapped the same way — an unmapped `inout` global raises a `MISSING_OUTPUT_MAPPING` warning on every End node, so map accumulators alongside the `out` variables.
 
 ### Structure
 
@@ -328,8 +415,9 @@ Every `$vars` / `$metadata` / `$self` reference inside `inputs.detail.bodyParame
 | `"recordId": "$vars.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 | `"recordId": "nodes.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 | `"recordId": "{vars.createEntityRecord1.output.Id}"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
+| `"recordId": "=js:createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 
-The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). `flow validate` does not catch this — it only manifests at `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). The last row above is the opposite mistake — `=js:` is present but the `$vars.` prefix on the node reference is missing, so the expression evaluates a bare (undefined) identifier instead of the node's output. `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
 
 ### Comparison
 
@@ -352,7 +440,7 @@ These variables are available in all expression contexts:
 | `$vars` | All workflow and node variables | `$vars.{variableId}` or `$vars.{nodeId}.{outputId}` |
 | `$metadata` | Workflow metadata (instanceId, executionId) | `$metadata.instanceId` |
 | `$self` | Current node's output (HTTP branch conditions only) | `$self.output.statusCode` |
-| `$vars.<loopId>.*` | Loop iteration context (inside loops only) | `$vars.loop1.currentItem`, `$vars.loop1.currentIndex` |
+| `$vars.<loopId>.*` | Loop iteration context (inside loops only) | `$vars.loop1.currentItem`, `$vars.loop1.currentIteration` |
 
 ### `$vars` Access Patterns
 
@@ -363,6 +451,9 @@ $vars.counter
 
 // Trigger-associated flow input (triggerNodeId set)
 $vars.{triggerNodeId}.output.{id}
+
+// File input (type: "file") → object, read .FullName for the name
+$vars.start.output.inputDoc.FullName
 
 // Node output (script node)
 $vars.script1.output
@@ -436,11 +527,11 @@ $self.output.statusCode >= 200 && $self.output.statusCode < 300
 
 ### Variable Update Expressions
 
-Evaluate to the new value for the target variable.
+Evaluate to the new value for the target variable. **Not a `=js:` string** — this is the one expression site that takes an object. The JS body goes in `expression` without the prefix, and `fieldType` is the target variable's declared type. See [Variable Updates](#variable-updates-variableupdates).
 
-```
-=js:$vars.counter + 1
-=js:$vars.items.concat([$vars.newItem.output])
+```json
+{ "type": "jsExpression", "expression": "$vars.counter + 1", "fieldType": "number" }
+{ "type": "jsExpression", "expression": "$vars.items.concat([$vars.newItem.output])", "fieldType": "array" }
 ```
 
 ### Loop Collection Expression
@@ -452,7 +543,7 @@ The `inputs.collection` field on a Loop node resolves to an array to iterate ove
 =js:$vars.inputArray.filter(x => x.active)
 ```
 
-Inside the loop body, use `$vars.<loopId>.currentItem` and `$vars.<loopId>.currentIndex` (e.g., `$vars.loop1.currentItem`).
+Inside the loop body, use `$vars.<loopId>.currentItem` and `$vars.<loopId>.currentIteration` (e.g., `$vars.loop1.currentItem`).
 
 ---
 
@@ -500,14 +591,14 @@ A node's output (`$vars.{nodeId}.output`) is available to **all downstream nodes
 Inside a loop body, you have access to:
 - All parent-scope `$vars` (read-only from loop's perspective)
 - `$vars.<loopId>.currentItem` — current array element
-- `$vars.<loopId>.currentIndex` — zero-based index
+- `$vars.<loopId>.currentIteration` — 1-based iteration number
 - `$vars.<loopId>.collection` — the original array
 
 Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
 
 > **Important:** Loop body nodes must have `"parentId": "<loopId>"` set in their JSON. Without this, the runtime does not know the node is inside the loop and `$vars.<loopId>.currentItem` will be undefined.
 
-After loop completion, `$vars.<loopId>.output` contains aggregated results from all iterations.
+After loop completion, `$vars.<loopId>.output` holds one entry per iteration — **each entry keyed by body node id, with that node's outputs nested underneath**, NOT the body node's bare return value. See [loop/impl.md § Aggregated loop output](../author/references/plugins/loop/impl.md#aggregated-loop-output-varsloopidoutput).
 
 ### Subflow Scope
 
@@ -517,7 +608,19 @@ Subflows have their own variable scope. Parent variables are **not** automatical
 
 ## Variable Management via CLI
 
-There are **no CLI commands** for adding or removing variables. Manage variables with `Edit` against the `.flow` file.
+**Authoring a flow: use `Edit`.** Add, remove, and update `variables.globals` and `variables.variableUpdates` directly in the `.flow` file. `variableUpdates` has no CLI command at all.
+
+**Declaring an eval input: use the CLI.** Globals have a narrow CLI surface that the evaluate capability depends on, because `eval add` validates its `--inputs` keys against the flow's declared inputs:
+
+| Command | Use |
+| --- | --- |
+| `uip maestro flow variable add <flow> <id> --direction in --type <type>` | Declare an input the eval set will supply |
+| `uip maestro flow variable list <flow> --output json` | Check what the flow already declares |
+| `uip maestro flow variable remove <flow> <id>` | Drop a declared global |
+
+See [evaluate/references/eval-sets-guide.md](../evaluate/references/eval-sets-guide.md).
+
+> **`variable add --direction in` binds the variable to a trigger** by writing `triggerNodeId`. That binding is what puts the input in the packed entry point's contract — without it `flow pack` emits an empty `input.properties` while `validate` and `format` stay green. The CLI infers the flow's single trigger; if a flow has more than one, it fails and asks for `--trigger-node-id <nodeId>` to say which entry point the input belongs to. Hand-authored globals need the same field — see [Workflow Variables](#workflow-variables).
 
 ### Adding a workflow input variable
 
@@ -572,7 +675,8 @@ A flow with input, state, and output variables:
         "type": "array",
         "subType": "object",
         "defaultValue": [],
-        "description": "Items to process"
+        "description": "Items to process",
+        "triggerNodeId": "start"
       },
       {
         "id": "processedCount",
@@ -598,7 +702,11 @@ A flow with input, state, and output variables:
       "transform1": [
         {
           "variableId": "processedCount",
-          "expression": "=js:$vars.processedCount + $vars.transform1.output.count"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.processedCount + $vars.transform1.output.count",
+            "fieldType": "number"
+          }
         }
       ]
     }
@@ -615,8 +723,8 @@ A flow with input, state, and output variables:
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "description": "Data passed when the flow is triggered manually.",
+          "source": "null",
           "var": "output"
         }
       }
@@ -638,7 +746,7 @@ A flow with input, state, and output variables:
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }

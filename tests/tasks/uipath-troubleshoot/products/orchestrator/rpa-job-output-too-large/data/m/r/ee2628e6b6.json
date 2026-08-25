@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {"Key": "b2c8cb22-2ebc-4c27-87f3-05efe701af1c", "Name": "original_email@test.com's workspace", "Path": "original_email@test.com's workspace", "Type": "Personal", "ParentKey": ""},
+    {"Key": "f4a4b5c6-d7e8-9012-3def-456789012345", "Name": "FinanceOps", "Path": "FinanceOps", "Description": "Folder hosting the InvoiceExtractor process.", "Type": "Standard", "ParentKey": ""},
+    {"Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a", "Name": "Shared", "Path": "Shared", "Type": "Standard", "ParentKey": ""}
+  ]
+}

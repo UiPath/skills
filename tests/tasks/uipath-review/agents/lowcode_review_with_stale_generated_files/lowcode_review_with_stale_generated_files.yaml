@@ -1,0 +1,80 @@
+task_id: skill-review-agents-lowcode-stale-generated-files
+description: >
+  Regression smoke for a read-only review of a low-code agent with current
+  authored source, a stale entry-points.json, and misleading canaries in
+  generated runtime trees.
+  Verifies the reviewer refreshes and validates the project, runs deterministic
+  review without explicitly writing or editing project files, and accepts
+  refresh-managed synchronization instead of reporting pre-refresh state as a
+  defect.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 2400
+  max_turns: 60
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_with_stale_generated_files/setup_fixture.py"
+    timeout: 30
+
+initial_prompt: |
+  I have a low-code UiPath agent at `SupportSol/SupportAgent`. Please review it
+  and save the structured report to `./_review_report.md`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside the low-code project"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*SupportSol/SupportAgent'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside the low-code project"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*SupportSol/SupportAgent'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Reviewer refreshed the low-code project successfully"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+refresh\b'
+    min_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Reviewer validated the refreshed low-code project successfully"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+validate\b'
+    min_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Reviewer ran the deterministic low-code review successfully"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+review\b'
+    min_count: 1
+    require_success: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Refreshed derived state passes; the report does not file CLI-managed state as a defect and ends with a matching final grade"
+    command: "python3 $TASK_DIR/check_stale_generated_files.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

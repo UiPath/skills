@@ -1,0 +1,86 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ff3333cc-001",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-29T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-002",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-29T08:00:01.418Z",
+      "Message": "[ExcelLedgerProcess] Appending today's transactions to C:\\Robot\\Data\\ledger.xlsx",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-003",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-29T08:00:01.910Z",
+      "Message": "Invoke: FetchTransactions.xaml — returned dtTransactions with 78 rows, 6 columns (TxnId, TxnDate, Account, Amount, Currency, Status)",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-004",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-29T08:00:02.110Z",
+      "Message": "Use Excel File: ledger.xlsx — workbook opened (OpenXML provider); UiPath.Excel.Activities version 2.24.7 (>= 2.8.5)",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-005",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-29T08:00:02.310Z",
+      "Message": "Append Range: today's transactions — target sheet 'Transactions' inspection: AutoFilter active on column 'Status' (hiding rows where Status='Reconciled')",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-006",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-29T08:00:02.510Z",
+      "Message": "Append Range: today's transactions — last data row on sheet 'Transactions': row 4100. Computed append region: rows 4101-4178 (78 rows for the dtTransactions payload).",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-007",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-29T08:00:02.710Z",
+      "Message": "Append Range: today's transactions — target region validation (v2.8.5+): hidden rows detected in append target — sheet rows 4012-4089 are hidden by the AutoFilter and overlap with the computed append region's lookback. Pre-2.8.5 versions would have silently appended over the hidden region; v2.8.5+ throws to prevent data loss.",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff3333cc-008",
+      "JobKey": "ff333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-29T08:00:03.202Z",
+      "Message": "Append Range: today's transactions — UiPath.Excel.BusinessException: Cannot append to a range that contains hidden rows or columns. The target sheet 'Transactions' has hidden rows in the computed append region (rows 4012-4089).",
+      "ProcessName": "ExcelLedgerProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

@@ -1,23 +1,18 @@
 task_id: skill-bpmn-api-workflow-task
 description: >
   Author a Maestro BPMN API workflow invocation, covering the
-  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval.
-tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:service-task", "feature:api-workflow"]
-max_iterations: 1
+  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval. The
+  package-metadata assertions accept either shape that ships today:
+  `uip maestro bpmn update-metadata` output (operate.json main as
+  /content/<bpmn>#<start>, package-descriptor.json as a files map) or
+  hand-authored synthetic metadata using bare names and a content array.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:service-task", "feature:api-workflow"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+run_limits:
+  expected_turns: 32
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a UiPath Maestro BPMN Process Orchestration project at:
     ApiWorkflowDispatch/ApiWorkflowDispatch
 
@@ -29,8 +24,8 @@ initial_prompt: |
   - A `bpmn:serviceTask` named "Run Customer Sync API Workflow".
   - The service task must use a `uipath:activity` shell with type
     `Orchestrator.ExecuteApiWorkflowAsync`.
-  - Map a request object input and map invocation/status/result outputs to
-    declared variables.
+  - Map a request object input and map invocation/status/result outputs directly
+    on that API workflow service task to declared variables.
   - Add a boundary error path to a failure end event and a success end event.
   - Include BPMN DI for visible elements.
 

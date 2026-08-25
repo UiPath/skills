@@ -8,8 +8,14 @@ Activities are pre-built actions available for each connector (e.g., "Send Messa
 
 ## List Activities (Non-Trigger)
 
+Use the connector **Key**, not the display name. For Salesforce, the canonical key is `uipath-salesforce-sfdc`; do not pass `salesforce` or `uipath-salesforce` to activity commands.
+
 ```bash
 uip is activities list "<connector-key>" --output json
+```
+
+```bash
+uip is activities list "uipath-salesforce-sfdc" --output json
 ```
 
 This lists **non-trigger activities only** (actions, not event listeners).
@@ -18,6 +24,10 @@ This lists **non-trigger activities only** (actions, not event listeners).
 
 ```bash
 uip is activities list "<connector-key>" --triggers --output json
+```
+
+```bash
+uip is activities list "uipath-salesforce-sfdc" --triggers --output json
 ```
 
 The `--triggers` flag filters to **trigger activities only** (`isTrigger=true`). These represent events the connector can fire (e.g., "Record Created", "Record Updated").
@@ -46,7 +56,7 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 - **Activities** = named actions (e.g., "Send Email"). Discovered via `is activities list`.
 - **Triggers** = event listeners (e.g., "Record Created"). Discovered via `is activities list --triggers`. Metadata via `is triggers objects` / `is triggers describe`. See [triggers.md](triggers.md).
-- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources execute <verb>`.
+- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources run <verb>`.
 
 > After listing activities, present the available actions to the user. Activities provide context for what a connector can do — use this to guide which resource operations, triggers, or workflow actions to pursue.
 

@@ -1,0 +1,53 @@
+task_id: skill-agent-coded-eval-llm-judges
+description: >
+  Adds an LLM-judge evaluation harness to an already-built LangGraph
+  coded agent. The `intent-classifier` project is seeded on disk, so
+  this exercises only the eval-authoring path: the agent must create
+  two LLM-judge evaluators in a single eval set (one that scores the
+  output, one that scores the trajectory) and run them locally with
+  reproducible LLM responses.
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+
+run_limits:
+  expected_turns: 34
+  task_timeout: 1800
+  turn_timeout: 1200
+  max_turns: 40
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_llm_judges/_fixtures/intent-classifier ."
+    timeout: 10
+  - command: "bash -c 'cd intent-classifier && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 300
+
+initial_prompt: |
+  Test my UiPath coded agent with a couple of UiPath LLM evaluators - one for
+  the answer, one for the path it took - and run them. Save results to
+  eval-results.json next to pyproject.toml.
+
+  Don't publish, upload, or deploy. Just work through it to the end in one
+  go - only stop if you hit a real blocker.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both LLM-judge evaluator configs + eval-set + results shape"
+    command: "python3 $TASK_DIR/check_eval_llm_judges.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

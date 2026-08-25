@@ -1,0 +1,47 @@
+{
+  "Result": "Success",
+  "Code": "LicenseInfo",
+  "Data": {
+    "IsExpired": false,
+    "SubscriptionPlan": "ENTERPRISE",
+    "Allowed": {
+      "StudioPro": 0,
+      "BusinessRule": 0,
+      "Headless": 0,
+      "Development": 0,
+      "AppTest": 0,
+      "CaseManagement": 0,
+      "PerformanceTest": 0,
+      "ProcessOrchestration": 0,
+      "Attended": 0,
+      "Flow": 0,
+      "StudioX": 0,
+      "AgentService": 0,
+      "NonProduction": 0,
+      "TestAutomation": 1,
+      "Unattended": 1,
+      "Hosting": 0,
+      "Local": 0
+    },
+    "Used": {
+      "StudioPro": 0,
+      "BusinessRule": 0,
+      "Headless": 0,
+      "Development": 0,
+      "AppTest": 0,
+      "CaseManagement": 0,
+      "PerformanceTest": 0,
+      "ProcessOrchestration": 0,
+      "Attended": 0,
+      "Flow": 0,
+      "StudioX": 0,
+      "AgentService": 0,
+      "NonProduction": 0,
+      "TestAutomation": 0,
+      "Unattended": 1,
+      "Hosting": 0,
+      "Local": 0
+    },
+    "LicensedFeatures": []
+  }
+}

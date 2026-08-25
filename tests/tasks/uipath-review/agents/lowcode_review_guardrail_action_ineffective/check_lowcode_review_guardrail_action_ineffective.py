@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Check for LC_GUARDRAIL_ACTION_INEFFECTIVE — a format-valid Tool-scoped
+`pii_detection` guardrail uses a `block` action on a tool that legitimately
+needs the PII (SendCustomerEmail), which the catalog's `when_not_to_use`
+flags as breaking the tool.
+
+`uip agent review` returns the guardrail clean (no `GUARDRAIL_*`), so the only
+signal is the judgment rule. Verifies the saved report cites the rule_id.
+Citing the rule_id already proves the reviewer reached the catalog-grounded
+verdict, so no separate name-token is required (like unknown_validator).
+Other rule-id citations warn, not fail. Exit 0 on PASS; sys.exit on failure.
+"""
+import os
+import re
+import sys
+from pathlib import Path
+
+REPORT = Path(os.getcwd()) / "_review_report.md"
+REQUIRED_RULE_ID = "LC_GUARDRAIL_ACTION_INEFFECTIVE"
+# The rule_id is only reachable by reading the live catalog's when_not_to_use,
+# so its presence already implies a real, catalog-grounded finding — no separate
+# token (the agent doesn't always echo "SendCustomerEmail" / "Tool" verbatim).
+REQUIRED_TOKEN = ""
+MIN_REPORT_BYTES = 500
+
+NOISE = {
+    "JSON", "YAML", "TOML", "XAML", "BPMN", "PDD", "SDD", "UUID", "HTTP",
+    "HTTPS", "REST", "API", "CLI", "SDK", "NULL", "TRUE", "FALSE", "TODO",
+    "FIXME", "WIP", "README",
+}
+
+
+def main() -> None:
+    if not REPORT.is_file():
+        sys.exit(f"FAIL: {REPORT} not found")
+    text = REPORT.read_text(encoding="utf-8", errors="replace")
+    if len(text) < MIN_REPORT_BYTES:
+        sys.exit(f"FAIL: {REPORT} is suspiciously short ({len(text)} bytes).")
+    if REQUIRED_RULE_ID not in text:
+        sys.exit(f"FAIL: report does not cite rule_id `{REQUIRED_RULE_ID}`.")
+    print(f"OK: report cites `{REQUIRED_RULE_ID}`")
+    if REQUIRED_TOKEN and REQUIRED_TOKEN not in text:
+        sys.exit(f"FAIL: report does not mention `{REQUIRED_TOKEN}`.")
+    if REQUIRED_TOKEN:
+        print(f"OK: report mentions `{REQUIRED_TOKEN}`")
+
+    skills_repo = os.environ.get("SKILLS_REPO_PATH")
+    if skills_repo:
+        catalog_dir = Path(skills_repo) / "skills" / "uipath-review" / "references" / "agents"
+        if catalog_dir.is_dir():
+            catalog_text = "".join(
+                f.read_text(encoding="utf-8", errors="replace")
+                for f in sorted(catalog_dir.glob("agents-*-rules.md"))
+            )
+            unknown = sorted(
+                c for c in set(re.findall(r"`([A-Z][A-Z0-9_]{4,})`", text)) - NOISE
+                if c not in catalog_text
+            )
+            if unknown:
+                print(f"WARN: rule_id(s) not in the judgment catalog (may be CLI-emitted): {unknown}")
+    print("PASS")
+
+
+if __name__ == "__main__":
+    main()

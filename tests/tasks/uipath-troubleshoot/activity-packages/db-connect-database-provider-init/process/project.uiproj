@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerExportXlsx",
+  "ProjectType": "Process",
+  "Description": "Exports the finance ledger by connecting to an Excel workbook as a database and running a SELECT over [Ledger$] into a DataTable.",
+  "MainFile": "Main.xaml"
+}

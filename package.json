@@ -1,0 +1,54 @@
+{
+  "name": "@uipath/skills",
+  "version": "1.202.0",
+  "description": "UiPath agent skills for Claude Code, Codex, Cursor, Copilot, Gemini and OpenCode — RPA, UI automation, UI testing, coded agents/apps/workflows, and troubleshooting. Distributed as the UiPath Claude Code plugin.",
+  "author": {
+    "name": "UiPath"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UiPath/skills.git"
+  },
+  "keywords": [
+    "uipath",
+    "automation",
+    "rpa",
+    "workflows",
+    "skills",
+    "claude-code",
+    "agent",
+    "ui-automation",
+    "ui-testing",
+    "coded-agents",
+    "troubleshoot"
+  ],
+  "private": false,
+  "uipathSkillsFlavor": "default",
+  "files": [
+    "skills",
+    "agents",
+    "commands",
+    "hooks",
+    "assets",
+    ".claude-plugin",
+    ".cursor-plugin",
+    "version-manifest.json",
+    "README.md",
+    "LICENSE",
+    "CODEOWNERS",
+    "scripts/npm-package-lifecycle.mjs"
+  ],
+  "scripts": {
+    "skills:test": "node --test tests/scripts/compose-skill-flavor.test.mjs tests/scripts/manage-skill-flavors-skill.test.mjs tests/scripts/sync-maestro-sdk-preview.test.mjs",
+    "skills:validate": "node scripts/compose-skill-flavor.mjs validate",
+    "skills:build": "node scripts/compose-skill-flavor.mjs build",
+    "skills:pack": "node scripts/compose-skill-flavor.mjs pack",
+    "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
+    "prepack": "node scripts/npm-package-lifecycle.mjs prepare",
+    "postpack": "node scripts/npm-package-lifecycle.mjs restore",
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check"
+  }
+}

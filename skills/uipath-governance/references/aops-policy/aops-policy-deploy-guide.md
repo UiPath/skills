@@ -23,12 +23,12 @@ Assign policies to a user, group, or tenant by writing a JSON assignment file an
 |---------|------------|
 | user   | `[{ "productIdentifier": "<PRODUCT_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
 | group  | `[{ "productIdentifier": "<PRODUCT_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
-| tenant | `[{ "productIdentifier": "<PRODUCT_NAME>", "licenseTypeIdentifier": "<LICENSE_TYPE_GUID>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
+| tenant | `[{ "productIdentifier": "<PRODUCT_NAME>", "licenseTypeIdentifier": "<LICENSE_TYPE_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
 
 Semantics:
 
 - `productIdentifier` — product `name` (not label). See [aops-policy-commands.md — product list](./aops-policy-commands.md#uip-gov-aops-policy-product-list).
-- `licenseTypeIdentifier` (tenant only) — license type **`identifier` (GUID)** from `license-type list`, not the `name` and not the label. See [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list).
+- `licenseTypeIdentifier` (tenant only) — license type **`name`** (e.g. `Attended`, `E2E`) from `license-type list`, not the label. The live CLI exposes no GUID for license types — the `name` is the identifier. See [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list).
 - `policyIdentifier`:
   - a policy GUID → assign that policy to this product (and license type, for tenants)
   - `null` → **No Policy** explicitly (overrides any inherited policy)
@@ -44,7 +44,7 @@ When the same product has assignments at multiple scopes, the narrowest wins:
 
 - A **user** assignment (including explicit `null` = No Policy) overrides any group or tenant assignment for that product.
 - A **group** assignment overrides the tenant assignment for that product (for members of that group).
-- A **tenant** assignment is the org-wide default for a `(product, licenseType)` pair.
+- A **tenant** assignment is the org-wide default for a `(product, license type)` pair.
 - A product with no assignment at any scope → inherits the global default (no policy enforced).
 
 **Decision hint:** pick the narrowest scope that matches the user's ask.
@@ -62,7 +62,7 @@ When the same product has assignments at multiple scopes, the narrowest wins:
 
 ## License-type → product compatibility
 
-Tenant deployments are keyed by `(product, licenseType)`. Not every license carries every product — deploying a policy to a `(product, licenseType)` pair whose license does not include that product is a no-op. Common license → product mappings:
+Tenant deployments are keyed by `(product, license type)`. Not every license carries every product — deploying a policy to a `(product, license type)` pair whose license does not include that product is a no-op. Common license → product mappings:
 
 | License type | Products included |
 |--------------|-------------------|
@@ -86,7 +86,7 @@ If the user asks to deploy (for example) an Assistant policy to the `Unattended 
 | "Apply to Alice" / a named individual | user | [3.1](#31-deploy-to-a-user) |
 | "Apply to the Developers group" / named team | group | [3.2](#32-deploy-to-a-group) |
 | "Apply to everyone in the tenant" | tenant | [3.3](#33-deploy-to-a-tenant) |
-| "Apply to a license type org-wide" (requires licenseType) | tenant | [3.3](#33-deploy-to-a-tenant) |
+| "Apply to a license type org-wide" (requires license type) | tenant | [3.3](#33-deploy-to-a-tenant) |
 
 ---
 
@@ -96,7 +96,7 @@ If the user asks to deploy (for example) an Assistant policy to the `Unattended 
 
 Run `uip gov aops-policy deployment user list --output json` (see [commands reference](./aops-policy-commands.md#deployment-usergrouptenant-list)).
 
-Parse `Data` (an array). Each entry has `identifier`, `name`, and `source` — the identity-provider source (e.g. `cloud`, `local`, `aad`). Display as a numbered list:
+Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Display as a numbered list:
 
 ```text
 Governance users:
@@ -105,12 +105,17 @@ Governance users:
 ```
 
 - If only one user exists, use it automatically and inform the user.
-- If one entry's `name` matches the current login (from `uip login status`), suggest it as the default.
-- The list contains only users the governance service has already seen — it is not a full IdP roster. If the target user is missing, ask the caller to supply the user GUID and display name directly.
+- If one entry's `name` or `email` matches the current login (from `uip login status`), suggest it as the default.
+- The list contains only users the governance service has already seen — it is not a full IdP roster. If the target user is missing, fall back to the IdP:
 
-Store the chosen user's `identifier` as `$USER_ID`, its `name` as `$USER_DISPLAY_NAME`, and its `source` as `$USER_SOURCE`. Both `$USER_DISPLAY_NAME` and `$USER_SOURCE` are passed to `configure` in the next step.
+  1. Run `uip admin users list --search "<NAME_OR_EMAIL>" --output json` (see [/uipath:uipath-admin — user-management.md](../../../uipath-admin/references/user-management.md)).
+  2. From the matched record, take `id` as `$USER_ID`, `displayName` (or `userName`) as `$USER_DISPLAY_NAME`, and `email` as `$USER_EMAIL`. Set `$USER_SOURCE` from the IdP origin (`cloud`, `local`, `aad`).
+  3. `configure` auto-registers the user via the `AddUser` endpoint on first call — no separate registration step is needed.
+  4. If the IdP search also returns nothing, ask the caller to supply the GUID, display name, and email directly.
 
-### Step 2 — Pick policies per product (prompt only for missing information)
+Store the chosen user's `identifier` as `$USER_ID`, its `name` as `$USER_DISPLAY_NAME`, its `email` as `$USER_EMAIL`, and its `source` as `$USER_SOURCE`. `$USER_DISPLAY_NAME`, `$USER_EMAIL`, and `$USER_SOURCE` are all passed to `configure` in the next step.
+
+### Step 2 — Pick policies per product (pre-fill defaults; prompt only on ambiguity)
 
 **Skip rule:** if the user's original request already named the product(s) and policy(s) to assign, use those directly — do not re-ask.
 
@@ -153,12 +158,13 @@ Do NOT proceed without an explicit `yes`.
 ```bash
 uip gov aops-policy deployment user configure "$USER_ID" \
   --user "$USER_DISPLAY_NAME" \
+  --email "$USER_EMAIL" \
   --source "$USER_SOURCE" \
   --input "$SESSION_DIR/user-policies.json" \
   --output json
 ```
 
-The flag is `--user`, **not** `--user-name`. `--source` defaults to `local`; pass the identity-provider source from the `list` entry (e.g. `cloud`, `aad`) so the stored override stays consistent with the upstream identity record.
+The flag is `--user`, **not** `--user-name`. `--source` defaults to `local`; pass the identity-provider source from the `list` entry (e.g. `cloud`, `aad`) so the stored override stays consistent with the upstream identity record. `--email` is used only when governance auto-registers a brand-new user on this call (`AddUser` path); for already-registered users it is ignored. When omitted, it defaults to `--user`. Pass it explicitly whenever the IdP supplied a distinct email so the audit record carries the right address.
 
 ### Step 6 — Verify
 
@@ -174,13 +180,18 @@ uip gov aops-policy deployment user get "$USER_ID" --output json
 
 ### Step 1 — Identify the group
 
-Run `uip gov aops-policy deployment group list --output json`. Parse `Data` (an array). Each entry has `identifier`, `name`, and `source` (the IdP source). Display as a numbered list and let the user pick. Store the chosen group's `identifier` as `$GROUP_ID`, its `name` as `$GROUP_DISPLAY_NAME`, and its `source` as `$GROUP_SOURCE`.
+Run `uip gov aops-policy deployment group list --output json`. Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Display as a numbered list and let the user pick. Store the chosen group's `identifier` as `$GROUP_ID`, its `name` as `$GROUP_DISPLAY_NAME`, and its `source` as `$GROUP_SOURCE`.
 
-> If the group is not yet registered in the governance system, it will not appear in `deployment group list`. Ask the user to supply the group identifier and name directly from their organization directory, and store those values as `$GROUP_ID` and `$GROUP_DISPLAY_NAME` (with `$GROUP_SOURCE` set from the IdP) before proceeding.
+If the group is not yet known to the governance service, fall back to the IdP:
 
-### Step 2 — Pick policies per product (prompt only for missing information)
+1. Run `uip admin groups list --output json` and filter client-side: `--output-filter "Data[?contains(displayName, '<NAME>')]"`. `uip admin groups list` has **no** `--search` flag (see [/uipath:uipath-admin — group-management.md](../../../uipath-admin/references/group-management.md)).
+2. From the matched record, take `id` as `$GROUP_ID` and `displayName` as `$GROUP_DISPLAY_NAME`. Set `$GROUP_SOURCE` from the IdP origin.
+3. `configure` auto-registers the group via the `AddGroup` endpoint on first call — no separate registration step is needed.
+4. If the IdP lookup also returns nothing, ask the caller to supply the GUID and display name directly.
 
-Same as [3.1 Step 2](#step-2--pick-policies-per-product-prompt-only-for-missing-information): enumerate products, list candidate policies per product, auto-match to intent, fetch current assignments via `deployment group get "$GROUP_ID"` for the diff.
+### Step 2 — Pick policies per product (pre-fill defaults; prompt only on ambiguity)
+
+Same as [3.1 Step 2](#step-2--pick-policies-per-product-pre-fill-defaults-prompt-only-on-ambiguity): enumerate products, list candidate policies per product, auto-match to intent, fetch current assignments via `deployment group get "$GROUP_ID"` for the diff.
 
 ### Step 3 — Write the assignment file
 
@@ -236,9 +247,9 @@ uip gov aops-policy deployment group get "$GROUP_ID" --output json
 
 ### Step 1 — Identify the license type
 
-Tenant deployments are keyed by `(product, licenseType)`. List license types via `uip gov aops-policy license-type list --output json` — see [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) for the full output shape and sample rendering.
+Tenant deployments are keyed by `(product, license type)`. List license types via `uip gov aops-policy license-type list --output json` — see [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) for the full output shape and sample rendering.
 
-> **Use the license type's `identifier` (GUID) — not its `name`, not its label — as `licenseTypeIdentifier` in tenant assignment entries.** The `name` is only accepted by `deployed-policy get` / `deployed-policy list` as the positional `<licenseType>` argument.
+> **Use the license type's `name` (e.g. `Attended`, `E2E`) — not its label — as `licenseTypeIdentifier` in tenant assignment entries.** `license-type list` exposes no GUID. The same `name` is also the positional `<license-type>` argument for `deployed-policy get` / `deployed-policy list`.
 
 ### Step 2 — Identify the tenant
 
@@ -248,11 +259,13 @@ uip gov aops-policy deployment tenant list --output json
 
 Optional flags: `--product-name <PRODUCT_NAME>`, `--limit <N>`, `--offset <N>`.
 
-Parse `Data` (an array). Each tenant entry has `identifier`, `name`, and `tenantPolicies[]` — the current assignments, each keyed by `(productIdentifier, licenseTypeIdentifier, policyIdentifier)`. Let the user pick, then store the chosen tenant's `identifier` as `$TENANT_ID` and `name` as `$TENANT_NAME`.
+> `tenant list` triggers an upstream OMS sync before returning, so freshly created or recently re-enabled tenants show up here without a separate registration step. The first call after a tenant change may take longer.
 
-### Step 3 — Pick policies per `(product, licenseType)`
+Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment list](./aops-policy-commands.md#deployment-usergrouptenant-list)). Each tenant entry carries `tenantPolicies[]` — the current assignments, each keyed by `(productIdentifier, licenseTypeIdentifier, policyIdentifier)`. Let the user pick, then store the chosen tenant's `identifier` as `$TENANT_ID` and `name` as `$TENANT_NAME`.
 
-1. For each `(product, licenseType)` pair the user wants to assign, run `uip gov aops-policy list --product-name "<PRODUCT_NAME>" --output json` and pick a policy (or match the user's intent).
+### Step 3 — Pick policies per `(product, license type)`
+
+1. For each `(product, license type)` pair the user wants to assign, run `uip gov aops-policy list --product-name "<PRODUCT_NAME>" --output json` and pick a policy (or match the user's intent).
 2. Fetch current assignments: `uip gov aops-policy deployment tenant get "$TENANT_ID" --output json`.
 
 ### Step 4 — Write the assignment file
@@ -260,13 +273,13 @@ Parse `Data` (an array). Each tenant entry has `identifier`, `name`, and `tenant
 ```bash
 cat > "$SESSION_DIR/tenant-policies.json" <<'EOF'
 [
-  { "productIdentifier": "AITrustLayer", "licenseTypeIdentifier": "<NOLICENSE_GUID>",    "policyIdentifier": "<POLICY_GUID>" },
-  { "productIdentifier": "Development",  "licenseTypeIdentifier": "<DEVELOPMENT_GUID>",  "policyIdentifier": null }
+  { "productIdentifier": "AITrustLayer", "licenseTypeIdentifier": "NoLicense",   "policyIdentifier": "<POLICY_GUID>" },
+  { "productIdentifier": "Development",  "licenseTypeIdentifier": "Development", "policyIdentifier": null }
 ]
 EOF
 ```
 
-> `licenseTypeIdentifier` is the GUID from `license-type list` (`Data[].identifier`), NOT the license-type `name`. Resolve each license type's GUID from Step 1 before writing the file.
+> `licenseTypeIdentifier` is the license-type `name` (`Data[].name`) from `license-type list`, NOT a GUID and NOT the label. The live CLI exposes no GUID for license types. Resolve each license type's `name` from Step 1 before writing the file.
 
 ### Step 5 — Final review before configure (single confirmation gate)
 
@@ -274,7 +287,7 @@ EOF
 Deploying policies to <TENANT_NAME>:
   AI Trust Layer  / NoLicense    →   aitl-default  (<POLICY_ID>)
   Studio          / Development  →   (No Policy)
-Omitted (product, licenseType) pairs keep their current assignment.
+Omitted (product, license type) pairs keep their current assignment.
 
 Apply these changes to <TENANT_NAME>? (yes / no)
 ```
@@ -283,7 +296,7 @@ Do NOT proceed without an explicit `yes`.
 
 ### Step 6 — Save the assignments
 
-> **FULL-REPLACE semantics.** Any `(product, licenseType)` pair not listed in `$SESSION_DIR/tenant-policies.json` is removed from the tenant and reverts to "no pin". To preserve existing assignments, seed the input file from `deployment tenant get "$TENANT_ID"` before editing.
+> **FULL-REPLACE semantics.** Any `(product, license type)` pair not listed in `$SESSION_DIR/tenant-policies.json` is removed from the tenant and reverts to "no pin". To preserve existing assignments, seed the input file from `deployment tenant get "$TENANT_ID"` before editing.
 
 ```bash
 uip gov aops-policy deployment tenant configure "$TENANT_ID" \
@@ -339,13 +352,13 @@ Confirmation prompt (verbatim): `Remove <PRODUCT_LABEL> assignment from <TENANT_
 |-------|-------|-----|
 | `401 Unauthorized` | User token expired or missing | `uip login` and retry — see [aops-policy-commands.md — Authentication](./aops-policy-commands.md#authentication) |
 | `unknown productIdentifier` | Used the product label instead of its `name` | Re-run `uip gov aops-policy product list --output json` and pass the `name` field |
-| `unknown licenseTypeIdentifier` | Used the license `name` or label instead of its `identifier` (GUID) | Re-run `uip gov aops-policy license-type list --output json` and copy the `identifier` field (GUID) |
+| `unknown licenseTypeIdentifier` | Used the license type's label instead of its `name` | Re-run `uip gov aops-policy license-type list --output json` and copy the `name` field |
 | `unknown policyIdentifier` (GUID) | Stale or wrong policy GUID | Re-run `uip gov aops-policy list --product-name "<PRODUCT_NAME>" --output json` and copy the `identifier` |
 | `missing licenseTypeIdentifier in tenant entries` | Tenant entry omitted `licenseTypeIdentifier` | Add it to every tenant-subject entry (required key) |
 | `configure rejects the JSON` | Any of the above + malformed array | Validate with `jq type` and `jq '.[0] | keys'` before resubmitting |
 | `unknown flag --user-name` / `--group-name` | Flag renamed | Use `--user` (user configure) or `--group` (group configure). Only `tenant configure` uses `--tenant-name`. |
 | Existing assignments disappear after `configure` | Treated `configure` as merge | `configure` is FULL-REPLACE — seed the input file from `deployment <subject> get` before adding/modifying entries |
-| `deployment user list` / `group list` returns no results | Subject not onboarded to the governance system | Instruct the user to onboard the subject first; for groups, fall back to supplying the GUID directly from the organization directory |
+| `deployment user list` / `group list` returns no results | Subject not yet seen by the governance service (governance only lists subjects with prior overrides) | Resolve from the IdP via the Step 1 fallback (`uip admin users list --search` for users, `uip admin groups list` for groups). `configure` auto-registers the subject on first call via `AddUser` / `AddGroup` — no separate onboarding step needed. |
 | User cannot provide a tenant identifier | Tenant GUID unknown | Retrieve from Orchestrator or UiPath Cloud portal |
 | `null` assignment still inherited at a higher scope | User assumed `null` removed the mapping | `null` means explicit "No Policy" (overrides inheritance); use `tenant remove` (or omit the entry) to restore inheritance |
 

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T11:02:06.900Z",
+      "Message": "Word cannot open the document 'C:\\UiPath\\Inbound Docs\\data\\inbound\\Invoice_From_Email.docx' for reading because it is in Protected View (the file originated from an Internet/email location).\r\nin Main.xaml\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

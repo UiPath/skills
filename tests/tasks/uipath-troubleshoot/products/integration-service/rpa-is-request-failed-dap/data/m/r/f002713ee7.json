@@ -1,0 +1,25 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "38c2b236-c392-420f-9256-b50467e02122",
+      "State": "Faulted",
+      "ProcessName": "RPA Workflow",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "BBCFBBA7-8063-4F00-E5D1-0B49C871596F",
+      "StartTime": "2026-06-18T13:31:45.133Z",
+      "EndTime": "2026-06-18T13:31:50.893Z",
+      "CreationTime": "2026-06-18T13:31:42.187Z",
+      "Id": 50205597
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
