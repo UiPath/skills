@@ -7,9 +7,14 @@ description: >
   `uip aops` commands, and ends with a `pipeline create --file` invocation
   against a well-formed camelCase PipelineDto.
 
-  Platform note: runs without an authenticated tenant — commands will fail
-  with auth errors. That is acceptable; what matters is correct command
-  invocation and a well-formed PipelineDto JSON.
+  Tenant requirement: this task asserts the connection-scoped half of the
+  discovery flow (`connection solutions` / `connection projects`,
+  `connection repos`), which needs a SourceControl connection provisioned on
+  the target tenant — those calls take a connection identifier that
+  `connection list` can only supply when one exists. Against an empty tenant
+  the agent correctly stops after `connection list` returns `Data: []`, and
+  those criteria cannot be met. Run this on a seeded tenant; the smoke tier
+  covers the tenant-independent entry points instead.
 tags: [uipath-aops, e2e, mode:build, lifecycle:setup]
 
 max_iterations: 2
@@ -105,16 +110,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent must not fall back to the retired `uip sc` tool"
+    description: "Agent must not do the work through the retired `uip sc` tool"
     tool_name: "Bash"
-    command_pattern: 'uip\s+sc\s+'
+    command_pattern: 'uip\s+sc\s+(connection|repo|project|solution)\b'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent must not fall back to the retired `uip cicd` tool"
+    description: "Agent must not do the work through the retired `uip cicd` tool"
     tool_name: "Bash"
-    command_pattern: 'uip\s+cicd\s+'
+    command_pattern: 'uip\s+cicd\s+(pipeline|execution)\b'
     weight: 2.0
     pass_threshold: 1.0
 
