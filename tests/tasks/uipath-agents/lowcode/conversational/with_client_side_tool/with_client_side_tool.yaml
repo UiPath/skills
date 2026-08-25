@@ -1,0 +1,70 @@
+task_id: skill-agent-conversational-with-client-side-tool
+description: >
+  Positive integration test. Builds a conversational agent that collects
+  a decision from the user through a client-side tool. Verifies the skill
+  teaches conversational scaffold plus client-side tool wiring together,
+  and — the part most easily got wrong — that the tool's `outputSchema`
+  is authored as the thing the user fills in, not as an API response
+  envelope. On pre-built surfaces that schema is what the form is
+  generated from. Passes when the agent produces a validatable
+  conversational project containing a properly-shaped client-side tool.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, tool, client-side]
+max_iterations: 1
+
+run_limits:
+  max_turns: 50
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code conversational agent "ReviewAgent" that walks users
+  through reviewing a proposed change. Before it treats a change as settled, the
+  user has to tell it in the chat whether to go ahead or not, and can add a short
+  note explaining why. The agent should collect that decision itself rather than
+  guessing from free text. The solution should be named "ReviewSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Complete the task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ReviewAgent/agent.json was created"
+    path: "ReviewSol/ReviewAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
+    path: "ReviewSol/ReviewAgent/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Client-side tool present, correctly shaped, and its outputSchema models the user's decision"
+    command: "python3 $TASK_DIR/check_conversational_client_side_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
