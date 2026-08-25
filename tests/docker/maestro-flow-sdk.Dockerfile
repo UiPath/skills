@@ -1,5 +1,22 @@
 # syntax=docker/dockerfile:1.7
 ARG BASE_IMAGE=skills-image:base
+
+FROM node:22-bookworm-slim AS preview_flow_sdk_package
+
+ARG FLOW_SDK_VERSION
+ARG FLOW_BUILDER_SDK_SHA
+WORKDIR /src
+COPY --from=flow_builder_sdk typescript/sdk/ ./typescript/sdk/
+COPY --from=flow_builder_sdk integrations/scripts/ ./integrations/scripts/
+RUN mkdir -p /pkg && \
+    cd typescript/sdk && \
+    npm ci --no-audit --no-fund && \
+    npm pkg set \
+      version="${FLOW_SDK_VERSION:?FLOW_SDK_VERSION is required}" \
+      gitref="${FLOW_BUILDER_SDK_SHA:?FLOW_BUILDER_SDK_SHA is required}" && \
+    npm pack --pack-destination /pkg && \
+    mv /pkg/uipath-flow-sdk-*.tgz /pkg/uipath-flow-sdk.tgz
+
 FROM ${BASE_IMAGE}
 
 ARG FLOW_SDK_VERSION
@@ -9,23 +26,17 @@ ENV PREVIEW_FLOW_SDK_ASSETS_ROOT=/opt/preview-flow-sdk-assets
 
 RUN apt-get update && apt-get install -y --no-install-recommends unzip
 
-# Install the private SDK with a build-time secret. The npm configuration is
-# removed in the same layer, leaving the runtime image credential-free.
-RUN --mount=type=secret,id=npm_auth_token \
-    set -euo pipefail && \
-    token_file=/run/secrets/npm_auth_token && \
-    [ -s "$token_file" ] || { echo "npm_auth_token secret is required" >&2; exit 1; } && \
+# Build and install the SDK from the same pinned source that supplies the
+# connector library. This makes an SDK/compiler remediation measurable before
+# its next package release without leaving package credentials in the image.
+COPY --from=preview_flow_sdk_package \
+  /pkg/uipath-flow-sdk.tgz /opt/preview-flow-sdk-pkg/uipath-flow-sdk.tgz
+RUN set -euo pipefail && \
     mkdir -p "$PREVIEW_FLOW_SDK_ROOT" && \
-    npmrc="$PREVIEW_FLOW_SDK_ROOT/.npmrc" && \
-    printf '%s\n' \
-      '@uipath:registry=https://npm.pkg.github.com/' \
-      "//npm.pkg.github.com/:_authToken=$(cat "$token_file")" \
-      > "$npmrc" && \
     cd "$PREVIEW_FLOW_SDK_ROOT" && \
     printf '%s\n' '{"private":true,"type":"module"}' > package.json && \
-    npm install --save-exact --no-audit --no-fund --userconfig "$npmrc" \
-      "@uipath/flow-sdk@${FLOW_SDK_VERSION:?FLOW_SDK_VERSION is required}" && \
-    rm -f "$npmrc" && \
+    npm install --save-exact --no-audit --no-fund \
+      /opt/preview-flow-sdk-pkg/uipath-flow-sdk.tgz && \
     node -e "const p=require('./node_modules/@uipath/flow-sdk/package.json'); console.log('Installed', p.name+'@'+p.version)" && \
     printf '%s\n' "$FLOW_SDK_VERSION" > flow-sdk.version && \
     test -x node_modules/.bin/flow-sdk
