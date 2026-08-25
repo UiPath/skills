@@ -107,7 +107,7 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 
 - Do NOT mint `var` / `id` / `elementId` on the `outputs[]` entries written to the sidecar — the variables plugin mints them at Step 6.2 according to whether the SDD references each output. The plain field name from the schema is preserved (e.g., `name: "subject"`).
 - Do NOT strip `body` from the outputs — the variables plugin needs the full JSON Schema when emitting the root companion (especially for `jsonSchema`-typed outputs).
-- **Carry `responseFields` / `inputFields`.** They live outside `CaseShape`, so a `caseShape`-only sidecar destroys the only intact copy of the connector's field names and no consumer can repair the schema afterwards ([common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase)). The variables plugin repairs the keys when it emits `data.inputs.outputs[]` and the root companion at Step 6.2 — the schema in this sidecar is still PascalCase-verbatim, and every consumer reads it from here.
+- **Restore the contract field names before writing, and carry `responseFields` / `inputFields`.** Structural keys stay PascalCase-verbatim here, but the `outputs[].body` property names must already be the connector's own, per [common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase) — this sidecar is what every downstream consumer reads, and none of them re-derives those names. Do it here, where the whole spec response is still in hand. Carry the two authorities too: they live outside `CaseShape`, so a `caseShape`-only sidecar leaves no way to verify the names on Phase 3 re-entry.
 
 **Sidecar lifecycle:**
 
