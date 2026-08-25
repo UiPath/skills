@@ -29,9 +29,9 @@ import re
 import sys
 from typing import NoReturn
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
-from advisory_flow_utils import unwrap  # noqa: E402
-from flow_check import find_flow_file  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from _shared.advisory_flow_utils import unwrap  # noqa: E402
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "uipath.pattern.deep-rag"
 EXPECTED_TYPE_VERSION = "1.0"
