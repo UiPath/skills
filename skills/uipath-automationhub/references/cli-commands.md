@@ -22,6 +22,8 @@ Always pass `--output json`. Success:
 
 Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an `Instructions` hint — surface both to the user. Exit codes: `0` success, `1` failure, `3` validation.
 
+> ⚠️ **`--output-filter` requires an explicit `--limit`.** List commands default to `--limit 20`, and the CLI rejects an output filter on an implicit page (validation error, exit `3`) because it would silently filter only the first 20 records. Whenever you pass `--output-filter`, also pass a `--limit` sized to cover the full result set (the option's `--help` text states the command's maximum).
+
 ## Commands used by the flows
 
 | Command | Purpose | Data shape notes |
