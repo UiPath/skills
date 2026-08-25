@@ -253,6 +253,24 @@ To sync to Studio Web instead of publishing to Orchestrator:
 uip function push
 ```
 
+#### What Goes Into the Package
+
+`.nupkg` produced by `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json`, `package-descriptor.json`, `operate.json`). Control inclusion via `packOptions` in `uipath.json` — keep local-only fixtures, test data, and caches out of the published artifact:
+
+```json
+{
+  "packOptions": {
+    "fileExtensionsIncluded": [".py", ".json"],
+    "filesIncluded": ["config.yaml"],
+    "filesExcluded": ["test_*.py"],
+    "directoriesExcluded": ["data", "tests", "__pycache__"],
+    "includeUvLock": true
+  }
+}
+```
+
+Verify after `pack`: `unzip -l .uipath/<NAME>.<VERSION>.nupkg` must not list excluded paths.
+
 ## Important Notes
 
 - `UiPath()` must never be instantiated at module level — always inside a function body
