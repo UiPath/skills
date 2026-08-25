@@ -48,11 +48,11 @@ uip maestro flow registry get <node-type> --output json
 | `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/impl.md)                 |
 | `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
 | `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
-| `core.trigger.voice`            | [voice/impl.md](plugins/voice/impl.md)                         |
+| `core.trigger.voice`            | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
 | `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |
-| `uipath.agent.voice`            | [voice/impl.md](plugins/voice/impl.md)                         |
-| `uipath.conversational.voice.*` | [voice/impl.md](plugins/voice/impl.md)                         |
+| `uipath.agent.voice`            | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
+| `uipath.conversational.voice.*` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
 | `uipath.core.rpa-workflow.*`    | [rpa/impl.md](plugins/rpa/impl.md)                             |
 | `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md)     |

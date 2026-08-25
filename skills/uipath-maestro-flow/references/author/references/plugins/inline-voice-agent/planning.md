@@ -24,9 +24,18 @@ uip conversational trunks list --direction outbound --output json   # outbound `
 uip conversational trunks list --direction inbound  --output json   # inbound binding
 ```
 
-- **Outbound** — `createOutgoingCall1.inputs.from` must be a number with `outboundEnabled: true`. A number that is only inbound-enabled fails at dial time, not at validate.
+- **Outbound `inputs.from`** — one of the tenant's outbound-enabled trunks. `trunks list --direction outbound` enumerates the candidates; each trunk's `phoneNumber` is a usable value. A number that is only inbound-enabled fails at dial time, not at validate.
+- **Outbound `inputs.to`** — the user's to give. Who gets called is not a tenant fact and not the agent's call to make.
 - **Inbound** — the number you bind must have `inboundEnabled: true`. A tenant can easily have several trunks where only one qualifies.
 - A trunk already showing a non-null `processKey` is bound to another process; re-pointing it needs `--yes` and **silently takes the number away from that process**. Confirm with the user before reusing one.
+- **`trunks list` returning nothing is not something you can fix from the CLI.** The CLI can read trunks and bind one to a process — it cannot add a number, enable a direction on one, or release one back. Those are portal-only, on the **Phone numbers** page:
+
+  ```text
+  {baseUrl}/{orgName}/agents_/phone-numbers
+  # e.g. https://alpha.uipath.com/conversationalagents/agents_/phone-numbers
+  ```
+
+  It is org-scoped (no tenant segment) — build it from `uip login status --output json` (`Data.BaseUrl` + `Data.Organization`). There is no `trunks create`.
 
 Numbers referenced in older examples go stale — always re-list rather than copying a number out of a doc or an existing flow. Binding an inbound number is a deploy-time step, not a `.flow` edit: [impl.md § Bind an Inbound Phone Number](impl.md#bind-an-inbound-phone-number).
 
@@ -50,7 +59,7 @@ Use voice nodes when the flow's job is a phone conversation — answering an inb
 
 ## Topologies
 
-Exactly two supported shapes. The `callContext` originates at the trigger (inbound) or the create-outgoing-call node (outbound) and must reach both the voice agent and the end-call node.
+Exactly two supported shapes. The `callContext` originates at the trigger (inbound) or the create-outgoing-call node (outbound) and must reach both the voice agent and the end-call node. **Both shapes live at the top level of the `.flow`** — a voice agent node inside a `core.subflow` is rejected by `flow validate` and by pack; see [impl.md § What NOT to Do](impl.md#what-not-to-do).
 
 **Inbound** — agent answers a call:
 
@@ -63,6 +72,19 @@ core.trigger.voice (output) → uipath.agent.voice (success) → uipath.conversa
 ```text
 core.trigger.manual (output) → uipath.conversational.voice.create-outgoing-call (success) → uipath.agent.voice (success) → uipath.conversational.voice.end-call
 ```
+
+### Picking a topology changes how the flow is tested
+
+Only a real inbound call can raise a `core.trigger.voice`, so **`uip maestro flow debug` refuses an inbound flow outright** (`Inbound voice flows cannot be debugged from the CLI.`). Testing it means the full deploy path — publish, bind a number, then dial it — while an outbound flow runs under `flow debug` directly and places its call from the CLI.
+
+| | Inbound | Outbound |
+| --- | --- | --- |
+| Trigger | `core.trigger.voice` | `core.trigger.manual` (or any other trigger) |
+| `uip maestro flow debug` | **Rejected** — publish + bind + dial the number | Runs, and places a real call |
+| Phone number | Bound to the deployed release ([impl.md § Bind an Inbound Phone Number](impl.md#bind-an-inbound-phone-number)) | Named directly in `inputs.from` |
+| Needs a deploy to test at all | Yes | No |
+
+Outbound is the only shape with a local test loop; inbound cannot be exercised at all until it is deployed and a number is bound to it.
 
 ## Ports
 
@@ -102,16 +124,5 @@ In the architectural plan:
 
 - `voice-topology: inbound | outbound` — which of the two shapes
 - `voice-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow --conversational` runs
-- Outbound only: `voice-from: <SIP trunk E.164 number>` and `voice-to: <destination E.164 number>` — `from` must be a number provisioned on the tenant; flag unknowns as Open Questions
+- Outbound only: `voice-from: <SIP trunk E.164 number>` — one of the tenant's outbound-enabled trunks (§ Phone Numbers and SIP Trunks) — and `voice-to: <destination E.164 number>`, which the user supplies
 - Tools/contexts/escalations on the voice agent reuse the [inline-agent](../inline-agent/planning.md) annotations
-
-## Tool Choice — Prefer Context Grounding over IS Connectors
-
-A voice agent takes the same tool/context/escalation resources as any inline agent, but the two kinds do **not** ship equally today:
-
-| Resource kind | Status |
-| --- | --- |
-| Context grounding (index) | Works end to end — validate, pack, debug, `solution publish`, `solution deploy`, live call |
-| Integration Service connector tool (e.g. Web Search) | **Blocked at ship time.** `solution publish` rejects the package, and even a clean package cannot be deployed |
-
-Plan voice agents around context-grounding indexes and built-in tools. If the user asks for a connector-backed tool on a voice agent, raise it as a **Risk** in the plan rather than designing around it — the two failure modes and the current absence of a workaround are in [impl.md § Connector Tools Are Blocked at Ship Time](impl.md#connector-tools-are-blocked-at-ship-time).
