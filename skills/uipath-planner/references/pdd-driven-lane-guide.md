@@ -152,7 +152,7 @@ Walk the project list. For each project, emit task rows per the matched pattern.
 3. **Skill prompt references SDD sections explicitly.** "Implement `Process/CalculateTotal.xaml` per §11 row #3 of `<sdd-path>`. Use exact data field names from §5."
 4. **Anti-hallucination rule appended verbatim** to every Skill prompt.
 5. **Blocked-by edges** capture the dependency order — leaf resources before consumers, build before testing, testing before deploy.
-6. **Mandatory testing task per generation skill.** Inserted between generation tasks and any deploy task.
+6. **Mandatory testing task per generation skill.** Inserted between generation tasks and any deploy task; heading carries the literal token `Testing (MANDATORY)` per [plan-and-tasks-format.md](plan-and-tasks-format.md#testing-task-is-mandatory).
 7. **Propagate the delivery model.** When `Delivery model` is `automation-suite` or `standalone`, append one constraint line to every Skill prompt: "Deployment target: <value> — do not introduce products or features unavailable there." Skip the line for `cloud` / `unspecified`.
 
 ## Step 7 — Write tasks.md

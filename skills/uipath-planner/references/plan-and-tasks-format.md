@@ -137,6 +137,8 @@ Plans that build a **custom connector** (`uipath-connector-builder`) or an **IXP
 - [ ] **Validate:** all tests pass; record results
 ```
 
+The heading's description slot is the **literal token** `Testing (MANDATORY)` — copy it verbatim. Never insert words between `Testing` and `(MANDATORY)`: write `— Testing (MANDATORY)`, NOT `— Testing for <Project> (MANDATORY)`. Self-review and downstream checks grep for the exact token. Project identity lives only in the `Identity` field (`<skill>:<project>:testing`), never in the heading.
+
 ## Regenerate logic (PDD-driven lane only)
 
 When the user picks "Regenerate from the SDD" on the planner's resume question, preserve completed work via identity matching.

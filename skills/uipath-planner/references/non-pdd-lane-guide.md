@@ -145,7 +145,7 @@ Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD l
 2. **Placeholder scan** — no "TBD", "TODO", "as needed", "if appropriate", "similar to".
 3. **Skill order** — correct specialist per task; skills load in the right order (e.g., RPA before platform deploy; testing before deploy).
 4. **Validation gaps** — every generation task ends with a `Validate:` compile / build / lint check.
-5. **Testing task present** — a dedicated `Testing (MANDATORY)` task exists for every generation skill in the plan. Routes to the specialist's testing references — does not describe the procedure.
+5. **Testing task present** — a dedicated Testing task exists for every generation skill in the plan, and each heading carries the literal token `Testing (MANDATORY)` — search the saved file for that exact string; no words between `Testing` and `(MANDATORY)` (project name belongs in `Identity`, not the heading). Routes to the specialist's testing references — does not describe the procedure.
 6. **Plan path present** — every Skill prompt names the plan file path (not "this plan").
 7. **No internal-flow leakage** — the plan does not duplicate steps from any specialist's own references.
 8. **Anti-hallucination rule** appended to every Skill prompt.
