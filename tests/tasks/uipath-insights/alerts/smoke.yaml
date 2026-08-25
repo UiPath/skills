@@ -122,14 +122,15 @@ success_criteria:
 
   # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
   # invocation. The epoch-seconds bounds and the two by-ID reads are the spots
-  # most likely to tempt it. Anchored on a flag value or a `get` argument so an
-  # unrelated `$VAR` in a `&&`-, `;`-, or `|`-batched neighbour cannot false-fail
-  # this. A newline-batched neighbour's own `--flag $VAR` can still match; that
-  # shape is rare enough to accept.
+  # most likely to tempt it. The flag branch names only the flags these commands
+  # accept, because the (?!uip\s) barrier crosses newline-batched neighbours
+  # (deliberately, to catch backslash-continuation), so a generic --flag would
+  # match a neighbour's `curl --data $BODY`. A neighbour reusing one of these
+  # exact flag names with a variable value can still false-fail.
   - type: command_not_executed
     description: "Agent did not use command substitution or a shell variable in a uip insights command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights(?:(?!uip\s)[^&;|])*--[a-z][a-z-]*[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+\S+\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
+    command_pattern: 'uip\s+insights(?:(?!uip\s)[^&;|])*--(limit|offset|process-key|output|time-range|since|until|alert-name|folder-name|severity|time-grouping)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+\S+\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
