@@ -144,7 +144,7 @@ Signals that match *below* the primary become candidate additional projects in a
 
 Apply the [Constraint Gate](#constraint-gate) to the matched primary before presenting it — a first-match product that is blocked on the customer's delivery model is replaced by the matrix's alternative, not presented with a caveat.
 
-> Row 8 (Solution) is a **packaging/composition outcome** (layer 4), not a runtime product: it is reached ONLY via a [Solution Signal](#solution-signals) — the PDD itself names multiple top-level deliverables, each already typed by rows 1–7 and the placement table. Design-derived supporting components (a wrapper API Workflow, custom connector, IXP model, Coded Function) never count toward row 8 — see the derived-component rule under Solution Signals. A single-component design ships as that product — standalone package or single-project Solution per the template's packaging decision.
+> Row 8 (Solution) is a **packaging/composition outcome** (layer 4), not a runtime product: it is reached ONLY via a [Solution Signal](#solution-signals) — the PDD itself names multiple top-level deliverables, each already typed by rows 1–7 and the placement table. Components the design derives never count toward row 8 ([derived-component rule](#solution-signals)). A single-component design ships as that product — standalone package or single-project Solution per the template's packaging decision.
 
 ### Maestro disambiguation — BPMN vs Flow vs Case
 
@@ -174,7 +174,7 @@ A Solution is the correct primary when any of the following applies, even if a s
 
 When any of the above applies, set the default primary to **Solution** and pre-compose the product list from the matched signals. Otherwise default to the highest single-product match.
 
-**Derived components never escalate scope.** Solution Signals test what the **PDD names as deliverables**, not what placement derives. A supporting component the design extracts — a wrapper API Workflow for a host with an IS-only integration surface, a custom connector, an IXP model, a Coded Function — stays an **integrated component** of the single-product primary: flag it in the primary's template and emit a build task ordered before its consumer (see [API Workflow (as integrated component)](#api-workflow-as-integrated-component)). It gets no solution overview, no per-project SDD, and never flips `SDD scope` to `solution`. Example: a Maestro BPMN process needing one outbound REST call to a system with no catalog connector → single-product BPMN SDD with an extracted API Workflow row + build task — NOT a Solution.
+**Derived components never escalate scope.** Deliverables named by the requirements set the scope; the part count of the design never does. Solution Signals test what the **PDD names as deliverables** — every scope-shaped decision downstream (single-product vs Solution, template choice, SDD file layout, packaging) follows that answer, never the number of buildable parts the design ends up with. Any supporting component the design introduces (wrapper API Workflow, custom connector, IXP model, Coded Function, Library) inherits its consumer's scope: an integrated-component row in the primary's template plus a build task ordered before its consumer — no solution overview, no per-project SDD, no `SDD scope: solution` flip.
 
 > **Ambiguous dual-product PDDs:** If exactly two products match with similar strength and no Solution signal applies, mark the higher-priority match as the default single-product recommendation and offer Solution (customize) as an alternative in the recommendation screen. Let the user confirm via `AskUserQuestion`.
 
@@ -517,7 +517,7 @@ uip is connectors list --filter "<KEYWORD>" --output json     # narrow by system
 
 - **Connector exists →** reuse it. Flag `Access Method = Integration Service — <CONNECTOR_SLUG>`; the planner adds a "Configure <X> connector" task routed to `uipath-platform`.
 - **No connector, and the consumer can call HTTP directly** — API Workflows (Unified HTTP Request activity), RPA (HTTP Request activity), coded Agents (Python HTTP client) → call the API directly. Flag `Access Method = Direct HTTP`. This is the default; do not create a connector or API Workflow project for a single host-capable consumer (extraction test — placement rule 6).
-- **No connector, and the consumer's integration surface is IS-only** (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) → either build a **custom connector** (flag `Access Method = Custom connector — <CONNECTOR_SLUG>`; task routed to `uipath-connector-builder`, ordered before its consumer) or wrap the call in a small **API Workflow** the host invokes. Prefer the custom connector when the integration is reused by 2+ projects or needs IS-level connection governance. An unverified connector is an `[SME REVIEW]` item — never assume one exists. Either way the wrapper is an **integrated component** of the single-product primary — it never escalates scope to Solution ([derived-component rule](#solution-signals)).
+- **No connector, and the consumer's integration surface is IS-only** (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) → either build a **custom connector** (flag `Access Method = Custom connector — <CONNECTOR_SLUG>`; task routed to `uipath-connector-builder`, ordered before its consumer) or wrap the call in a small **API Workflow** the host invokes. Prefer the custom connector when the integration is reused by 2+ projects or needs IS-level connection governance. An unverified connector is an `[SME REVIEW]` item — never assume one exists. Either way the wrapper is an integrated component — scope is unchanged ([derived-component rule](#solution-signals)).
 
 ### API Workflow (as integrated component)
 
@@ -528,7 +528,7 @@ uip is connectors list --filter "<KEYWORD>" --output json     # narrow by system
 
 A host that can call the API itself keeps the call in-host (`Access Method = Direct HTTP` — see Integration Service above): no API Workflow project, no task.
 
-**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, BPMN Activities Inventory serviceTask rows, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`. This stays single-product scope — no solution overview, no per-project SDD for the extracted API Workflow — unless a [Solution Signal](#solution-signals) independently applies.
+**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, BPMN Activities Inventory serviceTask rows, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`. Scope is unchanged ([derived-component rule](#solution-signals)).
 
 ### Reusability & shared assets
 
