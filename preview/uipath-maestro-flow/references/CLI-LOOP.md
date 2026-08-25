@@ -116,30 +116,27 @@ Match the final evidence to the stated acceptance bar after the last edit:
 If the requested evidence cannot be obtained inside that bound, report the
 evidence boundary instead of replacing it with repeated debug launches.
 
-### Managed HTTP: emitted-artifact bindings in emit-only projects
+### Managed HTTP: authored connection bindings
 
 `http({ managed: true, ... })` needs real connection and folder bindings for
-product debug. After **every emit**, select an enabled HTTP connection and add
-both bindings to the emitted artifact:
+connector-authenticated product debug. Select an enabled HTTP connection:
 
 ```bash
 uip is connections list --all-folders \
   --output-filter "[?ConnectorKey=='uipath-uipath-http'].{Id:Id,FolderKey:FolderKey,Name:Name}"
-
-uip maestro flow binding add <Name>Sol/<Name>/<Name>.flow \
-  "uipath-uipath-http connection" connection <connection-id> \
-  --resource-key <connection-id> --property-attribute ConnectionId --output json
-
-uip maestro flow binding add <Name>Sol/<Name>/<Name>.flow \
-  "FolderKey" folderKey <folder-key> \
-  --resource-key <folder-key> --property-attribute FolderKey --output json
 ```
 
-These are product bindings embedded in the emitted `.flow`, not the symbolic
-connector names authored in a root-level `bindings.json`. A managed-HTTP-only
-flow needs no authored `bindings.json`, but it still needs the two
-emitted-artifact bindings for product debug. Re-emission overwrites the artifact,
-so run both `binding add` commands again after the last compile.
+Declare symbolic entries in `bindings.json`, then pass both names to the node:
+
+```ts
+http({ managed: true, method: 'GET', url: '/me',
+  connection: 'spotifyHttp', folder: 'shared' })
+```
+
+Compilation resolves those names and writes both the connector-authenticated
+node detail and the required product bindings into the emitted `.flow`. Do not
+patch them into the artifact after emission; that edit would be lost on the next
+compile. Omit both options only when manual/implicit authentication is intended.
 
 ## Refresh, debug, and preserve evidence
 

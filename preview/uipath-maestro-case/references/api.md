@@ -13,9 +13,9 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Builders** — [CaseBuilder](#casebuilder-class) · [StageBuilder](#stagebuilder-class) · [TaskBuilder](#taskbuilder-class)
 
-**Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ConnectorOpts](#connectoropts-interface)
+**Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ExternalTaskOptions](#externaltaskoptions-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
 
 ## rule (function)
 
@@ -233,6 +233,14 @@ declare class TaskBuilder {
     caseManagement(name: string, opts?: {
             folder?: string;
         }): this;
+    /** Reference a published Maestro Flow. */
+    flowProcess(name: string, opts?: {
+            folder?: string;
+        }): this;
+    /** Invoke an external agent through its generated Integration Service descriptor. */
+    externalAgent<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
+    /** Invoke an external workflow through its generated Integration Service descriptor. */
+    externalWorkflow<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
     /**
      * An Action Center human task. `recipient` may be an email (→ Type 2) or
      * `{ type, value }`. `inputs`/`outputs` declare the task's form fields — inputs
@@ -550,6 +558,22 @@ export interface ExitOpts {
 }
 ````
 
+## ExternalTaskOptions (interface)
+
+````ts
+/** Required wiring and typed inputs for an external agent/workflow invocation. */
+export interface ExternalTaskOptions<I extends Record<string, unknown>> {
+    /** Symbolic Integration Service connection name declared in `bindings.json`. */
+    connection: string;
+    /** Symbolic Orchestrator folder binding name declared in `bindings.json`. */
+    folder: string;
+    /** Closed runtime mode; each family lowers this to its exact supported service type. */
+    mode: ExternalExecutionMode;
+    /** Inputs statically checked by the generated connector descriptor. */
+    inputs: I;
+}
+````
+
 ## ConnectorOpts (interface)
 
 ````ts
@@ -845,6 +869,15 @@ export interface BuiltSla {
 export type CaseAppDetailValue = string | number | boolean | null;
 ````
 
+## ConnectorDescriptor (type)
+
+````ts
+export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
+    readonly __inputs?: I;
+    readonly __outputs?: O;
+};
+````
+
 ## RecipientType (type)
 
 ````ts
@@ -868,15 +901,6 @@ export interface ActionField {
 }
 ````
 
-## ConnectorDescriptor (type)
-
-````ts
-export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
-    readonly __inputs?: I;
-    readonly __outputs?: O;
-};
-````
-
 ## TimerSpecData (interface)
 
 ````ts
@@ -896,6 +920,7 @@ export interface BuiltTask {
     ref?: TaskRef;
     action?: ActionSpecData;
     connector?: ConnectorSpecData;
+    external?: ExternalTaskSpecData;
     timer?: TimerSpecData;
     waitConnector?: WaitConnectorSpec;
     required?: boolean;
@@ -967,10 +992,16 @@ export interface ConnectorMeta {
 }
 ````
 
+## ExternalExecutionMode (type)
+
+````ts
+export type ExternalExecutionMode = 'sync' | 'async';
+````
+
 ## TaskKind (type)
 
 ````ts
-export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
+export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'flow-process' | 'external-agent' | 'external-workflow' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
 ````
 
 ## TaskRef (interface)
@@ -1005,6 +1036,15 @@ export interface ActionSpecData {
 export type ConnectorSpecData = Extract<ActionSpec, {
     kind: 'connector';
 }>;
+````
+
+## ExternalTaskSpecData (interface)
+
+````ts
+export interface ExternalTaskSpecData {
+    mode: ExternalExecutionMode;
+    connector: ConnectorSpecData;
+}
 ````
 
 ## TaskInputBinding (interface)

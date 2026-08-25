@@ -813,8 +813,14 @@ export interface ScheduledInputs {
 ````ts
 export type HttpInputs = HttpInputsBase & ({
     managed: false;
+    connection?: never;
+    folder?: never;
 } | {
     managed: true;
+    /** Symbolic HTTP connection name declared in bindings.json. */
+    connection?: string;
+    /** Symbolic folder name declared in bindings.json. */
+    folder?: string;
 });
 ````
 
@@ -1552,8 +1558,8 @@ export interface QueueItemInputs {
     folderPath: string;
     /**
      * The queue's own Orchestrator key (a GUID). It is the JOIN between this node
-     * and the flow's queue bindings — flow-check FC416 is the rule that says a node
-     * which does not reference its bindings cannot be dispatched — and it is what
+     * and the flow's queue bindings — a node which does not reference its bindings
+     * cannot be dispatched — and it is what
      * the designer's queue picker writes. The RUNTIME resolves the queue by
      * `queue` + `folderPath`, so all three are needed and none is redundant.
      */
@@ -1676,8 +1682,9 @@ interface HttpInputsBase {
      *   use `returns` to declare fields before reading them. The node choice does
      *   not decide whether application/json is parsed.
      *
-     * Authentication is the platform's (`ImplicitConnection`); a local run is
-     * unauthenticated, which matters only for APIs that need a key.
+     * With `managed: true`, omit `connection` and `folder` for the platform's
+     * manual/implicit mode, or provide both symbolic names to reuse an Integration
+     * Service HTTP connection. A local run remains unauthenticated.
      *
      * @enforcedBy HTTP_ONERROR_V1 `.onError()` on an http step needs `managed: true`; on
      *   the standalone node a 4xx arrives on the SUCCESS path and no handler runs.
@@ -1691,8 +1698,8 @@ interface HttpInputsBase {
      * Why you have to say: the platform's own definition declares the response as
      * a bare object, because only the API being called knows its shape. Without
      * this, `out('fetch','body','items')` reads from an object with no declared
-     * fields and flow-check rejects it (FC507) — correctly, since nothing could
-     * tell a real field from a typo. Same rule, and the same word, as
+     * fields, and nothing downstream can tell a real field from a typo. Same rule,
+     * and the same word, as
      * `rpaWorkflow`'s `returns`.
      */
     returns?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
@@ -1720,7 +1727,7 @@ interface HttpInputsBase {
      * to three attempts in total.
      *
      * Must be a non-negative integer. Above **5** `check` warns rather than
-     * errors: 5 is where `fil-run`'s dispatcher clamps, the deployed corpus's
+     * errors: the deployed corpus's
      * largest author-set value is 3, and the platform's own ceiling is not
      * measured — so a bigger number may well work, and refusing it outright would
      * fence off something we have no evidence is wrong.

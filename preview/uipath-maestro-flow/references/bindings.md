@@ -106,13 +106,9 @@ next compile.
 
 ## Emitted-artifact bindings
 
-`uip maestro flow binding add` edits bindings inside an already emitted `.flow`.
-It does not create or update the symbolic root file. This distinction matters
-for managed HTTP: it has no authored connector symbol, but product debug still
-needs its connection and folder bindings added to the artifact as described in
-[the CLI loop](CLI-LOOP.md#product-validation-and-conditional-bindings).
-
-If a workflow requires `binding add`, run it after the final compile because
-re-emission replaces the artifact. For Integration Service connector source,
-keep using symbolic names plus `bindings.json`; do not substitute artifact edits
-for the authored mapping.
+`uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
+it does not create or update the symbolic root file. SDK-authored Integration
+Service actions and managed HTTP nodes should instead keep symbolic names in
+source plus `bindings.json`, so recompilation deterministically restores the
+same node detail and product bindings. Use direct artifact edits only for a
+brownfield `.flow` with no source representation.

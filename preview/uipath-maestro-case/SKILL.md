@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ b384859. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ efd27ce. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -497,7 +497,7 @@ export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
 <!-- GEN:task-builder -->
 
 ```ts
-export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
+export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'flow-process' | 'external-agent' | 'external-workflow' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
 
 /**
      * Reference a published Maestro process.
@@ -557,6 +557,17 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
     }): this;
 
 /**
+     * Reference a published Maestro Flow.
+     *
+     * @param name - The published Flow's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
+     */
+    flowProcess(name: string, opts?: {
+        folder?: string;
+    }): this;
+
+/**
      * An Action Center human task. `recipient` may be an email (→ Type 2) or
      * `{ type, value }`. `inputs`/`outputs` declare the task's form fields — inputs
      * are read-only context the assignee sees, outputs are what they fill in.
@@ -577,6 +588,39 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
         inputs?: ActionField[];
         outputs?: ActionField[];
     }): this;
+
+/**
+     * Invoke an external agent through its generated Integration Service descriptor.
+     *
+     * @param descriptor - An `AgentExecution` operation from a generated connector module.
+     * @param opts - Required connection/folder bindings, sync/async mode, and descriptor-typed inputs.
+     * @returns This builder, so calls chain.
+     */
+    externalAgent<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
+
+/**
+     * Invoke an external workflow through its generated Integration Service descriptor.
+     *
+     * @param descriptor - A `ProcessExecution` operation from a generated connector module.
+     * @param opts - Required connection/folder bindings, sync/async mode, and descriptor-typed inputs.
+     * @returns This builder, so calls chain.
+     */
+    externalWorkflow<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
+
+/** Required wiring and typed inputs for an external agent/workflow invocation. */
+export interface ExternalTaskOptions<I extends Record<string, unknown>> {
+    /** Symbolic Integration Service connection name declared in `bindings.json`. */
+    connection: string;
+    /** Symbolic Orchestrator folder binding name declared in `bindings.json`. */
+    folder: string;
+    /** Closed runtime mode; each family lowers this to its exact supported service type. */
+    mode: ExternalExecutionMode;
+    /** Inputs statically checked by the generated connector descriptor. */
+    inputs: I;
+}
+
+/** Whether an external Integration Service task blocks for its result or waits for a callback. */
+export type ExternalExecutionMode = 'sync' | 'async';
 
 /**
      * Stringly form, for a connector with no prepared module.
@@ -760,12 +804,17 @@ export interface TimerSpecData {
 
 <!-- /GEN:task-builder -->
 
+Calling `.waitForTimer()` without a specification creates an intentionally
+unconfigured placeholder, which product validation rejects. For a validating
+stand-in task, provide an explicit ISO-8601 value such as
+`.waitForTimer({ duration: 'PT1M' })`.
+
 ### Task io-binding — pass inputs, capture outputs
 
-Reference-mode tasks (`process`/`agent`/`rpa`/`api-workflow`, and
-`case-management` sub-cases) can bind input parameters and extract result fields
-into readable case variables, so a later task or a `=vars.<name>` gate consumes a
-task's result:
+Reference-mode tasks (`process`/`agent`/`rpa`/`api-workflow`,
+`case-management` sub-cases, and `flow-process` Maestro Flows) can bind input
+parameters and extract result fields into readable case variables, so a later
+task or a `=vars.<name>` gate consumes a task's result:
 
 ```ts
 .task('Lookup age', t => t
@@ -889,6 +938,9 @@ connection/type IDs in the `.case.ts`; bind symbolic names in `bindings.json`.
 
 Pass one rule, an array for an **AND-group**, or an array of arrays for the
 complete **OR-of-AND grid** to `entryWhen`/`exitWhen`/`completeWhen`.
+Each method call emits one condition. To emit two separate conditions, call
+the method twice; passing two rules in one array emits one condition that
+requires both rules.
 
 For a pure data gate, use `when(expression)`. The receiving slot supplies the
 platform's canonical event, so `stage.entryWhen(when('=js:vars.amount > 1000'))`
@@ -1524,19 +1576,48 @@ A full worked example ships at `examples/NotifyOnApproval.case.ts` (+
 `examples/bindings.json`): a human approval stage followed by a Slack
 connector task.
 
+### External agents and workflows
+
+External agents and Power Automate workflows use generated connector descriptors,
+but they are distinct Case task families with a mandatory execution mode:
+
+```text
+import { ExecuteGoogleVertexAgent } from './sdk/connectors/uipath-google-vertex.js';
+import { InvokeAMicrosoftPowerAutomateFlow } from './sdk/connectors/uipath-microsoft-powerautomate.js';
+
+.task('Ask support agent', t => t
+  .externalAgent(ExecuteGoogleVertexAgent, {
+    connection: 'vertex', folder: 'shared', mode: 'sync',
+    inputs: { parent: 'agents/support' },
+  })
+  .entryWhen(rule('current-stage-entered')))
+.task('Start approval flow', t => t
+  .externalWorkflow(InvokeAMicrosoftPowerAutomateFlow, {
+    connection: 'powerAutomate', folder: 'shared', mode: 'async',
+    inputs: { workflow_id: 'case-review' },
+  })
+  .entryWhen(rule('current-stage-entered')))
+```
+
+- Use only a generated descriptor from the matching catalog: `AgentExecution`
+  for `.externalAgent()` and `ProcessExecution` for `.externalWorkflow()`.
+- `mode` is required and closed to `'sync' | 'async'`. It selects the exact
+  runtime handler and input encoding; never substitute a service-type string.
+- `connection` and `folder` are required symbolic root bindings. These task
+  families cannot be authored as unconfigured placeholders.
+
 ## Compile & check (CLI)
 
 Author `<Name>.case.ts` with a default export ending in `.build()`, then:
 
-Both ship in the package: as the bins `case-check` / `case-compile`, or run
-directly with `node node_modules/@uipath/flow-sdk/dist/case/<name>-cli.js`.
+Run the package's family-first CLI with `npx flow-sdk case <verb>`.
 
-- **`check`** (`case-check <Name>.case.ts`) — fast static validation of the built
+- **`check`** (`npx flow-sdk case check <Name>.case.ts`) — fast static validation of the built
   case; surfaces the common validator failures (task without an entry rule,
   case/stage without a completion rule, unsatisfiable `required-tasks-completed`,
   unresolved stage/task references, unsafe case/stage names, and out-of-range SLA
   counts) without writing a file. Exits non-zero on any error.
-- **`compile`** (`case-compile <Name>.case.ts [-o caseplan.json]`) — runs the
+- **`compile`** (`npx flow-sdk case compile <Name>.case.ts [-o caseplan.json]`) — runs the
   static check, then serializes to `caseplan.json` (default output name). Pair it
   with `uip maestro case validate` for the authoritative gate.
 - **`decompile`** (`uip maestro case decompile <caseplan.json> [-o Name.case.ts]`)
