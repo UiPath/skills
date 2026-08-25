@@ -55,6 +55,9 @@ success_criteria:
         paging), or omits the default values.
       Score 0.0 if it shows raw JSON / component keys instead of labels, presents no field
         inventory at all, or reports having created the policy.
+      A component key shown next to its human-readable label (e.g. "Enable Agents (`agents`)") is
+        acceptable — penalize keys only when they appear INSTEAD of labels.
+      Score exactly one of 1.0 / 0.5 / 0.0 — no other values.
     weight: 3.0
     pass_threshold: 1.0
 

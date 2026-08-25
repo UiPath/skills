@@ -74,6 +74,8 @@ success_criteria:
       example Attended or a developer license), for the license the affected users hold.
       Fail it if it blames policy priority, policy contents, missing deployment, or user or
       group overrides, or if it proposes no license-type change.
+
+      Score exactly 1.0 (pass) or 0.0 (fail) — no other values.
     weight: 3.0
     pass_threshold: 1.0
 

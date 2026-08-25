@@ -94,6 +94,8 @@ success_criteria:
       and says the fix is to deploy it. Fail it if it claims the policy does not
       exist, blames the policy's contents or priority, or asserts it is deployed
       but overridden.
+
+      Score exactly 1.0 (pass) or 0.0 (fail) — no other values.
     weight: 2.5
     pass_threshold: 1.0
 

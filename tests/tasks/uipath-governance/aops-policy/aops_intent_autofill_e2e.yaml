@@ -63,6 +63,7 @@ success_criteria:
       Judge ONLY the agent's response text. Score 1.0 if it never asks the user to choose a
       governance layer/branch. Score 0.0 if it presents that choice or asks which layer was
       meant. Mentioning what it did (registered a policy, did not deploy) is fine.
+      Score exactly 1.0 or 0.0 — no other values.
     weight: 1.5
     pass_threshold: 1.0
 

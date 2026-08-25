@@ -82,6 +82,8 @@ success_criteria:
       declines to deploy or asks the user to pick a license type that includes Assistant
       (e.g. Attended / a developer license). Fail it if it reports having deployed the policy
       under Unattended as requested, or gives a reason unrelated to license-type coverage.
+
+      Score exactly 1.0 (pass) or 0.0 (fail) — no other values.
     weight: 3.0
     pass_threshold: 1.0
 

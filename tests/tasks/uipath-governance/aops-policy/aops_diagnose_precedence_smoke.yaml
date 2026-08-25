@@ -89,6 +89,8 @@ success_criteria:
       assignment (or to deploy the intended policy at group scope for the team). Fail it if
       it blames policy priority numbers alone, claims no policy is deployed anywhere, blames
       the policy's contents, or proposes redeploying at tenant scope as the fix.
+
+      Score exactly 1.0 (pass) or 0.0 (fail) — no other values.
     weight: 2.5
     pass_threshold: 1.0
 
