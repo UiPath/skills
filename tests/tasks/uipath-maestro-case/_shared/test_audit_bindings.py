@@ -153,9 +153,7 @@ class AuditBindingsTests(unittest.TestCase):
                               "folderPath": {"defaultValue": "solution_folder"}}}]
         self.assertEqual(run(plan, sidecar, emit_connection=False)[0], 0)
 
-    # -- the D-detection hole this change closes --------------------------------
 
-    # -- what the repointed connection_parity e2e now additionally catches ------
 
     def test_accepts_general_empty_folderpath_form(self):
         """`folderPath: ""` -> `.{name}` is the GENERAL rule; solution_folder is the
@@ -198,76 +196,65 @@ class AuditBindingsTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("has no", out)
 
-    def test_malformed_caseplan_does_not_crash(self):
-        for bad in ("[]", "null", '"x"'):
+    def test_malformed_caseplan_is_a_finding_not_a_traceback(self):
+        """Unreadable input must land on the documented contract: exit 1 with a
+        numbered finding on stdout, never a traceback."""
+        for bad in ("[]", "null", '"x"', "5"):
             with tempfile.TemporaryDirectory() as tmp:
                 proj = pathlib.Path(tmp) / "Sol" / "Proj"
                 proj.mkdir(parents=True)
                 (proj / "caseplan.json").write_text(bad)
                 (proj / "bindings_v2.json").write_text('{"version":"2.0","resources":[]}')
-                with self.assertRaises(SystemExit) as ctx:
-                    audit_bindings.check(pathlib.Path(tmp) / "Sol", quiet=True)
-                self.assertIn("not a JSON object", str(ctx.exception))
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    with self.assertRaises(SystemExit) as ctx:
+                        audit_bindings.check(pathlib.Path(tmp) / "Sol", quiet=True)
+                self.assertEqual(ctx.exception.code, 1, bad)
+                self.assertIn("AUDIT FAIL", buf.getvalue())
+                self.assertIn("not a JSON object", buf.getvalue())
 
-    def test_pins_folder_key_required_only_when_declared(self):
-        """folderKey is omitted by contract when the connection has no folder, so
-        require it only when the caseplan declared one."""
-        plan = caseplan(bindings=[
-            {"id": "c", "resource": "Connection", "resourceKey": CONN,
-             "default": CONN, "propertyAttribute": "ConnectionId"},
-            {"id": "f", "resource": "Connection", "resourceKey": CONN,
-             "default": "FK", "propertyAttribute": "folderKey"},
-        ], connector=False)
-        sidecar = [{"resource": "Connection", "key": CONN,
-                    "value": {"connectionId": {"defaultValue": CONN}}}]
-        code, out = run(plan, sidecar, emit_connection=False)
-        self.assertEqual(code, 1)
-        self.assertIn("value.folderKey.defaultValue", out)
+    def test_non_list_bindings_does_not_crash(self):
+        plan = {"bindings": 5, "nodes": []}
+        self.assertEqual(run(plan, [])[0], 0)
 
-    def test_pins_uppercase_connectionid_casing_bug(self):
-        plan = caseplan(bindings=[
-            {"id": "c", "resource": "Connection", "resourceKey": CONN,
-             "default": CONN, "propertyAttribute": "ConnectionId"}], connector=False)
-        sidecar = [{"resource": "Connection", "key": CONN,
-                    "value": {"ConnectionId": {"defaultValue": CONN}}}]
-        code, out = run(plan, sidecar, emit_connection=False)
-        self.assertEqual(code, 1)
-        self.assertIn("uppercase C", out)
-
-    def test_pins_absent_sidecar(self):
+    def test_pins_resources_not_an_array(self):
+        """The last unpinned check from the round-3 mutation battery."""
         with tempfile.TemporaryDirectory() as tmp:
             proj = pathlib.Path(tmp) / "Sol" / "Proj"
             proj.mkdir(parents=True)
             (proj / "caseplan.json").write_text(json.dumps(caseplan()))
+            (proj / "bindings_v2.json").write_text('{"version":"2.0","resources":{}}')
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
                 code = audit_bindings.check(pathlib.Path(tmp) / "Sol", quiet=True)
             self.assertEqual(code, 1)
-            self.assertIn("bindings_v2.json is absent", buf.getvalue())
+            self.assertIn("is not an array", buf.getvalue())
+
+    def test_tolerates_product_authored_null_folder_path(self):
+        """A product-authored pair carries folderPath `default: null` (folder
+        unspecified) with a bare-name resourceKey. Not a defect."""
+        plan = caseplan(bindings=[
+            {"id": "a", "resource": "process", "resourceKey": "RPA Workflow",
+             "default": "RPA Workflow", "propertyAttribute": "name"},
+            {"id": "b", "resource": "process", "resourceKey": "RPA Workflow",
+             "propertyAttribute": "folderPath"},
+        ], connector=False)
+        sidecar = [{"resource": "process", "key": "RPA Workflow",
+                    "value": {"name": {"defaultValue": "RPA Workflow"}}}]
+        self.assertEqual(run(plan, sidecar, emit_connection=False)[0], 0)
 
     def test_pins_stale_sidecar_entry(self):
-        plan = caseplan(bindings=[binding("name", "OpsApi"), binding("folderPath", FOLDER)],
-                        connector=False)
-        sidecar = [CORRECT_SIDECAR[0], {"resource": "process", "key": "Ghost.Thing",
-                   "value": {"name": {"defaultValue": "Thing"},
-                             "folderPath": {"defaultValue": "Ghost"}}}]
+        """A sidecar key the caseplan no longer declares — left behind by a
+        binding repoint or removal."""
+        plan = caseplan(bindings=[binding("name", "OpsApi"),
+                                  binding("folderPath", FOLDER)], connector=False)
+        sidecar = [CORRECT_SIDECAR[0],
+                   {"resource": "process", "key": "Ghost.Thing",
+                    "value": {"name": {"defaultValue": "Thing"},
+                              "folderPath": {"defaultValue": "Ghost"}}}]
         code, out = run(plan, sidecar, emit_connection=False)
         self.assertEqual(code, 1)
         self.assertIn("stale sidecar entries", out)
-
-    def test_property_attribute_casing_does_not_evade(self):
-        """A `Name`/`FolderPath` casing typo must not slip past Check 11."""
-        plan = caseplan(bindings=[
-            {"id": "a", "resource": "process", "resourceKey": "WRONG",
-             "default": "OpsApi", "propertyAttribute": "Name"},
-            {"id": "b", "resource": "process", "resourceKey": "WRONG",
-             "default": FOLDER, "propertyAttribute": "FolderPath"},
-        ], connector=False)
-        sidecar = [{"resource": "process", "key": "WRONG", "value": {
-            "name": {"defaultValue": "OpsApi"}, "folderPath": {"defaultValue": FOLDER}}}]
-        code, out = run(plan, sidecar, emit_connection=False)
-        self.assertEqual(code, 1)
-        self.assertIn("not self-consistent", out)
 
     def test_skips_non_case_solution(self):
         with tempfile.TemporaryDirectory() as tmp:

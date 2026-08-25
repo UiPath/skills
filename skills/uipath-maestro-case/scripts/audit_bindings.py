@@ -46,18 +46,27 @@ def _load(path: pathlib.Path) -> dict:
     try:
         raw = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        sys.exit(f"FAIL: cannot read {path}: {exc}")
+        _abort(f"cannot read {path}: {exc}")
     try:
         doc = json.loads(raw)
     except json.JSONDecodeError as exc:
-        sys.exit(f"FAIL: {path} is not valid JSON: {exc}")
+        _abort(f"{path} is not valid JSON: {exc}")
     if not isinstance(doc, dict):
-        sys.exit(f"FAIL: {path} is not a JSON object (got {type(doc).__name__})")
+        _abort(f"{path} is not a JSON object (got {type(doc).__name__})")
     return doc
 
 
+def _abort(detail: str):
+    """Unreadable input is a finding, not a bare stderr line — Check 7 tells the
+    agent to quote the verdict and repair numbered findings."""
+    print("AUDIT FAIL: caseplan bindings[] and bindings_v2.json could not be read.")
+    print(f"  1. {detail}")
+    raise SystemExit(1)
+
+
 def _bindings(plan) -> list[dict]:
-    return [b for b in (plan.get("bindings") or []) if isinstance(b, dict)]
+    raw = plan.get("bindings")
+    return [b for b in raw if isinstance(b, dict)] if isinstance(raw, list) else []
 
 
 def _attr(binding: dict) -> str:
@@ -65,41 +74,26 @@ def _attr(binding: dict) -> str:
     return str(binding.get("propertyAttribute", "")).lower()
 
 
-def _check_sidecar_shape(resources: list, project: str, has_folder_key: set, out: list[str]) -> None:
-    """Check 1 — one entry per resource, `key` + nested `value.<prop>.defaultValue`."""
-    # Wrong shape is a whole-file property: report it once per observed key set,
-    # not once per entry (a 12-entry sidecar produced 12 identical lines).
+def _check_sidecar_shape(resources: list, project: str, out: list[str]) -> None:
+    """Check 1 — one entry per resource: a `key` plus a non-empty nested `value`.
+
+    Structural only. Asserting individual `value.<prop>.defaultValue` keys
+    false-fires on product-authored sidecars, which legitimately omit
+    `folderPath` and write the uppercase `ConnectionId` the CLI produces. The
+    failure this exists to catch — caseplan `bindings[]` dumped verbatim, or
+    invented field names — carries neither `key` nor `value`, so the structural
+    test is sufficient.
+    """
     malformed: dict[tuple, int] = {}
     for entry in resources:
         if not isinstance(entry, dict):
             malformed[("<not an object>",)] = malformed.get(("<not an object>",), 0) + 1
             continue
         value = entry.get("value")
-        if not entry.get("key") or not isinstance(value, dict):
+        if not isinstance(entry.get("key"), str) or not entry["key"] \
+                or not isinstance(value, dict) or not value:
             sig = tuple(sorted(str(k) for k in entry.keys()))
             malformed[sig] = malformed.get(sig, 0) + 1
-            continue
-        if "ConnectionId" in value and "connectionId" not in value:
-            out.append(
-                f"{project}: bindings_v2 entry {entry['key']!r} uses `value.ConnectionId` "
-                f"(uppercase C). `syncConnectionResources` reads lowercase "
-                f"`connectionId` — see bindings-v2-sync.md § Known CLI bug"
-            )
-            continue
-        if entry.get("resource") == "Connection" or "connectionId" in value:
-            # folderKey is omitted by contract when the connection has no folder
-            # (bindings/impl-json.md), so require it only when the caseplan
-            # declared one for this key.
-            wanted = ("connectionId", "folderKey") if entry["key"] in has_folder_key else ("connectionId",)
-        else:
-            wanted = ("name", "folderPath")
-        for prop in wanted:
-            leaf = value.get(prop)
-            if not isinstance(leaf, dict) or "defaultValue" not in leaf:
-                out.append(
-                    f"{project}: bindings_v2 entry {entry['key']!r} is missing "
-                    f"`value.{prop}.defaultValue`"
-                )
     for sig, count in sorted(malformed.items(), key=lambda kv: -kv[1]):
         out.append(
             f"{project}: {count} of {len(resources)} bindings_v2 entries have keys "
@@ -120,16 +114,19 @@ def _check_resource_keys(plan, project: str, out: list[str]) -> None:
         # PAIR_ATTRS excludes connectionId / folderKey, so connection bindings
         # never enter a pair and need no separate exemption.
         if isinstance(key, str) and attr in PAIR_ATTRS:
-            pairs.setdefault(key, {})[attr] = b.get("default") or ""
+            default = b.get("default")
+            pairs.setdefault(key, {})[attr] = default if isinstance(default, str) else None
     for key, defaults in sorted(pairs.items()):
         name, folder = defaults.get("name"), defaults.get("folderpath")
-        if name is None or folder is None:
-            missing = "folderPath" if folder is None else "name"
+        if "name" not in defaults or "folderpath" not in defaults:
+            missing = "folderPath" if "folderpath" not in defaults else "name"
             out.append(
                 f"{project}: resourceKey {key!r} has no {missing} binding — a pair's two "
                 f"bindings must share one identical resourceKey (Check 11); a mismatched "
                 f"pair splits into two half-keys like this one"
             )
+            continue
+        if name is None:
             continue
         if folder == INLINE_SIBLING_SENTINEL:
             out.append(
@@ -138,6 +135,10 @@ def _check_resource_keys(plan, project: str, out: list[str]) -> None:
                 f"resourceKey carries the {INLINE_SIBLING_SENTINEL} prefix. This passes "
                 f"validate and fails at invocation with 'folder not exist'"
             )
+            continue
+        if folder is None:
+            # `default: null` means folder unspecified — a product-authored
+            # shape whose resourceKey is the bare name. Nothing to compose.
             continue
         if folder:
             allowed = {f"{folder}.{name}"}
@@ -177,8 +178,12 @@ def check(solution_dir, quiet: bool = False) -> int:
             findings.append(f"{project}: bindings_v2.json is absent — run the Step 9.4 sync")
             resources: list = []
         else:
-            resources = _load(sidecar_path).get("resources") or []
-            if not isinstance(resources, list):
+            # NOT `or []` — a falsy non-list ({} / "" / 0) would be coerced to a
+            # clean empty list before the type check could see it.
+            resources = _load(sidecar_path).get("resources")
+            if resources is None:
+                resources = []
+            elif not isinstance(resources, list):
                 findings.append(f"{project}: bindings_v2.json `resources` is not an array")
                 resources = []
 
@@ -190,17 +195,13 @@ def check(solution_dir, quiet: bool = False) -> int:
             r["key"] for r in resources
             if isinstance(r, dict) and isinstance(r.get("key"), str) and r["key"]
         }
-        has_folder_key = {
-            b["resourceKey"] for b in _bindings(plan)
-            if _attr(b) == "folderkey" and isinstance(b.get("resourceKey"), str)
-        }
 
         if not quiet:
             print(f"  {project}:")
             print(f"    caseplan resourceKeys  {len(caseplan_keys)}")
             print(f"    bindings_v2 entries    {len(resources)}")
 
-        _check_sidecar_shape(resources, project, has_folder_key, findings)
+        _check_sidecar_shape(resources, project, findings)
 
         missing = sorted(caseplan_keys - sidecar_keys)
         if missing:
@@ -223,8 +224,7 @@ def check(solution_dir, quiet: bool = False) -> int:
             print(f"  {i}. {f}")
         return 1
 
-    if not quiet:
-        print("AUDIT OK: bindings_v2.json matches caseplan bindings[]")
+    print("AUDIT OK: bindings_v2.json matches caseplan bindings[]")
     return 0
 
 
