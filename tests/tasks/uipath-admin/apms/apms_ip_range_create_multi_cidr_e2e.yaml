@@ -1,0 +1,44 @@
+task_id: skill-admin-apms-ip-range-create-multi-cidr-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — allowlist two networks for
+  one office in a single call. The create verb takes a repeatable CIDR flag and
+  stores one allowlist entry per network under the shared name, so the read-back
+  requires BOTH networks to be allowed under that name: an agent that registers
+  only the first one fails.
+
+  Enforcement is never enabled by this test, so the entries have no effect on
+  access, and both CIDRs are TEST-NET documentation ranges.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, ip-management]
+
+pre_run:
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-multi-office" APMS_RANGE_COUNT="2" APMS_RANGE_CLAIM="0" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-multi-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Our Berlin office reaches the platform from the two separate networks listed in
+  `seed.json` (the `range.cidrs` field). Add both to our organization's IP
+  allowlist under the single name given in `range.name`.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Both networks are allowed under the requested name on the organization"
+    command: 'APMS_CHECK="present" APMS_SEED_KEY="range" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''verify_apms_ip_range.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Adding allowlist entries must not touch the enforcement toggle"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+enforcement\s+(?:enable|disable)\b'
+    weight: 2.0

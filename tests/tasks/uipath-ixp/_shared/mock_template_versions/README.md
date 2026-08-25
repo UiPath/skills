@@ -15,7 +15,7 @@ sandbox:
 ## Why it exists
 
 `get-metrics` defaults to the **latest trained** version, which is routinely not
-the **published/live** one (SKILL.md Critical Rule 20). The base mock fails every
+the **published/live** one (SKILL.md Critical Rule 21). The base mock fails every
 invocation, so a task testing that rule is unwinnable on it: the correct path
 reads `list-models` for the live version and carries it into `get-metrics -m <N>`,
 and a failing read leaves nothing to carry.

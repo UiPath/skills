@@ -16,7 +16,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 > **Confirm consent first.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. See the consent-before-debug rule in [SKILL.md](../../../SKILL.md). Do not run without explicit user authorization.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir.
@@ -24,7 +24,7 @@ The argument is the **project directory path** (the folder containing `project.u
 Pass input arguments when the flow has input parameters:
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
@@ -32,7 +32,7 @@ Bind local files to file-typed input variables with `--attachment <variableId>=<
 
 ```bash
 # Replace <variableId> and <localPath> placeholders below with your own values.
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```

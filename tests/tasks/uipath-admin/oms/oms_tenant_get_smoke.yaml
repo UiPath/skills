@@ -1,0 +1,57 @@
+task_id: skill-admin-oms-tenant-get-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — fetch ONE tenant's own record
+  rather than the whole list. The agent has to resolve the tenant it is logged into
+  and then read that tenant back by id. Graded on the record the platform returned:
+  its id matches the login tenant, and it carries the per-tenant fields the list
+  view is asked about (status, region, environment, tenant URL).
+
+  Read-only — no tenant is created, disabled, or removed.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, oms]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Show me the full details the platform holds for the tenant I am currently logged
+  into — its status, region, environment, and which service instances are
+  provisioned on it. Save the complete JSON result to ./tenant.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "tenant.json holds the login tenant's own record from the platform (id, status, region, URL)"
+    command: |
+      python3 -c "
+      import json, subprocess
+      saved = json.load(open('tenant.json', encoding='utf-8-sig'))
+      res = saved.get('Result') if isinstance(saved, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      me = json.loads(subprocess.run(['uip','login','status','--output','json'], capture_output=True, text=True).stdout)['Data']
+      rec = next((x for x in dicts(saved) if str(x.get('Id','')).lower() == me['TenantId'].lower() and x.get('Name')), None)
+      assert rec, 'the saved record is not the login tenant read back from the platform'
+      assert str(rec.get('Name')) == me['Tenant'], f\"record names tenant {rec.get('Name')!r}, expected {me['Tenant']!r}\"
+      for field in ('Status', 'Region', 'TenantUrl'):
+          assert rec.get(field), f'record carries no {field}; keys={sorted(rec)[:12]}'
+      instances = rec.get('TenantServiceInstances') or []
+      assert instances, 'the record lists no provisioned service instances — the tenant LIST leaves this field empty, so this is not the single-tenant read'
+      assert any(i.get('ServiceType') for i in instances), f'service instances carry no ServiceType; keys={sorted(instances[0])[:8]}'
+      print('OK: login tenant ' + str(rec.get('Name')) + ' retrieved (status=' + str(rec.get('Status')) + ', region=' + str(rec.get('Region')) + ', ' + str(len(instances)) + ' service instances)')
+      "
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Reading one tenant must not mutate any tenant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+(?:create|delete|disable|enable|update)\b'
+    weight: 2.0

@@ -35,7 +35,7 @@
     },
     {
       "id": "bWebhookFolder",
-      "name": "FolderKey",
+      "name": "uipath-http-webhook folder",
       "resource": "Connection",
       "resourceKey": "<folder-key of that connection, same command>",
       "default": "00000000-0000-0000-0000-000000000004",
@@ -59,7 +59,7 @@
     },
     {
       "id": "bOneDriveFolder",
-      "name": "FolderKey",
+      "name": "uipath-microsoft-onedrive folder",
       "resource": "Connection",
       "resourceKey": "<folder-key of that connection, same command>",
       "default": "00000000-0000-0000-0000-000000000008",

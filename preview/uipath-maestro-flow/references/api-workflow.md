@@ -1,6 +1,6 @@
 # API Workflow
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`apiWorkflow()`](api.md#apiworkflow-function).*
+*Exact signatures, fields, and defaults: [`apiWorkflow()`](api.md#apiworkflow-function).*
 
 Run a deployed coded API workflow as a serverless Orchestrator job.
 

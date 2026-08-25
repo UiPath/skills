@@ -24,8 +24,14 @@ on:
 # fails. coder_eval is a first-party internal package from the Azure Artifacts
 # feed, not public-registry supply-chain surface, so exclude it from the age
 # check only. Every other safe-chain check still applies.
+#
+# `anthropic` is excluded for the same reason, transitively: coder-eval >=0.11.1
+# pins anthropic>=1.0.0 (a fresh major), which the age gate suppresses — leaving
+# the resolver with only anthropic<=0.123.0 and "requirements are unsatisfiable"
+# until 1.0.0 ages out. The Anthropic SDK is the official first-party client, so
+# exempting it from the age check (only) is the same low-risk call as coder-eval.
 env:
-  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   detect:
@@ -401,6 +407,13 @@ jobs:
           set -euo pipefail
           bash .github/scripts/refresh-auth.sh
 
+          # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
+          # containers (reference anti-cheat), so container-root can no longer
+          # read the host-owned ~/.uipath extra_mount by capability. Widen it
+          # recursively via the "other" bits so the mounted .auth file (mode
+          # 600) is readable — mirrors coder-eval's own grant_container_access.
+          chmod -R o+rwX "$HOME/.uipath"
+
           # Fail once at setup, with a direct error, rather than letting every
           # guardrail task discover an unusable auth context independently.
           docker run --rm \
@@ -420,6 +433,12 @@ jobs:
         env:
           AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
+
+      # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
+      # can no longer import the group-level _shared/ helper by walking up the
+      # tree. Co-locate a copy of each group's _shared into its task dirs first.
+      - name: Stage _shared grader helpers
+        run: bash tests/scripts/stage_shared.sh
 
       - name: Run smoke tests
         env:

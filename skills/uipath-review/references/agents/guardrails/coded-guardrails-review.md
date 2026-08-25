@@ -167,6 +167,10 @@ the mapping IS needed, fetch via `WebFetch`:
   (`uipath-langchain` in `pyproject.toml` or `from langchain…` / `from langgraph…` imports): middleware classes,
   their supported scopes/stages, and the `uipath_langchain.guardrails` import paths.
 
+The `Platform Availability` notes on these pages are product-wide, so never turn one into a review finding:
+tenant availability comes from `uip agent guardrails list`, and the fetched pages supply class, scope, and
+import names only.
+
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages,
 import_path } }` lookup by joining catalog entries with the SDK class names. Use the fetched content as the sole
 source of truth for class/enum/import names — never memory.

@@ -3,7 +3,7 @@ description: >
   Smoke: asked how a project is performing "in production", the agent resolves
   the LIVE model version from `list-models` first, then scopes `get-metrics` to
   it with `--model-version` — rather than running a bare `get-metrics`, which
-  returns the LATEST trained version (SKILL.md Critical Rule 20).
+  returns the LATEST trained version (SKILL.md Critical Rule 21).
 
   The fixture pins live at version 9 (ProjectScore 0.98) while the latest
   trained is version 30 (ProjectScore 0.91), so the two paths produce different

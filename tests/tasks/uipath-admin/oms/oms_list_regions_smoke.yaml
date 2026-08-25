@@ -1,0 +1,42 @@
+task_id: skill-admin-oms-list-regions-smoke
+description: >
+  Smoke test (outcome-graded): agent lists the regions the organization can
+  provision services in. Graded on the region records read back from the platform
+  (real region names from the platform's own enumeration), not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  List the regions where my UiPath organization can provision services, and save
+  the complete JSON result to ./regions.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "regions.json holds real region records returned by the platform"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('regions.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      names = [x.get('Region') or x.get('region') for x in dicts(d) if x.get('Region') or x.get('region')]
+      assert names, 'no Region entries in the saved output'
+      known = {'europe', 'unitedstates', 'switzerland', 'japan', 'australia', 'canada', 'india', 'singapore', 'unitedkingdom', 'germany', 'uae', 'southafrica', 'brazil', 'korea', 'norway', 'france', 'italy', 'spain', 'netherlands', 'sweden'}
+      matched = [n for n in names if str(n).replace(' ', '').lower() in known]
+      assert matched, f'no recognizable platform region names: {names[:8]}'
+      print(f'OK: {len(names)} regions retrieved, e.g. {matched[:3]}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

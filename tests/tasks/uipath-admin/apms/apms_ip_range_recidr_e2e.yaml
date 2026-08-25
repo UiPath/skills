@@ -1,0 +1,37 @@
+task_id: skill-admin-apms-ip-range-recidr-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — an office renumbered, so the
+  network behind an existing allowlist entry has to change. The entry is seeded in
+  pre_run and its service-assigned id recorded, so reading that same id back with
+  the new network proves a real update landed rather than a delete-and-recreate.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, ip-ranges]
+
+pre_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-renumber-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+  - command: 'APMS_SEED_KEY="range" APMS_RANGE_BASE="ce-apms-renumber-office" APMS_RANGE_COUNT="2" APMS_RANGE_CLAIM="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''setup_apms_ip_range.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'APMS_CLEANUP_MARKER="ce-apms-renumber-office" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''cleanup_apms_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  The allowlist entry named in `seed.json` (the `range.name` field) points at the
+  old network for that office. The office has been renumbered — it now reaches us
+  from the SECOND network listed in `range.cidrs`. Update the existing entry to
+  allow the new network instead, keeping its name as it is.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The seeded entry now allows the new network, under the same id and name"
+    command: 'APMS_CHECK="updated" APMS_SEED_KEY="range" APMS_EXPECT_CIDR_INDEX="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''apms'',''verify_apms_ip_range.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

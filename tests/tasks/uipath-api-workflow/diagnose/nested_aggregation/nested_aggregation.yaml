@@ -1,0 +1,78 @@
+task_id: skill-api-workflow-diagnose-nested-aggregation
+description: >
+  Diagnose (nesting pitfall): an inner ForEach body exports into the OUTER
+  loop's output key, so the outer loop's results array collects one entry per inner
+  cell instead of one per row.
+
+  A partial-credit trap: the headline `cells` count is correct and only `perRow` is
+  wrong, so an agent that stops at the first number that looks right fails. Rewards
+  reading the export chain.
+
+  Covers the nesting category of references/troubleshooting.md.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py nested_aggregation"
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json takes a `matrix` (array of arrays) and should
+  return two things: `cells` = the total number of inner elements, and `perRow` =
+  how many rows there were.
+
+  `cells` is right but `perRow` is wrong. Diagnose why and fix it, keeping both
+  outputs.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place, not replaced wholesale"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
+      reading the file is equally valid, and 3 of 4 agents did exactly that)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: repaired workflow returns the correct result"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"matrix":[[1,2],[3,4,5]]}'
+      --output json | grep -qiE '"perRow":[ ]*2'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: still correct on a second, different input — not hardcoded"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"matrix":[[1],[2],[3]]}'
+      --output json | grep -qiE '"perRow":[ ]*3'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

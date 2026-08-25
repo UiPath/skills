@@ -61,10 +61,11 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 
 A synthetic local project authored without a CLI generator must still match the
 executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
-`operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
-`package-descriptor.json` has top-level `"content"` entries under `content/`.
-For the exact minimal JSON, see
+`isExecutable="true"`, each root start event carries
+`<uipath:entryPointId value="<uuid>" />`, `operate.json` has `"main"` plus
+`"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
+BPMN file and generated JSON. `uip maestro bpmn update-metadata <file.bpmn>`
+produces that shape; for the exact JSON, see
 [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
 
 A Process Orchestration package content folder contains:
@@ -75,7 +76,7 @@ A Process Orchestration package content folder contains:
 - `operate.json`.
 - `package-descriptor.json`.
 
-The package descriptor maps BPMN and generated JSON files under `content/`. The entry point file path references the BPMN file and start event, using the root start event's unique entry point ID.
+The package descriptor maps the BPMN file and generated JSON by name. The entry point file path references the BPMN file and start event as `/content/<bpmn-file>#<start-event-id>`, using the root start event's unique entry point ID.
 
 ## Authoring boundary
 

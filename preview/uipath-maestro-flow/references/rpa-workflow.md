@@ -1,6 +1,6 @@
 # RPA Workflow
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`rpaWorkflow()`](api.md#rpaworkflow-function).*
+*Exact signatures, fields, and defaults: [`rpaWorkflow()`](api.md#rpaworkflow-function).*
 
 Run a published robotic process and wait for its output arguments.
 
