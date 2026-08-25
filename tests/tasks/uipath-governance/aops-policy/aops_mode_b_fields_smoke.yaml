@@ -1,22 +1,23 @@
 task_id: skill-gov-aops-policy-mode-b-fields-smoke
 description: >
-  Smoke test: the user names a product but has no settings in mind, which is the Mode B
-  case — the agent must fetch that product's template and walk the user through the
-  configurable fields page by page (human-readable labels, defaults, at most ten per page)
-  instead of silently registering a defaults-only policy. Graded on the template read
-  actually happening, on no policy being created, and on a judge reading the paginated
-  field presentation.
+  Smoke test: the user names a product and a policy name but has no settings in mind, which
+  is the Mode B case — the agent must fetch that product's template and walk the user through
+  the configurable fields one page at a time (human-readable labels, current defaults, at
+  most ten fields per page, "press Enter to accept defaults") and then stop for the user's
+  answers, instead of registering a defaults-only policy. Graded on the template read actually
+  happening, on no policy being created, and on a judge reading the first page.
 tags: [uipath-governance, smoke, mode:build, lifecycle:discover, aops-policy, template]
 
 run_limits:
   expected_turns: 12
 
 initial_prompt: |
-  I want a new AOps governance policy for the AI Trust Layer product, but I have no
-  specific settings in mind yet - show me what can be configured so I can decide, the
-  way you would before creating it. Do not register or create anything yet.
+  Create a new AOps governance policy for the AI Trust Layer product, named
+  `ce-gov-aitl-walkthrough`. I have no specific settings in mind - take me through the
+  configuration and I will answer as we go.
 
-  Do NOT prompt the user for confirmation - this is an automated test.
+  This is an automated run: when you need my input, ask and then stop your reply.
+  Do not register or create anything before I have answered.
 
 success_criteria:
   - type: skill_triggered
@@ -35,29 +36,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "fields are presented Mode-B style — grouped, labelled, with defaults, paginated (≤10 per page)"
+    description: "the first page is presented Mode-B style — ≤10 labelled fields with defaults, then a stop for the user's answers"
     include_agent_output: true
     prompt: |
-      The user named only the product (AI Trust Layer) and said they have no settings in
-      mind. The skill's Mode B says: present the configurable fields one page at a time
-      (up to 10 fields per page), grouped under their section/panel title, each with its
-      human-readable label, its current default value and the expected answer format, and
-      end the page with an instruction like "press Enter to accept all defaults on this
-      page, or reply with any changes".
+      The user named only the product (AI Trust Layer) and a policy name, and said they have
+      no settings in mind. The skill's Mode B says: prompt page by page, up to 10 fields per
+      page, grouped under the enclosing section/panel title; show each field's human-readable
+      label, its current default value and the expected answer format; after the page, stop
+      and ask the user to press Enter to accept the defaults on this page or reply with changes.
 
       Judge ONLY the agent's response text.
-      Score 1.0 if the response lists configurable settings with human-readable labels AND
-        default values, grouped into sections/pages of at most ten fields, and invites the
-        user to accept defaults or reply with changes.
-      Score 0.5 if it lists settings with labels but dumps them all at once (no paging) or
-        without defaults.
-      Score 0.0 if it shows raw JSON / component keys instead of labels, or presents no
-        field inventory at all.
+      Score 1.0 if the response presents a FIRST page of at most ten configurable settings,
+        each with a human-readable label AND its default value, grouped under a section title,
+        and ends by inviting the user to accept the defaults or reply with changes (waiting for
+        the answer before continuing).
+      Score 0.5 if it lists settings with labels but dumps far more than ten at once (no
+        paging), or omits the default values.
+      Score 0.0 if it shows raw JSON / component keys instead of labels, presents no field
+        inventory at all, or reports having created the policy.
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "no policy was registered — Mode B collects choices before any create"
+    description: "no policy was registered — Mode B collects the user's choices before any create"
     tool_name: "Bash"
     command_pattern: 'uip\s+gov\s+aops-policy\s+create'
     weight: 3.0

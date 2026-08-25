@@ -1,17 +1,19 @@
 task_id: skill-gov-aops-policy-diagnose-precedence-smoke
 description: >
-  Smoke test (outcome-graded): the caller's own user carries a user-level override for the
-  E2E product (pinned in pre_run), so whatever the tenant deploys for E2E does not reach
-  this account — precedence is user > group > tenant. The agent has to walk the deployment
-  chain, read the user-scope assignment back, and name the override as the cause. Graded on
-  the saved user-scope record carrying the seeded policy plus a judge on the diagnosis; the
-  command_not_executed guard keeps the diagnosis from "fixing" it by changing deployments.
+  Smoke test (outcome-graded): a team's directory group (created in pre_run under this run's
+  own name) carries a group-scope assignment for the E2E product, so members do not get the
+  tenant-level E2E policy — precedence is user > group > tenant, and priority numbers play no
+  part. The agent has to walk the deployment chain to group scope, read the assignment back
+  and name the override as the cause. Graded on the saved group-scope record carrying the
+  seeded policy plus a judge on the diagnosis; the command_not_executed guard keeps the
+  diagnosis from "fixing" it by changing deployments. The group has no members, so nobody's
+  effective policy changes; post_run removes the group and the policy.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployment, troubleshoot]
 
 pre_run:
-  - command: 'AOPS_SEED_KEY="override" AOPS_POLICY_BASE="ce-gov-aops-override" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="User-level exception for one account" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+  - command: 'AOPS_SEED_KEY="override" AOPS_POLICY_BASE="ce-gov-aops-override" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Group-level exception for one team" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
     timeout: 120
-  - command: 'AOPS_SNAPSHOT_SCOPES="user" AOPS_PIN_USER_KEY="override" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_deployment_snapshot.py''))"'
+  - command: 'AOPS_SNAPSHOT_SCOPES="" AOPS_GROUP_BASE="ce-gov-aops-team" AOPS_PIN_GROUP_KEY="override" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_deployment_snapshot.py''))"'
     timeout: 120
 
 post_run:
@@ -22,14 +24,14 @@ run_limits:
   expected_turns: 20
 
 initial_prompt: |
-  A tenant admin says the tenant-level AOps governance for the `E2E` product (license type
-  `E2E`) is not what my account is getting - I seem to be governed by something else.
-  Work out why, for the account this CLI is logged in as.
+  A tenant admin says the members of the team whose directory group is named in `seed.json`
+  (the `subjects.groupName` field) are not getting the tenant-level AOps governance for the
+  `E2E` product - they seem to be governed by something else. Work out why.
 
   Save verbatim:
 
-  - the policy assignments recorded for my own user account -> ./user-scope.json
-  - what the service says is actually in effect for me for E2E / E2E -> ./effective.json
+  - the policy assignments recorded for that group -> ./group-scope.json
+  - the tenant's own deployment record -> ./tenant-scope.json
 
   Write your conclusion - the cause and what would have to change - to ./diagnosis.md.
   Do not change any deployment.
@@ -38,7 +40,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "user-scope.json is the caller's own assignment record and carries the seeded user-level override for E2E"
+    description: "group-scope.json is the team's assignment record and carries the seeded group-level override for E2E"
     command: |
       python3 -c "
       import json
@@ -50,13 +52,13 @@ success_criteria:
               for v in o.values(): yield from dicts(v)
           elif isinstance(o, list):
               for v in o: yield from dicts(v)
-      rows = [x for x in dicts(json.load(open('user-scope.json', encoding='utf-8-sig'))) if x.get('ProductIdentifier') or x.get('productIdentifier')]
-      assert rows, 'user-scope.json holds no per-product assignment entries'
+      rows = [x for x in dicts(json.load(open('group-scope.json', encoding='utf-8-sig'))) if x.get('ProductIdentifier') or x.get('productIdentifier')]
+      assert rows, 'group-scope.json holds no per-product assignment entries'
       hit = next((x for x in rows if str(x.get('PolicyIdentifier') or x.get('policyIdentifier') or '').lower() == pid), None)
-      assert hit, f'the seeded user-level override {pid} is not in user-scope.json — the user scope was not read'
+      assert hit, f'the seeded group-level override {pid} is not in group-scope.json — the group scope was not read'
       prod = hit.get('ProductIdentifier') or hit.get('productIdentifier')
       assert prod == 'E2E', f'override recorded under product {prod!r}'
-      print(f'OK: user scope shows the E2E override ({pid}) — the precedence chain was read at user level')
+      print(f'OK: group scope shows the E2E override ({pid}) — the precedence chain was read at group level')
       "
     timeout: 30
     expected_exit_code: 0
@@ -64,29 +66,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "the effective-policy resolution was saved"
-    path: "effective.json"
+    description: "the tenant-scope deployment record was saved"
+    path: "tenant-scope.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "the diagnosis names the user-level override as the cause (user > group > tenant) and the fix as removing/changing it"
+    description: "the diagnosis names the group-level assignment as the cause (user > group > tenant) and the fix as removing/changing it"
     files:
       - diagnosis.md
     max_file_chars: 20000
     include_agent_output: false
     prompt: |
-      The caller's user account has an explicit user-scope policy assignment for the E2E
+      The team's directory group has an explicit group-scope policy assignment for the E2E
       product. AOps resolves the effective policy by scope — user > group > tenant — so that
-      user-level assignment wins over whatever the tenant deploys; priority numbers play no
-      part in this.
+      group-level assignment wins over whatever the tenant deploys for its members; priority
+      numbers only break ties between several groups and play no part here.
 
-      Read ./diagnosis.md. Award a pass only if it identifies a user-scope (user-level)
-      assignment/override on this account as the reason the tenant policy does not apply,
-      and says the remedy is to remove or change that user-level assignment (or deploy the
-      intended policy at user scope). Fail it if it blames policy priority numbers, claims
-      no policy is deployed, blames the policy's contents, or proposes redeploying at tenant
-      scope as the fix.
+      Read ./diagnosis.md. Award a pass only if it identifies a group-scope (group-level)
+      assignment/override on that team's group as the reason the tenant policy does not
+      reach its members, and says the remedy is to remove or change that group-level
+      assignment (or to deploy the intended policy at group scope for the team). Fail it if
+      it blames policy priority numbers alone, claims no policy is deployed anywhere, blames
+      the policy's contents, or proposes redeploying at tenant scope as the fix.
     weight: 2.5
     pass_threshold: 1.0
 

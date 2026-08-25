@@ -12,8 +12,10 @@
                        `*enabled*` field that is true
 
 The field keys are resolved from the LIVE template (`template get --output-template-locale-resource`)
-at check time, so the check survives template drift and never hard-codes a component key. A policy
-created from untouched defaults fails on the value comparison.
+at check time, so the check survives template drift and never hard-codes a component key. Keys are
+compared case- and separator-insensitively: the template uses kebab-case (`gemini-control-toggle`)
+while `aops-policy get` echoes the stored data PascalCased (`GeminiControlToggle`). A policy created
+from untouched defaults fails on the value comparison.
 
 Exits 0 on success, 1 on failure.
 """
@@ -30,11 +32,22 @@ from gov_helpers import aops_get, aops_search, fail, ok, poll, run_cli, seed_ent
 
 logging.basicConfig(level=logging.INFO, format="verify_aops_policy_data: %(message)s")
 
+STRUCTURAL = {"components", "columns", "rows", "values", "data", "template", "defaultdata"}
+
+
+def norm(key: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(key).lower())
+
 
 def payload_of(policy: dict) -> dict:
-    node = policy.get("Data")
-    while isinstance(node, dict) and isinstance(node.get("Data"), dict):
-        node = node["Data"]
+    """The stored form data — `get` nests it under Data (sometimes twice, sometimes lower-case)."""
+    node = policy.get("Data", policy.get("data"))
+    while isinstance(node, dict):
+        inner = node.get("Data", node.get("data"))
+        if isinstance(inner, dict) and len(node) <= 2:
+            node = inner
+        else:
+            break
     return node if isinstance(node, dict) else {}
 
 
@@ -70,31 +83,32 @@ def keys_for_label(resource: dict, label_re: str) -> list[str]:
     keys = []
     for parent, d in walk(resource):
         label = d.get("label") or d.get("Label")
-        if isinstance(label, str) and rx.search(label) and parent and parent not in keys:
+        if isinstance(label, str) and rx.search(label) and parent and norm(parent) not in STRUCTURAL \
+                and parent not in keys:
             keys.append(parent)
     return keys
 
 
 def find_value(payload, key: str):
-    """Value stored under `key` anywhere in the policy data (dotted keys are nested objects)."""
-    parts = key.split(".")
-    node = payload
-    for p in parts:
-        if isinstance(node, dict) and p in node:
-            node = node[p]
-        else:
-            node = None
-            break
-    if node is not None:
-        return True, node
+    """Value stored under `key` anywhere in the policy data, casing/separators ignored."""
+    want = norm(key.split(".")[-1])
     for _, d in walk(payload):
-        if key in d:
-            return True, d[key]
+        for k, v in d.items():
+            if norm(k) == want:
+                return True, v
     return False, None
 
 
 def truthy(v) -> bool:
     return v is True or (isinstance(v, str) and v.strip().lower() in ("true", "yes", "1", "on"))
+
+
+def _equal(value, expect) -> bool:
+    if isinstance(expect, bool):
+        return truthy(value) == expect if isinstance(value, (bool, str)) else False
+    if isinstance(expect, str) and isinstance(value, str):
+        return value.strip().lower() == expect.strip().lower()
+    return value == expect
 
 
 def check_field(payload: dict, resource: dict, label_re: str, expect_raw: str):
@@ -114,21 +128,13 @@ def check_field(payload: dict, resource: dict, label_re: str, expect_raw: str):
     if not any(_equal(v, expect) for _, v in hits):
         fail(f"field(s) labelled /{label_re}/i hold {hits}, expected {expect!r} — "
              f"the user's intent was not applied to the policy data")
-    logging.info("field(s) %s -> %r as requested", [k for k, _ in hits], expect)
-
-
-def _equal(value, expect) -> bool:
-    if isinstance(expect, bool):
-        return truthy(value) == expect if isinstance(value, (bool, str)) else False
-    if isinstance(expect, str) and isinstance(value, str):
-        return value.strip().lower() == expect.strip().lower()
-    return value == expect
+    logging.info("field(s) %s -> %r as requested", [k for k, v in hits if _equal(v, expect)], expect)
 
 
 def check_row(payload: dict, key_re: str, code: str):
-    rx = re.compile(key_re, re.IGNORECASE)
+    rx = re.compile(norm(key_re) or key_re, re.IGNORECASE)
     arrays = [(k, v) for _, d in walk(payload) for k, v in d.items()
-              if isinstance(v, list) and rx.search(k)]
+              if isinstance(v, list) and rx.search(norm(k))]
     if not arrays:
         fail(f"no repeating-row field matching /{key_re}/i in the policy data")
     for key, rows in arrays:
@@ -138,7 +144,7 @@ def check_row(payload: dict, key_re: str, code: str):
             values = {str(v).strip().lower() for v in row.values() if isinstance(v, (str, int))}
             if code.lower() not in values:
                 continue
-            enabled = [v for k, v in row.items() if re.search(r"enabled", k, re.IGNORECASE)]
+            enabled = [v for k, v in row.items() if "enabled" in norm(k)]
             if enabled and not any(truthy(v) for v in enabled):
                 fail(f"row for {code} exists under {key} but is not enabled: {row}")
             logging.info("row for %s present under %s and enabled", code, key)
