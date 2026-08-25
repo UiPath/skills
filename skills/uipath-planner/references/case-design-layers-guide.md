@@ -41,7 +41,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 ### Task types
 
-<!-- parsed at runtime by scripts/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+<!-- parsed at runtime by scripts/audit-sdd.mjs — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit-sdd.mjs will report "model checks disarmed" -->
 
 The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
@@ -112,7 +112,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
-<!-- parsed at runtime by scripts/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+<!-- parsed at runtime by scripts/audit-sdd.mjs — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit-sdd.mjs will report "model checks disarmed" -->
 
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
@@ -400,7 +400,7 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 
 ### Naming rules
 
-<!-- parsed at runtime by scripts/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+<!-- parsed at runtime by scripts/audit-sdd.mjs — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit-sdd.mjs will report "model checks disarmed" -->
 
 Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
@@ -408,7 +408,7 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character `audit_sdd.py` gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
+**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character `audit-sdd.mjs` gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
 
 Everything else in that set is a **minting preference, not a platform limit** — the auditor reports it as an advisory that does not gate. Apply it to names YOU mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **A name the user, the source document, or a draft supplied is kept verbatim, punctuation included** (`Credit & Document Verification` stays). Rewriting one to fit the charset is the domain-fidelity defect the lane's authoring policy forbids, and it costs repair rounds for a display preference.
 
@@ -427,7 +427,7 @@ Comparison exact — case-sensitive, untrimmed. Never normalize external lookup 
 
 ## Layer closure — the design checklist
 
-ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `scripts/audit_sdd.py` owns them (enforcement list: template § Validation); run it on the written file.
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `scripts/audit-sdd.mjs` owns them (enforcement list: template § Validation); run it on the written file.
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
