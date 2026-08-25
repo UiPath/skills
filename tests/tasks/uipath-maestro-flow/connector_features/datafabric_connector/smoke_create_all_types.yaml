@@ -1,17 +1,13 @@
 task_id: skill-flow-datafabric-smoke-create-all-types
-skip: true  # disabled while fix is being validated locally; flip to false to run
 description: >
-  Smoke: full CRUD lifecycle for the UiPath Data Fabric connector in Maestro
-  Flow. Scaffolds a Flow that creates a FlowCodeEvalEntity record populating
-  all 8 supported field types (STRING, MULTILINE_TEXT, DECIMAL, INTEGER,
-  BOOLEAN, DATE, DATETIME, UUID), retrieves it by Id, deletes it, then
-  re-Gets the Id (expect 404) and Queries by title (expect 0 results) to
-  confirm hard-delete propagates to both endpoints. Validate-only — no live
-  tenant in sandbox — presence enforcement lives in the verifier.
+  Smoke: DF Create node on FlowCodeEvalEntity binds all 8 supported field
+  types (STRING, MULTILINE_TEXT, DECIMAL, INTEGER, BOOLEAN, DATE, DATETIME,
+  UUID) with correct JSON literal shapes. Validate-only — no live tenant in
+  sandbox. Full CRUD/negative-path coverage lives in e2e_contract_intake_pipeline.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:
-  max_turns: 60
+  max_turns: 30
   turn_timeout: 1800
   task_timeout: 3600
 
@@ -21,8 +17,8 @@ pre_run:
 
 initial_prompt: |
   I'm adding a record to the FlowCodeEvalEntity entity from my UiPath Flow and
-  want to fill in all the different field types we support. Build a Flow that
-  creates a record with these values:
+  want to fill in all the different field types we support. Build a Flow with
+  a single Data Fabric Create node that creates a record with these values:
 
   * title: "AllTypesTest-Smoke" (STRING)
   * description: "A sci-fi smoke test record covering all supported field types. A must-watch film." (MULTILINE_TEXT)
@@ -33,34 +29,20 @@ initial_prompt: |
   * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
   * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (UUID)
 
-  Once created:
-  1. Pull the record back by its Id (expansionLevel=1).
-  2. Delete it.
-  3. Try to Get the same Id — expect a not-found error.
-  4. Query for title='AllTypesTest-Smoke' — expect 0 results.
-
   The Flow is not complete until `uip maestro flow validate` passes.
 
 success_criteria:
-  - type: command_executed
-    description: "Flow file was validated"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
-    min_count: 1
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 60
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Create body covers all 8 field types with correct JSON literal shapes (or =js: expression bindings)"
     command: "python3 $TASK_DIR/check_smoke_create_all_types.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Final .flow has Create + Delete + Get + Query nodes on FlowCodeEvalEntity"
-    command: "python3 $TASK_DIR/check_ops_present.py FlowCodeEvalEntity create-entity-record delete-entity-record get-entity-record-by-id query-entity-records"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

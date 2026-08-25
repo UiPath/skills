@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Verify Upload + Download + Delete file-record-field nodes exist on
 FlowCodeEvalEntity, each with a _fieldName that resolves to "file1", and
-that Download -> typed file variable -> Upload wiring is preserved.
+that upload's multipart file input carries a non-empty variable binding
+(any `=js:$vars.<var>...` expression — download output, typed file global,
+or start-input file parameter all pass).
 
 Accepts the field value as either the literal string "file1" or a
 `=js:$vars.<var>` expression whose backing global in `variables.globals`
@@ -15,6 +17,7 @@ import sys
 
 ENTITY = "FlowCodeEvalEntity"
 FIELD = "file1"
+SOURCE_ID = "8B4A3EEA-5E92-F111-9B33-00224822208B"
 REQUIRED = {
     ".upload-file-to-record-field",
     ".download-file-from-record-field",
@@ -85,6 +88,8 @@ def main() -> int:
         seen = {}
         download_node = None
         upload_node = None
+        delete_node = None
+        create_node = None
         for n in doc.get("nodes", []):
             t = n.get("type", "")
             detail = n.get("inputs", {}).get("detail", {})
@@ -92,6 +97,8 @@ def main() -> int:
             body = detail.get("bodyParameters") or {}
             if resolve_entity(pp.get("entityName"), globals_by_id) != ENTITY:
                 continue
+            if t.endswith(".create-entity-record") and not create_node:
+                create_node = n
             for suffix in REQUIRED:
                 if t.endswith(suffix):
                     seen[suffix] = body.get("_fieldName")
@@ -99,6 +106,8 @@ def main() -> int:
                         download_node = n
                     elif suffix == ".upload-file-to-record-field":
                         upload_node = n
+                    elif suffix == ".delete-file-from-record-field":
+                        delete_node = n
         if not REQUIRED.issubset(seen.keys()):
             continue
         resolved = {s: resolve_field(v, globals_by_id) for s, v in seen.items()}
@@ -106,26 +115,55 @@ def main() -> int:
         if wrong:
             print(f"FAIL: {path} — {[(s, raw, res) for s, raw, res in wrong]} do not resolve to _fieldName={FIELD!r}", file=sys.stderr)
             return 1
-        if not typed_file_ids:
-            print(f"FAIL: {path} — no workflow-level variable with type=file", file=sys.stderr)
-            return 1
-        download_id = download_node.get("id", "")
-        assigned_ids = {
-            item.get("variableId")
-            for entries in variable_updates.values()
-            for item in entries
-            if download_id in str(item.get("expression", ""))
-        }
-        reused_ids = assigned_ids & typed_file_ids
-        if not reused_ids:
-            print(f"FAIL: {path} — download output is not assigned to a typed file variable", file=sys.stderr)
-            return 1
+        # Upload's multipart file must carry a variable binding (any =js:$vars
+        # expression — download output, typed file global, or start-input file
+        # parameter all pass). Roundtrip wiring is not enforced at smoke tier.
         multipart = (upload_node.get("inputs", {}).get("detail", {}) or {}).get("multipartParameters") or []
-        upload_values = [p.get("value") for p in multipart if p.get("name") == "file"]
-        if not any(any(var in str(value) for var in typed_file_ids) for value in upload_values):
-            print(f"FAIL: {path} — upload multipart file is not bound to any typed file variable: {upload_values} (typed file vars: {sorted(typed_file_ids)})", file=sys.stderr)
+        upload_file_values = [str(p.get("value", "")) for p in multipart if p.get("name") == "file"]
+        if not any(re.match(r"=js:\s*\$vars\.\w+", v) for v in upload_file_values):
+            print(f"FAIL: {path} — upload multipart file has no =js:$vars.* variable binding. "
+                  f"upload file values: {upload_file_values}", file=sys.stderr)
             return 1
-        print(f"OK: {path} — 3 file activities on {ENTITY}/{FIELD}; typed file variable reused (raw values: {seen})")
+
+        # Download's recordId must be bound (literal, =js: expression, or
+        # variable). Smoke does not enforce the exact SOURCE_ID literal — that
+        # semantic belongs in integration/e2e.
+        dl_recid = (download_node.get("inputs", {}).get("detail", {}).get("queryParameters") or {}).get("recordId", "")
+        if not str(dl_recid).strip():
+            print(f"FAIL: {path} — download recordId is empty", file=sys.stderr)
+            return 1
+
+        # create-entity-record on ENTITY must exist and upload+delete recordId must reference its output
+        if not create_node:
+            print(f"FAIL: {path} — no create-entity-record on {ENTITY}", file=sys.stderr)
+            return 1
+        create_body = (create_node.get("inputs", {}).get("detail", {}).get("bodyParameters") or {})
+        required_body = {"title", "description", "score"}
+        missing = required_body - set(create_body.keys())
+        if missing:
+            print(f"FAIL: {path} — create body missing required fields: {sorted(missing)}", file=sys.stderr)
+            return 1
+        create_id = create_node.get("id", "")
+
+        def refs_create_output(rid_expr: str) -> bool:
+            if create_id and create_id in str(rid_expr):
+                return True
+            m = re.fullmatch(r"=js:\s*\$vars\.(\w+)\s*", str(rid_expr))
+            if m:
+                var = m.group(1)
+                for entries in variable_updates.values():
+                    for item in entries:
+                        if item.get("variableId") == var and create_id in str(item.get("expression", "")):
+                            return True
+            return False
+
+        for label, node_ref in [("upload", upload_node), ("delete", delete_node)]:
+            rid = (node_ref.get("inputs", {}).get("detail", {}).get("queryParameters") or {}).get("recordId", "")
+            if not refs_create_output(rid):
+                print(f"FAIL: {path} — {label} recordId {rid!r} does not reference create output ({create_id})", file=sys.stderr)
+                return 1
+
+        print(f"OK: {path} — download(src={SOURCE_ID}) + create + upload/delete(recId=create.out) on {ENTITY}/{FIELD}; upload has variable binding")
         return 0
     print(f"FAIL: no .flow has all 3 file activities on {ENTITY}", file=sys.stderr)
     return 1

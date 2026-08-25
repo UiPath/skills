@@ -13,8 +13,6 @@ import sys
 
 ENTITY = "ContractRegistry"
 CREATE_FIELDS = {"contractTitle", "status", "priority", "dueDate", "value", "isUrgent"}
-EXPECTED_CREATES = 6
-EXPECTED_DELETES = 6
 
 
 def detail(node):
@@ -70,7 +68,10 @@ def main() -> int:
         with open(path) as f:
             doc = json.load(f)
         creates, queries, updates, deletes = [], [], [], []
+        has_loop = False
         for n in doc.get("nodes", []):
+            if n.get("type", "").startswith("core.logic.loop"):
+                has_loop = True
             if not targets_entity(n):
                 continue
             t = n.get("type", "")
@@ -83,8 +84,12 @@ def main() -> int:
             elif t.endswith(".delete-entity-record"):
                 deletes.append(n)
 
-        if len(creates) != EXPECTED_CREATES:
-            print(f"FAIL: {path} — expected {EXPECTED_CREATES} create nodes on {ENTITY}, found {len(creates)}", file=sys.stderr)
+        # Accept either 6 separate create nodes OR >=1 create node driven by a loop
+        if not creates:
+            print(f"FAIL: {path} — no create-entity-record node on {ENTITY}", file=sys.stderr)
+            continue
+        if len(creates) < 6 and not has_loop:
+            print(f"FAIL: {path} — {len(creates)} create nodes without a loop; need either 6 create nodes or a loop over 1+", file=sys.stderr)
             continue
         missing_by_node = [sorted(CREATE_FIELDS - set(body(n).keys())) for n in creates]
         offenders = [(i, m) for i, m in enumerate(missing_by_node) if m]
@@ -106,12 +111,16 @@ def main() -> int:
         if not any("status" in body(n) for n in updates):
             print(f"FAIL: {path} — no update touches status", file=sys.stderr)
             continue
-        if len(deletes) != EXPECTED_DELETES:
-            print(f"FAIL: {path} — expected {EXPECTED_DELETES} delete nodes, found {len(deletes)}", file=sys.stderr)
+        if not deletes:
+            print(f"FAIL: {path} — no delete node on {ENTITY}", file=sys.stderr)
+            continue
+        if len(deletes) < 6 and not has_loop:
+            print(f"FAIL: {path} — {len(deletes)} delete nodes without a loop; need either 6 or a loop", file=sys.stderr)
             continue
 
+        loop_hint = " (loop-driven)" if has_loop else ""
         print(f"OK: {path} — {len(creates)} create, {len(queries)} query, "
-              f"{len(updates)} update, {len(deletes)} delete on {ENTITY}")
+              f"{len(updates)} update, {len(deletes)} delete on {ENTITY}{loop_hint}")
         return 0
 
     print(f"FAIL: no .flow satisfies the ContractRegistry intake shape", file=sys.stderr)

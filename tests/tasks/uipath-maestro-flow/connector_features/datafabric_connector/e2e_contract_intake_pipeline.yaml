@@ -1,5 +1,4 @@
 task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
-skip: true  # disabled while fix is being validated locally; flip to false to run
 description: >
   E2E test for the UiPath Data Fabric connector in Maestro Flow. Exercises
   the full loop: bulk-create 6 contract records in ContractRegistry with
@@ -43,11 +42,11 @@ initial_prompt: |
   The Flow is not complete until `uip maestro flow validate` passes.
 
 success_criteria:
-  - type: command_executed
-    description: "Flow file was validated"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
-    min_count: 1
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 60
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

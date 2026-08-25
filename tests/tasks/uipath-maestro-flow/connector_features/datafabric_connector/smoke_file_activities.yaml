@@ -1,10 +1,12 @@
 task_id: skill-flow-datafabric-smoke-file-activities
-skip: true  # disabled while fix is being validated locally; flip to false to run
 description: >
-  Smoke: DF Flow connector file activities — UploadFileToRecordFieldV2 +
-  DownloadFileFromRecordFieldV2 + DeleteFileFromRecordFieldV2 wired against
-  the `file1` FILE field on FlowCodeEvalEntity. Presence enforcement lives
-  in the verifier.
+  Smoke: DF Flow connector file activities — Download + Create + Upload +
+  Delete wired against the `file1` FILE field on FlowCodeEvalEntity.
+  Exercises cross-record file transfer: Download from a fixed source record,
+  Create a new destination record, Upload the downloaded file to the new
+  record (typed file variable bridges download → upload; recordId bound to
+  create output), then Delete the file from the new record. Presence +
+  wiring enforcement lives in the verifier.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:
@@ -17,18 +19,22 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
-  Build a Flow that manipulates a file attached to a Data Fabric record.
-  Target the `FlowCodeEvalEntity` entity and its `file1` field directly on
-  every node — do not indirect the entity name or field name through
-  workflow variables. Chain three file operations in order on the same
-  record:
+  Build a Flow that transfers a file between two Data Fabric records on the
+  `FlowCodeEvalEntity` entity, `file1` field. Do NOT indirect the entity name
+  or field name through workflow variables. Chain four operations in order:
 
-  1. UploadFileToRecordFieldV2
-  2. DownloadFileFromRecordFieldV2
-  3. DeleteFileFromRecordFieldV2
-
-  Capture the DownloadFileFromRecordFieldV2 output into a typed file
-  variable so the downloaded file can be inspected downstream.
+  1. DownloadFileFromRecordFieldV2 — source recordId is fixed:
+     `8B4A3EEA-5E92-F111-9B33-00224822208B`. Assign the download output to a
+     workflow-level variable of type `file`.
+  2. CreateEntityRecord — create a new FlowCodeEvalEntity record. Populate
+     the body with plausible sample values on at least `title` (STRING),
+     `description` (MULTILINE_TEXT), and `score` (DECIMAL). Deterministic
+     literals are fine.
+  3. UploadFileToRecordFieldV2 — bind the multipart file input to the typed
+     file variable from step 1; bind recordId to the create activity's
+     output Id (do NOT hard-code).
+  4. DeleteFileFromRecordFieldV2 — bind recordId to the same create activity
+     output Id used in step 3.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

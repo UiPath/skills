@@ -1,8 +1,0 @@
-{
-  "displayName": "FileUploadVerify_20260618",
-  "description": "Coder-eval fixture for Data Fabric file download/upload round-trip coverage",
-  "fields": [
-    {"fieldName": "title", "type": "STRING", "lengthLimit": 200},
-    {"fieldName": "document", "type": "FILE"}
-  ]
-}

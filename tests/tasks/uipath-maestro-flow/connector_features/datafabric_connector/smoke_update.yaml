@@ -6,6 +6,10 @@ description: >
   verifier script (counts nodes in the final .flow, not CLI invocations).
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
 
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 3600
+
 pre_run:
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
     timeout: 60
