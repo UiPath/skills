@@ -75,7 +75,7 @@ Ingestion is asynchronous and automatic. Poll until the auto-created test cases 
 uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
-- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 9), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
+- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 8), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
 - The rows carry `TestCaseKey` (e.g. `SHIP:1`) plus `Id` (the UUID) and `Name` — count `TestCaseKey`, not `Id`, when polling.
 - Ingestion is done when `TestCount` new test cases from Step 1 are present, each named `"<suite> > <test title>"`. A plain `pack` prints only `Package`, `Output` and `TestCount` — if you want the exact expected names up front, run `--dry-run` first or read `testCases.json` inside the `.nupkg`; otherwise match on the count plus that name shape.
 - `TestCount` from Step 1 is one test case per Playwright **test** — it is not multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
@@ -85,7 +85,7 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 
 ## Step 4 — Set the default folder, create a test set, fill it by label
 
-Set the project's default Orchestrator folder FIRST — both the Step 5 probe and the Step 6 run resolve packages through it (Critical Rule #10):
+Set the project's default Orchestrator folder FIRST — both the Step 5 probe and the Step 6 run resolve packages through it (Critical Rule #9):
 
 ```bash
 uip or folders list --output json    # WITHOUT --all: only folders you are a member of
