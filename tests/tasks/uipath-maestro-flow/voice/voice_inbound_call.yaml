@@ -1,0 +1,144 @@
+task_id: skill-flow-voice-inbound-call
+description: >
+  Smoke test for the inbound half of the uipath-maestro-flow voice plugin: agent
+  builds the inbound topology — core.trigger.voice, a uipath.agent.voice node
+  backed by an inline conversational agent whose agent.json carries
+  settings.voice, and end-call — with no dial-out node, gets uip maestro flow
+  validate to pass, and then tells the user how an inbound flow is actually
+  tested. That last part is the point: `uip maestro flow debug` rejects an
+  incoming-call trigger outright, so the only way to run an inbound flow is
+  publish -> bind a number -> dial it. An agent that reaches for flow debug here,
+  or that swaps in a manual trigger to get a local run, has missed the plugin's
+  topology rule. Fully offline: the voice node types resolve from the CLI's
+  bundled registry, and init / author / validate need no login.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational, feature:trigger]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 80
+  turn_timeout: 900
+
+# Deliberately does NOT forbid `uip maestro flow debug`. The outbound task does,
+# because there a debug run would place a real call; here the whole question is
+# whether the agent knows debug is not the inbound test loop, so telling it not
+# to run debug would grade nothing.
+initial_prompt: |
+  Build a UiPath Flow project named "SupportLine" that answers incoming phone
+  calls to our support line, has an AI agent hold the conversation with the
+  caller, and hangs up when the conversation is over.
+
+  This sandbox has no UiPath tenant and is not logged in, so do NOT run anything
+  that needs a live connection, and do not pack, publish, or deploy.
+
+  Two things before you finish:
+  - `uip maestro flow validate` must pass on the generated flow.
+  - Tell me what I have to do to actually run this flow and take a test call.
+
+success_criteria:
+  # Discovery is dynamic in every criterion below: `uip maestro flow init` wraps
+  # the project in a `<Name>Solution/` directory the prompt does not pin, so a
+  # correct flow lands at `SupportLineSolution/SupportLine/…` and a hardcoded
+  # `path:` would score 0.0 on a valid build (#2213).
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the inbound trigger, the voice agent, and end-call"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      '"core.trigger.voice"'
+      '"uipath.agent.voice"'
+      '"uipath.conversational.voice.end-call"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The inbound flavour of the headline wiring rule: callContext originates at
+  # the trigger (not at a dial-out node) and must be bound into BOTH the voice
+  # agent and the end-call node. Also fails a flow that carries a
+  # create-outgoing-call node — that is the outbound topology, not the one asked
+  # for — and one whose trigger has no entryPointId, which is what a trunk
+  # binding resolves against at deploy time.
+  - type: run_command
+    description: "callContext comes from the incoming-call trigger, bound into BOTH the voice agent and end-call, with no dial-out node"
+    command: "python3 $TASK_DIR/check_voice_flow.py inbound-call-context"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Same check the outbound task runs — topology independent. `uip agent init
+  # --inline-in-flow --conversational` scaffolds everything EXCEPT
+  # settings.voice; adding it by hand is mandatory or validate fails.
+  - type: run_command
+    description: "Inline agent.json carries settings.voice and stays conversational"
+    command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `flow debug` rejects any flow with a core.trigger.voice node
+  # ("Inbound voice flows cannot be debugged from the CLI."), so reaching for it
+  # is a wasted turn the plugin exists to prevent.
+  - type: command_not_executed
+    description: "Agent did not try to debug an inbound voice flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The strongest signal in this task: the flow is only half the deliverable,
+  # the other half is knowing how it gets exercised.
+  - type: llm_judge
+    description: "Agent explains the inbound test loop — publish, bind a number, dial it — and does not claim flow debug can run it"
+    include_agent_output: true
+    prompt: |
+      The user asked for an inbound voice flow (an AI agent that answers calls
+      to a support line) and asked what they have to do to run it and take a
+      test call.
+
+      The ground truth: an inbound voice flow cannot be run with
+      `uip maestro flow debug` — the CLI rejects a flow that starts from an
+      incoming-call trigger, because only a real inbound call can raise that
+      trigger. The flow has to be packed and published, deployed to
+      Orchestrator, and then a phone number (SIP trunk) bound to the deployed
+      release with `uip conversational trunks assign`; the user then dials that
+      number. No phone number appears anywhere in the `.flow` itself — the
+      binding is made against the release after deploy. Adding or enabling a
+      phone number is portal-only.
+
+      Score 1.0 if the agent's answer conveys that testing means
+      publish/deploy + bind a phone number + call it, and does not suggest
+      `flow debug` as a way to run this flow.
+      Score 0.5 if the answer gets the deploy-and-bind path roughly right but
+      is vague about the number binding, or mentions `flow debug` as an option
+      alongside the correct path.
+      Score 0.0 if the answer tells the user to run `uip maestro flow debug`
+      to test it, claims the flow can be exercised locally, or omits any
+      explanation of how to run it.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory only (pass_threshold: 0) — records convention adherence without
+  # docking an agent that reaches the same graded outcome another way.
+  - type: command_executed
+    description: "Advisory: agent scaffolded the voice agent with uip agent init --inline-in-flow --conversational"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--conversational'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

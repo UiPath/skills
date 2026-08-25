@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Structural checks for an outbound voice flow (uipath-maestro-flow voice plugin).
+"""Structural checks for a voice flow (uipath-maestro-flow voice plugin).
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $TASK_DIR/check_voice_flow.py call-context
+    python3 $TASK_DIR/check_voice_flow.py inbound-call-context
     python3 $TASK_DIR/check_voice_flow.py agent-voice
 
 Offline only — reads the ``.flow`` source and the inline agent's ``agent.json``.
@@ -11,7 +12,7 @@ No tenant calls, no agent self-reports.
 Checks
 ------
 ``call-context``
-    The plugin's headline wiring rule. The outbound origin
+    The plugin's headline wiring rule, outbound flavour. The outbound origin
     (``uipath.conversational.voice.create-outgoing-call``) emits
     ``output.callContext``; it must be bound into BOTH the ``uipath.agent.voice``
     node and the ``uipath.conversational.voice.end-call`` node. Either
@@ -20,11 +21,20 @@ Checks
     ``=js:`` string — because both express the same wiring. ``fieldType`` is not
     graded: the validator never reads it on a ``jsExpression`` binding.
 
+``inbound-call-context``
+    Same rule, inbound flavour: the origin is the ``core.trigger.voice`` node
+    instead, and the flow must NOT dial out — a
+    ``uipath.conversational.voice.create-outgoing-call`` node means the agent
+    built the outbound topology (or both), not the inbound one asked for. Also
+    checks the trigger carries an ``inputs.entryPointId``, which is what a trunk
+    binding resolves against at deploy time.
+
 ``agent-voice``
     The voice agent's backing directory carries ``settings.voice`` (the block
     ``uip agent init --inline-in-flow --conversational`` does NOT scaffold) and
     still declares ``metadata.isConversational: true``. The agent directory is a
-    UUID, so it is located through the voice node's ``inputs.source``.
+    UUID, so it is located through the voice node's ``inputs.source``. Topology
+    independent.
 
 Exit 0 on pass; exit 1 with a ``FAIL:`` line naming what is wrong.
 """
@@ -44,6 +54,7 @@ sys.path.insert(
 from flow_check import find_project_dir  # noqa: E402
 
 VOICE_AGENT = "uipath.agent.voice"
+VOICE_TRIGGER = "core.trigger.voice"
 CREATE_CALL = "uipath.conversational.voice.create-outgoing-call"
 END_CALL = "uipath.conversational.voice.end-call"
 
@@ -96,16 +107,27 @@ def _binding_expression(value: object) -> str | None:
     return None
 
 
-def check_call_context(flow: dict) -> int:
-    origins = _nodes_of(flow, CREATE_CALL)
+def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
+    """The callContext wiring rule, with the origin node type as the variable.
+
+    Outbound flows originate the call at create-outgoing-call; inbound flows
+    originate it at the incoming-call trigger. Everything downstream of the
+    origin id is identical, so both topologies share this check.
+    """
+    role = (
+        "the outbound call origin"
+        if origin_type == CREATE_CALL
+        else "the inbound call origin"
+    )
+    origins = _nodes_of(flow, origin_type)
     if len(origins) != 1:
         return _fail(
-            f"expected exactly 1 {CREATE_CALL} node (the outbound call origin), "
+            f"expected exactly 1 {origin_type} node ({role}), "
             f"found {len(origins)}"
         )
     origin_id = origins[0].get("id")
     if not isinstance(origin_id, str) or not origin_id:
-        return _fail(f"the {CREATE_CALL} node has no id")
+        return _fail(f"the {origin_type} node has no id")
 
     wanted = re.compile(
         r"\$vars\s*\.\s*" + re.escape(origin_id) + r"\s*\.\s*output\s*\.\s*callContext"
@@ -148,6 +170,36 @@ def check_call_context(flow: dict) -> int:
     if errors:
         return _fail("; ".join(errors))
     return 0
+
+
+def check_inbound_call_context(flow: dict) -> int:
+    """Inbound topology: trigger-originated callContext, and no dial-out node."""
+    dialers = _nodes_of(flow, CREATE_CALL)
+    if dialers:
+        ids = ", ".join(repr(n.get("id")) for n in dialers)
+        return _fail(
+            f"inbound flow must not dial out, but it has {len(dialers)} "
+            f"{CREATE_CALL} node(s) ({ids}). An inbound flow starts from "
+            f"{VOICE_TRIGGER} and the call already exists"
+        )
+
+    triggers = _nodes_of(flow, VOICE_TRIGGER)
+    if len(triggers) != 1:
+        return _fail(
+            f"expected exactly 1 {VOICE_TRIGGER} node (the inbound trigger), "
+            f"found {len(triggers)}"
+        )
+    entry_point = (triggers[0].get("inputs") or {}).get("entryPointId")
+    if not isinstance(entry_point, str) or not entry_point.strip():
+        return _fail(
+            f"{VOICE_TRIGGER} node {triggers[0].get('id')!r} has no "
+            f"inputs.entryPointId — a trunk binding resolves against it at "
+            f"deploy time"
+        )
+    print(f"OK      {VOICE_TRIGGER} carries inputs.entryPointId")
+    print(f"OK      no {CREATE_CALL} node (correct for inbound)")
+
+    return check_call_context(flow, VOICE_TRIGGER)
 
 
 def check_agent_voice(flow_path: str, flow: dict) -> int:
@@ -202,10 +254,13 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     return 0
 
 
+CHECKS = ("call-context", "inbound-call-context", "agent-voice")
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 1 or argv[0] not in {"call-context", "agent-voice"}:
+    if len(argv) != 1 or argv[0] not in CHECKS:
         print(
-            "usage: check_voice_flow.py {call-context|agent-voice}",
+            f"usage: check_voice_flow.py {{{'|'.join(CHECKS)}}}",
             file=sys.stderr,
         )
         return 2
@@ -213,6 +268,8 @@ def main(argv: list[str]) -> int:
     flow_path, flow = _load_flow()
     if argv[0] == "call-context":
         return check_call_context(flow)
+    if argv[0] == "inbound-call-context":
+        return check_inbound_call_context(flow)
     return check_agent_voice(flow_path, flow)
 
 
