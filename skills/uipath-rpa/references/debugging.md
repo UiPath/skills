@@ -377,7 +377,8 @@ uip rpa debug start --file-path "MyWorkflow.xaml" --output json
 uip rpa debug continue --output json
 
 # 4. Check the response for:
-#    - Outer Result is "Success" (HasErrors: false) — the canonical pass/fail signal
+#    - Data.errors empty AND Data.output == "Session ended" (nested shape: HasErrors false) —
+#      the pass/fail signal; the outer Result stays "Success" even through failures
 #    - Output (workflow's serialized output args) carries the expected values
 #    - Streamed log entries during the run are diagnostic context, NOT a failure signal —
 #      Error/Warning levels there are workflow-emitted observability, not CLI failures
@@ -471,7 +472,7 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ## Reading Debug Output Effectively
 
-Read the response in this order, resolving each field by key presence per § Output Format. **Verdict comes from the outer `Result` envelope (equivalently `Data.errors` empty, or inner `HasErrors`) — never from log-entry levels.**
+Read the response in this order, resolving each field by key presence per § Output Format. **Verdict comes from `Data.errors` and `Data.output` together (nested shape: `HasErrors`) — never from the outer `Result`, and never from log-entry levels.**
 
 1. **`Data.errors` and `Data.output` together** — the success/failure signal. Passed only when `errors` is empty AND `output` is `"Session ended"`. The outer `Result` qualifies the CLI call, not the run, and stays `Success` through exceptions, compile failures, and a missing entry point.
 2. **`ErrorMessage` (when `HasErrors: true`)** — formatted chain with the source activity, exception type, message, and stack trace. This is the canonical failure diagnostic.

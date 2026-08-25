@@ -21,7 +21,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 ## Critical Rules
 
 1. **NEVER manually modify any files.** This skill is read-only. Exception: The command `uip agent refresh` is allowed and mandatory for low code agents, because it is not a manual modification, even when the command updates derived files -- do not restore or clean up those CLI-managed changes. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). For low-code agents, run `uip agent refresh` and `uip agent validate`. Run `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every command's Error / Warning / Info **counts** in the validation table, and a detail line for each Error and Warning — never a detail line for a clean result (Step 2d). A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — per-file `validate` checks one file deeply (structure, references, analyzer rules, unknown members, invalid enums, expression compilation); `build` compiles the **whole project** — every workflow, including files `validate` was never pointed at, plus project-scope analyzer rules and packaging. For low-code agents, run `uip agent refresh` and `uip agent validate`. Run `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every command's Error / Warning / Info **counts** in the validation table, and a detail line for each Error and Warning — never a detail line for a clean result (Step 2d). A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
@@ -180,7 +180,7 @@ Account for **all** results in the final review report: Error / Warning / Info c
 uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
-3. **Then run a project-level build** to catch what `validate` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
+3. **Then run a project-level build** — it covers the whole project: every workflow (including files per-entry-point `validate` never touched), project-scope analyzer rules, and packaging:
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
@@ -191,7 +191,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 
 > Do NOT validate only Main.xaml — validate every file listed in `entryPoints`. A project can have multiple entry points and errors in any of them block deployment.
 
-> Do NOT report a clean review based on `validate` alone. `validate` is static analysis; it does not catch unknown member names or invalid enum values. A "0 errors" `validate` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
+> Do NOT report a clean review based on per-file `validate` alone — it covers only the files it was pointed at, and a project whose validated files are clean can still fail `build` on a file nobody validated. A "0 errors" `validate` result with a failing `build` is a real bug that ships if the reviewer skips `build`.
 
 #### 2b. RPA Projects — Run Workflow Analyzer
 

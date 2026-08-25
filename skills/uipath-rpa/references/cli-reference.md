@@ -348,7 +348,7 @@ Warnings naming a rule ID you do not recognize: look it up with `analyzer-rules 
 
 ## Smoke Test
 
-`validate` (static analysis) and `run` (runtime compilation) use different validation paths. Some errors -- such as invalid enum values on activity properties -- pass static validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
+A clean `validate` + `build` gate is not runtime proof. Some defects produce no diagnostic in either phase — an attribute-form expression that silently became a literal (§ What each phase covers), activity CacheMetadata failures that surface only when the runtime instantiates the activity, and plain logic bugs. Always treat the smoke test as a critical validation step whose output is inspected, not just an optional extra.
 
 After reaching 0 validation errors AND a clean project-level build (Phase 2), run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect. Use `--skip-build` because the project has just been built clean — default `run` re-validates and re-builds internally, repeating ~10s of compilation:
 
