@@ -102,7 +102,7 @@ Phase 2 stub (exact):
 
 Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger --input-details` caseShape ([common § Procedure (Phase 3)](../../../connector-trigger-impl.md#procedure-phase-3)):
 
-After writing the block, repair its spliced keys — including each output's `body.properties` — per [common § Step 6](../../../connector-trigger-impl.md#step-6--repair-spliced-keys).
+After writing the block, repair its spliced keys — including each output's `body.properties` — per [common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
 
 ```json
 "uipath": {

@@ -44,7 +44,7 @@ The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`)
 
 Save the response. The interesting parts:
 
-> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree's keys are repaired on the way to disk — see [§ Repair spliced keys](#step-6--repair-spliced-keys).
+> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree's keys are repaired on the way to disk — see [§ Repair spliced keys](#normalize-key-casing-pascalcase--camelcase).
 
 | Variable | Source |
 |---|---|
@@ -54,7 +54,7 @@ Save the response. The interesting parts:
 | `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — single `body` entry. Body holds `parameters` (from eventParameters) and/or `filters.expression` (compiled JMESPath) when authored |
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — `response` (with displayName like "Email Received") + `Error` |
 | `spec.outputs.responseFields[]` | `.Data.Outputs.ResponseFields` — connector-contract field names as dotted leaf paths, held in `Name` VALUES (which the serializer leaves intact). The authority for the payload output's `body.properties` keys, which the serializer damages |
-| `spec.inputs.*[]` | `.Data.Inputs.EventParameters` / `.BodyFields` / `.QueryParameters` / `.PathParameters` — same shape, the authority for `inputs[].body` keys. See [§ Step 6](#step-6--repair-spliced-keys) for both |
+| `spec.inputs.*[]` | `.Data.Inputs.EventParameters` / `.BodyFields` / `.QueryParameters` / `.PathParameters` — same shape, the authority for `inputs[].body` keys. See [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase) for both |
 | `spec.caseShape.context[]` | `.Data.CaseShape.Context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty |
 
@@ -89,26 +89,13 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
 
-The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key repair in [§ Repair spliced keys](#step-6--repair-spliced-keys). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key repair in [§ Repair spliced keys](#normalize-key-casing-pascalcase--camelcase). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
 
-> **Mechanical contract — ordered passes, never combined.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). Pass 1: Read that file and splice `Data.CaseShape.Context` **verbatim — PascalCase keys intact** — into the target shape (the two placeholders are unique literal strings; substitute inline or via a later Edit). After the write, repair keys per [§ Repair spliced keys](#step-6--repair-spliced-keys) (Pass 2 lowers structural keys, Pass 3 restores contract keys). The skill is a substituter, not a composer. Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped. **Never retype `context` content from agent reasoning.**
+> **Mechanical contract — ordered passes, never combined.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). Pass 1: Read that file and splice `Data.CaseShape.Context` **verbatim — PascalCase keys intact** — into the target shape (the two placeholders are unique literal strings; substitute inline or via a later Edit). After the write, repair keys per [§ Repair spliced keys](#normalize-key-casing-pascalcase--camelcase) (Pass 2 lowers structural keys, Pass 3 restores contract keys). The skill is a substituter, not a composer. Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped. **Never retype `context` content from agent reasoning.**
 
-### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
+#### Normalize key casing (PascalCase → camelCase)
 
-Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` / `caseShape.outputs[]` and writes them to its target shape (task vs trigger node).
-
-Conventions (shared with activity):
-- `var` = `v` + 8 alphanumeric chars (unique across the case — see [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule))
-- `id` = same as `var`
-- `elementId` = the task's elementId (in-stage `wait-for-connector` task), the trigger node's id (case-level event trigger), or `<ownerNodeId>-<ruleId>` (connector-bound condition rule — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule))
-
-For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, case-exit rules living under `metadata.caseExitRules`) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
-
-> **Trigger-NODE inputs only:** the case-level event-**trigger node** gets no `elementId` on its inputs (different from in-stage task inputs). This does **NOT** apply to connector-bound **condition rules** — a rule's inputs AND outputs BOTH get `elementId = <ownerNodeId>-<ruleId>` (= `root-<ruleId>` for case-exit). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule), and each plugin's `impl-json.md` for the target-specific shape.
-
-### Step 6 — Repair spliced keys
-
-Runs after Step 5, over the whole spliced subtree (`context`, `inputs`, `outputs`, nested `body` included) — Pass 3 needs `inputs[]` / `outputs[]` already written. Nothing touches the subtree afterwards.
+Applies to the **whole** spliced spec subtree — `context` / `inputs` / `outputs` and their nested `body` — after it is written, i.e. after [§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs) has minted `var` / `id`. Nothing touches the subtree afterwards.
 
 `case spec --output json` PascalCases every key it serializes. That is a naming **policy**, not a reversible casing toggle, so the correct on-disk form depends on what a key IS. Values are never touched.
 
@@ -121,7 +108,7 @@ Runs after Step 5, over the whole spliced subtree (`context`, `inputs`, `outputs
 
 **Scope: the spliced subtree.** The skill-authored envelope is already camelCase. One exception: the root `variables[].inputOutputs[].body` companion is a copy of this schema, so copy the repaired body, not the cached one.
 
-**Pass 1 — write verbatim**, per [§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext).
+**Pass 1 — write verbatim**, per the mechanical contract above.
 
 **Pass 2 — lower structural keys.** One `Edit` per structural key present, `replace_all: true`, old/new carrying BOTH quotes AND the trailing colon: `"Name":` → `"name":`. That anchor makes it keys-only by construction — a value has no trailing colon, a blob-internal key is escaped (`\"Name\":`). Drive it from the closed set above, never from "every capital-first key you see": a contract field is legitimately `Fields` or `Id`, and lowering it here is safe only because Pass 3 overwrites it next.
 
@@ -140,6 +127,20 @@ Split each `Name` on `.` and walk the segments through `properties` / `items` / 
 **Cannot complete** → log to `build-issues.md` and surface; never invent a name or guess a casing. Three cases: a written key with no matching segment (or the reverse); a `$ref` with no matching `definitions` key; the authority missing because the cache kept only `CaseShape` — re-read the persisted response, re-run `case spec` only if genuinely absent, and persist the WHOLE response (`Outputs.ResponseFields` / `Inputs.*` sit outside `CaseShape`).
 
 **Verify.** `validate` passes a Pascal `multipartParameters` and a merely plausible field name alike, so this is the only build-time gate. (1) Repaired key sets equal their authority segments byte-for-byte — a capital-first scan cannot substitute, since the defect is lowercase-first (`requestBody` for `request_body`). (2) No capital-first key remains outside the repaired regions; each is a missed Pass 2 `Edit`. No observed connector field name is capital-first, so `"Id":` under `properties` is damage, not contract.
+
+
+### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
+
+Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` / `caseShape.outputs[]` and writes them to its target shape (task vs trigger node).
+
+Conventions (shared with activity):
+- `var` = `v` + 8 alphanumeric chars (unique across the case — see [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule))
+- `id` = same as `var`
+- `elementId` = the task's elementId (in-stage `wait-for-connector` task), the trigger node's id (case-level event trigger), or `<ownerNodeId>-<ruleId>` (connector-bound condition rule — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule))
+
+For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, case-exit rules living under `metadata.caseExitRules`) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
+
+> **Trigger-NODE inputs only:** the case-level event-**trigger node** gets no `elementId` on its inputs (different from in-stage task inputs). This does **NOT** apply to connector-bound **condition rules** — a rule's inputs AND outputs BOTH get `elementId = <ownerNodeId>-<ruleId>` (= `root-<ruleId>` for case-exit). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule), and each plugin's `impl-json.md` for the target-specific shape.
 
 ---
 
@@ -172,7 +173,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). If the caseShape carries a `{{TRIGGER_REGISTRATION_KEY}}` entry (event-parameter connectors only), substitute it exactly as the task does ([§ Step 3](#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key)) — there is no rule-specific variant.
 4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
-5. Replace the existing stub's `uipath` with the populated block below, then repair its spliced keys per [§ Step 6](#step-6--repair-spliced-keys) — Pass 2 and Pass 3 apply to `rule.uipath` exactly as they do to `task.data`, in **every** condition scope. The full shape is shown for context; do not rewrite the enclosing rule or condition:
+5. Replace the existing stub's `uipath` with the populated block below, then repair its spliced keys per [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase) — Pass 2 and Pass 3 apply to `rule.uipath` exactly as they do to `task.data`, in **every** condition scope. The full shape is shown for context; do not rewrite the enclosing rule or condition:
 
 ```json
 {
@@ -248,7 +249,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
-- **Do NOT leave spec PascalCase structural keys in the finished node — and do NOT repair by retyping.** The write is PascalCase-verbatim (Pass 1); the repair is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Pass 2) plus the contract-key restore (Pass 3). Retyping the subtree to change keys is the memory-reconstruction failure above wearing a different hat. See [§ Repair spliced keys](#step-6--repair-spliced-keys).
+- **Do NOT leave spec PascalCase structural keys in the finished node — and do NOT repair by retyping.** The write is PascalCase-verbatim (Pass 1); the repair is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Pass 2) plus the contract-key restore (Pass 3). Retyping the subtree to change keys is the memory-reconstruction failure above wearing a different hat. See [§ Repair spliced keys](#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
 - **Do NOT use `filterExpression` as a `--input-details` input.** The CLI rejects raw `filterExpression` strings (MST-8802). Pass the structured tree only.
