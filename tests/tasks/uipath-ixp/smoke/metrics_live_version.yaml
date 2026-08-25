@@ -23,7 +23,7 @@ initial_prompt: |
   How is the IXP project `my_invoices-f1afa9ef-ixp` performing in production
   right now?
 
-  Write your answer to `report.json` in the working directory:
+  Write your answer to `metrics.json` in the working directory:
 
       {"version": <the model version the score belongs to>,
        "project_score": <that version's ProjectScore>}
@@ -54,7 +54,7 @@ success_criteria:
   # get-metrics yields 0.91, so this separates the two paths on the artifact.
   - type: json_check
     description: "Reported the live version's identity and score (9 / 0.98), not the latest-trained one (30 / 0.91)"
-    path: "report.json"
+    path: "metrics.json"
     assertions:
       - expression: "version"
         operator: equals
