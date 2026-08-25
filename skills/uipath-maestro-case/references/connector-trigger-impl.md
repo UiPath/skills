@@ -44,7 +44,7 @@ The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`)
 
 Save the response. The interesting parts:
 
-> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree's keys are repaired on the way to disk — see [§ Repair spliced keys](#repair-spliced-keys).
+> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree's keys are repaired on the way to disk — see [§ Repair spliced keys](#step-6--repair-spliced-keys).
 
 | Variable | Source |
 |---|---|
@@ -53,7 +53,8 @@ Save the response. The interesting parts:
 | `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding (may be `null`) |
 | `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — single `body` entry. Body holds `parameters` (from eventParameters) and/or `filters.expression` (compiled JMESPath) when authored |
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — `response` (with displayName like "Email Received") + `Error` |
-| `spec.outputs.responseFields[]` | `.Data.Outputs.ResponseFields` — the connector-contract field **names**, as `Name` VALUES. The authority for `outputs[].body.properties` keys, which the serializer damages. See [§ Pass 3 — restore contract keys](#pass-3--restore-contract-keys) |
+| `spec.outputs.responseFields[]` | `.Data.Outputs.ResponseFields` — connector-contract field names as dotted leaf paths, held in `Name` VALUES (which the serializer leaves intact). The authority for the payload output's `body.properties` keys, which the serializer damages |
+| `spec.inputs.*[]` | `.Data.Inputs.EventParameters` / `.BodyFields` / `.QueryParameters` / `.PathParameters` — same shape, the authority for `inputs[].body` keys. See [§ Pass 3 — restore contract keys](#pass-3--restore-contract-keys) for both |
 | `spec.caseShape.context[]` | `.Data.CaseShape.Context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty |
 
@@ -88,52 +89,9 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
 
-The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key repair in [§ Repair spliced keys](#repair-spliced-keys). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key repair in [§ Repair spliced keys](#step-6--repair-spliced-keys). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
 
-> **Mechanical contract — ordered passes, never combined.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). Pass 1: Read that file and splice `Data.CaseShape.Context` **verbatim — PascalCase keys intact** — into the target shape (the two placeholders are unique literal strings; substitute inline or via a later Edit). After the write, repair keys per [§ Repair spliced keys](#repair-spliced-keys) (Pass 2 lowers structural keys, Pass 3 restores contract keys). The skill is a substituter, not a composer. Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped. **Never retype `context` content from agent reasoning.**
-
-#### Repair spliced keys
-
-`case spec --output json` applies a PascalCase **naming policy** to every object key it serializes — `Data.CaseShape.Context`; context / input / output entries (`"Name"`, `"Type"`, `"Value"`, `"Target"`, `"Body"`, `"DisplayName"`, `"Source"`); nested config (`"ActivityPropertyConfiguration"`, `"ActivityMetadata"`, `"InputMetadata"`, `"TelemetryData"`, `"UiPathActivityTypeId"`, …); response-schema keywords (`"Type"`, `"Properties"`, `"Definitions"`, `"Title"`, `"Items"`); payload keys folded from `--input-details` (`message.toRecipients` comes back as `"Message": { "ToRecipients": … }`); and the connector-contract property names inside the response schema (`request_body` comes back as `"RequestBody"`). Values are never touched. This holds regardless of how this doc's examples are cased — the live CLI emits PascalCase.
-
-The policy is a rename, not a reversible casing toggle, so the correct on-disk form depends on what a key IS, not on how it looks:
-
-| Class | Keys | Correct on-disk form |
-|---|---|---|
-| **Structural** — keywords the caseplan disk schema defines | Entry fields (`Name`, `Type`, `Value`, `Target`, `Body`, `DisplayName`, `Source`); nested config (`ActivityMetadata`, `UiPathActivityTypeId`, …); schema keywords (`Properties`, `Definitions`, `Title`, `Items`) | camelCase — first character lowered, rest preserved: `name`, `uiPathActivityTypeId` (Pass 2) |
-| **Contract** — field names the connector contract defines; data, not keywords, so ANY casing is legitimate | Property names inside `body.properties` / `body.definitions`; payload keys inside `inputs[].body` folded from `--input-details` | Byte-exact contract name from its authority (Pass 3): outputs ← `.Data.Outputs.ResponseFields[].Name`, inputs ← the Step 1 `--input-details` JSON. Lowering only round-trips camelCase names — `ConversationId`→`conversationId` ✓; `RequestBody`→`requestBody` ✗ (contract says `request_body`) |
-
-Invariants across all passes:
-
-- **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
-- **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, variables, bindings, task scaffolding) is already camelCase — do not re-case it.
-- **Ordered, never combined.** Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped (observed: `multipartParameters` lost → runtime `400 "Unable to parse multipart body"` while `validate` stays green).
-
-##### Pass 1 — write verbatim
-
-Write the subtree **PascalCase-verbatim** from the spec-cache — never drop, reorder, or retype content ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext) mechanical contract).
-
-##### Pass 2 — lower key casing
-
-One `Edit` per distinct capital-first key, `replace_all: true`, old/new including BOTH quotes AND the trailing colon — `"Name":` → `"name":`. The quote-colon anchor makes the edit keys-only **by construction**: a value sits after a colon (`: "Name"` — no trailing colon), and a blob-internal key is escaped (`\"Name\":`), so neither can match.
-
-`replace_all` cannot tell a structural `"Title":` from a contract property that happens to be named `Title` — it lowers both. That is fine: Pass 3 owns the final form of every contract key, which is why it runs last.
-
-##### Pass 3 — restore contract keys
-
-Runtime matches contract keys byte-for-byte — restore them from their authority, never derive them by casing.
-
-- **Output property names** (top-level keys under `outputs[].body.properties`): overwrite each with its `.Data.Outputs.ResponseFields[].Name`, whatever its casing — those are `Name` VALUES, which the serializer leaves intact. Pair positionally; `DisplayName` maps to the property's `title`, which confirms the pairing.
-- **Input payload keys** (inside `inputs[].body`): every key authored in the Step 1 `--input-details` JSON must reappear byte-for-byte; repair any mismatch from that JSON — it is agent-authored, so the authority is already on disk.
-- **`ResponseFields` absent from the spec-cache** — the cache kept only `CaseShape`. Re-read the persisted response first; re-run `case spec` only if it is genuinely absent ([phased-execution.md § In-session schema memo](phased-execution.md)), and persist the WHOLE response — `Outputs.ResponseFields` sits outside `CaseShape`.
-- **Property count differs from `ResponseFields`** — do not guess a pairing. Log to `build-issues.md` and surface.
-- **Names nested under `definitions.*` or a nested `properties`** — `ResponseFields` is flat and cannot reach them, and no output mode avoids the damage (`--output-filter` serializes after filtering). Log as "connector response schema may carry renamed nested fields" and surface. Never invent a name.
-
-##### Verify
-
-`validate` catches mis-cased schema fields but NOT content-level keys — a Pascal `multipartParameters` or a wrong contract name passes `validate` and fails at runtime — so this scan is the only build-time gate.
-
-Scan the spliced subtree for capital-first `"Xxx…":` keys. Every hit must be a restored contract key (it matches a `ResponseFields[].Name` or a Step 1 input key); any other hit is a missed Pass 2 `Edit`. Never "fix" a restored contract key by re-lowering it — `"Id":` under `properties` IS the contract, and re-lowering it undoes Pass 3.
+> **Mechanical contract — ordered passes, never combined.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). Pass 1: Read that file and splice `Data.CaseShape.Context` **verbatim — PascalCase keys intact** — into the target shape (the two placeholders are unique literal strings; substitute inline or via a later Edit). After the write, repair keys per [§ Repair spliced keys](#step-6--repair-spliced-keys) (Pass 2 lowers structural keys, Pass 3 restores contract keys). The skill is a substituter, not a composer. Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped. **Never retype `context` content from agent reasoning.**
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -147,6 +105,68 @@ Conventions (shared with activity):
 For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, case-exit rules living under `metadata.caseExitRules`) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
 
 > **Trigger-NODE inputs only:** the case-level event-**trigger node** gets no `elementId` on its inputs (different from in-stage task inputs). This does **NOT** apply to connector-bound **condition rules** — a rule's inputs AND outputs BOTH get `elementId = <ownerNodeId>-<ruleId>` (= `root-<ruleId>` for case-exit). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule), and each plugin's `impl-json.md` for the target-specific shape.
+
+### Step 6 — Repair spliced keys
+
+Runs **after** Step 5, on the whole spliced subtree — `context`, `inputs`, `outputs`, and every nested `body` — because Pass 3 and the verify gate below need `inputs[]` / `outputs[]` already present in the target. Nothing else may touch the subtree afterwards.
+
+`case spec --output json` applies a PascalCase **naming policy** to every object key it serializes: `Data.CaseShape.Context`; context / input / output entries (`"Name"`, `"Type"`, `"Value"`, `"Target"`, `"Body"`, `"DisplayName"`, `"Source"`); nested config (`"ActivityPropertyConfiguration"`, `"ActivityMetadata"`, `"InputMetadata"`, `"TelemetryData"`, `"UiPathActivityTypeId"`, …); response-schema keywords (`"Type"`, `"Properties"`, `"Definitions"`, `"Title"`, `"Items"`); and the connector-contract field names inside the request and response schemas (`request_body` comes back as `"RequestBody"`; `message.toRecipients` as `"Message": { "ToRecipients": … }`). Values are never touched.
+
+The policy is a rename, not a reversible casing toggle, so the correct on-disk form depends on what a key IS, not on how it looks:
+
+| Class | Keys | Correct on-disk form |
+|---|---|---|
+| **Structural** — keywords the caseplan disk schema defines. A closed set | Entry fields (`Name`, `Type`, `Value`, `Target`, `Body`, `DisplayName`, `Source`); nested config (`ActivityPropertyConfiguration`, `ActivityMetadata`, `InputMetadata`, `TelemetryData`, `UiPathActivityTypeId`, `Configuration`, `ErrorState`, `Multipart`, `MultipartParameters`, `BodyFieldName`); schema keywords (`Properties`, `Definitions`, `Title`, `Items`, `Required`, `Reference`, `DataType`) | camelCase — first character lowered, rest preserved: `name`, `uiPathActivityTypeId` (Pass 2) |
+| **Contract** — field names the connector defines. Data, not keywords, so ANY casing is legitimate | Keys inside `inputs[].body` and inside the payload output's `body.properties` / `body.definitions` | Byte-exact name from its authority in the same spec response (Pass 3). Lowering only round-trips camelCase names — `ConversationId`→`conversationId` ✓; `RequestBody`→`requestBody` ✗ (the contract says `request_body`) |
+
+Invariants across all passes:
+
+- **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
+- **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, bindings, task scaffolding) is already camelCase — do not re-case it. **One exception:** the root `variables[].inputOutputs[].body` companion is a verbatim copy of this same schema ([global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md)), so it carries the identical Pass 3 repair — copy the repaired body, never the cached one.
+- **Ordered, never combined.** Repairing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped (observed: `multipartParameters` lost → runtime `400 "Unable to parse multipart body"` while `validate` stays green).
+
+#### Pass 1 — write verbatim
+
+Write the subtree **PascalCase-verbatim** from the spec-cache — never drop, reorder, or retype content ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext) mechanical contract).
+
+#### Pass 2 — lower structural keys
+
+One `Edit` per distinct **structural** key present in the subtree (the closed set in the table above), `replace_all: true`, old/new including BOTH quotes AND the trailing colon — `"Name":` → `"name":`. The quote-colon anchor makes the edit keys-only **by construction**: a value sits after a colon (`: "Name"` — no trailing colon), and a blob-internal key is escaped (`\"Name\":`), so neither can match.
+
+Drive this pass from the structural set, **not** from "every capital-first key you can see" — a contract field is legitimately named `Fields` or `Id`, and lowering it here is only safe because Pass 3 overwrites it next. Where a contract field collides with a structural name (a Jira response nests a contract field literally named `name`), Pass 3 still owns the final form.
+
+#### Pass 3 — restore contract keys
+
+Runtime matches contract keys byte-for-byte, and `validate` never checks them. Restore them from their authority in the **same persisted spec response** — never derive them by casing, never by position.
+
+**Authorities.** Every entry's `Name` is a **dotted leaf path**, not a top-level key:
+
+| Subtree to repair | Authority |
+|---|---|
+| Payload output `body.properties` (the `response` / curated output) | `.Data.Outputs.ResponseFields[].Name` |
+| `inputs[name="body"].body` | `.Data.Inputs.BodyFields[].Name` |
+| `inputs[name="queryParameters"]` / `[name="pathParameters"]` bodies | `.Data.Inputs.QueryParameters[].Name` / `.Data.Inputs.PathParameters[].Name` |
+| Any `body.definitions` key | The `$ref` value that targets it — `"$ref": "#/definitions/response_metadata"` makes `response_metadata` the byte-exact name |
+
+**Derivation.** Split each authority `Name` on `.`; walk the segments down the schema (through `properties`, `items`, and `$ref` hops). At every level the segment IS the byte-exact key — overwrite the written key with it. The top-level key set is the ordered de-duplicated set of **first** segments.
+
+Match each written key to a segment by comparing them with case and underscores ignored, and confirm with `DisplayName` ↔ the property's `title` where present. **Never pair by index** — the two collections are different shapes and lengths: Jira returns three properties `Fields, Id, Key` against `ResponseFields` `fields.issuetype.name, id, key`, so index pairing writes a literal `"fields.issuetype.name":` key. Walking segments instead repairs the whole path: `Fields`/`Issuetype`/`Name` → `fields`/`issuetype`/`name`.
+
+**Scope — the payload output only.** `caseShape.outputs[]` also carries the `Error` output, whose properties are the fixed platform envelope `Code, Message, Detail, Category, Status, Element`. `ResponseFields` never describes it. Skip it entirely — Pass 2's camelCase is already correct there, and renaming it breaks every `=Error.Message` binding ([io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md)).
+
+**When the repair cannot be completed** — log to `build-issues.md` and surface. Never invent a name, and never fall back to a cased guess:
+
+- **A written key matches no authority segment, or a segment matches no written key.** Report both sides.
+- **`ResponseFields` / `Inputs` absent from the spec-cache** — the cache kept only `CaseShape`. Re-read the persisted response first; re-run `case spec` only if it is genuinely absent (permitted by [phased-execution.md](phased-execution.md) — the in-session memo's "never re-run an identical spec call" does not cover recovering an authority the cache dropped), and persist the WHOLE response: `Outputs.ResponseFields` and `Inputs.*` sit outside `CaseShape`.
+- **A `$ref` target with no matching `definitions` key** (or the reverse).
+
+#### Verify
+
+`validate` catches mis-cased schema fields but NOT content-level keys — a Pascal `multipartParameters`, or a contract name that is merely plausible, passes `validate` and fails at runtime — so this is the only build-time gate.
+
+1. **Contract keys — set equality against the authority.** For the payload output, the top-level `body.properties` key set must equal the de-duplicated first segments of `ResponseFields[].Name` byte-for-byte, and each repaired nested level must equal its segment. Same for `inputs[].body` against `Inputs.*`. A capital-letter scan cannot substitute: the PR-motivating defect is lowercase-first (`requestBody` where the contract says `request_body`), which no capital scan sees.
+2. **Structural keys — no capital-first key survives.** Outside the repaired contract regions, no `"Xxx…":` key may remain; each is a missed Pass 2 `Edit`. Do not exempt a key because it looks like a contract name: across every observed capture, ZERO `ResponseFields` names are capital-first, so `"Id":` under `properties` is the serializer's damage, not the contract (the live Outlook response returns `id`).
+3. **Re-verify after the last node.** Pass 2's `replace_all` is file-wide, so a later node's Pass 2 can lower a key an earlier node's Pass 3 restored whenever a contract field collides with a structural name. After the final connector node is written, re-run check 1 for every connector node in the case.
 
 ---
 
@@ -179,7 +199,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). If the caseShape carries a `{{TRIGGER_REGISTRATION_KEY}}` entry (event-parameter connectors only), substitute it exactly as the task does ([§ Step 3](#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key)) — there is no rule-specific variant.
 4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
-5. Replace the existing stub's `uipath` with the populated block below. The full shape is shown for context; do not rewrite the enclosing rule or condition:
+5. Replace the existing stub's `uipath` with the populated block below, then repair its spliced keys per [§ Step 6](#step-6--repair-spliced-keys) — Pass 2 and Pass 3 apply to `rule.uipath` exactly as they do to `task.data`, in **every** condition scope. The full shape is shown for context; do not rewrite the enclosing rule or condition:
 
 ```json
 {
@@ -188,8 +208,8 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
   "uipath": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted>",
-    "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
-    "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
+    "inputs":  "<caseShape.inputs  — var/id/elementId minted, keys repaired>",
+    "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied, keys repaired>",
     "bindings": []
   },
   "conditionExpression": "<optional =js: gate on case state, e.g. vars.X — NOT the event payload>"
@@ -255,7 +275,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
-- **Do NOT leave spec PascalCase structural keys in the finished node — and do NOT repair by retyping.** The write is PascalCase-verbatim (Pass 1); the repair is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Pass 2) plus the contract-key restore (Pass 3). Retyping the subtree to change keys is the memory-reconstruction failure above wearing a different hat. See [§ Repair spliced keys](#repair-spliced-keys).
+- **Do NOT leave spec PascalCase structural keys in the finished node — and do NOT repair by retyping.** The write is PascalCase-verbatim (Pass 1); the repair is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Pass 2) plus the contract-key restore (Pass 3). Retyping the subtree to change keys is the memory-reconstruction failure above wearing a different hat. See [§ Repair spliced keys](#step-6--repair-spliced-keys).
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
 - **Do NOT use `filterExpression` as a `--input-details` input.** The CLI rejects raw `filterExpression` strings (MST-8802). Pass the structured tree only.

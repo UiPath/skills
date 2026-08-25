@@ -53,8 +53,6 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 - `id` = same as `var`
 - **No `elementId`** on trigger inputs (different from in-stage task inputs).
 
-> **Repair `outputs[].body.properties` keys before caching** — per [common § Pass 3 — restore contract keys](../../../connector-trigger-impl.md#pass-3--restore-contract-keys). The cache is what every downstream consumer reads, so an unrepaired schema propagates.
-
 > **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume.
 
 ## Step 7 — Build trigger node and write to caseplan.json
@@ -96,7 +94,10 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
   "T02": {
     "context": "<caseShape.context — post-substitution from Step 5>",
     "inputs":  "<caseShape.inputs — un-minted, with body schema intact>",
-    "outputs": "<caseShape.outputs — un-minted, with body schema intact>"
+    "outputs": "<caseShape.outputs — un-minted, with body schema intact>",
+    // key-repair authorities — verbatim from the spec response, OUTSIDE CaseShape
+    "responseFields": "<.Data.Outputs.ResponseFields — verbatim>",
+    "inputFields":    "<.Data.Inputs — verbatim (EventParameters / BodyFields / QueryParameters / PathParameters)>"
   },
   "T03": { ... }
 }
@@ -106,6 +107,7 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 
 - Do NOT mint `var` / `id` / `elementId` on the `outputs[]` entries written to the sidecar — the variables plugin mints them at Step 6.2 according to whether the SDD references each output. The plain field name from the schema is preserved (e.g., `name: "subject"`).
 - Do NOT strip `body` from the outputs — the variables plugin needs the full JSON Schema when emitting the root companion (especially for `jsonSchema`-typed outputs).
+- **Carry `responseFields` / `inputFields`.** They live outside `CaseShape`, so a `caseShape`-only sidecar destroys the only intact copy of the connector's field names and no consumer can repair the schema afterwards ([common § Step 6](../../../connector-trigger-impl.md#step-6--repair-spliced-keys)). The variables plugin repairs the keys when it emits `data.inputs.outputs[]` and the root companion at Step 6.2 — the schema in this sidecar is still PascalCase-verbatim, and every consumer reads it from here.
 
 **Sidecar lifecycle:**
 
@@ -169,7 +171,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 
 1. `data.inputs.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
 2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
-3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
+3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`, plus the `responseFields` / `inputFields` key-repair authorities from outside `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
 5. **Placeholder:** all four `data.inputs` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.inputs.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
