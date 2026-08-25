@@ -6,7 +6,9 @@ description: >
   most ten fields per page, "press Enter to accept defaults") and then stop for the user's
   answers, instead of registering a defaults-only policy. Graded on the template read actually
   happening, on no policy being created, and on a judge reading the first page.
-tags: [uipath-governance, smoke, mode:build, lifecycle:discover, aops-policy, template]
+  Integration tier (nightly, not the PR smoke gate): a conversational first page is judged, and
+  the judge showed run-to-run variance in the gate — too path-variant for a 15-task gate at 95%.
+tags: [uipath-governance, integration, mode:build, lifecycle:discover, aops-policy, template]
 
 run_limits:
   expected_turns: 12

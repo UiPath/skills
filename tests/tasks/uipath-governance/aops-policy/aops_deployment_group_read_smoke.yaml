@@ -40,7 +40,8 @@ success_criteria:
       def cli(args):
           out = subprocess.run(['uip'] + args + ['--output', 'json'], capture_output=True, text=True, timeout=120)
           return json.loads(out.stdout)
-      live = (cli(['gov','aops-policy','deployment','group','list']).get('Data') or {}).get('Result') or []
+      # ce-gov-* groups are per-run fixtures other governance tasks create concurrently (nightly -j4, PR gate -j10); exclude only that prefix.
+      live = [g for g in ((cli(['gov','aops-policy','deployment','group','list']).get('Data') or {}).get('Result') or []) if not str(g.get('Name') or '').startswith('ce-gov-')]
       groups_doc = json.load(open('groups.json', encoding='utf-8-sig'))
       saved = [x for x in dicts(groups_doc) if x.get('Identifier') and x.get('Name')]
       saved_ids = {x['Identifier'] for x in saved}

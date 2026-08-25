@@ -1,14 +1,16 @@
 task_id: skill-gov-aops-policy-diagnose-precedence-smoke
 description: >
-  Smoke test (outcome-graded): a team's directory group (created in pre_run under this run's
-  own name) carries a group-scope assignment for the E2E product, so members do not get the
-  tenant-level E2E policy — precedence is user > group > tenant, and priority numbers play no
-  part. The agent has to walk the deployment chain to group scope, read the assignment back
-  and name the override as the cause. Graded on the saved group-scope record carrying the
-  seeded policy plus a judge on the diagnosis; the command_not_executed guard keeps the
-  diagnosis from "fixing" it by changing deployments. The group has no members, so nobody's
-  effective policy changes; post_run removes the group and the policy.
-tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployment, troubleshoot]
+  Integration test (outcome-graded): a team's directory group (created in pre_run under this run's
+  own name) carries a group-scope assignment for the E2E product, so its members are governed by a
+  policy the tenant admin never deployed to them — precedence is user > group > tenant, and priority
+  numbers play no part. The agent has to walk the deployment chain to group scope, read the
+  assignment back and name it as the source. Graded on the saved group-scope record carrying the
+  seeded policy plus a judge on the diagnosis; the command_not_executed guard keeps the diagnosis
+  from "fixing" it by changing deployments. The group has no members, so nobody's effective policy
+  changes; post_run removes the group and the policy. Integration tier (nightly, not the PR smoke
+  gate): the fixture creates a governance-known group, which other governance tasks running in the
+  same gate can observe, and the diagnosis is judged conversationally.
+tags: [uipath-governance, integration, mode:diagnose, lifecycle:discover, aops-policy, deployment, troubleshoot]
 
 pre_run:
   - command: 'AOPS_SEED_KEY="override" AOPS_POLICY_BASE="ce-gov-aops-override" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Group-level exception for one team" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
@@ -25,16 +27,17 @@ run_limits:
 
 initial_prompt: |
   A tenant admin says the members of the team whose directory group is named in `seed.json`
-  (the `subjects.groupName` field) are not getting the tenant-level AOps governance for the
-  `E2E` product - they seem to be governed by something else. Work out why.
+  (the `subjects.groupName` field) are being governed by an AOps policy for the `E2E` product
+  (license type `E2E`) that the admin never deployed to them. Work out where that governance
+  comes from.
 
   Save verbatim:
 
   - the policy assignments recorded for that group -> ./group-scope.json
   - the tenant's own deployment record -> ./tenant-scope.json
 
-  Write your conclusion - the cause and what would have to change - to ./diagnosis.md.
-  Do not change any deployment.
+  Write your conclusion - the source of the policy and what would have to change - to
+  ./diagnosis.md. Do not change any deployment.
 
   Do NOT prompt the user for confirmation - this is an automated test.
 
@@ -72,24 +75,24 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "the diagnosis names the group-level assignment as the cause (user > group > tenant) and the fix as removing/changing it"
+    description: "the diagnosis names the group-scope assignment as the source (user > group > tenant) and the fix as removing/changing it"
     files:
       - diagnosis.md
     max_file_chars: 20000
     include_agent_output: false
     prompt: |
       The team's directory group has an explicit group-scope policy assignment for the E2E
-      product. AOps resolves the effective policy by scope — user > group > tenant — so that
-      group-level assignment wins over whatever the tenant deploys for its members; priority
-      numbers only break ties between several groups and play no part here.
+      product. AOps resolves the effective policy by scope — user > group > tenant — so members
+      of that group are governed by the group-level assignment regardless of what the tenant
+      deploys (or does not deploy) for E2E; priority numbers only break ties between several
+      groups and play no part here.
 
-      Read ./diagnosis.md. Award a pass only if it identifies a group-scope (group-level)
-      assignment/override on that team's group as the reason the tenant policy does not
-      reach its members, and says the remedy is to remove or change that group-level
-      assignment (or to deploy the intended policy at group scope for the team). Fail it if
-      it blames policy priority numbers alone, claims no policy is deployed anywhere, blames
-      the policy's contents, or proposes redeploying at tenant scope as the fix.
-
+      Read ./diagnosis.md. Award a pass only if it identifies the group-scope (group-level)
+      assignment on that team's group as the source of the policy the members are getting, and
+      says the remedy is to remove or change that group-level assignment (deploying a different
+      policy at group scope also counts). Fail it if it attributes the governance to priority
+      numbers alone, to a tenant-level or user-level assignment, or to the policy's contents, or
+      if it proposes no change to the group-level assignment.
       Score exactly 1.0 (pass) or 0.0 (fail) — no other values.
     weight: 2.5
     pass_threshold: 1.0
