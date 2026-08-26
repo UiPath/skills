@@ -48,8 +48,9 @@ pre_run:
     timeout: 180
 
 initial_prompt: |
-  I want to trial a custom field layout before rolling it out. In a throwaway
-  project of your own, set up one field that our auditors can fill in on
+  I want to trial a custom field layout in UiPath Test Manager before rolling it
+  out. In a throwaway Test Manager project of your own, set up one field that
+  our auditors can fill in on
   requirements, on test cases and on test sets — the same field on all three, so
   I can report across them together. It should hold free text, suggest the
   accepted values to whoever is filling it in, and start out with a sensible

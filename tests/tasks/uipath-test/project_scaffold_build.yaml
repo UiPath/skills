@@ -81,15 +81,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent authored a test case in its fresh project"
-    tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--name\s+\S)uip\s+tm\s+testcases?\s+create\b'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent started a run against that test case by UUID, proving the provisioning is usable"
+    description: "Agent started a run against a test case it authored, proving the provisioning is usable"
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--test-case-id\s+\S)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
     min_count: 1

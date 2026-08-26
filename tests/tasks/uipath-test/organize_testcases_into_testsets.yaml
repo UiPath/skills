@@ -69,8 +69,9 @@ pre_run:
     timeout: 240
 
 initial_prompt: |
-  In the CLAIM project there are exactly three test cases whose names begin with
-  `EVFX-ORG-SRC-TC`. Collect all three into a single new regression test set.
+  In the UiPath Test Manager project CLAIM there are exactly three test cases
+  whose names begin with `EVFX-ORG-SRC-TC`. Collect all three into a single new
+  regression test set.
 
   Look them up by that name prefix rather than pulling the whole project's test
   case list — the real project has hundreds of cases and I don't want them all

@@ -48,8 +48,9 @@ pre_run:
     timeout: 180
 
 initial_prompt: |
-  I want to see how our release-tier tagging would work before I apply it to a
-  real project. In a throwaway project of your own:
+  I want to see how our release-tier tagging would work in UiPath Test Manager
+  before I apply it to a real project. In a throwaway Test Manager project of
+  your own:
 
   Set up three test cases. Tag two of them as tier 1 and the third as tier 2,
   using the label names `EVFX-CURATE-tier1` and `EVFX-CURATE-tier2`. Then build
