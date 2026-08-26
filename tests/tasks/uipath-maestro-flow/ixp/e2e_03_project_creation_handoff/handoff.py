@@ -93,6 +93,29 @@ UIP_TIMEOUT_SECONDS = 120
 # Node-type prefix for an IxP extraction node in a .flow.
 IXP_NODE_PREFIX = "uipath.ixp."
 
+# Folder deletes can fail transiently (provisioning race on the just-created
+# sentinel, GH run 32967816894; an "Error resolving folder" on a half-hour-old
+# folder, GH run 32968685992 — the CLI's RetryWillNotFix hint was wrong both
+# times). Retried briefly wherever a folder is deleted. Env-tunable so the
+# unit-test suite is not slowed by real sleeps.
+FOLDER_DELETE_ATTEMPTS = 4
+FOLDER_DELETE_RETRY_SECONDS = float(os.environ.get("HANDOFF_RETRY_SECONDS", "5"))
+
+
+def delete_folder_with_retry(folder_key: str) -> subprocess.CompletedProcess[str]:
+    """Delete a folder, retrying transient failures; returns the last attempt."""
+    for attempt in range(FOLDER_DELETE_ATTEMPTS):
+        completed = run_uip(["or", "folders", "delete", folder_key, "--yes", "--output", "json"])
+        if completed.returncode == 0:
+            return completed
+        if attempt < FOLDER_DELETE_ATTEMPTS - 1:
+            print(
+                f"folder delete attempt {attempt + 1} for {folder_key} failed "
+                f"(exit {completed.returncode}); retrying in {FOLDER_DELETE_RETRY_SECONDS:g}s"
+            )
+            time.sleep(FOLDER_DELETE_RETRY_SECONDS)
+    return completed
+
 
 def run_uip(arguments: list[str]) -> subprocess.CompletedProcess[str]:
     """Run one `uip` subcommand, capturing both streams."""
@@ -313,20 +336,7 @@ def folder_id_watermark() -> int:
     created = run_uip_json(["or", "folders", "create", sentinel_name, "--output", "json"])
     sentinel_key = created["Data"]["Key"]
     sentinel_id = int(created["Data"]["Id"])
-    # Deleting a folder milliseconds after creating it can race provisioning
-    # (GH run 32967816894: delete exit 1 straight after a successful create,
-    # on a pair that had succeeded six runs straight) — retry briefly before
-    # concluding the runner genuinely lacks the permission.
-    for attempt in range(4):
-        deleted = run_uip(["or", "folders", "delete", sentinel_key, "--yes", "--output", "json"])
-        if deleted.returncode == 0:
-            break
-        if attempt < 3:
-            print(
-                f"sentinel delete attempt {attempt + 1} failed "
-                f"(exit {deleted.returncode}); retrying in 5s"
-            )
-            time.sleep(5)
+    deleted = delete_folder_with_retry(sentinel_key)
     if deleted.returncode != 0:
         detail = " ".join((deleted.stdout or deleted.stderr).split())
         raise RuntimeError(
@@ -530,7 +540,7 @@ def check_main() -> int:
 # ── teardown ──────────────────────────────────────────────────────────────────
 
 def delete_folder(folder_key: str) -> bool:
-    completed = run_uip(["or", "folders", "delete", folder_key, "--yes", "--output", "json"])
+    completed = delete_folder_with_retry(folder_key)
     if completed.returncode == 0:
         print(f"OK: deleted run-scoped folder {folder_key} (removes its registry nodes)")
         return True

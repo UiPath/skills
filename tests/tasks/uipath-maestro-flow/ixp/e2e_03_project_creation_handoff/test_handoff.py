@@ -177,6 +177,8 @@ def install_fake_uip(sandbox: pathlib.Path, **payload: Any) -> dict[str, str]:
 
     env = dict(os.environ)
     env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+    # No real sleeps between simulated folder-delete retries.
+    env["HANDOFF_RETRY_SECONDS"] = "0"
     return env
 
 
@@ -616,7 +618,7 @@ def test_seed_retries_a_transiently_failing_sentinel_delete(
     env = install_fake_uip(sandbox, sentinel_delete_failures=2)
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "retrying in 5s" in completed.stdout
+    assert "retrying in" in completed.stdout
     assert (sandbox / SNAPSHOT).exists()
 
 
