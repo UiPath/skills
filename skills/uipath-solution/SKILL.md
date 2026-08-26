@@ -64,6 +64,7 @@ All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uni
 
 The typical lifecycle for a UiPath Solution:
 
+<!--skill-flavor:solution-lifecycle-host:start-->
 ```
 1. init / project add  → Create solution, register projects (.uipx + resources/solution_folder/)
 2. resources refresh   → Sync bundled artefacts and debug overwrites with cloud state
@@ -78,6 +79,8 @@ The typical lifecycle for a UiPath Solution:
 > **`restore` is an optimization, not a requirement.** `pack` restores dependencies internally, so a separate `restore` step is only useful when you want deps resolved up front — most often in CI (`login → restore → pack`) to fail fast on a missing feed before the heavier pack runs. `restore` takes a `<solutionPath>` only (solution dir with a `.uipx`, or a `.uis` file), resolves deps in place, and does **not** produce a package. It needs an authenticated session to reach private Orchestrator feeds, so run `uip login` before it.
 
 > **AppV2 coded apps in the solution flow through `uip solution`, not `uip codedapp` directly.** When a coded-app project has `Type: "AppV2"` in `.uipx`, `uip solution pack` bundles its `.nupkg` and `uip solution deploy run` provisions it in the deployment folder — no separate `uip codedapp pack` / `publish` / `deploy` step. Standalone coded apps (scaffolded outside any solution via `npx create-vite`, flat `dist/` at the project root, no `project.uiproj` / `webAppManifest.json`) use the direct `codedapp` path instead. See `uipath-coded-apps` for the standalone lifecycle and for authoring an AppV2 project inside a solution via `uip codedapp init`.
+<!--skill-flavor:solution-lifecycle-host:end-->
+
 
 Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
