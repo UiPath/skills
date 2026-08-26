@@ -41,7 +41,7 @@ uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --out
 
   > What is your UiPath **environment** (cloud / staging / alpha), **organization name**, and **tenant name**?
 
-  Wait for the reply, then run the matching command from the Quick Reference.
+  Wait for the reply, then follow the interactive-sign-ins rule above: give the user the exact one-shot command from the Quick Reference to run in their own terminal (or, if you run it, first tell them a browser window is about to open), and confirm with `uip login status --output json`.
 
 ## Environment → Authority Mapping
 

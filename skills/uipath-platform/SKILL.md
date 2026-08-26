@@ -111,7 +111,7 @@ uip login status --profile dev --output json
 ```text
 ! uip login
 ```
-Then confirm with `uip login status --output json` once they say it's done. (An abandoned earlier attempt is harmless: a newer `uip login` automatically takes over the callback port.)
+Then confirm with `uip login status --output json` once they say it's done. If a retry fails with `EADDRINUSE` / "Port 8104 is already in use", an abandoned earlier attempt is still holding the callback port — it releases itself within 5 minutes, or the user can end the stale `uip login` process.
 
 For a named interactive login:
 ```bash
