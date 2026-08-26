@@ -12,9 +12,7 @@
 #   cccc000000000002     2    6  0.667   yes            reviewed on only 2   REVIEW
 #                                                       of the 5 documents
 #   cccc000000000003     5    5  1.000   no             -                    -
-#   cccc000000000004     4    4  0.500   yes            short by ONE doc =   UPLOAD
-#                                                       missing marker,
-#                                                       not unconfirmed
+#   cccc000000000004     4    4  0.500   yes            short by ONE doc     REVIEW
 #
 # Every below-target field has a sample too small for a rewrite to be
 # evaluated (regression_threshold = max(0.1, 1/Annotations): 0.2, 0.167 and
@@ -22,9 +20,10 @@
 # field's own Documents vs ValidatedDocuments:
 #
 #   ...0001  Documents 5 == ValidatedDocuments 5 -> sample as large as the data
-#   ...0002  Documents 2 <<  ValidatedDocuments 5 -> unreviewed for this field
-#   ...0004  Documents 4, short by ONE -> within the missing-marker allowance
-#            (a field legitimately absent from a document), NOT unconfirmed
+#   ...0002  Documents 2 <  ValidatedDocuments 5 -> no evidence on 3 documents
+#   ...0004  Documents 4 <  ValidatedDocuments 5 -> no evidence on 1 document;
+#            ANY shortfall is REVIEW - the payload cannot say what that
+#            document is, and only the review can
 #
 # Annotations does NOT separate them, and is the trap. ...0002 has the LARGEST
 # Annotations (6) of the three despite being reviewed on the fewest documents,

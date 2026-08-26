@@ -278,8 +278,8 @@ That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — 
 
 **A small `Annotations` has two causes with opposite remedies.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
 
-- **`Documents` equal to `ValidatedDocuments`, or short by one or two** → the sample is already as large as the labelled data allows (a small shortfall is missing markers — the field legitimately absent from a document — not an unreviewed field). Tag it **UPLOAD**.
-- **`Documents` materially below `ValidatedDocuments`** → some labelled documents carry no label for this field: never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** — those documents need the standard review pass ([Label Documents Guide](label-documents-guide.md)), which 2a-check's `Recall < 0.5` gate would never trigger here.
+- **`Documents` equal to `ValidatedDocuments`** → this field already has evidence on every labelled document; the sample is as large as the data allows. Tag it **UPLOAD**.
+- **`Documents` below `ValidatedDocuments`** → some labelled documents carry no evidence for this field, and the payload cannot say why — never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** — the review pass ([Label Documents Guide](label-documents-guide.md)) shows which in seconds, and 2a-check's `Recall < 0.5` gate would never trigger it. Even when the review finds nothing to add, confirming that costs a glance, while an unreviewed document left unfound caps the field for good.
 
 Both tags are **final-report lines, not loop actions**: the loop runs on to its normal stopping criteria — never pause mid-run to ask for documents or to review — and the report then says plainly that a tagged field's score cannot rise further until its sample grows.
 
