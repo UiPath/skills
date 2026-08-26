@@ -1,8 +1,11 @@
 task_id: skill-flow-voice-prompt-inputs
 description: >
-  Outbound voice flow whose prompt reads flow data: the trigger's customer name
-  and amount must reach the voice agent's system prompt. Guards the four-piece
-  input contract — node `agentInputVariables[]` (delivery), agent.json
+  Outbound voice topology whose prompt reads flow data — the full outbound
+  build (create-outgoing-call -> uipath.agent.voice -> end-call, `callContext`
+  into both, an inline conversational agent whose agent.json carries
+  settings.voice) plus the input contract on top. The trigger's customer name
+  and amount must both reach the voice agent's system prompt, which needs four
+  pieces aligned: node `agentInputVariables[]` (delivery), agent.json
   `inputSchema.properties` (contract), `{{input.<key>}}` in `messages[].content`
   (resolution), and the trigger-associated globals the bindings resolve against.
   Delivery is the piece only `flow pack` reads: omit it and `flow debug`
@@ -15,6 +18,11 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-n
 run_limits:
   expected_turns: 34
   max_turns: 80
+  # This is the longest voice build (topology + the four-piece input contract),
+  # and it is the ONLY outbound coverage — a task_timeout abort loses the
+  # topology signal too, not just the inputs signal. smoke.yaml caps at 900s,
+  # which leaves ~26s/turn at the expected turn count; 1200 matches default.yaml.
+  task_timeout: 1200
   turn_timeout: 900
 
 initial_prompt: |
@@ -48,9 +56,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # --min-inputs 2 because the prompt supplies BOTH a name and an amount. The
+  # four-piece contract is satisfiable with one wired input, so without the
+  # count the second value ships ungraded.
   - type: run_command
-    description: "Prompt inputs are wired end to end: node binding -> inputSchema -> {{input.<key>}} -> declared global"
-    command: "python3 $TASK_DIR/check_voice_flow.py prompt-inputs"
+    description: "Both prompt inputs are wired end to end: node binding -> inputSchema -> {{input.<key>}} -> declared global"
+    command: "python3 $TASK_DIR/check_voice_flow.py prompt-inputs --min-inputs 2"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -65,7 +76,7 @@ success_criteria:
       '"uipath.conversational.voice.end-call"'
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -73,7 +84,7 @@ success_criteria:
     command: "python3 $TASK_DIR/check_voice_flow.py call-context"
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -87,9 +98,25 @@ success_criteria:
   # Advisory (pass_threshold: 0) — record convention adherence without docking
   # an agent that reaches the same graded outcome another way.
   - type: command_executed
+    description: "Advisory: agent scaffolded the voice agent with uip agent init --inline-in-flow --conversational"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--conversational'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
     description: "Advisory: agent rebuilt contentTokens with uip agent refresh --inline-in-flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 0

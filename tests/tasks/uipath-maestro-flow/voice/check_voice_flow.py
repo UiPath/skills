@@ -4,7 +4,10 @@
     python3 $TASK_DIR/check_voice_flow.py call-context          # outbound wiring
     python3 $TASK_DIR/check_voice_flow.py inbound-call-context  # inbound wiring
     python3 $TASK_DIR/check_voice_flow.py agent-voice           # sidecar agent.json
-    python3 $TASK_DIR/check_voice_flow.py prompt-inputs         # flow data -> prompt
+    python3 $TASK_DIR/check_voice_flow.py prompt-inputs [--min-inputs N]
+
+`--min-inputs N` asserts the prompt reads N distinct inputs — use it whenever
+the task's prompt supplies more than one value.
 
 Offline — reads the `.flow` source and the inline agent's `agent.json`. No
 tenant calls, no agent self-reports. Exit 0 on pass; exit 1 with a `FAIL:` line.
@@ -263,7 +266,7 @@ BINDING_RE = re.compile(r"^=(?:js:)?\s*\$vars\.([A-Za-z0-9_-]+)\.output\.(.+)$")
 INPUT_TOKEN_RE = re.compile(r"\{\{\s*input\.([A-Za-z0-9_]+)\s*\}\}")
 
 
-def check_prompt_inputs(flow_path: str, flow: dict) -> int:
+def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
     """Flow data reaching the voice prompt needs all four pieces aligned:
 
     Delivery   node `inputs.agentInputVariables[]` binding -> BPMN JobArguments
@@ -275,6 +278,11 @@ def check_prompt_inputs(flow_path: str, flow: dict) -> int:
     still back-fills from `inputSchema`, so the published call is the first place
     the input goes missing. A bare `$vars.…` left in prompt text is graded as a
     failure — nothing rewrites agent.json prompts, so it reaches the model raw.
+
+    `min_inputs` is how many DISTINCT inputs the prompt must read. A task that
+    asks for two values (name AND amount) passes its four-piece contract with
+    one wired input unless the count is asserted — the second value silently
+    goes ungraded.
     """
     resolved = _voice_agent_json(flow_path, flow)
     if isinstance(resolved, int):
@@ -361,6 +369,13 @@ def check_prompt_inputs(flow_path: str, flow: dict) -> int:
             f"no {{{{input.<key>}}}} token in any {agent_json} messages[].content — "
             f"the prompt never reads the delivered input"
         )
+    elif len(referenced) < min_inputs:
+        errors.append(
+            f"the prompt reads {len(referenced)} distinct input(s) "
+            f"({', '.join(sorted(referenced))}) but this flow is started with "
+            f"{min_inputs} — every value the caller supplies has to reach the "
+            f"prompt, not just the first"
+        )
     for key in sorted(referenced - set(properties)):
         errors.append(
             f"prompt references {{{{input.{key}}}}} but inputSchema.properties "
@@ -383,18 +398,39 @@ def check_prompt_inputs(flow_path: str, flow: dict) -> int:
 CHECKS = ("call-context", "inbound-call-context", "agent-voice", "prompt-inputs")
 
 
+def _usage() -> int:
+    print(
+        f"usage: check_voice_flow.py {{{'|'.join(CHECKS)}}} [--min-inputs N]",
+        file=sys.stderr,
+    )
+    return 2
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 1 or argv[0] not in CHECKS:
-        print(f"usage: check_voice_flow.py {{{'|'.join(CHECKS)}}}", file=sys.stderr)
-        return 2
+    if not argv or argv[0] not in CHECKS:
+        return _usage()
+    check, rest = argv[0], argv[1:]
+
+    # `--min-inputs N` applies to prompt-inputs only; the other checks take no
+    # arguments, so a stray flag is a task-authoring error, not a soft default.
+    min_inputs = 1
+    if rest:
+        if check != "prompt-inputs" or len(rest) != 2 or rest[0] != "--min-inputs":
+            return _usage()
+        try:
+            min_inputs = int(rest[1])
+        except ValueError:
+            return _usage()
+        if min_inputs < 1:
+            return _usage()
 
     flow_path, flow = _load_flow()
-    if argv[0] == "call-context":
+    if check == "call-context":
         return check_call_context(flow)
-    if argv[0] == "inbound-call-context":
+    if check == "inbound-call-context":
         return check_inbound_call_context(flow)
-    if argv[0] == "prompt-inputs":
-        return check_prompt_inputs(flow_path, flow)
+    if check == "prompt-inputs":
+        return check_prompt_inputs(flow_path, flow, min_inputs)
     return check_agent_voice(flow_path, flow)
 
 

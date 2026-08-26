@@ -83,7 +83,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not try to debug an inbound voice flow"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
     weight: 2.0
     pass_threshold: 1.0
 
