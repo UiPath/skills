@@ -22,7 +22,7 @@ non-repeatable, target `F1` 0.7.
 | `cccc000000000001` | 5 | 5 | 0.400 | yes | **UPLOAD** |
 | `cccc000000000002` | 2 | 6 | 0.667 | yes | **REVIEW** |
 | `cccc000000000003` | 5 | 5 | 1.000 | no | — |
-| `cccc000000000004` | 4 | 4 | 0.500 | yes | **UPLOAD** (missing-marker allowance) |
+| `cccc000000000004` | 4 | 4 | 0.500 | yes | **REVIEW** |
 
 Every below-target field is genuinely unmeasurable-by-rewrite — their
 regression thresholds (`max(0.1, 1/Annotations)`) are 0.2, 0.167 and 0.25 — so
@@ -53,9 +53,10 @@ project-level `ValidatedDocuments`:
   labelled document; the sample is as large as the data allows → **UPLOAD**.
 - `…0002` — `Documents` 2 << `ValidatedDocuments` 5 → three labelled documents
   carry no label for this field → **REVIEW**.
-- `…0004` — `Documents` 4, short by exactly one → within the missing-marker
-  allowance (a field legitimately absent from a document is recorded as
-  missing, not left unconfirmed) → **UPLOAD**, not REVIEW.
+- `…0004` — `Documents` 4, short by exactly one → still **REVIEW**: the payload
+  cannot say what that one document is — unreviewed, or reviewed and skipped —
+  and only the review can. Rounding a small shortfall up to "complete" silently
+  caps the field if the document was in fact never reviewed.
 
 **`Annotations` is the trap, not the signal.** `…0002` carries the **largest**
 `Annotations` (6) of the three flagged fields while being reviewed on the
