@@ -54,6 +54,98 @@ prepare-connector <connector-key> <action> \
 For many connectors that first command is **not enough on its own** — see the
 parent-field loop below before concluding a field does not exist.
 
+### A Generic operation is authored from the LIBRARY, not through prepare-connector
+
+Author it directly, with the **library's** action id and the object as an option:
+
+```ts
+.step('users', connector('uipath-servicenow-servicenow', 'list-all-records',
+  {}, { connection: 'sn', folder: 'shared', object: 'acr_user' }))
+```
+
+That is the generic form, and it needs no live resolution: it compiles off the
+baked library, validates, and runs. `prepare-connector` is for a **curated,
+schema-dynamic** op whose real fields the connection decides (Jira create-issue
+and friends) — a generic list usually has no connection-specific input fields at
+all, so preparing one resolves nothing and costs a round trip.
+
+Reach for it here only when a field you need is genuinely missing, and know what
+it changes. The two namespaces differ: the library calls this `list-all-records`
+and materializes it per object, while the registry serves `list-records`, so
+`registry get` finds nothing under the library id and `prepare-connector` reports
+the connector's real action list with the closest matches first. Re-running with
+the registry id succeeds — and yields a CURATED descriptor pinned to one object
+(`ListAccountRecoveryEnrolledUser`), whose node type is `…list-records`. That is
+a different node from the generic one you were asked for. Author the generic call
+above unless you specifically want that.
+
+### Finding the object id for a Generic operation
+
+`--object` takes the connection's **API** name (`acr_user`), not its display
+name. Filter the catalog server-side — a real tenant has tens of thousands of
+objects, and paging them client-side is what makes this expensive:
+
+```bash
+# By API name, when the task names it outright.
+uip is resources list <connector-key> --connection-id <id> \
+  --output-filter "[?Name=='acr_user']" --output json
+# By human label, when the task only gives you that. `lower()` is available.
+uip is resources list <connector-key> --connection-id <id> \
+  --output-filter "[?contains(lower(DisplayName),'account recovery')]" --output json
+```
+
+Each row is `{Name, DisplayName, Path, Type, SubType, Custom, ElementKey}` —
+`Name` is what `--object` wants. To see one object's parameters for a single
+operation without preparing it:
+
+```bash
+uip is resources describe <connector-key> <object> --connection-id <id> \
+  --operation List --output json
+```
+
+## Structured filters (CEQL)
+
+For an Integration Service list operation, preserve the FilterBuilder contract
+as a structured tree. A raw CEQL string such as `status='Active'` is only the
+runtime query; it does not describe the filter tree Studio Web needs.
+
+```json
+{
+  "groupOperator": 0,
+  "index": 0,
+  "filters": [
+    {
+      "id": "status",
+      "operator": "Equals",
+      "value": {
+        "value": "Active",
+        "rawString": "\"Active\"",
+        "isLiteral": true
+      }
+    }
+  ],
+  "groups": []
+}
+```
+
+`groupOperator` is numeric (`0` for And, `1` for Or). Use the field id from the
+operation schema and the product operator name, such as `Equals`; do not replace
+the tree with `{ "ceql": "..." }` or an ad-hoc description object.
+
+When the environment provides the node-configure authoring command, pass the
+tree under `filter` so the CLI can emit both the runtime CEQL query and the
+design-time saved filter tree:
+
+```bash
+uip maestro flow node configure <flow-file> <node-id> \
+  --detail '{"filter": {"groupOperator": 0, "index": 0, "filters": [{"id": "status", "operator": "Equals", "value": {"value": "Active", "rawString": "\"Active\"", "isLiteral": true}}], "groups": []}}' \
+  --output json
+```
+
+If the request is offline and asks only for a reviewable filter plan, save this
+same tree in the requested JSON artifact. Do not fabricate a connected node or
+resource binding when no tenant connection exists.
+
 ## Schema-dynamic operations: the parent-field loop
 
 A connection alone does not resolve these operations. Their real field set is a
