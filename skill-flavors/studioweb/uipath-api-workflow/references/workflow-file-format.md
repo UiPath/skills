@@ -9,7 +9,7 @@ Runtime inputs come from fields declared by the freshly inspected `RunProject` s
 <!--skill-flavor:project-structure:start-->
 ## Project Structure in Studio Web
 
-Studio Web owns the project scaffold and solution-level metadata. Create an API Workflow project through the live `proxy-tools-Solution` / `CreateProjects` schema, then treat the files exposed by the Studio Web workspace/VFS as the authoritative project tree.
+Studio Web owns the project scaffold and solution-level metadata. Create an API Workflow project through the live `CreateProjects` schema, then treat the files exposed by the Studio Web workspace/VFS as the authoritative project tree.
 
 - Inspect the live `CreateProjects` schema immediately before invocation and use exactly its declared parameters and project-type enum values.
 - Verify the returned `/solution/<projectName>` directory with `LsDirectory`.

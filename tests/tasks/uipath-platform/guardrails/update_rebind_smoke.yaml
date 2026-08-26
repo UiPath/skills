@@ -1,0 +1,101 @@
+task_id: skill-platform-guardrails-byog-update-rebind
+description: >
+  Smoke test: agent repoints an existing BYOG configuration at a different
+  Integration Service connection and switches it off in the same edit —
+  `guardrails byo-configurations update <id> --connection-id <new> --disabled`.
+  The prompt names the configuration and the target connection by name, never
+  by id, so the agent has to resolve both through `list` and
+  `is connections list`. Verifies it uses `update` rather than delete-and-
+  re-create (which would change the Id every agent pins to), does not reach for
+  `--validator-name`/`--validator-type` (locked at creation, no such flags),
+  and that the edit really landed — asserted against the shim's state file, not
+  the agent's summary. `update` re-probes because the connection binding
+  changes; the shim aborts the edit if that probe fails.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:setup, guardrail]
+
+run_limits:
+  expected_turns: 12
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: mock_template}
+
+initial_prompt: |
+  We've moved our content-safety provider to the DR instance, so our PII
+  guardrail is calling the wrong one. Point the `byog-pii-prod` guardrail
+  configuration at the `Azure AI Content Safety - DR` connection instead.
+
+  Leave it switched off once it's repointed — QA signs off tomorrow before we
+  turn it back on. Keep the guardrail's name as it is; agents already
+  reference it.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed BYOG configurations to resolve byog-pii-prod to its Id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+list(?![\w-])'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed Integration Service connections to resolve the DR connection's Id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+connections\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Graded as two independent facts, not one command shape: the CLI accepts the
+  # rebind and the disable either in one `update` or in two, and both are
+  # correct. Requiring them in a single invocation failed a CI run whose end
+  # state was right (the state-file assertion below passed) purely because the
+  # agent split it into two calls.
+  - type: command_executed
+    description: "Agent rebound the configuration to the DR connection with update (not delete+create)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+update\s+["'']?(3fa1c8d2-77e4-4b09-9c15-08de7f2201bd|\$)(?=[\s\S]*--connection-id[= ]\s*["'']?(9d5e21ab-4c07-4f3e-8b62-1a7c0e93f5d8|\$))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent left the configuration switched off via update --disabled"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+update\s+["'']?(3fa1c8d2-77e4-4b09-9c15-08de7f2201bd|\$)(?=[\s\S]*--disabled)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not delete-and-re-create instead of updating (that would change the Id agents pin to)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+(delete|create)\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not pass --validator-name/--validator-type to update — locked at creation, no such flags"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+update(?=[\s\S]*--validator-(name|type))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The edit actually landed: re-bound to the DR connection AND switched off.
+  # Read from the shim's state file so it holds whatever the agent reports.
+  - type: run_command
+    description: "Configuration now points at the DR connection and is disabled"
+    command: >-
+      python3 -c "import json, os, sys;
+      s = json.load(open('.byog-state.json')) if os.path.exists('.byog-state.json') else {};
+      u = s.get('updated', {}).get('3fa1c8d2-77e4-4b09-9c15-08de7f2201bd', {});
+      sys.exit(0 if u.get('ConnectionId') == '9d5e21ab-4c07-4f3e-8b62-1a7c0e93f5d8' and u.get('Enabled') is False else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

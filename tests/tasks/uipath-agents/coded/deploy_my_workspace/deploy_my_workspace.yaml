@@ -7,6 +7,12 @@ description: >
   the package was built — a "version already exists" publish conflict
   does not fail the task. Exercises the production packaging path the
   rest of the suite never reaches.
+  The summarizer is deliberately LLM-backed (free-form paraphrase per
+  run): deterministic no-LLM logic is a Coded Function and the skill
+  redirects it to uipath-functions, whose lifecycle has no
+  `uip codedagent deploy`. Do not reword the prompt back to a
+  deterministic echo, and keep it free of implementation hints (no
+  framework or node mechanics).
 tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
 
 run_limits:
@@ -16,14 +22,18 @@ run_limits:
   max_turns: 40
 
 initial_prompt: |
-  Build a minimal no-LLM UiPath coded agent named `deploy-smoke`
-  that echoes the input message. Input: `message` (string). Output:
-  `echoed` (string). Then deploy it to the personal workspace.
+  I want a small UiPath coded agent called `deploy-smoke`. Given a
+  short text `message`, it should reply with a one-sentence summary
+  in its own words — the wording should adapt to whatever the message
+  says, not follow a fixed template. Input: `message` (string).
+  Output: `summary` (string).
 
-  The test harness has UiPath auth pre-configured. The workspace may
-  already hold this package from an earlier run — if the deploy
-  reports the version already exists, that is expected; consider the
-  deploy step done and do not re-deploy.
+  Build it, then deploy it to my personal workspace. No local test
+  run needed — packaging and deploying are the goal. The test harness
+  has UiPath auth pre-configured. The workspace may already hold this
+  package from an earlier run — if the deploy reports the version
+  already exists, that is expected; consider the deploy step done and
+  do not re-deploy.
 
   Do NOT pause between planning and implementation. Complete
   end-to-end in a single pass.

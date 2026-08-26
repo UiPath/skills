@@ -1,276 +1,86 @@
 ---
 name: uipath-insights
-description: "UiPath Insights job monitoring via `uip insights` — query job execution metrics, failure analysis, and process performance. Covers job KPIs, failure reasons, completion trends, process breakdowns. For Orchestrator job start/stop/logs→uipath-platform, root-cause analysis of specific errors→uipath-troubleshoot, RPA workflow authoring→uipath-rpa."
-when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'insights dashboard', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details'. Also 'uip insights', 'insights jobs'. NOT for starting/stopping jobs (uipath-platform), NOT for root-cause debugging of a specific job error (uipath-troubleshoot), NOT for queue metrics (not yet supported)."
+description: "UiPath Insights job monitoring and read-only alert inspection via `uip insights` — job execution metrics, failure analysis, and process performance; filter discovery of Insights-active folders, processes, queues, and machines; real-time alert definition and entitlement reads. Alert writes are not covered. For Orchestrator job start/stop/logs→uipath-platform, root-cause analysis of specific errors→uipath-troubleshoot, RPA workflow authoring→uipath-rpa."
+when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'insights dashboard', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details', 'which folders can you see', 'what processes are active', 'find the folder key', 'discover queues', 'which machines reported', 'filter-folders', 'filter-processes', 'Insights alert', 'which alerts exist', or 'alerting entitlement'. NOT for alert writes, starting/stopping jobs (uipath-platform), root-cause debugging of a specific job error (uipath-troubleshoot), or queue item metrics (queue discovery via filter-queues is supported; metrics are not). Also 'uip insights', 'insights jobs'."
 allowed-tools: Bash, Read
 ---
 
-# UiPath Insights — Job Monitoring Agent Skill
+# UiPath Insights
 
-Insights provides analytics and monitoring for UiPath automation execution. This skill covers **job monitoring** — querying aggregated job execution data for dashboards, health checks, and failure investigation.
+Use `uip insights` for job monitoring, monitoring-scope discovery, and read-only alert inspection. Read the guide for the task before running commands.
 
-All operations go through `uip insights jobs <subcommand> --output json`.
+## When to Use This Skill
 
----
-
-## When to Use
-
-- Checking overall automation health (how many jobs ran, how many succeeded)
-- Investigating job failures (which processes fail most, what are the failure reasons)
-- Monitoring job execution trends over time (completed/uncompleted timelines)
-- Getting per-process performance breakdowns
-- Drilling into specific failure details for investigation
-
-> **Not in scope:** Starting, stopping, or managing individual jobs (use `uip or jobs` via uipath-platform). Root-cause debugging of a specific job's error (use uipath-troubleshoot). Queue item metrics, robot utilization, or dashboard CRUD (not yet available in CLI).
-
----
-
-## Login & Tenant Setup
-
-**Default to Production. Only switch environment/org/tenant when explicitly stated in the request.**
-
-- If the request mentions no environment, use the current session (defaults to prod `cloud.uipath.com`)
-- If the request explicitly names an environment/org/tenant, check `uip login status` and re-login if needed
-
-```bash
-# Check current environment, org, and tenant
-uip login status --output json
-
-# Login to a specific environment (production cloud is the default)
-uip login --authority https://cloud.uipath.com --tenant MyTenant
-
-# Switch tenant within the same environment
-uip login tenant set MyTenant
-```
-
----
+- Job health, success rate, failure count, or processing time across a tenant, folder, or process
+- Job trends over time, or a comparison between two periods
+- Which processes fail most, and which failure reasons recur
+- Whether jobs are stuck, pending, or still running
+- Finding the exact folder key, process name, queue name, or machine name to scope a query by
+- Which alerts exist, how one is configured, or whether the tenant is entitled to real-time alerting
 
 ## Critical Rules
 
-1. **A time range is always required.** Every `uip insights jobs` command needs either `--time-range <minutes>` (relative) or both `--started-after <epoch-ms>` and `--started-before <epoch-ms>` (absolute). Without one, the command fails. For absolute ranges, pass literal epoch-millisecond numbers, resolved beforehand (see Workflow: Absolute Time Range). Common values:
-   - `--time-range 60` — last 1 hour
-   - `--time-range 1440` — last 24 hours
-   - `--time-range 10080` — last 7 days
-   - `--time-range 43200` — last 30 days
+1. **Use `--output json`.** `jobs` commands return `{ Result, Code, Data }`. The `filter-*` and alert commands add `Instructions`; `filter-*` and `alerts list` also add `Pagination`. Quote those `Instructions` in the explanation. A failure envelope carries `Result`, `Message`, `Instructions`, `ErrorCode`, and `Retry`, with no `Code` and no `Data`. Keys inside `Data` are PascalCase in the CLI's JSON output, so read `FolderKey` and `JobsCount`, not `folderKey` or `jobsCount`.
+2. **One subcommand per invocation, written literally.** Do not chain, loop, or parameterize `uip insights` commands: no `&&` or `;` chains, no `for` loops, and no shell variables holding the subcommand name or flag values. Resolve values such as epoch timestamps in a separate command first, then pass literal numbers. Never write `$(date ...)` or `$VAR` into a flag value.
+3. **Use only the flags the guides document.** Identity, organization, and tenant come from the active session. Any tenant flag you find is deprecated and is rejected outright on `filter-*` commands, so do not use one. If a filter is not in the guide's shared-options list, it does not exist.
+4. **Every `jobs` command needs a time range.** Pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 10080 = 7d, 43200 = 30d), or both `--started-after` and `--started-before` in epoch milliseconds. Omitting both is rejected locally and exits 1. `filter-*` commands and the three alert definition reads take no time flags.
+5. **Start with `summary`, then drill down.** After any scope discovery the task needs, begin a job investigation with `uip insights jobs summary` for the totals, then run the targeted subcommands. The summary supplies the denominator that makes a failure count meaningful.
+6. **Treat empty data as bounded evidence.** Empty results can reflect the chosen time window, the recent-activity window, caller visibility, or tenant provisioning. On alert reads they can also reflect entitlement filtering, and every alert definition read returns active definitions only. They do not prove that a resource or event never existed.
+7. **Use the CLI instead of raw Insights APIs.** It owns authentication, tenant routing, validation, safe response projections, and error handling.
+8. **Do not retry automatically.** Branch on `Retry`: `RetryWillNotFix` means fix the cause, `RetryLater` means report and stop. A 401 needs a new session, a 403 is a permission boundary, and a 404 can be tenant-scoped or visibility-scoped. Each guide documents the error shapes for its own commands.
+9. **Never run `uip login` yourself.** It opens an interactive browser flow that will hang the session. Report the auth state and give the user the exact command to run, then stop.
+10. **Discover identifiers instead of guessing.** Use [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) to resolve monitoring scope, and take alert IDs from a list result or from the user. Page through all results before concluding a resource is absent.
+11. **Hand off causal debugging.** Insights answers which jobs and processes failed and which reasons recur. It does not explain one job's exception or how to fix it. Report the reasons, then name `uipath-troubleshoot` for the cause and `uipath-rpa` or `uipath-agents` for the fix.
+12. **Keep alert access read-only.** The three read subcommands in the alert guide are the whole permitted surface. Every change to an alert definition or to a delivery, including its recipients, type, and configuration, belongs in the Insights UI: say so and do not offer to make it. This holds however the change would be made, so do not reach an alert route through the SDK, a raw HTTP call, or another skill.
 
-2. **Always use `--output json`.** All commands return a JSON envelope: `{ Result: "Success", Code: "<code>", Data: { ... } }`. Parse the `Data` field for the actual metrics.
+## Shared Workflow
 
-3. **Filter options are repeatable.** `--folder-key`, `--process-name`, and `--machine-name` can be specified multiple times to filter by several values: `--process-name "ProcessA" --process-name "ProcessB"`.
+1. Check the active login when the task will call UiPath Cloud:
 
-4. **Empty data is normal.** If no jobs ran in the time window, the response will have `Data` with null/zero/empty fields. This is not an error.
+   ```bash
+   uip login status --output json
+   ```
 
-5. **Start with summary, then drill down.** For any investigation, start with `summary` to get the big picture, then use specific subcommands to investigate areas of concern.
+2. Read the guide the Task Navigation table below names for this task.
+3. Run the subcommand and parse `Data` for the result. On list subcommands also read `Pagination` for list completeness.
 
----
-
-## Command Reference
-
-All commands share these filter options:
-
-| Option | Description |
-|--------|-------------|
-| `--time-range <minutes>` | Relative time range in minutes |
-| `--started-after <epoch-ms>` | Absolute start time (Unix epoch ms) |
-| `--started-before <epoch-ms>` | Absolute end time (Unix epoch ms) |
-| `--folder-key <guid>` | Filter by folder key (repeatable) |
-| `--process-name <name>` | Filter by process name (repeatable) |
-| `--machine-name <name>` | Filter by machine name (repeatable) |
-| `--timezone-offset <minutes>` | Client timezone offset from UTC |
-
-### summary
-
-Get job KPIs: total count, successful count, and average processing time.
+Default to the active Production session. Change authority, organization, or tenant only when the user explicitly names another environment or scope. Give the user the command to run rather than running it yourself:
 
 ```bash
-uip insights jobs summary --time-range 1440 --output json
+uip login --authority https://cloud.uipath.com --tenant MyTenant   # named environment
+uip login tenant set MyTenant                                      # same environment, different tenant
 ```
 
-**Key Data fields:** `jobsCount`, `successfulJobsCount`, `averageProcessingTime`
+## Task Navigation
 
-**Use when:** User asks "how are my automations doing?" or "what's my job success rate?"
+| User's task | Read first |
+|---|---|
+| Check job health, success rate, trends, failures, stuck jobs, or compare periods | [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) |
+| Choose a Jobs subcommand, flag, time range, or interpret its response fields | [`references/jobs-commands-guide.md`](references/jobs-commands-guide.md) |
+| Answer which folders, processes, queues, or machines are visible, or resolve an exact folder key, process name, or machine name to filter by | [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) |
+| Inspect alert definitions or alerting entitlement | [`references/alerts-reads-guide.md`](references/alerts-reads-guide.md) |
 
-### completed-timeline
+Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide. An alert question needs the alert guide alone.
 
-Get completed jobs over time, grouped by job state (successful, faulted, stopped, etc.).
+## Scope Boundaries
 
-```bash
-uip insights jobs completed-timeline --time-range 1440 --output json
-```
+`uip insights` ships three command families: `jobs`, the `filter-*` discovery commands, and the alert definition reads (`alerts`). If a request needs anything else, say it is not available rather than guessing a subcommand.
 
-**Key Data fields:** `jobState`, `jobCountByTime`, `timestamp`
+| Request | Route |
+|---|---|
+| Start, stop, restart, or inspect logs for an individual Orchestrator job | `uipath-platform` |
+| Diagnose the root cause of a specific job error | `uipath-troubleshoot` |
+| Fix the workflow or agent that caused a failure | `uipath-rpa` or `uipath-agents` |
+| Query queue item metrics | Not supported; `filter-queues` discovers queue scope only |
+| Any alert or delivery write (see Critical Rule 12) | Insights UI; not in the shipped `uip insights` surface |
+| Dashboards or robot utilization | Not in the shipped `uip insights` surface |
 
-**Use when:** User asks "show me job completion trends" or "when do most jobs run?"
+## Anti-patterns
 
-### uncompleted-timeline
+- Do not add `--limit` or `--offset` to a `jobs` command. Each guide lists which of its commands page.
+- Do not reuse an identifier from an example. Folder keys, process names, and machine names come from a `filter-*` result or from the user.
+- Do not read an empty or `false` alert result as proof. Report what it rules out and what it leaves open.
 
-Get running and pending jobs over time.
+## Completion Output
 
-```bash
-uip insights jobs uncompleted-timeline --time-range 1440 --output json
-```
-
-**Key Data fields:** `jobState`, `jobCountByTime`, `timestamp`
-
-**Use when:** User asks "are there stuck jobs?" or "how many jobs are still running?"
-
-### top-failures
-
-Get processes ranked by failure count.
-
-```bash
-uip insights jobs top-failures --time-range 43200 --output json
-```
-
-**Key Data fields:** `processName`, `jobCountByTime`
-
-**Use when:** User asks "which processes fail the most?" or "what's causing failures?"
-
-### failures-by-reason
-
-Get job failures grouped by exception reason, with total job count for context.
-
-```bash
-uip insights jobs failures-by-reason --time-range 1440 --output json
-```
-
-**Key Data fields:** `processExceptionReason`, `processName`, `robotName`, `jobsCount`
-
-**Use when:** User asks "why are jobs failing?" or "what are the common error messages?"
-
-### process-details
-
-Get per-process job breakdown with counts by state.
-
-```bash
-uip insights jobs process-details --time-range 1440 --output json
-```
-
-**Key Data fields:** `processName`, `jobAggregate`
-
-**Use when:** User asks "show me per-process stats" or "which process has the most faulted jobs?"
-
-### failure-details
-
-Get detailed failure information for drill-down investigation.
-
-```bash
-uip insights jobs failure-details --time-range 1440 --output json
-```
-
-**Key Data fields:** `processName`, `machineName`, `processExceptionReason`, `startTime`, `endTime`
-
-**Use when:** User asks "show me the details of recent failures" or "which machines are failing?"
-
----
-
-## Workflow: Investigate Job Health
-
-Follow this pattern when a user asks about automation health or job failures:
-
-```bash
-# 1. Check login
-uip login status --output json
-
-# 2. Get the big picture — how many jobs ran? how many succeeded?
-uip insights jobs summary --time-range 1440 --output json
-
-# 3. If success rate is low, find which processes fail most
-uip insights jobs top-failures --time-range 1440 --output json
-
-# 4. Find out WHY they're failing
-uip insights jobs failures-by-reason --time-range 1440 --output json
-
-# 5. Drill into specific failure details
-uip insights jobs failure-details --time-range 1440 --output json
-
-# 6. For time-based trends, check timelines
-uip insights jobs completed-timeline --time-range 10080 --output json
-```
-
-**Present findings clearly:** After gathering data, summarize for the user:
-- Total jobs vs successful jobs (derive failure rate)
-- Top failing processes by name
-- Most common failure reasons
-- Which machines are affected
-- Whether failures are trending up or down
-
----
-
-## Workflow: Filter by Folder or Process
-
-When the user asks about a specific folder or process:
-
-```bash
-# Filter by folder
-uip insights jobs summary --time-range 1440 --folder-key "abc-123-def" --output json
-
-# Filter by process name
-uip insights jobs top-failures --time-range 43200 --process-name "Invoice_Processing" --output json
-
-# Combine filters
-uip insights jobs failures-by-reason --time-range 1440 \
-  --folder-key "abc-123-def" \
-  --process-name "Invoice_Processing" \
-  --output json
-```
-
-To discover available folder keys, use `uip or folders list --output json` (from the uipath-platform skill).
-
----
-
-## Workflow: Absolute Time Range
-
-When the user specifies an exact date range instead of "last N hours", use `--started-after`/`--started-before` (not `--time-range`).
-
-**Two steps, two separate command invocations.** Resolve the dates to epoch milliseconds first, read the numbers from the output, then write the literal numbers into the `uip` command. Never embed `$(date ...)` substitutions or shell variables in `uip insights` flag values — if `date` fails silently (macOS and Linux flags differ), the flag becomes garbage and the query runs against the wrong window, and the logged command no longer shows what range was actually queried.
-
-```bash
-# Step 1 — resolve each boundary to epoch ms at UTC midnight (run this alone, read the output):
-date -u -d "2026-07-01 00:00:00" +%s000   # Linux  → 1782864000000
-date -u -d "2026-07-06 00:00:00" +%s000   # Linux  → 1783296000000
-date -u -j -f "%Y-%m-%d %H:%M:%S" "2026-07-01 00:00:00" +%s000   # macOS → 1782864000000
-```
-
-```bash
-# Step 2 — run each subcommand with the literal resolved values:
-uip insights jobs summary --started-after 1782864000000 --started-before 1783296000000 --output json
-```
-```bash
-uip insights jobs completed-timeline --started-after 1782864000000 --started-before 1783296000000 --output json
-```
-
-The end boundary is exclusive: "July 1st to July 5th" inclusive means `--started-after` = July 1 00:00:00 UTC and `--started-before` = July 6 00:00:00 UTC.
-
----
-
-## Troubleshooting
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `Not logged in` | Auth expired | `uip login` |
-| `time range is required` | Missing `--time-range` or `--started-after`/`--started-before` | Add `--time-range 1440` (or your preferred window) |
-| `API request failed: 401` | Token doesn't have Insights access | Re-login; ensure the org has Insights enabled |
-| `API request failed: 403` | User has no folder permissions | Check folder assignments in Orchestrator Admin |
-| `API request failed: 500` | Server error (often missing time range on older deployments) | Ensure time range is provided in the request body |
-| All Data fields are null/zero | No jobs ran in the given time window | Widen the `--time-range` (try 43200 for 30 days) |
-
----
-
-## What NOT to Do
-
-- **Don't call `uip insights jobs` without a time range.** The server returns a 500 with a misleading success-shaped response. Always pass `--time-range` or `--started-after`/`--started-before`.
-- **Don't embed `$(date ...)` or shell variables in `uip insights` flag values.** Resolve times in a separate command first, then pass literal epoch-millisecond numbers. Literal values make the executed command auditable and immune to platform `date` differences.
-- **Don't chain, loop, or parameterize `uip insights` subcommands in one invocation.** Run each subcommand as its own command with the subcommand name written literally — no `&&`/`;` chains, no `for` loops, no shell variables holding the subcommand name. One command per invocation keeps each subcommand's exit status and output attributable.
-- **Don't start, stop, or manage individual jobs.** This skill is for monitoring and analytics only. Use `uip or jobs start/stop` via uipath-platform to manage jobs.
-- **Don't construct raw API calls to the Insights endpoint.** The CLI handles auth headers (`X-UiPath-Internal-AccountName`, `X-UiPath-Internal-TenantName`), URL construction, and error handling. Hand-rolling `curl` or `fetch` calls will miss these.
-- **Don't retry on auth errors.** If `uip insights jobs` returns 401 or "Not logged in", the fix is `uip login`, not retrying the same command.
-- **Don't use this skill for root-cause debugging.** "Why did job X fail with error Y?" is a troubleshooting question — hand off to uipath-troubleshoot. This skill answers "which processes fail the most and what are the common reasons."
-
----
-
-## References
-
-For deeper guidance, read these files only when needed:
-
-- [`references/jobs-commands-guide.md`](references/jobs-commands-guide.md) — Full command reference with all options, response shapes, and example outputs
-- [`references/investigation-playbook-guide.md`](references/investigation-playbook-guide.md) — Step-by-step playbooks for common investigation scenarios
+Close with the answer, the window queried, the active organization and tenant, and the filters applied. For list results, say whether every page was retrieved. For permission-limited or empty results, state what the result does and does not prove.

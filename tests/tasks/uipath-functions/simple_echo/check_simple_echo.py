@@ -6,12 +6,14 @@ Verifies the artifacts a Simple Function scaffold MUST produce:
   1. `echo-agent/pyproject.toml` exists, has `[project]` with `authors`,
      and contains NO `[build-system]` section (Critical Rule C1).
   2. `echo-agent/main.py` defines `Input` and `Output` Pydantic models
-     and an `async def main(input: Input) -> Output` entrypoint.
+     and the entry function that `uipath.json` registers. The function
+     NAME is arbitrary (SKILL.md), so it is read from `uipath.json`
+     rather than assumed to be `main`.
   3. `echo-agent/main.py` does NOT instantiate any UiPath* class at
      module level (Critical Rule C4 — lazy LLM init).
-  4. `echo-agent/uipath.json` has `functions.main == "main.py:main"`
-     (the simple-function entrypoint registration documented in
-     references/coded/lifecycle/setup.md).
+  4. `echo-agent/uipath.json` registers a `main` KEY (required — the
+     success criteria run `uip function run main`) pointing at
+     `main.py:<any_function_name>`.
   5. `echo-agent/entry-points.json` has one entrypoint whose
      `filePath` is `main` (or `main.py`) and whose input/output
      JSON schemas mention the `message`/`repeat`/`echoed`/`length`
@@ -26,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -70,29 +73,61 @@ def check_pyproject() -> None:
     print("OK: pyproject.toml has [project], `authors`, and no [build-system]")
 
 
-def check_main_py() -> None:
+def check_uipath_json() -> str:
+    """Validate the entrypoint registration; return the entry function name.
+
+    The `main` KEY is required — the task's success criteria run
+    `uip function run main`, which resolves that key. The function name
+    behind it is arbitrary (SKILL.md: "Both the key and the function name
+    are arbitrary"), so any identifier is accepted.
+    """
+    doc = _load_json(ROOT / "uipath.json")
+    functions = doc.get("functions") or {}
+    if not functions:
+        sys.exit(
+            "FAIL: uipath.json has no `functions` map — the entrypoint is not "
+            "registered, so the project is not a Coded Function"
+        )
+    main_entry = functions.get("main")
+    if main_entry is None:
+        sys.exit(
+            f'FAIL: uipath.json `functions` has no "main" key — '
+            f'`uip function run main` cannot resolve an entrypoint. '
+            f'Got keys: {sorted(functions)}'
+        )
+    module, _, func = str(main_entry).partition(":")
+    if not func:
+        sys.exit(
+            f'FAIL: uipath.json functions.main should be "<file>:<function_name>", '
+            f'got {main_entry!r}'
+        )
+    if Path(module).name not in ("main.py", "main"):
+        sys.exit(
+            f'FAIL: uipath.json functions.main should point at main.py, '
+            f'got {main_entry!r}'
+        )
+    print(f'OK: uipath.json registers functions.main -> {main_entry!r}')
+    return func
+
+
+def check_main_py(entry_func: str) -> None:
     main = ROOT / "main.py"
     text = _read_text(main)
-    for needle in ("class Input", "class Output", "def main"):
+    for needle in ("class Input", "class Output"):
         if needle not in text:
             sys.exit(f"FAIL: main.py is missing `{needle}`")
-    print("OK: main.py defines Input, Output, and main()")
+    # The entry function's NAME is arbitrary — take it from uipath.json and
+    # assert main.py actually defines it (sync or async).
+    if not re.search(rf"^\s*(async\s+)?def\s+{re.escape(entry_func)}\s*\(", text, re.M):
+        sys.exit(
+            f"FAIL: main.py does not define `def {entry_func}` — uipath.json "
+            f"registers it as the entrypoint but the function is missing"
+        )
+    print(f"OK: main.py defines Input, Output, and {entry_func}()")
     violations = find_module_level_llm_clients(main)
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print("OK: main.py has no module-level UiPath* construction")
-
-
-def check_uipath_json() -> None:
-    doc = _load_json(ROOT / "uipath.json")
-    functions = doc.get("functions") or {}
-    main_entry = functions.get("main")
-    if main_entry not in ("main.py:main", "./main.py:main"):
-        sys.exit(
-            f'FAIL: uipath.json functions.main should be "main.py:main", '
-            f'got {main_entry!r}'
-        )
-    print(f'OK: uipath.json registers functions.main -> {main_entry!r}')
 
 
 def check_entry_points() -> None:
@@ -142,8 +177,8 @@ def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
     check_pyproject()
-    check_main_py()
-    check_uipath_json()
+    entry_func = check_uipath_json()
+    check_main_py(entry_func)
     check_entry_points()
     check_bindings()
     if not (ROOT / "run_marker.txt").is_file():

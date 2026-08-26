@@ -7,7 +7,8 @@ Usage:
 Read-only. Exit 0 = grammar-clean. Exit 1 = numbered findings on stderr;
 repair the plan with Write/Edit and re-run until clean. Enforces the compact
 `tasks/tasks.md` contract (planning.md § Compact no-build T-entry shape): `## T{N}: task "{Task Name}"` headings, one
-`field: value` per line, lanes on sequential runs, no registry-derived keys.
+`field: value` per line, legal `activation-mode` / `entry-rule` pairs, lanes on
+sequential runs, no registry-derived keys.
 `--sdd` additionally checks every `sla-status-change(...)` reference in the
 SDD for the 2-arg (breach) / 3-arg (at-risk) quoted shape.
 """
@@ -33,10 +34,33 @@ TASK_HEADING = re.compile(
 ANY_T_HEADING = re.compile(r"^## T\d+\s*[:.]", re.M)
 FORBIDDEN_KEYS = ["taskTypeId", "activityTypeId", "connectionId", "registry-resolved", "recipients-resolved"]
 
+# planning.md § Activation-mode audit — the six user-visible task modes plus
+# `parallel-after-predecessor`.
+ACTIVATION_MODES = {
+    "sequential", "parallel", "parallel-after-predecessor",
+    "event-triggered", "adhoc", "fan-in", "conditional-gate",
+}
+# plugins/conditions/task-entry-conditions/planning.md § activation-mode /
+# rule-type table, keyed by rule. Rules outside this map are explicitly
+# authored event/condition rules and pair with any mode that permits them.
+ENTRY_RULE_MODES = {
+    "runs-sequentially": {"sequential", "parallel-after-predecessor"},
+    "current-stage-entered": {"parallel"},
+    "adhoc": {"adhoc"},
+    "selected-tasks-completed": {"fan-in", "conditional-gate"},
+    "wait-for-connector": {"event-triggered"},
+}
+
 
 def field_value(section: str, field: str) -> str | None:
     match = re.search(rf"(?im)^\s*[-*]?\s*{re.escape(field)}\s*:\s*(.+)$", section)
     return match.group(1).strip() if match else None
+
+
+def rule_token(value: str | None) -> str | None:
+    """Leading canonical identifier, dropping any `("selector")` and trailing prose."""
+    match = re.match(r"[a-z][a-z0-9-]*", (value or "").strip().strip('`"\' ').casefold())
+    return match.group(0) if match else None
 
 
 def audit(path: Path) -> list[str]:
@@ -83,6 +107,21 @@ def audit(path: Path) -> list[str]:
                 findings.append(f"{label}: missing `{field}:` line{hint}")
 
         activation = (field_value(section, "activation-mode") or "").casefold()
+        mode = rule_token(activation)
+        rule = rule_token(field_value(section, "entry-rule"))
+        if mode is not None and mode not in ACTIVATION_MODES:
+            findings.append(
+                f"{label}: `activation-mode: {mode}` is not a task mode; use one of "
+                f"{', '.join(sorted(ACTIVATION_MODES))}"
+            )
+        elif mode is not None and rule in ENTRY_RULE_MODES:
+            allowed = ENTRY_RULE_MODES[rule]
+            if mode not in allowed:
+                findings.append(
+                    f"{label}: `activation-mode: {mode}` cannot carry `entry-rule: {rule}` — "
+                    f"that rule pairs with {' or '.join(sorted(allowed))} "
+                    f"(list position never normalizes an authored rule into another mode)"
+                )
         lane = field_value(section, "lane")
         if "sequential" in activation and (lane is None or not re.match(r"^\d+$", lane)):
             findings.append(f"{label}: sequential task needs an integer `lane:` line")

@@ -8,7 +8,10 @@ description: >
   the suite runs `solution init` in 54 tasks but never packs, publishes or
   deploys, and `uipath-solution` carries no agent-flavoured deploy coverage
   either, so this path had no test owner anywhere in the repo. Also pins the
-  post-2026-08-06 package naming (`<NAME>_<VERSION>.zip`, underscore not dot).
+  post-2026-08-06 package naming (`<NAME>_<VERSION>.zip`, underscore not dot) —
+  graded tenant-side: a stale dotted path makes publish fail, so no package
+  record ever appears (the local .zip may be staged outside the workspace,
+  e.g. /tmp, where artifact collection never sees it).
   The two-stage branch (deploy inactive, activate separately) is reached through
   the owner's change process, not through test-shaped instructions: the prompt
   states the release rule, the skill has to know that `--skip-activate` is what
@@ -126,7 +129,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Promotion outcome: archive uses the canonical <NAME>_<VERSION>.zip naming, the shipped agent was promoted unchanged, and the deployment reached the tenant and was torn down again"
+    description: "Promotion outcome: the packed archive was published to the tenant as the seeded <NAME>/<VERSION> package, the shipped agent was promoted unchanged, and the deployment reached the tenant and was torn down again"
     command: "python3 $TASK_DIR/check_deploy_activate.py"
     timeout: 180
     expected_exit_code: 0

@@ -1,0 +1,31 @@
+task_id: skill-admin-authz-permissions-tenant-scope-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — retrieve the permission
+  catalog limited to TENANT scope. Graded on the slice the service returned: every
+  row carries the TENANT ScopeType (or the scope-agnostic ANY rows the service
+  includes in every filter), so the scope filter is verified by its effect on the
+  data rather than by the flag the agent typed.
+
+  Read-only, no tenant state is touched, and the check is agent-agnostic — it
+  reads the saved file and the service, never the transcript.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, permissions]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  I am authoring a role that will apply at tenant level. Retrieve the
+  permissions that can be granted at tenant scope in my UiPath organization —
+  tenant-level permissions only, not organization- or project-level ones — and
+  save the complete JSON result to ./tenant-permissions.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "tenant-permissions.json holds a real permission catalog limited to TENANT scope"
+    command: 'AUTHZ_PERM_FILE="tenant-permissions.json" AUTHZ_EXPECT_SCOPE="TENANT" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_permission_listing.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

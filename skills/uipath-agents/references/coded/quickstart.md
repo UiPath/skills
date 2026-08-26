@@ -59,6 +59,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add <framework-package>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
 | **Build** | [lifecycle/build.md](lifecycle/build.md) | Code agent logic with framework patterns |
 | **Bindings** | [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md) | Sync resource overrides in `bindings.json` |
+| **Env vars** | [lifecycle/environment-variables.md](lifecycle/environment-variables.md) | Which store the cloud runtime reads (not `.env`); `%ASSETS/<ASSET_NAME>%` to pull a value from an Orchestrator asset |
 | **Run** | [lifecycle/running-agents.md](lifecycle/running-agents.md) | `uip codedagent run` |
 | **Evaluate** | [lifecycle/evaluate.md](lifecycle/evaluate.md) | `uip codedagent eval` |
 | **Deploy** | [lifecycle/deployment.md](lifecycle/deployment.md) | `uip codedagent deploy`, `uip codedagent invoke` |
@@ -198,7 +199,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution projects import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution projects import "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
@@ -229,10 +230,13 @@ Read the relevant reference file at each step — do not guess.
 
 ## Quick Start: Scenario 2 — In-Solution Coded Agent in a Flow
 
+<!--skill-flavor:scenario-two-ownership:start-->
 Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent, no separate skill hand-off. **`uipath-agents` owns this scenario end-to-end** — solution scaffolding, flow scaffolding, agent build, registration, and flow wiring all happen here. Do not invoke `uipath-maestro-flow` as a separate skill; run the maestro-flow CLI commands directly from this workflow.
+<!--skill-flavor:scenario-two-ownership:end-->
 
 Execute the following in order, end-to-end, in one pass — do not pause for confirmation between steps.
 
+<!--skill-flavor:flow-project-creation:start-->
 1. **Scaffold the solution.** From the working directory:
 
    ```bash
@@ -249,25 +253,33 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    ```
 
    This auto-registers the flow as a project in the solution.
+<!--skill-flavor:flow-project-creation:end-->
 
-3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`):
+<!--skill-flavor:agent-scaffold-solution-root:start-->
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`) — `uip codedagent new` scaffolds into the **current directory**, it does NOT create a subfolder, so create the agent folder first and run everything inside it:
+<!--skill-flavor:agent-scaffold-solution-root:end-->
 
    ```bash
+   mkdir "<AgentName>"
+   cd "<AgentName>"
    uv venv --python 3.13
    source .venv/bin/activate        # .venv\Scripts\activate on Windows
-   uv add <framework-package>       # e.g. uipath-langchain for LangGraph
-   uv add uipath-dev --dev
-   uv sync
+   uv pip install <framework-package>   # e.g. uipath-langchain for LangGraph
    uip codedagent setup --force
    uip codedagent new "<AgentName>"
+   uv add uipath-dev --dev
+   uv sync
    ```
 
-   Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
+   `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root.
 
-4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings:
+<!--skill-flavor:agent-scaffold-result-paths:start-->
+   Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
+<!--skill-flavor:agent-scaffold-result-paths:end-->
+
+4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings (still inside `<AgentName>/`):
 
    ```bash
-   cd "<AgentName>"
    uip codedagent init
    ```
 
@@ -276,8 +288,10 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 5. **Register the agent in the solution.** This step mints the `resource.key` UUID the flow node will reference:
 
    ```bash
+<!--skill-flavor:agent-solution-registration:start-->
    cd ..
    uip solution projects add "<AgentName>" "<SolutionName>.uipx" --output json
+<!--skill-flavor:agent-solution-registration:end-->
    ```
 
    After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.

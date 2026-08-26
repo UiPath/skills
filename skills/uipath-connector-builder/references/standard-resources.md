@@ -49,13 +49,32 @@ activity's fields also need field-level `requestCurated`/`responseCurated` visib
 see **fields** below.
 
 ### by-id methods (GETBYID / PATCH / PUT / DELETE)
-`activity create` auto-adds the `/{primaryKey}` path param for by-id methods, so a
-GETBYID method's path becomes `/<object>/{id}` without extra flags. The suffix is added
-ALWAYS for `GETBYID`, and for `PATCH`/`PUT`/`DELETE` only when the activity is CRUD (it also
-defines `GET`/`GETBYID`); a write-only activity keeps its base path. A per-method
+`activity create` auto-adds an `/{id}` path param for by-id methods, so a GETBYID method's
+path becomes `/<object>/{id}` without extra flags. The suffix is added ALWAYS for `GETBYID`,
+and for `PATCH`/`PUT`/`DELETE` only when the activity is CRUD (it also defines
+`GET`/`GETBYID`); a write-only activity keeps its base path. A per-method
 `--method-vendor-path GETBYID=/foo` override that lacks `{id}` STILL works — the id param
 is derived from the canonical resource path. Only model GETBYID for TRUE by-id endpoints,
 not a search/list-by-filter endpoint.
+
+**The path token and the primary key are different things — never derive one from the
+other.** The token in `/meetings/{meetingId}` is substituted before the request leaves the
+platform: the vendor only ever sees `/meetings/1234`, so the token's NAME is arbitrary and
+says nothing about the response. `metadata.primaryKey` names a **response field**, which is
+resolved by name against the vendor's raw JSON (see "fields" below). If you pass
+`--vendor-path /latest/{base_currency}` the CLI keeps `{base_currency}` as the path token
+and defaults the primary key to `id` — it will NOT adopt `base_currency` as the key, and it
+warns so you set the real one. Declare the key the vendor actually returns:
+
+```bash
+# vendor returns {"base_code":"USD", …} but the URL slot is {base_currency}
+uip is connectors builder activity create --name rates \
+  --vendor-path '/latest/{base_currency}' --methods GETBYID --primary-key base_code
+```
+
+Catalogue connectors do exactly this — HubSpot Marketing `get_contact_list` has
+`metadata.primaryKey: ["listId"]` (a real response key) while its GETBYID path is
+`/lists/{list_id}`, with `list_id` existing only as an input parameter.
 
 ### nested / parent-id vendor paths (mid-path `{token}`)
 A path variable is bound on TWO sides: element-side `{name}` in the internal `path`, vendor-side
@@ -84,8 +103,20 @@ internal path, and a `{token}` in the vendorPath with no param sending it (unbou
 [events.md](events.md) §"SR-level event metadata".
 
 ## fields — definitions (top-level object)
-Each key = field name and MUST equal `field.name`. Add/update with `activity field
-create --resource <name> --name <field> [--type <t>]`. Re-running MERGES: top-level keys
+Each key = field name and MUST equal `field.name`.
+
+**`field.name` must be the key the vendor actually returns.** There is no field-level
+response mapping — no `vendorPath`, `vendorName`, or transformation exists on an SR field,
+and element-service does not project the response through the field list at all (it returns
+the vendor body, minus an optional `rootKey` unwrap). The activity runtime resolves each
+declared field by looking `field.name` up as a **dot-path into the raw vendor JSON**
+(`owner_id.name`, `email[*].value` — nesting and arrays are expressed in the name itself,
+as shipped connectors like Pipedrive do). Matching is exact and case-sensitive. A field
+whose name the vendor never sends binds to an **empty activity output with no error
+anywhere** — so a guessed name is indistinguishable from a working one until run time.
+Author fields from the vendor's documented response, not from the URL or your own naming.
+
+Add/update with `activity field create --resource <name> --name <field> [--type <t>]`. Re-running MERGES: top-level keys
 you pass win, unspecified keys are kept, and per-method visibility is deep-merged.
 `--type` is required only for a NEW field, optional on a merge.
 

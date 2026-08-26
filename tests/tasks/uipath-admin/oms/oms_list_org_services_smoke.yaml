@@ -1,0 +1,43 @@
+task_id: skill-admin-oms-list-org-services-smoke
+description: >
+  Smoke test (outcome-graded): agent lists the organization-level services
+  provisioned for the organization. Graded on the service instances read back
+  from the platform (service type, status and the instance URL the platform
+  assigned), not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  List the organization-level services currently provisioned in my UiPath
+  organization and save the complete JSON result to ./org-services.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "org-services.json holds real provisioned service instances (ServiceType + Status + platform URL)"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('org-services.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rows = [x for x in dicts(d) if x.get('ServiceType') or x.get('serviceType')]
+      assert rows, 'no service instances in the saved output'
+      assert any(x.get('Status') or x.get('status') for x in rows), 'no service instance carries a Status'
+      assert any((x.get('Url') or x.get('url') or x.get('Uri') or x.get('uri') or '').startswith('http') for x in rows), 'no service instance carries a platform URL — not a real provisioning read'
+      types = sorted({str(x.get('ServiceType') or x.get('serviceType')) for x in rows})
+      print(f'OK: {len(rows)} organization services retrieved, e.g. {types[:4]}')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -283,10 +283,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
-
 run_limits:
   expected_turns: 73
   task_timeout: 900

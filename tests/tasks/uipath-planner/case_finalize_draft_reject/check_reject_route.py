@@ -4,7 +4,7 @@
 The staged draft authors the Application Rejected lane as `user-selected-stage`
 while its Requirements say rejection follows automatically from the Reviewer
 Decision. `user-selected-stage` is the picker rule, not a deterministic route
-(case-authoring-rules-guide § Logical integrity 5, § Finalization 12a), so
+(references/case-design-layers-guide.md § Layer closure — blocking checks 2/3 (lane entry + producer)), so
 finalization must re-key the lane on the decision fact and add the origin's
 gated diverting exit plus a mutually-exclusive completion gate.
 
@@ -83,7 +83,7 @@ def main() -> None:
             fail(
                 f"{LANE!r} is entered by user-selected-stage, but rejection is deterministic from "
                 "the Reviewer Decision — a picker rule cannot carry a decision route "
-                "(case-authoring-rules-guide § Logical integrity 5)"
+                "(references/case-design-layers-guide.md § Layer closure — blocking check 2)"
             )
 
         keyed = [

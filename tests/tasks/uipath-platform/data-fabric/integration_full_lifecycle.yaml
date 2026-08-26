@@ -98,9 +98,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified the update with records get"
+    description: "Agent verified the update with records get or query"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+get'
+    command_pattern: 'uip\s+df\s+records\s+(get|query)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -114,9 +114,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used the `fieldName` key when defining a field (entity create or update addFields)"
+    description: "Agent used the `name` key when defining a field (entity create or update addFields)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*fieldName'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*\\?\"name\\?\"'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

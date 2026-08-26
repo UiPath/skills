@@ -5,7 +5,6 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 ## Prerequisites
 
 - Authenticated session
-- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table on a pre-rename CLI.
 - A Test Manager project key
 - A Test Manager test set key
 
@@ -28,7 +27,7 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 
 4. **Include common metrics in all reports**
    - Status of each test execution
-   - Count of test case logs per execution with result: `none`, `passed`, `failed`, `restricted`
+   - Count of test case logs per execution with result: `none`, `passed`, `failed`, `restricted` — derive these counts by tallying the test case logs already fetched in step 1
    - List of frequently failing test cases
 
 5. **Add persona-specific content**
@@ -47,6 +46,20 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
   
 6. **Validate the report before saving**
    - Check that all required sections for the persona (steps 4–5, 7) are present. Add any missing sections before writing the file.
+
+   Every section below is a real markdown heading (`##` or `###`), not a
+   sentence folded into prose. Reports without them are incomplete:
+
+   | Persona | Required headings |
+   |---|---|
+   | All personas | `## Summary` · `## Test Set` (name and key) · `## Results Breakdown` (counts for passed / failed / none / restricted) · `## Frequently Failing Test Cases` (step 4 requires this metric in every report) |
+   | QA Engineer | plus `## Regressions` |
+   | Developer | plus `## Failed Assertions` (assertion message per failing test case log) |
+   | Release Manager | plus `## Go / No-Go` (success rate, blocker count, risk assessment) |
+
+   Add a persona-appropriate extra section when the data warrants it, but
+   never drop a required one; write "None" under a heading that has no
+   content rather than omitting the heading.
 
 7. **Ask if further details are needed**
    - Follow [Analyse More](#analyse-more).
@@ -94,3 +107,4 @@ Stop when: the user is satisfied, the response has no more data, or 3 retries ha
 
 - **Do NOT generate a report without asking for the persona** — a release manager receiving raw test logs is noise; a tester receiving only a pass/fail count is missing the detail they need.
 - **Do NOT fabricate test results** — only report data returned by the API. If executions are empty, tell the user there are no results for the selected filters.
+- **Do NOT build `--output-filter` aggregate expressions to compute counts** — a malformed filter aborts the command, and under Critical Rule 10 that stops the whole report for totals you can tally from the test case logs already fetched.

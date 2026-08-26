@@ -50,13 +50,67 @@ Continue beyond the deterministic report only when the user's initial request ex
 review or names additional non-guardrail checks. Preserve the deterministic fields verbatim if a later request
 extends the report.
 
-If the CLI does not emit `Data.Issues[]`, do not invent a substitute `CODED_GUARDRAIL_*` rule ID. Report a
-source-observed problem as rule-ID-less prose and list the deterministic CLI rule as skipped.
+If the CLI does not emit `Data.Issues[]`, do not invent a substitute **deterministic** rule ID
+(`CODED_GUARDRAIL_WRONG_IMPORT` / `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` / `CODED_GUARDRAIL_INVALID_CONTRACT` are
+CLI-only) and list the deterministic CLI rule as skipped. The judgment rule IDs — `CODED_GUARDRAIL_ACTION_INEFFECTIVE`,
+`CODED_GUARDRAIL_MISAPPLIED`, `CODED_GUARDRAIL_RECOMMENDED` — come from `agents-coded-rules.md` and stay valid via the
+judgment paths below. A source-observed problem covered by neither source is reported as rule-ID-less prose.
 
 Like the recommend capability, this is **live-catalog driven** — the catalog's authored fields (`when_to_use`,
 `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every
-decision. The coded vocabulary (Python class names, scopes, entity enums) comes from the SDK docs. Do not hardcode
-which guardrail fits which agent, or which Python class implements which validator.
+decision. When a finding names Python classes/enums, that vocabulary comes from the SDK docs (Step 0), never memory.
+Do not hardcode which guardrail fits which agent, or which Python class implements which validator.
+
+## Conclusive audit fast path — completed report checkpoint
+
+When an existing, CLI-clean guardrail conclusively contradicts a catalog clause — its action is in the scope's
+invalid set (→ `CODED_GUARDRAIL_ACTION_INEFFECTIVE`) or the agent's own context matches a disqualifying
+`when_not_to_use` / `NOT_recommended_for` condition (→ `CODED_GUARDRAIL_MISAPPLIED`, Relevance) — use this bounded
+sequence **before** general manual review:
+
+1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`;
+2. read the entry `.py` per [Read the agent first](#read-the-agent-first) — the wired guardrail's class, scope,
+   stage, action, and target are all visible in that source; no SDK-doc mapping is needed;
+3. fetch the catalog and tenant validator list once, as specified in Step 0;
+4. compare the wired guardrail and the agent's context (system prompt, schemas, tool docstrings) against the
+   catalog entry's `when_not_to_use` / `NOT_recommended_for` and `examples[].config`; and
+5. on a direct match, establish the finding and immediately save the requested report.
+
+The saved report is a completed checkpoint, not working notes: retained CLI findings, grade derivation, and the
+finding with the guardrail's source location and identifiers, matched catalog clause, configured scope/action, and
+catalog-supported fix. Then **end the current review turn** unless the user's initial request explicitly asks for
+an exhaustive review or names additional non-guardrail checks. Do not delay the checkpoint to fetch SDK
+documentation sites, read installed package sources (`site-packages/…`), probe framework APIs (`inspect.getsource`
+/ signature checks), import or execute the project or scratch agents, re-run the review CLI or catalog, or do
+general architecture analysis — none of that adds admissible evidence to a catalog-clause verdict.
+
+This fast path requires a direct source-to-catalog contradiction, not a plausible concern. Canonical example: a
+synthetic-data generator whose system prompt states it never receives real customer data carries a `pii_detection`
+guardrail on its LLM factory — the catalog's `when_not_to_use` disqualifies PII detection where generated PII is
+the intended product. If the clause does not directly match, continue normal Audit Mode.
+
+## Missing-guardrail fast path — completed deliverable
+
+When the entry source clearly matches a catalog use case and no matching guardrail is wired (no middleware, no
+`@guardrail`), use this bounded sequence:
+
+1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`;
+2. read the entry `.py` per [Read the agent first](#read-the-agent-first);
+3. fetch the catalog and tenant validator list once, as specified in Step 0;
+4. establish `CODED_GUARDRAIL_RECOMMENDED` per Recommend Mode steps 2–5, phrasing scope and action in catalog
+   vocabulary (Agent / Llm / Tool · PRE / POST · block / escalate / log). SDK docs are NOT required — fetch them
+   only if the report names concrete Python classes not already visible in the source; and
+5. immediately save the requested report with the rule ID exactly `CODED_GUARDRAIL_RECOMMENDED`, the exact
+   source-evidence clause (schema property names, prompt line, tool docstring), and the recommended scope/action,
+   then return it.
+
+The saved report is the completed deliverable for this guardrail path. After saving it, **end the current review
+turn**. Same detour denylist as the conclusive audit fast path. Continue beyond it only when the user's initial
+request explicitly asks for an exhaustive review or names additional non-guardrail checks.
+
+If the catalog fetch itself fails, `CODED_GUARDRAIL_RECOMMENDED` stays the correct, valid rule ID (a
+judgment-catalog ID from `agents-coded-rules.md`, not a CLI ID) — use generic scope/action wording and note
+"catalog-limited" in the message.
 
 ---
 
@@ -96,16 +150,26 @@ Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status
 
 > **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). If the code wires a BYO validator construct, match it against the `IsByo: true` entry (by its `ByoValidatorName` — tenant-unique; the code passes no connection id), not the built-in one, before reading `Parameters`/scopes. See [uipath-agents coded guardrails.md § BYO (bring-your-own) validators](/uipath:uipath-agents).
 
-### SDK Docs (required when Step 0 needs Python class names)
+### SDK Docs (only when a finding must name Python classes)
 
-Coded agents reference guardrails by **Python class name** (`UiPathPIIDetectionMiddleware`, `PIIValidator`), not by
-`validator_id`. Fetch the SDK doc pages via `WebFetch` to map the two:
+Fetch SDK docs **only when** a finding's message must map `validator_id` ↔ Python class and the class is not
+already visible in the agent source. The catalog and validator list speak `validator_id` only and carry no Python
+class names — the SDK docs are the sole translation table between the two vocabularies, not a second verdict
+authority. A source-visible class name may be cited as the **observed wiring** (its structural validity — real
+class, correct module, valid contract — is the deterministic CLI's job: `CODED_GUARDRAIL_WRONG_IMPORT` /
+`CODED_GUARDRAIL_INVALID_CONTRACT`); any class the report **prescribes** comes from the SDK docs, never memory.
+Relevance verdicts and generically-phrased recommendations need no mapping — skip this subsection for them. When
+the mapping IS needed, fetch via `WebFetch`:
 
-- `https://uipath.github.io/uipath-python/core/guardrails/` — always (validators, entity enums, `GuardrailScope` /
-  `GuardrailExecutionStage`, action classes).
+- `https://uipath.github.io/uipath-python/core/guardrails/` — validators, entity enums, `GuardrailScope` /
+  `GuardrailExecutionStage`, action classes.
 - `https://uipath.github.io/uipath-python/langchain/guardrails/` — when the agent is LangChain/LangGraph
   (`uipath-langchain` in `pyproject.toml` or `from langchain…` / `from langgraph…` imports): middleware classes,
   their supported scopes/stages, and the `uipath_langchain.guardrails` import paths.
+
+The `Platform Availability` notes on these pages are product-wide, so never turn one into a review finding:
+tenant availability comes from `uip agent guardrails list`, and the fetched pages supply class, scope, and
+import names only.
 
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages,
 import_path } }` lookup by joining catalog entries with the SDK class names. Use the fetched content as the sole
@@ -242,10 +306,10 @@ recommended action with the protection-vs-audit signal. Examples:
 
 ## Report
 
-Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), canonical line format:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
 
 ```
-[<prefix><n>] `<rule_id>` — <file> — <message>. Fix: <suggested_fix>.
+| <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |
 ```
 
 - Recommendations (`CODED_GUARDRAIL_RECOMMENDED`) → **`I-D-` (Info)** — improvements, not failures. The action
@@ -267,8 +331,9 @@ Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), 
    double-flag a `CODED_GUARDRAIL_WRONG_IMPORT` / `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` /
    `CODED_GUARDRAIL_INVALID_CONTRACT` deterministic finding.
 3. **Catalog-driven, not hardcoded** — every audit verdict and recommendation cites a catalog field
-   (`when_not_to_use`, `when_to_use` / `use_cases`, `examples[].config.action_type`). Class/enum/import names come
-   from the SDK docs, never memory.
+   (`when_not_to_use`, `when_to_use` / `use_cases`, `examples[].config.action_type`). Verdicts need only the
+   catalog and the agent source; when the report names Python classes/enums/imports not already visible in the
+   source, they come from the SDK docs, never memory.
 4. **Catalog unavailable → defer Audit Mode** (Rules Skipped), keep Recommend Mode's source-only detection with
    generic wording and the code-only wiring half of `CODED_GUARDRAIL_MISAPPLIED`. Never guess
    effectiveness/relevance without the catalog.

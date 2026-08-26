@@ -24,7 +24,7 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
-> **Reading command output.** `--output json` prints a JSON envelope, but not on its own line: auto-updater chatter (including `Update completed with failures.`, which is unrelated to your command), `Resolved project …` progress lines and trailing telemetry warnings share the same stream. Judge a command by the `Result` field inside the envelope, never by surrounding text, and extract from the first `{` before parsing.
+> **Reading command output.** `--output json` prints a JSON envelope, but not on its own line: auto-updater chatter (including `Update completed with failures.`, which is unrelated to your command), `Resolved project …` progress lines and trailing telemetry warnings share the same stream. Judge a command by the `Result` field inside the envelope, never by surrounding text. Noise appears on **both sides** of the JSON, so taking everything from the first `{` is not enough — slice from the first `{` to the **matching final `}`** (or read the last balanced JSON object) before parsing, or a trailing telemetry line will break the parse.
 
 > **If a command is missing.** Two commands in this pipeline are hidden from `--help`, so `--help` is not a reliable way to tell whether a build has them: `testsets playwright-context` (Step 5) and `run --playwright-projects` (Step 6). Older CLIs answer `unknown command` / `unknown option` for them. Treat them differently:
 >
@@ -59,7 +59,7 @@ uip tm pack --project-path <dir> --type playwright \
 uip or packages upload "<out-dir>/<PackageName>.1.0.0.nupkg" --output json
 ```
 
-`--package-version` is a NuGet/SemVer-style version: three numeric parts with an optional prerelease suffix (`1.0.0`, `1.0.1-beta.1`) — `1.0` is rejected. Each upload needs a version the feed does not already have, so before re-packing check what is published and go above it:
+`--package-version` is a NuGet/SemVer-style version: **three or four** numeric parts with an optional prerelease/build suffix (`1.0.0`, `1.0.0.0`, `1.0.1-beta.1`) — `1.0` is rejected. Each upload needs a version the feed does not already have, so before re-packing check what is published and go above it:
 
 ```bash
 uip or packages list --search <PackageName> --output json
@@ -75,7 +75,7 @@ Ingestion is asynchronous and automatic. Poll until the auto-created test cases 
 uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
-- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 9), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
+- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 8), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
 - The rows carry `TestCaseKey` (e.g. `SHIP:1`) plus `Id` (the UUID) and `Name` — count `TestCaseKey`, not `Id`, when polling.
 - Ingestion is done when `TestCount` new test cases from Step 1 are present, each named `"<suite> > <test title>"`. A plain `pack` prints only `Package`, `Output` and `TestCount` — if you want the exact expected names up front, run `--dry-run` first or read `testCases.json` inside the `.nupkg`; otherwise match on the count plus that name shape.
 - `TestCount` from Step 1 is one test case per Playwright **test** — it is not multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
@@ -85,7 +85,7 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 
 ## Step 4 — Set the default folder, create a test set, fill it by label
 
-Set the project's default Orchestrator folder FIRST — both the Step 5 probe and the Step 6 run resolve packages through it (Critical Rule #10):
+Set the project's default Orchestrator folder FIRST — both the Step 5 probe and the Step 6 run resolve packages through it (Critical Rule #9):
 
 ```bash
 uip or folders list --output json    # WITHOUT --all: only folders you are a member of
@@ -135,7 +135,8 @@ uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 Read the fields off the JSON response rather than relying on the names below staying current — this list describes today's shape, and `--output json` always carries whatever the API returns.
 
 - `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` holds the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set. Both are **comma-joined strings** (`"chromium, firefox"`), not arrays — split on `", "` when scripting; no stored selection is `""`.
-- `Data.IsPlaywright: false` → RPA, mixed, manual, or multi-package test set — run it **without** `--playwright-projects`.
+- `Data.IsPlaywright: false` → the set does **not** resolve to exactly one synced Playwright package (RPA, multi-package, or no package at all) — run it **without** `--playwright-projects`.
+- **`true` does not mean "only Playwright".** The check is *one* Playwright package, not *only* Playwright tests: a set holding Playwright tests from one package plus manual test cases still reports `true`, because manual cases resolve to no package. Treat the flag as "project selection is available here", not as a purity test.
 - The server never errors on type here, so this is the safe discriminator for automation: probe first, branch on `IsPlaywright`.
 - **False negative without a folder:** the probe resolves the package through the project's default folder — if that isn't set (Step 4), a genuine Playwright test set reports `IsPlaywright: false`. Set the default folder before trusting a `false`.
 

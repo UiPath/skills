@@ -11,8 +11,8 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | Commands | What | Auth |
 |----------|------|------|
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
-| `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+| `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.json.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+| `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory read (`list`) + atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
@@ -110,7 +110,7 @@ uip solution upload <SolutionDir> --output json --output-filter "{Status: Status
 
 ## uip maestro case pack
 
-Pack a single Case project directory into a `.nupkg` file.
+Pack a single Case project directory into a `.nupkg` file — **and, as a side effect, compile `caseplan.json` into `caseplan.json.bpmn` inside the project directory.** That recompile is why Phase 7 runs it. Offline.
 
 ```bash
 uip maestro case pack <project-path> <output-path> --output json
@@ -119,17 +119,21 @@ uip maestro case pack <project-path> <output-path> --output json
 | Flag | Description |
 |------|-------------|
 | `<project-path>` | **(required)** Path to the Case project directory |
-| `<output-path>` | **(required)** Output directory for the `.nupkg` |
+| `<output-path>` | **(required)** Output directory for the `.nupkg` — use `<SolutionDir>/dist`, never a path inside the case project directory |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
 
-> **Not the deploy path.** `uip solution publish` accepts a solution `.zip`, not a project `.nupkg`, and `uip solution pack` already produces the project `.nupkg` internally. Phase 7 uses `uip solution pack` — see below.
+> **Required before every `uip solution pack`.** Run it on every Phase 7 pass, including runs that skipped Phase 5 / Phase 6, and including runs where a `.bpmn` already exists (it may be stale). See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
+
+> **Requires `package-descriptor.json`** in the project directory (written at scaffold). Without it: `Missing package-descriptor.json in: <project-path>`. Restore the file — never skip the step.
+
+> **Not the deploy artifact.** `uip solution publish` accepts a solution `.zip`, not this `.nupkg` (`<Name>.case.Case.<version>.nupkg`), and `uip solution pack` produces its own project `.nupkg` internally. Run `case pack` for the BPMN recompile; publish the `solution pack` `.zip` — see below.
 
 ---
 
 ## uip solution pack
 
-Pack the solution directory into a deployable `.zip`. Phase 7 step 2 — consent-gated. Offline.
+Pack the solution directory into a deployable `.zip`. Phase 7 step 3 — consent-gated. Offline.
 
 ```bash
 uip solution pack <SolutionDir> <SolutionDir>/dist --output json
@@ -149,11 +153,13 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 > Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
 
+> **Does NOT compile the case BPMN.** It bundles `caseplan.json.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
+
 ---
 
 ## uip solution publish
 
-Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 3 — consent-gated.
+Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 4 — consent-gated.
 
 ```bash
 uip solution publish <packagePath> --wait --output json

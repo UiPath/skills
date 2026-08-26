@@ -125,7 +125,9 @@ Always check `Result` first. On failure, `Message` and `Instructions` carry the 
 
 | Capability | Login required? |
 |---|---|
+<!--skill-flavor:flow-init-login-scope:start-->
 | **Author** | No — `flow init`, `validate`, `format`, registry (OOTB nodes), `Edit` / `Write` edits, planning all work offline |
+<!--skill-flavor:flow-init-login-scope:end-->
 | **Operate** | **Yes** — `solution upload`, `solution resources refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 
@@ -156,15 +158,19 @@ uip or folders list --output json
 
 Or pull it from the job/process context (e.g., `Data.folderKey` on a job status response, or from the debug output's surrounding metadata).
 
-## 7. `UIPCLI_LOG_LEVEL=info` for debug runs
+## 7. `UIP_LOG_LEVEL=info` for debug runs
 
-Set `UIPCLI_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail in the CLI output. Without it, debug runs return only the final result.
+Set `UIP_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail in the CLI output. Without it, debug runs return only the final result.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
-The env var has no effect on other subcommands.
+At `info` the run narrates the `jobKey`, the `instanceId`, and the Studio Web URL to **stderr**. Capture stderr, not just stdout: when a run overruns its poll budget the CLI reports only `Debug polling timed out after <N>s` on stdout, with no instance identifier — the stderr narration is then the only way to find the instance and inspect it (`uip maestro flow debug-instance incidents <instanceId>`).
+
+> **The variable is `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL`.** The CLI reads only the former; the latter is silently ignored, so a command prefixed with it produces no extra output at all. `--log-level <level>` is the equivalent global flag.
+
+The level applies to every `uip` command, not just `flow debug`.
 
 ## 8. Global options
 

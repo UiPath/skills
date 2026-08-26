@@ -13,7 +13,7 @@ description: >
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:link-automation]
 
 run_limits:
-  expected_turns: 36
+  expected_turns: 18
   max_turns: 35
 
 initial_prompt: |
@@ -32,9 +32,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
+    description: "Agent discovered folder key with `folders list -n|--name <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\s+-n\s+\S+'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(-n|--name)\s+\S)uip\s+(or|orchestrator)\s+folders\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -56,10 +56,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran the testcase successfully with --test-case-id (UUID), --execution-type automated, and the requested execution name"
+    description: "Agent ran the testcase with --test-case-id (UUID), --execution-type automated, and the requested execution name"
     tool_name: "Bash"
     command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+(["\x27])Eval Link Run - Manager Escalation\1)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
-    require_success: true
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

@@ -1,13 +1,22 @@
 # Task Catalogs Reference
 
-Task catalogs group tasks and define their retention policy. Folder-scoped: a
-catalog created in one folder is invisible from another. Catalog IDs are numeric.
+A task catalog is a reusable, folder-scoped definition that buckets related tasks
+and configures how they behave: data retention (delete or archive the tasks after
+a retention period), encryption of task data, and labels. Every task is associated
+with at most one catalog, and it inherits that catalog's configuration when it is
+linked through its metadata (`tasks metadata --catalog-id`). A catalog created in one folder is invisible from
+another, and catalog IDs are numeric. See the
+[Action Center documentation](https://docs.uipath.com/automation-cloud/docs/actions).
 
 ## Folder scoping
 
-Every catalog command is folder-scoped. Pass `--folder-id <id>`, or omit it on an
-interactive terminal to pick a folder from a list. `--folder-id` is required when
-stdout is not a TTY (coding agents, CI) — pass it explicitly there.
+Every catalog command needs a folder, given one of three mutually exclusive
+ways: `--folder-id <numeric-id>`, `--folder-path <path>`, or
+`--folder-key <guid>` (path and key are what `uip or folders list` prints). In
+an interactive terminal you can omit all three and pick a folder from a list.
+In a non-interactive run (a coding agent or CI, where no picker can be shown)
+you must pass one explicitly, otherwise the command fails with
+`A folder is required`.
 
 ## List
 
@@ -66,8 +75,8 @@ Success `Code: TaskCatalogUpdated`.
 | Flag | Values | Notes |
 |------|--------|-------|
 | `--retention-action` | `Delete`, `Archive` | The two accepted retention actions |
-| `--retention-period` | days (positive integer) | Days before the action fires |
-| `--retention-bucket-id` | numeric | Storage bucket ID — required when the action is `Archive` |
+| `--retention-period` | 1 to 180 (days) | Days before the action fires. Must be between 1 and 180; a value outside that range is rejected with an API error. |
+| `--retention-bucket-id` | numeric | Storage bucket ID, required when the action is `Archive` |
 
 > `Archive` moves tasks into a storage bucket at the retention limit, so it needs
 > a `--retention-bucket-id`. `Delete` needs no bucket.

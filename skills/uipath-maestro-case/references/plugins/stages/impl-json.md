@@ -1,7 +1,3 @@
----
-direct-json: supported
----
-
 # stages — JSON Implementation
 
 > **Node `type` value: `case-management:Stage`** — use this exact string for both primary and secondary stages. Never write `uipath.case.stage`, `uipath.stage`, or any other variant.

@@ -4,6 +4,20 @@ description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driv
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
+# Reasoning budget
+- Match reasoning to step difficulty and bias toward acting; for mechanical / IO / format steps, if a
+  provided script already covers the task, run it — don't re-derive it.
+- Save deep, extended reasoning for the one genuinely hard judgment a script can't make for you.
+
+# Working style
+- **Understand first, then decide.** Read this skill's SKILL.md and understand the scripts it ships before you act. Then plan accordingly, such as run a script as-is when it fits, change a script when it's close, or write extra scripts to complement — based on what the scripts actually do, not a guess.
+- **Plan the whole path up front, then chain.** Outline the full sequence of steps before running anything, batch independent steps into one turn, and pipeline the whole plan in as few turns as possible. Don't do things that can be pipelined into one call turn-by-turn.
+- **Inspect an input ONCE.** To learn a file's structure (sheets/columns, pages, form fields, keys), dump it once — ideally to a file you then grep — never re-open the same file field-by-field or retry it with several libraries.
+- **Don't repeat work.** Do not rerun a command when its inputs and relevant state are unchanged, and do not reread an unchanged file, script, or SKILL.md already in context. After a tool or command may modify a file, reread the affected content before relying on it.
+- **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline python across turns. Keep it terse — no comment banners or narration in inline scripts.
+- **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file.
+- **Don't do anything unnecessary.** Don't call tools, read files, or put results into context unless they're immediately needed.
+
 # UiPath Maestro BPMN
 
 Work with UiPath Maestro (Process Orchestration) `.bpmn` projects across their
@@ -35,7 +49,10 @@ tags, imported Integration Service payloads, and stable element IDs. Do not
 regenerate the whole file or drop extension data the skill does not recognize —
 preserve-only structures (see the blocklist in
 [references/structural-bpmn.md](references/structural-bpmn.md)) round-trip
-untouched.
+untouched. Never normalize existing nodes to this skill's canonical templates:
+do not add missing attributes (e.g. `type="json" target="bodyField"` on an
+existing `uipath:input`) to elements the edit does not target — on untouched
+neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
@@ -119,8 +136,8 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    files** — fixture spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
-   expression/error mappings, retry attributes), then generate one
-   `BPMNShape`/`BPMNEdge` per node and flow. For local authoring prompts, use the
+   expression/error mappings, retry attributes), then run
+   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For local authoring prompts, use the
    plain project layout `<ProjectName>/<ProjectName>.bpmn` with
    `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
    `.uipx` artifacts unless the user explicitly asks to package or operate the
@@ -150,11 +167,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
-   If a local-only prompt asks for `operate.json`, `entry-points.json`,
-   `bindings_v2.json`, or `package-descriptor.json`, follow the minimal local
-   metadata shape in
-   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
-   Do not copy CLI scaffold metadata shapes into a synthetic local project.
+   If the user asks for the package metadata files, or to package or operate,
+   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
+   files, and keep its output as written — that shape is the contract `pack`
+   consumes. Only fall back to the equivalent hand-authored shape in
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
+   when the CLI is unavailable. Every root start event needs a
+   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
+   the project generates zero entry points.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
@@ -201,7 +221,7 @@ registry serves a template for vs. what you author by hand:
 | Boundary events: `attachedToRef`, interrupting/non-interrupting (`cancelActivity`) | Authored (registry gap) |
 | Subprocess, event subprocess (`triggeredByEvent`), call activity | Authored (registry gap); call-activity payloads from registry |
 | Multi-instance / loop characteristics | Authored from canvas contract — **registry exposes no template (registry gap)** |
-| `bpmndi:BPMNDiagram` (shape per node, edge per flow) | Always generated — **registry emits none (registry gap)** |
+| `bpmndi:BPMNDiagram` (shape per node, edge per flow) | Generated via `uip maestro bpmn format <file.bpmn>` — **registry emits none (registry gap)** |
 
 Flagged registry gaps: the registry serves no template for structural BPMN,
 sequence-flow conditions, event-definition payloads, boundary-event attributes,

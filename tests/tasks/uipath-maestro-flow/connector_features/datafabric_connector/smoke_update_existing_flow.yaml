@@ -1,0 +1,63 @@
+task_id: skill-flow-datafabric-smoke-update-existing-flow
+description: >
+  Brownfield smoke: `pre_run` scaffolds a real `MovieReportFlow` with one
+  record-query activity on FlowCodeEvalEntity and no filter or sort
+  and snapshots the initial bytes to pre_state.flow. Agent must set filter
+  + descending sort, then revert. Verifier diffs final vs snapshot to prove
+  the revert was clean.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:edit, connector, uipath-uipath-dataservice]
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1500
+  task_timeout: 2400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/scaffold_movie_report_flow.py"'
+    timeout: 120
+
+initial_prompt: |
+  MovieReportSolution/MovieReportFlow/MovieReportFlow.flow already exists
+  in your working directory. It has a single record-query activity on
+  FlowCodeEvalEntity with no filter and no sort.
+
+  Do the following on that one activity — do NOT touch any other node,
+  edge, definition, or variable:
+
+  1. Filter for records where active is true and score is at least 8.5.
+  2. Add descending ordering by score.
+  3. Then revert both changes so the activity is back to no
+     filter, no ordering, and its original settings.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+  The flow is not complete until the final state matches the initial
+  state on those three fields and `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "flow node configure invoked >=2 times on MovieReportFlow (edit + revert leave a CLI trace)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+configure.*MovieReportFlow'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final MovieReportFlow validates cleanly"
+    command: "uip maestro flow validate MovieReportSolution/MovieReportFlow/MovieReportFlow.flow --output json | python3 -c \"import json,sys; sys.exit(0 if json.load(sys.stdin)['Result']=='Success' else 1)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Revert restored the exact initial flow state"
+    command: "python3 $TASK_DIR/check_smoke_update_existing_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

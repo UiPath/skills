@@ -10,7 +10,7 @@ description: >
   answer (work in a separate lane); the rule authored as a Review STAGE-entry row, which
   re-enters Review and re-runs every task whose shouldRunOnlyOnce is false — the default;
   and a task with no entry condition, which the runtime never triggers.
-tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
+tags: [uipath-maestro-case, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
 max_iterations: 1
 
 run_limits:

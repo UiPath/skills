@@ -4,7 +4,18 @@ description: >
   license-allocation rules across the account, with pagination flags, and
   saves the full CLI response to `rules.json`. Verifies the file is written
   and captures the response envelope. CLI auth failure is expected offline.
-tags: [uipath-platform, smoke, licensing, groups]
+tags: [uipath-platform, smoke, licensing, groups, mode:operate, lifecycle:discover]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
 
 initial_prompt: |
   List the group license-allocation rules in this account. Sort them by name
@@ -19,10 +30,26 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
+  - type: run_command
+    description: "Agent invoked `uip platform groups rules get` (.uip-cmdlog shim log) — rules.json alone cannot prove the CLI ran"
+    command: "grep -Eq 'uip platform groups rules get' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent passed the requested pagination and sort flags (limit 20, name descending)"
+    command: "grep -E 'uip platform groups rules get' .uip-cmdlog | grep -E -- '--limit[= ]20' | grep -Eq -- '--sort-order[= ]Desc'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "Agent wrote the CLI response to rules.json"
     path: "rules.json"
-    weight: 2.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_contains

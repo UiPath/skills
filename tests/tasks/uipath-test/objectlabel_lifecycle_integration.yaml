@@ -28,8 +28,9 @@ initial_prompt: |
   Once that's done, take "eval-smoke" back off the three but keep
   "eval-regression" on them.
 
-  Then just scribble a one-liner on where the tags ended up into
-  ./health-labels.md.
+  Then write a one-liner on where the tags ended up into ./health-labels.md.
+  That file is part of the deliverable — finish by writing it. One pass of
+  checks is enough; don't re-verify the tag state repeatedly.
 
 success_criteria:
   - type: command_executed

@@ -1,0 +1,68 @@
+task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
+description: >
+  E2E test for the UiPath Data Fabric connector in Maestro Flow. Exercises
+  the full loop: bulk-create 6 contract records in ContractRegistry with
+  priority-based logic, sort-query for the highest-priority record,
+  filter-query for urgent contracts, update a targeted record, then delete
+  all 6 as cleanup. Static-validate only; runtime `flow debug` skipped to
+  avoid live tenant side effects (6 real records per eval run).
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice]
+
+run_limits:
+  expected_turns: 100
+  task_timeout: 5400
+  max_turns: 200
+  turn_timeout: 4500
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Our legal team needs a UiPath Flow to handle contract intake against the
+  `ContractRegistry` Data Fabric entity (fields: contractTitle STRING,
+  status STRING, priority INTEGER, dueDate DATE, value DECIMAL,
+  isUrgent BOOLEAN).
+
+  Build a Flow that:
+
+  1. Creates 6 contract records. Each has: contractTitle, status='Under Review',
+     a priority between 1 and 6, a dueDate 30 days from today, a value between
+     10,000 and 100,000, and isUrgent=true for any contract with priority 5 or
+     higher.
+  2. Queries all contracts sorted by priority descending and confirms the top
+     result has priority=6.
+  3. Queries for urgent contracts (isUrgent=true) and confirms exactly 2 are
+     returned.
+  4. Updates the priority-6 contract to status='In Review'.
+  5. Deletes all 6 records.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains ContractRegistry CRUD shape: 6 create nodes with all 6 body fields, 2+ query nodes (priority-desc sort + isUrgent filter), 1+ update touching status, 6 delete nodes"
+    command: "python3 $TASK_DIR/check_e2e_contract_intake_pipeline.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches manifest"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

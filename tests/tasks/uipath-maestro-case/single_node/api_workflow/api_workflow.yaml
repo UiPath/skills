@@ -86,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | API Workflow Reference | Name "NameToAgeFixed2", Folder "Shared" |
+  | API Workflow Reference | Name "NameToAgeFixed", Folder "Shared/uipath-maestro-case/NameToAgeFixed2" |
   | Component Type | API_WORKFLOW |
 
   **Inputs**

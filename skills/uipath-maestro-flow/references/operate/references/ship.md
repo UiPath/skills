@@ -1,3 +1,4 @@
+<!--skill-flavor:ship-content:start-->
 # Ship — Publish a Flow
 
 Publish journey for a Flow project. Two paths: **Studio Web upload** (default) and **Orchestrator deploy** (only when explicitly requested). Both require `uip login`.
@@ -55,3 +56,4 @@ For `uip solution publish` and the rest of the deployment workflow, see [/uipath
 ## What's next
 
 After Studio Web upload, the user typically wants to **debug** the flow end-to-end against real systems. See [run.md](run.md). After Orchestrator deploy, the user typically wants to **trigger and monitor** the deployed process — also [run.md](run.md).
+<!--skill-flavor:ship-content:end-->

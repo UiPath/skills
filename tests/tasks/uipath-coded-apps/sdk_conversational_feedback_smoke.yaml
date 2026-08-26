@@ -6,10 +6,22 @@ description: >
   chat sessions with a deployed conversational agent) and `Feedback`
   (from the `feedback` subpath, submits ratings/comments on AI agent
   responses). Each via subpath import + constructor DI, with
-  `.env.example` scope coverage.
+  `uipath.json` scope coverage.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
+  # The one task in this family that cannot finish inside the smoke default of
+  # 40. Measured on run 32182757902: it reaches its first Write at tool-call
+  # #48 and finishes at 57 turns. Capped at 40 (run 32184723921) it produced no
+  # files at all and scored 0.11. The rest of the family stays on the default.
+  #
+  # 200, matching nightly.yaml, NOT a snug 60: run_limits apply to every
+  # experiment, so a per-task override tuned for smoke silently *downgrades*
+  # the nightly budget. At 60 this task hit the ceiling under nightly
+  # (run 32226795313, 65 turns). In smoke the effective bound is turn_timeout.
+  max_turns: 200
+  turn_timeout: 1200
+  task_timeout: 1200
 
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
@@ -29,9 +41,10 @@ initial_prompt: |
      comment?: string): Promise<void>` — uses the `Feedback` service to
      submit a rating (and optional comment) on an AI agent response.
 
-  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars.
-  Fill `VITE_UIPATH_SCOPE` with the ACTUAL scope values these two services
-  require (look them up in the skill's conversational-agent and feedback
+  Also write `uipath.json` — the skill's single SDK config source
+  (`clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, `redirectUri`).
+  Fill `scope` with the ACTUAL scope values these two services require
+  (look them up in the skill's conversational-agent and feedback
   references — Feedback needs one scope on every method; starting a
   conversational session needs its own scope family). Do not leave the
   scope empty or as a placeholder; the scope string is part of what this
@@ -46,6 +59,10 @@ initial_prompt: |
   exported functions take ONLY the data arguments shown above; do NOT
   accept service instances as parameters.
 
+  Write both files first from the skill's references, then refine. Do not
+  spelunk the SDK's generated `.d.ts` for exact response type names — the
+  return types are not graded.
+
 success_criteria:
   - type: file_exists
     description: "src/agent-support.ts was created"
@@ -54,8 +71,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: ".env.example was created"
-    path: ".env.example"
+    description: "uipath.json was created"
+    path: "uipath.json"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -108,16 +125,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE references Traces.Api (Rule #16 — Feedback needs Traces.Api on every method)"
-    command: "grep -E '^VITE_UIPATH_SCOPE=.*Traces\\.Api' .env.example"
+    description: "uipath.json scope references Traces.Api (Rule #16 — Feedback needs Traces.Api on every method)"
+    command: "python3 -c \"import json,sys; sys.exit(0 if 'Traces.Api' in str(json.load(open('uipath.json')).get('scope','')) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE references ConversationalAgents (Rule #16 — required for startSession)"
-    command: "grep -E '^VITE_UIPATH_SCOPE=.*ConversationalAgents' .env.example"
+    description: "uipath.json scope references ConversationalAgents (Rule #16 — required for startSession)"
+    command: "python3 -c \"import json,sys; sys.exit(0 if 'ConversationalAgents' in str(json.load(open('uipath.json')).get('scope','')) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

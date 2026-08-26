@@ -51,7 +51,7 @@ REQUIRED_TASK_TYPES = {
 # The automated runnable variant deliberately omits these (no HITL / no live connectors).
 FORBIDDEN_TASK_TYPES = {"action", "execute-connector-activity", "wait-for-connector"}
 REQUIRED_EXTERNAL_BINDINGS = {
-    "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow": "API Workflow",
+    "Shared/uipath-agents/WeatherAPI.WeatherAPI": "WeatherAPI",
     "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters": "CountLetters",
     "Shared/uipath-agents/ProcurementProcess.ProcurementProcess": "ProcurementProcess",
     "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow": "RPA Workflow",

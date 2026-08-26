@@ -1,0 +1,70 @@
+task_id: skill-ixp-upgrade-deployment-smoke
+description: >
+  Smoke: a folder already serves v13 of the project; the agent moves it to v14
+  with `deployments upgrade`. Traps: `create` only ever adds, so re-deploying
+  the title on another version is a 409, not a repoint; and `upgrade` is
+  addressed by the backend-minted DeploymentName (`invoices-08963f00-ixp`), not
+  the title (`invoices`). The prompt supplies both, so the test is whether the
+  agent puts the NAME in the positional slot, not whether it looks one up.
+  Harness is unauthenticated; grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+# TODO: assert the lookup itself once coder_eval's RecordedCli can mock a specific
+# verb — `deployments list` cannot be served per-verb, hence the name in the prompt.
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  Orchestrator folder `3f0a91c7-1111-2222-3333-444455556666` currently serves
+  model version 13 of IXP project `my_invoices-f1afa9ef-ixp`. That deployment has
+  the title `invoices` and the DeploymentName `invoices-08963f00-ixp`. Trained
+  version 14 is ready — make the folder serve version 14 instead.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: cli_called
+    description: "Moved the deployment with `deployments upgrade <Name> invoices-08963f00-ixp --version 14 --folder-key <key>`"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "invoices-08963f00-ixp"]
+    flags:
+      version: "14"
+      folder-key: "3f0a91c7-1111-2222-3333-444455556666"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # `value_flags` is load-bearing: --version/--folder-key are not declared under
+  # `flags` here, so without it their values stay non-flag, shift the positional
+  # slots, and `upgrade --version 14 --folder-key K <project> invoices` dodges the
+  # guard.
+  - type: cli_called
+    description: "Did NOT pass the title `invoices` where the DeploymentName belongs (a clean 404)"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "invoices"]
+    value_flags: ["version", "folder-key", "output"]
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT try to repoint the existing deployment with `deployments create` (409, not a repoint)"
+    verb: "ixp deployments create"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

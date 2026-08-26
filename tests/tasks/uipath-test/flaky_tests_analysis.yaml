@@ -15,9 +15,169 @@ run_limits:
   expected_turns: 17
   max_turns: 35
 
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the EVFX- contract.
+#
+# This task is a PURE READER: it needs an intermittent pass/fail history and
+# never writes. While it read CLAIM's shared "UAT Smoke Suite" it kept losing
+# that history to other tasks — execution_rerun retried failed cases, cleanup
+# closed the reopened logs as Passed, and the suite converged on 3-pass/0-fail.
+# The 2026-08-05 nightly analysed three executions that were uniformly green
+# and correctly found no flakiness, so the assertions criterion had no failing
+# log to target.
+#
+# EVFX-FLAKY-SET is owned by this task alone. The seed asserts the property the
+# task reads — at least one of the three most recent finished executions
+# carries a failure — so a healthy fixture is left untouched and a drifted one
+# self-heals with a single append. TC2 is the intermittent case.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-FLAKY-SET"
+      CASES = ["EVFX-FLAKY-TC1", "EVFX-FLAKY-TC2", "EVFX-FLAKY-TC3"]
+      # TC2 is the flaky one: Passed, Failed, Passed across the three runs.
+      PATTERNS = [["Passed", "Passed", "Passed"],
+                  ["Passed", "Failed", "Passed"],
+                  ["Passed", "Passed", "Passed"]]
+
+      # Provisioning failures exit NON-ZERO so a setup fault is never scored as
+      # an agent regression.
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key, set_id = ts["TestSetKey"], ts["Id"]
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if len(keys) != len(CASES):
+          fail(f"expected {len(CASES)} test cases, resolved {len(keys)}: {keys}")
+      if keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", set_key,
+               "--test-case-keys", *keys)
+
+      # Guard on the PROPERTY the task needs, not on a count. Counting was
+      # fragile: if a prior execution was momentarily Running rather than
+      # Finished, len(done) read 2 and the loop topped up with PATTERNS[2:] --
+      # an all-pass execution that then pushed the intermittency-bearing one
+      # out of the "3 most recent" window the task reads, leaving no failing
+      # log to fetch assertions from.
+      #
+      # Invariant: among the 3 most recent FINISHED executions, at least one
+      # carries a failure. Seed only when that is false, so a healthy fixture
+      # is left untouched and a drifted one self-heals with a single append.
+      done = sorted((e for e in call("ex.list", "tm", "executions", "list",
+                                     "--project-key", P, "--test-set-id", set_id).get("Data") or []
+                     if e.get("Status") == "Finished"),
+                    key=lambda e: e.get("Created") or "", reverse=True)
+      window = done[:3]
+
+      # Check INTERMITTENCY, not merely "a failure exists". Three executions
+      # in which TC2 always fails satisfies "some execution has a failure"
+      # while giving the task no case that both passes and fails -- nothing to
+      # rank by flakiness. Compare per-case outcomes across the window.
+      outcomes = {}
+      for e in window:
+          for l in call(f"logs.{e['Id'][:8]}", "tm", "executions", "testcaselogs",
+                        "list", "--project-key", P,
+                        "--execution-id", e["Id"]).get("Data") or []:
+              name = (l.get("TestCase") or {}).get("Name") or l.get("TestCaseId")
+              outcomes.setdefault(name, set()).add(l.get("Result"))
+      flaky_cases = [n for n, r in outcomes.items()
+                     if "Passed" in r and "Failed" in r]
+      print(f"FIXTURE: {len(done)} finished; window={len(window)}; "
+            f"intermittent cases={flaky_cases}", flush=True)
+
+      if len(window) >= 3 and flaky_cases:
+          print("FIXTURE: intermittency intact - nothing to seed"); raise SystemExit(0)
+
+      # Fill the window to three, then append whichever run CREATES
+      # intermittency given what is already there. The corrective pattern is
+      # positional, so it depends on the gap: a case stuck on Failed needs a
+      # Passed run, and an all-green window needs a Failed one. Appending
+      # Passed/Failed/Passed unconditionally would fail TC2 again and leave a
+      # permanently-failing case still not intermittent.
+      always_failed = [n for n, r in outcomes.items()
+                       if "Failed" in r and "Passed" not in r]
+      corrective = (["Passed", "Passed", "Passed"] if always_failed
+                    else ["Passed", "Failed", "Passed"])
+      # Only override the fill when the RESULTING window would still lack
+      # intermittency. Overriding unconditionally turned the from-empty fill
+      # into PPP/PFP/PFP; two runners seeding concurrently could then interleave
+      # into a newest-three of PFP/PFP/PFP, where TC2 always fails and nothing
+      # is flaky. Simulate the outcome first and correct only if needed.
+      def window_after(extra):
+          hist = [None] * len(window) + list(extra)
+          seen = {}
+          for i, pat in enumerate(hist[-3:]):
+              if pat is None:
+                  for n, r in outcomes.items():
+                      seen.setdefault(n, set()).update(r)
+                  continue
+              for idx, cname in enumerate(CASES):
+                  seen.setdefault(cname, set()).add(pat[idx % len(pat)])
+          return [n for n, r in seen.items() if "Passed" in r and "Failed" in r]
+
+      todo = PATTERNS[len(window):] if len(window) < 3 else []
+      if not flaky_cases and not window_after(todo):
+          if todo:
+              todo[-1] = corrective
+          else:
+              todo = [corrective]
+      for pat in todo:
+          r = call("run", "tm", "testsets", "run", "--test-set-key", set_key,
+                   "--execution-type", "manual")
+          eid = (r.get("Data") or {}).get("ExecutionId")
+          if not eid:
+              fail("could not start a manual execution")
+          logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                      "--project-key", P, "--execution-id", eid).get("Data") or []
+          if len(logs) != len(CASES):
+              fail(f"execution {eid} has {len(logs)} logs, expected {len(CASES)}")
+          for i, l in enumerate(logs):
+              res = pat[i % len(pat)]
+              call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+                   "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+                   "--result", res, "--has-error", "true" if res == "Failed" else "false",
+                   "--executed-by", "eval-fixture@uipath.com")
+          print(f"FIXTURE: seeded {eid} with {pat}", flush=True)
+      EOF
+    timeout: 280
+
 initial_prompt: |
-  Analyse the top 3 executions with a finished executionStatus of a test
-  set 'UAT Smoke Suite' in my UiPath Test Manager project CLAIM. List testcases that pass and
+  Analyse the 3 most recent executions with a finished executionStatus of a test
+  set 'EVFX-FLAKY-SET' in my UiPath Test Manager project CLAIM. List testcases that pass and
   fail intermittently, ranked by flakiness. Also, list the assertions for such testcases.
 
 success_criteria:

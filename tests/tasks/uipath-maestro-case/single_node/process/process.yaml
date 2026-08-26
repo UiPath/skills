@@ -86,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "ProcurementProcess", Folder "Shared/uipath-agents" |
+  | Process Reference | Name "ProcurementProcess", Folder "Shared/uipath-agents/ProcurementProcess" |
   | Component Type | PROCESS |
   ```
 
