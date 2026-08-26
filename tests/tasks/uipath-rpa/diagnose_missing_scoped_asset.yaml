@@ -6,12 +6,12 @@ description: >
   config points the asset at 'Shared'). The agent must correlate a static Robot
   job log with the process config, diagnose the folder-scope mismatch, and write
   a remediation to diagnosis.md. There is NO workflow to build or run — the
-  fixtures are two text files, so the task carries zero Studio-host cost and runs
-  on any runner. Exercises the "asset/config mismatch" diagnostic distinct from
+  fixtures are two text files, so the task carries zero Studio-host cost and
+  stays fast even on the Windows lane. Exercises the "asset/config mismatch" diagnostic distinct from
   the selector-failure log task. Adapted from the Autopilot.Evaluation RPA golden
   scenario `diagnose-medium-missing-mis-scoped-asset`; fixtures are inlined in the
   prompt and grading is deterministic (no LLM judge).
-tags: [uipath-rpa, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-rpa, windows, integration, mode:diagnose, lifecycle:discover]
 
 run_limits:
   max_turns: 30

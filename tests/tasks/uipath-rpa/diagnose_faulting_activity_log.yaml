@@ -4,14 +4,14 @@ description: >
   static UiPath Robot job log that ends in one unhandled exception and must read
   it, identify the faulting activity by DisplayName, name the exception type, and
   write a root-cause + fix to diagnosis.md. There is NO workflow to build or run
-  — the fixture is a log, so the task carries zero Studio-host cost and runs on
-  any runner. Complements skill-rpa-fix-broken-xaml-validate-loop (D1
+  — the fixture is a log, so the task carries zero Studio-host cost and stays
+  fast even on the Windows lane. Complements skill-rpa-fix-broken-xaml-validate-loop (D1
   validate->fix on a broken artifact) with the D3 "read a failed run's log"
   archetype the suite otherwise lacks. Adapted from the Autopilot.Evaluation RPA
   golden scenario `diagnose-medium-faulting-activity-from-log`; the log is inlined
   in the prompt (matching the repo's fixture-in-prompt convention) and grading is
   deterministic (no LLM judge).
-tags: [uipath-rpa, integration, mode:diagnose, lifecycle:discover]
+tags: [uipath-rpa, windows, integration, mode:diagnose, lifecycle:discover]
 
 run_limits:
   max_turns: 30
