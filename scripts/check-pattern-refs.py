@@ -32,7 +32,9 @@ import re
 import sys
 from pathlib import Path
 
-TYPE_RE = re.compile(r"\b(?:Orchestrator|Actions|Maestro|Intsvc)\.[A-Za-z][A-Za-z0-9]*\b")
+# Every prefix the bundled spec uses. Omitting one makes this check silently
+# skip the types it names, which is the rot it exists to prevent.
+TYPE_RE = re.compile(r"\b(?:Orchestrator|Actions|Maestro|Intsvc|BPMN|A2A)\.[A-Za-z][A-Za-z0-9]*\b")
 LINK_RE = re.compile(r"\]\(([^)]+)\)")
 ROUTER_ROW_RE = re.compile(r"^\|\s*`([a-z0-9-]+)`\s*\|[^|]*\|\s*\[[^\]]+\]\(([^)]+)\)\s*\|", re.M)
 HEADING_RE = re.compile(r"^#{1,6}\s+(.*)$", re.M)

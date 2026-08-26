@@ -45,8 +45,8 @@ Single-channel is the base shape.
 | `end_received` | `bpmn:endEvent` | Mechanism |
 | `end_escalated` | `bpmn:endEvent` | Mechanism |
 
-Every outgoing sequence flow from `wait` must target a catch event — that is a
-rule of the gateway, not a choice. See
+Every outgoing sequence flow from `wait` must target an intermediate catch event
+or a receive task — that is a rule of the gateway, not a choice. See
 [structural-bpmn.md](../structural-bpmn.md#gateways).
 
 | Sequence flow | Label | Condition |

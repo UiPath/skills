@@ -46,13 +46,15 @@ FLOW_NODE_KINDS = (
 def main() -> None:
     root = load_bpmn(BPMN)
 
+    # Only constructs that indicate a pattern fired. An error boundary event is
+    # node-level recovery rather than a pattern shape, so it is not graded here
+    # — failing it would red an agent for defensible error handling.
     unwanted = {
         "userTask": "a human review step",
         "exclusiveGateway": "a decision branch",
         "parallelGateway": "a parallel split",
         "inclusiveGateway": "a decision branch",
         "eventBasedGateway": "an event race",
-        "boundaryEvent": "an attached event handler",
     }
     for kind, what in unwanted.items():
         found = elements(root, kind)
