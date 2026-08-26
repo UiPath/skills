@@ -3,7 +3,7 @@ description: >
   Integration coverage for Data Fabric Record Created and Record Updated
   triggers, including trigger-side date filters, downstream Query/Get/Delete
   wiring, and preservation of entity resources on every activity.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, feature:trigger, feature:records, feature:entities, feature:activities, path-to-ga]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:trigger, feature:records, feature:entities, feature:activities, uipath-uipath-dataservice]
 
 run_limits:
   max_turns: 120

@@ -7,7 +7,7 @@ description: >
   record (typed file variable bridges download → upload; recordId bound to
   create output), then Delete the file from the new record. Presence +
   wiring enforcement lives in the verifier.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice,]
 
 run_limits:
   max_turns: 100

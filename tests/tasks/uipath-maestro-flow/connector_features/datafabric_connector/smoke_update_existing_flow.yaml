@@ -5,7 +5,7 @@ description: >
   and snapshots the initial bytes to pre_state.flow. Agent must set filter
   + descending sort, then revert. Verifier diffs final vs snapshot to prove
   the revert was clean.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:edit, connector, uipath-uipath-dataservice, ipe]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:edit, connector, uipath-uipath-dataservice]
 
 run_limits:
   max_turns: 100

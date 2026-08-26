@@ -5,7 +5,7 @@ description: >
   expansionLevel comparison across levels 1, 2, and 3 (C-02).
   Static-validate only; runtime `flow debug` skipped to avoid live tenant
   side effects.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice]
 
 run_limits:
   expected_turns: 40
