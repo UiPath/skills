@@ -64,7 +64,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "every connector field name in caseplan.json matches the live connector contract byte-for-byte (inputs, response properties, definitions/$ref, and the compiled trigger filter)"
+    description: "every connector field name in caseplan.json matches the live connector contract byte-for-byte (inputs, response properties, definitions/$ref, compiled trigger filter), and both connector nodes resolve complete connection + folder bindings"
     command: "python3 $TASK_DIR/check_connector_naming.py"
     timeout: 180
     expected_exit_code: 0

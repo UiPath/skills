@@ -19,6 +19,7 @@ Checks, in order:
   2. payload output properties    -> ResponseFields[].Name    (set equality, Error excluded)
   3. definitions keys             -> the $ref value targeting each one
   4. compiled trigger filter      -> Filter.Fields[].Name     (names appear verbatim)
+  5. connection / folder bindings -> root bindings[]          (resolve, complete, not copied)
 """
 from __future__ import annotations
 
@@ -117,8 +118,10 @@ def connector_nodes(plan: dict):
 
 def check_inputs(label: str, block: dict, auth: list[str]) -> None:
     """Written -> authority only. An authority name with no written key is an
-    unused optional parameter, not a mismatch."""
+    unused optional parameter, not a mismatch. An input set that is entirely
+    empty is a build that never populated the request, not a clean pass."""
     segs = {norm(s): s for s in top_level(auth)}
+    written_any = False
     for entry in block.get("inputs") or []:
         body = entry.get("body")
         if not isinstance(body, dict):
@@ -128,15 +131,20 @@ def check_inputs(label: str, block: dict, auth: list[str]) -> None:
             # `parameters` holds eventParameters, `filters` holds the compiled JMESPath
             if written in ENVELOPE_BODY_KEYS:
                 continue
+            written_any = True
             want = segs.get(norm(written))
             if want is None:
                 fail(f"{label}: input key {written!r} matches no field in the connector contract")
             elif written != want:
                 fail(f"{label}: input key {written!r} should be {want!r} (byte-exact contract name)")
+    if auth and not written_any:
+        fail(f"{label}: no request field was written at all — the connector declares "
+             f"{len(top_level(auth))} input field(s); an empty request cannot be graded")
 
 
 def check_outputs(label: str, block: dict, auth: list[str]) -> None:
     expected = top_level(auth)
+    graded_any = False
     for entry in block.get("outputs") or []:
         name = str(entry.get("name") or "")
         if name.lower() in ERROR_OUTPUT_NAMES:
@@ -144,12 +152,16 @@ def check_outputs(label: str, block: dict, auth: list[str]) -> None:
         props = ci(entry.get("body") or {}, "properties")
         if not isinstance(props, dict) or not props:
             continue
+        graded_any = True
         written = list(props.keys())
         if set(written) != set(expected):
             missing = [e for e in expected if e not in written]
             extra = [w for w in written if w not in expected]
             fail(f"{label}: output {name!r} property names do not match the contract; "
                  f"missing={missing[:8]} unexpected={extra[:8]}")
+    if expected and not graded_any:
+        fail(f"{label}: no response schema was written at all — the connector declares "
+             f"{len(expected)} response propert(ies); an absent schema cannot be graded")
 
 
 def check_definitions(label: str, block: dict) -> None:
@@ -190,12 +202,58 @@ def check_filter(label: str, block: dict, auth: list[str]) -> None:
             fail(f"{label}: compiled filter references {token!r}; the contract field is {want!r}")
 
 
+BINDING_FIELDS = {"id", "name", "type", "resource", "resourceKey", "default", "propertyAttribute"}
+
+
+def check_bindings(label: str, block: dict, root_bindings: list) -> None:
+    """A connector node points at two root bindings — the connection and the
+    folder — and copies neither onto itself. A dangling or malformed binding
+    renders as a broken node in Studio Web while `validate` stays green."""
+    by_id = {b.get("id"): b for b in root_bindings if isinstance(b, dict)}
+    ctx = {c.get("name"): c.get("value") for c in (block.get("context") or [])}
+
+    if block.get("bindings") != []:
+        fail(f"{label}: data.bindings must be [] — root bindings are never copied onto the task "
+             f"(got {block.get('bindings')!r})")
+
+    conn_id = ctx.get("resourceKey")
+    for ctx_name, attr in (("connection", "ConnectionId"), ("folderKey", "folderKey")):
+        ref = ctx.get(ctx_name)
+        if ref is None:
+            if ctx_name == "folderKey":
+                continue  # omitted when the connection has no folder
+            fail(f"{label}: context[{ctx_name}] is missing")
+            continue
+        m = re.fullmatch(r"=bindings\.(\w+)", str(ref))
+        if not m:
+            fail(f"{label}: context[{ctx_name}] should be '=bindings.<id>', got {ref!r}")
+            continue
+        binding = by_id.get(m.group(1))
+        if binding is None:
+            fail(f"{label}: context[{ctx_name}] points at binding {m.group(1)!r}, "
+                 f"which is not in the root bindings[]")
+            continue
+        missing = BINDING_FIELDS - set(binding)
+        if missing:
+            fail(f"{label}: binding {m.group(1)!r} is missing required field(s) {sorted(missing)} "
+                 f"— Studio Web fails to render the node")
+        if binding.get("propertyAttribute") != attr:
+            fail(f"{label}: binding for context[{ctx_name}] has propertyAttribute "
+                 f"{binding.get('propertyAttribute')!r}, expected {attr!r}")
+        if conn_id and binding.get("resourceKey") != conn_id:
+            fail(f"{label}: binding {m.group(1)!r} resourceKey is {binding.get('resourceKey')!r}, "
+                 f"expected the node's connection id {conn_id!r}")
+        if not binding.get("default"):
+            fail(f"{label}: binding {m.group(1)!r} has an empty default")
+
+
 def main() -> int:
     path = sys.argv[1] if len(sys.argv) > 1 else CASEPLAN
     if not os.path.exists(path):
         print(f"FAIL: {path} not found")
         return 1
     plan = json.load(open(path))
+    root_bindings = plan.get("bindings") or []
 
     seen = 0
     for label, connector_key, block in connector_nodes(plan):
@@ -218,6 +276,7 @@ def main() -> int:
         check_outputs(label, block, authority_names(data, "outputs"))
         check_definitions(label, block)
         check_filter(label, block, authority_names(data, "filter"))
+        check_bindings(label, block, root_bindings)
 
     if seen < 2:
         fail(f"expected 2 connector tasks with resolvable contracts, graded {seen}")
