@@ -23,8 +23,8 @@ These four carry the shape. Change one and you are building something else.
 ## Shape
 
 Roles: **Entry** — omit when inserting into a process that already runs.
-**Mechanism** — load-bearing, above. **Placeholder** — bind it, or skip it if
-the process already does this.
+**Mechanism** — changing it changes the pattern. **Placeholder** — bind it, or
+skip it if the process already does this.
 
 | Node | Element | Role |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ the process already does this.
 | `analyze` | `bpmn:serviceTask` | Placeholder · insertion point |
 | `validate` | `bpmn:businessRuleTask` | Mechanism |
 | `confidence_gate` | `bpmn:exclusiveGateway` | Mechanism |
-| `perform_action` | `bpmn:serviceTask` | Placeholder |
+| `perform_action` | `bpmn:serviceTask` | Placeholder · Mechanism — bind the target, but keep it a single node with two inbound edges |
 | `human_review` | `bpmn:userTask` | Mechanism |
 | `post_review_gate` | `bpmn:exclusiveGateway` | Mechanism |
 | `end_actioned` | `bpmn:endEvent` | Mechanism |
@@ -127,9 +127,13 @@ The commonest reduction: the process already scores the item. Insert only
 `validate` onward, bind the gate to the existing score variable, and add no
 second analyzer.
 
-Drop `validate` when the analyzer's output is already schema-constrained and
-cannot be malformed — then simplify the gate condition to the confidence term
-alone. Keep both named end events regardless; that is the audit trail.
+`validate` is the one load-bearing step you can remove, and only when its
+mechanism is vacuous rather than unwanted: if the analyzer's output is
+schema-constrained and cannot be malformed, there is no invalid case to route,
+so simplify the gate to the confidence term alone. If malformed output is merely
+unlikely, keep it.
+
+Keep both named end events regardless; that is the audit trail.
 
 ## Composing
 

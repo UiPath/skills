@@ -99,9 +99,7 @@ they are absorbed by `uipath:retry` on the node.
 
 ## Composing
 
-One net at container level covers every subprocess nested under it. Place a
-second inside a `high-volume-batch` iteration or a `queue-distribution`
-performer only when a per-item failure should be handled per item and the run
-should continue. The net must sit **directly** in the container it guards;
-wrapping it in another subprocess changes which failures reach it. See
-[composing-guide.md](composing-guide.md).
+Nested patterns are covered for free: one net catches failures in every
+subprocess beneath it. For when a second net inside a batch iteration or a queue
+performer earns its place, see
+[composing-guide.md](composing-guide.md#scoping-the-failure-net).
