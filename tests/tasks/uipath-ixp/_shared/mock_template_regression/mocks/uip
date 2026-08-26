@@ -12,7 +12,7 @@
 #   bbbb000000000003 line     untouched    40   0.900 -> 0.650  0.250  0.100  COLLATERAL
 #   bbbb000000000004 header   untouched     5   1.000 -> 0.889  0.111  0.200  ignore
 #
-# thr = max(0.1, 2 x 1/(2 x Annotations)) from the guide's Regression noise floor.
+# thr = max(0.1, 1/Annotations) from the guide's Regression noise floor.
 #
 # Three separations are graded, and each needs a different value:
 #

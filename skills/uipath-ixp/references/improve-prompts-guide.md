@@ -47,7 +47,7 @@ The values `get-metrics` returns are neither independent nor interchangeable —
 | `F1` | field, group | **Decision variable.** Targeting (2a), regression (2f), stopping (2f). |
 | `Precision` | field, group | **Decision variable.** Splits a low `F1` into PRECISION vs RECALL (2a) — that split picks which rewrite to attempt. |
 | `Recall` | field, group | **Decision variable.** Same split, plus the `< 0.5` labelling-gap probe (2a-check). |
-| `Annotations` | field | **Decision variable.** Reviewed **extractions** for that field (not documents) — the sample `F1` is computed over, so it sets the noise floor for the regression check (2f). |
+| `Annotations` | field | **Decision variable.** Reviewed **extractions** for that field (not documents) — the sample `F1` is computed over, so it sets that field's regression threshold (2f). |
 | `Documents` | field, group | **Decision variable.** How many documents this field (or group) was reviewed in — a per-field count, not a project total. `0` → SKIP (2a): no evidence to evaluate a rewrite against. Below `ValidatedDocuments` → this field has unconfirmed labels (2f). |
 | `ProjectScore` | project | **Report only** — the headline number, an average of the per-field `F1` values. Never gate on it (2f diffs the fields directly). |
 | `ValidatedDocuments` | project | **Decision variable.** How many labelled documents the metrics are computed over — project-level only, and the ceiling for every per-field `Documents`. Below the project's total document count → unlabelled documents exist; label them before looping (1e). |
@@ -266,16 +266,13 @@ Compare the new metrics against the **previous iteration** at both levels — th
 
 #### Regression noise floor
 
-`F1` is computed by counting right and wrong over that field's `Annotations`, so with a small sample it moves in jumps. At `Annotations` = 5, a single annotation-level event moves `F1` from 1.00 to 0.909 (one spurious extraction), 0.889 (one missed value) or 0.800 (one correct value turned wrong) — **one event jumps `F1` by 0.09–0.20**. Chance produces the same jump as a genuinely worse instruction, and the number alone cannot tell them apart, so the rollback threshold has to exceed what a single event can cause.
-
-Set it from the sample size:
+With few `Annotations`, `F1` moves in jumps: a single annotation flipping by chance jumps it as far as a genuinely worse instruction would, and the number alone cannot tell the two apart. The rollback threshold therefore scales with the sample:
 
 ```text
-noise_floor = 1 / (2 x Annotations)   # ~smallest F1 step this field can express
-regression_threshold = max(0.1, 2 x noise_floor)
+regression_threshold = max(0.1, 1 / Annotations)
 ```
 
-At `Annotations` = 5 that is 0.2 — as large as the biggest single-event jump, so a drop generally has to be worth more than one flipped annotation before it counts as evidence. From `Annotations` = 10 up, the 0.1 floor takes over. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
+That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — and the flat 0.1 from `Annotations` = 10 up. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
 
 **Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, no prompt rewrite can be evaluated — but the fix depends on *why* the sample is small.
 
@@ -343,7 +340,7 @@ Freight Charge  | 1.000   | 0.889    | -0.111 (under its threshold, kept) | 1.00
 Project score:   X.XX (Quality) -> Y.YY (Quality)   ValidatedDocuments: D
 Iterations: N total, M with rollbacks
 Fields still below target (F1 < 0.7): [list]
-Fields whose Annotations are too few to measure progress (noise floor >= 0.1): [list, each tagged UPLOAD or CONFIRM]
+Fields whose regression_threshold sits above the flat 0.1 (too few Annotations to measure progress): [list, each tagged UPLOAD or CONFIRM]
 Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 ```
 

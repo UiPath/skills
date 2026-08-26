@@ -27,7 +27,7 @@ per-field edits, `metrics_group_rollback` declares one group edit.
 | `bbbb000000000003` | Line Items | no | 40 | 0.900 | 0.650 | 0.250 | 0.100 | **collateral** — report, don't roll back |
 | `bbbb000000000004` | Receipt | no | 5 | 1.000 | 0.889 | 0.111 | 0.200 | ignore — under its own floor |
 
-`threshold = max(0.1, 2 x 1 / (2 x Annotations))`, per
+`threshold = max(0.1, 1 / Annotations)`, per
 [Regression noise floor](../../../../../skills/uipath-ixp/references/improve-prompts-guide.md#regression-noise-floor).
 
 `ProjectScore` (the unweighted mean of per-field `F1`) falls 0.925 → 0.757.
