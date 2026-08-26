@@ -41,10 +41,7 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The intent discriminator. Before-iterating means the loop's baseline: the
-  # latest trained version (30, ProjectScore 0.91) — not the live version
-  # (9, ProjectScore 0.98) that "how is it performing in production" would
-  # read. Version 30 separates the two paths on the artifact.
+  # Resolving the live version instead answers 9 / 0.98.
   - type: json_check
     description: "Reported the improvement baseline — the latest trained version (30), not the live one (9)"
     path: "metrics.json"
@@ -53,7 +50,7 @@ success_criteria:
         operator: equals
         expected: 30
       - expression: "project_score"
-        operator: gte
-        expected: 0.9
+        operator: equals
+        expected: 0.91
     weight: 3.0
     pass_threshold: 1.0
