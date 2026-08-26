@@ -1,6 +1,6 @@
 # Project Setup Guide
 
-Complete workflow for creating a **new** IXP project, labelling documents when annotation quality matters — by the skill, or scaffold-only with the user annotating themselves — and getting initial metrics. Run all steps end-to-end automatically. Deployment is a separate, optional final step — [Deployment Guide](deployment-guide.md).
+Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically. Deployment is a separate, optional final step — [Deployment Guide](deployment-guide.md).
 
 > **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
@@ -85,15 +85,13 @@ uip ixp projects update-title <project-name> "Vendor Invoices" --output json
 
 Skip this step if the user already provided a meaningful name in Step 1.
 
-## Step 4 — Decide whether labelling is needed
+## Step 4 — Label All Documents
 
-**Labelling improves extraction quality; it is NOT required for a working,
-callable model.** A trained version appears on its own within seconds of
-`projects create`.
+**Default:** follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
 
-| The user wants… | Do this |
-| --- | --- |
-| A model an automation / Maestro Flow can call (documents + a downstream goal, not a quality target) | Skip labelling; deploy to a folder per the [Deployment Guide](deployment-guide.md). Say quality is untuned and labelling is the lever if fields come back wrong. |
-| Better extraction quality, or they named accuracy/F1/scores | Follow the [Label Documents Guide](label-documents-guide.md) for every document. Deploy ([Deployment Guide](deployment-guide.md)) only if they also want a callable model. |
-| To annotate themselves (checking annotation quality, or keeping agent costs down) | **Stop after scaffolding.** Hand over the project name — they can label in-product or via the [Label Documents Guide](label-documents-guide.md) later, then deploy if needed ([Deployment Guide](deployment-guide.md)). |
-| Unclear | Skip labelling — cheap to add later (`deployments upgrade` moves a deployment to a newer version). Deploy only when the user's goal calls for it. |
+Labelling is optional — it produces the **project score** (`get-metrics` reports nothing until documents are confirmed) and is not required for a callable model (a trained version appears on its own within seconds of `projects create`). Skip it only when:
+
+- **The request is a model for an automation to call** — a flow, activity pack, or other runtime consumer, with no score, metrics, or accuracy target named. Deploy instead per the [Deployment Guide](deployment-guide.md).
+- **The user opts out** — says to skip labelling, or that they (or an SME) will label. Stop after Step 3 and hand over the project name; they can label in-product or via the [Label Documents Guide](label-documents-guide.md) later.
+
+Skipping is never silent: state that the model is unscored and that labelling is the fix if fields come back wrong.
