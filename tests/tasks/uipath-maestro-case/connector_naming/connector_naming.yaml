@@ -1,0 +1,86 @@
+task_id: skill-case-connector-naming
+description: >
+  CONNECTOR FIELD-NAMING CONTRACT (live tenant, static grading) - build a
+  two-task case from a staged sdd.md and assert that every connector request
+  and response field name written to caseplan.json matches the connector's own
+  contract byte-for-byte.
+
+  The two tasks are chosen so the pair spans both naming conventions the CLI
+  serializer damages differently. Slack "Send Message to Channel" has a
+  snake_case contract (`send_as`, `icon_emoji`, `app_id`, `thread_ts`,
+  `response_metadata`) whose names first-character lowering destroys. Outlook
+  "Calendar Event Created" has a capital-first contract (`Title`, `ID`,
+  `CalendarID`, `Attachments[*].MIMEType`) whose names a "no capital-first key
+  may remain" scan destroys. Between them the case also covers array markers,
+  three-level nesting, $ref/definitions, a 102-leaf -> 13-property collapse,
+  and contract names that collide with JSON-Schema keywords (`Title`, `Type`,
+  `Name`).
+
+  Stops at validate - the case is NEVER run or debugged. Nothing is posted to
+  Slack and no calendar event is awaited; grading is a static comparison of
+  caseplan.json against `uip maestro case spec`.
+
+  TENANT PRECONDITION: the two connections in fixtures/sdd.md must exist and be
+  Enabled. Neither task needs a resource lookup - `send_as` and `channel` take
+  literal values and the trigger declares no event parameters.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, connector, resource]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 300
+  turn_timeout: 3600
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD staged as `sdd.md` in this folder. Build a UiPath Case
+  Management solution named "ConnectorNaming" containing a project also named
+  "ConnectorNaming" from it.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
+  not re-interview me, and do not redesign the process. The tenant is LIVE and
+  both connections in the SDD are real - resolve both connector tasks against
+  them. Skeleton or placeholder connector blocks are NOT acceptable.
+
+  Pass every input, filter clause, and output binding exactly as the SDD lists
+  them, using the connector's own field names verbatim.
+
+  Stop after `uip maestro case validate` passes. Do NOT run `case debug`, do
+  NOT publish, and do NOT upload the solution - this case must never execute.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated ConnectorNaming caseplan.json"
+    command: "uip maestro case validate ConnectorNaming/ConnectorNaming/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "every connector field name in caseplan.json matches the live connector contract byte-for-byte (inputs, response properties, definitions/$ref, and the compiled trigger filter)"
+    command: "python3 $TASK_DIR/check_connector_naming.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug, publish, or solution upload - this case must never execute"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+case\s+(debug|publish)|solution\s+(upload|deploy))\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 2.0
+    pass_threshold: 1.0
