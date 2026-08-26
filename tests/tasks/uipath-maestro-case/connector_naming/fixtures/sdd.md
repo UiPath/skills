@@ -82,17 +82,15 @@ to an ID.
 | Sink | Field name | Value | Naming case covered |
 |---|---|---|---|
 | queryParameters | `send_as` | `bot` | flat snake_case, REQUIRED |
-| bodyParameters | `channel` | `C01G1P7CU58` (the `#general` channel) | single word, REQUIRED |
+| bodyParameters | `channel` | `#general` | single word, REQUIRED |
 | bodyParameters | `messageToSend` | `Naming contract check` | lowerCamelCase, REQUIRED |
 | bodyParameters | `link_names` | `true` | flat snake_case, native boolean |
 | bodyParameters | `image` | `https://example.invalid/build.png` | single word, optional |
 
-> `send_as` and `channel` are the connector's only reference-typed inputs, and
-> both take literal values here — `bot` is the field's own default, and
-> `channel` is the resolved id of `#general`, a channel that exists on every
-> Slack workspace this connection can reach. Do NOT run a resource lookup: the
-> `curated_channels` resource caps at 1000 results on this workspace and its
-> page parameter is ignored, so a lookup cannot be relied on to find a channel.
+> `send_as` and `channel` are the connector's only reference-typed inputs.
+> The channel is given by name — resolving it to an id is the skill's job, and
+> the resolved value is not what this case grades. What IS graded is that the
+> field is written under the key `channel`.
 >
 > This input set is deliberately limited to the fields Studio Web's Slack form
 > exposes, so a canvas-built solution stays a valid cross-check of the shape.
