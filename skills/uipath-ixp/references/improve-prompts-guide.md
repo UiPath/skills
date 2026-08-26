@@ -266,7 +266,7 @@ Compare the new metrics against the **previous iteration** at both levels — th
 
 #### Regression noise floor
 
-`F1` is a ratio over that field's `Annotations`, so it cannot move in arbitrarily small steps. With `Annotations` = 5 the reachable values near the top are 1.00, 0.889, 0.80 — **adjacent steps of ~0.11**. One annotation flipping is indistinguishable from a genuinely worse instruction, so the rollback threshold has to sit above the steps the metric takes on its own.
+`F1` is computed by counting right and wrong over that field's `Annotations`, so with a small sample it can only take a few values — at `Annotations` = 5 the values nearest the top are 1.00, 0.889 and 0.80, with nothing in between. **A single annotation changing moves `F1` by ~0.11 in one jump**, and one annotation flipping by chance produces the same drop as a genuinely worse instruction — the number alone cannot tell them apart. The rollback threshold therefore has to be bigger than the jump one annotation can cause.
 
 Set it from the sample size:
 
