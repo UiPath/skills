@@ -1,7 +1,6 @@
 ---
 name: uipath-test
 description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
-when_to_use: "Triage a failed Test Manager run: inspect failed test case logs, assertions and step logs, tell a real regression from a flaky test via result history, download failure attachments as defect evidence. Also manage projects, requirements, test cases, test sets and executions, and generate persona-tailored test reports."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
