@@ -415,6 +415,13 @@ Verify the agent ran a specific CLI command (matched by regex). From `init_valid
   pass_threshold: 1.0   # fraction of min_count required to pass
 ```
 
+**Scope lookaheads and excludes to ONE command segment.** The grader runs one `pattern.search()` per Bash tool call (`re.DOTALL`) and also matches a normalized haystack with newlines collapsed to spaces — so `(?=[\s\S]*--flag)` and `exclude_pattern` see every command batched into that call (codex chains `a && b` or stacks lines; a call-wide exclude then vetoes a correct command). Use the segment idiom `S = (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*` ("rest of THIS command", stops at newline, `&&`, `||`, `;`, `|`, or the next `uip`) and inline negatives instead of `exclude_pattern`:
+
+```yaml
+# S expanded inline — YAML single quotes, no escaping needed
+command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)'
+```
+
 ### `file_exists`
 
 Verify a file was created in the sandbox. From `init_validate.yaml`:
