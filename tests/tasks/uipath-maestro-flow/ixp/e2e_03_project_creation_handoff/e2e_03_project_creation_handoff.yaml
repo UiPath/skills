@@ -29,7 +29,7 @@ description: >
   cross-checks the authored node against live tenant state, catching a
   schema-valid flow wired to the wrong extractor.
 
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp, path-to-ga]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp]
 
 # driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
 # @uipath/ixp-tool plugin, pre-baked only into skills-image:latest (see
