@@ -33,7 +33,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created feedback with --positive, --trace-id, and --folder-key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+feedback\s+create(?=.*--positive)(?=.*--trace-id)'
+    command_pattern: 'uip\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--positive)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--trace-id)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

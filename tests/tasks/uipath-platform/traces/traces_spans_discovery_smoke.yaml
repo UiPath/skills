@@ -6,6 +6,8 @@ description: >
   `spans get <trace-id>` form with folder context. Complements traces_fetch.yaml,
   which only ever reaches `spans get --job-key` and never touches `or jobs traces`,
   the positional trace-id form, or the `--folder-path`/`--folder-key` context flags.
+  The positional ID is accepted anywhere in the command (flags-first is legal); a
+  `--job-key`/`--folder-key` GUID value does not count as it.
   Auth/404 responses are acceptable outcomes — the graded behavior is which tools
   the agent reaches for and the shape of the commands, not tenant data.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces]
@@ -39,7 +41,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched spans by positional trace ID (not the --job-key shortcut)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get\s+(?:\\\s+)?["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})'
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?<!--job-key\s)(?<!--folder-key\s)["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})["'']?(?:\s|$))'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -47,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed folder context on spans get (--folder-path or --folder-key)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=[\s\S]*--folder-(path|key))'
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-(?:path|key))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

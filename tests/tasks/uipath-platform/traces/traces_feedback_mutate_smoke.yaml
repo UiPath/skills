@@ -7,8 +7,11 @@ description: >
   replacement, not additive, so adding a tag means re-passing the existing tag
   alongside the new one. An agent that passes only the new tag silently drops
   the old one and fails. Also covers `--folder-key` and the required `-y` on the
-  two commands they were never checked for. Auth/404 responses are acceptable
-  outcomes — the graded behavior is command shape.
+  two commands they were never checked for. The positional ID is accepted
+  anywhere in the command (`update [options] [id]` — flags-first is legal; a
+  `--folder-key` GUID value does not count as the ID), and graders are
+  segment-scoped so batched calls grade per command. Auth/404 responses are
+  acceptable outcomes — the graded behavior is command shape.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
 
 run_limits:
@@ -33,7 +36,7 @@ success_criteria:
   - type: command_executed
     description: "Agent flipped the sentiment and set the new comment via update, with the required --folder-key"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+(?!-)\S+(?=[\s\S]*--negative)(?=[\s\S]*--comment[\s=])(?=[\s\S]*--folder-key)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?<!--folder-key\s)["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})["'']?(?:\s|$))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment[\s=])(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -41,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Agent re-passed the existing tag alongside the new one (--category replaces, not appends)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+(?!-)\S+(?=[\s\S]*--category[\s=]["'']?Output)(?=[\s\S]*--category[\s=]["'']?Agent\s+Error)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?<!--folder-key\s)["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})["'']?(?:\s|$))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category[\s=]["'']?Output)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category[\s=]["'']?Agent\s+Error)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -49,7 +52,7 @@ success_criteria:
   - type: command_executed
     description: "Agent, not the harness, deleted the duplicate record with --folder-key and the required -y"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+delete\s+(?!-)\S+(?=[\s\S]*--folder-key)(?=[\s\S]*(?:\s-y(?:\s|$)|--yes))'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+delete(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?<!--folder-key\s)["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})["'']?(?:\s|$))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?:\s-y(?:\s|$)|--yes))'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

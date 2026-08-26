@@ -30,7 +30,7 @@ success_criteria:
   - type: command_executed
     description: "Agent filed negative feedback on the trace with the review text as a comment"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--negative)(?=[\s\S]*--trace-id)(?=[\s\S]*--comment[\s=])'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--trace-id)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment[\s=])'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -38,7 +38,7 @@ success_criteria:
   - type: command_executed
     description: "Agent attributed the feedback to the agent and its version"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--agent-id)(?=[\s\S]*--agent-version)(?=[\s\S]*--folder-key)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-version)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -46,8 +46,7 @@ success_criteria:
   - type: command_executed
     description: "Feedback was filed WITHOUT --span-id: for a directly-invoked agent the root span is the agent run"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create'
-    exclude_pattern: '--span-id'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

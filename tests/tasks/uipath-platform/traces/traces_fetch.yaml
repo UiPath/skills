@@ -1,8 +1,12 @@
 task_id: skill-platform-traces-fetch
 description: >
   Smoke test: agent uses the uipath-platform skill to fetch LLM trace spans for a
-  given job key against the live tenant. Verifies the agent knows to call
-  `uip traces spans get --job-key <guid> --output json`.
+  given job key against the live tenant. Two paths score: the direct
+  `uip traces spans get --job-key <guid>` shortcut, or traces.md's own two-step
+  flow (`uip or jobs traces <key>` → `spans get <trace-id>`) — the tenant
+  currently rejects the `--job-key` form for unknown jobs (`Error retrieving
+  trace ID for job`), so an agent following the documented flow must not score
+  0. Either way `spans get` must be reached.
   A 404 response (no traces for this job key) is an acceptable outcome.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, traces]
 
@@ -16,9 +20,17 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent fetched spans using uip traces spans get with --job-key flag"
+    description: "Agent resolved the job's traces: spans get --job-key directly, or the documented or jobs traces <key> discovery step"
     tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+spans\s+get.*--job-key'
+    command_pattern: '(uip|\$UIP)\s+(?:traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--job-key)|(?:or|orchestrator)\s+jobs\s+traces\s+(?!-)\S+)'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent reached uip traces spans get (by job key or by a discovered trace ID)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get\b'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0

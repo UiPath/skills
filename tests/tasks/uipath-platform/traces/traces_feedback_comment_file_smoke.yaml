@@ -34,7 +34,7 @@ success_criteria:
   - type: command_executed
     description: "Agent sourced the first comment from review-note.md rather than retyping it"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file[\s=]+["'']?(?:\$?\S*/)?review-note\.md)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment-file[\s=]+["'']?(?:\$?\S*/)?review-note\.md)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -42,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent applied both category tags on one record (--category is repeatable)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--category[\s=]["'']?Output)(?=[\s\S]*--category[\s=]["'']?Agent\s+Error)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category[\s=]["'']?Output)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category[\s=]["'']?Agent\s+Error)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -50,7 +50,7 @@ success_criteria:
   - type: command_executed
     description: "Agent piped the generated write-up in on stdin (--comment-file -)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file[\s=]+-(\s|$))'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment-file[\s=]+-(\s|$))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -63,8 +63,7 @@ success_criteria:
   - type: command_executed
     description: "Trace 7d3a91e0f5c24b8ea0c6d219bb47f0a3 was filed via --comment-file, never inline --comment"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?7d3a91e0f5c24b8ea0c6d219bb47f0a3)(?=[\s\S]*--comment-file)'
-    exclude_pattern: '--comment[\s=]'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--trace-id[\s=]+["'']?7d3a91e0f5c24b8ea0c6d219bb47f0a3)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment-file)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment[\s=])'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -72,8 +71,7 @@ success_criteria:
   - type: command_executed
     description: "Trace a18b4c7d2e934f60b5c81d3a6f9e2077 was filed via --comment-file, never inline --comment"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?a18b4c7d2e934f60b5c81d3a6f9e2077)(?=[\s\S]*--comment-file)'
-    exclude_pattern: '--comment[\s=]'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--trace-id[\s=]+["'']?a18b4c7d2e934f60b5c81d3a6f9e2077)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment-file)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment[\s=])'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
