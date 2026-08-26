@@ -270,6 +270,20 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
         '| Script action | `core.action.script` |',
       ),
     );
+    write(
+      upstreamRoot,
+      'typescript/sdk/skill/SKILL-bpmn.md',
+      [
+        '# BPMN fixture v2',
+        '',
+        '[API](references/bpmn-api.md).',
+        '',
+        '## Capability router',
+        '',
+        '`example/NotifyChannel.bpmn.ts` is the worked example.',
+        '',
+      ].join('\n'),
+    );
     const newPin = commit(upstreamRoot, 'drift');
 
     const result = syncSnapshots({ skillsRoot, upstreamRoot });
@@ -300,6 +314,14 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
     assert.match(
       read(skillsRoot, 'preview/uipath-maestro-case/SKILL.md'),
       /New upstream Case guidance/,
+    );
+    assert.match(
+      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      /# BPMN fixture v2[\s\S]*`examples\/NotifyChannel\.bpmn\.ts`/,
+    );
+    assert.doesNotMatch(
+      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      /representative process/,
     );
     for (const skill of ['flow', 'case', 'bpmn']) {
       assert.match(
