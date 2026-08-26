@@ -63,7 +63,7 @@ Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follo
 2. To create a new project: follow [Project Setup Guide](references/project-setup-guide.md)
 3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts-guide.md)
 4. To label documents on an existing project: follow [Label Documents Guide](references/label-documents-guide.md)
-5. To deploy a model so an automation can call it (Maestro Flow, activity packs): `projects create` → `list-models` → `deployments create --folder-key`. Neither labelling nor `publish` is required — see [Project Setup Guide § Step 5](references/project-setup-guide.md#step-5--deploy-so-it-can-be-called).
+5. To deploy a model so an automation can call it (Maestro Flow, activity packs): `projects create` → `list-models` → `deployments create --folder-key`. Neither labelling nor `publish` is required — see [Deployment Guide](references/deployment-guide.md).
 
 If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the Project Setup guide).
 
