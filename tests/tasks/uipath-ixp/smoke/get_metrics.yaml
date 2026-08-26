@@ -1,21 +1,13 @@
 task_id: skill-ixp-get-metrics-smoke
 description: >
-  Smoke: asked for the BASELINE scores of an improvement loop, the agent
-  reads the latest trained version — the model instruction edits retrain
-  (Critical Rule 21, guide 1a) — and reports its numbers, not the live
-  version's.
+  Smoke: asked for an improvement loop's BASELINE scores, the agent reads
+  the latest trained version — the model instruction edits retrain
+  (Critical Rule 21, guide 1a) — not the live one.
 
-  The mirror of metrics_live_version, on the same fixture: live is v9
-  (ProjectScore 0.98), latest is v30 (ProjectScore 0.91), so the two intents
-  have opposite correct answers. "How is it performing in production" reads
-  the live version; "inspect scores before iterating" reads the baseline the
-  loop improves on — the latest trained model (improve-prompts-guide, 1a).
-  The prompt names the improvement loop and the word baseline outright; the
-  version must still come from the skill. An agent that resolves the live
-  version regardless of intent answers
-  9 / 0.98 and fails the outcome check. The graded values are reachable only
-  from an actual `get-metrics` read, and the command criterion locks in the
-  project-`Name` argument (not `Title`).
+  Mirror of metrics_live_version on the same fixture (live v9 scores 0.98,
+  latest v30 scores 0.91): an agent that resolves the live version
+  regardless of intent answers 9/0.98 and fails the outcome check. Also
+  locks in the project-Name argument (not Title).
 tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
