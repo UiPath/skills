@@ -289,7 +289,7 @@ uip maestro flow registry search <keyword>
 | `core.action.transform` | `output`, `error` | `input` |
 | `core.logic.decision` | `true`, `false` | `input` |
 | `core.logic.switch` | `case-{id}` (dynamic), `default` | `input` |
-| `core.logic.loop` | `success`, `output` | `input`, `loopBack` |
+| `core.logic.loop` | `success`, `error` (outer), `start` (inner) | `input` (outer), `continue`, `break` (inner) |
 | `core.logic.merge` | `output` | `input` |
 | `core.control.end` | — | `input` |
 | `core.logic.terminate` | — | `input` |

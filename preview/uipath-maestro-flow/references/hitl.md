@@ -1,12 +1,14 @@
 # Human-in-the-Loop
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`hitl()`](api.md#hitl-function).*
+*Exact signatures, fields, and defaults: [`hitl()`](api.md#hitl-function).*
 
 Pause a Flow for a person using the default inline form, the quick-form node
-type, or a deployed Action App.
+type, a deployed Action App, or a document-validation station.
 
 Signature:
-`hitl({ variant?: 'quick-form' | 'action-app', app?, title?, priority?, fields?, outcomes })`.
+`hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation', app?,
+document?, title?, priority?, labels?, recipient?, fields?, outcomes,
+outcomePorts?, exposeError? })`.
 
 ```ts
 .step('review', hitl({ title: 'Review invoice',
@@ -16,6 +18,27 @@ Signature:
   { value: 'Approve', body: (b) => b.return({ status: 'approved' }) },
 ], (other) => other.return({ status: 'rejected' }))
 ```
+
+## Delivery, fields, and routing
+
+- `recipient` is `{ channels?, assignee: { type, value? }, connections? }` —
+  channels are `'Slack' | 'teams' | 'Email' | 'ActionCenter'` (Teams really is
+  the lowercase `'teams'`); assignee types are `user`, `group`, `staticEmail`,
+  `staticGroupName`, `workload`, `roundRobin`, `custom`. Omit the whole object
+  for the platform default (Email + Action Center, assigned to a group).
+- `labels` is one comma-separated string, shown in Action Center.
+- A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
+  (pre-filled AND editable — give it a `value`; the reviewed value comes back
+  at the field's own id).
+- `outcomePorts: true` gives each outcome its own exit, `outcome-<slug>` (the
+  name lowercased, non-alphanumerics to `-`). The FIRST outcome continues the
+  main path; route the others with `.stepToList('outcome-<slug>', …)`. Base
+  variant only. `exposeError: true` additionally exposes
+  `out('<step>', 'error')` and implies outcome-port routing.
+- `variant: 'document-validation'` takes `document: { extractionResult,
+  storageBucket?, documentId?, render?, taxonomy? }` and no `fields`; bind
+  `extractionResult` to the upstream extract step's `ExtractionResult`.
+  `render: 'custom'` requires `taxonomy` (and takes `app`).
 
 ## Variant judgment
 

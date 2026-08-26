@@ -139,7 +139,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 | Agent | Description |
 |-------|-------------|
-| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
+| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, and conventions, then writes the context files itself for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project with authored workflows is detected without existing context, or on explicit user request. Skips empty and freshly-scaffolded projects. |
 
 ## Multi-Tool Support
 

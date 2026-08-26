@@ -1,0 +1,35 @@
+task_id: skill-admin-authz-roles-builtin-filter-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — retrieve only the built-in
+  authorization roles, excluding custom ones. A marker custom role is seeded in
+  pre_run precisely so the filter has something to exclude: the check fails if any
+  Custom row comes back, so the filter is verified by its effect on the data
+  rather than by the flag the agent typed.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, role]
+
+pre_run:
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-builtin-filter-decoy" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Custom decoy that a built-in-only listing must exclude" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 60
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-builtin-filter-decoy" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 60
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Show me only the built-in authorization roles that ship with the platform in my
+  UiPath organization — leave out any custom roles we created ourselves. Save the
+  complete JSON result to ./builtin-roles.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "builtin-roles.json holds only BuiltIn roles from the service — the seeded custom decoy is excluded"
+    command: 'AUTHZ_ROLE_FILE="builtin-roles.json" AUTHZ_EXPECT_TYPE="BuiltIn" AUTHZ_MIN_ROWS="10" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_listing.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

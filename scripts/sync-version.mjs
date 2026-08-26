@@ -9,6 +9,7 @@
  *   - .claude-plugin/plugin.json   .version (== package.json base version)
  *   - .claude-plugin/marketplace.json  .plugins[0].version (== plugin.json)
  *   - .codex-plugin/plugin.json    .version (== plugin.json — Codex channel)
+ *   - .cursor-plugin/plugin.json   .version (== plugin.json — Cursor channel)
  *
  * `targetCli` is derived as the matching @uipath/cli minor line
  * (`^MAJOR.MINOR.0`). A skills release tracks the CLI minor line it ships
@@ -20,22 +21,24 @@
  * alpha stamp from publish.yml) are NOT propagated: plugin auto-update wants
  * plain versions, and the plugin channel is a git ref, not the npm tarball.
  * `.claude-plugin/plugin.json` is the canonical plugin version; the
- * marketplace and Codex manifests mirror it. Rules enforced here:
+ * marketplace, Codex, and Cursor manifests mirror it. Rules enforced here:
  *   - plugin version != package.json base version -> rewrite to the base
  *     version (errors out if package.json's base version is BELOW the plugin
  *     version — plugin auto-update never downgrades, so a lower version
  *     would freeze users)
- *   - marketplace .plugins[0].version and .codex-plugin/plugin.json .version
- *     must always equal .claude-plugin/plugin.json .version
+ *   - marketplace .plugins[0].version, .codex-plugin/plugin.json .version,
+ *     and .cursor-plugin/plugin.json .version must always equal
+ *     .claude-plugin/plugin.json .version
  * See docs/RELEASE.md.
  *
  * Usage:
  *   node scripts/sync-version.mjs               # rewrite derived manifests
  *   node scripts/sync-version.mjs --check       # exit 1 if any are out of sync
+ *   node scripts/sync-version.mjs --list-paths  # print the files this script owns
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -55,7 +58,26 @@ const PATHS = {
   plugin: join(ROOT, ".claude-plugin", "plugin.json"),
   marketplace: join(ROOT, ".claude-plugin", "marketplace.json"),
   codexPlugin: join(ROOT, ".codex-plugin", "plugin.json"),
+  cursorPlugin: join(ROOT, ".cursor-plugin", "plugin.json"),
 };
+
+// `--list-paths` prints every file this script owns -- the authoritative
+// package.json plus each derived manifest -- as one repo-relative POSIX path
+// per line, then exits.
+//
+// Release automation stages exactly this set, so adding a channel to PATHS is
+// picked up automatically instead of needing a matching edit to a hardcoded
+// `git add` list. Skipping that edit is what dropped
+// `.cursor-plugin/plugin.json` from the 1.201 sprint-cut commit and blocked
+// every publish channel (#2767).
+//
+// Keep stdout to the paths alone: this is consumed via command substitution.
+if (process.argv.includes("--list-paths")) {
+  for (const p of Object.values(PATHS)) {
+    console.log(relative(ROOT, p).split(sep).join("/"));
+  }
+  process.exit(0);
+}
 
 function readJson(p) {
   return JSON.parse(readFileSync(p, "utf-8"));
@@ -147,6 +169,16 @@ if (codexPlugin.version !== pluginVersion) {
   );
   codexPlugin.version = pluginVersion;
   writes.push(() => writeJson(PATHS.codexPlugin, codexPlugin));
+}
+
+// .cursor-plugin/plugin.json — Cursor distribution channel; must equal plugin.json.
+const cursorPlugin = readJson(PATHS.cursorPlugin);
+if (cursorPlugin.version !== pluginVersion) {
+  drift.push(
+    `.cursor-plugin/plugin.json: ${cursorPlugin.version} -> ${pluginVersion}`,
+  );
+  cursorPlugin.version = pluginVersion;
+  writes.push(() => writeJson(PATHS.cursorPlugin, cursorPlugin));
 }
 
 if (CHECK) {

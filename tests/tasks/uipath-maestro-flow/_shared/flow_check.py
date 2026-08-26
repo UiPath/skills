@@ -53,6 +53,42 @@ from typing import Any, Iterable, Sequence
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
 
+# Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
+# / ``--attachment``). Stashed because the runtime returns every global — `in` and
+# `out` alike — in one ``variables.globals`` dict with no direction marker, so
+# this is the only exact way to tell a result from an echo of what we just fed
+# in. Consumed by :func:`_declared_input_global_keys`; see the input-echo note on
+# :func:`assert_outputs_contain`.
+_LAST_DEBUG_INPUT_IDS: set[str] = set()
+
+# Project dir :func:`run_debug` resolved for the most recent run. Stashed so the
+# source-declared `direction:"in"` signal works automatically instead of needing
+# every call site to opt in — and so the lookup is scoped to the project that
+# actually ran, never a bare glob from an arbitrary CWD.
+_LAST_DEBUG_PROJECT_DIR: str | None = None
+
+
+# The CLI polls for `--timeout` seconds (default 600) before giving up, while
+# call sites here cap the subprocess at 180-300s. Without an explicit
+# `--timeout` we SIGKILL the CLI mid-poll and keep nothing — no payload, no
+# instanceId, no incidents. The headroom covers the phases `--timeout` does not
+# bound (upload, provisioning, begin-session, create-instance), so the CLI
+# always self-terminates first, with a parseable envelope.
+_CLI_TIMEOUT_HEADROOM_SECONDS = 60
+_MIN_CLI_TIMEOUT_SECONDS = 30
+
+# `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` — the CLI never reads the latter. At
+# `info` it narrates jobKey / instanceId / Studio Web URL to stderr, the only
+# way to find the instance after a timeout.
+_DEBUG_LOG_LEVEL = "info"
+
+# Matched on the message: the CLI labels this path `Retry: RetryWillNotFix`,
+# which is wrong for a poll timeout.
+_DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
+
+# Each attempt costs the full subprocess budget, so cap below `retries`:
+# 3 x 300s would exceed the 600s criterion budget in the task YAMLs.
+_POLL_TIMEOUT_ATTEMPTS = 2
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -63,23 +99,50 @@ _LAST_DEBUG_RAW: str | None = None
 # check (customer-escalation-triage). Distinct from a real flow failure (a
 # `finalStatus` that completed-with-fault, or wrong outputs), which must fail
 # immediately. Retry ONLY on the transient markers below.
-_DEBUG_RETRY_MARKERS = ('"retry": "retrylater"', '"errorcode": "server_error"')
+_DEBUG_RETRY_MARKERS = (
+    '"retry": "retrylater"',
+    '"errorcode": "server_error"',
+    _DEBUG_POLL_TIMEOUT_MARKER,
+)
+
+
+def _output_blob(result: subprocess.CompletedProcess) -> str:
+    """Both streams, lowercased, for case-insensitive marker matching."""
+    return f"{result.stdout}\n{result.stderr}".lower()
 
 
 def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
-    server-side error (5xx / RetryLater) worth retrying, rather than a real
-    flow fault. Case-insensitive so CLI key casing can't slip past."""
+    server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
+    rather than a real flow fault. Case-insensitive so CLI key casing can't
+    slip past."""
     if result.returncode == 0:
         return False
-    blob = f"{result.stdout}\n{result.stderr}".lower()
-    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+    if any(marker in _output_blob(result) for marker in _DEBUG_RETRY_MARKERS):
         return True
     # Fall back to an explicit 5xx HttpStatus in the error Context.
     data = _parse_json(result.stdout)
     status = _get_ci(data or {}, "Context", default={})
     http = _get_ci(status if isinstance(status, dict) else {}, "HttpStatus")
     return isinstance(http, int) and 500 <= http < 600
+
+
+def _is_poll_timeout(result: subprocess.CompletedProcess) -> bool:
+    """True iff the CLI gave up on its own poll budget, rather than any other
+    transient error — see :data:`_POLL_TIMEOUT_ATTEMPTS`."""
+    return result.returncode != 0 and (
+        _DEBUG_POLL_TIMEOUT_MARKER in _output_blob(result)
+    )
+
+
+def _as_text(raw: bytes | str | None) -> str:
+    """Decode captured child output. ``subprocess.TimeoutExpired`` carries it as
+    bytes even under ``text=True``, unlike ``CompletedProcess``."""
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace")
+    return raw
 
 
 # ── Public helpers ──────────────────────────────────────────────────────────
@@ -97,10 +160,15 @@ def run_debug(
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
 
-    Transient server-side errors (5xx / ``RetryLater`` while polling the debug
-    instance — see :func:`_is_transient_debug_error`) are retried up to
-    ``retries`` times with ``backoff_seconds`` between attempts. A real flow
-    fault (non-transient failure, or a run that completes with the wrong
+    ``timeout`` is the hard subprocess cap; the CLI gets a strictly smaller
+    ``--timeout`` so an overrun ends with its own diagnosable envelope instead
+    of a SIGKILL.
+
+    Transient server-side errors (5xx / ``RetryLater``, or the CLI's own
+    poll-budget expiry — see :func:`_is_transient_debug_error`) are retried up
+    to ``retries`` times with ``backoff_seconds`` between attempts; poll
+    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS`. A real flow fault
+    (non-transient failure, or a run that completes with the wrong
     ``finalStatus``) fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
@@ -108,16 +176,53 @@ def run_debug(
     ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
     ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
+    cli_timeout = max(
+        _MIN_CLI_TIMEOUT_SECONDS, timeout - _CLI_TIMEOUT_HEADROOM_SECONDS
+    )
+    cmd = [
+        "uip",
+        "maestro",
+        "flow",
+        "debug",
+        project_dir,
+        "--output",
+        "json",
+        "--timeout",
+        str(cli_timeout),
+    ]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    global _LAST_DEBUG_RAW
+    env = dict(os.environ)
+    env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
+    global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS, _LAST_DEBUG_PROJECT_DIR
+    # Record what we bound as input, and where the project lives, so output
+    # assertions can discount echoes of our own inputs.
+    _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
+        str(k) for k in (attachments or {})
+    }
+    _LAST_DEBUG_PROJECT_DIR = project_dir
     for attempt in range(retries):
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        try:
+            r = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout, env=env
+            )
+        except subprocess.TimeoutExpired as exc:
+            # The CLI's own --timeout never fired, so the stall is upstream of
+            # polling. Keep the partial output rather than dying on a traceback.
+            _LAST_DEBUG_RAW = _as_text(exc.stdout)
+            _fail_with_capture(
+                f"flow debug exceeded the {timeout}s subprocess cap without returning "
+                f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
+                "polling: solution upload, Studio Web debug provisioning, "
+                "begin-session, or create-instance).\n"
+                f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
+            )
         _LAST_DEBUG_RAW = r.stdout
         if r.returncode == 0 or not _is_transient_debug_error(r):
+            break
+        if _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
         if attempt + 1 < retries:
             time.sleep(backoff_seconds)
@@ -392,18 +497,115 @@ def collect_outputs(payload: dict) -> list[Any]:
     runtime (as a name→value dict). ``variables.globalVariables`` is the
     SDK-typed array shape; in practice the runtime populates the dict form.
     Both are walked to be safe.
+
+    NOTE: ``variables.globals`` holds every global — ``in`` as well as ``out``
+    — so this includes the flow's own INPUT values. That is deliberate for
+    callers doing a "did the run produce anything at all" check, but it makes
+    the set unsafe for grading a needle that is also an input. See
+    :func:`assert_outputs_contain`, which subtracts the declared inputs.
     """
+    return _global_leaves(payload)
+
+
+def _global_leaves(payload: dict, *, skip_keys: Iterable[str] = ()) -> list[Any]:
+    """Flattened global + element-output leaves, optionally skipping globals by
+    key. ``skip_keys`` is how :func:`assert_outputs_contain` drops declared
+    inputs; element outputs are never skipped (they are genuine node results)."""
+    skip = {str(k).lower() for k in skip_keys}
     out: list[Any] = []
     variables = _get_ci(payload, "variables", "Variables") or {}
-    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
+    for key, val in (_get_ci(variables, "globals", "Globals") or {}).items():
+        if str(key).lower() in skip:
+            continue
         out.extend(_leaves(val))
     for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        name = str(_get_ci(v, "id", "Id", "name", "Name") or "")
+        if name.lower() in skip:
+            continue
         value = _get_ci(v, "value", "Value")
         if value is not None:
             out.extend(_leaves(value))
     for e in _get_ci(variables, "elements", "Elements") or []:
         out.extend(_leaves(_get_ci(e, "outputs", "Outputs") or {}))
     return out
+
+
+def _declared_input_global_keys(
+    payload: dict, *, project_dir: str | None = None
+) -> set[str]:
+    """Return the ``variables.globals`` keys that hold INPUT values, not results.
+
+    Three signals, unioned, because no single one is complete. All are cheap:
+    none of them globs the filesystem, which matters because the module is
+    imported from an arbitrary CWD (at a repo root, ``**/*.flow`` matches
+    hundreds of unrelated flows through a ``plugins/`` symlink loop and would
+    read whichever one sorted first).
+
+    1. **Key shape.** A trigger-scoped input is keyed
+       ``<triggerNodeId>.output.<varId>`` at runtime — e.g.
+       ``start.output.inputDoc``. Outputs are keyed by bare id (``fileName``),
+       so this shape is unambiguously an input.
+    2. **What the checker itself bound.** :func:`run_debug` stashes the variable
+       ids it passed via ``--inputs`` / ``--attachment``. Those are inputs by
+       construction, and this is exact — no parsing, no guessing. It covers the
+       plain (non-trigger) inputs that signal 1 cannot see.
+    3. **Source declaration.** Reads the project's first ``.flow`` and collects
+       ``variables.globals[].id`` where ``direction == "in"``. Catches inputs the
+       checker never passed — an ``in`` global with a ``defaultValue`` still gets
+       a runtime value and still echoes. The project defaults to the one
+       :func:`run_debug` resolved, so this needs no per-call-site opt-in;
+       ``project_dir`` overrides it for a caller holding a payload from
+       elsewhere. Parse failures degrade to signals 1-2 rather than erroring.
+
+    Why not read direction from the payload? The runtime does return a
+    ``variables.globalDefinitions`` map, but it carries only ``name`` and
+    ``type`` — no direction — so it cannot separate an input from an output::
+
+        "globalDefinitions": {"start.output.inputDoc": {"name": "inputDoc", "type": "file"},
+                              "fileName": {"name": "fileName", "type": "string"}}
+
+    Verified against a live debug payload. It is useful only for mapping a
+    trigger-scoped key back to its declared id, which the leaf split below
+    already does.
+    """
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    keys = list((_get_ci(variables, "globals", "Globals") or {}).keys())
+    keys += [
+        str(_get_ci(v, "id", "Id", "name", "Name") or "")
+        for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []
+    ]
+
+    # Signal 1 — trigger-scoped key shape.
+    inputs = {k for k in keys if re.match(r"^[^.]+\.output\.[^.]+$", str(k))}
+
+    # Signals 2 and 3 — ids known to be inputs, matched to keys by exact name or
+    # by the leaf of a `<trigger>.output.<id>` key.
+    declared = {str(i).lower() for i in _LAST_DEBUG_INPUT_IDS}
+    project_dir = project_dir or _LAST_DEBUG_PROJECT_DIR
+    if project_dir:
+        try:
+            flows = sorted(
+                glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+            )
+            if flows:
+                with open(flows[0]) as f:
+                    flow = json.load(f)
+                src = (
+                    flow.get("variables")
+                    or flow.get("workflow", {}).get("variables")
+                    or {}
+                )
+                declared |= {
+                    str(v["id"]).lower()
+                    for v in (src.get("globals") or [])
+                    if v.get("direction") == "in" and v.get("id")
+                }
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    for k in keys:
+        if str(k).lower() in declared or str(k).rsplit(".", 1)[-1].lower() in declared:
+            inputs.add(k)
+    return inputs
 
 
 def _leaves(v: Any):
@@ -418,24 +620,72 @@ def _leaves(v: Any):
 
 
 def assert_outputs_contain(
-    payload: dict, needles: str | Sequence[str], *, require_all: bool = True
+    payload: dict,
+    needles: str | Sequence[str],
+    *,
+    require_all: bool = True,
+    allow_input_echo: bool = False,
+    project_dir: str | None = None,
 ) -> None:
-    """Assert the stringified outputs contain the given needle(s).
+    """Assert the stringified outputs contain the given needle(s), IGNORING the
+    flow's own input values.
 
     ``require_all=True`` (default): every needle must appear.
     ``require_all=False``: at least one needle must appear.
+
+    Input echoes do not count (MST — see below). ``variables.globals`` carries
+    every global, ``in`` included, and :func:`_leaves` flattens nested objects —
+    so a needle that is also an input is matched by the input's own value and
+    the assertion becomes a tautology, passing regardless of what the flow
+    computed. Observed live on the file-attachment task: binding
+    ``--attachment inputDoc=<random>.txt`` puts the whole attachment object in
+    ``globals``, so ``assert_outputs_contain(payload, "<random>.txt")`` passed a
+    flow whose End node mapped the output to a hardcoded ``"sample-report.txt"``::
+
+        {"start.output.inputDoc": {"ID": ..., "FullName": "evidence-<rand>.txt", ...},
+         "fileName": "sample-report.txt"}
+
+    Declared inputs are therefore subtracted before matching (see
+    :func:`_declared_input_global_keys`). When a needle is absent from the
+    outputs but WOULD have matched an input, the failure says so explicitly
+    rather than reporting a bare "missing" — that case means the check was
+    previously passing vacuously and the task needs a real output assertion,
+    usually :func:`assert_named_output_contains`.
+
+    Inputs this checker never passed are covered too — an ``in`` global with a
+    ``defaultValue`` also echoes — by reading the project :func:`run_debug`
+    resolved; ``project_dir`` overrides that. ``allow_input_echo=True``
+    restores the old whole-payload behavior for the rare check that legitimately
+    grades a round-trip; prefer naming the output variable instead, so the
+    subtraction is never a reason to weaken an assertion elsewhere.
     """
     if isinstance(needles, str):
         needles = [needles]
-    haystack = _stringify(collect_outputs(payload))
+    all_leaves = _stringify(collect_outputs(payload))
+    if allow_input_echo:
+        haystack = all_leaves
+        input_keys: set[str] = set()
+    else:
+        input_keys = _declared_input_global_keys(payload, project_dir=project_dir)
+        haystack = _stringify(_global_leaves(payload, skip_keys=input_keys))
     present = [n for n in needles if n.lower() in haystack]
     missing = [n for n in needles if n.lower() not in haystack]
     ok = len(missing) == 0 if require_all else len(present) > 0
     if not ok:
         mode = "all of" if require_all else "any of"
+        echo_only = [n for n in missing if n.lower() in all_leaves]
+        detail = ""
+        if echo_only:
+            detail = (
+                f"\nINPUT ECHO: {echo_only} appear ONLY in the flow's input globals "
+                f"{sorted(input_keys)}, not in its outputs. Before this guard existed "
+                f"the match was satisfied by the input itself, so this check passed "
+                f"vacuously. Grade the real output instead — "
+                f"assert_named_output_contains(payload, '<outVarId>', ...)."
+            )
         _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
-            f"missing={missing}\nOutputs: {haystack[:1000]}"
+            f"missing={missing}\nOutputs: {haystack[:1000]}{detail}"
         )
 
 

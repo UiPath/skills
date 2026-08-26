@@ -13,7 +13,7 @@ run_limits:
 
 initial_prompt: |
   Create a flow file to create a group direct message between
-  Coder Evals, IS-sandboxes and E2E-testing.
+  Coder Evals, IS-sandboxes@uipath.com and E2E-testing.
   Use the connection present in Shared/uipath-maestro-flow.
 
 success_criteria:

@@ -67,21 +67,54 @@ Body:
 | `OVR-PROCESS_OWNER` | `ah-section-ovr-0-0` | `"<email>"` (direct string) |
 | `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) |
 
-When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — that is almost always the un-flagged owner/submitter.
+**Studio Web link** (optional): the schema's `OVR-OVERVIEW_STUDIO_WEB_LINK` question links the process to a Studio Web solution. Its `value` is a JSON **string** — `{"url": "<{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={id}>", "name": "<solution name>", "hasProcessMap": <bool>}` (`url` required; `hasProcessMap: true` only when the solution's orchestration project has a `.bpmn` — it drives AH's Maestro diagram preview). Settable at create or via the update path; empty string unlinks.
 
-**Response 201** — the created process object **at the top level** (not nested): `process_id`, `process_uuid`, `process_name`, … Record `process_id`. *(Used by the publish flow.)*
+When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — usually the un-flagged owner/submitter, but **tenant admins can mark additional questions required** (commonly "Applications used"/"Thin applications used"); diff the payload against every `required`-flagged question in the live schema.
+
+**Response 201** — the standard envelope with the created process **nested under `data`**: `{ "message": "Resource Created", "statusCode": 201, "data": { "process_id": …, "process_uuid": …, "process_name": … } }`. Read **`data.process_id`** — it is NOT at the top level. If you received a 201 the process WAS created — never re-POST because a field read came back undefined; re-read the response instead. *(Used by the publish flow.)*
 
 ### POST `/automations/{process_id}/documents`
-Attach a document to a process. **Link-based** (a link/embed URL + metadata), not a raw file upload — byte upload is a separate `media` endpoint that is not usable yet. Governed by `open-api-service` `ProcessDocumentValidator` (`src/models/schema/processDocumentRequest.schema.ts`). **Required fields, verified live:**
+Attach a document to a process — **by uploaded bytes (`file`) or by link (`embed_link`)**. Governed by `open-api-service` `ProcessDocumentValidator` (`src/api/v1/services/processDocumentValidator.class.ts`; schema `src/models/schema/processDocumentRequest.schema.ts`). **Required fields, verified against the validator source:**
 
 ```json
-{ "document_title": "…", "document_description": "…", "document_type_id": 1, "embed_link": "https://…" }
+{
+  "document_title": "…",
+  "document_description": "…",
+  "document_type_id": 1,
+  "file": { "file_name": "…", "mimetype": "…", "file_content": "<base64>", "file_encoding": "base64" }
+}
 ```
 
 - `document_title` (**not** `document_name`), `document_description`, `document_type_id` are all required by the schema.
-- Plus **exactly one** of `embed_link` or `file` — enforced in the handler (not the schema), so omitting both 400s with `"One and only one of embed_link or file need to be specified."` Use `embed_link`.
+- **`document_type_id` values are fixed platform-wide** (from `tenant-service` `file.constants.js` — never guess):
 
-Returns the created `document_id`. *(Used by the publish flow.)*
+  | id | Type | id | Type |
+  |---|---|---|---|
+  | 1 | PDD (Process Definition Document) | 7 | INF (Input File) |
+  | 2 | SDD (Solution Design Document) | 8 | OUF (Output File) |
+  | 3 | DSD (Development Specification Document) | 9 | MISC ("Misc." — anything else) |
+  | 4 | SOP (Standard Operating Procedure) | 10 | TCD (Task Capture Document — **special**: accepts only `zip`/`ssp` uploads, **no embed_link**) |
+  | 5 | DWI (Detailed Work Instructions) | 11 | ASC (Automation Source Code) |
+  | 6 | PM (Process Map) | | |
+
+  Pick by the document's kind: PDD → `1`, SDD → `2`; when unsure, default to `9` (MISC).
+- Plus **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the schema. Sending both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
+- **`file` — byte upload, the default.** Validated by `EncodedFileValidator`: `file_name`, `mimetype`, `file_content`, `file_encoding` are all required and must be non-empty, and `file_encoding` must be `base64` — the only accepted value. No mimetype allowlist. The JSON body limit is **300mb**, so a PDD-sized `.docx` or `.md` fits with room to spare.
+- **`embed_link`** — use only when the document already lives at a URL and the bytes are not available.
+
+Returns the standard envelope with the created id **nested under `data`** — read **`data.document_id`**. *(Used by the publish flow.)*
+
+### POST `/automations/{process_id}/media`  *(not needed for documents)*
+A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
+
+### GET `/hierarchy`
+The tenant's category tree (verified live): `data.levels` (level names) + `data.categories[]`, each with `category_id`, `category_name`, `category_is_active`, and nested `subcategories`. **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. Only pick nodes with **`category_is_active: 1`** — `0` means archived and the write will be rejected or hidden. *(Used by the publish flow.)*
+
+### GET `/users?limit=<n>`
+The Automation Hub users on the tenant (verified live): paged envelope with the list under **`data.users[]`**; each entry carries **`user_email`**, `user_first_name`/`user_last_name`, and `user_is_active`. **This is how to resolve a valid owner/submitter email** — both must be provisioned AH users (prefer `user_is_active: 1`), and this endpoint is the ground truth. *(Used by the publish flow.)*
+
+### GET `/appinventory?limit=<n>`
+The tenant's application inventory (paged; entries carry the application id, name, version, language). **This is the valid-answer set for tenant-required application questions** ("Applications used", "Thin applications used") in the publish flow. *(Used by the publish flow when the tenant requires application questions.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*
@@ -90,7 +123,10 @@ Search/list processes. Returns a paged list (results under a resource key, e.g. 
 Fetch one process by numeric id (or slug). Returns the full process record (can be ~300 fields; project to the ones you need for display). *(Used by the get flow.)*
 
 ### GET `/automations/{process_id}/documents`
-List a process's documents (key `documents`); each entry includes the document name, type, and a `FileId` / download reference. *(Used by both flows.)*
+List a process's documents (key `documents`). Each entry carries `document_id`, `document_title`, `document_type_id`, and **either** a `file_id` (file-backed — downloadable) **or** an `embed_link` (link-backed — nothing to download; show the URL). *(Used by both flows.)*
+
+### GET `/download/file/{file_id}`
+Download a file-backed document's **bytes**. `{file_id}` is the `file_id` from the documents list — **not** the `document_id`. The response body is the raw file — save it with `curl -o <path>`; there is no JSON envelope. Link-backed documents (`file_id` absent) cannot be downloaded — present their `embed_link` instead. *(Used by the get flow.)*
 
 ### GET `/automations/{id}/components`  *(optional)*
 Linked components for the process.

@@ -13,7 +13,7 @@ description: >
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project (issue
   type Task). Targets live in the task's `jira_is.py`.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
 
 run_limits:
   expected_turns: 55
@@ -67,9 +67,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Discover the flow file — the prompt names only the FLOW, never the enclosing
+  # solution, so a hardcoded `<Name>/<Name>/<Name>.flow` would grade the solution
+  # directory's name (an unstated requirement) and score 0.0 on a valid flow built
+  # at e.g. `EscalationJiraTicketSolution/EscalationJiraTicket/`.
   - type: run_command
     description: "Generated EscalationJiraTicket Flow validates without errors"
-    command: "uip maestro flow validate EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

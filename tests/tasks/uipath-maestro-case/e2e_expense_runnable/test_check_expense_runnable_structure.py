@@ -78,44 +78,39 @@ class RunLimitTests(unittest.TestCase):
         self.assertEqual(limits["turn_timeout"], limits["task_timeout"])
 
 
+def _valid_resources() -> list[dict]:
+    """bindings_v2.json resources whose deployed names all match the tenant."""
+    return [
+        {
+            "key": "Shared/uipath-agents/WeatherAPI.WeatherAPI",
+            "value": {"name": {"defaultValue": "WeatherAPI"}},
+        },
+        {
+            "key": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
+            "value": {"name": {"defaultValue": "CountLetters"}},
+        },
+        {
+            "key": "Shared/uipath-agents/ProcurementProcess.ProcurementProcess",
+            "value": {"name": {"defaultValue": "ProcurementProcess"}},
+        },
+        {
+            "key": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
+            "value": {"name": {"defaultValue": "RPA Workflow"}},
+        },
+        {
+            "key": "Shared/uipath-maestro-case/CaseTest.Maestro Case",
+            "value": {"name": {"defaultValue": "Maestro Case"}},
+        },
+    ]
+
+
 class ResourceBindingTests(unittest.TestCase):
     def test_accepts_runnable_resource_display_names(self) -> None:
-        _assert_required_external_bindings(
-            {
-                "resources": [
-                    {
-                        "key": "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow",
-                        "value": {"name": {"defaultValue": "API Workflow"}},
-                    },
-                    {
-                        "key": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
-                        "value": {"name": {"defaultValue": "CountLetters"}},
-                    },
-                    {
-                        "key": "Shared/uipath-agents/ProcurementProcess.ProcurementProcess",
-                        "value": {"name": {"defaultValue": "ProcurementProcess"}},
-                    },
-                    {
-                        "key": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
-                        "value": {"name": {"defaultValue": "RPA Workflow"}},
-                    },
-                    {
-                        "key": "Shared/uipath-maestro-case/CaseTest.Maestro Case",
-                        "value": {"name": {"defaultValue": "Maestro Case"}},
-                    },
-                ]
-            }
-        )
+        _assert_required_external_bindings({"resources": _valid_resources()})
 
     def test_rejects_resource_alias_in_place_of_display_name(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "API Workflow"):
-            _assert_required_external_bindings(
-                {
-                    "resources": [
-                        {
-                            "key": "Shared/uipath-maestro-case/NameToAgeFixed2.NameToAgeFixed2",
-                            "value": {"name": {"defaultValue": "NameToAgeFixed2"}},
-                        }
-                    ]
-                }
-            )
+        # The SDD alias "ProjectEuler" is not the deployed name "RPA Workflow".
+        resources = _valid_resources()
+        resources[3]["value"]["name"]["defaultValue"] = "ProjectEuler"
+        with self.assertRaisesRegex(SystemExit, "RPA Workflow"):
+            _assert_required_external_bindings({"resources": resources})

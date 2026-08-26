@@ -99,6 +99,12 @@ discovery or the user.
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
   `<uipath:bindings>` holds the live connection id from `uip is connections list`.
+  The context field that carries the reference differs by node kind: activities
+  (`Intsvc.ActivityExecution`) use `connection`; connector **triggers and waits**
+  (`Intsvc.EventTrigger`, `Intsvc.WaitForEvent`) use `connectionId`. Either way
+  `uip maestro bpmn refresh` (and `pack`) materialize that binding into a
+  `Connection` resource in `bindings_v2.json` — without it the process passes
+  `validate` but faults at runtime with `Connection null` (error 102010).
 
 Declare all bindings in a single process-level `<uipath:bindings version="v1">`
 block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,
@@ -147,6 +153,15 @@ the CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-auth
 trigger shell stays **draft** until the CLI supplies the concrete trigger
 properties, connection binding, and schemas.
 
+For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
+from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
+use `connection`); the timer trigger binds no connection. After authoring the
+connection binding, run `uip maestro bpmn refresh <project>` so the binding is
+materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
+connection is not materialized passes `validate` but faults at runtime with a
+null connection (error 102010). Use `refresh`, not the deprecated
+`update-metadata`, which does not materialize connection bindings.
+
 ## Connectionless vs connector HTTP
 
 - **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated
@@ -180,7 +195,7 @@ auth, schema, or enrichment decision is missing).
 4. Author the structural BPMN the registry does not emit: sequence flows,
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
-5. Generate the `bpmndi:BPMNDiagram` (shape per node, edge per flow).
+5. Generate the `bpmndi:BPMNDiagram`: `uip maestro bpmn format <file.bpmn>`
 6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).
 
 ## OOTB extension types (29, login-free)

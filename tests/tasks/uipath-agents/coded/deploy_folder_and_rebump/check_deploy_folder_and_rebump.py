@@ -9,7 +9,8 @@ Asserts:
   1. `acme-echo/pyproject.toml` is valid TOML with a `[project]` table.
   2. The `version` follows semver `MAJOR.MINOR.PATCH`.
   3. The `version` is strictly greater than `0.0.1` (the pre-seeded
-     version), with `0.0.2` being the expected patch bump.
+     version). Any bump counts — leftover versions on the tenant feed
+     from earlier runs legitimately force the agent past `0.0.2`.
   4. No `[build-system]` section (Critical Rule C1).
 """
 
@@ -69,14 +70,13 @@ def main() -> None:
 
     version = parse_version(text)
     print(f"OK: pyproject.toml [project].version parses as {version}")
-    EXPECTED_VERSION = (0, 0, 2)
-    if version != EXPECTED_VERSION:
+    if version <= SCAFFOLD_VERSION:
         fail(
-            f"version {version} is not the expected patch bump {EXPECTED_VERSION}. "
-            "The agent should read pyproject.toml, see version 0.0.1, and bump "
-            "the patch to 0.0.2 before redeploying."
+            f"version {version} was not bumped past the pre-seeded "
+            f"{SCAFFOLD_VERSION}. The agent should read pyproject.toml, see "
+            "version 0.0.1, and bump it before redeploying."
         )
-    print(f"OK: version bumped to {version} — correct patch bump before redeploy")
+    print(f"OK: version bumped to {version} — bumped past pre-seeded 0.0.1 before redeploy")
 
     print("OK: deploy-to-folder + patch-bump roundtrip verified")
 

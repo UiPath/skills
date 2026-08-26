@@ -104,6 +104,22 @@ Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator
 
 ## Wiring the Agent's Inputs
 
-For inputs that reference flow variables, use `{ "type": "literal", "expression": "{{ $vars.X }}", "fieldType": "string" }` — NOT `=js:...` expressions. `=js:` ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`.
+One `inputs.<field>` entry per property in the agent's input schema (`entry-points.json`, mirrored in the definition's `inputDefinition.properties`). Two valid value shapes, same binding:
+
+```json
+"inputs": {
+  "<INPUT_FIELD>": {
+    "type": "jsExpression",
+    "expression": "$vars.<UPSTREAM_NODE_ID>.output.<FIELD>",
+    "fieldType": "<FIELD_TYPE>"
+  }
+}
+```
+
+- `jsExpression` — bare `$vars...` expression, no `=js:` prefix. Upstream values read as `$vars.<nodeId>.output.<field>`; flow globals as `$vars.<global>`.
+- `literal` — text template; static text mixable with `{{ }}` interpolations: `{ "type": "literal", "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}", "fieldType": "<FIELD_TYPE>" }`.
+- `<FIELD_TYPE>` is the property's JSON-schema type from the agent's input schema (e.g. `string`, `boolean`, `number`) — read it from there, do not invent it.
+
+NEVER a plain `"=js:..."` string value — it ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. Complete worked example (trigger → agent → end): uipath-maestro-flow skill, agent-plugin reference § Wiring Inputs.
 
 Input-only rule. Mapping the agent's output back to a flow-level global on an End node DOES use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).

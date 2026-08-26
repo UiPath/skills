@@ -137,10 +137,35 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 4. Assignment at wrong tenant
 
 **Investigation:**
-1. Verify assignment exists: `uip admin authorization roles assignments list --filter "<PRINCIPAL_NAME>" --output json`
-2. Inspect role: `uip admin authorization roles get "<ROLE_ID>" --output json` — check `ownerServiceName` and `scopeType`
-3. Validate Rule 17: `CentralizedAccess` → no service segment in scope-path; any other value → path must include `lowercase(ownerServiceName)`
-4. Verify via PDP: `uip admin authorization check-access "<PRINCIPAL_ID>" --output json`
+1. Inspect the role first: `uip admin authorization roles get "<ROLE_ID>" --output json` — check `ownerServiceName` and `scopeType`
+2. Validate Rule 17: `CentralizedAccess` → no service segment in scope-path; any other value → path must include `lowercase(ownerServiceName)`
+3. Verify via PDP: `uip admin authorization check-access "<PRINCIPAL_ID>" --output json`
+4. List the principal's grants: `uip admin authorization roles assignments list --identity-id "<PRINCIPAL_ID>" --output json` (`--filter` is **not** a valid flag here — it exists on `roles list`, not on `assignments list`)
+
+> **A mis-scoped grant is invisible to the default listing — use `--scope-path` to see it.**
+> `assignments list` filters on a scope path **and** a service, both derived from your flags:
+>
+> | flags | server scope | server serviceName |
+> |---|---|---|
+> | none, `--identity-id`, `--scope Tenant` | `/tenant/<tid>` | `centralizedaccess` |
+> | `--service <svc>` | `/tenant/<tid>/<svc>` | `<svc>` |
+> | `--scope-path <path>` (no `--service`) | `<path>` verbatim | **unset** |
+>
+> A Cause 1 grant — a `<svc>`-owned role granted at the bare `/tenant/<tid>` — matches
+> neither of the first two shapes: the centralized-access shapes exclude it on service,
+> and the `--service` shape excludes it on path. So it is absent from the default
+> listing, from `--identity-id`, from `--scope Tenant` (with or without
+> `--include-inherited`) and from `--service <svc>`. Retrieve it with the one shape that
+> applies no service filter:
+>
+> ```bash
+> uip admin authorization roles assignments list --scope-path "/tenant/<TENANT_ID>" --output json
+> ```
+>
+> Verified on a live tenant: this returns the mis-scoped grant while every other shape
+> returns only the principal's other grants. **Never read an empty centralized-access
+> listing as "the grant does not exist"** — re-query with `--scope-path` first, and never
+> re-create the assignment on that basis, which reproduces the original mismatch.
 
 **Fix:** Cause 1 → re-create assignment with correct scope-path matching ownerServiceName. Cause 2 → re-assign at correct scope. Cause 3 → update role actions. Cause 4 → re-assign at correct tenant.
 
