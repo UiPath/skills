@@ -99,14 +99,14 @@ The **entire** `caseShape.context[]` array, and every nested subtree under it, i
 
 After splicing the spec subtree (`context` / `inputs` / `outputs` and their nested `body`), lower-case the **first character of every object KEY**, preserving the rest: `Name`→`name`, `DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`, `Properties`→`properties`.
 
-**Exception — the field names inside a payload `body` are contract, not casing.** The keys OF a `properties` or `definitions` map are connector field names. Lowering them does not restore them (`AppId` → `appId`, contract `app_id`) and on a capital-first connector destroys a name that was already correct (Outlook `Title` → `title`), so exclude them from this pass and take each from its authority instead:
+**Exception — keys OF a `properties` / `definitions` map are connector field names. Never re-case them; take each from its authority.** Lowering breaks both conventions: `AppId` → `appId` ≠ contract `app_id`, and Outlook `Title` → `title` destroys a name already correct.
 
-| Keys of | Authority |
+| Keys of | Take from |
 |---------|-----------|
-| a `properties` map, at every depth | the ordered distinct segments of `.Data.Outputs.ResponseFields[].Name` (payload output) or `.Data.Inputs.*[].Name` (input) under that map's accumulated dotted path — same list, same order, so take the *i*-th segment for the *i*-th key |
-| a `definitions` map | the tail after `#/definitions/` of the `$ref` that targets it — `ResponseFields` does not describe these, and the CLI PascalCases the key while leaving the ref's underscores intact (`#/definitions/messageBot_profile`) |
+| `properties`, every depth | ordered distinct segments of `.Data.Outputs.ResponseFields[].Name` (output) / `.Data.Inputs.*[].Name` (input) under that map's accumulated dotted path — same order, so *i*-th segment for *i*-th key |
+| `definitions` | tail of the `$ref` targeting it (`#/definitions/messageBot_profile`) — `ResponseFields` does not describe these |
 
-Every authority `Name` is a `Name` **value**, which the serializer leaves intact. The `Error` output is the fixed platform envelope, not contract: lower it normally. `validate` accepts a plausible wrong name, so it is not evidence.
+`Error` output: platform envelope — lower normally. `validate` accepts a wrong name, so it is not evidence.
 
 - **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
 - **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, variables, bindings, task scaffolding) is already camelCase — do not re-case it.
@@ -114,11 +114,15 @@ Every authority `Name` is a `Name` **value**, which the serializer leaves intact
 
 #### Copy the payload body whole
 
-Applies to every connector node — `execute-connector-activity`, the `wait-for-connector` task, the case-level event trigger, and a connector-bound condition rule.
+Every connector node: `execute-connector-activity`, `wait-for-connector` task, event trigger, connector-bound condition rule.
 
-**A payload `body` is excluded from the re-casing passes above and written as one unit instead.** `replace_all` cannot honour the exception: the same spelling is both a JSON-Schema keyword and a contract field name in one body — live Slack has `"Title":` 134× and `"Type":` 161×, nearly all keywords but not all — so no document-wide edit separates them and no later repair has anything unique to anchor on. Writing the body in one piece does separate them, because position tells you which is which: keys **of** a `properties` / `definitions` map are field names (take them from their authority), everything else in a schema node is a keyword (lower it: `type`, `properties`, `definitions`, `title`, `items`, `required`, `format`, `description`, `enum`, `default`, `$ref`, `$schema`). If a key is neither, halt and report it rather than guessing.
+**Exclude payload bodies from the passes above. Write each as one unit, copied from `tasks/spec-cache.<elementId>.json` — re-Read the file, never reconstruct from memory.** `replace_all` cannot separate keyword from field name (live Slack: `"Title":` 134×, `"Type":` 161×, mostly keywords). Position can — inside a body:
 
-**Copy the whole body from `tasks/spec-cache.<elementId>.json` — re-Read the file, never reconstruct from memory.** It is a full JSON Schema: Slack `send_message_to_channel_v2`'s `response` is **514 keys** (13 top-level + 118 nested property keys, 29 definitions, 29 `$ref`s), Outlook `Calendar Event Created` 120. Check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache; on any mismatch re-copy rather than patch. `validate` reports a truncated schema as `Valid`.
+- key **of** a `properties` / `definitions` map → field name, from its authority above
+- anything else in a schema node → keyword, lower it (`type`, `properties`, `definitions`, `title`, `items`, `required`, `format`, `description`, `enum`, `default`, `$ref`, `$schema`)
+- neither → halt and report
+
+Sizes: Slack `send_message_to_channel_v2` `response` = **514 keys** (13 top-level + 118 nested property keys, 29 definitions, 29 `$ref`s); Outlook `Calendar Event Created` = 120. Check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache; mismatch → re-copy, do not patch. `validate` reports a truncated schema as `Valid`.
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
