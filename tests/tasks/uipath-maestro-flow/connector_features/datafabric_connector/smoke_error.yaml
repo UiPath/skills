@@ -22,6 +22,9 @@ initial_prompt: |
      FlowCodeEvalEntity for title='ErrorTestRecord'.
   3. In the same parallel branch, Query FlowCodeEvalEntity with no filter.
 
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
   The Flow is not complete until `uip maestro flow validate` passes.
 
 success_criteria:

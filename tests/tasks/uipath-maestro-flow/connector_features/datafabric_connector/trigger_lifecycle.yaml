@@ -34,7 +34,11 @@ initial_prompt: |
   - Delete the same record using that Id.
 
   For both flows, keep the configured connection and correct entity on every
-  trigger and Data Fabric activity. Validate every final flow file.
+  trigger and Data Fabric activity.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flows end-to-end in a
+  single pass.
+  Validate every final flow file.
 
 success_criteria:
   - type: run_command
