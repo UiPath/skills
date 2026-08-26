@@ -121,7 +121,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | --- | --- | --- |
 | `core.trigger.manual` | _(inline — no plugin)_ | Flow is started on demand by a user or API call |
 | `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Flow runs on a recurring schedule |
-| `core.trigger.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Flow starts when a phone call arrives on a bound number (inbound voice topology). Gated on conversational voice being enabled on the tenant |
+| `core.trigger.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Flow starts when a phone call arrives on a bound number (inbound voice topology) |
 | IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
 
 **Rules:**
@@ -144,7 +144,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
-| `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Dial an outbound phone call and emit its `callContext` (outbound voice topology). Gated on conversational voice being enabled on the tenant |
+| `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Dial an outbound phone call and emit its `callContext` (outbound voice topology) |
 | `uipath.conversational.voice.end-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | End the active call in a voice flow |
 
 ### Control Flow
@@ -177,7 +177,7 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 | --- | --- | --- |
 | `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
-| `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext`. Gated on conversational voice being enabled on the tenant |
+| `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext` |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 

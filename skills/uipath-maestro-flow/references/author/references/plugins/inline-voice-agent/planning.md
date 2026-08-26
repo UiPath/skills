@@ -13,7 +13,7 @@ For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, 
 | `uipath.conversational.voice.create-outgoing-call` | Action | Dial an outbound call and wait until the media stream is open; emits the `callContext` (outbound topology) |
 | `uipath.conversational.voice.end-call` | Action | End the active call |
 
-All four are fixed OOTB node types. They ship in the CLI's bundled registry, so `registry get` resolves them offline on any tenant — a clean `registry get` confirms the *node shapes*, not that the tenant can place calls. Conversational voice enablement and SIP trunk provisioning are only observable at deploy/debug time; if the user hasn't confirmed them, flag it as an Open Question. Commands: [impl.md § Registry Validation](impl.md#registry-validation).
+All four are fixed OOTB node types. They ship in the CLI's bundled registry, so `registry get` resolves them offline on any tenant — a clean `registry get` confirms the *node shapes*, not that the tenant can place calls. SIP trunk provisioning is only observable at deploy/debug time — check it with `trunks list` below. Commands: [impl.md § Registry Validation](impl.md#registry-validation).
 
 ## Phone Numbers and SIP Trunks
 

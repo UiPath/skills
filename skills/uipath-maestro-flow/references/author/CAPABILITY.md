@@ -106,7 +106,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
-| **Build a voice agent flow (answer or place phone calls)** | [plugins/inline-voice-agent/](references/plugins/inline-voice-agent/) — `uipath.agent.voice` plus the nodes that start, place, and end the call, requires conversational voice enabled on the tenant |
+| **Build a voice agent flow (answer or place phone calls)** | [plugins/inline-voice-agent/](references/plugins/inline-voice-agent/) — `uipath.agent.voice` plus the nodes that start, place, and end the call |
 | **Extract structured fields from documents** | [plugins/ixp/](references/plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
 | **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](references/plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
