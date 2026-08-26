@@ -5,7 +5,7 @@ description: >
   Static-validate only; runtime `flow debug` skipped to avoid live tenant
   side effects. Count enforcement lives in the verifier script (counts
   nodes in the final .flow, not CLI invocations).
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice]
 
 run_limits:
   max_turns: 100

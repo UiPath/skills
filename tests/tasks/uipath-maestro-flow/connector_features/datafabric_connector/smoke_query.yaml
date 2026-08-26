@@ -3,7 +3,7 @@ description: >
   Smoke: read-only record queries against FlowCodeEvalEntity covering boolean,
   numeric, text, date, datetime, UUID, and null filters, ordered pages, and
   offset pagination. FILE attachments are not filterable.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice]
 
 run_limits:
   turn_timeout: 2400

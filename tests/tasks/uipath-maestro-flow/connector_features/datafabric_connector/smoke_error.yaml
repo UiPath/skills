@@ -2,7 +2,7 @@ task_id: skill-flow-datafabric-smoke-error
 description: >
   Smoke: attempt a record creation against a non-existent entity — expect a
   structured 4xx and zero side effects on FlowCodeEvalEntity.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, negative, uipath-uipath-dataservice,]
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, negative, uipath-uipath-dataservice]
 
 run_limits:
   max_turns: 100
