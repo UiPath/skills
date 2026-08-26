@@ -11,7 +11,7 @@ tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:mu
 max_iterations: 1
 
 run_limits:
-  task_timeout: 1200
+  task_timeout: 1800
   max_turns: 60
   turn_timeout: 1200
 
