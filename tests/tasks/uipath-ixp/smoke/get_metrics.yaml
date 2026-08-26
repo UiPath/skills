@@ -1,9 +1,9 @@
 task_id: skill-ixp-get-metrics-smoke
 description: >
-  Smoke: agent picks `uip ixp projects get-metrics <Name>
-  --output json` to fetch per-field F1/Precision/Recall before
-  iterating on prompts. Locks in the project-`Name` argument
-  (not `Title`) and `--output json`.
+  Smoke: asked for per-field F1/Precision/Recall, the agent enters the
+  metrics flow against the project `Name` (not `Title`): resolving the
+  version with `list-models` first (Critical Rule 21), with
+  `get-metrics` accepted too. Locks in the `Name` argument.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -31,9 +31,9 @@ initial_prompt: |
 
 success_criteria:
   - type: file_matches_regex
-    description: "Agent invoked `uip ixp projects get-metrics` against the requested project Name (positional or via --project-name flag)"
+    description: "Agent entered the metrics flow (`list-models` or `get-metrics`) against the requested project Name"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+projects\s+(?:list-models|get-metrics)\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0

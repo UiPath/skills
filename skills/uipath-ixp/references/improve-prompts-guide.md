@@ -276,12 +276,14 @@ That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — 
 
 **Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, no prompt rewrite can be evaluated — but which remedy to report depends on *why* the sample is small.
 
-**A small `Annotations` has two causes with opposite fixes.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
+**A small `Annotations` has two causes with opposite remedies.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
 
-- **`Documents` equals `ValidatedDocuments`** → this field was reviewed on every reviewed document, so its sample is already as large as the labelled data allows. Tag it **UPLOAD** in the final report — more documents are the user's follow-up after the loop, never a reason to stop mid-run and ask for them.
-- **`Documents` below `ValidatedDocuments`** → some labelled documents carry no label for this field — never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** in the final report: on those documents, confirm the prediction where it is right, correct it where it is not, and mark the field missing where it is genuinely absent — each outcome grows the sample, and a wrong prediction is never confirmed as-is. Reviewing happens after the loop, never as a mid-loop detour (2a-check's `Recall < 0.5` gate misses this case). Allow a shortfall of one or two: a field legitimately absent from a document carries a missing marker instead.
+- **`Documents` equal to `ValidatedDocuments`, or short by one or two** → the sample is already as large as the labelled data allows (a small shortfall is missing markers — the field legitimately absent from a document — not an unreviewed field). Tag it **UPLOAD**.
+- **`Documents` materially below `ValidatedDocuments`** → some labelled documents carry no label for this field: never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** — those documents need the standard review pass ([Label Documents Guide](label-documents-guide.md)), which 2a-check's `Recall < 0.5` gate would never trigger here.
 
-`Annotations / Documents` is the average number of extractions per document — about 1 for a single-value field, higher under a repeatable group. Whichever cause applies, name it in the final report — "more prompt rewrites" is not the answer in either case.
+Both tags are **final-report lines, not loop actions**: the loop runs on to its normal stopping criteria — never pause mid-run to ask for documents or to review — and the report then says plainly that a tagged field's score cannot rise further until its sample grows.
+
+`Annotations / Documents` is the average number of extractions per document — about 1 for a single-value field, higher under a repeatable group.
 
 **Selective regression check:** For each field you updated this iteration, compare its `F1` drop against **that field's** `regression_threshold`:
 
@@ -346,4 +348,4 @@ Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 
 `ErrorRate` is the manual-correction burden left; `Annotations` tells a real plateau from an unmeasurable one.
 
-If fields still need work, suggest the user run another round with more iterations. For any field in the *too-few-`Annotations`* list, say which remedy it needs: **UPLOAD** more documents when its `Documents` already matches `ValidatedDocuments`, or **REVIEW** the documents where it carries no label when its `Documents` falls materially short. More prompt rewrites is not the answer in either case.
+If fields still need work, suggest the user run another round with more iterations. For any field in the *too-few-`Annotations`* list, say plainly that its score cannot rise further until its sample grows, and which remedy grows it — **UPLOAD** (more documents) or **REVIEW** (the documents where it carries no label).
