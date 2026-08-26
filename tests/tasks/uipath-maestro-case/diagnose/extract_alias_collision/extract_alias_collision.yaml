@@ -13,9 +13,9 @@ tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:mu
 max_iterations: 1
 
 run_limits:
-  task_timeout: 2400
+  task_timeout: 1500
   max_turns: 60
-  turn_timeout: 1800
+  turn_timeout: 1200
 
 sandbox:
   template_sources:
@@ -39,6 +39,16 @@ initial_prompt: |
   - Do NOT delete the gate, the stages, the tasks, or the trigger.
   - Do NOT run `uip maestro case debug`.
   - Do NOT ask for approval. Work end-to-end and finish with validate passing.
+
+  Scope — this is a targeted single-line repair, not a build:
+
+  - The defect and its fix are both inside
+    LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
+  - Read the case definition and the skill's variable/binding rules only. You do
+    NOT need to read the reference set exhaustively — the read-to-EOF rule is
+    lifted for this repair.
+  - The fix is ONE line. If you are on your third edit, stop editing and re-read
+    the variable declarations instead of trying variations.
 
   Load the uipath-maestro-case skill and follow its validate → fix loop.
 
