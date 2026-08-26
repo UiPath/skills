@@ -1,0 +1,80 @@
+task_id: skill-ixp-metrics-group-rollback-smoke
+description: >
+  Smoke: when the iteration's edit was GROUP instructions, a regression in the
+  fields under that group is rolled back at the group level — the one
+  interaction the guide's collateral rule names as mechanically caused — while
+  untouched fields whose drops sit under their own noise floors are left alone.
+
+  Same two-version fixture as metrics_regression_noise_floor, opposite edit
+  history: here the prompt declares a single `groups update-prompts` edit on
+  `Receipt > Line Items`. Both fields under it regressed beyond their own
+  thresholds (0.200 and 0.250 vs 0.100), so the group edit is rolled back. The
+  two header fields dropped 0.111 each at Annotations 5 — under their 0.200
+  thresholds — so reporting them as collateral mistakes noise for damage.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:improve]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_regression}
+
+initial_prompt: |
+  An improvement iteration just finished on the IXP project
+  `receipts_qa-7c2e11a4-ixp`. Model version 40 was the state before it;
+  version 41 is the result.
+
+  The iteration made exactly ONE change: it updated the field-group
+  instructions of `Receipt > Line Items` using `groups update-prompts`. No
+  per-field instructions were changed anywhere.
+
+  Decide what to do about the result. Write `decision.json` in the working
+  directory, with exactly these two keys:
+
+      {"rollback_group": "<the field group whose instructions should be rolled
+                          back, or an empty string if none>",
+       "collateral":     ["<field ids outside the edited group whose drop
+                          exceeds their own regression threshold>"]}
+
+  `collateral` is an array of field id strings and may be empty.
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do not change any instructions — decide only.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Read the previous iteration's metrics (version 40), not just the current ones"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\b(?=.*(?:--model-version[= ]|-m\s+)40\b).*)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The positive branch of the collateral rule: every field under the edited
+  # group regressed beyond its own threshold, and the edit that moved them was
+  # the group instructions — so the rollback target is the group.
+  - type: json_check
+    description: "Rolled back the edited group's instructions (both fields under it regressed beyond their own thresholds)"
+    path: "decision.json"
+    assertions:
+      - expression: "rollback_group"
+        operator: equals
+        expected: "Receipt > Line Items"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The header fields dropped 0.111 each at Annotations 5 — under their own
+  # 0.200 thresholds. Reporting them as collateral mistakes noise for damage.
+  - type: json_check
+    description: "Did not report the untouched header fields as collateral — their drops sit under their own noise thresholds"
+    path: "decision.json"
+    assertions:
+      - expression: "length(collateral)"
+        operator: equals
+        expected: 0
+    weight: 3.0
+    pass_threshold: 1.0

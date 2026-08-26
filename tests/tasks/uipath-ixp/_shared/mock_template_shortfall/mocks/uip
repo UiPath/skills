@@ -1,0 +1,120 @@
+#!/bin/sh
+# Annotations-shortfall `uip` mock for uipath-ixp smoke tasks that must tell a
+# genuinely small sample from unconfirmed labels. Overlays the base
+# mock_template (list it SECOND in template_sources so this file wins).
+#
+# Fixture - project receipts_lite-4a9f30d2-ixp, ValidatedDocuments 5, every
+# field non-repeatable, target F1 0.7:
+#
+#   field             Docs  Ann   F1     below target?  why small            fix
+#   cccc000000000001     5    5  0.400   yes            reviewed on all 5    UPLOAD
+#                                                       docs already
+#   cccc000000000002     2    6  0.667   yes            reviewed on only 2   REVIEW
+#                                                       of the 5 documents
+#   cccc000000000003     5    5  1.000   no             -                    -
+#   cccc000000000004     4    4  0.500   yes            short by ONE doc =   UPLOAD
+#                                                       missing marker,
+#                                                       not unconfirmed
+#
+# Every below-target field has a sample too small for a rewrite to be
+# evaluated (regression_threshold = max(0.1, 1/Annotations): 0.2, 0.167 and
+# 0.25) - the remedies differ, and the only signal that separates them is the
+# field's own Documents vs ValidatedDocuments:
+#
+#   ...0001  Documents 5 == ValidatedDocuments 5 -> sample as large as the data
+#   ...0002  Documents 2 <<  ValidatedDocuments 5 -> unreviewed for this field
+#   ...0004  Documents 4, short by ONE -> within the missing-marker allowance
+#            (a field legitimately absent from a document), NOT unconfirmed
+#
+# Annotations does NOT separate them, and is the trap. ...0002 has the LARGEST
+# Annotations (6) of the three despite being reviewed on the fewest documents,
+# because Annotations counts reviewed EXTRACTIONS and this field averages 3 per
+# document. An agent comparing Annotations against a document count - or taking
+# the smallest Annotations as the smallest sample - prescribes the fixes the
+# wrong way round.
+#
+# Recall is deliberately not the discriminator either: ...0002 sits at Recall
+# 0.667, well above the 0.5 gate on step 2a-check, so an agent relying on that
+# gate alone never probes it.
+#
+# Rows derive from explicit confusion matrices:
+#   ...0001  Ann 5  TP2 FP3 FN3  -> F1 0.400  P 0.400  R 0.400  Err 0.600
+#   ...0002  Ann 6  TP4 FP2 FN2  -> F1 0.667  P 0.667  R 0.667  Err 0.333
+#   ...0003  Ann 5  TP5 FP0 FN0  -> F1 1.000  P 1.000  R 1.000  Err 0.000
+#   ...0004  Ann 4  TP2 FP2 FN2  -> F1 0.500  P 0.500  R 0.500  Err 0.500
+# ErrorRate is an integer error count over Annotations - max(FP,FN)/Ann here -
+# so ErrorRate x Annotations is a whole number on every row (3, 2, 0, 2).
+#
+# ProjectScore is the unweighted mean of per-field F1: 0.642.
+# Group row aggregates the matrices: TP13 FP7 FN7 -> F1 0.65, Err 7/20 = 0.35.
+#
+# Logging matches the base mock exactly - same `uip ` prefix, same newline
+# folding - so anchored `^uip\s+ixp ...` criteria keep matching.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+METRICS='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":5,"ProjectScore":0.642,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Receipt","F1":0.65,"Precision":0.65,"Recall":0.65,"ErrorRate":0.35,"Documents":5}],"Fields":[{"FieldGroup":"Receipt","FieldId":"cccc000000000001","F1":0.4,"Precision":0.4,"Recall":0.4,"ErrorRate":0.6,"Documents":5,"Annotations":5,"Quality":"average"},{"FieldGroup":"Receipt","FieldId":"cccc000000000002","F1":0.667,"Precision":0.667,"Recall":0.667,"ErrorRate":0.333,"Documents":2,"Annotations":6,"Quality":"average"},{"FieldGroup":"Receipt","FieldId":"cccc000000000003","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":5,"Annotations":5,"Quality":"good"},{"FieldGroup":"Receipt","FieldId":"cccc000000000004","F1":0.5,"Precision":0.5,"Recall":0.5,"ErrorRate":0.5,"Documents":4,"Annotations":4,"Quality":"average"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"4a9f30d2-6b18-4c93-8e51-2f7a90c4d611","Name":"receipts_lite-4a9f30d2-ixp","Title":"Receipts_Lite","CreatedAt":"2026-08-01T07:22:00Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"receipts_lite-4a9f30d2-ixp","Title":"Receipts_Lite","Description":"Small receipt set","CreatedTime":"2026-08-01T07:22:00Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":12,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-22T14:03:41.007000+00:00","Description":""}],"Tags":[],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"name":"Exact Text"},{"name":"Date"}],"label_groups":[{"name":"Receipt","repeatable":false,"field":[{"field_id":"cccc000000000001","name":"Merchant Address"},{"field_id":"cccc000000000002","name":"Payment Method"},{"field_id":"cccc000000000003","name":"Total Amount"},{"field_id":"cccc000000000004","name":"Receipt Date"}]}]}}}
+EOF
+exit 0
+;;
+"ixp documents list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpDocumentsList","Data":{"Documents":[{"Id":"d01"},{"Id":"d02"},{"Id":"d03"},{"Id":"d04"},{"Id":"d05"}],"Total":5,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    ""|latest|12)
+        printf '%s\n' "$METRICS"
+        ;;
+    *)
+        printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+
+# Everything else fails like the base mock: offline, no network call.
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1
