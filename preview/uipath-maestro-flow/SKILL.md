@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ efd27ce. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 6fbf344. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -82,6 +82,19 @@ Exact function signatures and option shapes:
 `StepList`, `ArmBuilder`). The sibling authoring surfaces have their own skills:
 `uipath-maestro-case` for `@uipath/flow-sdk/case` and `uipath-maestro-bpmn`
 for `@uipath/flow-sdk/bpmn`. Neither is needed to build a Flow.
+
+Those pages are **compact** — signature, summary, one line per field — because
+they are read under a token budget. The unabridged declarations they are
+generated from ship in the installed package and are the authority when a
+signature names a type whose members or rules you need:
+
+```bash
+grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
+#  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts   (full @param prose, all five field values)
+```
+
+Grep the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and
+no comments, so searching it is how a lookup turns into twenty tool calls.
 
 ## Supported node types
 
@@ -441,6 +454,12 @@ Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, so
 `tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
 **Reference: [`references/inline-agent.md`](references/inline-agent.md)** — resource families: [`references/agent-resources.md`](references/agent-resources.md)
+
+## Evaluation assets
+
+An inline agent does not create evaluators, eval sets, or data points. Manage
+those project files with the Flow eval CLI; read
+**[`references/evaluate.md`](references/evaluate.md)**.
 
 ## Queue item
 
