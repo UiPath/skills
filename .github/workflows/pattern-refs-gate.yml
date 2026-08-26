@@ -1,0 +1,35 @@
+name: Pattern Reference Gate
+
+# Fails when the Maestro BPMN pattern guides drift from the rest of the skill:
+# an extension type that no longer exists in the bundled validator spec, a
+# router row pointing at a missing guide, a guide with no router row, or a
+# broken relative link or heading anchor.
+#
+# None of that is caught by skills:validate, which checks composition rather
+# than content. The check runs in under a second against the whole skill, so
+# there is no paths filter and no detect/skip job — it can be made a required
+# check as-is.
+
+concurrency:
+  group: pattern-refs-gate-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: uipath-ubuntu-latest
+    name: Check pattern references
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with: { python-version: '3.13' }
+
+      - name: Check Maestro BPMN pattern references
+        run: python3 scripts/check-pattern-refs.py

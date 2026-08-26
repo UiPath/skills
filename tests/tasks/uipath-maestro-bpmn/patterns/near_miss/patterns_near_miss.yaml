@@ -1,0 +1,54 @@
+task_id: skill-bpmn-patterns-near-miss
+description: >
+  The requested process is close to the approval-chain pattern but matches none
+  of its stock variants: two approvers act at the same time, then a third acts
+  after both. Verifies the agent reaches for the shape and adapts it rather than
+  forcing the process into a stock variant or abandoning the shape entirely.
+  The prompt never names the pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `VendorOnboarding/VendorOnboarding.bpmn` for this process:
+
+  A vendor onboarding request arrives. Compliance and Finance both review it,
+  and they work at the same time — neither waits for the other. Once both have
+  signed off, the requester's Manager reviews it last. Only after all three
+  approve is the vendor provisioned and the requester told the outcome.
+
+  A rejection by any of the three stops the request immediately and the
+  requester is told it was rejected. Each reviewer's decision and reasoning must
+  be recoverable afterwards, per reviewer.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "VendorOnboarding/VendorOnboarding.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Process is well-formed and carries the approval-chain mechanisms adapted
+      to a parallel-then-sequential shape
+    command: "python3 $TASK_DIR/check_near_miss.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
