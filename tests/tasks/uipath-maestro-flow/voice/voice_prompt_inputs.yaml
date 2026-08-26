@@ -18,11 +18,12 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-n
 run_limits:
   expected_turns: 34
   max_turns: 80
-  # This is the longest voice build (topology + the four-piece input contract),
-  # and it is the ONLY outbound coverage — a task_timeout abort loses the
-  # topology signal too, not just the inputs signal. smoke.yaml caps at 900s,
-  # which leaves ~26s/turn at the expected turn count; 1200 matches default.yaml.
-  task_timeout: 1200
+  # turn_timeout is the real budget: a single-shot task runs the whole agent
+  # loop in one communicate() call, so raising task_timeout above it does
+  # nothing (the orchestrator warns when you try). 900 is what both
+  # default.yaml and smoke.yaml set, and it clears this build with room —
+  # the verified run took 535s for the longest voice topology plus the
+  # four-piece input contract.
   turn_timeout: 900
 
 initial_prompt: |
