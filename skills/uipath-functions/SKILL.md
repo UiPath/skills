@@ -255,15 +255,25 @@ uip function push
 
 #### What Goes Into the Package
 
-`.nupkg` produced by `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json`, `package-descriptor.json`, `operate.json`). Control inclusion via `packOptions` in `uipath.json` — keep local-only fixtures, test data, and caches out of the published artifact:
+`.nupkg` produced by `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json`, `package-descriptor.json`, `operate.json`). Control inclusion and exclusion via `packOptions` in `uipath.json` — keep local-only fixtures, test data, and caches out of the published artifact:
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `fileExtensionsIncluded` | `string[]` | No | `[".py", ".mermaid", ".json", ".yaml", ".yml", ".md"]` | File extensions to include in the package |
+| `filesIncluded` | `string[]` | No | `["pyproject.toml"]` | Specific files to always include |
+| `filesExcluded` | `string[]` | No | `[]` | Specific files to exclude |
+| `directoriesExcluded` | `string[]` | No | `[]` | Directories to exclude from packaging |
+| `includeUvLock` | `boolean` | No | `false` | Whether to include `uv.lock` file |
+
+**Example:**
 
 ```json
 {
   "packOptions": {
-    "fileExtensionsIncluded": [".py", ".mermaid", ".json", ".yaml", ".yml", ".md"],
+    "fileExtensionsIncluded": [".py", ".json"],
     "filesIncluded": ["config.yaml"],
     "filesExcluded": ["test_*.py"],
-    "directoriesExcluded": ["data", "tests", "__pycache__"],
+    "directoriesExcluded": ["tests", "__pycache__"],
     "includeUvLock": true
   }
 }

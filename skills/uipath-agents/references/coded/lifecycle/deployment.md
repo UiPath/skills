@@ -67,12 +67,22 @@ content/
 └── uv.lock
 ```
 
-Control file inclusion via `packOptions` in `uipath.json`:
+Control file inclusion and exclusion via `packOptions` in `uipath.json`:
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `fileExtensionsIncluded` | `string[]` | No | `[".py", ".mermaid", ".json", ".yaml", ".yml", ".md"]` | File extensions to include in the package |
+| `filesIncluded` | `string[]` | No | `["pyproject.toml"]` | Specific files to always include |
+| `filesExcluded` | `string[]` | No | `[]` | Specific files to exclude |
+| `directoriesExcluded` | `string[]` | No | `[]` | Directories to exclude from packaging |
+| `includeUvLock` | `boolean` | No | `false` | Whether to include `uv.lock` file |
+
+**Example:**
 
 ```json
 {
   "packOptions": {
-    "fileExtensionsIncluded": [".py", ".mermaid", ".json", ".yaml", ".yml", ".md"],
+    "fileExtensionsIncluded": [".py", ".json"],
     "filesIncluded": ["config.yaml"],
     "filesExcluded": ["test_*.py"],
     "directoriesExcluded": ["tests", "__pycache__"],
