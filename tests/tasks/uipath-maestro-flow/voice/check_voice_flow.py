@@ -1,42 +1,12 @@
 #!/usr/bin/env python3
 """Structural checks for a voice flow (uipath-maestro-flow voice plugin).
 
-Usage (from a task's run_command, cwd = sandbox root):
-    python3 $TASK_DIR/check_voice_flow.py call-context
-    python3 $TASK_DIR/check_voice_flow.py inbound-call-context
-    python3 $TASK_DIR/check_voice_flow.py agent-voice
+    python3 $TASK_DIR/check_voice_flow.py call-context          # outbound wiring
+    python3 $TASK_DIR/check_voice_flow.py inbound-call-context  # inbound wiring
+    python3 $TASK_DIR/check_voice_flow.py agent-voice           # sidecar agent.json
 
-Offline only — reads the ``.flow`` source and the inline agent's ``agent.json``.
-No tenant calls, no agent self-reports.
-
-Checks
-------
-``call-context``
-    The plugin's headline wiring rule, outbound flavour. The outbound origin
-    (``uipath.conversational.voice.create-outgoing-call``) emits
-    ``output.callContext``; it must be bound into BOTH the ``uipath.agent.voice``
-    node and the ``uipath.conversational.voice.end-call`` node. Either
-    serialization is accepted — the persisted Studio Web binding object
-    (``{"type": "jsExpression", "expression": "...", "fieldType": ...}``) or a
-    ``=js:`` string — because both express the same wiring. ``fieldType`` is not
-    graded: the validator never reads it on a ``jsExpression`` binding.
-
-``inbound-call-context``
-    Same rule, inbound flavour: the origin is the ``core.trigger.voice`` node
-    instead, and the flow must NOT dial out — a
-    ``uipath.conversational.voice.create-outgoing-call`` node means the agent
-    built the outbound topology (or both), not the inbound one asked for. Also
-    checks the trigger carries an ``inputs.entryPointId``, which is what a trunk
-    binding resolves against at deploy time.
-
-``agent-voice``
-    The voice agent's backing directory carries ``settings.voice`` (the block
-    ``uip agent init --inline-in-flow --conversational`` does NOT scaffold) and
-    still declares ``metadata.isConversational: true``. The agent directory is a
-    UUID, so it is located through the voice node's ``inputs.source``. Topology
-    independent.
-
-Exit 0 on pass; exit 1 with a ``FAIL:`` line naming what is wrong.
+Offline — reads the `.flow` source and the inline agent's `agent.json`. No
+tenant calls, no agent self-reports. Exit 0 on pass; exit 1 with a `FAIL:` line.
 """
 
 from __future__ import annotations
@@ -47,11 +17,10 @@ import os
 import re
 import sys
 
-# `_shared/` is reachable two different ways depending on where this runs.
-# Locally the task dir sits in the repo, so `../_shared` resolves. Under
-# coder-eval the task dir is copied into the container alone ($TASK_DIR ->
-# /work/task_dir), so `../_shared` does not exist and only the repo mount does
-# — $SKILLS_REPO_PATH, the same root the other criteria in this task use.
+# `_shared/` resolves two ways: locally the task dir sits in the repo so
+# `../_shared` works; under coder-eval the task dir is copied in alone
+# ($TASK_DIR -> /work/task_dir) and only the repo mount ($SKILLS_REPO_PATH,
+# which the other criteria also use) has it.
 _TASK_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 _REPO = os.environ.get("SKILLS_REPO_PATH")
 _ROOTS = [_TASK_ROOT]
@@ -81,7 +50,7 @@ def _fail(msg: str) -> int:
 
 
 def _load_flow() -> tuple[str, dict]:
-    """Return the (path, parsed) ``.flow`` that holds the voice agent node."""
+    """Return the (path, parsed) `.flow` that holds the voice agent node."""
     project_dir = find_project_dir()
     paths = sorted(glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True))
     if not paths:
@@ -100,9 +69,7 @@ def _load_flow() -> tuple[str, dict]:
             print(f"Reading {path}")
             return path, flow
 
-    seen = sorted(
-        {n.get("type") for _, f in parsed for n in f.get("nodes") or []}
-    )
+    seen = sorted({n.get("type") for _, f in parsed for n in f.get("nodes") or []})
     sys.exit(
         f"FAIL: no {VOICE_AGENT} node in any .flow under {project_dir}; "
         f"node types seen: {seen}"
@@ -124,21 +91,18 @@ def _binding_expression(value: object) -> str | None:
 
 
 def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
-    """The callContext wiring rule, with the origin node type as the variable.
+    """The callContext wiring rule: the origin node emits output.callContext and
+    it must be bound into BOTH the voice agent and the end-call node.
 
-    Outbound flows originate the call at create-outgoing-call; inbound flows
-    originate it at the incoming-call trigger. Everything downstream of the
-    origin id is identical, so both topologies share this check.
+    Outbound originates at create-outgoing-call, inbound at the trigger;
+    everything downstream of the origin id is identical. Either serialization is
+    accepted (persisted Studio Web binding object or a `=js:` string) and
+    `fieldType` is not graded — the validator never reads it on a jsExpression.
     """
-    role = (
-        "the outbound call origin"
-        if origin_type == CREATE_CALL
-        else "the inbound call origin"
-    )
     origins = _nodes_of(flow, origin_type)
     if len(origins) != 1:
         return _fail(
-            f"expected exactly 1 {origin_type} node ({role}), "
+            f"expected exactly 1 {origin_type} node (the call origin), "
             f"found {len(origins)}"
         )
     origin_id = origins[0].get("id")
@@ -148,7 +112,6 @@ def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
     wanted = re.compile(
         r"\$vars\s*\.\s*" + re.escape(origin_id) + r"\s*\.\s*output\s*\.\s*callContext"
     )
-
     rules = {
         VOICE_AGENT: "conversational-voice-call-context",
         END_CALL: "conversational-voice-end-call-context",
@@ -189,7 +152,8 @@ def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
 
 
 def check_inbound_call_context(flow: dict) -> int:
-    """Inbound topology: trigger-originated callContext, and no dial-out node."""
+    """Inbound topology: trigger-originated callContext, no dial-out node, and an
+    entryPointId on the trigger (what a trunk binding resolves against)."""
     dialers = _nodes_of(flow, CREATE_CALL)
     if dialers:
         ids = ", ".join(repr(n.get("id")) for n in dialers)
@@ -219,6 +183,10 @@ def check_inbound_call_context(flow: dict) -> int:
 
 
 def check_agent_voice(flow_path: str, flow: dict) -> int:
+    """The sidecar agent.json carries settings.voice (which `uip agent init
+    --inline-in-flow --conversational` does NOT scaffold) and is still
+    conversational. Topology independent; the agent dir is a UUID, so it is
+    located through the voice node's inputs.source."""
     agents = _nodes_of(flow, VOICE_AGENT)
     if len(agents) != 1:
         return _fail(f"expected exactly 1 {VOICE_AGENT} node, found {len(agents)}")
@@ -275,10 +243,7 @@ CHECKS = ("call-context", "inbound-call-context", "agent-voice")
 
 def main(argv: list[str]) -> int:
     if len(argv) != 1 or argv[0] not in CHECKS:
-        print(
-            f"usage: check_voice_flow.py {{{'|'.join(CHECKS)}}}",
-            file=sys.stderr,
-        )
+        print(f"usage: check_voice_flow.py {{{'|'.join(CHECKS)}}}", file=sys.stderr)
         return 2
 
     flow_path, flow = _load_flow()
