@@ -198,7 +198,7 @@ uip insights alert-deliveries get <DELIVERY_ID> --output json
 
 `TenantMatches` confirms the delivery belongs to the session tenant. The route is already tenant-scoped, so `false` indicates a backend defect worth reporting rather than a cross-tenant delivery. The tenant key itself is never returned.
 
-A 404 here has two causes, and they are not the ones on `alerts get`: the delivery ID does not exist, or the delivery belongs to another tenant. Take the ID from a `DeliveryId` on an `alerts list` or `alert-history list` row.
+A 404 here has two causes, and they are not the ones on `alerts get`: the delivery ID does not exist, or the delivery belongs to another tenant. Take the ID from a `DeliveryId` on an `alerts list` or `alert-history list` row; the `Id` on this command's output is that same value echoed back.
 
 `RecipientCount` of 0 means the response carried no recipients. The backend rejects an empty recipient list on write, so 0 is most likely a broken delivery, but it is not proof of one.
 
