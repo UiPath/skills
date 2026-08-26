@@ -30,7 +30,9 @@ Keys inside `Data` are PascalCase in the CLI's JSON output. Read `QueueName`, no
 5. **Every page repeats the whole backend request.** These commands page the CLI's own copy of the list. `--limit` defaults to 50, so a 50-row result is a full page rather than a complete list; read `Pagination.Total` and `Pagination.HasMore`.
 6. **`--folder-key` takes a GUID, and no queue command returns one.** `queues details` returns `FolderName`, a display name. Map a name to its key with `uip insights filter-folders list` before filtering on it. `queues failure-details` returns `FolderId`, whose relationship to the folder key is not confirmed; map it the same way rather than feeding it back in.
 7. **Some rows repeat a queue name legitimately.** `queues sla` is one row per queue and process pair, and `queues details` is one row per queue and folder pair.
-8. **These commands need a Cloud or Dedicated SaaS deployment.** On Automation Suite and Service Fabric they return `Result: ConfigError` with `ErrorCode: configuration_error` before the tenant is consulted. That is a deployment fact, not a permission or data answer, and retrying will not change it.
+8. **A null string field is an answer, not an error.** Several columns are null by construction, most often the SLA breach times. Report what the null means for that field rather than treating the row as broken or the value as blank.
+9. **Row order is the server's on `top-failures`, `failure-details`, `operational-metrics`, and both timelines.** Those five queries order their own rows and the CLI does not re-sort them. `sla`, `details`, `failures-by-reason`, and `retry-outcomes` are sorted by the CLI before paging.
+10. **These commands need a Cloud or Dedicated SaaS deployment.** On Automation Suite and Service Fabric they return `Result: ConfigError` with `ErrorCode: configuration_error` before the tenant is consulted. That is a deployment fact, not a permission or data answer, and retrying will not change it.
 
 ## Errors
 
@@ -70,9 +72,11 @@ SLA bucket counts, first breach times, and robot demand, one row per queue and p
 uip insights queues sla --time-range 1440 --output json
 ```
 
-`Data[]`: `QueueName`, `ProcessName`, `InSlaCount`, `AtRiskCount`, `OutOfSlaCount`, `FirstSlaBreachAt`, `FirstRiskBreachAt`, `AverageHandlingTime`, `AveragePendingTime`, `RunningRobots`, `NecessaryRobots`.
+`Data[]`: `QueueName`, `ProcessName`, `InSlaCount`, `AtRiskCount`, `OutOfSlaCount`, `FirstSlaBreachAt`, `FirstRiskBreachAt`, `AverageHandlingTimeMs`, `AveragePendingTimeMs`, `RunningRobots`, `NecessaryRobots`.
 
-`AverageHandlingTime` and `AveragePendingTime` carry no unit because the backend declares none. Report the number without asserting seconds or minutes.
+This row mixes two time windows. The SLA bucket counts and the two breach times use the range you asked for. `AverageHandlingTimeMs`, `AveragePendingTimeMs`, `RunningRobots`, and `NecessaryRobots` come from queries with a fixed 30-day window and do not narrow with `--time-range`. Never present those four as figures for a shorter window.
+
+`FirstSlaBreachAt`, `FirstRiskBreachAt`, and `ProcessName` are null when the query has no answer for that queue. A null breach time means nothing is predicted to breach, which is a result worth reporting, not missing data.
 
 ### queues completed-timeline and queues uncompleted-timeline
 
@@ -98,9 +102,11 @@ Queues ranked by failed items.
 uip insights queues top-failures --time-range 43200 --output json
 ```
 
-`Data[]`: `QueueName`, `ApplicationExceptions`, `BusinessExceptions`, `TotalFailures`.
+`Data[]`: `QueueName`, `ApplicationExceptions`, `BusinessExceptions`, `ClassifiedFailures`.
 
-The server returns at most ten queues, already ranked, so a queue missing from this list is not proof it had no failures. `TotalFailures` is the CLI's sum of the two exception counts; the backend does not return a total.
+The server returns at most ten queues, already ranked by its own failure total, and the rows stay in that order. A queue missing from this list is not proof it had no failures.
+
+`ClassifiedFailures` is the sum of the two exception counts and is not the queue's failure total. The server ranks on a count that also includes failures with no exception type and never returns that count, so a queue can sit at the top of this list with a low `ClassifiedFailures`. Report the two typed counts, and do not present `ClassifiedFailures` as the number of failures.
 
 ### queues failures-by-reason
 
@@ -145,9 +151,9 @@ Retried items and how many later succeeded, per queue.
 uip insights queues retry-outcomes --time-range 43200 --output json
 ```
 
-`Data[]`: `QueueName`, `RetriedItems`, `SuccessfulItems`, `SuccessRate`.
+`Data[]`: `QueueName`, `RetriedItems`, `SuccessfulItems`, `SuccessRatePercent`.
 
-`SuccessRate` describes retried items only. It is not the queue's overall success rate; use `queues summary` for that. The value comes from the backend unchanged and its scale is not documented, so present it as the backend's own figure rather than asserting a percentage.
+`SuccessRatePercent` describes retried items only. It is not the queue's overall success rate; use `queues summary` for that. The backend computes it on a 0 to 100 scale rounded to two decimals and the CLI passes it through unchanged.
 
 ### queues operational-metrics
 
@@ -156,6 +162,8 @@ The Dedicated SaaS queue operations table.
 ```bash
 uip insights queues operational-metrics --time-range 1440 --widget-type non-rda --output json
 ```
+
+Rows stay in the server's own `RUN_DATE` order. `RunDate` is a date string whose format the backend does not declare, so do not re-sort or parse it.
 
 `Data[]`: `TenantName`, `RunDate`, `L1FolderName`, `L2FolderName`, `L3FolderName`, `AirId`, `QueueName`, `OpeningBalance`, `Loaded`, `Completed`, `SystemException`, `BusinessException`, `Abandoned`, `Pending`, `Reconcile`, `SuccessPercentage`.
 
