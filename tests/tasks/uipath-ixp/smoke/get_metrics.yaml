@@ -1,11 +1,18 @@
 task_id: skill-ixp-get-metrics-smoke
 description: >
-  Smoke: asked for per-field F1/Precision/Recall, the agent actually
-  fetches them - `get-metrics` against the project `Name` (not `Title`).
-  The version-serving mock answers `list-models` (live v9, latest v30)
-  and `get-metrics`, so resolving the version first (Critical Rule 21)
-  completes instead of stranding the flow before the metrics call.
-  Grades command shape.
+  Smoke: asked for per-field scores BEFORE ITERATING ON PROMPTS, the agent
+  reads the improvement loop's baseline — the latest trained version — and
+  reports its numbers, not the live version's.
+
+  The mirror of metrics_live_version, on the same fixture: live is v9
+  (ProjectScore 0.98), latest is v30 (ProjectScore 0.91), so the two intents
+  have opposite correct answers. "How is it performing in production" reads
+  the live version; "inspect scores before iterating" reads the baseline the
+  loop improves on — the latest trained model (improve-prompts-guide, 1a).
+  An agent that resolves the live version regardless of intent answers
+  9 / 0.98 and fails the outcome check. The graded values are reachable only
+  from an actual `get-metrics` read, and the command criterion locks in the
+  project-`Name` argument (not `Title`).
 tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -22,6 +29,11 @@ initial_prompt: |
   of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on
   prompts.
 
+  Write `metrics.json` in the working directory:
+
+      {"version": <the model version the scores belong to>,
+       "project_score": <that version's ProjectScore>}
+
   Important:
   - Do NOT prompt the user for confirmation — this is an automated test.
 
@@ -32,4 +44,21 @@ success_criteria:
     pattern: >-
       (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
     weight: 2.0
+    pass_threshold: 1.0
+
+  # The intent discriminator. Before-iterating means the loop's baseline: the
+  # latest trained version (30, ProjectScore 0.91) — not the live version
+  # (9, ProjectScore 0.98) that "how is it performing in production" would
+  # read. Version 30 separates the two paths on the artifact.
+  - type: json_check
+    description: "Reported the improvement baseline — the latest trained version (30), not the live one (9)"
+    path: "metrics.json"
+    assertions:
+      - expression: "version"
+        operator: equals
+        expected: 30
+      - expression: "project_score"
+        operator: gte
+        expected: 0.9
+    weight: 3.0
     pass_threshold: 1.0
