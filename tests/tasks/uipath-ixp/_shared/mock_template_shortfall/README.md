@@ -6,7 +6,7 @@ A field can sit below target with a sample too small for any instruction
 rewrite to be evaluated, and that happens for two reasons with **opposite**
 fixes: the labelled data really is that small (upload more documents), or the
 data is there but this field's predictions were never confirmed on some of it
-(confirm what you have). This overlay serves a project where both cases are
+(review those documents: confirm, correct, or mark missing). This overlay serves a project where both cases are
 present and only one signal tells them apart.
 
 List it SECOND in `template_sources` so its `mocks/uip` wins over the base
@@ -20,7 +20,7 @@ non-repeatable, target `F1` 0.7.
 | `FieldId` | `Documents` | `Annotations` | `F1` | below target? | correct fix |
 |---|---|---|---|---|---|
 | `cccc000000000001` | 5 | 5 | 0.400 | yes | **UPLOAD** |
-| `cccc000000000002` | 2 | 6 | 0.667 | yes | **CONFIRM** |
+| `cccc000000000002` | 2 | 6 | 0.667 | yes | **REVIEW** |
 | `cccc000000000003` | 5 | 5 | 1.000 | no | — |
 | `cccc000000000004` | 4 | 4 | 0.500 | yes | **UPLOAD** (missing-marker allowance) |
 
@@ -52,10 +52,10 @@ project-level `ValidatedDocuments`:
 - `…0001` — `Documents` 5 == `ValidatedDocuments` 5 → already reviewed on every
   labelled document; the sample is as large as the data allows → **UPLOAD**.
 - `…0002` — `Documents` 2 << `ValidatedDocuments` 5 → three labelled documents
-  never had this field confirmed → **CONFIRM**.
+  carry no label for this field → **REVIEW**.
 - `…0004` — `Documents` 4, short by exactly one → within the missing-marker
   allowance (a field legitimately absent from a document is recorded as
-  missing, not left unconfirmed) → **UPLOAD**, not CONFIRM.
+  missing, not left unconfirmed) → **UPLOAD**, not REVIEW.
 
 **`Annotations` is the trap, not the signal.** `…0002` carries the **largest**
 `Annotations` (6) of the three flagged fields while being reviewed on the

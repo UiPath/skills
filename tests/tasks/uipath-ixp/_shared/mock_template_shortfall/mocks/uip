@@ -9,7 +9,7 @@
 #   field             Docs  Ann   F1     below target?  why small            fix
 #   cccc000000000001     5    5  0.400   yes            reviewed on all 5    UPLOAD
 #                                                       docs already
-#   cccc000000000002     2    6  0.667   yes            reviewed on only 2   CONFIRM
+#   cccc000000000002     2    6  0.667   yes            reviewed on only 2   REVIEW
 #                                                       of the 5 documents
 #   cccc000000000003     5    5  1.000   no             -                    -
 #   cccc000000000004     4    4  0.500   yes            short by ONE doc =   UPLOAD
@@ -22,7 +22,7 @@
 # field's own Documents vs ValidatedDocuments:
 #
 #   ...0001  Documents 5 == ValidatedDocuments 5 -> sample as large as the data
-#   ...0002  Documents 2 <<  ValidatedDocuments 5 -> labels never confirmed
+#   ...0002  Documents 2 <<  ValidatedDocuments 5 -> unreviewed for this field
 #   ...0004  Documents 4, short by ONE -> within the missing-marker allowance
 #            (a field legitimately absent from a document), NOT unconfirmed
 #

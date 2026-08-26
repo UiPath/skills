@@ -48,7 +48,7 @@ The values `get-metrics` returns are neither independent nor interchangeable —
 | `Precision` | field, group | **Decision variable.** Splits a low `F1` into PRECISION vs RECALL (2a) — that split picks which rewrite to attempt. |
 | `Recall` | field, group | **Decision variable.** Same split, plus the `< 0.5` labelling-gap probe (2a-check). |
 | `Annotations` | field | **Decision variable.** Reviewed **extractions** for that field (not documents) — the sample `F1` is computed over, so it sets that field's regression threshold (2f). |
-| `Documents` | field, group | **Decision variable.** How many documents this field (or group) was reviewed in — a per-field count, not a project total. `0` → SKIP (2a): no evidence to evaluate a rewrite against. Below `ValidatedDocuments` → this field has unconfirmed labels (2f). |
+| `Documents` | field, group | **Decision variable.** How many documents this field (or group) was reviewed in — a per-field count, not a project total. `0` → SKIP (2a): no evidence to evaluate a rewrite against. Below `ValidatedDocuments` → some reviewed documents carry no label for this field (2f). |
 | `ProjectScore` | project | **Report only** — the headline number, an average of the per-field `F1` values. Never gate on it (2f diffs the fields directly). |
 | `ValidatedDocuments` | project | **Decision variable.** How many labelled documents the metrics are computed over — project-level only, and the ceiling for every per-field `Documents`. Below the project's total document count → unlabelled documents exist; label them before looping (1e). |
 | `ModelVersion` | project | **Decision variable.** Retrain completion ([Waiting for retrain](#waiting-for-retrain)). |
@@ -279,7 +279,7 @@ That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — 
 **A small `Annotations` has two causes with opposite fixes.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
 
 - **`Documents` equals `ValidatedDocuments`** → this field was reviewed on every reviewed document, so its sample is already as large as the labelled data allows. Tag it **UPLOAD** in the final report — more documents are the user's follow-up after the loop, never a reason to stop mid-run and ask for them.
-- **`Documents` below `ValidatedDocuments`** → documents are labelled but this field's predictions were never confirmed on some of them. Tag it **CONFIRM** in the final report — confirming happens after the loop, never as a mid-loop detour (2a-check's `Recall < 0.5` gate misses this case). Allow a shortfall of one or two: a field legitimately absent from a document carries a missing marker instead.
+- **`Documents` below `ValidatedDocuments`** → some labelled documents carry no label for this field — never reviewed there, or reviewed and skipped because the prediction was wrong. Tag it **REVIEW** in the final report: on those documents, confirm the prediction where it is right, correct it where it is not, and mark the field missing where it is genuinely absent — each outcome grows the sample, and a wrong prediction is never confirmed as-is. Reviewing happens after the loop, never as a mid-loop detour (2a-check's `Recall < 0.5` gate misses this case). Allow a shortfall of one or two: a field legitimately absent from a document carries a missing marker instead.
 
 `Annotations / Documents` is the average number of extractions per document — about 1 for a single-value field, higher under a repeatable group. Whichever cause applies, name it in the final report — "more prompt rewrites" is not the answer in either case.
 
@@ -340,10 +340,10 @@ Freight Charge  | 1.000   | 0.889    | -0.111 (under its threshold, kept) | 1.00
 Project score:   X.XX (Quality) -> Y.YY (Quality)   ValidatedDocuments: D
 Iterations: N total, M with rollbacks
 Fields still below target (F1 < 0.7): [list]
-Fields whose regression_threshold sits above the flat 0.1 (too few Annotations to measure progress): [list, each tagged UPLOAD or CONFIRM]
+Fields whose regression_threshold sits above the flat 0.1 (too few Annotations to measure progress): [list, each tagged UPLOAD or REVIEW]
 Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 ```
 
 `ErrorRate` is the manual-correction burden left; `Annotations` tells a real plateau from an unmeasurable one.
 
-If fields still need work, suggest the user run another round with more iterations. For any field in the *too-few-`Annotations`* list, say which fix it needs: **UPLOAD** more documents when its `Annotations` already matches `ValidatedDocuments`, or **CONFIRM** its unconfirmed predictions when it falls materially short of them. More prompt rewrites is not the answer in either case.
+If fields still need work, suggest the user run another round with more iterations. For any field in the *too-few-`Annotations`* list, say which remedy it needs: **UPLOAD** more documents when its `Documents` already matches `ValidatedDocuments`, or **REVIEW** the documents where it carries no label when its `Documents` falls materially short. More prompt rewrites is not the answer in either case.
