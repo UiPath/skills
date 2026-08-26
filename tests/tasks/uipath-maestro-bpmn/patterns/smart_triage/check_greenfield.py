@@ -29,18 +29,27 @@ def main() -> None:
     if not manual:
         fail("no userTask — low-confidence items have no human fallback")
 
-    # The fallback must converge on a gateway that the confident path also
-    # reaches, or the process grew two dispatch points instead of one.
+    # The fallback must converge on the routing gateway, but not necessarily in
+    # one hop — applying the human's chosen category first is a fair adaptation.
+    # Walk downstream instead of asserting a direct edge.
     manual_ids = {t.attrib.get("id") for t in manual}
     gateway_ids = {g.attrib.get("id") for g in gateways}
-    targets_from_manual = {
-        f.attrib.get("targetRef") for f in flows(root) if f.attrib.get("sourceRef") in manual_ids
-    }
-    shared = targets_from_manual & gateway_ids
+    edges = [(f.attrib.get("sourceRef"), f.attrib.get("targetRef")) for f in flows(root)]
+
+    reachable: set[str] = set()
+    frontier = list(manual_ids)
+    while frontier:
+        node = frontier.pop()
+        for source, target in edges:
+            if source == node and target not in reachable:
+                reachable.add(target)
+                frontier.append(target)
+
+    shared = reachable & gateway_ids
     if not shared:
         fail(
-            "the human fallback does not rejoin a gateway "
-            f"(it targets {sorted(t for t in targets_from_manual if t)}) — routing was duplicated"
+            "the human fallback never reaches a gateway "
+            f"(it reaches {sorted(n for n in reachable if n)}) — routing was duplicated"
         )
 
     route_gate = next(iter(shared))
