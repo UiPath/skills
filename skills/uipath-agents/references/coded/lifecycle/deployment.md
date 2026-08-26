@@ -72,7 +72,7 @@ Control file inclusion via `packOptions` in `uipath.json`:
 ```json
 {
   "packOptions": {
-    "fileExtensionsIncluded": [".py", ".json"],
+    "fileExtensionsIncluded": [".py", ".mermaid", ".json", ".yaml", ".yml", ".md"],
     "filesIncluded": ["config.yaml"],
     "filesExcluded": ["test_*.py"],
     "directoriesExcluded": ["tests", "__pycache__"],

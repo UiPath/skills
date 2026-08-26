@@ -260,7 +260,7 @@ uip function push
 ```json
 {
   "packOptions": {
-    "fileExtensionsIncluded": [".py", ".json"],
+    "fileExtensionsIncluded": [".py", ".mermaid", ".json", ".yaml", ".yml", ".md"],
     "filesIncluded": ["config.yaml"],
     "filesExcluded": ["test_*.py"],
     "directoriesExcluded": ["data", "tests", "__pycache__"],
