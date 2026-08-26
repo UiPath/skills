@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. Triage failed runs: inspect failed test case logs, assertions and step logs, tell a real regression from a flaky test via result history, download failure attachments as defect evidence. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -16,6 +16,9 @@ Manage UiPath Test Manager resources (projects, test cases, test sets, execution
 - User wants to **generate a shareable test report** tailored to a QA engineer, developer, or release manager
 - User asks about **test coverage, regression trends, or failure rates**
 - User needs a **go/no-go decision summary** based on recent test executions
+- User wants to **triage a failed run** — which cases failed, which assertion broke, which step it died on
+- User asks whether a failure is a **real regression or a flaky test** (result history over past executions)
+- User needs **failure evidence** — screenshots and logs pulled off the failed cases for a defect
 
 ## Concepts
 ### What is Testmanager?
@@ -316,6 +319,7 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
 
 | I want to... | Start here |
 |---|---|
+| **Triage a failed run to a root cause** (failed logs → assertions → step logs → evidence; flaky vs regression) | [references/failure-triage-guide.md](references/failure-triage-guide.md) |
 | **Generate a shareable test report** (tester or release manager view) | [references/test-result-report-guide.md](references/test-result-report-guide.md) |
 | **Publish a project and link it to a Test Manager test case** (Studio/RPA) | [references/publish-and-link-guide.md](references/publish-and-link-guide.md) |
 | **Pack, ingest, and run a Playwright suite on serverless** (pack → upload → labels → run) | [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md) |

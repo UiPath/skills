@@ -1,0 +1,143 @@
+task_id: skill-test-failed-run-triage-diagnose
+description: >
+  Integration test: agent uses the uipath-test skill to triage a red test set run
+  in the CLAIM project down to a cause rather than a count. Asserts that the
+  agent (a) checks login status, (b) locates the run's failed test case logs with
+  `executions testcaselogs list --only-failed` instead of pulling every log and
+  filtering client-side, and (c) checks the failing case's own history with
+  `testcases list-result-history --only-failed` to separate a real regression
+  from a flaky test. The skill — not the prompt — must teach the triage ladder,
+  the `--only-failed` server-side narrowing, and that one red run is not enough
+  evidence to call a regression.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:discover, feature:test-case]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 35
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-TRIAGE-SET"
+      CASES = ["EVFX-TRIAGE-TC1", "EVFX-TRIAGE-TC2", "EVFX-TRIAGE-TC3"]
+      RESULTS = ["Passed", "Failed", "Passed"]
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key, set_id = ts["TestSetKey"], ts["Id"]
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if len(keys) != len(CASES):
+          fail(f"expected {len(CASES)} cases, resolved {len(keys)}")
+      call("set.add", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", *keys)
+
+      # Guard on the PROPERTY the task reads: at least one FINISHED execution
+      # carrying a failure. Counting executions would top up forever; asserting
+      # the property leaves a healthy fixture untouched and self-heals a drifted
+      # one with a single append. This task needs a stable failure, NOT
+      # intermittency -- flaky_tests_analysis owns that shape in its own
+      # namespace, and the two must not be confused.
+      finished = [e for e in call("ex.list", "tm", "executions", "list",
+                                 "--project-key", P, "--test-set-id", set_id).get("Data") or []
+                  if (e.get("ExecutionStatus") or e.get("Status")) == "Finished"]
+      for e in finished:
+          logs = call(f"logs.{e['Id'][:8]}", "tm", "executions", "testcaselogs",
+                      "list", "--project-key", P, "--execution-id", e["Id"]).get("Data") or []
+          if any(l.get("Result") == "Failed" for l in logs):
+              print("FIXTURE: a finished execution with a failure exists - nothing to seed",
+                    flush=True)
+              raise SystemExit(0)
+
+      r = call("run", "tm", "testsets", "run", "--test-set-key", set_key,
+               "--execution-type", "manual")
+      eid = (r.get("Data") or {}).get("ExecutionId")
+      if not eid:
+          fail("could not start a manual execution")
+      logs = call("logs.new", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      if len(logs) != len(CASES):
+          fail(f"execution {eid} has {len(logs)} logs, expected {len(CASES)}")
+      for i, l in enumerate(logs):
+          res = RESULTS[i % len(RESULTS)]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      print(f"FIXTURE: seeded {eid} with {RESULTS}", flush=True)
+      PYEOF
+    timeout: 280
+
+initial_prompt: |
+  The `EVFX-TRIAGE-SET` suite in my UiPath Test Manager project CLAIM came back
+  red on its last finished run. I don't want a pass/fail tally — I want to know
+  which test case actually failed, and whether this is a genuine regression I
+  should hand to a developer or just a flaky test that will go green on the next
+  run. Tell me which it is and what you based that on.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent located the run for the named test set rather than guessing an execution"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)uip\s+tm\s+(executions?\s+list|testsets?\s+list)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent narrowed to the failed test case logs server-side with --only-failed (Critical Rule #9)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--only-failed\b)uip\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked the failing case's own history to tell a regression from a flake"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-case-id\s+\S)uip\s+tm\s+testcases?\s+list-result-history\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
