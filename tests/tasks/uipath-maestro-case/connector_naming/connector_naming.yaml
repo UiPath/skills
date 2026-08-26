@@ -25,10 +25,16 @@ description: >
   literal values and the trigger declares no event parameters.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, connector, resource]
 
+# One harness "turn" is the ENTIRE agent query stream, so turn_timeout caps the
+# whole session, not a single exchange — it must exceed the full build. A first
+# run set it to 3600 and was hard-killed at Phase 2 with Phase 3 (the connector
+# splice this task exists to grade) never reached. Sized from that run: ~20 min
+# to finish Phase 2 on a two-task case, so allow well over 3x for Phase 3 plus
+# validate, and keep task_timeout above turn_timeout to absorb one cold restart.
 run_limits:
-  task_timeout: 5400
+  task_timeout: 10800
   max_turns: 300
-  turn_timeout: 3600
+  turn_timeout: 9000
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
