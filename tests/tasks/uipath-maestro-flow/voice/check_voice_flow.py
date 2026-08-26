@@ -4,6 +4,7 @@
     python3 $TASK_DIR/check_voice_flow.py call-context          # outbound wiring
     python3 $TASK_DIR/check_voice_flow.py inbound-call-context  # inbound wiring
     python3 $TASK_DIR/check_voice_flow.py agent-voice           # sidecar agent.json
+    python3 $TASK_DIR/check_voice_flow.py prompt-inputs         # flow data -> prompt
 
 Offline — reads the `.flow` source and the inline agent's `agent.json`. No
 tenant calls, no agent self-reports. Exit 0 on pass; exit 1 with a `FAIL:` line.
@@ -238,7 +239,148 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     return 0
 
 
-CHECKS = ("call-context", "inbound-call-context", "agent-voice")
+def _voice_agent_json(flow_path: str, flow: dict) -> tuple[dict, dict, str] | int:
+    """Return (voice node, parsed agent.json, agent.json path) or a fail code."""
+    agents = _nodes_of(flow, VOICE_AGENT)
+    if len(agents) != 1:
+        return _fail(f"expected exactly 1 {VOICE_AGENT} node, found {len(agents)}")
+    node = agents[0]
+    source = (node.get("inputs") or {}).get("source")
+    if not isinstance(source, str) or not source:
+        return _fail(
+            f"{VOICE_AGENT} node {node.get('id')!r} has no inputs.source "
+            f"(the inline agent directory's ProjectId)"
+        )
+    agent_json = os.path.join(os.path.dirname(flow_path), source, "agent.json")
+    try:
+        with open(agent_json, encoding="utf-8") as handle:
+            return node, json.load(handle), agent_json
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as err:
+        return _fail(f"could not read {agent_json}: {err}")
+
+
+BINDING_RE = re.compile(r"^=(?:js:)?\s*\$vars\.([A-Za-z0-9_-]+)\.output\.(.+)$")
+INPUT_TOKEN_RE = re.compile(r"\{\{\s*input\.([A-Za-z0-9_]+)\s*\}\}")
+
+
+def check_prompt_inputs(flow_path: str, flow: dict) -> int:
+    """Flow data reaching the voice prompt needs all four pieces aligned:
+
+    Delivery   node `inputs.agentInputVariables[]` binding -> BPMN JobArguments
+    Contract   the same key under agent.json `inputSchema.properties`
+    Resolution `{{input.<key>}}` in `messages[].content`
+    Variable   the bound `$vars.<trigger>.output.<id>` declared in globals
+
+    Delivery is the piece that only `flow pack` reads: omit it and `flow debug`
+    still back-fills from `inputSchema`, so the published call is the first place
+    the input goes missing. A bare `$vars.…` left in prompt text is graded as a
+    failure — nothing rewrites agent.json prompts, so it reaches the model raw.
+    """
+    resolved = _voice_agent_json(flow_path, flow)
+    if isinstance(resolved, int):
+        return resolved
+    node, agent, agent_json = resolved
+
+    errors: list[str] = []
+
+    delivery = (node.get("inputs") or {}).get("agentInputVariables")
+    if not isinstance(delivery, list) or not delivery:
+        return _fail(
+            f"{VOICE_AGENT} node {node.get('id')!r} has no inputs."
+            f"agentInputVariables[] — that binding is what `flow pack` turns into "
+            f"the runtime JobArguments, so the prompt's inputs would ship empty"
+        )
+
+    bound: dict[str, str] = {}
+    for entry in delivery:
+        if not isinstance(entry, dict):
+            errors.append(f"agentInputVariables entry is not an object: {entry!r}")
+            continue
+        key = entry.get("id")
+        if not isinstance(key, str) or not key:
+            errors.append(f"agentInputVariables entry has no id: {entry!r}")
+            continue
+        if "value" in entry and "binding" not in entry:
+            errors.append(
+                f"agentInputVariables entry {key!r} uses `value` instead of "
+                f"`binding` — the converter only reads `binding`, so JobArguments "
+                f"ship empty"
+            )
+            continue
+        binding = entry.get("binding")
+        if not isinstance(binding, str) or not BINDING_RE.match(binding.strip()):
+            errors.append(
+                f"agentInputVariables entry {key!r} binding is not a "
+                f"`=$vars.<node>.output.<field>` expression: {binding!r}"
+            )
+            continue
+        bound[key] = binding.strip()
+
+    # Variable: a trigger-associated global must exist for each bound field.
+    globals_ = ((flow.get("variables") or {}).get("globals")) or []
+    declared = {
+        (g.get("triggerNodeId"), g.get("id"))
+        for g in globals_
+        if isinstance(g, dict) and g.get("direction") == "in"
+    }
+    for key, binding in bound.items():
+        match = BINDING_RE.match(binding)
+        trigger, field = match.group(1), match.group(2)
+        if (trigger, field) not in declared:
+            errors.append(
+                f"{key!r} binds $vars.{trigger}.output.{field} but no "
+                f'variables.globals entry declares it (direction "in", '
+                f"triggerNodeId {trigger!r}) — it resolves to nothing at runtime"
+            )
+
+    # Contract: every delivered key declared in the agent's inputSchema.
+    properties = ((agent.get("inputSchema") or {}).get("properties")) or {}
+    for key in bound:
+        if key not in properties:
+            errors.append(
+                f"{key!r} is bound on the node but absent from {agent_json} "
+                f"inputSchema.properties — the runtime drops it"
+            )
+
+    # Resolution: prompt tokens reference declared keys, and carry no raw $vars.
+    referenced: set[str] = set()
+    for index, message in enumerate(agent.get("messages") or []):
+        content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, str) or not content:
+            continue
+        if "$vars." in content:
+            errors.append(
+                f"messages[{index}].content contains a raw `$vars.` reference — "
+                f"nothing rewrites agent.json prompt text, so it reaches the model "
+                f"literally; use {{{{input.<key>}}}} instead"
+            )
+        referenced.update(INPUT_TOKEN_RE.findall(content))
+
+    if not referenced:
+        errors.append(
+            f"no {{{{input.<key>}}}} token in any {agent_json} messages[].content — "
+            f"the prompt never reads the delivered input"
+        )
+    for key in sorted(referenced - set(properties)):
+        errors.append(
+            f"prompt references {{{{input.{key}}}}} but inputSchema.properties "
+            f"has no {key!r} key"
+        )
+    for key in sorted(referenced - set(bound)):
+        errors.append(
+            f"prompt references {{{{input.{key}}}}} but the node binds no such "
+            f"input — `flow debug` back-fills it, `flow pack` does not"
+        )
+
+    if errors:
+        return _fail("; ".join(errors))
+
+    for key in sorted(referenced):
+        print(f"OK      {key} : node binding -> inputSchema -> {{{{input.{key}}}}}")
+    return 0
+
+
+CHECKS = ("call-context", "inbound-call-context", "agent-voice", "prompt-inputs")
 
 
 def main(argv: list[str]) -> int:
@@ -251,6 +393,8 @@ def main(argv: list[str]) -> int:
         return check_call_context(flow)
     if argv[0] == "inbound-call-context":
         return check_inbound_call_context(flow)
+    if argv[0] == "prompt-inputs":
+        return check_prompt_inputs(flow_path, flow)
     return check_agent_voice(flow_path, flow)
 
 

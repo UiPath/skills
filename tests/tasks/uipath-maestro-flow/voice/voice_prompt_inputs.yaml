@@ -1,0 +1,95 @@
+task_id: skill-flow-voice-prompt-inputs
+description: >
+  Outbound voice flow whose prompt reads flow data: the trigger's customer name
+  and amount must reach the voice agent's system prompt. Guards the four-piece
+  input contract — node `agentInputVariables[]` (delivery), agent.json
+  `inputSchema.properties` (contract), `{{input.<key>}}` in `messages[].content`
+  (resolution), and the trigger-associated globals the bindings resolve against.
+  Delivery is the piece only `flow pack` reads: omit it and `flow debug`
+  back-fills from `inputSchema`, so a published call is the first place the
+  inputs go missing. Also catches a bare `$vars.…` left in prompt text, which
+  nothing rewrites and the model receives literally. Fully offline — init /
+  author / validate need no login.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
+
+run_limits:
+  expected_turns: 34
+  max_turns: 80
+  turn_timeout: 900
+
+initial_prompt: |
+  Build a UiPath Flow project named "PaymentReminderPersonalized" that places an
+  outbound phone call, has an AI agent hold the conversation, and hangs up when
+  it is over.
+
+  The agent must greet the person by name and state the amount owed, both taken
+  from the flow's inputs rather than hardcoded in the prompt: the flow is started
+  with a customer name and an outstanding amount, and the agent's system prompt
+  has to read those two values.
+
+  This sandbox has no UiPath tenant and is not logged in, so:
+  - Use placeholder E.164 numbers for the calling and destination numbers —
+    do not look up or provision real ones.
+  - Do NOT run anything that needs a live connection, and do NOT pack, deploy,
+    or place a real call. In particular, do not run `uip maestro flow debug`.
+
+  The task is NOT complete until `uip maestro flow validate` passes on the
+  generated flow.
+
+# Every criterion discovers the project dynamically: `flow init` wraps it in a
+# `<Name>Solution/` the prompt does not pin, so a hardcoded `path:` would score
+# 0.0 on a valid build (#2213).
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Prompt inputs are wired end to end: node binding -> inputSchema -> {{input.<key>}} -> declared global"
+    command: "python3 $TASK_DIR/check_voice_flow.py prompt-inputs"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the three outbound voice node types"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      '"uipath.conversational.voice.create-outgoing-call"'
+      '"uipath.agent.voice"'
+      '"uipath.conversational.voice.end-call"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "callContext from the create-outgoing-call node is bound into BOTH the voice agent and the end-call node"
+    command: "python3 $TASK_DIR/check_voice_flow.py call-context"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline agent.json carries settings.voice and stays conversational"
+    command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold: 0) — record convention adherence without docking
+  # an agent that reaches the same graded outcome another way.
+  - type: command_executed
+    description: "Advisory: agent rebuilt contentTokens with uip agent refresh --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
