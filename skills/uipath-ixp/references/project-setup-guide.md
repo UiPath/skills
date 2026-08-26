@@ -1,6 +1,6 @@
 # Project Setup Guide
 
-Complete workflow for creating a **new** IXP project, labelling documents when quality matters, and getting initial metrics. Run steps 1-4 end-to-end automatically; Step 5 (deploy) only when the user's goal calls for it.
+Complete workflow for creating a **new** IXP project, labelling documents when annotation quality matters — by the skill, or scaffold-only with the user annotating themselves — and getting initial metrics. Run steps 1-4 end-to-end automatically; Step 5 (deploy) only when the user's goal calls for it.
 
 > **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
@@ -95,6 +95,7 @@ callable model.** A trained version appears on its own within seconds of
 | --- | --- |
 | A model an automation / Maestro Flow can call (documents + a downstream goal, not a quality target) | Skip labelling; go to [Step 5](#step-5--deploy-so-it-can-be-called). Say quality is untuned and labelling is the lever if fields come back wrong. |
 | Better extraction quality, or they named accuracy/F1/scores | Follow the [Label Documents Guide](label-documents-guide.md) for every document. Deploy (Step 5) only if they also want a callable model. |
+| To annotate themselves (checking annotation quality, or keeping agent costs down) | **Stop after scaffolding.** Hand over the project name — they can label in-product or via the [Label Documents Guide](label-documents-guide.md) later, then return for Step 5 if needed. |
 | Unclear | Skip labelling — cheap to add later (`deployments upgrade` moves a deployment to a newer version). Confirm before deploying: a deployment cannot be un-deployed. |
 
 ## Step 5 — Deploy so it can be called
