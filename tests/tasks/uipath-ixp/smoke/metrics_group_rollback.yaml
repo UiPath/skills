@@ -36,8 +36,8 @@ initial_prompt: |
 
       {"rollback_group": "<the field group whose instructions should be rolled
                           back, or an empty string if none>",
-       "collateral":     ["<field ids that regressed but are NOT under the
-                          edited group>"]}
+       "collateral":     ["<field ids outside the edited group whose drop
+                          exceeds their own regression threshold>"]}
 
   `collateral` is an array of field id strings and may be empty.
 

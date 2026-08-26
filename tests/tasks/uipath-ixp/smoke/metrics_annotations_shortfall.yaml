@@ -40,10 +40,9 @@ initial_prompt: |
 
       {"<field_id>": "UPLOAD" | "REVIEW"}
 
-      "UPLOAD"  = its evidence is already as complete as the labelled data
-                  allows; more documents must be uploaded and labelled
-      "REVIEW"  = some labelled documents carry no label for this field;
-                  review those documents - confirm, correct, or mark missing
+      "UPLOAD"  = more labelled documents are what will grow its sample
+      "REVIEW"  = reviewing the existing documents' labels for this field
+                  is what will grow its sample
 
   Fields at or above target must not appear.
 

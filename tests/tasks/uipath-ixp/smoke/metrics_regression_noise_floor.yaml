@@ -42,7 +42,8 @@ initial_prompt: |
   directory, with exactly these two keys:
 
       {"rollback":   ["<field ids whose instructions should be rolled back>"],
-       "collateral": ["<field ids that regressed but were NOT edited>"]}
+       "collateral": ["<field ids that were NOT edited and whose drop
+                      exceeds their own regression threshold>"]}
 
   Both values are arrays of field id strings, and either may be empty. List
   each field id at most once, and do not put the same id in both arrays.
