@@ -57,7 +57,7 @@ defaults:
   # per task, so cleaning it after each row keeps the run dir from ballooning
   # across the ~480-row activation sweep (no-op for claude, which never stages it).
   post_run:
-    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv -o -name .agents \\) -prune -exec rm -rf {} +"
+    - command: "python -c \"import os, shutil; [(dirs.remove(d), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for root, dirs, _ in os.walk('.') for d in [x for x in list(dirs) if x in ('node_modules', '.npm-prefix', '.venv', '.agents')]]\""
       timeout: 30
 
 variants:

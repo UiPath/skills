@@ -28,7 +28,7 @@ defaults:
   # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
   # sandboxes don't leak Node module resolution).
   post_run:
-    - command: "rm -rf node_modules .npm-prefix"
+    - command: "python -c \"import shutil; [shutil.rmtree(d, ignore_errors=True) for d in ('node_modules', '.npm-prefix')]\""
       timeout: 30
 
 variants:
