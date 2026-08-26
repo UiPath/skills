@@ -80,10 +80,10 @@ If documents were just labelled (or uploaded, or the taxonomy was edited), wait 
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
-uip ixp projects get-metrics <project-name> --output json
+uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
-The baseline is the **latest trained version**, because that is the model your instruction edits retrain — so the bare call above is right even when a `live` tag exists. Per Critical Rule 21 the version follows the question: a production question would read the live version; this baseline reads the latest. Still say which version you read.
+`--model-version latest` is deliberate: the baseline is the latest trained version — the model your instruction edits retrain — not the `live` tag (Critical Rule 21: the version follows the question).
 
 Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
 
