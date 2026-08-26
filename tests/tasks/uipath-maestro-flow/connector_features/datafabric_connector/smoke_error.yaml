@@ -1,0 +1,58 @@
+task_id: skill-flow-datafabric-smoke-error
+description: >
+  Smoke: attempt a record creation against a non-existent entity — expect a
+  structured 4xx and zero side effects on FlowCodeEvalEntity.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, negative, uipath-uipath-dataservice]
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1500
+  task_timeout: 2400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a Flow that:
+
+  1. Attempts to create a record on entity 'NonExistentEntity' with
+     title='ErrorTestRecord', score=5.0. Expect an error — do not swallow it.
+  2. In a parallel branch (so it runs even after the failure), Query
+     FlowCodeEvalEntity for title='ErrorTestRecord'.
+  3. In the same parallel branch, Query FlowCodeEvalEntity with no filter.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Create attempted on NonExistentEntity"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Two follow-up Query nodes present"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Flow validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: "Create targets NonExistentEntity; Queries target FlowCodeEvalEntity"
+    command: "python3 $TASK_DIR/check_smoke_error.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

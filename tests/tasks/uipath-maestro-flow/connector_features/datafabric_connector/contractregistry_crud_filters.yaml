@@ -1,0 +1,58 @@
+task_id: skill-flow-datafabric-contractregistry-crud-filters
+description: >
+  Integration coverage for the ContractRegistry Data Fabric lifecycle:
+  create all entity fields, query with null and date filters, update a title
+  through a variable, retrieve the updated record by Id, and expose mapped
+  outputs without losing the entity binding.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:records, feature:entities, feature:activities, uipath-uipath-dataservice]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3600
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a UiPath Flow named ContractRegistryCrudFilters with a manual trigger
+  using the configured UiPath Data Fabric connection and the ContractRegistry
+  entity. Preserve the entity name on every Data Fabric activity.
+
+  The flow must:
+
+  1. Create one ContractRegistry record and populate every field:
+     contractTitle, status, priority, dueDate, value, and isUrgent. Use
+     non-null deterministic or generated values for the fields.
+  2. Query ContractRegistry with a filter that selects records where
+     dueDate is less than 2026-08-04. Return at most 100 records.
+  3. Query ContractRegistry with a filter that selects records where
+     contractTitle is null. Return at most 100 records.
+  4. Store a random/non-constant contract title in a workflow variable and
+     update the created record's contractTitle from that variable.
+  5. Get the updated ContractRegistry record by Id, using the Id from the
+     update activity output rather than a hard-coded Id.
+  6. Map the created, queried, updated, and retrieved values to the flow
+     output where the activity supports output mapping.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "ContractRegistry CRUD, filters, variable update, Get-by-Id wiring, and output mapping are present"
+    command: "python3 $TASK_DIR/check_contractregistry_crud_filters.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
