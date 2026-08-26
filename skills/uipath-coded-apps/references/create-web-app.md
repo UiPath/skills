@@ -271,4 +271,4 @@ If login fails, see [debug.md](debug.md).
 
 ## Deploy
 
-When ready, follow [pack-publish-deploy.md](pack-publish-deploy.md) for the full deployment pipeline. `uip codedapp deploy` registers the production redirect URIs on the External Application automatically — no manual step is required.
+When ready, follow [pack-publish-deploy.md](pack-publish-deploy.md) for the full deployment pipeline. Add the production URL (`https://<org-host>.<env>.uipath.host/<routing-name>`) as a redirect URI on the External Application before the first sign-in — `uip codedapp deploy` does not register redirect URIs itself (verified against `actions/deploy.ts`, which has no redirect-URI call).
