@@ -1,0 +1,61 @@
+task_id: skill-case-diagnose-missing-task-entry-rule
+description: >
+  Diagnose mode — the staged case PASSES `uip maestro case validate` with zero
+  errors and zero warnings, but Review's "Notify Reviewer" task carries no
+  `entryConditions`. Per the skill's Rule 6 a missing task entry rule leaves
+  `uip maestro case debug` hanging indefinitely at that task. Exercises whether
+  the agent can find a defect the validator is completely silent about, rather
+  than treating a green validate as proof of health.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:task-entry]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate` cleanly, but a debug run hangs forever instead of
+  completing — it never gets past the Review stage.
+
+  Find out why and fix it. Keep the intended design: three stages,
+  Intake → Review → Decision, with both Review tasks intact.
+
+  - A clean validate is NOT evidence the case is healthy here. The defect is
+    something validate does not check.
+  - Do NOT delete the stalling task to make the symptom go away.
+  - Do NOT run `uip maestro case debug` — reason from the case definition.
+  - Do NOT ask for approval. Work end-to-end in a single pass.
+
+  Load the uipath-maestro-case skill and use its knowledge of task activation
+  and entry rules.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every task now carries a non-empty entry rule from the closed rule set; both Review tasks preserved"
+    command: "python3 $TASK_DIR/check_missing_task_entry_rule.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

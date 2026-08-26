@@ -1,0 +1,62 @@
+task_id: skill-case-diagnose-undeclared-gate-vars
+description: >
+  Diagnose mode — three gate expressions reference undeclared variables
+  (`approvalTier` on Decision entry, `riskBand` on Decision exit,
+  `escalationPath` on Review entry), but `uip maestro case validate` reports
+  only TWO: it emits at most one error per node, so Decision's second defect is
+  masked behind its first. Exercises the sweep-don't-iterate discipline — an
+  agent that fixes only what validate printed will need a second round and can
+  conclude it is done while a defect remains.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:conditions, feature:variables]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ fails
+  `uip maestro case validate`. Diagnose and repair it so it validates cleanly.
+
+  Keep the intended design: three stages, Intake → Review → Decision, with every
+  gate expression preserved and still gating on the same business condition.
+
+  - Do NOT delete or blank any `conditionExpression` to make an error go away.
+    Every expression present now must still be present and reference a declared
+    variable when you are done.
+  - Be careful: the validator does not necessarily report every defect in one
+    pass. Do not assume the list it prints is complete.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end in a single pass.
+
+  Load the uipath-maestro-case skill and follow its validate → fix loop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the repaired caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All three gate expressions survive and every vars.X they reference is declared — including the masked riskBand"
+    command: "python3 $TASK_DIR/check_undeclared_gate_vars.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

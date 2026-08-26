@@ -1,0 +1,67 @@
+task_id: skill-case-diagnose-extract-alias-collision
+description: >
+  Diagnose mode — the staged case PASSES `uip maestro case validate` with zero
+  findings, but the Decision stage never enters at runtime: its gate reads
+  `vars.route`, which is declared but produced by nothing, while the value the
+  case actually produces lands in `route2` (Review's task element). That is the
+  signature of an extract alias that auto-suffixed on an id collision — the
+  declared companion and the written variable drift apart and the validator
+  cannot see it, because both names exist. Grades the trap: re-declaring or
+  defaulting `route` keeps validate green and leaves the gate dead. The fix must
+  make the gate and the producer name the same variable.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:conditions]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate` cleanly, but at runtime the Decision stage never
+  enters — the case stalls after Review even when the upstream routing decision
+  is made.
+
+  Find out why and fix it. Keep the intended design: three stages,
+  Intake → Review → Decision, and Decision must still gate on the routing
+  decision produced upstream.
+
+  - A clean validate is NOT evidence the case is healthy here. The defect is
+    something validate cannot see.
+  - The repaired case must have Decision's gate read a variable that something
+    in the case actually produces.
+  - Do NOT delete the gate, the stages, the tasks, or the trigger.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end and finish with validate passing.
+
+  Load the uipath-maestro-case skill and follow its validate → fix loop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Gate and producer agree — Decision's gate reads a variable that is actually produced; 3 stages preserved; not silenced by declaring an orphan"
+    command: "python3 $TASK_DIR/check_extract_alias_collision.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
