@@ -1,4 +1,4 @@
-task_id: skill-flow-voice-prompt-inputs
+task_id: skill-flow-voice-outbound-call
 description: >
   Outbound voice topology whose prompt reads flow data — the full outbound
   build (create-outgoing-call -> uipath.agent.voice -> end-call, `callContext`
