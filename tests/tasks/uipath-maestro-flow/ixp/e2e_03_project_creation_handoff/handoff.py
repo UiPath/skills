@@ -315,8 +315,10 @@ def require_domain_uncovered() -> None:
         raise RuntimeError(
             "the fixture domain is already covered by resolvable published "
             f"extractor(s) {covered} — the agent can correctly reuse one, so this "
-            "task cannot measure the handoff. Change the fixture domain "
-            "(documents/README.md) or point the run at a tenant without it."
+            "task cannot measure the handoff. If this is this task's own leaked "
+            "residue (a failed teardown), deleting its Orchestrator folder removes "
+            "the node — the folder key is the trailing GUID of the NodeType above. "
+            "Otherwise change the fixture domain (documents/README.md)."
         )
     print(
         f"OK: none of the {len(nodes)} published IxP node(s) cover the fixture domain "
