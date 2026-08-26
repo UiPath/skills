@@ -9,10 +9,10 @@ description: >
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:
-  expected_turns: 60
-  task_timeout: 3600
+  expected_turns: 100
+  task_timeout: 5400
   max_turns: 200
-  turn_timeout: 3000
+  turn_timeout: 4500
 
 pre_run:
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'

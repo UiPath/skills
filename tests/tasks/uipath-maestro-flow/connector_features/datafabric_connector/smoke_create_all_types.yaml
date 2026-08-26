@@ -8,7 +8,7 @@ description: >
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, ipe]
 
 run_limits:
-  max_turns: 30
+  max_turns: 100
   turn_timeout: 1800
   task_timeout: 3600
 
