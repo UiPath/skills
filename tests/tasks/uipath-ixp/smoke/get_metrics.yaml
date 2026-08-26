@@ -1,15 +1,17 @@
 task_id: skill-ixp-get-metrics-smoke
 description: >
-  Smoke: asked for per-field scores BEFORE ITERATING ON PROMPTS, the agent
-  reads the improvement loop's baseline — the latest trained version — and
-  reports its numbers, not the live version's.
+  Smoke: asked for the BASELINE scores of an improvement loop, the agent
+  reads what the guide defines the baseline to be — the latest trained
+  version — and reports its numbers, not the live version's.
 
   The mirror of metrics_live_version, on the same fixture: live is v9
   (ProjectScore 0.98), latest is v30 (ProjectScore 0.91), so the two intents
   have opposite correct answers. "How is it performing in production" reads
   the live version; "inspect scores before iterating" reads the baseline the
   loop improves on — the latest trained model (improve-prompts-guide, 1a).
-  An agent that resolves the live version regardless of intent answers
+  The prompt names the improvement loop and the word baseline outright; the
+  version must still come from the guide. An agent that resolves the live
+  version regardless of intent answers
   9 / 0.98 and fails the outcome check. The graded values are reachable only
   from an actual `get-metrics` read, and the command criterion locks in the
   project-`Name` argument (not `Title`).
@@ -25,9 +27,10 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template_versions}
 
 initial_prompt: |
-  A document automation engineer wants to inspect the per-field F1 scores
-  of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on
-  prompts.
+  A document automation engineer is starting an improvement loop on the
+  extraction instructions of the IXP project named
+  `my_invoices-f1afa9ef-ixp`, and needs the baseline per-field F1 scores
+  the loop's changes will be measured against.
 
   Write `metrics.json` in the working directory:
 
