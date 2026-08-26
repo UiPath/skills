@@ -1,17 +1,11 @@
-# SDD — Connector Field-Naming Contract Case
-
-> Purpose: one stage, two connector tasks, whose only job is to exercise
-> connector request / response **field-name** fidelity. The activity's contract
-> is snake_case; the trigger's contract is PascalCase (capital-first). Every
-> field name below is the connector's own, taken verbatim from
-> `uip maestro case spec`. The build must reproduce them byte-for-byte.
+# SDD — ConnectorNaming
 
 ## Table of Contents
 
-- Section 1: Case Definition
-- Section 2: Stages & Tasks
-- Section 3: Personas & App Views
-- Section 4: Integrations
+- [Section 1: Case Definition](#section-1-case-definition)
+- [Section 2: Stages & Tasks](#section-2-stages--tasks)
+- [Section 3: Personas & App Views](#section-3-personas--app-views)
+- [Section 4: Integrations](#section-4-integrations)
 
 ---
 
@@ -19,169 +13,165 @@
 
 ### Case Metadata
 
-| Field | Value |
-|---|---|
-| Case name | ConnectorNaming |
-| Project name | ConnectorNaming |
-| Solution name | ConnectorNaming |
-| Description | Single-stage connector field-naming contract case. |
-| Case identifier type | auto |
-| Folder Path | Shared/uipath-maestro-case |
+| Property | Value |
+|----------|-------|
+| Case Name | ConnectorNaming |
+| Case Description | Posts a build notice to Slack, then waits for a matching Outlook calendar event. Exercises connector request and response field handling across two connectors. |
+| Case Identifier | Type: constant. Constant → Prefix: CN |
+| Priority | Choiceset: Low, Medium, High — Default: Medium |
+| Case-Level SLA | — |
+| SLA Type | time-based |
+| Case App | Disabled |
+| Task-output passing | Direct |
+| Case Identifier source | =metadata.ExternalId |
 
 ### Case Triggers
 
 | T# | Type | Detail |
-|---|---|---|
+|----|------|--------|
 | T01 | manual | Manual start. No trigger parameters. |
 
 ### Case Exit Conditions
 
-| Rule | Marks case complete |
-|---|---|
-| selected-stage-completed → Stage 1 | true |
+| WHEN | IF | Marks Case Complete | Display Name |
+|------|-----|---------------------|--------------|
+| `selected-stage-completed("Naming")` | — | Yes | Case exit rule 1 |
 
 ### Case Variables
 
-| Name | Category | Type | Default | Source |
-|---|---|---|---|---|
-| postAppId | Variable | string | — | T02 output `app_id` |
-| postTs | Variable | string | — | T02 output `ts` |
-| postThreadTs | Variable | string | — | T02 output `thread_ts` |
-| postChannel | Variable | string | — | T02 output `channel` |
-| eventId | Variable | string | — | T03 output `ID` |
-| eventTitle | Variable | string | — | T03 output `Title` |
-| eventCalendarName | Variable | string | — | T03 output `CalendarName` |
-| eventHasAttachments | Variable | string | — | T03 output `HasAttachments` |
+| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+|------|----------|------|----------------|--------------|---------|-------------|
+| postAppId | Variable | string | | | | Slack app id returned by the post. |
+| postTs | Variable | string | | | | Slack message timestamp returned by the post. |
+| postThreadTs | Variable | string | | | | Slack thread timestamp returned by the post. |
+| postChannel | Variable | string | | | | Slack channel returned by the post. |
+| eventId | Variable | string | | | | Identifier of the calendar event that fired the trigger. |
+| eventTitle | Variable | string | | | | Subject of the calendar event. |
+| eventCalendarName | Variable | string | | | | Calendar the event belongs to. |
+| eventHasAttachments | Variable | string | | | | Whether the calendar event carries attachments. |
 
 ---
 
 ## Section 2: Stages & Tasks
 
-### Stage 1: Naming — both contracts in one stage
+### Stage 1: Naming (`stage_naming`)
 
-Entry: case started. Exit: both tasks complete.
+#### Stage Entry Conditions
 
-#### T02: Add connector-activity task "Post Naming Notice"
+| WHEN | IF | Display Name |
+|------|-----|--------------|
+| `current-stage-entered` | — | Entry rule 1 |
+
+#### Stage Exit Conditions
+
+| WHEN | IF | Completion | Display Name |
+|------|-----|------------|--------------|
+| `selected-tasks-completed("Await Calendar Event")` | — | Yes | Exit rule 1 |
+
+#### Stage SLA
+
+—
+
+#### Tasks
+
+| # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
+|---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
+| 1 | Post Naming Notice | execute-connector-activity | sequential | stage enters | Yes | No | system | — |
+| 2 | Await Calendar Event | wait-for-connector | sequential | after Post Naming Notice | Yes | No | system | — |
+
+##### Task 1.1: Post Naming Notice
+
+**Type:** execute-connector-activity
+**Activation Mode:** sequential
+**Design Rationale:** A connector activity is the only task type that issues an outbound Slack call; sequential because it must complete before the case waits on the calendar event.
+**Description:** Posts a build notice to the team Slack channel and captures the message identifiers.
+
+**Entry Condition:**
+
+| WHEN | IF | Display Name |
+|------|-----|--------------|
+| `current-stage-entered` | — | Entry rule 1 |
+
+**Task envelope**
+
+| Required | Run Only Once | Skip Condition |
+|----------|---------------|----------------|
+| Yes | No | — |
 
 **Connector:** Slack · **Connector Key:** `uipath-salesforce-slack`
 **Connection:** is-sandboxes · **Connection ID:** `e03f734e-0f80-4e8a-a7c1-0ece309b0ca4`
 **Activity Type ID:** `37a305b2-89b1-315d-b73f-1778839a6c47` · **Service Type:** `Intsvc.ActivityExecution`
-**Object:** Send Message to Channel
-**Folder Path:** Shared/uipath-maestro-case
+**Auth Method:** OAuth2
+**Account / Endpoint:** —
+**Operation:** Send Message to Channel (objectName `send_message_to_channel_v2`)
+**Trigger / Event:** —
 
-- activation-mode: sequential
-- entry-rule: current-stage-entered
-- isRequired: true
-- runOnlyOnce: false
+**Inputs:**
 
-**Inputs — pass exactly these, with these values.** Three are required; the
-rest are chosen to cover flat snake_case, a boolean, and two- and three-level
-dotted paths. Pass `channel` as the literal channel name — do not resolve it
-to an ID.
+| Field | Type | Binding |
+|-------|------|---------|
+| send_as | string | `"bot"` |
+| channel | string | `"#general"` |
+| messageToSend | string | `"Naming contract check"` |
+| link_names | boolean | `"true"` |
+| image | string | `"https://example.invalid/build.png"` |
 
-| Sink | Field name | Value | Naming case covered |
-|---|---|---|---|
-| queryParameters | `send_as` | `bot` | flat snake_case, REQUIRED |
-| bodyParameters | `channel` | `#general` | single word, REQUIRED |
-| bodyParameters | `messageToSend` | `Naming contract check` | lowerCamelCase, REQUIRED |
-| bodyParameters | `link_names` | `true` | flat snake_case, native boolean |
-| bodyParameters | `image` | `https://example.invalid/build.png` | single word, optional |
+**Outputs:**
 
-> `send_as` and `channel` are the connector's only reference-typed inputs.
-> The channel is given by name — resolving it to an id is the skill's job, and
-> the resolved value is not what this case grades. What IS graded is that the
-> field is written under the key `channel`.
->
-> This input set is deliberately limited to the fields Studio Web's Slack form
-> exposes, so a canvas-built solution stays a valid cross-check of the shape.
-> The connector's dotted body fields (`attachment.image_url`,
-> `metadata.event_type`, `metadata.event_payload.id`) and `icon_emoji` are real
-> contract fields but have no form control, so they are out of scope here;
-> dotted-input coverage lives in the cm_golden Outlook task
-> (`message.toRecipients`).
+| Field | Binding / Value |
+|-------|------------------|
+| app_id | -> postAppId |
+| ts | -> postTs |
+| thread_ts | -> postThreadTs |
+| channel | -> postChannel |
 
-**Outputs.** The connector returns **102 leaf paths that collapse to 13
-top-level properties** — the harshest available test of the dotted-path
-derivation. Bind four:
+##### Task 1.2: Await Calendar Event
 
-| Field path | → Case variable | Naming case covered |
-|---|---|---|
-| `app_id` | postAppId | flat snake_case output |
-| `ts` | postTs | two-letter lowercase name |
-| `thread_ts` | postThreadTs | flat snake_case, also an input field name |
-| `channel` | postChannel | same name on input and output |
+**Type:** wait-for-connector
+**Activation Mode:** sequential
+**Design Rationale:** The case must pause until a matching calendar event arrives; a connector wait is the only task type that suspends on an inbound Integration Service event.
+**Description:** Waits for an Outlook calendar event whose subject matches the posted notice, then captures the event identifiers.
 
-The unbound remainder MUST still appear with contract names, in particular:
+**Entry Condition:**
 
-- `blocks[*]` — array marker must survive; its leaves include
-  `blocks[*].block_id` (snake under an array) and `blocks[*].text.type`
-- `response_metadata` — snake, two segments
-- `message` — nested object three levels deep, e.g. `message.bot_profile.app_id`
-  and `message.attachments[*].callback_id`
-- `icons`, `metadata`, `ok`, `root`, `subtype`, `username`
+| WHEN | IF | Display Name |
+|------|-----|--------------|
+| `runs-sequentially` | — | Entry rule 1 |
 
-#### T03: Add wait-for-connector task "Await Calendar Event"
+**Task envelope**
+
+| Required | Run Only Once | Skip Condition |
+|----------|---------------|----------------|
+| Yes | No | — |
 
 **Connector:** Microsoft Outlook 365 · **Connector Key:** `uipath-microsoft-outlook365`
 **Connection:** is-sandboxes-test@uipathsandboxes.onmicrosoft.com · **Connection ID:** `dd657127-91f5-4568-a3a3-c024bc03fb0f`
 **Activity Type ID:** `32b856f3-e7ba-3cb3-9f4b-4c85280315be` · **Service Type:** `Intsvc.WaitForEvent`
-**Object / Event:** Calendar Event Created
-**Folder Path:** Shared/uipath-maestro-case
+**Auth Method:** OAuth2
+**Account / Endpoint:** —
+**Operation:** Calendar Event Created (objectName `Calendar`, event `CALENDAR_CREATED`)
+**Trigger / Event:** Calendar Event Created
 
-- activation-mode: sequential
-- entry-rule: runs-sequentially
-- isRequired: true
-- runOnlyOnce: false
+**Inputs:** — no event parameters.
 
-**Event parameters — none.** This trigger declares no inputs, so author no
-`eventParameters`.
+**Trigger Filter:**
 
-**Filter — author exactly this.** The trigger declares a `jmes` filter builder
-over 18 fields; `Title` is the one the UI labels "Subject". The filter is a
-third place field names must survive byte-exact, because they compile into a
-JMESPath expression:
+| Field | Operator | Value |
+|-------|----------|-------|
+| Title | contains | `Naming contract` |
+| HasAttachments | not equals | `true` |
+| Attachments[*].MIMEType | contains | `text/` |
 
-| Filter field | Operator | Value | Naming case covered |
-|---|---|---|---|
-| `Title` | contains | `Naming contract` | capital-first, collides with the `title` schema keyword |
-| `HasAttachments` | not equals | `true` | capital-first boolean |
-| `Attachments[*].MIMEType` | contains | `text/` | array-marked, dotted, three-capital run |
+Group operator: And.
 
-Join the three clauses with `And`. Do not hand-write the JMESPath — pass the
-structured tree and let the CLI compile it. For reference, Studio Web compiles
-this exact filter to:
+**Outputs:**
 
-```
-((contains(Title,'Naming contract'))&&(HasAttachments!=`true`)&&(Attachments[?contains(MIMEType,'text/')]))
-```
-
-Note the array clause becomes a JMESPath filter projection
-(`Attachments[?contains(MIMEType,…)]`), not a `[*]` path — the field names
-still appear verbatim, which is what the grader checks.
-
-**Outputs.** 20 leaf paths collapse to 14 top-level properties, **every one
-capital-first**. This is the half of the contract that a "no capital-first key
-may remain" scan destroys. Bind four:
-
-| Field path | → Case variable | Naming case covered |
-|---|---|---|
-| `ID` | eventId | all-caps contract name |
-| `Title` | eventTitle | **collides with the JSON-Schema `title` keyword** |
-| `CalendarName` | eventCalendarName | capital-first with internal capital |
-| `HasAttachments` | eventHasAttachments | capital-first boolean |
-
-The unbound remainder MUST still appear with contract names:
-
-- `Attachments[*]`, `Attendees[*]`, `Categories[*]` — capital-first **and**
-  array-marked
-- `Attachments[*].MIMEType`, `Attachments[*].ID`, `Attachments[*].Name`,
-  `Attachments[*].Size` — nested under an array; `MIMEType` carries a
-  three-capital run
-- `Attendees[*].Type`, `Attendees[*].Response`, `Attendees[*].Name`,
-  `Attendees[*].Email` — `Type` and `Name` collide with schema keywords
-- `Categories[*].Name`
-- `CalendarID` — capital-first with a trailing all-caps segment
-- `Description`, `Importance`, `Sensitivity`, `AllDay`, `Location`, `ShowAs`
+| Field | Binding / Value |
+|-------|------------------|
+| ID | -> eventId |
+| Title | -> eventTitle |
+| CalendarName | -> eventCalendarName |
+| HasAttachments | -> eventHasAttachments |
 
 ---
 
@@ -189,11 +179,11 @@ The unbound remainder MUST still appear with contract names:
 
 ### Personas
 
-None. This case has no human tasks.
+None — every task is system-executed.
 
 ### Process App Views
 
-None.
+None — Case App is Disabled.
 
 ---
 
@@ -201,10 +191,19 @@ None.
 
 ### Integration Service Connectors
 
-| Connector | Connector Key | Connection | Connection ID | Used by |
-|---|---|---|---|---|
-| Slack | `uipath-salesforce-slack` | is-sandboxes | `e03f734e-0f80-4e8a-a7c1-0ece309b0ca4` | T02 |
-| Microsoft Outlook 365 | `uipath-microsoft-outlook365` | is-sandboxes-test@uipathsandboxes.onmicrosoft.com | `dd657127-91f5-4568-a3a3-c024bc03fb0f` | T03 |
+#### Slack
+
+**Connector Key:** `uipath-salesforce-slack`
+**Connection:** is-sandboxes · **Connection ID:** `e03f734e-0f80-4e8a-a7c1-0ece309b0ca4`
+**Auth Method:** OAuth2
+**Operations used:** Send Message to Channel (Task 1.1)
+
+#### Microsoft Outlook 365
+
+**Connector Key:** `uipath-microsoft-outlook365`
+**Connection:** is-sandboxes-test@uipathsandboxes.onmicrosoft.com · **Connection ID:** `dd657127-91f5-4568-a3a3-c024bc03fb0f`
+**Auth Method:** OAuth2
+**Operations used:** Calendar Event Created trigger (Task 1.2)
 
 ### API Workflows
 
@@ -219,5 +218,21 @@ None.
 None.
 
 ### Child Cases
+
+None.
+
+### External Agents
+
+None.
+
+### IXP / Document Understanding Models
+
+None.
+
+### Coded Functions
+
+None.
+
+### Reusable Components
 
 None.
