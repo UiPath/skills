@@ -7,7 +7,7 @@ description: >
   CaseTest child case. Validates the resulting case file and runs
   `uip maestro case debug` end-to-end, asserting the case finalStatus is
   `Completed`.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:operate, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
 run_limits:
