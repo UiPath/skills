@@ -172,7 +172,9 @@ To change any of these values, edit `uipath.json`.
 
 ## Quick Deploy (Full Pipeline)
 
+<!--skill-flavor:codedapp-pipeline-host:start-->
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
+<!--skill-flavor:codedapp-pipeline-host:end-->
 
 1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. With **client credentials** (headless/CI), use `--scope "OR.Default Apps.Read Apps.Write"` — all three names are required: `OR.Default` for Orchestrator, `Apps.Read` and `Apps.Write` for the Apps-service registration in `uip codedapp publish`. The External Application itself needs only `Apps.Read` and `Apps.Write`; `OR.Default` is auto-granted and not portal-selectable, so name it in `--scope`. If publish or deploy then fails, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 2. **Build** — `npm run build`. Verify `ls dist/`.
