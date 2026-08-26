@@ -23,7 +23,7 @@ sandbox:
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_regression}
+    - {type: template_dir, path: ../_shared/mock_template_metrics}
 
 initial_prompt: |
   An improvement iteration just finished on the IXP project
