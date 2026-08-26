@@ -5,9 +5,8 @@ description: >
   (Critical Rule 21, guide 1a) — not the live one.
 
   Mirror of metrics_live_version on the same fixture: an agent that
-  resolves the live version
-  regardless of intent answers 9/0.98 and fails the outcome check. Also
-  locks in the project-Name argument (not Title).
+  resolves the live version regardless of intent answers 9/0.98 and fails
+  the outcome check. Also locks in the project-Name argument (not Title).
 tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
