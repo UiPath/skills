@@ -85,8 +85,10 @@ uip maestro case spec --type activity \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details "<json from Step 1>" \
-  --output json
+  --output json > tasks/spec-cache.<elementId>.json
 ```
+
+**Redirect to the cache file — never Write a summarised copy.** Then gate it: the de-duplicated first segments of `.Data.Outputs.ResponseFields[].Name` must equal the top-level keys of the payload output's `Body.Properties`. Unequal → truncated cache, re-fetch before splicing ([common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase)).
 
 The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full `caseShape` populated with values from `--input-details`.
 

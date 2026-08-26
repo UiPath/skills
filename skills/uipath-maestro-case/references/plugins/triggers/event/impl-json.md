@@ -81,6 +81,8 @@ Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx`
 }
 ```
 
+> **Re-case and restore `context` / `inputs` before Step 6.2.** They are spliced PascalCase-verbatim here and carry `ActivityPropertyConfiguration`, `TelemetryData`, `UiPathActivityTypeId`; apply [common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase) to the trigger node itself, not only to the sidecar.
+
 > Since v24 all trigger runtime config lives under `data.inputs` (the old `data.uipath` bag flattened in). The event trigger's CONFIG-input array is therefore `data.inputs.inputs`, its outputs `data.inputs.outputs`, its context `data.inputs.context`.
 > `data.inputs.outputs` is initialized empty (`[]`). The variables plugin populates it in Phase 3 Step 6.2 using the sidecar from Step 8 below.
 

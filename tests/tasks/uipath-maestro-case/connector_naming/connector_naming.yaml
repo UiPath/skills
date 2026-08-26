@@ -23,7 +23,7 @@ description: >
   TENANT PRECONDITION: the two connections in fixtures/sdd.md must exist and be
   Enabled. Neither task needs a resource lookup - `send_as` and `channel` take
   literal values and the trigger declares no event parameters.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, connector, resource]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, connector]
 
 # One harness "turn" is the ENTIRE agent query stream, so turn_timeout caps the
 # whole session, not a single exchange — it must exceed the full build. A first
@@ -72,7 +72,7 @@ success_criteria:
   - type: run_command
     description: "every connector field name in caseplan.json matches the live connector contract byte-for-byte (inputs, response properties, definitions/$ref, compiled trigger filter), and both connector nodes resolve complete connection + folder bindings"
     command: "python3 $TASK_DIR/check_connector_naming.py"
-    timeout: 180
+    timeout: 300
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
