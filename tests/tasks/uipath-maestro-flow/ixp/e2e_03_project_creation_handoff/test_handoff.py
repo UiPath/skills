@@ -3,9 +3,9 @@
 The grader's verdict depends on live tenant state (`uip ixp projects list`,
 `uip ixp deployments list`), so these tests stub `uip` with a fake executable on
 PATH. That exercises the diff, attribution and node-matching logic without
-creating IXP projects — which matters more than usual here: folder deployments
-cannot be deleted, so every real exercise of the positive path leaves a permanent
-`uipath.ixp.*` node in the tenant's registry.
+creating IXP projects — which matters more than usual here: a real exercise of
+the positive path creates a folder deployment, and the only way to remove one
+(and its `uipath.ixp.*` registry node) is to delete its Orchestrator folder.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from handoff import SNAPSHOT, project_digest  # noqa: E402
 from handoff import DOMAIN_MARKERS  # noqa: E402
 
 # Built from the guard's own first marker, so rotating the fixture domain
-# (documents/generate.py) re-points these tests automatically.
+# (documents/README.md) re-points these tests automatically.
 COVERED_NAME = f"{DOMAIN_MARKERS[0]}-inspection-abc123-ixp"
 STALE_RESIDUE_NAME = f"{DOMAIN_MARKERS[0]}-inspection-e0b615cf-ixp"
 
@@ -97,6 +97,12 @@ elif argv[:4] == ["maestro", "flow", "registry", "get"]:
     # project has been deleted. Exit 1 is what the real CLI does for a node it
     # cannot resolve.
     if argv[4] in payload.get("unresolvable_nodes", []):
+        print("node type not found", file=sys.stderr)
+        sys.exit(1)
+    # Deleting a deployment's folder removes its registry node (the trailing
+    # 36 chars of an IxP NodeType are the folder key). sticky_nodes models
+    # registry-indexing lag: the node keeps resolving after the folder is gone.
+    if argv[4] not in payload.get("sticky_nodes", []) and argv[4][-36:] in deleted_folders():
         print("node type not found", file=sys.stderr)
         sys.exit(1)
     print(json.dumps({"Data": {"Node": {"type": argv[4]}}}))
@@ -849,6 +855,67 @@ def test_seed_blocks_when_one_of_several_matches_still_resolves(
     assert completed.returncode != 0
     assert live in completed.stderr
     assert stale not in completed.stderr
+
+
+def test_seed_self_heals_a_leaked_folder_deployment(sandbox: pathlib.Path) -> None:
+    """A resolvable covering node is usually this task's own leaked residue.
+
+    Deleting the node's Orchestrator folder (the trailing GUID of its NodeType)
+    removes the deployment, so seed does that itself and re-probes instead of
+    demanding a hand-delete — the rig heals the previous run's failed teardown
+    (GH run 32968685992 leaked exactly this shape).
+    """
+    leaked = ixp_node_type(COVERED_NAME)
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"self-heal: deleted leaked folder {FOLDER_KEY}" in completed.stdout
+    assert (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_blocks_when_the_self_heal_folder_delete_fails(
+    sandbox: pathlib.Path,
+) -> None:
+    """No usable self-heal → the original fail-fast, with the attempt reported."""
+    leaked = ixp_node_type(COVERED_NAME)
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
+        undeletable_folders=[FOLDER_KEY],
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert "self-heal: could not delete folder" in completed.stdout
+    assert "already covered" in completed.stderr
+    assert not (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_blocks_this_run_when_the_registry_lags_the_self_heal(
+    sandbox: pathlib.Path,
+) -> None:
+    """Folder deleted, but the registry keeps serving the node (indexing lag).
+
+    The agent could still wire the stale node, so THIS run must not proceed —
+    but the folder is gone, so the next run starts clean. The error must say
+    a re-run is the remedy.
+    """
+    leaked = ixp_node_type(COVERED_NAME)
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
+        sticky_nodes=[leaked],
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert f"self-heal: deleted leaked folder {FOLDER_KEY}" in completed.stdout
+    assert "re-run the task" in completed.stderr
+    assert not (sandbox / SNAPSHOT).exists()
 
 
 def test_seed_accepts_an_uncovered_fixture_domain(sandbox: pathlib.Path) -> None:

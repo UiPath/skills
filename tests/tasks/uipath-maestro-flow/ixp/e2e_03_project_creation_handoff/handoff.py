@@ -62,6 +62,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -255,6 +256,27 @@ def ixp_node_identifiers(document: dict[str, Any]) -> list[str]:
 # the domain (documents/README.md explains why that happens).
 DOMAIN_MARKERS = ("falcon", "raptor", "mews", "bird-of-prey", "bird_of_prey")
 
+# Registry deletion propagation can lag behind a folder delete, so a self-heal
+# re-probes a few times before giving up. Same env knob as the folder-delete
+# retry so the unit-test suite runs sleep-free.
+DOMAIN_RECHECK_ATTEMPTS = 3
+DOMAIN_RECHECK_SECONDS = float(os.environ.get("HANDOFF_RETRY_SECONDS", "15"))
+
+_GUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z", re.IGNORECASE
+)
+
+
+def folder_key_from_node_type(node_type: str) -> str | None:
+    """The deployment folder's key: the trailing GUID of an IxP NodeType.
+
+    Deployed models register as uipath.ixp.{deploymentName}.{modelId}-{folderKey},
+    so the last 36 characters are the Orchestrator folder key — the handle that
+    deletes the deployment (deployments have no delete verb of their own).
+    """
+    match = _GUID_RE.search(node_type)
+    return match.group(0) if match else None
+
 
 def require_deployments_create() -> None:
     """Exit 0 from the subcommand's own --help means the verb exists.
@@ -274,16 +296,12 @@ def require_deployments_create() -> None:
     print("OK: `uip ixp deployments create` is available")
 
 
-def require_domain_uncovered() -> None:
-    """Fail if a resolvable published extractor already covers the fixture domain.
+def resolvable_covering_nodes() -> tuple[list[str], int, int]:
+    """One registry pull + search + probe cycle over the fixture domain.
 
-    If one does, reusing it is the correct agent action and the handoff never
-    fires — the run would go red for a reason unrelated to the behaviour under
-    test. Each name match is probed with `registry get`: resolvable = a live
-    extractor (block); unresolvable = dangling residue nobody can use (report,
-    step over). Residue can stay resolvable long after its project is deleted,
-    so a block here usually means a prior teardown failed to delete its folder
-    — rotate the fixture domain per documents/README.md.
+    Returns (resolvable domain-matched NodeTypes, total nodes, name matches).
+    Each name match is probed with `registry get`: resolvable = a live extractor;
+    unresolvable = dangling residue nobody can use (report, step over).
     """
     run_uip(["maestro", "flow", "registry", "pull", "--force"])
     payload = run_uip_json(
@@ -310,19 +328,66 @@ def require_domain_uncovered() -> None:
                 f"(`registry get` exited {completed.returncode}) — stale deployment "
                 "residue, not a usable extractor."
             )
+    return covered, len(nodes), len(matched)
+
+
+def require_domain_uncovered() -> None:
+    """Fail if a resolvable published extractor already covers the fixture domain.
+
+    If one does, reusing it is the correct agent action and the handoff never
+    fires — the run would go red for a reason unrelated to the behaviour under
+    test. A covering node is usually this task's own leaked residue (a teardown
+    whose folder delete failed), so seed self-heals first: delete each covering
+    node's Orchestrator folder — the trailing GUID of its NodeType — then
+    re-probe. Registry deletion propagation can lag, so a node still resolvable
+    after the rechecks fails THIS run (the agent could reuse it) but the next
+    run starts clean. A block that persists across runs means the folder could
+    not be deleted, or a genuinely foreign extractor covers the domain — rotate
+    the fixture domain per documents/README.md.
+    """
+    covered, total, matched = resolvable_covering_nodes()
+    if covered:
+        deleted_any = False
+        for node_type in covered:
+            folder_key = folder_key_from_node_type(node_type)
+            if folder_key is None:
+                print(
+                    f"cannot self-heal '{node_type}' — no trailing folder-key GUID "
+                    "in the NodeType"
+                )
+                continue
+            completed = delete_folder_with_retry(folder_key)
+            if completed.returncode == 0:
+                print(f"self-heal: deleted leaked folder {folder_key} backing '{node_type}'")
+                deleted_any = True
+            else:
+                detail = " ".join((completed.stderr or completed.stdout).split())
+                print(
+                    f"self-heal: could not delete folder {folder_key} "
+                    f"(exit {completed.returncode}): {detail}"
+                )
+
+        if deleted_any:
+            for _ in range(DOMAIN_RECHECK_ATTEMPTS):
+                time.sleep(DOMAIN_RECHECK_SECONDS)
+                covered, total, matched = resolvable_covering_nodes()
+                if not covered:
+                    print("OK: fixture domain clear after self-heal")
+                    break
 
     if covered:
         raise RuntimeError(
             "the fixture domain is already covered by resolvable published "
             f"extractor(s) {covered} — the agent can correctly reuse one, so this "
-            "task cannot measure the handoff. If this is this task's own leaked "
-            "residue (a failed teardown), deleting its Orchestrator folder removes "
-            "the node — the folder key is the trailing GUID of the NodeType above. "
-            "Otherwise change the fixture domain (documents/README.md)."
+            "task cannot measure the handoff. Seed tried deleting each node's "
+            "Orchestrator folder (the trailing GUID of the NodeType). If a folder "
+            "was deleted just now, the registry may still be serving the stale "
+            "node — re-run the task. Otherwise delete the folder by hand or change "
+            "the fixture domain (documents/README.md)."
         )
     print(
-        f"OK: none of the {len(nodes)} published IxP node(s) cover the fixture domain "
-        f"({len(matched)} name match(es), none resolvable)"
+        f"OK: none of the {total} published IxP node(s) cover the fixture domain "
+        f"({matched} name match(es), none resolvable)"
     )
 
 
