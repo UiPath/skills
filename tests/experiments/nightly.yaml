@@ -15,6 +15,7 @@ defaults:
       image: skills-image:latest
       env_passthrough_extra:
         - SKILLS_REPO_PATH
+        - MAESTRO_FLOW_SDK_SETUP
         - BEDROCK_MODEL
         - TASK_PARALLELISM
         - UIPATH_CLI_ENABLE_ENV_AUTH
@@ -50,6 +51,13 @@ defaults:
       env_params:
         api_base: CODEX_BASE_URL
         api_key: CODEX_API_KEY
+
+  pre_run:
+    - command: |-
+        if [ "${MAESTRO_FLOW_SDK_SETUP:-0}" = "1" ]; then
+          bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"
+        fi
+      timeout: 30
 
   # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions
   # wire cleanup_solutions.py into their own post_run — that must run before

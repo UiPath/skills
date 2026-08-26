@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from typing import Any
 
 CONNECTOR = "uipath-atlassian-jira"
 FOLDER_PATH = "Shared/uipath-maestro-flow"
@@ -20,34 +21,72 @@ PROJECT_KEY = "CE"        # "Coder Eval" project on uipath-sandbox-380
 ISSUETYPE_ID = "11457"    # "Task" issue type, scoped to the CE project
 
 
-def _run(*args: str) -> dict:
-    out = subprocess.run(
+def _operation(args: tuple[str, ...]) -> str:
+    return " ".join(args[:3])
+
+
+def _run(*args: str) -> dict[str, Any]:
+    result = subprocess.run(
         ["uip", *args, "--output", "json"],
         capture_output=True, text=True, timeout=120,
-    ).stdout
-    return json.loads(out)
+    )
+    try:
+        envelope = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"uip {_operation(args)} returned invalid JSON "
+            f"(exit {result.returncode}, stdout length {len(result.stdout)})"
+        ) from exc
+    if not isinstance(envelope, dict):
+        raise RuntimeError(f"uip {_operation(args)} returned a non-object JSON envelope")
+    return envelope
+
+
+def _is_transient(envelope: dict[str, Any]) -> bool:
+    return envelope.get("Retry") == "RetryLater" or envelope.get("ErrorCode") == "server_error"
+
+
+def _failure_summary(envelope: dict[str, Any]) -> str:
+    keys = ("Result", "ErrorCode", "Retry", "StatusCode", "Message")
+    summary = {key: envelope[key] for key in keys if key in envelope}
+    return json.dumps(summary, sort_keys=True, default=str)
+
+
+def _required_data(*args: str, retry_transient: bool = False) -> Any:
+    envelope = _run(*args)
+    if retry_transient and _is_transient(envelope):
+        envelope = _run(*args)
+    if envelope.get("Result") != "Success" or "Data" not in envelope:
+        raise RuntimeError(
+            f"uip {_operation(args)} failed: {_failure_summary(envelope)}"
+        )
+    return envelope["Data"]
 
 
 def connection_id() -> str:
-    folder_key = _run("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
-    conns = _run("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")["Data"]
+    folder = _required_data("or", "folders", "get", FOLDER_PATH, retry_transient=True)
+    folder_key = folder["Key"]
+    conns = _required_data(
+        "is", "connections", "list", CONNECTOR,
+        "--folder-key", folder_key, "--refresh",
+    )
     return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
 
 
 def myself(conn_id: str) -> str:
     """Return the connection user's Atlassian accountId."""
-    return _run(
+    return _required_data(
         "is", "resources", "run", "get", CONNECTOR, "myself",
         "--connection-id", conn_id,
-    )["Data"]["accountId"]
+    )["accountId"]
 
 
 def create_issue(conn_id: str, summary: str) -> str:
     body = {"fields": {"project": {"key": PROJECT_KEY}, "issuetype": {"id": ISSUETYPE_ID}, "summary": summary}}
-    return _run(
+    return _required_data(
         "is", "resources", "run", "create", CONNECTOR, "curated_create_issue",
         "--connection-id", conn_id, "--body", json.dumps(body),
-    )["Data"]["key"]
+    )["key"]
 
 
 def get_issue(conn_id: str, key: str) -> dict | None:
