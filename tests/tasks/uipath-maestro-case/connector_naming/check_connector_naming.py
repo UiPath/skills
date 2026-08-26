@@ -30,6 +30,7 @@ import sys
 
 CASEPLAN = "ConnectorNaming/ConnectorNaming/caseplan.json"
 ERROR_OUTPUT_NAMES = {"error"}
+ENVELOPE_BODY_KEYS = {"parameters", "filters"}
 FAILURES: list[str] = []
 
 
@@ -123,6 +124,10 @@ def check_inputs(label: str, block: dict, auth: list[str]) -> None:
         if not isinstance(body, dict):
             continue
         for written in body:
+            # structural envelope keys a trigger input body carries, not contract fields:
+            # `parameters` holds eventParameters, `filters` holds the compiled JMESPath
+            if written in ENVELOPE_BODY_KEYS:
+                continue
             want = segs.get(norm(written))
             if want is None:
                 fail(f"{label}: input key {written!r} matches no field in the connector contract")

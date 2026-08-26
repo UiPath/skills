@@ -82,17 +82,22 @@ to an ID.
 | Sink | Field name | Value | Naming case covered |
 |---|---|---|---|
 | queryParameters | `send_as` | `bot` | flat snake_case, REQUIRED |
-| bodyParameters | `channel` | `#case-coding-agent-integration-test` | single word, REQUIRED |
+| bodyParameters | `channel` | `C01G1P7CU58` | single word, REQUIRED |
 | bodyParameters | `messageToSend` | `Naming contract check` | lowerCamelCase, REQUIRED |
-| bodyParameters | `icon_emoji` | `:robot_face:` | flat snake_case |
-| bodyParameters | `link_names` | `true` | flat snake_case, boolean |
-| bodyParameters | `metadata.event_type` | `case_build_notice` | dotted 2 levels, snake both segments |
-| bodyParameters | `metadata.event_payload.id` | `naming-contract-001` | dotted 3 levels |
-| bodyParameters | `attachment.image_url` | `https://example.invalid/build.png` | dotted 2 levels, snake leaf |
+| bodyParameters | `link_names` | `true` | flat snake_case, native boolean |
+| bodyParameters | `image` | `https://example.invalid/build.png` | single word, optional |
 
-> `send_as` and `channel` are the connector's only reference-typed inputs.
-> Both take literal values here — `bot` is the field's own default and
-> `#general` is a channel name. Do NOT run a resource lookup for either.
+> `send_as` and `channel` are the connector's only reference-typed inputs, and
+> both take literal values here — `bot` is the field's own default, and
+> `channel` is the resolved channel id. Do NOT run a resource lookup.
+>
+> This input set is deliberately limited to the fields Studio Web's Slack form
+> exposes, so a canvas-built solution stays a valid cross-check of the shape.
+> The connector's dotted body fields (`attachment.image_url`,
+> `metadata.event_type`, `metadata.event_payload.id`) and `icon_emoji` are real
+> contract fields but have no form control, so they are out of scope here;
+> dotted-input coverage lives in the cm_golden Outlook task
+> (`message.toRecipients`).
 
 **Outputs.** The connector returns **102 leaf paths that collapse to 13
 top-level properties** — the harshest available test of the dotted-path
@@ -138,11 +143,20 @@ JMESPath expression:
 | Filter field | Operator | Value | Naming case covered |
 |---|---|---|---|
 | `Title` | contains | `Naming contract` | capital-first, collides with the `title` schema keyword |
-| `HasAttachments` | equals | `false` | capital-first boolean |
+| `HasAttachments` | not equals | `true` | capital-first boolean |
 | `Attachments[*].MIMEType` | contains | `text/` | array-marked, dotted, three-capital run |
 
 Join the three clauses with `And`. Do not hand-write the JMESPath — pass the
-structured tree and let the CLI compile it.
+structured tree and let the CLI compile it. For reference, Studio Web compiles
+this exact filter to:
+
+```
+((contains(Title,'Naming contract'))&&(HasAttachments!=`true`)&&(Attachments[?contains(MIMEType,'text/')]))
+```
+
+Note the array clause becomes a JMESPath filter projection
+(`Attachments[?contains(MIMEType,…)]`), not a `[*]` path — the field names
+still appear verbatim, which is what the grader checks.
 
 **Outputs.** 20 leaf paths collapse to 14 top-level properties, **every one
 capital-first**. This is the half of the contract that a "no capital-first key
