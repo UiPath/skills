@@ -32,7 +32,7 @@ description: >
 
   Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
   `uip login`, not the tempdir smoke gate.
-tags: [uipath-api-workflow, e2e, mode:diagnose, lifecycle:discover]
+tags: [uipath-api-workflow, e2e, mode:diagnose, lifecycle:discover, traces]
 
 sandbox:
   python: {}

@@ -30,8 +30,9 @@ Some capabilities are taught and tested across **multiple** skills with no folde
 | Capability (report key) | Tag | Inventory source(s) | Host skills | Scorecard row |
 |---|---|---|---|---|
 | `uipath-context-grounding` | `context-grounding` | `skills/uipath-agents/references/context-grounding-patterns.md` (decision logic) + `skills/uipath-agents/references/coded/capabilities/context-grounding.md` + `.../lowcode/capabilities/context/context.md` + the BatchTransform/DeepRAG `planning.md` files those link to | `uipath-agents`, `uipath-maestro-flow` | ECS (uip context-grounding) |
+| `uipath-platform-traces` | `traces` | `skills/uipath-platform/references/traces/traces.md` + `skills/uipath-platform/references/traces/feedback.md` (+ the traces rows of `skills/uipath-platform/SKILL.md`) | `uipath-platform`, `uipath-api-workflow` | LLMOPS/Traces (uip traces) |
 
-Add a row when a capability (a) is documented in a shared `references/` doc, (b) is exercised by tasks tagged with a single stable tag that span ≥2 skill dirs, and (c) maps to a standalone scorecard product row. Remove it only if the capability gets its own `skills/uipath-<name>/` folder (then it becomes a normal skill).
+Add a row when a capability (a) is documented in a shared `references/` doc, (b) is exercised by tasks tagged with a single stable tag that span ≥2 skill dirs — or the capability is a sub-product of a multi-product skill that has its own scorecard row (e.g. `traces` inside `uipath-platform`) — and (c) maps to a standalone scorecard product row. Remove it only if the capability gets its own `skills/uipath-<name>/` folder (then it becomes a normal skill).
 
 ### Planned Skills Registry
 
