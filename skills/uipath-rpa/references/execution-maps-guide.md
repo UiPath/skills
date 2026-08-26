@@ -25,7 +25,7 @@ A clean `validate` + `build` does NOT prove runtime behavior. Known silent failu
 
 ## Journey: Greenfield XAML (no UIA)
 
-Skip the project-discovery subagent — nothing to discover yet (SKILL.md § Skip gate: no `project.json` before T1, only the untouched scaffold after it). Write `project-context.md` + `AGENTS.md` yourself at T4.
+Skip the project-discovery subagent — nothing to discover yet ([environment-setup.md § Skip gate](environment-setup.md): no `project.json` before T1, only the untouched scaffold after it). Write `project-context.md` + `AGENTS.md` yourself at T4.
 
 | Turn | Emit in ONE assistant message |
 |---|---|
@@ -44,7 +44,7 @@ Skip the project-discovery subagent — nothing to discover yet (SKILL.md § Ski
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T1 — Context** | § Precondition context check — § Skip gate first, then the discovery subagent, which writes `project-context.md` + `AGENTS.md` itself ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
+| **T1 — Context** | SKILL.md § Precondition context check — the skip gate first, then the discovery subagent, which writes `project-context.md` + `AGENTS.md` itself ([environment-setup.md § Project Context Discovery](environment-setup.md)) ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
 | **T2 — Edit** | Batched `Edit`s (anchor each on its own target block — same-file Edits serialize; overlapping anchors fail) ∥ `packages install` `Bash` if new dependencies |
 | **T3 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run` per § Gate ≠ runtime proof |
 | **T4 — Report** | Output check (if T3 ran) + § Completion Output + memory save |
@@ -70,7 +70,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check (SKILL.md § UIA Prerequisites, Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
+| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package's core guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check ([uia-starter-guide.md § UIA Prerequisites](uia-starter-guide.md), Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
 | **Per capture-screen** | (a) capture bundle — run the `uia-configure-target` flow for ALL of this screen's checklist elements in one pass, through OR registration; (b) ONE state advance via the interact CLI — only to reach the next screen, never to test behavior |
 | **T-author — after ALL screens captured** | Scaffold/authoring prerequisites (Capture-First Fast Path order) ∥ batch-author every screen's activities in one pass (Rule 18), embed path for OR target attachment |
 | **T-gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` |
