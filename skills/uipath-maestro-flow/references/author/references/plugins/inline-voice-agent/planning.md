@@ -49,7 +49,7 @@ Use voice nodes when the flow's job is a phone conversation — answering an inb
 | --- | --- | --- |
 | The interaction is a live phone call | Yes | No |
 | Reasoning/judgment step over flow data, no call involved | No | Yes |
-| Needs typed `outputSchema` consumed by downstream nodes | No — a voice agent's `outputSchema` stays empty (the runtime streams the conversation) | Yes |
+| Needs typed `outputSchema` consumed by downstream nodes | Optional — the node emits three fixed `uipath__*` outputs regardless; custom schema properties merge with them | Yes |
 | Needs eval runs (`uip maestro flow eval`) | No — the platform blocks voice agents from eval runs | Yes |
 
 ### When NOT to Use
