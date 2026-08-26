@@ -1,4 +1,4 @@
-task_id: skill-bpmn-patterns-negative
+task_id: skill-bpmn-no-pattern
 description: >
   A short linear process that matches none of the pattern shapes. Verifies the
   negative gate holds: the agent authors the three steps asked for and does not
@@ -41,7 +41,7 @@ success_criteria:
   - type: run_command
     description: >
       Process is well-formed, linear, and free of retrofitted pattern scaffolding
-    command: "python3 $TASK_DIR/check_negative.py"
+    command: "python3 $TASK_DIR/check_no_pattern.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

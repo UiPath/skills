@@ -1,0 +1,50 @@
+task_id: skill-bpmn-queue-distribution
+description: >
+  Maestro consumes an existing Orchestrator queue, one instance per item.
+  Grades the queue-triggered start, the outcome branch, and a distinct
+  transaction status on every path. The prompt never names the pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 26
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `ClaimWorker/ClaimWorker.bpmn` for this process:
+
+  An Orchestrator queue named ClaimsQueue is already filled by another system.
+  Maestro should now do the work.
+
+  Each new item in that queue starts the process, which handles that one item
+  and nothing else — there is no looping and no fetching of the next item. When
+  the item is done the queue must be told which of three things happened: it
+  succeeded, it failed, or it should be tried again later. Each of those ends
+  the process distinctly.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ClaimWorker/ClaimWorker.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Load-bearing mechanisms of the pattern are present"
+    command: "python3 $TASK_DIR/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

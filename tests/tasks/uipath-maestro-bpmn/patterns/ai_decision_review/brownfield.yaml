@@ -1,4 +1,4 @@
-task_id: skill-bpmn-patterns-brownfield
+task_id: skill-bpmn-ai-decision-review-brownfield
 description: >
   Insert the AI-decision-review shape into a process that already runs and
   already produces a confidence score. Verifies the agent inserts only the part

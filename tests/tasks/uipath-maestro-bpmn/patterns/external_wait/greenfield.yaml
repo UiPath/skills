@@ -1,0 +1,48 @@
+task_id: skill-bpmn-external-wait
+description: >
+  A request goes to an outside party with reminders and an SLA escalation.
+  Grades that reply, reminder and deadline are modelled as a race on one
+  gateway, and that the reminder resumes the same wait. The prompt never names
+  the pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 26
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `VendorDocs/VendorDocs.bpmn` for this process:
+
+  A vendor is asked to send a compliance document. The process then waits.
+  Whichever happens first decides what comes next: the vendor replies, a nudge
+  is due, or the deadline passes. A nudge is sent and the process goes back to
+  waiting. A reply is checked before it is trusted. If the deadline passes with
+  no acceptable reply, an escalation runs. Both endings are recorded distinctly.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "VendorDocs/VendorDocs.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Load-bearing mechanisms of the pattern are present"
+    command: "python3 $TASK_DIR/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

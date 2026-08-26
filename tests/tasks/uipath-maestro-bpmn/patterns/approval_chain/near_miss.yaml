@@ -1,4 +1,4 @@
-task_id: skill-bpmn-patterns-near-miss
+task_id: skill-bpmn-approval-chain-near-miss
 description: >
   The requested process is close to the approval-chain pattern but matches none
   of its stock variants: two approvers act at the same time, then a third acts
