@@ -129,6 +129,15 @@ elif argv[:3] == ["or", "folders", "delete"]:
     if "--yes" not in argv:
         print("Confirmation required: re-run with --yes.", file=sys.stderr)
         sys.exit(1)
+    if argv[3].startswith("sentinel-") and payload.get("sentinel_delete_failures", 0) > 0:
+        attempts_log = os.path.join(here, "sentinel_attempts.txt")
+        with open(attempts_log, "a") as handle:
+            handle.write("x")
+        with open(attempts_log) as handle:
+            attempts_so_far = len(handle.read())
+        if attempts_so_far <= payload["sentinel_delete_failures"]:
+            print("folder is still provisioning", file=sys.stderr)
+            sys.exit(1)
     if argv[3] in payload.get("undeletable_folders", []):
         print("folder delete refused", file=sys.stderr)
         sys.exit(1)
@@ -597,6 +606,29 @@ def test_seed_snapshots_existing_projects_and_folders(sandbox: pathlib.Path) -> 
         "mark": 100000,
     }
     assert json.loads((sandbox / SNAPSHOT).read_text()) == expected
+
+
+def test_seed_retries_a_transiently_failing_sentinel_delete(
+    sandbox: pathlib.Path,
+) -> None:
+    """Deleting a folder right after creating it can race provisioning —
+    a couple of transient failures must not abort the run (GH 32967816894)."""
+    env = install_fake_uip(sandbox, sentinel_delete_failures=2)
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "retrying in 5s" in completed.stdout
+    assert (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_fails_when_the_sentinel_delete_never_succeeds(
+    sandbox: pathlib.Path,
+) -> None:
+    """A persistent delete failure means teardown could not clean up either."""
+    env = install_fake_uip(sandbox, sentinel_delete_failures=99)
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert "folder-delete permission" in completed.stderr
+    assert not (sandbox / SNAPSHOT).exists()
 
 
 def test_seed_fails_loudly_when_the_tenant_is_unreachable(

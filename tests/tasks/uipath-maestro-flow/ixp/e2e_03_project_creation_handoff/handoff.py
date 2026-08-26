@@ -64,6 +64,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import traceback
 import uuid
 from typing import Any
@@ -312,13 +313,27 @@ def folder_id_watermark() -> int:
     created = run_uip_json(["or", "folders", "create", sentinel_name, "--output", "json"])
     sentinel_key = created["Data"]["Key"]
     sentinel_id = int(created["Data"]["Id"])
-    deleted = run_uip(["or", "folders", "delete", sentinel_key, "--yes", "--output", "json"])
+    # Deleting a folder milliseconds after creating it can race provisioning
+    # (GH run 32967816894: delete exit 1 straight after a successful create,
+    # on a pair that had succeeded six runs straight) — retry briefly before
+    # concluding the runner genuinely lacks the permission.
+    for attempt in range(4):
+        deleted = run_uip(["or", "folders", "delete", sentinel_key, "--yes", "--output", "json"])
+        if deleted.returncode == 0:
+            break
+        if attempt < 3:
+            print(
+                f"sentinel delete attempt {attempt + 1} failed "
+                f"(exit {deleted.returncode}); retrying in 5s"
+            )
+            time.sleep(5)
     if deleted.returncode != 0:
+        detail = " ".join((deleted.stdout or deleted.stderr).split())
         raise RuntimeError(
             f"could not delete sentinel folder {sentinel_key} (exit {deleted.returncode}) — "
             "the runner lacks folder-delete permission, so teardown cannot remove the "
             "run-scoped folder and every run would leak a deployment. Fix the runner role "
-            f"before running this task. Detail: {(deleted.stdout or deleted.stderr).strip()}"
+            f"before running this task. Detail: {detail}"
         )
     print(f"OK: folder create/delete pre-flight passed (watermark Id {sentinel_id})")
     return sentinel_id
