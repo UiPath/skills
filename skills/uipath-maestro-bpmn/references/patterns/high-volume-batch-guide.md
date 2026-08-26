@@ -72,7 +72,10 @@ system or items must be ordered.
   work happens at runtime, not while authoring.
 - **`aggregate`** — apply the policy and set `policySatisfied`. Best-effort
   always true; all-or-nothing true only with zero failures; quorum true above a
-  threshold.
+  threshold. Evaluate it here, in a node, rather than as a
+  `bpmn:completionCondition` on the multi-instance marker. A completion
+  condition stops the block early, which is a different thing from judging the
+  run afterwards, and it cannot see the per-item results the policy needs.
 - **`send_report`** — email, chat, dashboard, audit store.
 
 Fetch payloads through [registry-workflow.md](../registry-workflow.md).
