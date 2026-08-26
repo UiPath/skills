@@ -266,7 +266,7 @@ Compare the new metrics against the **previous iteration** at both levels — th
 
 #### Regression noise floor
 
-`F1` is computed by counting right and wrong over that field's `Annotations`, so with a small sample it can only take a few values — at `Annotations` = 5 the values nearest the top are 1.00, 0.889 and 0.80, with nothing in between. **A single annotation changing moves `F1` by ~0.11 in one jump**, and one annotation flipping by chance produces the same drop as a genuinely worse instruction — the number alone cannot tell them apart. The rollback threshold therefore has to be bigger than the jump one annotation can cause.
+`F1` is computed by counting right and wrong over that field's `Annotations`, so with a small sample it moves in jumps. At `Annotations` = 5, a single annotation-level event moves `F1` from 1.00 to 0.909 (one spurious extraction), 0.889 (one missed value) or 0.800 (one correct value turned wrong) — **one event jumps `F1` by 0.09–0.20**. Chance produces the same jump as a genuinely worse instruction, and the number alone cannot tell them apart, so the rollback threshold has to exceed what a single event can cause.
 
 Set it from the sample size:
 
@@ -275,7 +275,7 @@ noise_floor = 1 / (2 x Annotations)   # ~smallest F1 step this field can express
 regression_threshold = max(0.1, 2 x noise_floor)
 ```
 
-At `Annotations` = 5 that is 0.2 — a drop must exceed two of the smallest possible steps (~0.11 each) before it counts as evidence. From `Annotations` = 10 up, the 0.1 floor takes over. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
+At `Annotations` = 5 that is 0.2 — as large as the biggest single-event jump, so a drop generally has to be worth more than one flipped annotation before it counts as evidence. From `Annotations` = 10 up, the 0.1 floor takes over. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
 
 **Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, no prompt rewrite can be evaluated — but the fix depends on *why* the sample is small.
 
