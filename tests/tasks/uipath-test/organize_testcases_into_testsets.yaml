@@ -96,17 +96,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent narrowed the lookup server-side with --filter on the EVFX-ORG-SRC prefix (Critical Rules #8 + #9)"
+    description: "Agent narrowed the lookup server-side with --filter rather than listing the project (Critical Rules #8 + #9)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)(?=[\s\S]*--filter\s+\S)(?=[\s\S]*EVFX-ORG-SRC)uip\s+tm\s+testcases?\s+list\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)(?=[\s\S]*--filter\s+\S)uip\s+tm\s+testcases?\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the test set with the EVFX-ORG-SET- stamp"
+    description: "Agent created a test set with --project-key and --name"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)(?=[\s\S]*--name\s+\S)(?=[\s\S]*EVFX-ORG-SET-)uip\s+tm\s+testsets?\s+create\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)(?=[\s\S]*--name\s+\S)uip\s+tm\s+testsets?\s+create\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

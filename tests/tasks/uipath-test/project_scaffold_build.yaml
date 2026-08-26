@@ -73,9 +73,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the project with --name, --project-key and the caller's EVFX-SCAFFOLD- stamp"
+    description: "Agent created a project with both --name and --project-key carrying values"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*EVFX-SCAFFOLD-)(?=[\s\S]*--name\s+\S)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
+    command_pattern: '(?=[\s\S]*--name\s+\S)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

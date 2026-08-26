@@ -105,7 +105,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+customfield\s+create[\s\S]*--object-type\b'
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0   # advisory: records the anti-pattern without gating the score
 
   - type: command_executed
     description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"

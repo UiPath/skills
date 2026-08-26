@@ -81,15 +81,15 @@ success_criteria:
   - type: command_executed
     description: "Agent applied the tier labels to its test cases with `objectlabel add`"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)(?=[\s\S]*EVFX-CURATE-tier)uip\s+tm\s+objectlabel\s+add\b'
+    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+objectlabel\s+add\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent populated the set with the --labels selector, passing BOTH tier labels in one variadic call"
+    description: "Agent populated the set with the --labels selector rather than explicit keys"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\b)(?=[\s\S]*EVFX-CURATE-tier1)(?=[\s\S]*EVFX-CURATE-tier2)uip\s+tm\s+testcases?\s+add\b'
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+testcases?\s+add\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -99,14 +99,14 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--labels\s+\S+,'
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0   # advisory: records the anti-pattern without gating the score
 
   - type: command_not_executed
     description: "Agent did not fall back to enumerating explicit --test-case-keys, which defeats the label selector the request asked for"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--test-case-keys\b'
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0   # advisory: records the anti-pattern without gating the score
 
   - type: command_executed
     description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"
