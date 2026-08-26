@@ -39,3 +39,7 @@
 {"id": "uipath-insights-039", "prompt": "Which queues are at risk of breaching their SLA?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-040", "prompt": "Why are items failing in the Invoices queue?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-041", "prompt": "Of the queue items we retried this month, how many went on to succeed?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-042", "prompt": "How much runtime did our unattended robots log versus attended this week?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-043", "prompt": "Which machines had the most faulted jobs this month?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-044", "prompt": "Was the FinanceVM machine available overnight or did it drop?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-045", "prompt": "Show me runtime minutes per machine for the last 30 days.", "expected_skill": "uipath-insights"}
