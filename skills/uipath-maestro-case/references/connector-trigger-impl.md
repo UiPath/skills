@@ -108,11 +108,15 @@ After splicing the spec subtree (`context` / `inputs` / `outputs` and their nest
 
 Every authority `Name` is a `Name` **value**, which the serializer leaves intact. The `Error` output is the fixed platform envelope, not contract: lower it normally. `validate` accepts a plausible wrong name, so it is not evidence.
 
-**Copy the whole body from `tasks/spec-cache.<elementId>.json` — re-Read the file, never reconstruct from memory.** It is a full JSON Schema: Slack `send_message_to_channel_v2`'s `response` is **514 keys** (13 top-level + 118 nested property keys, 29 definitions, 29 `$ref`s), Outlook `Calendar Event Created` 120. Check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache; on any mismatch re-copy rather than patch. `validate` reports a truncated schema as `Valid`.
-
 - **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
 - **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, variables, bindings, task scaffolding) is already camelCase — do not re-case it.
 - **Mechanism — per-key `Edit`, never retyping.** Two passes. Pass 1: write the subtree **PascalCase-verbatim** (never drop, reorder, or retype content). Pass 2: one `Edit` per distinct key, `replace_all: true`, old/new including BOTH quotes AND the trailing colon — `"Name":` → `"name":`. The quote-colon anchor makes the edit keys-only **by construction**: a value sits after a colon (`: "Name"` — no trailing colon), and a blob-internal key is escaped (`\"Name\":`), so neither can match. Then verify: no capital-first `"Xxx…":` key remains anywhere in the spliced subtree **except the schema field names carved out above**, which a capital-first contract legitimately keeps (`Title`, `ID`, `MIMEType`); each leftover elsewhere is one more Edit. Combining the passes — re-casing while transcribing — is where subtrees get dropped (observed: `multipartParameters` lost → runtime `400 "Unable to parse multipart body"` while `validate` stays green).
+
+#### Copy the payload body whole
+
+Applies to every connector node — `execute-connector-activity`, the `wait-for-connector` task, the case-level event trigger, and a connector-bound condition rule.
+
+**Copy the whole body from `tasks/spec-cache.<elementId>.json` — re-Read the file, never reconstruct from memory.** It is a full JSON Schema: Slack `send_message_to_channel_v2`'s `response` is **514 keys** (13 top-level + 118 nested property keys, 29 definitions, 29 `$ref`s), Outlook `Calendar Event Created` 120. Check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache; on any mismatch re-copy rather than patch. `validate` reports a truncated schema as `Valid`.
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 

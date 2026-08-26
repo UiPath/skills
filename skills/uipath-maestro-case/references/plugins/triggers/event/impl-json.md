@@ -53,7 +53,7 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 - `id` = same as `var`
 - **No `elementId`** on trigger inputs (different from in-stage task inputs).
 
-> **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume. Capture each `body` whole with the keys OF its `properties` / `definitions` maps taken from their authority, not re-cased ([common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase)) — the variables plugin writes them through verbatim.
+> **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume. Capture each `body` whole ([common § Copy the payload body whole](../../../connector-trigger-impl.md#copy-the-payload-body-whole)) with the keys OF its `properties` / `definitions` maps taken from their authority, not re-cased ([common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase)) — the variables plugin writes them through verbatim.
 
 ## Step 7 — Build trigger node and write to caseplan.json
 
