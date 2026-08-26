@@ -37,8 +37,10 @@ uip maestro case spec --type trigger \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details "<json from Step 1>" \
-  --output json
+  --output json > tasks/spec-cache.<elementId>.json
 ```
+
+**Redirect — do not hand-write this file.** The response reaches tens of KB (68 KB for Slack `send_message_to_channel_v2`). A copy written from reasoning drops subtrees silently — observed: an 8.4 KB cache holding 4 of 102 `ResponseFields`, which starved the authority above and left the built node with 4 of 13 response properties while `validate` stayed green. This `>` is the one redirect [SKILL.md](../SKILL.md) Rule 13 permits.
 
 The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`). The CLI returns the full `caseShape` populated with values from `--input-details`. Add `--object-name "<picked entity>"` for entity-typed Curated triggers ([planning § 2 Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)).
 
