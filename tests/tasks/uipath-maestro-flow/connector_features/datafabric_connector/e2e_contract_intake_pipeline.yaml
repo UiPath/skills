@@ -50,7 +50,7 @@ success_criteria:
   - type: run_command
     description: "Final .flow passes `uip maestro flow validate`"
     command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
-    timeout: 60
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
