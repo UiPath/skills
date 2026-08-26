@@ -1,0 +1,40 @@
+task_id: skill-platform-traces-feedback-list-by-trace
+description: >
+  Smoke test (operate): agent lists the feedback filed on ONE trace, filtered to
+  thumbs-up, with plain `uip traces feedback list --trace-id ... --positive`.
+  `--trace-id` and `--positive` on `list` are documented in feedback.md but graded
+  nowhere: list_filters grades the span/agent/paging filters and `--negative`,
+  and feedback_smoke prompts a list but grades only create. One of three new
+  `mode:operate` traces tasks (with spans_get_by_trace_id and feedback_get) so
+  maturity rotation cannot skip every operate task in one nightly. Graders are
+  segment-scoped so batched calls grade per command. Auth/404 responses are
+  acceptable outcomes — the graded behavior is command shape.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, traces, feedback]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Show me every thumbs-up review filed on trace `c9d2e4f6a8b04c1e9f3a5b7d2e4f6a8b`
+  in folder key `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`. Just the feedback rows —
+  I do not need the span context behind them.
+
+  The identifiers come from the review export and may not resolve against this
+  tenant — that is expected. Run the read and report what comes back.
+
+success_criteria:
+  - type: command_executed
+    description: "Read scoped to the trace with plain list (not list detailed) and the folder key"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--trace-id[\s=]["'']?c9d2e4f6a8b04c1e9f3a5b7d2e4f6a8b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Same read filtered to positive sentiment only (--positive, never --negative)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--trace-id[\s=]["'']?c9d2e4f6a8b04c1e9f3a5b7d2e4f6a8b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--positive)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

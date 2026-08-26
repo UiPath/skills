@@ -1,0 +1,62 @@
+task_id: skill-platform-traces-spans-get-by-trace-id
+description: >
+  Smoke test (operate): agent reads one trace's span tree from a trace ID plus
+  folder context — the entry point when a ticket or log quotes a trace ID and
+  there is no job to discover it from. One of three new `mode:operate` traces
+  tasks (with feedback_get and feedback_list_by_trace): the two existing operate
+  tasks (traces_fetch, traces_e2e) mature together and were both skipped in the
+  same nightly, which starred the scorecard's Operate cell — more operate tasks
+  keeps one executing every run. Graders are segment-scoped from day one and
+  accept the positional ID anywhere in the command (`spans get [options]
+  [trace-id]`). The no-detour guard is the inverse of spans_discovery: that task
+  mandates `or jobs traces`; here the ticket already gives the trace ID, so a
+  trip through the jobs surface (`or jobs list|traces`, `--job-key`) fails.
+  Auth/404 responses are acceptable outcomes — the graded behavior is command
+  shape.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, traces]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  A reviewer flagged trace `0af7651916cd43dd8448eb211c80319c` in the
+  `Shared/uipath-platform` folder. Show me its spans — the name, status, and
+  duration of each.
+
+  The trace ID comes from the review export and may not resolve against this
+  tenant — that is expected. Run the read and report what comes back; do not go
+  looking for a substitute trace.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the span tree by positional trace ID (accepted anywhere in the command; a --job-key/--folder-key value does not count)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?<!--job-key\s)(?<!--folder-key\s)["'']?(?:\$\{?\w+\}?|0af7651916cd43dd8448eb211c80319c)["'']?(?:\s|$))'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed folder context on spans get (--folder-path or --folder-key)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-(?:path|key))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No detour through the jobs surface: trace ID was given, so or jobs list|traces / --job-key must not be used"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(?:(?:or|orchestrator)\s+jobs\s+(?:list|traces)\b|traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--job-key))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory: --output json is the CLI default, so the flag is outcome-invisible
+  # (test-writing.md) — record convention adherence without gating on it.
+  - type: command_executed
+    description: "Advisory: spans read used --output json"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--output[\s=]["'']?json)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

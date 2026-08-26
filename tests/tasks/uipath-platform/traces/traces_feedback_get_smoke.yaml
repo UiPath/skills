@@ -1,0 +1,39 @@
+task_id: skill-platform-traces-feedback-get
+description: >
+  Smoke test (operate): agent fetches one feedback record by ID with
+  `uip traces feedback get <id> --folder-key`. The read is documented in
+  feedback.md but graded only inside traces_feedback_e2e, where it is reached
+  through create — a standalone get from a known ID was never exercised. One of
+  three new `mode:operate` traces tasks (with spans_get_by_trace_id and
+  feedback_list_by_trace) so maturity rotation cannot skip every operate task in
+  one nightly (the cause of the starred Operate cell). Read-only is graded: any
+  create/update/delete fails the task. Auth/404 responses are acceptable
+  outcomes — the graded behavior is command shape.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, traces, feedback]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Pull up feedback record `9e7b3c21-58d4-4f0a-b6e2-1c7a9d3f5e80` from folder key
+  `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2` — I need its sentiment, its comment,
+  and which trace it is attached to.
+
+  The ID comes from the review export and may not resolve against this tenant —
+  that is expected. Run the read, report what comes back, and change nothing.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the record by ID with feedback get plus the folder key (ID accepted anywhere in the command)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+get(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?<!--folder-key\s)["'']?(?:\$\{?\w+\}?|9e7b3c21-58d4-4f0a-b6e2-1c7a9d3f5e80)["'']?(?:\s|$))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only: agent did not create, update, or delete feedback"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+(create|update|delete)\b'
+    weight: 1.5
+    pass_threshold: 1.0
