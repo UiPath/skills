@@ -1,34 +1,27 @@
 task_id: skill-test-organize-testcases-into-testsets
 description: >
-  Integration test: agent uses the uipath-test skill to organise testcases into
-  logical test sets for a named feature. Asserts that the agent (a) checks
-  login status with --output json, (b) lists
-  testcases with --project-key + --filter , and
-  (c) creates at least one test set with --project-key + --output json.
-  The skill — not the prompt — must teach the --filter narrowing rule and
-  the testcases add command for assigning testcases to a set.
-tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:test-set]
+  Integration test: agent uses the uipath-test skill to collect a known set of
+  test cases into a test set in the CLAIM project. Asserts that the agent
+  (a) checks login status, (b) narrows the test case lookup server-side with
+  `testcases list --filter` on an exact name prefix rather than listing the whole
+  project, (c) creates a test set, and (d) adds the matched cases to it with
+  `testcases add --test-set-key --test-case-keys`. The skill — not the prompt —
+  must teach the `--filter` narrowing rule, that `--filter` is a PREFIX match,
+  and that set membership is changed through the `testcases` verb group rather
+  than under `testsets`.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-set]
 
 run_limits:
-  expected_turns: 22
+  expected_turns: 18
   max_turns: 35
 
-# This task's DELIVERABLE is creating test sets, so its output is scratch, not
-# a fixture — the EVFX- contract protects state other runs depend on, and
-# nothing depends on these. Left uncleaned they accumulate roughly three sets
-# per run forever, which is how CLAIM ended up with the duplicate
-# "Disbursement - …" sets that made the agent stop and ask which one to use.
-#
-# The sweep runs in PRE_run and spares anything stamped with today's date. Two
-# models run the nightly concurrently, so a post_run sweep of the whole
-# EVFX-ORG-* prefix would delete the other run's sets while it was still
-# working. Clearing only earlier days keeps growth bounded to a single day's
-# runs without either run touching the other's output.
 pre_run:
   - command: |
-      python3 - <<'EOF'
-      import json, subprocess, sys, datetime
-      P, PREFIX = "CLAIM", "EVFX-ORG-"
+      python3 - <<'PYEOF'
+      import json, subprocess, datetime
+      P = "CLAIM"
+      SRC_PREFIX, SET_PREFIX = "EVFX-ORG-SRC-TC", "EVFX-ORG-SET-"
+      SRC = [f"{SRC_PREFIX}{i}" for i in (1, 2, 3)]
       today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
       def call(*a):
@@ -39,34 +32,59 @@ pre_run:
           except Exception:
               return {}
 
+      def source_cases():
+          data = call("tm", "testcases", "list", "--project-key", P,
+                      "--filter", SRC_PREFIX).get("Data") or []
+          return {c.get("Name"): c for c in data}
+
+      have = source_cases()
+      created = 0
+      for name in SRC:
+          if name not in have:
+              call("tm", "testcases", "create", "--project-key", P, "--name", name)
+              created += 1
+      if created:
+          have = source_cases()
+      missing = [n for n in SRC if n not in have]
+      print(f"SEED: {len(SRC) - len(missing)}/{len(SRC)} source case(s) present "
+            f"({created} created this run)")
+      if missing:
+          print(f"SEED WARNING: still missing {missing} — the task will fail on the "
+                f"--filter criterion, which is the correct signal for absent fixtures")
+
       sets = call("tm", "testsets", "list", "--project-key", P,
-                  "--filter", PREFIX).get("Data") or []
+                  "--filter", SET_PREFIX).get("Data") or []
       removed = 0
       for t in sets:
           name = t.get("Name") or ""
-          if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
+          if not name.startswith(SET_PREFIX) or name.startswith(SET_PREFIX + today):
               continue
-          call("tm", "testsets", "delete", "--test-set-key", t["TestSetKey"], "--yes")
+          key = t.get("TestSetKey")
+          if not key:
+              continue
+          call("tm", "testsets", "delete", "--test-set-key", key, "--yes")
           removed += 1
-      print(f"CLEANUP: removed {removed} {PREFIX}* test set(s) from earlier days")
-      EOF
-    timeout: 180
+      print(f"CLEANUP: removed {removed} {SET_PREFIX}* test set(s) from earlier days")
+      PYEOF
+    timeout: 240
 
 initial_prompt: |
-  I have a project called CLAIM. Organise testcases for the "disbursement"
-  feature into logical test sets (e.g. happy path, edge cases, regression).
-  List the testcases filtered by "disbursement", group them, and create the
-  test sets in Test Manager with appropriate names and descriptions.
+  In the CLAIM project there are exactly three test cases whose names begin with
+  `EVFX-ORG-SRC-TC`. Collect all three into a single new regression test set.
 
-  Name every test set you create with the prefix `EVFX-ORG-<STAMP>-<TAG>-`,
-  where <STAMP> is the current UTC date and time as YYYYMMDD-HHMMSS and <TAG>
-  is 6 random lowercase hex characters you generate once for this session —
-  for example `EVFX-ORG-20260812-141530-a3f9c1-Happy Path`. The random tag
-  matters: another session may start in the very same second, and a timestamp
-  alone would then produce identical names. Earlier planning sessions left
-  their own test sets behind in this project; yours must not reuse or extend
-  those names, and you should create your own set rather than stopping to ask
-  which existing one to use.
+  Look them up by that name prefix rather than pulling the whole project's test
+  case list — the real project has hundreds of cases and I don't want them all
+  fetched.
+
+  Name the test set `EVFX-ORG-SET-<STAMP>-<TAG>`, where <STAMP> is the current
+  UTC date and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex
+  characters you generate once for this session. The random tag matters: another
+  session may start in the very same second, and a timestamp alone would produce
+  identical names. Earlier sessions left their own sets behind in this project;
+  create your own rather than reusing or extending one, and do not stop to ask
+  which existing set to use.
+
+  Just run it through — no need to check in.
 
 success_criteria:
   - type: command_executed
@@ -78,25 +96,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed testcases with --project-key and --filter flag (Critical Rules #2 + #8)"
+    description: "Agent narrowed the lookup server-side with --filter on the EVFX-ORG-SRC prefix (Critical Rules #8 + #9)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--filter'
+    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)(?=[\s\S]*--filter\s+\S)(?=[\s\S]*EVFX-ORG-SRC)uip\s+tm\s+testcases?\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created a test set with --project-key"
+    description: "Agent created the test set with the EVFX-ORG-SET- stamp"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testsets?\s+create\s+.*--project-key|uip\s+tm\s+testsets?\s+create'
+    command_pattern: '(?=[\s\S]*--project-key\s+CLAIM)(?=[\s\S]*--name\s+\S)(?=[\s\S]*EVFX-ORG-SET-)uip\s+tm\s+testsets?\s+create\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added testcases to the new test set with --test-set-key + --test-case-keys"
+    description: "Agent added the matched cases to the set with --test-set-key + --test-case-keys"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+add\s+.*--test-set-key.*--test-case-keys|uip\s+tm\s+testsets?\s+add-testcases\s+.*--test-set-key'
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--test-case-keys\s+\S)uip\s+tm\s+(testcases?\s+add|testsets?\s+add-testcases)\b'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0

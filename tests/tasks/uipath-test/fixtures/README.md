@@ -22,7 +22,7 @@ and therefore exact for this scheme.
 | `flaky_tests_analysis` | CLAIM | `EVFX-FLAKY-SET`, `EVFX-FLAKY-TC{1,2,3}` | 3 Finished executions; TC2 fails in one |
 | `test_report_junit_export` | CLAIM | `EVFX-JUNIT-SET`, `EVFX-JUNIT-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` |
 | `release_signoff_wait_report_e2e` | CLAIM | `EVFX-SIGNOFF-SET`, `EVFX-SIGNOFF-TC{1,2}` | No execution; both cases automation-linked |
-| `organize_testcases_into_testsets` | CLAIM | the `EVFX-ORG-*` namespace | Nothing pre-created; the task creates `EVFX-ORG-<YYYYMMDD-HHMMSS>-*` and `pre_run` clears earlier days |
+| `organize_testcases_into_testsets` | CLAIM | the `EVFX-ORG-*` namespace: `EVFX-ORG-SRC-TC{1,2,3}` (inputs) + `EVFX-ORG-SET-*` (outputs) | 3 source test cases, no execution; the task creates `EVFX-ORG-SET-<YYYYMMDD-HHMMSS>-*` and `pre_run` seeds the sources create-if-absent and clears earlier days' sets |
 | `integration_release_readiness_qa_lead` | BANK | the existing regression suite (no `EVFX-` names) | 1 Finished execution mixing `Passed`/`Failed`/`Restricted`/`None` |
 | `project_scaffold_build` | its own throwaway project | the `EVFX-SCAFFOLD-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
@@ -71,6 +71,31 @@ row here misleads the next maintainer into reusing or removing live state.
    require a default Orchestrator folder on the project (SKILL.md Critical
    Rule 10). `pre_run` attempts the run first and only pins a folder if that
    genuinely fails, so a working project default is never overwritten.
+
+## Why `organize` owns its INPUTS, not just its outputs
+
+`organize_testcases_into_testsets` used to read unowned CLAIM data: the prompt
+asked it to filter test cases by `disbursement`, matching
+`Claim Payout - ACH Disbursement` and `Claim Payout - Check Disbursement`. That
+combination cannot work, because **`tm testcases list --filter` is a PREFIX
+match** (verified: `--filter sync` against `Auto-sync Test …` returns 0) and
+`disbursement` is a *suffix* of those names. The filtered lookup the task grades
+could never return the cases it needed.
+
+So the task passed or failed on which recovery branch the model happened to
+pick: abandon `--filter` and list the whole project (passes), or retry a shorter
+prefix like `d` and stop when that is also empty (fails). It failed the
+2026-08-24 codex nightly that way and passed 2026-08-25 by listing unfiltered —
+same code, same tenant, opposite outcome.
+
+It now seeds `EVFX-ORG-SRC-TC{1,2,3}` and filters on `EVFX-ORG-SRC-TC`, which is
+a genuine prefix of names the task owns. Every model takes the same single path,
+and the graded `--filter` call returns exactly three cases every run.
+
+**Authoring rule this generalises to:** a `--filter` term in a prompt MUST be a
+real prefix of the target names. Never use a distinguishing word that appears
+mid-name or at the end — it turns the task into a coin flip on model recovery
+behaviour.
 
 ## Steady state
 
