@@ -1,21 +1,21 @@
 task_id: skill-ixp-get-metrics-smoke
 description: >
-  Smoke: asked for per-field F1/Precision/Recall, the agent enters the
-  metrics flow against the project `Name` (not `Title`): resolving the
-  version with `list-models` first (Critical Rule 21), with
-  `get-metrics` accepted too. Locks in the `Name` argument.
-
-  Harness is unauthenticated; CLI calls fail with auth errors.
-  Grades command shape, not wire effect.
+  Smoke: asked for per-field F1/Precision/Recall, the agent actually
+  fetches them - `get-metrics` against the project `Name` (not `Title`).
+  The version-serving mock answers `list-models` (live v9, latest v30)
+  and `get-metrics`, so resolving the version first (Critical Rule 21)
+  completes instead of stranding the flow before the metrics call.
+  Grades command shape.
 tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
-  expected_turns: 4
+  expected_turns: 6
 
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_versions}
 
 initial_prompt: |
   A document automation engineer wants to inspect the per-field F1 scores
@@ -23,17 +23,13 @@ initial_prompt: |
   prompts.
 
   Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant
-    in this environment. Commands will fail with auth errors — that is
-    expected. Run each command once and move on. Do NOT retry or attempt
-    to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: file_matches_regex
-    description: "Agent entered the metrics flow (`list-models` or `get-metrics`) against the requested project Name"
+    description: "Agent fetched the metrics - `get-metrics` against the requested project Name"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+(?:list-models|get-metrics)\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
