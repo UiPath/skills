@@ -83,6 +83,8 @@ mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp projects get-metrics <project-name> --output json
 ```
 
+The baseline is the **latest trained version** — the model the loop iterates on — so the bare call above is correct even when a live tag exists: Critical Rule 21's resolve-live ladder does not apply to the loop's baseline (its naming requirement does).
+
 Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
