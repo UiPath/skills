@@ -274,12 +274,12 @@ regression_threshold = max(0.1, 1 / Annotations)
 
 That is 0.2 at `Annotations` = 5 — one flipped annotation is not evidence — and the flat 0.1 from `Annotations` = 10 up. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
 
-**Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, no prompt rewrite can be evaluated — but the fix depends on *why* the sample is small.
+**Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, no prompt rewrite can be evaluated — but which remedy to report depends on *why* the sample is small.
 
 **A small `Annotations` has two causes with opposite fixes.** `Annotations` counts reviewed **extractions**, not documents — one document can contribute several — so it cannot be compared against a document count directly. Compare the field's own `Documents` against the project-level `ValidatedDocuments`:
 
-- **`Documents` equals `ValidatedDocuments`** → this field was reviewed on every reviewed document, so its sample is already as large as the labelled data allows. Fix: **upload and label more documents.**
-- **`Documents` below `ValidatedDocuments`** → documents are labelled but this field's predictions were never confirmed on some of them. Fix: **confirm what you already have** — tag it CONFIRM in the final report; confirming happens after the loop, never as a mid-loop detour (2a-check's `Recall < 0.5` gate misses this case). Allow a shortfall of one or two: a field legitimately absent from a document carries a missing marker instead.
+- **`Documents` equals `ValidatedDocuments`** → this field was reviewed on every reviewed document, so its sample is already as large as the labelled data allows. Tag it **UPLOAD** in the final report — more documents are the user's follow-up after the loop, never a reason to stop mid-run and ask for them.
+- **`Documents` below `ValidatedDocuments`** → documents are labelled but this field's predictions were never confirmed on some of them. Tag it **CONFIRM** in the final report — confirming happens after the loop, never as a mid-loop detour (2a-check's `Recall < 0.5` gate misses this case). Allow a shortfall of one or two: a field legitimately absent from a document carries a missing marker instead.
 
 `Annotations / Documents` is the average number of extractions per document — about 1 for a single-value field, higher under a repeatable group. Whichever cause applies, name it in the final report — "more prompt rewrites" is not the answer in either case.
 
