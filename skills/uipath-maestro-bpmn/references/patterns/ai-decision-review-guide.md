@@ -22,10 +22,6 @@ These four carry the shape. Change one and you are building something else.
 
 ## Shape
 
-Roles: **Entry** — omit when inserting into a process that already runs.
-**Mechanism** — changing it changes the pattern. **Placeholder** — bind it, or
-skip it if the process already does this.
-
 | Node | Element | Role |
 | --- | --- | --- |
 | `start` | `bpmn:startEvent` + message event definition | Entry |

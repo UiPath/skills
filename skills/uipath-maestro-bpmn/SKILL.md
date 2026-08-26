@@ -89,6 +89,10 @@ Read the guide for each pattern the process actually uses — one for a simple
 process, several for a composed one — and none for a pattern you are not
 building.
 
+Every guide's shape table marks each node **Entry** (omit when inserting into a
+process that already runs), **Mechanism** (changing it changes the pattern), or
+**Placeholder** (bind it, or skip it if the process already does this).
+
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
 | `ai-decision-review` | AI decides; humans review only the uncertain ones | [ai-decision-review-guide.md](references/patterns/ai-decision-review-guide.md) |

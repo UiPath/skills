@@ -24,9 +24,7 @@ These four carry the shape. Change one and you are building something else.
 
 ## Shape
 
-Roles: **Mechanism** — load-bearing, above. **Placeholder** — bind it, or skip
-it if the process already does this. There is no Entry row: this pattern is
-never wired into a path.
+This pattern has no Entry row: it is never wired into a path.
 
 The net itself is a `bpmn:subProcess` with `triggeredByEvent="true"`, holding:
 
