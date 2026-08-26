@@ -27,10 +27,9 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template_versions}
 
 initial_prompt: |
-  A document automation engineer is starting an improvement loop on the
-  extraction instructions of the IXP project named
-  `my_invoices-f1afa9ef-ixp`, and needs the baseline per-field F1 scores
-  the loop's changes will be measured against.
+  I'm starting an improvement loop on the extraction instructions of the
+  IXP project `my_invoices-f1afa9ef-ixp` — get the baseline per-field F1
+  scores the loop's changes will be measured against.
 
   Write `metrics.json` in the working directory:
 
