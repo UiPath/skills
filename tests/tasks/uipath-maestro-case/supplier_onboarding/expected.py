@@ -13,7 +13,7 @@ Two kinds of constant live here:
    connection. A tenant reinstall re-mints every one of them; re-sweep the fixture,
    then re-run `sweep_guids.py` and paste the result here.
 
-Nothing in this module reads the caseplan. `plan.py` does that.
+Nothing in this module reads the caseplan. `caseplan_reader.py` does that.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ FIXTURE_SDD = os.path.join(HERE, "fixtures", "sdd.md")
 
 # sha256 of the fixture as committed. The YAML asserts this separately; the graders
 # do not, so a deliberate fixture edit does not have to touch every checker.
-FIXTURE_SHA256 = "fdabb38a01dec03b90c60c85517bf77a572b4745e90d56dcc99e3c1550346170"
+FIXTURE_SHA256 = "b140437081436511c79cd71eb77233e9eac4a73ed15f861308cf5adaf3273a2c"
 
 CASEPLAN_GLOB = "**/caseplan.json"
 
@@ -278,7 +278,7 @@ ACTION_APPS = {
     "Supplier Portal Access Confirmation": "8bfee375-9973-446d-b409-6799688ffe49",
     "supplier-delay-escalation": "fb171d7c-33a1-4bb6-b09a-030044a7c0b6",
 }
-CHILD_CASES = {"SupplierContractNegotiation": "5330b909-49ef-498d-b2af-0a9f6526c439"}
+CHILD_CASES = {"SupplierContractNegotiation": "a028146a-e14f-489b-a6ca-e1ffa1d315f6"}
 
 ALL_RESOURCE_IDS = set(API_WORKFLOWS.values()) | set(AGENTS.values()) \
     | set(ACTION_APPS.values()) | set(CHILD_CASES.values())          # 20
@@ -308,7 +308,7 @@ RESOURCE_KEYS = {
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierRejectionAuditLog": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierSignOffTierRules": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierWithdrawalCleanup": ("process", "Api"),
-    "uipath-maestro-case.SupplierContractNegotiation": ("process", "CaseManagement"),
+    "Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation": ("process", "CaseManagement"),
     "dd657127-91f5-4568-a3a3-c024bc03fb0f": ("Connection", None),
 }
 
@@ -416,6 +416,17 @@ CONNECTOR_OUTPUT_PATH = "response.status"
 CONNECTOR_OUTPUT_ROOT = "response"
 CONNECTOR_OUTPUT_TARGET = "lastEmailStatus"
 CONNECTOR_TASK_COUNT = 8
+
+# The four supporting documents the category-match agent reads. The fixture reads them
+# through a guarded array walk rather than a bare `vars.X.FullName`, so the names are
+# pinned here instead of parsed back out of an expression whose shape is free.
+SUPPORTING_DOCUMENT_VARIABLES = {
+    "registrationCertificate",
+    "insuranceDocument",
+    "taxFormsDocument",
+    "bankDetailsDocument",
+}
+DOCUMENT_READER_TASK = "Confirm offering category match"
 
 
 def _fail(msg: str):

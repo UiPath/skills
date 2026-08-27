@@ -27,7 +27,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import expected as E  # noqa: E402
-import plan as P  # noqa: E402
+import caseplan_reader as P  # noqa: E402
 
 # Literals that appear in a decision guard but are not in any deployed enum. These
 # are the shapes an invented business label takes.
