@@ -196,3 +196,7 @@
 # Automation Hub skills (Open API publish/read of processes via the user's cloud token)
 /skills/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
 /tests/tasks/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
+
+# StudioAdmin AOps skill (SourceControl + CICD pipelines)
+/skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
+/tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
