@@ -75,7 +75,6 @@ initial_prompt: |
 
   Trigger it manually. Set up a fresh Orchestrator folder for anything this
   needs deployed and use that folder — don't put anything in the existing ones.
-  The task is not complete until `uip maestro flow validate` passes on the flow.
 
   - The `uip` CLI is already available and the runner is logged in.
   - Use `--output json` on all uip commands.
