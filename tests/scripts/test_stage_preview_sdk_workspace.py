@@ -23,6 +23,7 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
             {
                 "name": "@uipath/flow-sdk",
                 "version": "3.20.0",
+                "gitref": "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8",
                 "type": "module",
                 "exports": "./index.js",
             }
@@ -36,8 +37,12 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
     (library_json / "index.json").write_text(
         json.dumps({"entries": [{"nodeType": REQUIRED_CONNECTOR}]})
     )
-    commit = "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8"
-    (assets_root / "flow-builder-sdk.sha").write_text(f"{commit}\n")
+    registry_root = assets_root / "registry"
+    registry_root.mkdir()
+    registry_hash = "d34db33f"
+    (registry_root / "current.json").write_text(
+        json.dumps({"libraryHash": registry_hash})
+    )
 
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -45,11 +50,6 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
         bin_dir / "uip",
         "#!/bin/sh\n[ \"$*\" = \"maestro flow compile --help\" ]\n",
     )
-    _write_executable(
-        bin_dir / "prepare-connector",
-        "#!/bin/sh\n[ \"$*\" = \"--help\" ]\n",
-    )
-
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     (workspace / "package.json").write_text(
@@ -60,6 +60,7 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
         "PATH": f"{bin_dir}:{os.environ['PATH']}",
         "PREVIEW_FLOW_SDK_ROOT": str(sdk_root),
         "PREVIEW_FLOW_SDK_ASSETS_ROOT": str(assets_root),
+        "UIP_MAESTRO_REGISTRY_HOME": str(registry_root),
         "FLOW_SDK_LIBRARY_JSON": str(library_json),
     }
 
@@ -82,6 +83,7 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
     assert json.loads((workspace / "preview-sdk-provenance.json").read_text()) == {
         "package": "@uipath/flow-sdk",
         "version": "3.20.0",
-        "flow_builder_sdk_commit": commit,
+        "gitref": "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8",
         "connector_library": True,
+        "connector_library_hash": registry_hash,
     }
