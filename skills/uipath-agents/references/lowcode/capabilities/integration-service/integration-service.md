@@ -137,7 +137,7 @@ IS tools differ structurally from Orchestrator-based tools:
 ### Building `inputSchema` from `requestFields`
 
 - Each request field becomes a property with its `type` and `description`
-- Fields with `enum` → add `enum` and `oneOf` arrays
+- Fields with `enum` → add `enum` and `oneOf` arrays **only when the field is dynamic** (agent-decided). A **static** field must NOT carry an `enum` in `inputSchema` — the agent runtime injects the static default and finalizes the model before it is rebuilt, breaking the build (`<Tool> is not fully defined; __Dynamictype…`). So: single-value enum → make the field static (bake the value, no `enum` here); multi-value enum → keep it dynamic and emit `enum`/`oneOf` so the LLM picks a valid value.
 - Fields with nested dotted names (e.g., `attachment.title`) → nest as objects in the schema
 - Fields marked `required: true` → add to the `required` array
 - Add `"additionalProperties": false` to the input schema
@@ -159,14 +159,17 @@ IS tools differ structurally from Orchestrator-based tools:
 
 - Each `requestField` becomes a parameter with `fieldLocation: "body"` and `value: "{{prompt}}"` (dynamic, filled by the LLM at runtime)
 - Each `parameter` from metadata (query/path params) keeps its original `fieldLocation` (e.g., `"query"`)
-- Fields with `enum` values: set `fieldVariant: "static"`, `dynamic: false`, `value` to the first enum value, and `enumValues` to an **array of `{name, value}` objects** (NOT bare strings) — copy the metadata's `fields.<name>.enum` through verbatim. Bare-string arrays pass `uip agent validate` but make Studio Web drop the tool from the agent UI.
+- Fields with `enum` values — scope by cardinality (a static field carrying an `enum` in `inputSchema` breaks the agent runtime's model build):
+  - **Single-value** enum → `fieldVariant: "static"`, `dynamic: false`, `value` to that one enum value (do NOT emit `enum`/`oneOf` in `inputSchema` for it).
+  - **Multi-value** enum → keep `fieldVariant: "dynamic"` (`value: "{{prompt}}"`) so the LLM picks; the `enum`/`oneOf` in `inputSchema` constrains the choice.
+  - Either way set `enumValues` to an **array of `{name, value}` objects** (NOT bare strings) — copy the metadata's `fields.<name>.enum` through verbatim. Bare-string arrays pass `uip agent validate` but make Studio Web drop the tool from the agent UI.
 - Fields with `reference`: include the `reference` object and set `loadReferenceOptionsByDefault: true`
 - Set `position: "primary"` for required fields, `"secondary"` for optional
 - Increment `sortOrder` starting from 1
 
 **Parameter `fieldVariant` values:**
-- `"dynamic"` — value filled by the LLM at runtime (`value: "{{prompt}}"`, `dynamic: true`, `enumValues: null`)
-- `"static"` — pre-configured value (e.g., single-value enum default). Set `dynamic: false`, `value` to the chosen enum value, and `enumValues` to the object-array form below.
+- `"dynamic"` — value filled by the LLM at runtime (`value: "{{prompt}}"`, `dynamic: true`). `enumValues: null` for free-text fields; for a **multi-value enum** kept dynamic, set `enumValues` to the object-array form below so the choice is constrained.
+- `"static"` — pre-configured value (e.g., **single-value** enum default). Set `dynamic: false`, `value` to the chosen enum value, and `enumValues` to the object-array form below.
 
 **Parameter `enumValues` format — MUST be an array of `{name, value}` objects, never bare strings:**
 ```jsonc
