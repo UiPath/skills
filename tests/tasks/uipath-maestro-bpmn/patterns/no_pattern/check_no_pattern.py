@@ -19,6 +19,7 @@ from bpmn_assertions import (  # noqa: E402
     fail,
     load_bpmn,
 )
+from graph import ids, reachable  # noqa: E402
 
 BPMN = "NightlyExport/NightlyExport.bpmn"
 FLOW_NODE_KINDS = (
@@ -72,9 +73,17 @@ def main() -> None:
     if len(ends) != 1:
         fail(f"expected exactly one end event for a process with one outcome, found {len(ends)}")
 
+    work = sum(len(elements(root, k)) for k in ("task", "serviceTask", "scriptTask", "sendTask"))
+    if work < 3:
+        fail(f"{work} work activities — the requested read, reshape and write steps are not all present")
+
     total = sum(len(elements(root, kind)) for kind in FLOW_NODE_KINDS)
     if total > 7:
         fail(f"{total} flow nodes for a three-step process — scaffolding was added")
+
+    start = elements(root, "startEvent")[0].attrib.get("id")
+    if not (reachable(root, start) & ids(elements(root, "endEvent"))):
+        fail("the end event is not reachable from the start — the steps are not connected")
 
     if not root.findall(".//{http://www.omg.org/spec/BPMN/20100524/DI}BPMNDiagram"):
         fail("no bpmndi:BPMNDiagram — the file will not import")

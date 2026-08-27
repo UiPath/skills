@@ -22,6 +22,7 @@ from bpmn_assertions import (  # noqa: E402
     fail,
     load_bpmn,
 )
+from graph import ids, reachable, reaches  # noqa: E402
 
 BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
@@ -43,6 +44,28 @@ def main() -> None:
             "expected a parallel gateway pair for the two concurrent reviewers, "
             f"found {len(parallel)} — the shape was not adapted"
         )
+
+    # Counting gateways is not the adaptation. A fork must reach at least two
+    # review tasks, and a third review must sit downstream of the join — three
+    # sequential reviews beside two detached gateways is the shape this rejects.
+    task_ids = ids(user_tasks)
+    forks = [
+        g for g in parallel
+        if len(reachable(root, g.attrib.get("id", "")) & task_ids) >= 2
+    ]
+    if not forks:
+        fail("no parallel gateway reaches two review tasks — the concurrent pair was not modelled")
+
+    joins = [
+        g for g in parallel
+        if g not in forks and any(reaches(root, t, g.attrib.get("id", "")) for t in task_ids)
+    ]
+    if not joins:
+        fail("the concurrent reviews never merge on a parallel join")
+
+    join_id = joins[0].attrib.get("id", "")
+    if not (reachable(root, join_id) & task_ids):
+        fail("no review task follows the join — the third approver does not act after the other two")
 
     # The chain can stop at any step: a decision gateway is what makes that
     # possible, and there must be more than the parallel merge.

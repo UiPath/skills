@@ -9,8 +9,11 @@ not depend on each other, and some will fail without the run being a failure.
 These four carry the shape. Change one and you are building something else.
 
 - **Each item runs in its own subprocess instance.** A multi-instance marker on
-  a container, not a loop drawn on the canvas. One item's failure is contained
-  in its own instance, so it cannot take the run down with it.
+  a container, not a loop drawn on the canvas. The marker gives each item its own
+  scope and lets them run concurrently — it does **not** by itself stop one
+  item's failure ending the run. An unhandled failure propagates outward, so
+  containing it needs a `failure-escalation` net placed inside the iteration.
+  Isolation is the marker plus that net, never the marker alone.
 - **Aggregation happens once, after the block completes.** The multi-instance
   container does not exit until every instance has, which is what makes a single
   aggregation step correct rather than a race.

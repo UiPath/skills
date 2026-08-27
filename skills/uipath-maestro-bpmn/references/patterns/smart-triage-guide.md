@@ -100,7 +100,10 @@ reaches manual triage.
   classifier needs out of an unstructured source.
 - **`handle_a..c`** — see Adapting below; usually a message dispatch rather than
   work done here.
-- **`manual_triage`** — `Actions.HITL`.
+- **`manual_triage`** — `Actions.HITL`. Bind the task's category output to
+  `routeCategory`, the same variable `route_gate` reads. Bound anywhere else,
+  low-confidence items dispatch on the classifier's original guess and the
+  review changes nothing.
 
 Fetch payloads through [registry-workflow.md](../registry-workflow.md).
 

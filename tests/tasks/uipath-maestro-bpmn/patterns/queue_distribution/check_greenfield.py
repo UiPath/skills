@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 
 from bpmn_assertions import BPMN_NS, elements, fail, load_bpmn  # noqa: E402
+from graph import ids, reachable  # noqa: E402
 
 DI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
 BPMN = "ClaimWorker/ClaimWorker.bpmn"
@@ -43,6 +44,21 @@ def main() -> None:
     ends = elements(root, "endEvent")
     if len(ends) < 3:
         fail(f"expected a distinct ending per outcome, found {len(ends)} end events")
+
+    # Three branches to three ends is not the mechanism — marking the transaction
+    # is. Each branch must pass through its own activity before ending, or the
+    # queue is never told what happened to the item.
+    gate = max(
+        gateways, key=lambda g: len([f for f in flows(root) if f.attrib.get("sourceRef") == g.attrib.get("id")])
+    ).attrib.get("id")
+    work_ids = ids(elements(root, "serviceTask") + elements(root, "scriptTask") + elements(root, "sendTask"))
+    branch_heads = [f.attrib.get("targetRef") for f in flows(root) if f.attrib.get("sourceRef") == gate]
+    marking = {h for h in branch_heads if h in work_ids}
+    if len(marking) < 3:
+        fail(
+            f"only {len(marking)} of the {len(branch_heads)} outcome branches start with an activity "
+            f"({sorted(marking)}) — the queue is not told the item succeeded, failed or was postponed"
+        )
 
     MSG = f"PASS: single queue-triggered start, {branched} outcome branches, {len(ends)} endings, no loop"
 

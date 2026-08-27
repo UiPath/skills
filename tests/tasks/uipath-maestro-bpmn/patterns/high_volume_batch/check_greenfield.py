@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 
 from bpmn_assertions import BPMN_NS, elements, fail, load_bpmn  # noqa: E402
+from graph import ids, reachable, reaches  # noqa: E402
 
 DI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
 BPMN = "InvoiceBatch/InvoiceBatch.bpmn"
@@ -33,12 +34,28 @@ def main() -> None:
     if not gateways:
         fail("no exclusive gateway — the run has no policy verdict")
 
-    # Aggregation and the summary both sit between the block and the verdict:
-    # the gateway must not be the container's immediate successor.
-    after = {f.attrib.get("targetRef") for f in flows(root) if f.attrib.get("sourceRef") == sub_id}
+    # Absence of a direct edge proves nothing on its own — a dead-end branch or an
+    # unrelated gateway elsewhere would satisfy it. Require a real path from the
+    # block to a verdict gateway, through at least two distinct activities.
     gateway_ids = {g.attrib.get("id") for g in gateways}
-    if after & gateway_ids:
-        fail("the policy gateway directly follows the multi-instance block — nothing aggregates or reports first")
+    downstream = reachable(root, sub_id)
+    verdicts = [g for g in gateway_ids & downstream]
+    if not verdicts:
+        fail(f"no gateway is reachable from {sub_id} — the block never reaches a verdict")
+
+    verdict = verdicts[0]
+    work_ids = ids(
+        elements(root, "serviceTask") + elements(root, "scriptTask") + elements(root, "sendTask")
+    )
+    on_path = {
+        n for n in downstream & work_ids
+        if n != verdict and reaches(root, n, verdict)
+    }
+    if len(on_path) < 2:
+        fail(
+            f"only {len(on_path)} activity between the block and the verdict "
+            f"({sorted(on_path)}) — aggregation and the summary do not both happen first"
+        )
 
     ends = elements(root, "endEvent")
     if len(ends) < 2:

@@ -60,7 +60,14 @@ def main() -> None:
     if not nets:
         fail("no event subprocess — a per-claim failure has nowhere to go")
 
-    scoped = [n for n in nets if batch in set(ancestors(n, parent_map))]
+    # Direct child, not merely a descendant: a net buried in another inner
+    # subprocess would not catch failures from sibling per-item work.
+    scoped = [n for n in nets if parent_map.get(n) is batch]
+    if not scoped and any(batch in set(ancestors(n, parent_map)) for n in nets):
+        fail(
+            "the failure net is nested deeper than the iteration it should guard — "
+            "an event subprocess only catches failures in the container it sits directly in"
+        )
     if not scoped:
         outer = [n.attrib.get("id") for n in nets]
         fail(

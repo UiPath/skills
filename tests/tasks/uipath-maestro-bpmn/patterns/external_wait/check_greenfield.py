@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 
 from bpmn_assertions import BPMN_NS, elements, fail, load_bpmn  # noqa: E402
+from graph import reachable  # noqa: E402
 
 DI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
 BPMN = "VendorDocs/VendorDocs.bpmn"
@@ -34,10 +35,23 @@ def main() -> None:
     if len(timers) < 2:
         fail(f"expected a reminder timer and an SLA timer, found {len(timers)}")
 
-    # The reminder must come back to the same gateway, or the wait was rebuilt.
-    back = [f for f in flows(root) if f.attrib.get("targetRef") == wait_id]
-    if not back:
-        fail("nothing flows back into the wait gateway — the reminder does not resume the wait")
+    # Any incoming edge is not proof: a reply-validation path or an unrelated
+    # cycle would satisfy it. Follow the gateway's own timer branches instead.
+    timer_ids = {
+        e.attrib.get("id")
+        for e in root.findall(f".//{{{BPMN_NS}}}intermediateCatchEvent")
+        if e.find(f"./{{{BPMN_NS}}}timerEventDefinition") is not None
+    }
+    timer_branches = {f.attrib.get("targetRef") for f in out} & timer_ids
+    if not timer_branches:
+        fail("no timer hangs off the wait gateway — there is no reminder or deadline branch")
+
+    resuming = [t for t in timer_branches if wait_id in reachable(root, t)]
+    if not resuming:
+        fail(
+            f"no timer branch off the gateway returns to it (branches: {sorted(timer_branches)}) "
+            "— the reminder does not resume the wait"
+        )
 
     ends = elements(root, "endEvent")
     if len(ends) < 2:

@@ -22,6 +22,7 @@ from bpmn_assertions import (  # noqa: E402
     fail,
     load_bpmn,
 )
+from graph import ids, reachable, reaches  # noqa: E402
 
 BPMN = "ClaimsIntake.bpmn"
 PRESERVED_IDS = {
@@ -53,8 +54,22 @@ def main() -> None:
     gateways = elements(root, "exclusiveGateway")
     if not gateways:
         fail("no exclusive gateway — nothing routes low-confidence claims away from auto-settle")
-    if not elements(root, "userTask"):
+    reviews = elements(root, "userTask")
+    if not reviews:
         fail("no userTask — there is no human in the loop")
+
+    # Existence is not insertion. The new scaffolding must sit on the original
+    # Score -> Settle path, or an untouched fixture plus a detached review passes.
+    from_score = reachable(root, "Task_Score")
+    wired = [g for g in ids(gateways) if g in from_score]
+    if not wired:
+        fail("no gateway is reachable from Task_Score — the review was added beside the process, not into it")
+    if not (from_score & ids(reviews)):
+        fail("no review task is reachable from Task_Score — the human is not in the path")
+
+    approved = [r for r in ids(reviews) if reaches(root, r, "Task_Settle")]
+    if not approved:
+        fail("no review task reaches Task_Settle — an approved claim can never settle")
 
     # 3. The gate reads the score the process already produces, rather than a
     #    duplicate declared alongside it.

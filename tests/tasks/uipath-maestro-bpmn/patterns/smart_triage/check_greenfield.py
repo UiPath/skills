@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 
 from bpmn_assertions import BPMN_NS, elements, fail, load_bpmn  # noqa: E402
+from graph import ids, reachable, reaches  # noqa: E402
 
 DI_NS = "http://www.omg.org/spec/BPMN/20100524/DI"
 BPMN = "SupportTriage/SupportTriage.bpmn"
@@ -32,30 +33,40 @@ def main() -> None:
     # The fallback must converge on the routing gateway, but not necessarily in
     # one hop — applying the human's chosen category first is a fair adaptation.
     # Walk downstream instead of asserting a direct edge.
-    manual_ids = {t.attrib.get("id") for t in manual}
-    gateway_ids = {g.attrib.get("id") for g in gateways}
-    edges = [(f.attrib.get("sourceRef"), f.attrib.get("targetRef")) for f in flows(root)]
+    manual_ids = ids(manual)
+    gateway_ids = ids(gateways)
+    downstream_of_manual = reachable(root, manual_ids)
 
-    reachable: set[str] = set()
-    frontier = list(manual_ids)
-    while frontier:
-        node = frontier.pop()
-        for source, target in edges:
-            if source == node and target not in reachable:
-                reachable.add(target)
-                frontier.append(target)
-
-    shared = reachable & gateway_ids
-    if not shared:
+    from_manual = downstream_of_manual & gateway_ids
+    if not from_manual:
         fail(
             "the human fallback never reaches a gateway "
-            f"(it reaches {sorted(n for n in reachable if n)}) — routing was duplicated"
+            f"(it reaches {sorted(n for n in downstream_of_manual if n)}) — routing was duplicated"
         )
 
-    route_gate = next(iter(shared))
+    # One dispatch point means the confident path converges on the SAME gateway.
+    # Without this a human-only routing gateway satisfies the check while the
+    # confident items dispatch somewhere else entirely.
+    conf_gates = [g for g in gateway_ids if g not in from_manual]
+    if not conf_gates:
+        fail("could not identify a confidence gate distinct from the routing gateway")
+
+    # The confident branch must reach the router WITHOUT passing through the
+    # human task. Plain reachability is satisfied by the fallback's own path,
+    # which would let a human-only router pass as the shared dispatch point.
+    route_candidates = [
+        g for g in from_manual
+        if len([f for f in flows(root) if f.attrib.get("sourceRef") == g]) >= 3
+        and any(g in reachable(root, c, blocked=manual_ids) for c in conf_gates)
+    ]
+    if not route_candidates:
+        fail(
+            "no three-way gateway is reached from both the confidence gate and the "
+            "human fallback — routing was duplicated rather than shared"
+        )
+
+    route_gate = route_candidates[0]
     out = [f for f in flows(root) if f.attrib.get("sourceRef") == route_gate]
-    if len(out) < 3:
-        fail(f"routing gateway has {len(out)} outgoing flows, expected one per category")
 
     ends = elements(root, "endEvent")
     if len(ends) < 3:

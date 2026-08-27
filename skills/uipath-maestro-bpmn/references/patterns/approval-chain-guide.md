@@ -8,10 +8,13 @@ any point should stop the request.
 
 These four carry the shape. Change one and you are building something else.
 
-- **A gateway after every approver, and rejection exits.** Each step can stop
-  the chain. Every rejection routes to one shared notify-and-end pair rather
-  than each step growing its own exit, so adding an approver adds a row, not a
-  new terminal branch.
+- **A gateway after every approver, and rejection exits.** Every rejection
+  routes to one shared notify-and-end pair rather than each step growing its own
+  exit, so adding an approver adds a row, not a new terminal branch. In the
+  sequential shape this also stops the chain at the first rejection, because the
+  next approver is reachable only through the approve branch. The parallel shape
+  cannot: its join waits for every approver, so all verdicts are collected and
+  one gateway rejects afterwards.
 - **Per-approver outcome variables.** Each step records its own verdict and
   rationale. A single shared `outcome` variable would let the last approver
   overwrite the audit trail of the ones before.
