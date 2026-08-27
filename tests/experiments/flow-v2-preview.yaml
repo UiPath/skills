@@ -15,12 +15,10 @@ defaults:
   sandbox:
     driver: docker
     docker:
-      image: skills-codex:latest
+      image: skills-image:latest
       network: bridge
       env_passthrough_extra:
         - SKILLS_REPO_PATH
-        # GitHub Packages auth for `npm install @uipath/flow-sdk`.
-        - NODE_AUTH_TOKEN
         - UIPATH_CLI_DISABLE_VERSION_SYNC
         # Parity with nightly.yaml. Inert unless a Delegate runtime sets them.
         - UIPATH_CLI_ENABLE_ENV_AUTH
@@ -51,20 +49,11 @@ defaults:
     ignore_patterns: []
 
   pre_run:
-    # Runtime npm auth for the @uipath scope. The shared image ships none: its
-    # build-time npmrc carries a literal token and is deleted in the same layer.
-    # @uipath/flow-sdk is published only to GitHub Packages, so without this
-    # every in-sandbox `npm install @uipath/flow-sdk` 404s against the public
-    # registry and each compile fails with it. Kept here rather than in
-    # tests/docker/Dockerfile so npm resolution is unchanged for every other
-    # suite. Written to $HOME, which is where npm resolves userconfig, so it
-    # holds whatever HOME the runner forwards. ${NODE_AUTH_TOKEN} stays literal:
-    # npm expands it at read time, so no token is written to disk.
-    - command: |-
-        mkdir -p "$HOME" && printf '%s\n' \
-          '@uipath:registry=https://npm.pkg.github.com/' \
-          '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' \
-          > "$HOME/.npmrc"
+    # Link the image's @uipath/flow-sdk and connector registry into the workspace,
+    # the same setup nightly.yaml runs. Unconditional here: a preview run always
+    # authors through the SDK. Replaces the old in-sandbox `npm install`, which the
+    # shared image made unnecessary when it started baking the package.
+    - command: bash "$SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"
       timeout: 30
 
   post_run:
