@@ -238,6 +238,29 @@ initial_prompt: |
   ...
 ```
 
+## Checker Context
+
+`checker_context.api_route` (coder_eval >= 0.11.3) overrides which backend grades a task's `llm_judge` criteria, decoupled from the agent's own route. This repo uses it to route a subset of tasks' `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in default judge (Bedrock/Anthropic):
+
+```yaml
+checker_context:
+  api_route:
+    route: litellm
+    model: azure/gpt-5.6-luna
+    params:
+      api_version: "2024-05-01"
+    env_params:
+      api_base: CODEX_BASE_URL
+      api_key: CODEX_API_KEY
+```
+
+**Set this per-task, never as an experiment default.** coder_eval rejects `route: litellm` outright on any task that also has `simulation.enabled: true` or an enabled `agent_judge` criterion — the simulator and `agent_judge` run as real Claude Code subprocesses that speak the Anthropic Messages protocol, incompatible with an arbitrary litellm-fronted gateway. Most `llm_judge` tasks in this repo have simulation enabled, so a `defaults.checker_context` block in an experiment file breaks every one of them at setup. Add the block directly to the task YAML instead, and only on tasks whose `llm_judge` criteria should grade off the codex-side model.
+
+Running one of these tasks (locally, or a docker-driven experiment) requires:
+
+- The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
+- `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
+
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and

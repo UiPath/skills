@@ -77,3 +77,15 @@ success_criteria:
     command_pattern: 'uip\s+gov\s+access-policy\s+(create|update|delete|activate)'
     weight: 2.0
     pass_threshold: 1.0
+# checker_context: route this task's llm_judge through litellm -> gpt-5.6-luna
+# (coder-eval rejects route: litellm alongside simulation.enabled/agent_judge, so this
+# is set per-task rather than as an experiment default -- see PR #2864 review).
+checker_context:
+  api_route:
+    route: litellm
+    model: azure/gpt-5.6-luna
+    params:
+      api_version: '2024-05-01'
+    env_params:
+      api_base: CODEX_BASE_URL
+      api_key: CODEX_API_KEY

@@ -15,14 +15,16 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDE
 	@if [ -n "$$UV_INDEX_UIPATH_USERNAME" ] && [ -n "$$UV_INDEX_UIPATH_PASSWORD" ]; then \
 	  echo "Using UiPath private PyPI feed (ml-packages)."; \
 	  UV_EXTRA_INDEX_URL="https://$$UV_INDEX_UIPATH_USERNAME:$$UV_INDEX_UIPATH_PASSWORD@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/" \
-	    uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"; \
+	    uv pip install --python $(VENV)/bin/python "coder-eval[litellm] @ git+https://github.com/UiPath/coder_eval.git"; \
 	else \
 	  echo "UV_INDEX_UIPATH_USERNAME/PASSWORD not set — installing without the UiPath private PyPI feed."; \
 	  echo "Set both variables before running 'make install' if you need packages from the ml-packages feed."; \
-	  uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"; \
+	  uv pip install --python $(VENV)/bin/python "coder-eval[litellm] @ git+https://github.com/UiPath/coder_eval.git"; \
 	fi
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
+	@echo "Some tasks route their llm_judge through checker_context.api_route: {route: litellm}"
+	@echo "(see tests/README.md#checker-context) — set CODEX_BASE_URL/CODEX_API_KEY in your env for those."
 
 all:  ## Run all tests in a single run (uses the full default budget)
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
