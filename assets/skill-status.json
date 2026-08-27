@@ -33,6 +33,14 @@
       },
       "last_synced": null
     },
+    "uipath-aops": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-api-workflow": {
       "status": "in-development",
       "confluence": {
@@ -83,7 +91,10 @@
     },
     "uipath-functions": {
       "status": "preview",
-      "confluence": { "page_id": null, "url": null },
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
       "last_synced": null
     },
     "uipath-governance": {

@@ -6,7 +6,7 @@ Configure connector activity nodes after the generic node-add operation in [edit
 
 ## Requirements and data model
 
-Every connector node requires an Integration Service connection in top-level `bindings[]`. Run `registry get` with `--connection-id`; otherwise custom fields, dynamic enums, and reference metadata are absent.
+Every connector node requires an Integration Service connection in top-level `bindings[]`. Run `registry get` with `--connection-id`; otherwise custom fields, dynamic enums, and reference metadata are absent. `registry get` accepts only `--connection-id` and `--local` — no `--activity-version` (it reads the node's own `configuration.version` and self-routes `4.0.0` activities; anything else fails `error: unknown option`). For `4.0.0` nodes `--connection-id` adds nothing (metadata not connection-scoped — see [§ 4.0.0 Activities](#400-activities)).
 
 Connector configuration is stored in `inputs.detail`:
 
@@ -30,6 +30,15 @@ Concrete activities encode object and operation in the node type; their `inputDe
 Classify the activity from `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` returned by `registry get`, parsing it as JSON and checking `activityType`. For `"Generic"`, run Step 2a and capture its `operation` for Step 3's `--operation`; otherwise skip Step 2a.
 
 Definitions in `definitions[]` are CLI-owned. `uip maestro flow node add` copies them from the registry; never hand-write or hand-edit them. If configuration reports `No instanceParameters found in definition`, run `uip maestro flow registry pull --force`, delete the stale `definitions[]` entry, and run `uip maestro flow node add <file> <node-type>` again. Do not paste `form` by hand.
+
+## 4.0.0 Activities
+
+An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`. Author it through the Configuration workflow below like any other connector activity. Four deltas:
+
+1. **No `objectName` in `--detail`** — resolved from the configuration's `activityName` (`model.context.objectName` is empty).
+2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <activity-name> --activity-version 4.0.0`).
+3. **Operation label ≠ HTTP verb** — a semantic operation (e.g. `Update`) pairs with any verb (e.g. `POST /usergroups.users.update`). `flow validate` accepts it; do not "fix" the method to match the label.
+4. **Not connection-scoped** — `--connection-id` on `registry get` adds no custom fields.
 
 ## No-live-tenant or planning-only configuration
 
@@ -93,6 +102,8 @@ uip is resources describe "<connector-key>" "<objectName>" \
 ```
 
 Then run `cat <metadataFile path from response>` and read the full cached metadata. Pass `--operation` as the node definition's `model.context[].method` verbatim. Do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method` as the describe lookup key.
+
+> **`4.0.0` activities** — positional is the `activityName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<activityName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
 
 Read `availableOperations[].method` and `availableOperations[].path` for method and endpoint; `parameters[]` for query/path parameters and `reference` objects; `requestFields[]` for body names, types, required status, descriptions, and `reference` objects; and `responseFields[]` for the response schema.
 

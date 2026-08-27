@@ -16,7 +16,7 @@ description: >
   exit rules, the user-selected-stage entry rule, condition-driven branch
   routing via exitToStageId with conditionExpression discrimination, wide
   fan-out, and skeleton placeholder tasks (edges retired).
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:wait-for-user, feature:wide-fanout, feature:tasks, feature:task-entry, feature:skeleton-task]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:conditions, feature:wait-for-user, feature:wide-fanout, feature:tasks, feature:task-entry, feature:skeleton-task]
 max_iterations: 1
 
 run_limits:
