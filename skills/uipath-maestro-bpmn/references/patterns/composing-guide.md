@@ -1,7 +1,8 @@
 # Composing Patterns
 
-Read this when a process uses more than one pattern, or when adding a pattern to
-a process that already exists.
+Read this when a process uses more than one pattern. For a single pattern —
+greenfield or inserted into a process that already runs — its own guide is
+enough.
 
 ## Patterns are graph fragments
 
@@ -68,16 +69,9 @@ triage own handling for every category it routes.
 
 ## Adding a pattern to a process that already runs
 
-The process may already do part of what the pattern draws. Reuse what is there
-instead of duplicating it: if the process already extracts and scores an item,
-insert only the confidence gate and the review branch, not a second analyze
-step. A partial pattern that reuses existing work beats a complete one bolted
-alongside it.
-
-Reuse existing variables the same way. Where a guide names a variable the
-process already holds under another name, point the pattern's conditions at the
-existing one rather than declaring a duplicate. Keep the guide's names only for
-variables you are creating.
+Insert only the part the process lacks, and bind to what it already holds. Each
+guide's "Adapting it" says which of its steps are commonly already present and
+which variable to bind instead of declaring.
 
 Everything the pattern does not touch stays untouched — element IDs, unknown
 `uipath:*` payloads, imported connector data. Inserting a pattern is a surgical

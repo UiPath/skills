@@ -95,9 +95,9 @@ process that already runs), **Mechanism** (changing it changes the pattern), or
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
-| `ai-decision-review` | AI decides; humans review only the uncertain ones | [ai-decision-review-guide.md](references/patterns/ai-decision-review-guide.md) |
+| `ai-decision-review` | AI makes one call; act on it, or a human reviews it | [ai-decision-review-guide.md](references/patterns/ai-decision-review-guide.md) |
 | `approval-chain` | A request needs sign-off from several people | [approval-chain-guide.md](references/patterns/approval-chain-guide.md) |
-| `smart-triage` | Mixed inbound work routes to per-category handling | [smart-triage-guide.md](references/patterns/smart-triage-guide.md) |
+| `smart-triage` | Inbound work sorted into categories, each handled elsewhere | [smart-triage-guide.md](references/patterns/smart-triage-guide.md) |
 | `external-wait` | The process waits on an outside party under an SLA | [external-wait-guide.md](references/patterns/external-wait-guide.md) |
 | `high-volume-batch` | Many independent items processed in one run | [high-volume-batch-guide.md](references/patterns/high-volume-batch-guide.md) |
 | `failure-escalation` | Unhandled failures must never disappear silently | [failure-escalation-guide.md](references/patterns/failure-escalation-guide.md) |
@@ -107,11 +107,11 @@ process that already runs), **Mechanism** (changing it changes the pattern), or
 node, or a change that does not introduce one of these shapes. A pattern is
 never a wrapper to retrofit onto work that does not need one.
 
-Adding a pattern to a process that already exists, or using more than one? Read
+Using more than one pattern in one process? Read
 [references/patterns/composing-guide.md](references/patterns/composing-guide.md)
-first — patterns are graph fragments that go anywhere, so the start event each
-guide draws is usually dropped on insertion. Covers the four ways to join and
-the two placements the engine constrains.
+first — which pattern keeps its start event, the four ways the rest join it, how
+variables cross a nesting boundary, and the two placements the engine
+constrains. A single pattern needs only its own guide.
 
 ## Workflow
 

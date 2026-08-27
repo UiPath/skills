@@ -1,0 +1,58 @@
+task_id: skill-bpmn-composition-nested-review
+description: >
+  One process needing three patterns at once: a batch fanned out per item, an
+  AI decision with human review inside each iteration, and a failure net scoped
+  to the iteration rather than the process. Exercises the composition rules —
+  which pattern keeps the start event, what nests inside what, and where a net
+  belongs. The prompt never names a pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 90
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `ClaimsNightly/ClaimsNightly.bpmn` for this process:
+
+  Each night a list of claims is fetched and every claim is handled
+  independently of the others, several at a time.
+
+  For a single claim: it is scored, and how confident that score is decides what
+  happens. Confident claims are settled automatically. The rest go to an
+  assessor who approves or rejects; approved ones settle the same way, rejected
+  ones end with that recorded.
+
+  If handling one claim fails in a way retries cannot fix, that claim alone is
+  escalated and recorded — the rest of the night's claims must carry on. When
+  every claim has finished, the results are totalled and a summary goes to
+  finance.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ClaimsNightly/ClaimsNightly.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Three shapes composed correctly: batch outermost, review nested per item,
+      failure net scoped to the iteration
+    command: "python3 $TASK_DIR/check_nested_review.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
