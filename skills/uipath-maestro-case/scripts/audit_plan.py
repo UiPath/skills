@@ -22,8 +22,11 @@ consecutive single-task lanes on sequential runs.
 
 Checks common to both lanes: legal `activation-mode` values, legal
 `activation-mode` / `entry-rule` pairs, sequential lane numbering.
-`--sdd` additionally checks every `sla-status-change(...)` reference in the
-SDD for the 2-arg (breach) / 3-arg (at-risk) quoted shape.
+`--sdd` additionally checks that each §4.6 task keeps an entry-rule the SDD
+authored for it (a legal pair can still be the wrong rule), that every
+`sla-status-change(...)` reference in the SDD has the 2-arg (breach) / 3-arg
+(at-risk) quoted shape, and that the plan repeats each SDD `sla-status-change`
+entry verbatim.
 """
 
 from __future__ import annotations
@@ -212,6 +215,95 @@ def sla_shape_findings(text: str, source: str) -> list[str]:
     return findings
 
 
+def sdd_task_entry_rules(sdd: str) -> dict[str, tuple[set[str], set[str]]]:
+    """Every `##### Task <n>: <Name>` block's authored entry rules and selectors.
+
+    A task block declares its rules in the `**Entry Condition:**` table, whose
+    first column holds the rule, optionally with a quoted `("selector")` naming
+    the tasks it waits on. A task may declare more than one row, so each value
+    is `(rule tokens the SDD allows, every selector name it names)`.
+    """
+    out: dict[str, tuple[set[str], set[str]]] = {}
+    blocks = re.split(r"(?m)^#####\s+Task\s+[\w.]+\s*:\s*", sdd)[1:]
+    for block in blocks:
+        name = block.split("\n", 1)[0].strip().strip('"` ')
+        start = block.find("**Entry Condition:**")
+        if not name or start < 0:
+            continue
+        rules: set[str] = set()
+        selectors: set[str] = set()
+        for line in block[start:].splitlines()[1:]:
+            stripped = line.strip()
+            if not stripped.startswith("|"):
+                # The table ends at the first non-table line after it started.
+                if rules:
+                    break
+                continue
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            if not cells or set(cells[0]) <= set("-: ") or cells[0].upper() == "WHEN":
+                continue
+            token = rule_token(cells[0])
+            if token:
+                rules.add(token)
+                selectors.update(re.findall(r'"([^"\n]+)"', cells[0]))
+        if rules:
+            out[name] = (rules, selectors)
+    return out
+
+
+def task_name(head_line: str) -> str | None:
+    """Task name from either T-entry heading form."""
+    match = re.search(r'task\s+"([^"\n]+)"', head_line)
+    return match.group(1) if match else None
+
+
+def plan_preserves_sdd_task_rules(plan: str, sdd: str) -> list[str]:
+    """Each §4.6 task keeps an entry-rule the SDD actually authored for it.
+
+    `sequential` + `runs-sequentially` is a legal pair, so the pairing check
+    passes when a task whose SDD row says `selected-tasks-completed("X")` is
+    rewritten into a plain ordered run. Only the SDD can settle that, and
+    SKILL.md Rule 6 / planning.md § Authority order both forbid the rewrite.
+    """
+    authored = sdd_task_entry_rules(sdd)
+    if not authored:
+        return []
+    findings: list[str] = []
+    headings = list(re.finditer(r"(?m)^## (T\d+)[^\n]*$", plan))
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(plan)
+        section = plan[heading.start():end]
+        head_line = section.splitlines()[0]
+        if not TASK_HEADING.match(head_line):
+            continue
+        name = task_name(head_line)
+        entry = authored.get(name)
+        if entry is None:
+            continue
+        allowed, selectors = entry
+        written = rule_token(field_value(section, "entry-rule"))
+        if written is None:
+            continue
+        if written not in allowed:
+            findings.append(
+                f"{heading.group(1)} {name}: `entry-rule: {written}` is not what the SDD authored "
+                f"({' or '.join(sorted(allowed))}) — an authored rule is preserved verbatim, never "
+                f"normalized (SKILL.md Rule 6, planning.md § Authority order)"
+            )
+            continue
+        # A rule whose SDD row names the tasks it waits on keeps those names.
+        # `selected-tasks-completed` with the selector dropped reaches
+        # `caseplan.json` as an empty gate that `validate` accepts.
+        for selected in sorted(selectors - {name}):
+            if selected not in section:
+                findings.append(
+                    f"{heading.group(1)} {name}: `entry-rule: {written}` drops the task the SDD "
+                    f"names — the T-entry must name {selected} (as the rule's selector or "
+                    f"`selected-tasks-ids`)"
+                )
+    return findings
+
+
 def plan_repeats_sdd_sla_rules(plan: str, sdd: str) -> list[str]:
     """Every quoted-arg sla-status-change entry declared in the SDD is repeated
     verbatim in the plan (compact-contract requirement) — target + each title."""
@@ -258,8 +350,10 @@ def main() -> None:
     findings = audit(Path(args[0]), lane)
     if sdd is not None:
         sdd_text = sdd.read_text(encoding="utf-8")
+        plan_text = Path(args[0]).read_text(encoding="utf-8")
         findings.extend(sla_shape_findings(sdd_text, sdd.name))
-        findings.extend(plan_repeats_sdd_sla_rules(Path(args[0]).read_text(encoding="utf-8"), sdd_text))
+        findings.extend(plan_preserves_sdd_task_rules(plan_text, sdd_text))
+        findings.extend(plan_repeats_sdd_sla_rules(plan_text, sdd_text))
     if findings:
         shown = findings[:40]
         print("AUDIT FAIL — repair these, then re-run:", file=sys.stderr)

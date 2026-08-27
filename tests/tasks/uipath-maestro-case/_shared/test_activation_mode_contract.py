@@ -143,3 +143,103 @@ def test_build_lane_ignores_condition_entries(tmp_path):
 """
     code, out = _audit(tmp_path, text, "build")
     assert code == 0, out
+
+SDD = """# SDD — Fixture
+
+##### Task 1.1: StageATask1
+
+**Entry Condition:**
+
+| WHEN | IF | Display Name |
+|------|-----|--------------|
+| current-stage-entered | — | Entry Rule 1 |
+
+##### Task 1.2: StageATask2
+
+**Entry Condition:**
+
+| WHEN | IF | Display Name |
+|------|-----|--------------|
+| selected-tasks-completed("StageATask1") | — | Entry Rule 1 |
+"""
+
+GATED_TASK = """# tasks.md
+
+## T09: Add process task "StageATask2" to "StageA"
+- taskTypeId: 3d48f889-d4d3-4dde-82d2-68725901641e
+- activation-mode: {mode}
+- entry-rule: {rule}
+- lane: 1
+- isRequired: true
+- runOnlyOnce: false
+{extra}"""
+
+
+def _audit_with_sdd(tmp_path: Path, plan_text: str) -> tuple[int, str]:
+    plan = tmp_path / "tasks.md"
+    plan.write_text(plan_text, encoding="utf-8")
+    sdd = tmp_path / "sdd.md"
+    sdd.write_text(SDD, encoding="utf-8")
+    done = subprocess.run(
+        [sys.executable, str(AUDIT), str(plan), "--lane", "build", "--sdd", str(sdd)],
+        capture_output=True, text=True,
+    )
+    return done.returncode, done.stdout + done.stderr
+
+
+def test_sdd_rules_and_selectors_are_read():
+    rules = audit_module().sdd_task_entry_rules(SDD)
+    assert rules["StageATask1"] == ({"current-stage-entered"}, set())
+    assert rules["StageATask2"] == ({"selected-tasks-completed"}, {"StageATask1"})
+
+
+def audit_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("audit_plan", AUDIT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_rewriting_an_authored_rule_is_flagged(tmp_path):
+    """`sequential` + `runs-sequentially` is a legal pair, so only the SDD can
+    settle that the authored `selected-tasks-completed` gate was rewritten."""
+    code, out = _audit_with_sdd(
+        tmp_path,
+        GATED_TASK.format(mode="sequential", rule="runs-sequentially", extra=""),
+    )
+    assert code == 1
+    assert "is not what the SDD authored (selected-tasks-completed)" in out
+
+
+def test_dropping_the_selector_is_flagged(tmp_path):
+    """The rule survives but the task it waits on does not; `validate` accepts
+    the resulting empty gate."""
+    code, out = _audit_with_sdd(
+        tmp_path,
+        GATED_TASK.format(mode="conditional-gate", rule="selected-tasks-completed", extra=""),
+    )
+    assert code == 1
+    assert "drops the task the SDD names" in out
+    assert "must name StageATask1" in out
+
+
+def test_preserved_rule_and_selector_pass(tmp_path):
+    code, out = _audit_with_sdd(
+        tmp_path,
+        GATED_TASK.format(
+            mode="conditional-gate",
+            rule='selected-tasks-completed("StageATask1")',
+            extra="- selected-tasks-ids: StageATask1\n",
+        ),
+    )
+    assert code == 0, out
+
+
+def test_a_task_absent_from_the_sdd_is_not_judged(tmp_path):
+    """Only tasks the SDD authored a rule for are compared."""
+    text = GATED_TASK.format(mode="sequential", rule="runs-sequentially", extra="").replace(
+        "StageATask2", "SomeOtherTask"
+    )
+    code, out = _audit_with_sdd(tmp_path, text)
+    assert code == 0, out
