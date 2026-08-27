@@ -94,6 +94,7 @@ def main() -> int:
             t = n.get("type", "")
             detail = n.get("inputs", {}).get("detail", {})
             pp = detail.get("pathParameters") or {}
+            query = detail.get("queryParameters") or {}
             body = detail.get("bodyParameters") or {}
             if resolve_entity(pp.get("entityName"), globals_by_id) != ENTITY:
                 continue
@@ -101,7 +102,7 @@ def main() -> int:
                 create_node = n
             for suffix in REQUIRED:
                 if t.endswith(suffix):
-                    seen[suffix] = body.get("_fieldName")
+                    seen[suffix] = query.get("_fieldName") or body.get("_fieldName")
                     if suffix == ".download-file-from-record-field":
                         download_node = n
                     elif suffix == ".upload-file-to-record-field":

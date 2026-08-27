@@ -101,11 +101,13 @@ if len(all_query_details) != 3:
 def qp(detail):
     return detail.get("queryParameters", {}) or {}
 
-def bp(detail):
-    return detail.get("bodyParameters", {}) or {}
+def sort_field(detail):
+    query = qp(detail)
+    body = detail.get("bodyParameters", {}) or {}
+    return query.get("_sortFieldName") or body.get("_sortFieldName")
 
 ascending_pages = [d for d in all_query_details
-                   if bp(d).get("_sortFieldName") == "score"
+                   if sort_field(d) == "score"
                    and str(qp(d).get("isAscending")).lower() == "true"
                    and str(qp(d).get("limit")) == "2"]
 if not any(str(qp(d).get("start")) == "0" for d in ascending_pages):
@@ -116,7 +118,7 @@ if not any(str(qp(d).get("start")) == "2" for d in ascending_pages):
     sys.exit(1)
 
 descending_active = [d for d in all_query_details
-                     if bp(d).get("_sortFieldName") == "score"
+                     if sort_field(d) == "score"
                      and str(qp(d).get("isAscending")).lower() == "false"
                      and str(qp(d).get("limit")) == "4"
                      and "active" in node_filter_text(d)
