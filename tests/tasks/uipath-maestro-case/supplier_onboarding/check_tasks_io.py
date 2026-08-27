@@ -32,7 +32,7 @@ from collections import Counter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import expected as E  # noqa: E402
-import plan as P  # noqa: E402
+import caseplan_reader as P  # noqa: E402
 from _shared.case_check import task_is_skeleton  # noqa: E402
 
 def main() -> int:
