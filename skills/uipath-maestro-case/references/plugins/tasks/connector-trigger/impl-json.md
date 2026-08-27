@@ -74,7 +74,7 @@ For each entry in `caseShape.inputs[]`:
 - `id` = same as `var`
 - `elementId` = the task's elementId
 
-For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers). Carry each `body` whole ([common § Copy the payload body whole](../../../connector-trigger-impl.md#copy-the-payload-body-whole)), taking the keys OF its `properties` / `definitions` maps from their authority rather than by re-casing ([common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase)).
+For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers). Carry each `body` whole ([common § Copy the payload body, then rename its field keys](../../../connector-trigger-impl.md#copy-the-payload-body-then-rename-its-field-keys)), taking the keys OF its `properties` / `definitions` maps from their authority rather than by re-casing ([common § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase)).
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
