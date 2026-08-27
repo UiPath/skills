@@ -1,70 +1,63 @@
 # Agent Node — Implementation
 
-Agent nodes invoke UiPath AI agents via node type `uipath.core.agent.{key}`. Coded (Python) agents always use this plugin; low-code (`agent.json`) agents use it only when they are a standalone project (in-solution sibling or published). Inline low-code agents (embedded as a UUID subdirectory inside the flow project) use `uipath.agent.autonomous` — see the [inline-agent plugin](../inline-agent/impl.md).
+Agent nodes invoke UiPath AI agents through `uipath.core.agent.{key}`. Coded (Python) agents always use this plugin. Standalone low-code (`agent.json`) agents use it when in-solution siblings or published; inline low-code agents embedded as a UUID subdirectory use `uipath.agent.autonomous`—see the [inline-agent plugin](../inline-agent/impl.md).
 
-The agent lives in one of two places:
+Agents are either:
 
-- **In this solution** — sibling project inside the current solution. `{key}` is the local `resource.key` minted by `uip solution projects add` (written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`). The runtime resolves the node via the Studio Web projects API after `uip solution upload`. The manifest in `definitions[]` carries `model.section: "In this solution"`.
-- **Published** — deployed to Orchestrator as a tenant resource. `{key}` is the Orchestrator-assigned resource key. Discoverable via `uip maestro flow registry search`. The manifest in `definitions[]` carries `model.section: "Published"`.
+- **In this solution**: a sibling project. `{key}` is the local `resource.key` minted by `uip solution projects add` and written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`. Runtime resolution uses the Studio Web projects API after `uip solution upload`; `definitions[]` uses `model.section: "In this solution"`.
+- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `model.section: "Published"`.
 
-The node-instance shape (in `nodes[]`) is identical across the two variants — only the manifest in `definitions[]` differs (`{key}` and `model.section`).
+The `nodes[]` shape is the same; only the `definitions[]` manifest differs.
 
-## Discovery
+## Discovery and Registry Validation
 
-**Published (tenant registry):**
+Run these commands for published agents (requires `uip login`):
 
 ```bash
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
-Requires `uip login`. Only published agents from your tenant appear.
-
-**In-solution (local, no login required):**
+Only published agents from the logged-in tenant appear. Run these commands inside the flow project directory for in-solution agents; no login is required:
 
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
 
-Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
+These discover sibling agent projects in the same `.uipx` solution.
 
-## Registry Validation
+Run:
 
 ```bash
 uip maestro flow registry get "uipath.core.agent.{key}" --output json
 uip maestro flow registry get "uipath.core.agent.{key}" --local --output json
 ```
 
-Requires `uip login`. Only published agents from the tenant appear in the registry.
+The non-local command requires `uip login` and shows only published tenant agents. Confirm from `registry get`:
 
-Confirm from `registry get`:
+- Ports are input `input` and output `output`.
+- `outputDefinition.output.schema` contains `content` (string).
+- `outputDefinition.error.schema` contains `code`, `message`, `detail`, `category`, `status`.
+- `model.serviceType` is `Orchestrator.StartAgentJob`.
+- `model.bindings.resourceSubType` is `Agent`.
+- `model.bindings.resourceKey` is the `<FolderPath>.<AgentName>` string used to scope binding resolution.
+- `inputDefinition` is the typed input schema, with one property per `entry-points.json` input field. Each property requires an `inputs.<field>` entry on the node instance; it is empty only for agents with no typed inputs (free-form). See [Wiring Inputs](#wiring-inputs).
 
-- Input port: `input`
-- Output port: `output`
-- `outputDefinition.output.schema` — contains `content` (string)
-- `outputDefinition.error.schema` — contains `code`, `message`, `detail`, `category`, `status`
-- `model.serviceType` — `Orchestrator.StartAgentJob`
-- `model.bindings.resourceSubType` — `Agent`
-- `model.bindings.resourceKey` — the `<FolderPath>.<AgentName>` string used to scope binding resolution
-- `inputDefinition` — the agent's typed input schema, one property per input field (mirrors the agent's `entry-points.json`). Each property gets one `inputs.<field>` entry on the node instance — see [Wiring Inputs](#wiring-inputs). Empty only when the agent declares no typed inputs (free-form)
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON below for node-specific `inputs`.
 
-## Adding / Editing
+## Node Instances
 
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
+Per-instance data is `inputs`, `outputs`, and `display`; BPMN type, service type, version, and binding/context templates come from `definitions[]`.
 
-## JSON Structure
-
-### Node instance (inside `nodes[]`) — published variant
-
-The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and binding/context templates come from the definition in `definitions[]`.
+### Published
 
 ```json
 {
-  "id": "classifyIntent",
-  "type": "uipath.core.agent.ffa33d88-8a85-4570-933c-9a69aa2dfbb5",
+  "id": "<NODE_ID>",
+  "type": "uipath.core.agent.<AGENT_UUID>",
   "typeVersion": "<DEFINITION_VERSION>",
-  "display": { "label": "Classify Intent" },
+  "display": { "label": "<LABEL>" },
   "inputs": {
     "<INPUT_FIELD>": {
       "type": "jsExpression",
@@ -83,23 +76,22 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-The `model` block (BPMN type, `serviceType`, `bindings`, `context` template) lives on the manifest entry in `definitions[]`, not on the instance. The manifest is auto-populated by `uip maestro flow registry pull` — never hand-author it.
+Never invent these values; confirm all three with `registry get` before wiring:
 
-Three values to discover — never invent:
-- **`type` suffix** — Orchestrator-assigned UUID for this agent. Per-ring and per-agent — never copy across environments. Read from `uip maestro flow registry search "uipath.core.agent"` / `registry get` as `nodeType`.
-- **`typeVersion`** — the manifest's `version` field. Read from `uip maestro flow registry get <node-type> --output json` (`.version`).
-- **`resourceKey`** — composite `<FolderPath>.<AgentName>` (e.g. `Shared.Apple Genius Agent`). Appears on each top-level `bindings[]` entry tied to this agent. Read from `registry get` (`model.bindings.resourceKey` on the manifest).
+- `type` suffix: the Orchestrator-assigned UUID, per ring and agent; read `nodeType` from `uip maestro flow registry search "uipath.core.agent"` or `registry get`.
+- `typeVersion`: the manifest `version`, read from `uip maestro flow registry get <node-type> --output json` (`.version`).
+- `resourceKey`: composite `<FolderPath>.<AgentName>`, read from `model.bindings.resourceKey`.
 
-Confirm all three from `registry get` before wiring.
+The `model` block belongs on the `definitions[]` manifest, not the instance. The manifest is auto-populated by `uip maestro flow registry pull`; never hand-author it.
 
-### Node instance (inside `nodes[]`) — in-solution variant
+### In-solution
 
 ```json
 {
-  "id": "codedAgent",
+  "id": "<NODE_ID>",
   "type": "uipath.core.agent.<resourceKey>",
   "typeVersion": "<DEFINITION_VERSION>",
-  "display": { "label": "<Label>", "icon": "<AGENT_ICON>" },
+  "display": { "label": "<LABEL>", "icon": "<AGENT_ICON>" },
   "inputs": {},
   "outputs": {
     "error": { "type": "object", "description": "Error information if the agent fails", "source": "=Error", "var": "error" }
@@ -107,26 +99,28 @@ Confirm all three from `registry get` before wiring.
 }
 ```
 
-**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. Exception: `output` MAY be declared with exactly `source: "=this"` plus the agent's output schema — that form is safe; the hazard is any other hand-authored `source`. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
+Declare `error` only; `output` is derived. Hand-authoring it makes the converter copy `source` verbatim, so `"=result.response"` resolves to null at runtime even when `flow validate` passes. `output` is allowed only with exactly `source: "=this"` and the agent’s output schema. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
-`<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
+Set `display.icon` by inspecting the sibling project root: use `"autonomous-agent"` when `agent.json` exists, otherwise `"coded-agent"`. Do not copy `.display.icon` from `uip maestro flow registry get --local`; that manifest reports `"coded-agent"` for every in-solution agent.
 
-Same shape as the published variant — no `model` on the instance.
+Never hand-author `definitions[]`. Run:
 
-**Never hand-author the `definitions[]` entry.** Run `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json`, extract the `Data.Node` object, and paste it verbatim into `definitions[]`. Constructing it by hand risks missing required validator fields (`model.section`, `runtimeConstraints`, `supportsErrorHandling`, etc.).
+```bash
+uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
+```
 
-`<resourceKey>` is the local `resource.key` written by `uip solution projects add` to `resources/solution_folder/process/agent/<CodedAgentProject>.json` — read it from that file or from `uip maestro flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json` (`.version`).
+Extract the `Data.Node` object verbatim into `definitions[]`; hand construction can omit `model.section`, `runtimeConstraints`, and `supportsErrorHandling`. Read `<resourceKey>` from `resources/solution_folder/process/agent/<CodedAgentProject>.json` or from `uip maestro flow registry list --local --output json`. Read `<DEFINITION_VERSION>` from `.version` in local `registry get` output.
 
-### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+## Top-level `bindings[]`
 
-**Rule.** Exactly one entry per `(resourceKey, propertyAttribute)` pair. Multiple node instances referencing the same agent MUST reuse the same `bindings[].id` — never duplicate the entry.
+`bindings[]` is a sibling of `nodes`, `edges`, and `definitions`. Create exactly one entry per `(resourceKey, propertyAttribute)` pair. Multiple instances referencing one agent must reuse the same `bindings[].id`; never duplicate entries.
 
-**Validate.** After writing the flow, group `bindings[]` by `(resourceKey, propertyAttribute)`. Each group must have length 1. If any group has length > 1, deduplicate before saving.
+After writing the flow, group `bindings[]` by `(resourceKey, propertyAttribute)` and require each group to have length 1. Deduplicate any group longer than 1 before saving.
 
 ```json
 "bindings": [
   {
-    "id": "bClassifyIntentName",
+    "id": "<BINDING_ID_NAME>",
     "name": "name",
     "type": "string",
     "resource": "process",
@@ -136,7 +130,7 @@ Same shape as the published variant — no `model` on the instance.
     "resourceSubType": "Agent"
   },
   {
-    "id": "bClassifyIntentFolderPath",
+    "id": "<BINDING_ID_FOLDER>",
     "name": "folderPath",
     "type": "string",
     "resource": "process",
@@ -148,82 +142,86 @@ Same shape as the published variant — no `model` on the instance.
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+See [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings) for resolution mechanics and why these entries are required.
 
 ## Wiring Inputs
 
-One `inputs.<field>` entry per property in the definition's `inputDefinition.properties`. Two valid value shapes, same binding:
+Create one `inputs.<field>` entry for every property in `inputDefinition.properties`. Use either shape below with the same binding:
 
-1. **`jsExpression`** — bare `$vars...` expression, NO `=js:` prefix:
+```json
+"<INPUT_FIELD>": {
+  "type": "jsExpression",
+  "expression": "$vars.<UPSTREAM_NODE_ID>.output.<FIELD>",
+  "fieldType": "<FIELD_TYPE>"
+}
+```
 
-   ```json
-   "inputs": {
-     "<INPUT_FIELD>": {
-       "type": "jsExpression",
-       "expression": "$vars.<UPSTREAM_NODE_ID>.output.<FIELD>",
-       "fieldType": "<FIELD_TYPE>"
-     }
-   }
-   ```
+or:
 
-2. **`literal`** — text template; static text mixable with `{{ }}` interpolations: `{ "type": "literal", "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}", "fieldType": "<FIELD_TYPE>" }`.
+```json
+"<INPUT_FIELD>": {
+  "type": "literal",
+  "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}",
+  "fieldType": "<FIELD_TYPE>"
+}
+```
 
-NEVER a plain `"=js:..."` string value — it ships verbatim to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. `<FIELD_TYPE>` is the property's JSON-schema type from the definition's `inputDefinition.properties` (e.g. `string`, `boolean`, `number`) — read it from there, do not invent it.
+`literal` may mix static text and `{{ }}` interpolation. Never use a plain `"=js:..."` string; it is sent verbatim to the activity and fails with `Cannot find name '<identifier>'`. Set `<FIELD_TYPE>` to the property’s JSON-schema type (`string`, `boolean`, `number`, etc.) from `inputDefinition.properties`; do not invent it.
 
-Worked example: trigger → agent → end, flow input surfaced through the trigger. The flow declares the input as a global bound to the trigger, and the agent reads it from the trigger's output:
+For a trigger-to-agent flow, surface a flow input as a trigger-bound global:
 
 ```json
 "variables": {
   "globals": [
-    { "id": "<INPUT_FIELD>", "direction": "in", "type": "string", "defaultValue": "", "triggerNodeId": "trigger1" }
+    { "id": "<INPUT_FIELD>", "direction": "in", "type": "string", "defaultValue": "", "triggerNodeId": "<TRIGGER_ID>" }
   ]
 }
 ```
 
+Connect trigger → agent → end:
+
 ```json
 "edges": [
-  { "id": "e1", "sourceNodeId": "trigger1", "sourcePort": "output", "targetNodeId": "agent1", "targetPort": "input" },
-  { "id": "e2", "sourceNodeId": "agent1", "sourcePort": "output", "targetNodeId": "end1", "targetPort": "input" }
+  { "id": "<EDGE_1>", "sourceNodeId": "<TRIGGER_ID>", "sourcePort": "output", "targetNodeId": "<AGENT_ID>", "targetPort": "input" },
+  { "id": "<EDGE_2>", "sourceNodeId": "<AGENT_ID>", "sourcePort": "output", "targetNodeId": "<END_ID>", "targetPort": "input" }
 ]
 ```
 
-The agent node's `inputs.<INPUT_FIELD>` then references `$vars.trigger1.output.<INPUT_FIELD>` (shape 1 above). Upstream values always read as `$vars.<nodeId>.output.<field>`; flow-level globals read as `$vars.<global>`.
+Reference upstream values as `$vars.<nodeId>.output.<field>` and flow globals as `$vars.<global>`. Agent inputs therefore reference `$vars.<TRIGGER_ID>.output.<INPUT_FIELD>`.
 
 ## Accessing Output
 
-The agent's response is available downstream:
-
 ```javascript
-// In a Script node after the agent
-const response = $vars.classifyIntent.output.content;
-return { classification: response };
+const response = $vars.<AGENT_NODE_ID>.output.content;
+return { result: response };
 ```
 
-- `$vars.{nodeId}.output.content` — the agent's text response
-- `$vars.{nodeId}.error` — error details if the agent fails
+- `$vars.{nodeId}.output.content`: agent text response.
+- `$vars.{nodeId}.error`: failure details.
 
 ## If the Agent Does Not Exist Yet
 
-Create the agent first, then wire it. Three paths:
+Create it before wiring:
 
-- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution projects add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../../../uipath-agents/references/coded/embedding-in-flows.md).
-- **Published coded agent** — `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
-- **Published low-code agent** — `uip solution deploy`, then `uip maestro flow registry pull --force`.
+- **In-solution sibling, coded or low-code**: scaffold with `uipath-agents`, register with `uip solution projects add` to mint `resource.key`, then discover with `uip maestro flow registry list --local`. For coded agents, see [coded/embedding-in-flows.md](../../../../../../uipath-agents/references/coded/embedding-in-flows.md).
+- **Published coded**: run `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
+- **Published low-code**: run `uip solution deploy`, then `uip maestro flow registry pull --force`.
 
 ## Using an Agent as a Tool Resource
 
-To use a published agent (coded or low-code) as a **tool for another agent** rather than a standalone flow node, add it as a `uipath.agent.resource.tool.agent` resource node wired to the parent agent's `tool` handle. This lives within the agent's canvas, not at the top level of the flow.
+To use a published coded or low-code agent as another agent’s tool, add a `uipath.agent.resource.tool.agent` resource node inside the parent agent’s canvas and wire it to the parent agent’s `tool` handle. Do not add it at the top level of the flow.
 
-For the resource file format and wiring details, see the `uipath-agents` skill:
+For format and wiring details, see the `uipath-agents` skill:
+
 - Coded agents: [coded/flow-integration.md § Pattern 3](../../../../../../uipath-agents/references/coded/flow-integration.md#pattern-3-tool-resource-for-another-agent)
-- Low-code agents: see the `uipath-agents` skill's low-code references.
+- Low-code agents: the `uipath-agents` skill’s low-code references.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Agent not published, or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully |
-| In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution projects add` was never run for the agent project | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
-| Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details. For coded agents, test locally first with `uip codedagent run` |
-| Empty `output.content` | Agent returned no response | Verify the agent is configured correctly (published: in Orchestrator; in-solution: in Studio Web) |
-| `inputDefinition` is empty | Agent declares no typed input schema (free-form) | Wire upstream data via `jsExpression` inputs — see [Wiring Inputs](#wiring-inputs) |
+| Node type not found in registry | Agent is unpublished or registry is stale | For an in-solution agent, run `registry list --local`. Otherwise run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully. |
+| In-solution node does not resolve | `resourceKey` was invented, or `uip solution projects add` was not run | Run `uip maestro flow registry list --local` and use its `resourceKey`, which must equal `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`. |
+| Agent execution failed | Underlying agent error | Inspect `$vars.{nodeId}.error`; for coded agents, test locally with `uip codedagent run`. |
+| Empty `output.content` | Agent returned no response | Verify configuration in Orchestrator for published agents or Studio Web for in-solution agents. |
+| `inputDefinition` is empty | Agent declares no typed input schema (free-form) | Wire upstream data through `jsExpression` inputs; see [Wiring Inputs](#wiring-inputs). |

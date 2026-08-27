@@ -6,64 +6,27 @@
 
 ## Registry Validation
 
-```bash
-uip maestro flow registry get core.logic.delay --output json
-```
+Run `uip maestro flow registry get core.logic.delay --output json`.
 
-Confirm: input port `input`, output port `output`, required inputs `timerType` and `timerPreset`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm input port `input`, output port `output`, and required inputs `timerType` and `timerPreset`. Set the node instance `typeVersion` to the response `version` field; do not hardcode it.
 
 ## JSON Structure
 
-### Duration-Based (Preset)
-
 ```json
 {
-  "id": "wait15min",
+  "id": "<id>",
   "type": "core.logic.delay",
   "typeVersion": "<DEFINITION_VERSION>",
-  "display": { "label": "Wait 15 Minutes" },
-  "inputs": {
-    "timerType": "timeDuration",
-    "timerPreset": "PT15M"
-  }
+  "display": { "label": "<label>" },
+  "inputs": { "timerType": "<timerType>", "timerPreset": "<preset>" }
 }
 ```
 
-### Duration-Based (Custom ISO 8601)
+- Duration preset: use `timerType: "timeDuration"` and `timerPreset: "<preset>"` (for example, `"PT15M"`).
+- Custom duration: use `timerPreset: "custom"` and add `timerValue` as an ISO 8601 duration (for example, `"P1DT5H30M"`).
+- Wait until a date: use `timerType: "timeDate"`, `timerPreset: "custom"`, and `timerDate` as an ISO 8601 datetime or `=js:` expression (for example, `"=js:$vars.scheduledDate"`).
 
-```json
-{
-  "id": "waitCustom",
-  "type": "core.logic.delay",
-  "typeVersion": "<DEFINITION_VERSION>",
-  "display": { "label": "Wait 1 Day 5 Hours" },
-  "inputs": {
-    "timerType": "timeDuration",
-    "timerPreset": "custom",
-    "timerValue": "P1DT5H30M"
-  }
-}
-```
-
-### Date-Based (Wait Until)
-
-```json
-{
-  "id": "waitUntil",
-  "type": "core.logic.delay",
-  "typeVersion": "<DEFINITION_VERSION>",
-  "display": { "label": "Wait Until April 15" },
-  "inputs": {
-    "timerType": "timeDate",
-    "timerPreset": "custom",
-    "timerDate": "=js:$vars.scheduledDate"
-  }
-}
-```
-
-## Adding / Editing
-
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`. BPMN type and event definition come from the definition in `definitions[]`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). BPMN type and event definition come from `definitions[]`.
 
 ## Debug
 

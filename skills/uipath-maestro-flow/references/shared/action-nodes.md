@@ -1,16 +1,16 @@
 # Action Node Structure
 
-Reference for the boilerplate shared by every action-node `impl.md` in this skill. Plugin docs should link here for the standard parts and only spell out what is plugin-specific: the registry type string, plugin-specific input fields, plugin-specific rules, debug entries, and node-type configuration workflows.
+Reference boilerplate shared by every action-node `impl.md`. Plugin docs should link here and specify only the registry type string, plugin-specific inputs and rules, debug entries, and node-type configuration workflows.
 
 ## Registry validation
 
-Every action node should validate its registry contract before authoring:
+Before authoring, run:
 
 ```bash
 uip maestro flow registry get <node-type> --output json
 ```
 
-`registry get` returns the manifest at `Data.Node`. Do **not** inspect `Data` directly as if it were the node manifest.
+`registry get` returns the manifest at `Data.Node`; do not inspect `Data` directly as the node manifest.
 
 ```json
 {
@@ -29,18 +29,11 @@ uip maestro flow registry get <node-type> --output json
 }
 ```
 
-Inspect:
-
-- `Data.Node.handleConfiguration` — input port name and output port name(s). Array of position groups, not a map with a top-level `handles` field.
-- `Data.Node.inputDefinition` — required inputs.
-- `Data.Node.outputDefinition` — downstream payloads.
-- `Data.Node.model.serviceType` — where applicable.
-
-Plugin `impl.md` records what to confirm for that specific node type.
+Inspect `Data.Node.handleConfiguration` for input and output port names; it is an array of position groups, not a map with a top-level `handles` field. Inspect `Data.Node.inputDefinition` for required inputs, `Data.Node.outputDefinition` for downstream payloads, and `Data.Node.model.serviceType` where applicable. Each plugin `impl.md` records what to confirm for its node type.
 
 ## Standard JSON skeleton
 
-All action nodes share this base shape on the node instance:
+Every action-node instance uses this base shape:
 
 ```json
 {
@@ -66,27 +59,40 @@ All action nodes share this base shape on the node instance:
 }
 ```
 
-`outputs.output` documents the success payload referenced downstream as `=js:$vars.{nodeId}.output`. `outputs.error` documents the failure shape; the runtime routes to the implicit `error` port when the action faults. See [Implicit error port on action nodes](file-format.md#implicit-error-port-on-action-nodes).
+`outputs.output` documents the success payload referenced downstream as `=js:$vars.{nodeId}.output`; `outputs.error` documents the failure shape. Runtime faults route to the implicit `error` port. See [Implicit error port on action nodes](file-format.md#implicit-error-port-on-action-nodes).
 
-> **For action nodes the instance `outputs` block is documentation, not the runtime contract.** What actually exposes the node's outputs as process-level `$vars.{nodeId}.output` is the matching `variables.nodes[]` entry — see [file-format.md — Node outputs](file-format.md#node-outputs). The BPMN emitter ignores the action-node instance `outputs` block at serialization (the manifest's `outputDefinition` drives the activity-side mapping). **Exception — Orchestrator-job nodes** (api-workflow, rpa-workflow, agent, agentic-process, function): the converter DOES read their instance `outputs` and copies each `source` verbatim, so a wrong `source` (e.g. `=result.response`) breaks `$vars.{nodeId}.output` — declare `error` only there. End / terminate nodes are also an exception: their instance `outputs` block IS consumed to map workflow-level `out` variables. `uip maestro flow format` regenerates `variables.nodes[]` from the current node graph (MST-9972), so running format after structural edits self-heals an omitted entry.
+For action nodes, the instance `outputs` block is documentation, not the runtime contract. The matching `variables.nodes[]` entry exposes process-level `$vars.{nodeId}.output`; see [file-format.md — Node outputs](file-format.md#node-outputs). The BPMN emitter ignores the instance `outputs` block at serialization because the manifest's `outputDefinition` drives activity-side mapping.
+
+**Exceptions:** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function) have their instance `outputs` read by the converter, which copies each `source` verbatim. A wrong `source` (for example, `=result.response`) breaks `$vars.{nodeId}.output`; declare `error` only there. End / terminate nodes also have their instance `outputs` consumed to map workflow-level `out` variables.
+
+`uip maestro flow format` regenerates `variables.nodes[]` from the current node graph (MST-9972), so running format after structural edits self-heals an omitted entry.
 
 ## Standard ports
 
 | Direction | Common name(s) | Notes |
 | --- | --- | --- |
-| Input (target) | `input` | Every action node accepts a single input edge on `input`. |
-| Output (success, source) | `output`, `default`, or `success` | Name varies by plugin — `registry get` is authoritative. |
+| Input (target) | `input` | Every action node accepts one input edge on `input`. |
+| Output (success, source) | `output`, `default`, or `success` | The name varies by plugin; `registry get` is authoritative. |
 | Output (error, source) | `error` | Implicit on every action node via `outputs.error`. |
 
-Some plugins add dynamic source ports (e.g., HTTP `branch-{id}` from `inputs.branches`); those are documented in the plugin's own `impl.md`.
+Plugins may add dynamic source ports, such as HTTP `branch-{id}` from `inputs.branches`; document these in the plugin's `impl.md`.
 
 ## Adding and editing procedures
 
-For step-by-step add, delete, and wiring instructions, see [editing-operations.md](../author/references/editing-operations.md) and the JSON recipes in [editing-operations-json.md](../author/references/editing-operations-json.md). Plugin `impl.md` files describe only the inputs and wiring patterns that are specific to the node type.
+Use [editing-operations.md](../author/references/editing-operations.md) and [editing-operations-json.md](../author/references/editing-operations-json.md) for step-by-step add, delete, and wiring instructions. Plugin `impl.md` files should describe only node-type-specific inputs and wiring patterns.
 
 ## Migrating a plugin to reference this template
 
-When converting an existing plugin `impl.md` to use this template:
+Keep in the plugin:
 
-- **Keep in the plugin:** registry type string, `typeVersion`, plugin-specific input fields, plugin-specific configuration workflow (e.g., `node configure` for HTTP/connector nodes), plugin-specific rules, common patterns, debug table.
-- **Replace with a link here:** generic JSON skeleton, generic `outputs` block (`=result.response` / `=result.Error`), generic registry-validation prose, generic "Adding / Editing" cross-reference.
+- registry type string and `typeVersion`;
+- plugin-specific input fields;
+- plugin-specific configuration workflows, such as `node configure` for HTTP/connector nodes;
+- plugin-specific rules, common patterns, and debug table.
+
+Replace with a link here:
+
+- generic JSON skeleton;
+- generic `outputs` block (`=result.response` / `=result.Error`);
+- generic registry-validation prose;
+- generic "Adding / Editing" cross-reference.

@@ -1,49 +1,52 @@
 # Run — Execute a Flow
 
-Execute a flow on demand and monitor progress. Three modes: **debug** (controlled re-run with full Studio Web visibility), **process run** (trigger a deployed process), **job inspection** (status and traces). All require `uip login`.
+Execute a flow on demand in three modes: **debug** (controlled re-run with Studio Web visibility), **process run** (trigger a deployed process), and **job inspection** (status and traces). All require `uip login`.
 
 ## Pre-flight
 
-1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
-2. **For debug runs: solution resources refreshed.** Always run before `flow debug` so connection and process resource declarations are in sync with project bindings:
+1. Run `uip login status --output json` and confirm success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
+2. Before every debug run, run:
 
    ```bash
    uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
 
+This synchronizes connection and process resource declarations with project bindings.
+
 ## Debug — controlled end-to-end run
 
-> **Confirm consent first.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. See the consent-before-debug rule in [SKILL.md](../../../SKILL.md). Do not run without explicit user authorization.
+> **Confirm consent first.** `flow debug` executes the flow for real—it sends emails, posts messages, and calls APIs. See the consent-before-debug rule in [SKILL.md](../../../SKILL.md). Do not run without explicit user authorization.
+
+Run:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
-The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir.
+Use the directory containing `project.uiproj`: `<ProjectName>/` from the solution directory, or `.` when already inside it.
 
-Pass input arguments when the flow has input parameters:
+Pass inputs with:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
-Bind local files to file-typed input variables with `--attachment <variableId>=<localPath>` (repeatable). `<variableId>` (left of `=`) must match the `id` of a `variables.globals[]` entry with `direction:"in"` and `type:"file"`:
+Bind file inputs with repeatable `--attachment <variableId>=<localPath>`:
 
 ```bash
-# Replace <variableId> and <localPath> placeholders below with your own values.
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding).
+Before binding, confirm each `<variableId>` exists in `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding).
 
-> **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../../shared/variables-and-expressions.md#file-input).
+At runtime, a `file` variable is an object. A Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../../shared/variables-and-expressions.md#file-input).
 
 ### Reporting debug runs to the user
 
-The CLI response includes a **Studio Web URL** (where the user inspects the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary**:
+Parse the CLI JSON response for the Studio Web URL and instance ID, typically `Data.studioWebUrl` and `Data.instanceId`. Always make these the first two summary lines:
 
 ```text
 Studio Web URL: <url>
@@ -52,9 +55,7 @@ Instance ID: <instanceId>
 <run status, node traces, errors, etc.>
 ```
 
-If either value is missing from the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
-
-See [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-commands.md#uip-maestro-flow-debug) for additional options.
+If either value is missing, emit its label with `<not returned by CLI>`; never omit or bury these lines. See [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-commands.md#uip-maestro-flow-debug).
 
 ## Process run — trigger a deployed process
 
@@ -62,40 +63,43 @@ See [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-command
 For flows already deployed to Orchestrator (via [ship.md](ship.md) → Orchestrator path):
 <!--skill-flavor:ship-orchestrator-path-pointer:end-->
 
+Run:
+
 ```bash
-uip maestro flow process list --output json                           # discover deployed processes
-uip maestro flow process run <process-key> <folder-key> --output json # trigger a run
+uip maestro flow process list --output json
+uip maestro flow process run <process-key> <folder-key> --output json
 ```
 
-Pass input arguments and/or bind file-typed input variables:
+Pass inputs and/or bind file inputs:
 
 ```bash
-# Replace <variableId> and <localPath> placeholders below with your own values.
 uip maestro flow process run <process-key> <folder-key> --output json \
   --inputs '{"numberA": 5, "numberB": 7}' \
   --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
+Before binding, confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only, `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots and passes the JSON-schema check even though the slot's nominal type is `string`.
 
 Run `uip maestro flow process --help` for all subcommands and options.
 
 ## Job inspection — status and traces
 
+Run:
+
 ```bash
-uip maestro flow job status <job-key> --output json   # check status of a running or completed job
-uip maestro flow job traces <job-key> --output json   # stream the verbose execution timeline
+uip maestro flow job status <job-key> --output json
+uip maestro flow job traces <job-key> --output json
 ```
 
-> **Traces are verbose** and contain the full execution timeline. Use them only when needed for diagnosis — start from incidents first via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).
+Traces are verbose and contain the full execution timeline. Use them only when needed for diagnosis; start from incidents via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).
 
 ## What's next
 
-- **Run failed?** Triage via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) — start with incidents, escalate to traces only if needed.
+- **Run failed?** Triage via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md), starting with incidents and escalating to traces only if needed.
 - **Need to intervene in a running instance** (pause, resume, cancel, retry)? See [manage.md](manage.md).
 
 ## Anti-patterns
 
-- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
-- **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
-- **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) for the priority ladder.
+- **Never run `flow debug` as validation.** Run `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
+- **Never skip `solution resources refresh` before debug.** Stale resource declarations can cause runtime binding failures even when the local `.flow` is correct.
+- **Never start diagnosis from `job traces`.** Traces are last-resort; follow the priority ladder in [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).

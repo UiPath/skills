@@ -1,13 +1,15 @@
 # Transform Node — Implementation
 
-## Node Types
+## Node Types and Registry Validation
 
-- `core.action.transform` — generic (chains multiple operations)
+Supported node types:
+
+- `core.action.transform` — generic; chains operations
 - `core.action.transform.filter` — filter only
 - `core.action.transform.map` — map only
 - `core.action.transform.group-by` — group-by only
 
-## Registry Validation
+Run:
 
 ```bash
 uip maestro flow registry get core.action.transform --output json
@@ -16,21 +18,38 @@ uip maestro flow registry get core.action.transform.map --output json
 uip maestro flow registry get core.action.transform.group-by --output json
 ```
 
-Confirm: input port `input`, output ports `output` and `error`, required inputs `collection` and `operations`. Set each node instance's `typeVersion` to the `version` field from the matching response — do not hardcode it.
+Confirm each definition has input port `input`, output ports `output` and `error`, and required inputs `collection` and `operations`. Set each instance's `typeVersion` to the matching response's `version`; do not hardcode it.
 
-## Adding / Editing
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the node-specific `inputs` and `model` structures below.
 
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
+Every transform uses this output schema:
 
-## Collection Input Contract
+```json
+"outputs": {
+  "output": {
+    "type": "object",
+    "description": "The return value of the transform",
+    "source": "=result.response",
+    "var": "output"
+  },
+  "error": {
+    "type": "object",
+    "description": "Error information if the transform fails",
+    "source": "=Error",
+    "var": "error"
+  }
+}
+```
 
-`inputs.collection` is a transform-specific path field, not a general `=js:` value field. Set it to the variable path that contains the array:
+## Collection Input and Output Shape
+
+`inputs.collection` is a transform-specific path containing the array. Use a plain path:
 
 ```json
 "collection": "$vars.orders.output.items"
 ```
 
-**NEVER** wrap transform `collection` in `=js:`. **NEVER** set it to an inline array literal. Both forms below are wrong:
+Never use `=js:` or an inline array literal:
 
 ```json
 "collection": "=js:$vars.orders.output.items"
@@ -40,27 +59,19 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 "collection": "=js:[{\"title\":\"Example\"}]"
 ```
 
-The transform runtime turns the path string into a lookup such as `vars.orders.output.items`. If the string starts with `=js:` or contains an inline JSON/JS literal, that lookup resolves to an empty collection.
+The runtime resolves the path as a lookup such as `vars.orders.output.items`; `=js:` and inline JSON/JS literals resolve to an empty collection. For static data, put the array in a workflow variable `defaultValue` or emit it from an upstream static-data/script node, then reference that variable or node output.
 
-For static data, store the array in a workflow variable `defaultValue` or emit it from an upstream static-data/script node, then point `collection` at that variable or node output. Filtering, mapping, and grouping still belong in transform nodes.
-
-## Output Shape
-
-`$vars.<transformNode>.output` is a **bare array** — no `.items`, `.body`, `.response`. filter → surviving elements; map → mapped elements; group-by → group objects (`{<groupByField>, <alias>…}`).
-
-Chain transforms off the bare array. `.output.items` on a transform → `undefined` → empty, silently (no fault). `.items`/`.body.items` in the examples below is HTTP-body/variable shape, never a transform's own output.
+A transform's `$vars.<transformNode>.output` is a bare array: filter returns surviving elements, map returns mapped elements, and group-by returns group objects (`{<groupByField>, <alias>…}`). Chain transforms from `.output`, never `.output.items`; `.items` becomes `undefined` and silently yields empty input. `.items`/`.body.items` below refer only to HTTP-body or variable shapes.
 
 ```json
 "collection": "$vars.filterHighViewDays.output"
 ```
 
-Read an element field in a Script node: `$vars.groupByNode.output[0].totalViews`.
-
----
+In a Script node, read an element field as `$vars.groupByNode.output[0].totalViews`.
 
 ## Generic Transform (`core.action.transform`)
 
-Chains multiple operations (filter -> map -> groupBy) in a single node. Operations execute in order; each feeds into the next.
+Operations run in order; each feeds the next.
 
 ```json
 {
@@ -72,8 +83,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "collection": "$vars.fetchData.output.body.employees",
     "operations": [
       {
-        "id": "op1",
-        "type": "filter",
+        "id": "op1", "type": "filter",
         "config": {
           "operation": "and",
           "filters": [
@@ -82,8 +92,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
         }
       },
       {
-        "id": "op2",
-        "type": "map",
+        "id": "op2", "type": "map",
         "config": {
           "keepOriginalFields": false,
           "mappings": [
@@ -95,23 +104,11 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the transform",
-      "source": "=result.response",
-      "var": "output"
-    },
-    "error": {
-      "type": "object",
-      "description": "Error information if the transform fails",
-      "source": "=Error",
-      "var": "error"
-    }
+    "output": { "type": "object", "description": "The return value of the transform", "source": "=result.response", "var": "output" },
+    "error": { "type": "object", "description": "Error information if the transform fails", "source": "=Error", "var": "error" }
   }
 }
 ```
-
----
 
 ## Filter (`core.action.transform.filter`)
 
@@ -125,8 +122,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "collection": "$vars.orders.output.items",
     "operations": [
       {
-        "id": "op1",
-        "type": "filter",
+        "id": "op1", "type": "filter",
         "config": {
           "operation": "and",
           "filters": [
@@ -138,31 +134,17 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the transform",
-      "source": "=result.response",
-      "var": "output"
-    },
-    "error": {
-      "type": "object",
-      "description": "Error information if the transform fails",
-      "source": "=Error",
-      "var": "error"
-    }
+    "output": { "type": "object", "description": "The return value of the transform", "source": "=result.response", "var": "output" },
+    "error": { "type": "object", "description": "Error information if the transform fails", "source": "=Error", "var": "error" }
   }
 }
 ```
 
-**Filter conditions:** `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null`
+Conditions: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null`.
 
-**Filter operations:** `and` (all conditions must match), `or` (any condition matches)
+Operations: `and` (all conditions), `or` (any condition).
 
-> **Filter `value` is literal-only — no `$vars`, no `=js:`, no brace-templates.** The Transform runtime reads `value` as-is and does not evaluate expressions. Setting `"value": "$vars.threshold"`, `"value": "=js:$vars.threshold"`, or `"value": "{$vars.threshold}"` silently produces an empty filtered array — the filter is comparing each item's field against the literal string `$vars.threshold` (or `=js:...`), never against the intended number. Only literal scalars work: `"value": 500`, `"value": "active"`, `"value": true`. If you need a dynamic threshold, compute the filter inside a [Script](../script/impl.md) node instead, or hoist the literal into the flow design and keep the Transform filter for demo-time thresholds.
-
-**`field` accepts dot-paths** for nested object fields (e.g., `"field": "order.amount"`). Applies to `collection` elements.
-
----
+`filter.value` is literal-only. It does not evaluate `$vars`, `=js:`, or brace templates; `"$vars.threshold"`, `"=js:$vars.threshold"`, and `"{$vars.threshold}"` are compared as literal strings and silently produce an empty result. Use literal scalars such as `500`, `"active"`, or `true`. For dynamic thresholds, filter in a [Script](../script/impl.md) node or hoist the literal into the flow design. `field` accepts dot-paths such as `order.amount`.
 
 ## Map (`core.action.transform.map`)
 
@@ -176,8 +158,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "collection": "$vars.rawData.output.items",
     "operations": [
       {
-        "id": "op1",
-        "type": "map",
+        "id": "op1", "type": "map",
         "config": {
           "keepOriginalFields": false,
           "mappings": [
@@ -190,29 +171,15 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the transform",
-      "source": "=result.response",
-      "var": "output"
-    },
-    "error": {
-      "type": "object",
-      "description": "Error information if the transform fails",
-      "source": "=Error",
-      "var": "error"
-    }
+    "output": { "type": "object", "description": "The return value of the transform", "source": "=result.response", "var": "output" },
+    "error": { "type": "object", "description": "Error information if the transform fails", "source": "=Error", "var": "error" }
   }
 }
 ```
 
-**Transformations:** `copy` (no change), `uppercase`, `lowercase`, `trim` (remove leading/trailing whitespace).
+Transformations: `copy`, `uppercase`, `lowercase`, `trim`.
 
-**`keepOriginalFields`:** When `false`, only mapped fields appear in output. When `true`, unmapped fields pass through.
-
-**`renameTo`:** New field name. Empty string (`""`) keeps the original name.
-
----
+`keepOriginalFields: false` outputs only mapped fields; `true` passes through unmapped fields. `renameTo` changes the field name; `""` keeps the original name.
 
 ## Group By (`core.action.transform.group-by`)
 
@@ -226,8 +193,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "collection": "$vars.employees.output.items",
     "operations": [
       {
-        "id": "op1",
-        "type": "groupBy",
+        "id": "op1", "type": "groupBy",
         "config": {
           "groupByField": "department",
           "aggregations": [
@@ -244,23 +210,13 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the transform",
-      "source": "=result.response",
-      "var": "output"
-    },
-    "error": {
-      "type": "object",
-      "description": "Error information if the transform fails",
-      "source": "=Error",
-      "var": "error"
-    }
+    "output": { "type": "object", "description": "The return value of the transform", "source": "=result.response", "var": "output" },
+    "error": { "type": "object", "description": "Error information if the transform fails", "source": "=Error", "var": "error" }
   }
 }
 ```
 
-**Aggregation operations:**
+Aggregation operations:
 
 | Operation | Description | `field` required |
 | --- | --- | --- |
@@ -273,15 +229,13 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 | `first` | First item's field value | Yes |
 | `last` | Last item's field value | Yes |
 
----
-
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Filter passes all items through | Wrong condition name (e.g. `greater` instead of `greater_than`) | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
-| Filter silently returns empty array | Filter `value` holds an unresolved expression (`"$vars.x"`, `"=js:..."`, `"{$vars.x}"`) — Transform compares each item against that string literal | Replace with a literal scalar (`"value": 500`); expressions are not evaluated in filter `value`. If the threshold must be dynamic, do the filter in a Script node |
-| Collection is null/empty | `collection` was wrapped in `=js:` or set to an inline array literal instead of a plain variable path | Use a path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; keep static arrays in a variable default or upstream node |
-| Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
-| GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |
-| Chained transform gets empty input, upstream had rows | `collection` used `$vars.<transform>.output.items`; transform output is a bare array (`.items` → `undefined`) | Use `$vars.<transform>.output` — see [Output Shape](#output-shape) |
+| Filter passes all items through | Wrong condition name, such as `greater` instead of `greater_than` | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
+| Filter silently returns empty array | `value` contains an unresolved expression; Transform compares it as a literal string | Use a literal scalar such as `"value": 500`; for dynamic thresholds, use a Script node |
+| Collection is null/empty | `collection` uses `=js:` or an inline array literal | Use a plain path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; store static arrays in a variable default or upstream node |
+| Map output missing fields | `keepOriginalFields: false` and the field is unmapped | Add the field to mappings or set `keepOriginalFields: true` |
+| GroupBy produces empty groups | No items match `groupByField` | Check that `groupByField` matches the actual data fields |
+| Chained transform gets empty input although upstream had rows | Used `$vars.<transform>.output.items`; transform output is a bare array | Use `$vars.<transform>.output`; see [Output Shape](#output-shape) |
