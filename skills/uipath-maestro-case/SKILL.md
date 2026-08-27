@@ -110,6 +110,8 @@ Read [references/planning.md](references/planning.md) to produce:
 
 `tasks/` is adjacent to `sdd.md`, never inside the solution/project. Auto-proceed to Phase 2 unless the request explicitly asks to stop for plan review. Re-read `tasks.md` first.
 
+Phase 2 does not start until `python3 scripts/audit_plan.py tasks/tasks.md --lane build --sdd sdd.md` prints `AUDIT OK`. It is the deterministic check on the §4.6 `activation-mode` / `entry-rule` pair; `uip maestro case validate` cannot detect a malformed Phase 1 handoff. See [references/planning.md § MANDATORY plan-shape gate](references/planning.md#step-5--finalize-tasksmd-auto-proceed-to-phase-2).
+
 ### Phase 2 — Prototyping
 
 Read [references/implementation.md](references/implementation.md) and [references/phased-execution.md](references/phased-execution.md). Follow Steps 6–11.9:

@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
-"""Deterministic grammar audit for the compact no-build plan (tasks/tasks.md).
+"""Deterministic grammar audit for tasks/tasks.md, on either planning lane.
 
 Usage:
-    python3 audit_plan.py <tasks/tasks.md> [--sdd <sdd.md>]
+    python3 audit_plan.py <tasks/tasks.md> [--lane plan|build] [--sdd <sdd.md>]
 
 Read-only. Exit 0 = grammar-clean. Exit 1 = numbered findings on stderr;
-repair the plan with Write/Edit and re-run until clean. Enforces the compact
-`tasks/tasks.md` contract (planning.md § Compact no-build T-entry shape): `## T{N}: task "{Task Name}"` headings, one
-`field: value` per line, legal `activation-mode` / `entry-rule` pairs, lanes on
-sequential runs, no registry-derived keys.
+repair the plan with Write/Edit and re-run until clean.
+
+`--lane plan` (the default) enforces the compact no-build contract
+(planning.md § Compact no-build T-entry shape): `## T{N}: task "{Task Name}"`
+headings, one `field: value` per line, the full plan-only field set, and no
+registry-derived keys.
+
+`--lane build` audits a build-lane plan, whose T-entries legitimately carry
+resolved registry data (`taskTypeId`), JSON-shaped task keys (`isRequired`,
+`runOnlyOnce`), and their stage and type in the canonical heading rather than
+as fields. It therefore drops the forbidden-key and plan-only field checks and
+keeps only what both lanes share: `activation-mode` and `entry-rule` present on
+every task T-entry, both drawn from their vocabularies, correctly paired, and
+consecutive single-task lanes on sequential runs.
+
+Checks common to both lanes: legal `activation-mode` values, legal
+`activation-mode` / `entry-rule` pairs, sequential lane numbering.
 `--sdd` additionally checks every `sla-status-change(...)` reference in the
 SDD for the 2-arg (breach) / 3-arg (at-risk) quoted shape.
 """
@@ -25,6 +38,14 @@ TASK_FIELDS = [
 ]
 # `lane` is only mandatory for sequential runs; checked separately.
 ALWAYS_REQUIRED = [f for f in TASK_FIELDS if f != "lane"]
+
+# The build lane names the same task differently: `stage` and `type` come from
+# the canonical heading, `required`/`run-only-once` are written as the JSON keys
+# `isRequired`/`runOnlyOnce`, and `resource-intent`/`identity` do not exist once
+# the registry is resolved. Only the two activation fields are required on both
+# lanes -- the same pair planning.md's Plan-shape gate and SKILL.md Rule 6 demand.
+BUILD_LANE_REQUIRED = ["activation-mode", "entry-rule"]
+LANES = ("plan", "build")
 
 # Compact form (`## T{N}: task "Name"`) or canonical full-form build title
 # (`## T{N}: Add <type> task "Name" to "Stage"`) — both are addressable.
@@ -63,7 +84,13 @@ def rule_token(value: str | None) -> str | None:
     return match.group(0) if match else None
 
 
-def audit(path: Path) -> list[str]:
+def heading_stage(head_line: str) -> str | None:
+    """Stage name from a canonical build-lane heading: `... task "X" to "StageA"`."""
+    match = re.search(r'\bto\s+"([^"\n]+)"\s*$', head_line.strip())
+    return match.group(1) if match else None
+
+
+def audit(path: Path, lane: str = "plan") -> list[str]:
     findings: list[str] = []
     sequential_lanes: dict[str, list[tuple[str, int]]] = {}
     text = path.read_text(encoding="utf-8")
@@ -73,9 +100,12 @@ def audit(path: Path) -> list[str]:
         findings.append("no `## T{N}:` entries found — the compact plan uses T-numbered H2 entries")
         return findings
 
-    for key in FORBIDDEN_KEYS:
-        if key in text:
-            findings.append(f"forbidden key {key!r} — the no-build plan omits registry-derived data")
+    if lane == "plan":
+        for key in FORBIDDEN_KEYS:
+            if key in text:
+                findings.append(f"forbidden key {key!r} — the no-build plan omits registry-derived data")
+
+    required_fields = ALWAYS_REQUIRED if lane == "plan" else BUILD_LANE_REQUIRED
 
     for index, heading in enumerate(headings):
         end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
@@ -84,10 +114,17 @@ def audit(path: Path) -> list[str]:
         label = heading.group(1)
 
         is_task_entry = TASK_HEADING.match(head_line) is not None
-        looks_like_task = (
-            field_value(section, "stage") is not None
-            and field_value(section, "activation-mode") is not None
-        ) or re.search(r"(?i)\btask\b[^\n]*\"", head_line) is not None
+        # The salvage heuristic recovers a §4.6 task whose heading is malformed.
+        # It is plan-lane only: a build-lane plan also carries §4.7 condition
+        # entries (`Add task-entry condition for "X" in "Y"`) that satisfy every
+        # clause below while carrying `rule-type:`, not `entry-rule:`.
+        looks_like_task = lane == "plan" and (
+            (
+                field_value(section, "stage") is not None
+                and field_value(section, "activation-mode") is not None
+            )
+            or re.search(r"(?i)\btask\b[^\n]*\"", head_line) is not None
+        )
 
         if not is_task_entry and looks_like_task:
             findings.append(
@@ -99,7 +136,7 @@ def audit(path: Path) -> list[str]:
             continue
 
         # One `field: value` per line; semicolon-packed lines hide fields.
-        for field in ALWAYS_REQUIRED:
+        for field in required_fields:
             if field_value(section, field) is None:
                 hint = ""
                 if re.search(rf"(?i)[;,]\s*{re.escape(field)}\s*:", section):
@@ -126,7 +163,7 @@ def audit(path: Path) -> list[str]:
         if "sequential" in activation and (lane is None or not re.match(r"^\d+$", lane)):
             findings.append(f"{label}: sequential task needs an integer `lane:` line")
         elif "sequential" in activation and lane is not None:
-            stage = (field_value(section, "stage") or "").strip('"` ')
+            stage = (field_value(section, "stage") or heading_stage(head_line) or "").strip('"` ')
             sequential_lanes.setdefault(stage, []).append((label, int(lane)))
 
     # Sequential runs use consecutive single-task lanes: no duplicates, no gaps.
@@ -205,13 +242,20 @@ def plan_repeats_sdd_sla_rules(plan: str, sdd: str) -> list[str]:
 def main() -> None:
     args = list(sys.argv[1:])
     sdd: Path | None = None
+    lane = "plan"
     if "--sdd" in args:
         i = args.index("--sdd")
         sdd = Path(args[i + 1])
         del args[i:i + 2]
+    if "--lane" in args:
+        i = args.index("--lane")
+        lane = args[i + 1]
+        del args[i:i + 2]
+        if lane not in LANES:
+            sys.exit(f"--lane must be one of {', '.join(LANES)}")
     if len(args) != 1:
         sys.exit(__doc__)
-    findings = audit(Path(args[0]))
+    findings = audit(Path(args[0]), lane)
     if sdd is not None:
         sdd_text = sdd.read_text(encoding="utf-8")
         findings.extend(sla_shape_findings(sdd_text, sdd.name))

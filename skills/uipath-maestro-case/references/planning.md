@@ -109,7 +109,7 @@ If the plan-only / no-build exception is active — per Step 1, including its ne
 
 Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run.
 
-**MANDATORY final gate:** the plan is not deliverable until the skill's deterministic audit prints `AUDIT OK` (read-only): `python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence. If `python3` is unavailable, re-check headings and per-task fields against this contract manually.
+**MANDATORY final gate:** the plan is not deliverable until the skill's deterministic audit prints `AUDIT OK` (read-only): `python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --lane plan --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence. If `python3` is unavailable, re-check headings and per-task fields against this contract manually.
 
 End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
@@ -390,7 +390,15 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
 
-**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself (not the §4.7 condition entries) and confirm it literally contains its own `- activation-mode:` line and its own `- entry-rule:` line — **exactly one of each, colocated on the task's own T-entry** — and that the pair is legal for that mode. Re-run the §4.6 Activation-mode audit over the finished plan, covering all six modes, not just `sequential`.
+**MANDATORY plan-shape gate.** Phase 2 does not start until the skill's deterministic audit prints `AUDIT OK` over the finished plan (read-only):
+
+```bash
+python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --lane build --sdd sdd.md
+```
+
+It enforces exactly what §4.6 requires: every task T-entry carries its own `- activation-mode:` and `- entry-rule:` line — one of each, colocated on the task's own T-entry — both values come from their vocabularies, the pair is legal for that mode across all seven modes rather than `sequential` alone, and each sequential run holds consecutive single-task lanes. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence.
+
+If `python3` is unavailable, re-read every §4.6 task T-entry itself (not the §4.7 condition entries) and confirm each pair by hand against the [activation-mode / rule-type table](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract).
 
 **Known failure pattern:** deferring the rule to a *separate* §4.7 task-entry-condition entry (`rule-type:`) does not satisfy this gate — `caseplan.json` can end up fully correct while `tasks.md` itself still fails this check, because §4.6 and §4.7 are graded as separate artifacts. See [task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract) for the compliant §4.6 shape.
 

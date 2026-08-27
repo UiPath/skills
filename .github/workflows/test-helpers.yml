@@ -10,6 +10,11 @@ on:
       - 'tests/tasks/uipath-admin/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
+      # The maestro-case activation-mode contract guard reads this skill's own
+      # audit_plan.py and its two mode vocabularies, so a change there must run it.
+      - 'skills/uipath-maestro-case/scripts/**'
+      - 'skills/uipath-maestro-case/references/planning.md'
+      - 'skills/uipath-maestro-case/references/plugins/conditions/task-entry-conditions/planning.md'
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
