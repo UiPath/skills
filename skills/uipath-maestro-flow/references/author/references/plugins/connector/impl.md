@@ -234,13 +234,17 @@ Examples in `inputs.detail`:
 
 Before writing `--detail`, scan the operation's `parameters[]` (from Step 3 / `registry get`) for any entry with `design.component === "FilterBuilder"`. This applies to **any** operation, not only List operations — connectors render the FilterBuilder UI for any param flagged this way.
 
+> **Notation.** `--detail` is one flag taking one JSON blob. `--detail.filter` names the `filter` key inside it — there are no dot-path flags (`node configure … --detail.filter '…'` fails with `unknown option`). Write `--detail '{"filter": {…}}'`.
+
 For every match:
 
-- That parameter's `name` is the connector-specific filter input — most commonly `where`, sometimes `q` (Salesforce), sometimes another name. Do not assume `where`.
+- That parameter's `name` is the connector-specific filter input — most commonly `where`, sometimes `q` (Salesforce), sometimes another name. Do not assume `where`. The CLI compiles the tree into the first FilterBuilder parameter only.
+- **`flow validate` grammar-checks only `queryParameters.where` and `queryParameters.queryExpression`** on non-event connector nodes. A CEQL string under any other parameter name, or under `bodyParameters`, gets no check — author those through `--detail.filter`.
 - **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
-- **Do not pass a raw CEQL string under `--detail.queryParameters.<name>`.** It populates only the runtime half — debug runs succeed but the FilterBuilder UI shows `undefined` when the activity is reopened in SW. The CLI rejects this at configure time.
+- **Do not pass a raw CEQL string under `queryParameters.<name>` for a FilterBuilder parameter.** `node configure` rejects a bare CEQL string. It accepts one raw form — a whole-value `=js:` string — but that populates only the runtime half: debug runs succeed and the FilterBuilder UI shows `undefined` when the activity is reopened in Studio Web. Only a `filter` tree writes both halves.
 - **A dynamic operand in the tree works**: `"value": {"value": "=js:$vars...", "isLiteral": false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.
-- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing. Copy-paste template, operator aliases, and the error→fix table → [Hand-authored CEQL strings](#hand-authored-ceql-strings) below.
+- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. `=js:` must prefix the whole field value. Inside it, use a template literal or a `+` concatenation. A plain string containing `${…}` is never resolved — the query silently matches nothing. Copy-paste template, operator aliases, and the error→fix table → [Hand-authored CEQL strings](#hand-authored-ceql-strings) below.
+- **Verify every `$vars.<nodeId>` root in the expression** matches an `id` in `nodes[]`, and that an edge path reaches this node from it. `flow validate` does not check node ids inside connector inputs — a wrong id faults at runtime with `[400300]`.
 - Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
@@ -251,28 +255,37 @@ If the operation has no FilterBuilder parameter, server-side filtering is not su
 
 Preference order. Do not skip step 1.
 
-1. **`node configure --detail.filter`** — pass a structured tree. The CLI compiles the CEQL for you. Use this for every literal filter. It does not report a leaf whose field id the entity schema does not match — it drops that leaf (see Step 6a).
-2. **Hand-authored `=js:` string** — use only when a runtime value forces it, and only from the template below. Nothing validates the string: `flow validate` passes it through and IS faults at `flow debug` with `[102003]`.
+1. **`node configure` with a `filter` tree in `--detail`** — pass a structured tree. The CLI compiles the CEQL for you. Use this for every literal filter. It does not report a leaf whose field id the entity schema does not match — it drops that leaf (see Step 6a).
+2. **Hand-authored `=js:` string** — a runtime value does not force hand-authoring. Pass the operand as `{"value": {"value": "=js:$vars…", "isLiteral": false}}` and the CLI compiles it to a `{var_…}` placeholder plus `detail.filterVariables`. Hand-author only for a filter shape a tree cannot express — pass the whole value as one `=js:` string under `queryParameters.<filterParam>`, the only raw form `node configure` accepts.
+
+Run `uip maestro flow validate <file> --strict-bindings --output json` after writing any CEQL string. The grammar rules (quoted-field, double-quoted-value, operator-alias) warn by default; `--strict-bindings` promotes them to errors.
 
 Canonical template for a dynamic value:
 
 ```text
-=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
+=js:"accountNumber = '" + String($vars.<node>.output.<field>).replace(/'/g, "''") + "'"
 ```
 
 Single quotes delimit a value. Double quotes mark a column reference to the CEQL parser.
 
-**Anti-patterns.** Match the IS error text, then apply the corrected form.
+Escape single quotes in the value with `.replace(/'/g, "''")` — CEQL uses SQL `''` escaping. `flow validate` has no rule for this; an unescaped apostrophe breaks the parse at runtime.
+
+The root expression must be a template literal or a `+` chain. `flow validate` skips a filter whose root is a `.join()`, a helper call, a ternary, or a tagged template — those get no findings.
+
+Never nest `=js:` inside the interpolation (`${=js:…}`) — it ships as literal text; `node configure` rejects it.
+
+**Anti-patterns.** Never write these forms. Check your string against each row before you configure the node.
 
 | Wrong form | IS error text | Corrected form |
 |---|---|---|
 | `'accountNumber' = 'ACC123'` — field name quoted | `Expected a field name expression but got 'StringValue'` | `accountNumber = 'ACC123'` |
 | `` =js:"accountNumber = \"" + String(v) + "\"" `` — value double-quoted | `Unsupported value expression 'Column' on field 'accountNumber'` | `` =js:"accountNumber = '" + String(v) + "'" `` |
 | `accountNumber eq 'ACC123'` — OData alias | `[102003] Integration Services bad request` | `accountNumber = 'ACC123'` |
+| `"queryParameters": {"$where": "…"}` — OData-style `$` prefix on the key | `flow validate` error | `"queryParameters": {"where": "…"}` — CEQL takes no leading `$` |
 
-CEQL rejects OData aliases. Map them:
+CEQL rejects OData and SQL-style aliases. Map them:
 
-| OData alias | CEQL operator |
+| Alias | CEQL operator |
 |---|---|
 | `eq` | `=` |
 | `ne` | `!=` |
@@ -280,6 +293,8 @@ CEQL rejects OData aliases. Map them:
 | `ge` | `>=` |
 | `lt` | `<` |
 | `le` | `<=` |
+
+`<>` is not in the CEQL vocabulary and `flow validate` does not flag it — write `!=`.
 
 Full operator table → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
@@ -719,11 +734,12 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |
 | `bindings_v2.json` malformed or stale | It was hand-edited (the CLI overwrites edits on next debug/pack), or top-level `bindings[]` was mutated by hand | Never edit `bindings_v2.json` directly. Re-run `uip maestro flow node configure` on the affected connector node(s) so the CLI re-emits top-level `bindings[]`; `bindings_v2.json` is regenerated from those at the next debug/pack. Compare the emitted shape against the CLI-emitted reference in § Top-level `bindings[]` shape. |
 | Connector key not found | Wrong key name | Run `uip is connectors list --output json` — keys are often prefixed with `uipath-` |
-| FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
-| `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
+| FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A whole-value `=js:` string was passed (or hand-edited into the `.flow`) instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Tree-expressible filter: re-run `node configure` with the tree in the `filter` key — the CLI populates both halves. Deliberate whole-value `=js:` escape hatch (tree-inexpressible shape): this UI gap is the known cost — Studio Web cannot render a tree for it; the runtime is unaffected. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
+| `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | You gave configure a plain string where it wants a tree. | Put the filter in the `filter` key of `--detail` as a tree. |
+| Filter has no effect — the query returns all rows, no error anywhere | The node carries the filter definition Studio Web displays (`savedFilterTrees.<name>`) but not the query string the runtime executes (`queryParameters.<name>`). They are two separate fields; the runtime reads only the second. `flow validate` catches this only when the parameter is named `where`. | Re-run `node configure` with your filter in the `filter` key of `--detail` — it writes both fields. |
 | Data Service query returns every record (or faults with malformed CEQL ending in `AND`) though a filter tree was configured; `node configure` reported Success | A filter-tree leaf's field id did not match the entity schema (matching is case-sensitive). The compiler drops unmatched leaves without an error — one bad leaf empties the query string, a bad leaf beside a good one leaves a dangling `AND`. | Compare the tree's field ids against the entity schema — `uip df entities list --output json` for the entity `Id`, then `uip df entities get <entity-id> --output json` for the field names. Re-run `node configure` with the exact ids. See Step 6a. |
-| Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` builds the expression for you; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |
-| Node faults `[102003] Integration Services bad request`, IS 400 `"Unsupported value expression 'Column' on field '<field>'"` — `flow validate` passed | Hand-authored CEQL double-quotes the **value**, typically from a concatenation with escaped quotes: `` =js:"accountNumber = \"" + String(v) + "\"" ``. CEQL reads a double-quoted token as a column reference, not a string literal. | Single-quote the value inside the concatenation: `` =js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'" ``. Or author via `--detail.filter`. See [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed (CLIs before the CEQL grammar rules; current CLIs warn, `--strict-bindings` makes it an error) | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` builds the expression for you; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Unsupported value expression 'Column' on field '<field>'"` — `flow validate` passed (CLIs before the CEQL grammar rules; current CLIs warn, `--strict-bindings` makes it an error) | Hand-authored CEQL double-quotes the **value**, typically from a concatenation with escaped quotes: `` =js:"accountNumber = \"" + String(v) + "\"" ``. CEQL reads a double-quoted token as a column reference, not a string literal. | Single-quote the value inside the concatenation: `` =js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'" ``. Or author via `--detail.filter`. See [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
 | Node faults `[102003] Integration Services bad request` and the filter uses `eq`, `ne`, `gt`, `ge`, `lt`, or `le` | OData aliases in a hand-authored CEQL string. CEQL accepts only symbol operators. | Replace with `=`, `!=`, `>`, `>=`, `<`, `<=`. See the alias table in [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
 | `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
