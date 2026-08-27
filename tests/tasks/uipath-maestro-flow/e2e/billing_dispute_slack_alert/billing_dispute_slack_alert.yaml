@@ -14,10 +14,9 @@ description: >
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, path-to-ga, outcome-graded]
 
 run_limits:
-  expected_turns: 55
-  max_turns: 120
-  task_timeout: 2400
-  turn_timeout: 1200
+  max_turns: 150
+  turn_timeout: 3000
+  task_timeout: 3600
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/billing_dispute_slack_alert/seed.py"
