@@ -38,7 +38,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 
 - Triage a failed `flow debug` or deployed process run
 - Read incidents, runtime variables, deployed BPMN
-- Recognize known failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout)
+- Recognize known failure modes (missing `=js:`, misshapen nodes, HITL-stuck, reused reference IDs, single-nested layout)
 
 **Evaluate** — designing and running evaluations against a deployed flow. Read [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md).
 

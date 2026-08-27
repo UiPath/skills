@@ -161,7 +161,7 @@ The full metadata contains:
 
 Pass parent values via `-f, --field` — see [/uipath:uipath-platform — resources.md > Parent-Field-Driven Custom Fields (api-type ObjectActions)](../../../../../../uipath-platform/references/integration-service/resources.md#parent-field-driven-custom-fields-api-type-objectactions) for the full procedure, flag table, merge semantics, and error recovery.
 
-> **Skipping is not free even when the runtime call works.** For Get/Retrieve the upstream API returns data regardless — runtime stays green. The fetch is what makes Step 6c's `customFieldsRequestDetails` honest: without it, Studio Web has no schema to render the activity's custom fields, and any downstream `$vars.<thisNode>.output.<custom-field>` resolves to undefined. `flow validate` does not catch this — it surfaces as silent design-time corruption (MST-9107-class).
+> **Skipping is not free even when the runtime call works.** For Get/Retrieve the upstream API returns data regardless — runtime stays green. The fetch is what makes Step 6c's `customFieldsRequestDetails` honest: without it, Studio Web has no schema to render the activity's custom fields, and any downstream `$vars.<thisNode>.output.<custom-field>` resolves to undefined. `flow validate` does not catch this — it surfaces as silent design-time corruption.
 
 Run this before Step 5 (validate required fields) and reuse the same parent-field values in Step 6c's `customFieldsRequestDetails.parameterValues` (with the encoded keys).
 
@@ -174,10 +174,10 @@ Check **BOTH `requestFields` AND `parameters`** from the metadata for entries wi
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
 ```bash
-# Example: resolve Slack channel "#test-slack" to its ID
+# Example: resolve Slack channel "#general" to its ID
 uip is resources run list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
   --connection-id "<id>" --output json
-# -> { "id": "C1234567890", "name": "test-slack" }
+# -> { "id": "C1234567890", "name": "general" }
 ```
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, ask the user, with one option per match plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)).
@@ -224,7 +224,7 @@ Examples in `inputs.detail`:
 }
 ```
 
-> **The `=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference inside `bodyParameters`, `queryParameters`, and `pathParameters`.** Without it the BPMN runtime sees a literal string (`"vars.createEntityRecord1.output.Id"`) and binds it as-is to the activity input — `flow validate` passes; the failure surfaces only at `flow debug`. There is no `nodes.X.output.Y` syntax — that is an invention that silently ships as a literal string. See [node-output-wiring.md](../../../../shared/node-output-wiring.md) for the per-field-type rule and the full failure-mode table (MST-9107).
+> **The `=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference inside `bodyParameters`, `queryParameters`, and `pathParameters`.** Without it the BPMN runtime sees a literal string (`"vars.createEntityRecord1.output.Id"`) and binds it as-is to the activity input — `flow validate` passes; the failure surfaces only at `flow debug`. There is no `nodes.X.output.Y` syntax — that is an invention that silently ships as a literal string. See [node-output-wiring.md](../../../../shared/node-output-wiring.md) for the per-field-type rule and the full failure-mode table.
 
 ### Step 6 — Configure the node
 
@@ -301,7 +301,7 @@ After adding the node with `uip maestro flow node add`, configure it with the re
 
 ```bash
 uip maestro flow node configure <file> <nodeId> \
-  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "POST", "endpoint": "/issues", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}' \
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "POST", "endpoint": "/issues", "bodyParameters": {"fields.project.key": "<PROJECT_KEY>", "fields.issuetype.id": "10004"}}' \
   --output json
 ```
 
@@ -427,15 +427,15 @@ Examples: `fields.project.key` → `fields_sub_project_sub_key`; `items[*]` → 
 > | `bodyParameters` / `queryParameters` / `pathParameters` | Runtime input — what the connector actually sends to its API | **Raw** field names (e.g. `fields.project.key`, `tenantEntityName`) |
 > | `essentialConfiguration.customFieldsRequestDetails.parameterValues` | Design-time replay cache — drives the parent-field-driven schema fetch when the activity is re-opened or re-validated | **Encoded** keys (e.g. `fields_sub_project_sub_key`, `tenantEntityName`) |
 >
-> Concrete (Jira Create Issue): `bodyParameters.fields.project.key = "ENGCE"` AND `parameterValues = [["fields_sub_project_sub_key", "ENGCE"]]`. Concrete (Dataservice V3): `queryParameters.tenantEntityName = ""my-entity""` AND `parameterValues = [["tenantEntityName", ""my-entity""]]`. Dropping the runtime-input copy on the assumption that the cache covers it leaves the runtime with no field value to bind — manifests as `DAP-DT-_2003 refField with name <X> not found` at activity load.
+> Concrete (Jira Create Issue): `bodyParameters.fields.project.key = "<PROJECT_KEY>"` AND `parameterValues = [["fields_sub_project_sub_key", "<PROJECT_KEY>"]]`. Concrete (Dataservice V3): `queryParameters.tenantEntityName = ""my-entity""` AND `parameterValues = [["tenantEntityName", ""my-entity""]]`. Dropping the runtime-input copy on the assumption that the cache covers it leaves the runtime with no field value to bind — manifests as `DAP-DT-_2003 refField with name <X> not found` at activity load.
 
-**Shape (verified against Solution 386 — Jira Create Issue):**
+**Shape (Jira Create Issue):**
 
 ```json
 "customFieldsRequestDetails": {
   "objectActionName": "GenerateSchema",
   "parameterValues": [
-    ["fields_sub_project_sub_key", "ENGCE"],
+    ["fields_sub_project_sub_key", "<PROJECT_KEY>"],
     ["fields_sub_issuetype_sub_id", "3"]
   ]
 }
@@ -460,14 +460,14 @@ uip maestro flow node configure <file> <nodeId> --detail "$(cat <<'JSON'
   "method": "POST",
   "endpoint": "/curated_create_issue",
   "bodyParameters": {
-    "fields.project.key": "ENGCE",
+    "fields.project.key": "<PROJECT_KEY>",
     "fields.issuetype.id": "3",
     "fields.summary": "Created from Maestro"
   },
   "customFieldsRequestDetails": {
     "objectActionName": "GenerateSchema",
     "parameterValues": [
-      ["fields_sub_project_sub_key", "ENGCE"],
+      ["fields_sub_project_sub_key", "<PROJECT_KEY>"],
       ["fields_sub_issuetype_sub_id", "3"]
     ]
   }
@@ -608,7 +608,7 @@ For every unique connection used in the flow, `node configure` appends **two ent
 | Field | Value |
 |-------|-------|
 | `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
-| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically — this is the supported path. The placeholder form `"<CONNECTOR_KEY> connection"` appears in the table for reference only (e.g. when inspecting a flow whose bindings have not yet been configured); it must match the definition's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix). |
+| `name` (connection binding) | The IS connection name as it appears in Integration Service (e.g. `"user@example.com #3"`). `uip maestro flow node configure` fetches this from IS automatically — this is the supported path. The placeholder form `"<CONNECTOR_KEY> connection"` appears in the table for reference only (e.g. when inspecting a flow whose bindings have not yet been configured); it must match the definition's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix). |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
@@ -631,8 +631,8 @@ The connector node instance carries no `model` block and no binding/context data
     "name": "uipath-atlassian-jira connection",
     "type": "string",
     "resource": "Connection",
-    "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e",
-    "default": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+    "resourceKey": "11111111-2222-3333-4444-555555555555",
+    "default": "11111111-2222-3333-4444-555555555555",
     "propertyAttribute": "ConnectionId"
   },
   {
@@ -640,7 +640,7 @@ The connector node instance carries no `model` block and no binding/context data
     "name": "FolderKey",
     "type": "string",
     "resource": "Connection",
-    "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+    "resourceKey": "11111111-2222-3333-4444-555555555555",
     "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "propertyAttribute": "FolderKey"
   }
@@ -653,8 +653,8 @@ Two unique connections → four entries in `bindings[]` (two per connection):
 
 ```json
 "bindings": [
-  { "id": "bJiraConn",   "name": "uipath-atlassian-jira connection",   "type": "string", "resource": "Connection", "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e", "default": "7622a703-5d85-4b55-849b-6c02315b9e6e", "propertyAttribute": "ConnectionId" },
-  { "id": "bJiraFolder", "name": "FolderKey",                          "type": "string", "resource": "Connection", "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e", "default": "folder-uuid-for-jira",                "propertyAttribute": "FolderKey" },
+  { "id": "bJiraConn",   "name": "uipath-atlassian-jira connection",   "type": "string", "resource": "Connection", "resourceKey": "11111111-2222-3333-4444-555555555555", "default": "11111111-2222-3333-4444-555555555555", "propertyAttribute": "ConnectionId" },
+  { "id": "bJiraFolder", "name": "FolderKey",                          "type": "string", "resource": "Connection", "resourceKey": "11111111-2222-3333-4444-555555555555", "default": "folder-uuid-for-jira",                "propertyAttribute": "FolderKey" },
   { "id": "bSlackConn",  "name": "uipath-salesforce-slack connection", "type": "string", "resource": "Connection", "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "propertyAttribute": "ConnectionId" },
   { "id": "bSlackFolder","name": "FolderKey",                          "type": "string", "resource": "Connection", "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "default": "folder-uuid-for-slack",               "propertyAttribute": "FolderKey" }
 ]
@@ -672,11 +672,11 @@ At debug/pack time, the CLI derives `content/bindings_v2.json` from the top-leve
   "resources": [
     {
       "resource": "Connection",
-      "key": "7622a703-5d85-4b55-849b-6c02315b9e6e",
-      "id": "Connection7622a703-5d85-4b55-849b-6c02315b9e6e",
+      "key": "11111111-2222-3333-4444-555555555555",
+      "id": "Connection11111111-2222-3333-4444-555555555555",
       "value": {
         "ConnectionId": {
-          "defaultValue": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+          "defaultValue": "11111111-2222-3333-4444-555555555555",
           "isExpression": false,
           "displayName": "my-jira-connection"
         }

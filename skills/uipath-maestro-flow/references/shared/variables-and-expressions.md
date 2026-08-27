@@ -6,7 +6,7 @@ Complete reference for declaring variables, writing expressions, and managing da
 >
 > `flow validate` catches the structural expression-reference errors:
 >
-> - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+> - Missing `=js:` prefix on `$vars`/`$metadata`/`$self`
 > - Invented `nodes.<id>.output` syntax
 > - References to unknown variables or node IDs
 > - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
@@ -417,7 +417,7 @@ Every `$vars` / `$metadata` / `$self` reference inside `inputs.detail.bodyParame
 | `"recordId": "{vars.createEntityRecord1.output.Id}"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 | `"recordId": "=js:createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 
-The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). The last row above is the opposite mistake — `=js:` is present but the `$vars.` prefix on the node reference is missing, so the expression evaluates a bare (undefined) identifier instead of the node's output. `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). The last row above is the opposite mistake — `=js:` is present but the `$vars.` prefix on the node reference is missing, so the expression evaluates a bare (undefined) identifier instead of the node's output. `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference.
 
 ### Comparison
 
