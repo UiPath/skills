@@ -1,0 +1,78 @@
+task_id: skill-api-workflow-evals-gate-create
+description: >
+  Build (gate): on a plain create request — no mention of tests, no "don't ask" —
+  the agent must run Phase-0 discovery, find the panel-seeded evaluator and an
+  eval set with ZERO rows (what Studio Web leaves behind after the Evaluations
+  panel is opened once), and END ITS TURN with SKILL.md rule 22's two questions
+  ("want me to add tests?" and "loop mode or author once?") before writing
+  anything. Graded on what was NOT done (Workflow.json still the scaffold, eval
+  set still empty, no run) plus an llm_judge over the final response.
+
+  Exists because two live trials of the evals guidance authored the workflow
+  first and asked afterwards — once with the gate as Phase-0 prose, once with it
+  as the last Critical Rule — hence the gate now leads the skill body. The seed
+  mirrors the real environment those trials ran in (empty panel-seeded set). The untouched-files check is a
+  necessary condition only — an agent that does nothing also leaves the files
+  untouched — so it is paired with a deterministic "the agent inspected the
+  project" signal and the llm_judge over the final response, which is the
+  criterion that tells "asked the two questions" from "did nothing". The judge
+  needs an Anthropic judge transport (ANTHROPIC_API_KEY); without it this task
+  cannot pass, by design. Local-only.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/gate_create/seed.py"
+    timeout: 120
+
+initial_prompt: |
+  Create an API workflow in the scaffolded project ./AddNumbers that takes two
+  numbers `a` and `b` and returns their sum.
+
+success_criteria:
+  - type: run_command
+    description: "Rule 22: nothing authored yet — Workflow.json is still the scaffold, the eval set still has zero rows"
+    command: python3 $TASK_DIR/check_gate.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing was run — there is no workflow to run before the gate is answered"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovery happened: the agent inspected the project / its evals folder before stopping (an agent that does nothing fails this)"
+    tool_name: "Bash"
+    command_pattern: '(ls|find|cat|tree|head|jq|python3|grep)\s[^\n]*(AddNumbers|evals|Workflow\.json)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Final response asks the two gate questions: add tests? and loop mode?"
+    include_agent_output: true
+    prompt: |
+      The user asked for a brand-new API workflow. The skill requires the agent to
+      first look for tests (an `evals/` folder), find an eval set with no cases, and
+      then END ITS TURN by asking the user two things, without building anything yet:
+        (1) whether the user wants tests added (an evaluation dataset / test cases),
+        (2) whether to work in "loop mode" (run the tests and re-try until they all
+            pass) or author once and let the user verify.
+
+      Score 1.0 if the agent's final response clearly asks BOTH questions and has not
+      built the workflow (proposing candidate test cases alongside question 1 is fine).
+      Score 0.5 if it asks only one of the two, or asks them after already building.
+      Score 0.0 if it builds the workflow and/or tests without asking either question.
+    weight: 3.0
+    pass_threshold: 0.8
+
+run_limits:
+  expected_turns: 5
+  max_turns: 14
