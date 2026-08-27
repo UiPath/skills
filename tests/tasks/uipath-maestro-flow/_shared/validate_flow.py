@@ -38,10 +38,15 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flow_check import find_project_dir  # noqa: E402
 
-# The criterion budget every task YAML gives this script. Kept in sync by hand;
-# there is no harness channel that exposes a criterion's timeout to the command
-# it runs.
-_CRITERION_BUDGET_SECONDS = 180
+# The criterion budget to self-terminate inside. coder_eval exports only
+# TASK_DIR to a criterion's command, not the criterion's own timeout, so there
+# is nothing authoritative to read yet — :data:`_BUDGET_ENV` is the proposed
+# contract and stays inert until the harness sets it, at which point this needs
+# no change. Until then the default mirrors the task YAMLs by hand, and
+# :func:`_budget_seconds` announces what it resolved so a drift shows up in the
+# criterion output instead of silently costing the retry.
+_BUDGET_ENV = "CODER_EVAL_COMMAND_TIMEOUT"
+_DEFAULT_BUDGET_SECONDS = 180
 
 # Reserved for interpreter start, project discovery, and writing the failure
 # message. Without it the last attempt can end exactly as the harness fires.
@@ -64,6 +69,29 @@ _BACKOFF_SECONDS = 5.0
 _MIN_ATTEMPT_SECONDS = 30
 
 
+def _budget_seconds() -> int:
+    """The criterion budget, from the harness if it says, else the default.
+
+    A malformed or non-positive value is treated as absent rather than trusted:
+    a zero budget would refuse every attempt and report exhaustion for a flow
+    nobody ever tried to validate.
+    """
+    raw = os.environ.get(_BUDGET_ENV, "").strip()
+    try:
+        budget = int(float(raw))
+    except ValueError:
+        budget = 0
+    if budget <= 0:
+        if raw:
+            print(
+                f"note: ignoring {_BUDGET_ENV}={raw!r}; using "
+                f"{_DEFAULT_BUDGET_SECONDS}s",
+                file=sys.stderr,
+            )
+        return _DEFAULT_BUDGET_SECONDS
+    return budget
+
+
 def _as_text(raw: bytes | str | None) -> str:
     """Decode captured child output. ``subprocess.TimeoutExpired`` carries it as
     bytes even under ``text=True``, unlike ``CompletedProcess``."""
@@ -83,7 +111,7 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
     return max(_MIN_ATTEMPT_SECONDS, remaining / attempts_left)
 
 
-def _validate(flow: str, deadline: float) -> int:
+def _validate(flow: str, deadline: float, budget: int) -> int:
     """Validate one ``.flow``, retrying a stalled attempt. Returns its exit code.
 
     A non-zero exit is never retried: `flow validate` fails on schema and graph
@@ -94,7 +122,7 @@ def _validate(flow: str, deadline: float) -> int:
         remaining = deadline - time.monotonic()
         if remaining < _MIN_ATTEMPT_SECONDS:
             print(
-                f"FAIL: {flow} — {_CRITERION_BUDGET_SECONDS}s criterion budget "
+                f"FAIL: {flow} — {budget}s criterion budget "
                 f"exhausted before attempt {attempt} ({max(0.0, remaining):.0f}s left)",
                 file=sys.stderr,
             )
@@ -117,7 +145,7 @@ def _validate(flow: str, deadline: float) -> int:
             if attempt == _ATTEMPTS:
                 print(
                     f"FAIL: {flow} did not validate within "
-                    f"{_CRITERION_BUDGET_SECONDS}s across {_ATTEMPTS} attempts. "
+                    f"{budget}s across {_ATTEMPTS} attempts. "
                     "The flow file itself may well be valid — this is the CLI's "
                     "manifest fetch, not a schema fault.\n"
                     f"stdout: {_as_text(exc.stdout)}\n"
@@ -142,8 +170,9 @@ def main() -> int:
         print(f"FAIL: No .flow file found under {project_dir}", file=sys.stderr)
         return 1
 
-    deadline = time.monotonic() + (
-        _CRITERION_BUDGET_SECONDS - _BUDGET_HEADROOM_SECONDS
+    budget = _budget_seconds()
+    deadline = time.monotonic() + max(
+        _MIN_ATTEMPT_SECONDS, budget - _BUDGET_HEADROOM_SECONDS
     )
 
     rc = 0
@@ -151,7 +180,7 @@ def main() -> int:
         # Flushed: on an overrun the harness discards this process's buffered
         # stdout, and this line is what names the file that stalled.
         print(f"Validating {flow}", flush=True)
-        code = _validate(flow, deadline)
+        code = _validate(flow, deadline, budget)
         if code != 0:
             rc = code or 1
     return rc

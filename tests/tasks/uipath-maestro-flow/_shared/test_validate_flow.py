@@ -25,6 +25,8 @@ import validate_flow  # noqa: E402
 
 # Scaled down from the shipped 180/20/30 so the arithmetic stays checkable by
 # hand: 6s usable, so attempt 1 caps at 3.0s and its retry at what is left.
+# Applied to the default, with _BUDGET_ENV cleared, so these never depend on the
+# harness env of whoever runs pytest.
 _BUDGET = 8
 _HEADROOM = 2
 _MIN_ATTEMPT = 1
@@ -69,7 +71,8 @@ def _stub(monkeypatch, results, *, flows=("a.flow",)):
     monkeypatch.setattr(validate_flow.glob, "glob", lambda *a, **k: list(flows))
     monkeypatch.setattr(validate_flow.time, "sleep", lambda *_: None)
     monkeypatch.setattr(validate_flow.time, "monotonic", lambda: calls["clock"])
-    monkeypatch.setattr(validate_flow, "_CRITERION_BUDGET_SECONDS", _BUDGET)
+    monkeypatch.delenv(validate_flow._BUDGET_ENV, raising=False)
+    monkeypatch.setattr(validate_flow, "_DEFAULT_BUDGET_SECONDS", _BUDGET)
     monkeypatch.setattr(validate_flow, "_BUDGET_HEADROOM_SECONDS", _HEADROOM)
     monkeypatch.setattr(validate_flow, "_MIN_ATTEMPT_SECONDS", _MIN_ATTEMPT)
     calls["deadline"] = float(_BUDGET - _HEADROOM)
@@ -190,3 +193,38 @@ def test_no_attempt_outlives_the_budget(monkeypatch):
     validate_flow.main()
     assert calls["overruns"] == []
     assert sum(calls["timeouts"]) <= _BUDGET - _HEADROOM
+
+
+# ── Budget resolution ───────────────────────────────────────────────────────
+
+
+def test_budget_prefers_the_harness_over_the_default(monkeypatch):
+    """The default mirrors the task YAMLs by hand. The moment coder_eval starts
+    exporting a criterion's timeout, that must win without a code change."""
+    monkeypatch.setattr(validate_flow, "_DEFAULT_BUDGET_SECONDS", 180)
+    monkeypatch.setenv(validate_flow._BUDGET_ENV, "300")
+    assert validate_flow._budget_seconds() == 300
+
+
+def test_budget_falls_back_when_the_harness_is_silent(monkeypatch):
+    monkeypatch.setattr(validate_flow, "_DEFAULT_BUDGET_SECONDS", 180)
+    monkeypatch.delenv(validate_flow._BUDGET_ENV, raising=False)
+    assert validate_flow._budget_seconds() == 180
+
+
+@pytest.mark.parametrize("raw", ["", "   ", "abc", "0", "-5"])
+def test_budget_ignores_junk_rather_than_trusting_it(monkeypatch, raw, capsys):
+    """A zero or unparseable budget would refuse every attempt and report
+    exhaustion for a flow nobody ever tried to validate."""
+    monkeypatch.setattr(validate_flow, "_DEFAULT_BUDGET_SECONDS", 180)
+    monkeypatch.setenv(validate_flow._BUDGET_ENV, raw)
+    assert validate_flow._budget_seconds() == 180
+    # Junk is announced; simply being unset is not worth a line of noise.
+    assert ("ignoring" in capsys.readouterr().err) == bool(raw.strip())
+
+
+def test_harness_budget_reaches_the_attempt_caps(monkeypatch):
+    calls = _stub(monkeypatch, [_timeout(), _timeout()])
+    monkeypatch.setenv(validate_flow._BUDGET_ENV, str(_BUDGET))
+    validate_flow.main()
+    assert calls["overruns"] == []
