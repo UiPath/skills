@@ -73,6 +73,8 @@ Operationalizes item 2. Best-effort and auth-required — same rules as tenant l
 
 CLI surfaces drift across versions. When the installed CLI rejects a listed verb (`unknown command` / `unknown option`), discover the supported surface with `uip <group> --help`, or fall back to the platform API (Orchestrator OData for `or` resources) using the existing authenticated context — never invent a verb. Note any substitution in the Recommended Scope reasoning.
 
+**One round, then stop.** Issue the whole sweep as a single batch of `list` calls, read the results once, and decide. Do NOT re-run the sweep with new filters, keyword permutations, or client-side post-processing after a round that returned zero rows or an empty `Data` array — an empty estate is a final answer (`no reuse candidates`), not a signal to search harder. Do NOT retry a rejected flag with a guessed alternative: apply the drift rule above once, and if that call also fails, record the estate as unknown in the Recommended Scope reasoning and proceed. Every extra sweep round costs a full reasoning cycle inside the same turn that still has to author §1–§18.
+
 Record every covering hit as a reuse candidate in the Recommended Scope reasoning (Level 0 outcome line) and in the consuming template section (§Packages, Integrated Components, or connector rows). A hit that covers steps flips those steps to reuse — outcome `partial` or a downscoped to-be.
 
 ### Do-not-automate findings note
