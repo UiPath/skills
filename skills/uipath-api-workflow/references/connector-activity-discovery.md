@@ -585,7 +585,7 @@ When passing literals via `--inputs` to `stub`, pass bare strings: `--inputs '{"
 
 ### Rule (c) — Use `Data.SlotKey` and `Data.ExportBucketKey` from the stub verbatim
 
-Every other activity type in this skill (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps the same key in the slot AND in the export bucket. Connector activities are the **single exception**: the slot key (the activity's key in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. The stub computes both; never reconstruct either by hand from `objectName`.
+Every other output-exporting activity type in this skill (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps the same key in the slot AND in the export bucket. Connector activities are the **single output-exporting exception**: the slot key (the activity's key in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. Log Message is outside this comparison because it has no export bucket. The stub computes both connector keys; never reconstruct either by hand from `objectName`.
 
 ```json
 // Slot key (Data.SlotKey) — the activity key in the do array:

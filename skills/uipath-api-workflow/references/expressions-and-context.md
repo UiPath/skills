@@ -10,7 +10,7 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 | `$workflow.input` | The workflow's input arguments (from `--input-arguments` JSON or caller). Constant for the entire run. | Workflow run |
 <!--skill-flavor:workflow-input-source:end-->
 | `$workflow` | Workflow runtime info: `{ id, definition, input, startedAt }`. Use `$workflow.input` to read inputs. | Workflow run |
-| `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
+| `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task, and can be `undefined` after a side-effect-only Log Message. | Per-task |
 | `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<Activity>` | Workflow run |
 | `$output` | The current task's raw output. | This task only |
 | Loop bindings | Whatever name you set in `for.each` / `for.at`, prefixed with `$`. Examples: `for.each: "currentItem"` → `${$currentItem}`, `for.each: "customer"` → `${$customer}`, `for.at: "idx"` → `${$idx}`. The `$` is a literal character in the identifier — the unprefixed name is NOT bound. | Inside the loop body |
@@ -142,12 +142,13 @@ ${String($context.variables.count)}
 
 ## The `export.as` Pattern
 
-Each task's raw output is in `$output`. To make it available to later tasks, you must `export` it back into `$context`. Two patterns by category:
+Each output-producing task's raw output is in `$output`. To make it available to later tasks, you must `export` it back into `$context`. Two patterns by category:
 
 | Category | Activities | Export Pattern |
 |----------|-----------|----------------|
 | **Variables** | Assign | `{ ...$context, variables: { ...$context.variables, ...$output } }` |
-| **Outputs** | Everything else (JS_Invoke, If, ForEach, DoWhile, TryCatch, Response, Wait) | `{ ...$context, outputs: { ...$context?.outputs, "ActivityKey": $output } }` |
+| **Outputs** | JS_Invoke, If, ForEach, DoWhile, TryCatch, Response, Wait | `{ ...$context, outputs: { ...$context?.outputs, "ActivityKey": $output } }` |
+| **Side effect only** | Log Message | No `export`; it produces no output bucket |
 
 ### Output key
 
@@ -155,7 +156,7 @@ The output key in the export pattern matches the activity key as-is. Activity ke
 
 ### Without `export`
 
-If you omit `export`, the task's output disappears from context after the next task. Only `$output` (the most recent task's output) is reliably visible. Always `export` unless you specifically want the output discarded.
+If you omit `export` from an output-producing task, its output disappears from context after the next task. Only `$output` (the most recent task's output) is reliably visible. Always `export` unless you specifically want the output discarded. Log Message is intentionally different: it produces no output, so the following task can receive `undefined` as `$input`; use `$workflow.input`, `$context.variables`, or `$context.outputs` for durable data.
 
 ## Reading Prior Outputs
 

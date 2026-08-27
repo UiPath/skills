@@ -402,7 +402,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:export-bucket-roundtrip-symptom:start-->
 - **Symptom:** Authored a connector activity using the slot key for the export — `"GetNewestEmail_1"` in the `do` array AND in the `export.as`. Workflow runs locally; downstream `$context.outputs.GetNewestEmail_1.content.subject` returns the correct value. After opening or saving in StudioWeb, downstream reads return `undefined`. The TypeScript linter shows `TS2551: Property 'GetNewestEmail_1' does not exist on type 'typeof outputs'. Did you mean 'getNewestEmail_1'?`. Diff of the file shows the export bucket key was rewritten to `getNewestEmail_1` — the slot key in the `do` array stayed `GetNewestEmail_1`.
 <!--skill-flavor:export-bucket-roundtrip-symptom:end-->
-- **Cause:** Connector activities are the only activity type where the slot key (in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. Every other type (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps "slot key === export key." For connector activities, StudioWeb's serializer normalizes the export bucket to a stub-computed form. The stub returns both keys correctly in `Data.SlotKey` and `Data.ExportBucketKey` — they are sometimes identical (Outlook `ListEmails` → both `ListEmails_1`) and sometimes different (Outlook `getNewestEmail` → slot `GetNewestEmail_1` / bucket `getNewestEmail_1`; HTTP `http-request` → slot `HttpRequest_1` / bucket `http_request_1`). Reconstructing either key from `objectName` by hand is what produces the mismatch.
+- **Cause:** Connector activities are the only output-exporting activity type where the slot key (in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. Every other output-exporting type (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps "slot key === export key." Log Message has no export bucket. For connector activities, StudioWeb's serializer normalizes the export bucket to a stub-computed form. The stub returns both keys correctly in `Data.SlotKey` and `Data.ExportBucketKey` — they are sometimes identical (Outlook `ListEmails` → both `ListEmails_1`) and sometimes different (Outlook `getNewestEmail` → slot `GetNewestEmail_1` / bucket `getNewestEmail_1`; HTTP `http-request` → slot `HttpRequest_1` / bucket `http_request_1`). Reconstructing either key from `objectName` by hand is what produces the mismatch.
 - **Fix:** Use `Data.SlotKey` and `Data.ExportBucketKey` from the stub verbatim. The slot key goes in the `do` array; the export-bucket key goes in `export.as` AND in every downstream `$context.outputs.<X>` reference:
   ```json
   // ✓ Correct — both keys taken from the stub output
@@ -744,9 +744,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** `validate` rejects an activity — `Unknown activityType 'X'. Valid types: ...`
 <!--skill-flavor:allowlist-versioning:start-->
-- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned: `CustomLog` was added 2026-08-11, so older CLIs list 13 types and newer ones 14. **Take the list from the error message — never memorise one.**
+- **Cause:** The authorable set is closed and versioned. A released CLI can lag the Studio Web palette; native `LogMessage` is the known exception. **Take the list from the error message — never memorise one.**
 <!--skill-flavor:allowlist-versioning:end-->
-- **Fix:** Stay inside the list. Two task types the executor runs but `validate` refuses — do not author them:
+- **Fix:** Stay inside the list except for a Studio Web-authored `LogMessage` that passes the exact structural checks below. Two other task types the executor runs but `validate` refuses — do not author them:
 
   | Instead of | Use |
   |---|---|
@@ -754,14 +754,15 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   | `while` (pre-condition loop) | `DoWhile` + an `If` whose `#Else` exits via `Break` |
 
 <!--skill-flavor:allowlist-run-proof:start-->
-  Both execute under `run` (verified on executor 12.10.2), so **a passing local run is not proof a workflow can ship.** `validate` is the gate.
+  Both execute under `run` (verified on executor 12.10.2), so **a passing local run is not proof a workflow can ship.** `validate` is the gate, with only the narrow native `LogMessage` compatibility exception below.
 <!--skill-flavor:allowlist-run-proof:end-->
+- **Known native `LogMessage` exception:** tolerate the validator failure only when every error is `Unknown activityType 'LogMessage'` at a Log Message node's `metadata.activityType`, and each node has a `Log_Message_N` key, `run.script` with JavaScript plus the standard arguments block, exactly one matching `console.log` / `console.warn` / `console.error` call, `metadata.activityType` and `fullName` set to `LogMessage`, and no `export` or `return`. Report `uip --version` and the validator gap. Any additional error still blocks completion. Never rename the node to `CustomLog` or substitute JsInvoke.
 - **Error-count tell:** a small count naming the activityType — one error per offending task — → unknown **name**, caught by the allowlist. A large avalanche starting `Missing required property 'call'` → the schema could not match the task **shape**, which has two causes and you must check both:
   1. **Unknown task key** — the schema models no such task (e.g. `raise`). Nothing about the fields will help.
   2. **An unexpected field on a KNOWN task** — one stray key makes the whole task unmatchable, and the error text still says `Missing required property 'call'`. `set` on a `Break` is the documented instance: it produced **7797 errors** in this skill's own `nested-control-flow-example.json`, and deleting that one key made it Valid.
 
   So read the avalanche as "the schema cannot match this task", not "the task key is wrong". Diff the task against the shape in [task-types.md](task-types.md) field by field before concluding the type is unsupported.
-- **Logging:** `console.log` / `console.warn` inside a JavaScript activity are captured and emitted as `[Script <TaskName>]: ...`. Whether they reach Orchestrator job logs in cloud is unverified — a probe showed the Orchestrator job-log surface carrying only lifecycle lines — so put anything you must read after a run in the `Response`. `CustomLog` is on the list but no executor ships a handler for it; do not author one yet.
+- **Logging:** use native `LogMessage` for entries intended for Orchestrator logs. Info, Warning, and Error serialize as `console.log`, `console.warn`, and `console.error` inside the activity's `run.script`; see [task-types.md](task-types.md#4-log-message-logmessage). A standalone JsInvoke's console output is separate script diagnostics and is not a substitute for the native card.
 - **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
 
 ### Fixing in wrong order
