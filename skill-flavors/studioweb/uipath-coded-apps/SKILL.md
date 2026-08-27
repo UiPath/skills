@@ -3,7 +3,7 @@
 
 > **In Studio Web the whole coded-app lifecycle runs in the browser — no local machine, no build step, no push.**
 >
-> The pipeline is: **CreateProjects → `uip codedapp init` → `uip codedapp publish` → OAuth client → `uip codedapp deploy` → open the URL.**
+> The pipeline is: **CreateProjects → `uip codedapp init` → OAuth client → `uip codedapp deploy` (publishes + deploys) → open the URL.**
 >
 > **1. Create the project with the CreateProjects tool** (`projectType: "AppV2"`). This makes the coded-app project inside the open solution and registers it there. It arrives **empty** — just `project.uiproj` and `webAppManifest.json` under `/solution/<ProjectName>/`. Do not use `uip codedapp init` to create a *new* project here (that path needs the desktop resource builder); CreateProjects is the creation step.
 >
@@ -11,7 +11,7 @@
 >
 > **Before publishing: every coded app in the solution needs a bundle.** Studio Web packages the *whole solution*; one coded-app project without `source/dist` fails the entire publish with *"Compiled bundle not found at …/<Project>/source/dist"* — and that failure is only visible in Studio Web's Publish history, not to the command that submitted it. List the solution's projects (`ls /solution`) and run `uip codedapp init /solution/<Name>` for **each** coded app that still has only `project.uiproj` + `webAppManifest.json`.
 >
-> **3. Publish:** `uip codedapp publish` (bare — no pack, no package argument). In Studio Web this is routed to Studio Web's own publish flow, which packages the app client-side from `source/dist` and uploads it. There is **no `uip codedapp pack`** in the browser (the packager is Node-only); calling it only tells you to publish. Publish waits for the background packaging and reports the real outcome — `Failed` comes back with the packager's error text (fix it and publish again); if it reports the request still `Pending` after the wait, the packaging never ran (tab reloaded mid-publish) — publish again. Only a reported success means there is something to deploy. Keep the tab open until it completes — packaging happens in the browser.
+> **3. (Optional) Publish only:** `uip codedapp publish` (bare — no pack, no package argument). You do not need this before `deploy` — deploy publishes for you. Use it when you only want a package. In Studio Web this is routed to Studio Web's own publish flow, which packages the app client-side from `source/dist` and uploads it. There is **no `uip codedapp pack`** in the browser (the packager is Node-only); calling it only tells you to publish. Publish waits for the background packaging and reports the real outcome — `Failed` comes back with the packager's error text (fix it and publish again); if it reports the request still `Pending` after the wait, the packaging never ran (tab reloaded mid-publish) — publish again. Only a reported success means there is something to deploy. Keep the tab open until it completes — packaging happens in the browser.
 >
 > **4. Create the OAuth client — deploy fails without one** (*"missing required properties: externalClientId"*), and nothing creates it for you. Decide the routing name first (the app's URL path, e.g. `expense-app`) because the redirect URI must match the deployed URL exactly — `deploy` does **not** register redirect URIs:
 >
@@ -23,7 +23,7 @@
 >
 > `<org-host>` is the org name with `_` → `-`; `<env>` is `alpha`/`staging` (omit the `.<env>` segment on production `cloud.uipath.com`). Pass the returned `Id` to deploy as `--client-id`.
 >
-> **5. Deploy:** `uip codedapp deploy -n <app name> --path-name <routing-name> --client-id <id> --folder-key <folder key>`. `deploy` finds the published app server-side by name, so it needs no local state. `--folder-key` is required in the browser (there is no interactive folder picker): list folders with `uip or folders list --output json` and pick one — ask the user only if the choice is not obvious. One rule: the Apps service allows **one deployment of a published app per folder** — a second deploy into the same folder fails with `400 / 1004 "app already deployed in folder"`; use another folder or upgrade the existing deployment.
+> **5. Deploy:** `uip codedapp deploy -n <app name> --path-name <routing-name> --client-id <id>`. In Studio Web this verb is handled by the host: it sets the app resource's `externalClientId` and `routingName`, publishes the solution (server-side packaging) to your **personal workspace** with auto-deploy, waits for the publish and the deployment, and prints the app URL. No `--folder-key` — browser deploys go to the personal workspace. The routing name must be unique in the organization (the default `default-app` collides); any other coded app in the solution that still has no client id / routing name is given a unique route and the same client id so the deployment can validate — the output says so; give it its own OAuth client before real use. If the output says the deployment was removed by the platform, a resource is still unconfigured — read the message and rerun.
 >
 > **6. View:** deploy returns the app URL (`https://<org-host>.<env>.uipath.host/<routing-name>`). Give it to the user and, if you can, open it to confirm it loads. "Publish submitted" is not "live" — only a successful deploy with a URL is.
 >
