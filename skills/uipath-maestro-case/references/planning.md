@@ -332,7 +332,7 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 >
 > **Authority order:** an explicit rule in the supplied/approved SDD wins. This audit verifies the handoff; it does not redesign or normalize authored rules. Use the derivation bullets below only when authoring from source behavior that has no explicit task-entry rule.
 >
-> - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task, unless the SDD explicitly declares another legal rule. Only derive `runs-sequentially` for ordered work whose source does not already declare an entry rule.
+> - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task, unless the SDD explicitly declares another legal rule.
 > - Independent work that starts with the stage → `activation-mode: parallel`, `entry-rule: current-stage-entered`, and rationale says why the tasks are independent.
 > - Connector/event callback wait → `activation-mode: event-triggered`, usually `entry-rule: wait-for-connector`.
 > - User-launched optional work → `activation-mode: adhoc`, `entry-rule: adhoc`, `isRequired: false`.

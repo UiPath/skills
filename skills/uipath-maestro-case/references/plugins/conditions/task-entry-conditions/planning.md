@@ -73,7 +73,7 @@ For every task-entry-condition T-entry, verify the task's `activation-mode` and 
 | `sequential` | `runs-sequentially` |
 | `parallel` | `current-stage-entered` |
 | `parallel-after-predecessor` | `runs-sequentially` — independent siblings that share one predecessor's next task set |
-| `event-triggered` | `wait-for-connector` (or `sla-status-change` for an SLA-started task) or another explicitly authored event/condition rule |
+| `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
 | `adhoc` | `adhoc` |
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
 | `conditional-gate` | `selected-tasks-completed` with a branch/non-immediate dependency rationale, or the explicitly authored gate rule |
