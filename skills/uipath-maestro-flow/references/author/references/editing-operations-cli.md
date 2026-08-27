@@ -179,7 +179,7 @@ These operations require the `Edit` tool. Use the [Edit / Write strategy guide](
 
 1. **Any non-carve-out structural edit** — node/edge CRUD, scheduled triggers, HITL QuickForm nodes, inline-agent nodes, non-connector resources, and graph rewiring
 2. **Node input updates** — the CLI does not have a `node update` command; use `Edit` to preserve node IDs and `$vars.{nodeId}` references
-3. **Workflow variables** — add/remove/update `variables.globals`
-4. **Variable updates** — add/modify `variables.variableUpdates` entries
+3. **Workflow variables while authoring** — updating `variables.globals` in place, and any `subType`/`schema`/`defaultValue` change. There *is* a CLI surface for declaring globals (`uip maestro flow variable add|list|remove`), but it is scoped to declaring eval inputs — see [variables-and-expressions.md § Variable Management via CLI](../../shared/variables-and-expressions.md#variable-management-via-cli)
+4. **Variable updates** — add/modify `variables.variableUpdates` entries. No CLI command exists for these
 5. **Output mapping on End nodes** — add `outputs` object with `source` expressions
 6. **Subflows** — create `subflows.{nodeId}` with nested nodes, edges, variables

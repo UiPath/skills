@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ f4973f6. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ efd27ce. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -17,7 +17,7 @@ belong upstream.
 
 Author a UiPath **Case plan** by writing TypeScript that builds a hierarchy of
 **stages** and **tasks**, then serialize it to a `caseplan.json` (schema
-**V20**). Like the Flow builder, this is a *builder*, not a program: you declare
+**V30**). Like the Flow builder, this is a *builder*, not a program: you declare
 the case's shape by calling methods, and flow between stages is expressed with
 **conditions** (`rule(...)`), not edges — a case plan has **no edges**.
 
@@ -33,6 +33,13 @@ Exact function signatures and option shapes, including every builder method
 [`references/api.md`](references/api.md).
 
 ## Authoring
+
+> **Keep the source in the authoring directory.** Write `<Name>.case.ts` in the
+> current working directory—the directory containing this `SKILL.md` and the
+> workspace `package.json`—and run `check` / `compile` from there. If a
+> `<Name>/<Name>/` Case project was scaffolded for generated artifacts, do not
+> infer that the TypeScript source belongs inside it or `cd` there unless the
+> task explicitly says so.
 
 ```ts
 import { casePlan, rule } from '@uipath/flow-sdk/case';
@@ -87,26 +94,82 @@ uip maestro case validate caseplan.json --output json
 <!-- GEN:case-builder -->
 
 ```ts
-/** Start building a case plan with the given id. (`casePlan`, not `case` — reserved word.) */
+/**
+ * Start building a case plan with the given id. (`casePlan`, not `case` — reserved word.)
+ *
+ * @param id - The plan's stable identifier.
+ * @returns A {@link CaseBuilder} to declare stages and tasks on.
+ */
 export declare function casePlan(id: string): CaseBuilder;
 
-name(n: string): this;
+/**
+     * Set the case plan's display name.
+     *
+     * @param n - The name the designer shows.
+     * @returns This builder, so calls chain.
+     */
+    name(n: string): this;
 
-/** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`). */
+/**
+     * Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`).
+     *
+     * @param id - The prefix, or an `=`-expression when `type` is `'external'`.
+     * @param type - `'constant'` for a fixed prefix, `'external'` to compute it.
+     * @returns This builder, so calls chain.
+     */
     identifier(id: string, type?: 'constant' | 'external'): this;
 
-description(text: string): this;
+/**
+     * Describe the case plan.
+     *
+     * @param text - Prose the designer shows alongside the plan.
+     * @returns This builder, so calls chain.
+     */
+    description(text: string): this;
 
-caseApp(enabled?: boolean): this;
+/**
+     * Turn the generated Case App on or off, or configure its summary and sections.
+     *
+     * Section `details` are authored as a map of at most six primitive values; the
+     * serializer JSON-encodes that map into the shipped wire string. Configuring a
+     * Case App enables it. The platform-owned Case App version markers are never
+     * inferred by this method.
+     *
+     * @example
+     * **Configure a summary and one detail section**
+     * ```ts
+     * .caseApp({
+     *   summary: '=js:vars.summary',
+     *   sections: [{ title: 'Amounts', details: { total: '=js:vars.total', urgent: true } }],
+     * })
+     * ```
+     *
+     * @param enabledOrConfig - A boolean toggle, or the typed Case App configuration.
+     * @returns This builder, so calls chain.
+     */
+    caseApp(enabledOrConfig?: boolean | CaseAppConfig): this;
 
 /**
      * Declare a read/write case variable.
      *
-     * **Not referenceable from a `=js:vars.<name>` expression.** A `.var(...)` emits
-     * a companion entry but no formal slot, so `uip maestro case validate` rejects
-     * `vars.<name>` with `Variable 'vars.<name>' does not exist` (`check` catches it
-     * as VAR_NOT_REFERENCEABLE). If an expression must read the value, declare it as a
-     * trigger-bound In-arg instead: `.input({ name: type }, { from: trigger })`.
+     * @remarks
+     * Readable from a `=js:vars.<name>` expression, like a trigger-bound In-arg.
+     *
+     * This comment used to say the opposite — that only `.input(shape, { from })`
+     * could be read, and that a bare `.var()` failed `uip maestro case validate`
+     * with "Variable 'vars.<name>' does not exist". That was true when written and
+     * stopped being true at #257, which made the serializer emit the `inputOutputs`
+     * companion (`id: <name>`, `elementId: "root"`) the platform resolves
+     * `vars.<name>` against. `check` carried a matching `VAR_NOT_REFERENCEABLE`
+     * error and dropped it for the same reason.
+     *
+     * Binding is about WHEN a value arrives, not whether it can be read. An
+     * UNDECLARED `vars.<x>` is still a hard error, thrown by `.build()`.
+     *
+     * @param name - The variable's name; read it as `=vars.<name>`.
+     * @param type - A `types.*` descriptor, or {@link jsonSchema} for a structured one.
+     * @param defaultValue - Its initial value. Omit it to start unset.
+     * @returns This builder, so calls chain.
      */
     var(name: string, type: TypeDesc | JsonSchemaType, defaultValue?: unknown): this;
 
@@ -117,11 +180,17 @@ caseApp(enabled?: boolean): this;
      * projected into that trigger's `entry-points.json` input schema. A declared
      * In-arg is readable as `=vars.<name>` (its `inputOutputs` companion resolves it).
      *
+     * @example
+     * **Bind case In-args to a trigger's payload**
      * ```ts
      * const t = manualTrigger();
      * casePlan('x').trigger(t)
      *   .input({ claimId: 'string', riskScore: { type: 'float', default: '1.5' } }, { from: t })
      * ```
+     *
+     * @param shape - In-arg names to types, or `{ type, default }`.
+     * @param opts - `{ from: <trigger> }` binds the args to a trigger's payload.
+     * @returns This builder, so calls chain.
      */
     input(shape: Record<string, TypeDesc | JsonSchemaType | {
         type: TypeDesc;
@@ -135,6 +204,9 @@ caseApp(enabled?: boolean): this;
      * Declare case Out-args. Each value is a {@link TypeDesc}, or `{ type, default }`
      * to set a default. Out-args are readable as `=vars.<name>` and projected into
      * every trigger's `entry-points.json` output schema (with their default).
+     *
+     * @param shape - Out-arg names to types, or `{ type, default }`.
+     * @returns This builder, so calls chain.
      */
     output(shape: Record<string, TypeDesc | JsonSchemaType | {
         type: TypeDesc;
@@ -142,14 +214,32 @@ caseApp(enabled?: boolean): this;
         body?: unknown;
     }>): this;
 
-/** Add a primary stage. `fn` receives a stage sub-builder. */
+/**
+     * Add a primary stage. `fn` receives a stage sub-builder.
+     *
+     * @param label - The stage's display name.
+     * @param fn - Receives a sub-builder for the stage's tasks and conditions.
+     * @returns This builder, so calls chain.
+     */
     stage(label: string, fn: (s: StageBuilder) => void): this;
 
-/** Add a secondary/exception stage (`case-management:ExceptionStage`). */
+/**
+     * Add a secondary/exception stage (`case-management:Stage` with `data.stageType: "secondary"`).
+     *
+     * @param label - The stage's display name.
+     * @param fn - Receives a sub-builder for the stage's tasks and conditions.
+     * @returns This builder, so calls chain.
+     */
     exceptionStage(label: string, fn: (s: StageBuilder) => void): this;
 
-/** Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default). */
-    completeWhen(rules: CaseRule | CaseRule[], opts?: {
+/**
+     * Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default).
+     *
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
+     * @param opts - `displayName`, and whether meeting it completes the case.
+     * @returns This builder, so calls chain.
+     */
+    completeWhen(rules: CaseRuleGrid, opts?: {
         displayName?: string;
         marksCaseComplete?: boolean;
     }): this;
@@ -158,6 +248,9 @@ caseApp(enabled?: boolean): this;
      * Set a case-level SLA (deadline + escalations for the whole case), emitted to
      * `metadata.slaRules`. Call more than once for conditional SLAs; the default
      * (no `when`) must be last.
+     *
+     * @param opts - The deadline, its escalations, and an optional `when` gate.
+     * @returns This builder, so calls chain.
      */
     sla(opts: SlaOpts): this;
 
@@ -165,10 +258,18 @@ caseApp(enabled?: boolean): this;
      * Add a case trigger (what starts the case). Call more than once for
      * multiple triggers; the first is the primary. Omit entirely for the default
      * single manual trigger. Build specs with {@link manualTrigger}/{@link timerTrigger}.
+     *
+     * @param t - A trigger from `manualTrigger` / `timerTrigger` / `eventTrigger`.
+     * @returns This builder, so calls chain.
      */
     trigger(t: BuiltTrigger): this;
 
-build(): BuiltCase;
+/**
+     * Finish the plan and return the description the serializer writes.
+     *
+     * @returns The built case — its stages, tasks, triggers and variables.
+     */
+    build(): BuiltCase;
 
 export type TypeDesc = (typeof types)[keyof typeof types];
 
@@ -193,10 +294,15 @@ export interface CaseVarDecl {
  * vs array is `body.type`. Use in `.var()`/`.input()`/`.output()` where a
  * {@link TypeDesc} is expected.
  *
+ * @example
+ * **Declare an object variable and an array variable**
  * ```ts
  * .var('caseData', jsonSchema({ type: 'object', properties: { status: { type: 'string' } } }))
  * .var('attachments', jsonSchema({ type: 'array', items: { type: 'string' } }))
  * ```
+ *
+ * @param body - The JSON schema. Its `type` decides object vs array.
+ * @returns A type descriptor for `.var()` / `.input()` / `.output()`.
  */
 export declare function jsonSchema(body: unknown): JsonSchemaType;
 
@@ -213,22 +319,122 @@ export interface JsonSchemaType {
 
 <!-- /GEN:case-builder -->
 
+### Case App summary and sections
+
+Pass a typed configuration to `.caseApp(...)` to enable the generated Case App
+and define its summary view:
+
+```text
+.caseApp({
+  summary: '=js:vars.summary',
+  sections: [
+    {
+      title: 'Overview',
+      details: {
+        amount: '=js:vars.amount',
+        status: 'Open',
+        urgent: true,
+      },
+    },
+  ],
+})
+```
+
+Each section accepts at most six detail entries. Values must be primitives:
+string, number, boolean, or `null`; nested objects and arrays are not supported.
+The SDK JSON-encodes the map into the Case wire format and generates a stable
+section id when `id` is omitted. `.caseApp()` and `.caseApp(true)` remain the
+boolean-only enablement form. The SDK does not invent platform-owned
+`caseAppVersion` or `caseAppCreatedVersion` stamps.
+
+### Designer layout
+
+Use `.layout()` for optional stage and trigger canvas metadata. Keys are the
+exact author-level stage labels and trigger display names; the serializer
+resolves them to final node ids:
+
+```text
+.layout({
+  stages: { Intake: { position: { x: 160, y: 120 }, width: 420 } },
+  triggers: { 'Order received': { position: { x: 40, y: 120 } } },
+})
+```
+
+Layout never changes Case behavior. Unknown or ambiguous names fail compilation.
+When a decompiled foreign Case already has layout, authored fields replace only
+the same fields for the named node; all untouched node/edge entries and fields
+remain byte-identical. Omit `.layout()` to retain the serializer's default
+positions or the complete preserved foreign side-car.
+
+### Human-selected stages and ad-hoc tasks
+
+A `wait-for-user` exit can expose the Case runtime's select-next-stage API.
+Name the Data Fabric entity that receives `instanceId` and `nextStage`:
+
+```text
+.exitWhen(rule('required-tasks-completed'), {
+  marksStageComplete: true,
+  type: 'wait-for-user',
+  selectNextStage: { objectName: 'CaseStageSelection' },
+})
+```
+
+Exactly one exit per case may configure `selectNextStage`, and each destination
+stage should enter on `rule('user-selected-stage')`. The entity needs string
+fields named `instanceId` and `nextStage`.
+
+Call `.allowAdhocTasks()` at case level when optional tasks with
+`rule('adhoc')` entry conditions may be started through the Case ad-hoc message
+contract. This does not expose legacy `adhocOrchestrationData` or Case Manager
+objects.
+
 ### stage (`s`)
 
 <!-- GEN:stage-builder -->
 
 ```ts
-description(text: string): this;
+/**
+     * Describe this stage.
+     *
+     * @param text - Prose the designer shows on the stage.
+     * @returns This builder, so calls chain.
+     */
+    description(text: string): this;
 
-required(value?: boolean): this;
+/**
+     * Mark this stage required, so the case cannot complete without it.
+     *
+     * @param value - Whether the stage is required.
+     * @returns This builder, so calls chain.
+     */
+    required(value?: boolean): this;
 
-/** Add a stage-entry condition (OR-group). Pass an array of rules for an AND-group. */
-    entryWhen(rules: CaseRule | CaseRule[], opts?: EntryOpts): this;
+/**
+     * Add a stage-entry condition. Pass a nested array for the complete OR-of-AND grid.
+     *
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
+     * @param opts - `displayName`, and the entry behaviour flags.
+     * @returns This builder, so calls chain.
+     */
+    entryWhen(rules: CaseRuleGrid, opts?: EntryOpts): this;
 
-/** Add a stage-exit condition (OR-group). Pass an array of rules for an AND-group. */
-    exitWhen(rules: CaseRule | CaseRule[], opts?: ExitOpts): this;
+/**
+     * Add a stage-exit condition. Pass a nested array for the complete OR-of-AND grid.
+     *
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
+     * @param opts - `displayName`, and whether meeting it completes the stage.
+     * @returns This builder, so calls chain.
+     */
+    exitWhen(rules: CaseRuleGrid, opts?: ExitOpts): this;
 
-/** Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0). */
+/**
+     * Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0).
+     *
+     * @param displayName - The task's display name.
+     * @param fn - Receives a sub-builder for what the task does.
+     * @param opts - `lane` places the task in a parallel lane (default 0).
+     * @returns This builder, so calls chain.
+     */
     task(displayName: string, fn: (t: TaskBuilder) => void, opts?: {
         lane?: number;
     }): this;
@@ -237,6 +443,9 @@ required(value?: boolean): this;
      * Set an SLA (deadline + escalations) on this stage. Call more than once for
      * conditional SLAs (each with a `when` gate); the default SLA (no `when`) must
      * be last.
+     *
+     * @param opts - The deadline, its escalations, and an optional `when` gate.
+     * @returns This builder, so calls chain.
      */
     sla(opts: SlaOpts): this;
 
@@ -262,22 +471,20 @@ export interface ExitOpts {
      * `exitToStage` — including backward edges (returning to an earlier stage is just
      * an exit that routes there).
      *
-     * The destination still evaluates its own `entryWhen(...)`, and only
-     * STAGE-ENTRY rules are legal there: `selected-stage-completed` /
-     * `selected-stage-exited` / `user-selected-stage` / `case-entered`. Do NOT try to
-     * gate a destination on `selected-tasks-completed` — that is a task-entry /
-     * stage-exit rule, and `uip maestro case validate` rejects it at stage entry with
-     * "task selection missing" (`check` now catches this as RULE_PLACEMENT).
-     *
-     * Consequence for >2-way branching: `selected-stage-completed`/`-exited` name only
-     * the SOURCE stage, so sibling branches out of one stage cannot be told apart by
-     * the destination's entry rule alone. The workable pattern is to let exactly ONE
-     * exit carry `marksStageComplete: true` (the success path, matched by
-     * `selected-stage-completed`) and gate the others on `selected-stage-exited`; for
-     * a human-chosen path use `type: 'wait-for-user'` here plus a
+     * @remarks
+     * The destination still evaluates its own `entryWhen(...)`. At the product pin,
+     * `selected-tasks-completed` is valid at stage entry when its `{ tasks: [...] }`
+     * payload resolves; use it when a source-stage task identifies the branch. The
+     * checker validates those task references separately from placement legality.
+     * For a human-chosen path use `type: 'wait-for-user'` here plus a
      * `user-selected-stage` entry on each destination.
      */
     exitToStage?: string;
+    /**
+     * Enable the runtime select-next-stage API for this `wait-for-user` exit.
+     * `objectName` is the Data Fabric entity that receives `{ instanceId, nextStage }`.
+     */
+    selectNextStage?: SelectNextStageSpec;
 }
 
 export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
@@ -290,24 +497,48 @@ export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
 <!-- GEN:task-builder -->
 
 ```ts
-export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
+export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'flow-process' | 'external-agent' | 'external-workflow' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
 
-/** Reference a published Maestro process. */
+/**
+     * Reference a published Maestro process.
+     *
+     * @param name - The published process's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
+     */
     process(name: string, opts?: {
         folder?: string;
     }): this;
 
-/** Reference a published agent. */
+/**
+     * Reference a published agent.
+     *
+     * @param name - The published agent's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
+     */
     agent(name: string, opts?: {
         folder?: string;
     }): this;
 
-/** Reference a published RPA process. */
+/**
+     * Reference a published RPA process.
+     *
+     * @param name - The published RPA process's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
+     */
     rpa(name: string, opts?: {
         folder?: string;
     }): this;
 
-/** Reference a published API workflow. */
+/**
+     * Reference a published API workflow.
+     *
+     * @param name - The published API workflow's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
+     */
     apiWorkflow(name: string, opts?: {
         folder?: string;
     }): this;
@@ -316,8 +547,23 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
      * Reference another published case (a **sub-case**). Pass data into the child
      * with `.inputs({...})` and read results back with `.outputs({...})` — the same
      * io-binding as reference-mode tasks.
+     *
+     * @param name - The published child case's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
      */
     caseManagement(name: string, opts?: {
+        folder?: string;
+    }): this;
+
+/**
+     * Reference a published Maestro Flow.
+     *
+     * @param name - The published Flow's name.
+     * @param opts - `folder` — the Orchestrator folder it lives in.
+     * @returns This builder, so calls chain.
+     */
+    flowProcess(name: string, opts?: {
         folder?: string;
     }): this;
 
@@ -326,6 +572,9 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
      * `{ type, value }`. `inputs`/`outputs` declare the task's form fields — inputs
      * are read-only context the assignee sees, outputs are what they fill in.
      * `labels` and `actionCatalogName` tag the task and name its action app.
+     *
+     * @param spec - The human task: its `title`, `priority`, `recipient`, and the `inputs` / `outputs` its form shows and collects.
+     * @returns This builder, so calls chain.
      */
     action(spec?: {
         title?: string;
@@ -340,40 +589,113 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
         outputs?: ActionField[];
     }): this;
 
-connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;
+/**
+     * Invoke an external agent through its generated Integration Service descriptor.
+     *
+     * @param descriptor - An `AgentExecution` operation from a generated connector module.
+     * @param opts - Required connection/folder bindings, sync/async mode, and descriptor-typed inputs.
+     * @returns This builder, so calls chain.
+     */
+    externalAgent<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
 
-/** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`). */
+/**
+     * Invoke an external workflow through its generated Integration Service descriptor.
+     *
+     * @param descriptor - A `ProcessExecution` operation from a generated connector module.
+     * @param opts - Required connection/folder bindings, sync/async mode, and descriptor-typed inputs.
+     * @returns This builder, so calls chain.
+     */
+    externalWorkflow<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
+
+/** Required wiring and typed inputs for an external agent/workflow invocation. */
+export interface ExternalTaskOptions<I extends Record<string, unknown>> {
+    /** Symbolic Integration Service connection name declared in `bindings.json`. */
+    connection: string;
+    /** Symbolic Orchestrator folder binding name declared in `bindings.json`. */
+    folder: string;
+    /** Closed runtime mode; each family lowers this to its exact supported service type. */
+    mode: ExternalExecutionMode;
+    /** Inputs statically checked by the generated connector descriptor. */
+    inputs: I;
+}
+
+/** Whether an external Integration Service task blocks for its result or waits for a callback. */
+export type ExternalExecutionMode = 'sync' | 'async';
+
+/**
+     * Stringly form, for a connector with no prepared module.
+     *
+     * @param key - The connector library key, e.g. `'uipath-salesforce-slack'`.
+     * @param action - The operation id, e.g. `'send-message-to-channel'`.
+     * @param inputs - The activity's inputs.
+     * @param opts - Symbolic `connection` / `folder`, an action `version`, and the
+     * `object` a generic operation addresses.
+     * @returns This builder, so calls chain.
+     */
+    connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;
+
+/**
+     * A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`).
+     *
+     * @param spec - How long to wait: an ISO-8601 `duration`, a `date`, or a repeating `cycle`.
+     * @returns This builder, so calls chain.
+     */
     waitForTimer(spec?: TimerSpecData): this;
 
 /**
-     * A wait-for-connector task — suspend the stage until an Integration Service
-     * **event** fires. Omit the spec (or `connectorKey`/`operation`) for a
-     * **placeholder** (a connector not yet registered): `data.uipath` carries only
-     * `serviceType: "Intsvc.WaitForEvent"`. Naming the connector/operation emits the
-     * `context` subscription. (A fully *resolved* subscription — real
-     * connection/typeId — needs live connector resolution and is out of scope.)
+     * A wait-for-connector task in placeholder or stringly-resolved form.
+     *
+     * @param spec - Omit for a placeholder, pass `connectorKey`/`operation` for the legacy named placeholder,
+     * or pass a symbolic `{ connector, event, ... }` subscription for library resolution.
+     * @returns This builder, so calls chain.
      */
     waitForConnector(spec?: WaitConnectorSpec): this;
 
 /**
- * A `wait-for-connector` subscription: suspend on an Integration Service event.
- * Omit `connectorKey`/`operation` for a bare **placeholder** (for a connector not
- * yet registered — `data.uipath` carries only `serviceType`).
+ * A placeholder connector/operation pair, or a library-resolved event
+ * subscription using the same symbolic shape as Flow `waitForEvent()`.
  */
-export interface WaitConnectorSpec {
-    /** Connector key, e.g. `uipath-microsoft-outlook365`. */
-    connectorKey?: string;
-    /** Event operation, e.g. `EMAIL_RECEIVED`. */
-    operation?: string;
-}
+export type WaitConnectorSpec = WaitConnectorPlaceholderSpec | EventSubscription;
 
-required(value?: boolean): this;
+/**
+     * Mark this task required, so its stage cannot complete without it.
+     *
+     * @param value - Whether the task is required.
+     * @returns This builder, so calls chain.
+     */
+    required(value?: boolean): this;
 
-runOnce(value?: boolean): this;
+/**
+     * Run this task at most once, even if its entry condition is met again.
+     *
+     * @param value - Whether the task runs only once.
+     * @returns This builder, so calls chain.
+     */
+    runOnce(value?: boolean): this;
 
-description(text: string): this;
+/**
+     * Run this task again whenever its entry condition is met after stage re-entry.
+     * This is the semantic inverse of {@link TaskBuilder.runOnce} and emits an explicit
+     * `shouldRunOnlyOnce: false`.
+     *
+     * @returns This builder, so calls chain.
+     */
+    runOnReEntry(): this;
 
-/** Skip this task when the `=js:` expression is truthy. */
+/**
+     * Describe this task.
+     *
+     * @param text - Prose the designer shows on the task.
+     * @returns This builder, so calls chain.
+     */
+    description(text: string): this;
+
+/**
+     * Skip this task when the `=js:` expression is truthy.
+     *
+     * @param expression - An `=js:` expression; the task is skipped when it is truthy.
+     * @returns This builder, so calls chain.
+     */
     skipWhen(expression: string): this;
 
 /**
@@ -381,6 +703,9 @@ description(text: string): this;
      * declared input parameter name; each value is a literal, a case-variable read
      * `=vars.<name>`, or a `=js:` expression. Pass `{ value, type }` to set a
      * non-string type (default `string`).
+     *
+     * @param shape - Input parameter names to literals, case-variable references, or `{ value, type }`.
+     * @returns This builder, so calls chain.
      */
     inputs(shape: Record<string, string | {
         value: string;
@@ -393,14 +718,23 @@ description(text: string): this;
      * `=vars.<name>`; each value is the source field expression (e.g. `=response`,
      * `=Error.Message`). Pass `{ source, type }` to set a non-string type. Emits a
      * `data.outputs[]` row plus a root `inputOutputs` companion so the name resolves.
+     *
+     * @param shape - Case-variable names to the result field they take, or `{ source, type }`.
+     * @returns This builder, so calls chain.
      */
     outputs(shape: Record<string, string | {
         source: string;
         type?: TypeDesc;
     }>): this;
 
-/** Add a task-entry condition (OR-group). Pass an array of rules for an AND-group. */
-    entryWhen(rules: CaseRule | CaseRule[], opts?: {
+/**
+     * Add a task-entry condition. Pass a nested array for the complete OR-of-AND grid.
+     *
+     * @param rules - One rule, an AND-group, or the complete OR-of-AND grid.
+     * @param opts - `displayName` for the condition.
+     * @returns This builder, so calls chain.
+     */
+    entryWhen(rules: CaseRuleGrid, opts?: {
         displayName?: string;
     }): this;
 
@@ -424,22 +758,33 @@ export interface ActionSpecData {
 /**
  * One field of an Action Center task's form. **Inputs** are read-only context the
  * assignee sees; **outputs** are the values they fill in. Emitted as a schema
- * `InputOutput` row (`{ name, type, displayName? }`) under `data.inputs[]` /
- * `data.outputs[]`.
+ * `InputOutput` row under `data.inputs[]` / `data.outputs[]`.
  *
- * Note: no `required` flag — on a task's io row `required` means "must hold a
- * value now", which `uip maestro case validate` rejects as an empty required
- * field at author time. Whether the assignee must fill a field is governed by the
- * resolved action app's own form schema; here the reviewer-must-fill semantic is
- * carried by the input (context) vs output (fill-in) split itself.
+ * @remarks
+ * `required: true` means this serialized row must already hold a non-empty
+ * `value`; it does not mean that the reviewer must fill the field. The source
+ * checker and `uip maestro case validate` both reject an empty required row with
+ * `EMPTY_REQUIRED_FIELD`. Reviewer input is still modeled by placing the field
+ * in `outputs` rather than `inputs`.
  */
 export interface ActionField {
     /** Field key. */
     name: string;
     /** Field type (default `string`). */
     type?: TypeDesc;
+    /** UI control subtype, for example `dropdown`. */
+    subType?: string;
     /** Human-facing label (defaults to `name` in the UI when omitted). */
     displayName?: string;
+    /** Input literal/expression, or the readable variable name for an output field. */
+    value?: string;
+    /** Require `value` to be non-empty at validation time. */
+    required?: boolean;
+    /** Dropdown choices, using the product's lower-case `{ value, label }` shape. */
+    options?: Array<{
+        value: string;
+        label: string;
+    }>;
 }
 
 /**
@@ -459,12 +804,17 @@ export interface TimerSpecData {
 
 <!-- /GEN:task-builder -->
 
+Calling `.waitForTimer()` without a specification creates an intentionally
+unconfigured placeholder, which product validation rejects. For a validating
+stand-in task, provide an explicit ISO-8601 value such as
+`.waitForTimer({ duration: 'PT1M' })`.
+
 ### Task io-binding — pass inputs, capture outputs
 
-Reference-mode tasks (`process`/`agent`/`rpa`/`api-workflow`, and
-`case-management` sub-cases) can bind input parameters and extract result fields
-into readable case variables, so a later task or a `=vars.<name>` gate consumes a
-task's result:
+Reference-mode tasks (`process`/`agent`/`rpa`/`api-workflow`,
+`case-management` sub-cases, and `flow-process` Maestro Flows) can bind input
+parameters and extract result fields into readable case variables, so a later
+task or a `=vars.<name>` gate consumes a task's result:
 
 ```ts
 .task('Lookup age', t => t
@@ -513,11 +863,15 @@ data into the child case and read its results back:
     labels: 'finance',                     // a single string (not a list)
     actionCatalogName: 'Expense Review',   // the action app this task instantiates
     inputs: [                              // read-only context the assignee SEES
-      { name: 'employeeName', type: 'string', displayName: 'Employee' },
+      { name: 'employeeName', type: 'string', displayName: 'Employee',
+        value: '=vars.employeeName', required: true },
       { name: 'amount', type: 'number', displayName: 'Amount' },
     ],
     outputs: [                             // fields the assignee FILLS IN
-      { name: 'approved', type: 'boolean' },
+      { name: 'decision', subType: 'dropdown', options: [
+        { value: 'approve', label: 'Approve' },
+        { value: 'reject', label: 'Reject' },
+      ] },
       { name: 'comment', type: 'string' },
     ],
   })
@@ -526,12 +880,13 @@ data into the child case and read its results back:
 ```
 
 - **`inputs` vs `outputs`** is the reviewer-must-fill split: inputs are shown
-  read-only, outputs are what they submit. Each is `{ name, type?, displayName? }`
-  (`type` defaults to `string`).
-- There is deliberately **no `required` flag** on a field — on a task io row
-  `required` means "must already hold a value", which `uip maestro case validate`
-  rejects as an empty required field at author time. Model mandatory-ness with the
-  input/output split, not a flag.
+  read-only, outputs are what they submit. `type` defaults to `string`;
+  `subType: 'dropdown'` and lower-case `{ value, label }` `options` describe a
+  choice field.
+- **`required: true` means the row must already hold a non-empty `value`.** It is
+  not a reviewer-must-fill flag. Both `case check` and product validation reject
+  a missing or empty value as `EMPTY_REQUIRED_FIELD`; use `outputs` to model what
+  the reviewer must fill in.
 
 ### wait-for-connector — suspend on an Integration Service event
 
@@ -549,23 +904,63 @@ Two forms, both emitting `serviceType: "Intsvc.WaitForEvent"`:
 ```
 
 Omit `connectorKey`/`operation` for a **placeholder** (a connector not yet
-registered) — a task's `data.uipath` is then `serviceType` only; a rule still
-carries a `uipath` bag (a bare rule is rejected by `validate`). A fully *resolved*
-subscription (real connection / typeId) needs live connector resolution and is not
-authored offline.
+registered) — a task's `data` is then `serviceType` only; a rule still carries a
+`uipath` bag (a bare rule is rejected by `validate`).
+
+For a **resolved** subscription, pass the same symbolic event object to a wait
+task or rule. The compiler resolves its operation/type metadata from
+`$FLOW_SDK_LIBRARY_JSON` and its connection/folder from `bindings.json`, then
+emits the full `context`/`inputs`/`outputs` bag and root bindings:
+
+```text
+const emailReceived = {
+  connector: 'uipath-microsoft-outlook365',
+  event: 'email-received',
+  where: { parentFolderId: '<mail-folder-id>' },
+  filters: [{ field: 'subject', contains: 'Invoice' }],
+  connection: 'outlook',
+  folder: 'caseFolder',
+};
+
+.task('Wait for reply', t => t
+  .waitForConnector(emailReceived)
+  .required().entryWhen(rule('current-stage-entered')))
+.task('Process reply', t => t
+  .process('Handler', { folder: 'Shared' })
+  .entryWhen(rule('wait-for-connector', { connector: emailReceived })))
+```
+
+A generated trigger descriptor may replace the stringly object on the task:
+`.waitForConnector(EmailReceived, { where, connection, folder })`. Never put raw
+connection/type IDs in the `.case.ts`; bind symbolic names in `bindings.json`.
 
 ## Conditions — `rule(type, opts?)`
 
-Combine rules into an **AND-group** by passing an array to
-`entryWhen`/`exitWhen`/`completeWhen`; call those methods multiple times for
-**OR-groups** (DNF).
+Pass one rule, an array for an **AND-group**, or an array of arrays for the
+complete **OR-of-AND grid** to `entryWhen`/`exitWhen`/`completeWhen`.
+Each method call emits one condition. To emit two separate conditions, call
+the method twice; passing two rules in one array emits one condition that
+requires both rules.
+
+For a pure data gate, use `when(expression)`. The receiving slot supplies the
+platform's canonical event, so `stage.entryWhen(when('=js:vars.amount > 1000'))`
+means `rule('case-entered', { expression: '=js:vars.amount > 1000' })`. The
+other defaults are `current-stage-entered` for task entry,
+`selected-tasks-completed` for stage exit, and `required-stages-completed` for
+case completion. Use `rule(...)` when the event or its stage/task payload is
+part of the intent.
 
 <!-- GEN:conditions -->
 
 ```ts
 /**
- * Declare a condition rule. Combine rules into AND-groups by passing an array to
- * `entryWhen`/`exitWhen`/etc.; call those methods multiple times for OR-groups.
+ * Declare a condition rule. Pass one rule, an array for an AND-group, or an
+ * array of arrays for the complete OR-of-AND grid to
+ * `entryWhen`/`exitWhen`/etc.
+ *
+ * @param type - Which condition, e.g. `'case-entered'` or `'selected-tasks-completed'`.
+ * @param opts - What the rule needs, e.g. the `tasks` a task-completion rule waits on.
+ * @returns A rule to pass to `entryWhen` / `exitWhen` / `completeWhen`.
  */
 export declare function rule(type: CaseRuleType, opts?: RuleOpts): CaseRule;
 
@@ -575,7 +970,8 @@ export interface RuleOpts {
     /**
      * Symbolic stage label (for `selected-stage-completed` / `selected-stage-exited`).
      *
-     * Both rules serialize identically — to `selectedStageId` — so this SDK draws no
+     * @remarks
+     * Both rules serialize identically — to the one-element `selectedStageIds` array — so this SDK draws no
      * distinction between them; the difference is interpreted at runtime. Use
      * `selected-stage-exited` for an interrupting exception-stage entry (what the
      * shipped example does) and `selected-stage-completed` when you mean the stage
@@ -586,6 +982,7 @@ export interface RuleOpts {
      * Task references for `selected-tasks-completed`. Resolved **case-wide, not
      * per-stage** — a rule in one stage may reference a task in another.
      *
+     * @remarks
      * Two forms:
      * - bare `'Task Name'` — the normal form.
      * - qualified `'<Stage Label>/<Task Name>'` — also accepted, and clearer when a
@@ -623,22 +1020,25 @@ export interface RuleOpts {
 
 <!-- /GEN:conditions -->
 
-Rule **placement** (which the types cannot express):
+Common rule placement (the product-pin matrix accepts every node-rule type in
+all four node/metadata slots; these are the usual authoring patterns):
 
-| Rule | Legal position |
+| Rule | Common position |
 | --- | --- |
 | `case-entered` | stage entry (case start) |
 | `current-stage-entered` | task entry |
 | `required-tasks-completed` | stage exit |
 | `required-stages-completed` | case completion |
 | `selected-stage-completed` / `selected-stage-exited` | stage entry (needs `{ stage }`) |
-| `selected-tasks-completed` | task entry / stage exit ONLY (needs `{ tasks }`) — **illegal at stage entry**, `uip` rejects it with "task selection missing" |
+| `selected-tasks-completed` | task entry, stage entry/exit, or case exit (needs a non-empty `{ tasks }` payload) |
 | `user-selected-stage` | stage entry (with a `wait-for-user` exit elsewhere) |
 | `adhoc` | task entry, **and stage entry**. `{ expression }` is **optional** — bare `rule('adhoc')` is Valid (verified). Add an expression only to gate availability on case state. |
 | `runs-sequentially` | task entry |
 
 `stage`/`tasks` references use the **labels/names you gave** in the builder; the
-serializer resolves them to the generated ids.
+serializer resolves them to the generated ids. A `selected-tasks-completed`
+rule with neither tasks nor an expression is incomplete; `check` warns to add
+`{ tasks: [...] }` or use `when(expression)` for a pure stage-exit guard.
 
 ## Rules the validator enforces (common gotchas)
 
@@ -753,7 +1153,12 @@ export default casePlan('order-review')
 <!-- GEN:triggers -->
 
 ```ts
-/** A manual (user-initiated) case trigger. */
+/**
+ * A manual (user-initiated) case trigger.
+ *
+ * @param opts - Display name and other trigger metadata.
+ * @returns A trigger to pass to `.trigger(...)`.
+ */
 export declare function manualTrigger(opts?: ManualTriggerOpts): BuiltTrigger;
 
 export interface ManualTriggerOpts {
@@ -761,7 +1166,12 @@ export interface ManualTriggerOpts {
     description?: string;
 }
 
-/** A timer (scheduled) case trigger. `every` is an ISO-8601 repeating interval. */
+/**
+ * A timer (scheduled) case trigger. `every` is an ISO-8601 repeating interval.
+ *
+ * @param opts - The schedule — `every`, as an ISO-8601 repeating interval.
+ * @returns A trigger to pass to `.trigger(...)`.
+ */
 export declare function timerTrigger(opts: TimerTriggerOpts): BuiltTrigger;
 
 export interface TimerTriggerOpts {
@@ -779,9 +1189,10 @@ export interface TimerTriggerOpts {
 }
 
 /**
- * An Integration Service **event** trigger — an external event (a new row, an
- * email, a webhook) starts the case. Emits `data.uipath.serviceType:
- * "Intsvc.EventTrigger"`; payload fields map onto its `outputs[]`.
+ * An Integration Service event trigger in placeholder or stringly-resolved form.
+ *
+ * @param opts - Display/output options and an optional symbolic subscription.
+ * @returns A trigger to pass to `.trigger(...)`.
  */
 export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
 
@@ -789,12 +1200,19 @@ export interface EventTriggerOpts {
     name?: string;
     description?: string;
     /**
+     * Stringly resolved subscription. Prefer the descriptor overload when a
+     * prepared connector module is available. Omit this for the legacy
+     * `serviceType`-only placeholder.
+     */
+    subscription?: EventSubscription;
+    /**
      * Optional event-payload extractions. Each key is a case-variable name read
      * downstream as `=vars.<name>`; each value is the payload field expression
      * (`=response.<field>`). Pass `{ source, type }` for a non-`string` type. Each
      * emits a trigger `outputs[]` row plus a readable root `inputOutputs` companion.
      *
-     * With **no** outputs the event trigger is a **placeholder** (`data.uipath`
+     * @remarks
+     * With **no** outputs the event trigger is a **placeholder** (`data.inputs`
      * carries only `serviceType`) — the offline shape for an event on a connector
      * not yet registered; attach the real connection after registering it.
      */
@@ -813,6 +1231,8 @@ export interface BuiltTrigger {
     timeCycle?: string;
     /** Event only: payload-field extractions onto the trigger's `outputs[]` (see {@link EventTriggerOpts.outputs}). */
     eventOutputs?: TaskOutputBinding[];
+    /** Event only: a library-resolved Integration Service subscription. */
+    eventSubscription?: EventSubscription;
 }
 
 export type CaseTriggerKind = 'manual' | 'timer' | 'event';
@@ -842,26 +1262,34 @@ export default casePlan('nightly-sweep')
   .build();
 ```
 
-- **`manualTrigger({ name?, description? })`** — a `case-management:Trigger` node
-  with **no `data.uipath`** (that absence is the manual signature).
+- **`manualTrigger({ name?, description? })`** — a `uipath.case.trigger` node
+  with `data.typeVersion: '1.0.0'` and **no `data.inputs`** (that absence is the
+  manual signature). Its name is at `data.display.label`.
 - **`timerTrigger({ every, name?, description? })`** — `every` is an **ISO-8601
   repeating interval**, emitted verbatim as `timeCycle`: `R/PT1H` (hourly,
   unbounded), `R5/P1D` (5×, daily), `R5/<iso>/P1D` (5×, daily from an explicit
-  start). Emits `data.uipath = { serviceType: 'Intsvc.TimerTrigger', timerType:
-  'timeCycle', timeCycle }`.
+  start). Emits `data.inputs = { timerType: 'timeCycle', timeCycle,
+  serviceType: 'timer' }`.
 - **`eventTrigger({ name?, description?, outputs? })`** — an Integration Service
-  **event** start. Emits `data.uipath.serviceType: 'Intsvc.EventTrigger'`. With no
-  `outputs` it is a **placeholder** (`data.uipath` = only `serviceType`) — the
-  offline shape for an event on a connector not yet registered. `outputs` maps
-  payload fields to readable case variables, e.g.
+  **event** start. With no `subscription` it is a **placeholder**
+  (`data.inputs` = only `serviceType`) — the offline shape for an event on a
+  connector not yet registered. `outputs` maps payload fields to readable case
+  variables, e.g.
   `eventTrigger({ name: 'Order', outputs: { orderId: '=response.id' } })` →
   `=vars.orderId` downstream.
+- **Resolved event start** — add the same symbolic object used by
+  `waitForConnector` as `subscription`, or use a generated descriptor:
+  `eventTrigger(EmailReceived, { where, connection: 'outlook', folder:
+  'caseFolder', outputs: { subject: '=response.subject' } })`. Compile requires
+  the connector library and resolves the full context plus root bindings. An
+  In-arg bound with `.input(shape, { from: trigger })` remains bridged alongside
+  those resolved connector outputs.
 - The **first** `.trigger(...)` is the primary. Compile also syncs the sibling
   `entry-points.json` (one entry per trigger) so the runtime can discover them.
 
 ### Variable types
 
-A variable's `type` is one of: `string`, `integer`, `float`, `double`,
+A variable's `type` is one of: `string`, `number`, `integer`, `float`, `double`,
 `boolean`, `date`, `datetime`, `file`. Declare with a default via the
 `{ type, default }` form on `.input` / `.output` (defaults are written
 **verbatim as strings**, e.g. `'1.5'`):
@@ -908,9 +1336,9 @@ casePlan('intake').name('Intake').identifier('IN')
 A bound In-arg emits three coordinated pieces: a **formal slot**
 (`variables.inputs[]`, `elementId` = the trigger node), a **companion**
 (`variables.inputOutputs[]`, `id` = the arg name, what `=vars.<name>` resolves),
-and a **bridge** on the trigger node's `data.uipath.outputs[]` that copies the slot
+and a **bridge** on the trigger node's `data.inputs.outputs[]` that copies the slot
 into the companion at fire. Binding an In-arg to a **manual** trigger gives that
-node a `data.uipath = { outputs: … }` **with no `serviceType`** (it stays manual).
+node a `data.inputs = { outputs: … }` **with no `serviceType`** (it stays manual).
 An `.input(...)` **without** `{ from }` stays a bare declaration (no binding).
 `from` must be a trigger you added with `.trigger(...)`.
 
@@ -947,7 +1375,12 @@ export interface SlaOpts {
 /** SLA deadline unit. `min` = minutes, `h` = hours, `d` = days, `w` = weeks, `m` = months. */
 export type SlaUnit = 'min' | 'h' | 'd' | 'w' | 'm';
 
-/** Declare an escalation. `notify` recipients come from {@link toUser}/{@link toGroup}. */
+/**
+ * Declare an escalation. `notify` recipients come from {@link toUser}/{@link toGroup}.
+ *
+ * @param opts - When it fires (`after`) and who it notifies (`notify`).
+ * @returns An escalation to attach to an SLA.
+ */
 export declare function escalation(opts: EscalationOpts): BuiltEscalation;
 
 export interface EscalationOpts {
@@ -957,7 +1390,8 @@ export interface EscalationOpts {
     notify: EscalationRecipient[];
     /**
      * For an `at-risk` trigger, the percentage of the SLA elapsed when it fires
-     * (e.g. `80` = at 80% of the deadline). Ignored for `sla-breached`.
+     * (e.g. `80` = at 80% of the deadline). Defaults to `100` when omitted and
+     * is ignored for `sla-breached`.
      */
     atRiskPercentage?: number;
     displayName?: string;
@@ -975,10 +1409,22 @@ export interface EscalationRecipient {
     value?: string;
 }
 
-/** An escalation recipient that is a single user. */
+/**
+ * An escalation recipient that is a single user.
+ *
+ * @param target - How the user is addressed, e.g. `'email'`.
+ * @param value - The address itself, when `target` names a lookup rather than a value.
+ * @returns A recipient for an escalation's `notify` list.
+ */
 export declare function toUser(target: string, value?: string): EscalationRecipient;
 
-/** An escalation recipient that is a user group. */
+/**
+ * An escalation recipient that is a user group.
+ *
+ * @param target - How the group is addressed, e.g. `'name'`.
+ * @param value - The value itself, when `target` names a lookup rather than a value.
+ * @returns A recipient for an escalation's `notify` list.
+ */
 export declare function toGroup(target: string, value?: string): EscalationRecipient;
 ```
 
@@ -1035,15 +1481,22 @@ export default casePlan('claim-review')
 
 - **`escalation({ trigger, notify, atRiskPercentage?, displayName? })`** — `notify`
   is a list from **`toUser(target, value?)`** / **`toGroup(target, value?)`**
-  (`value` defaults to `target`). Give an `at-risk` escalation an
-  `atRiskPercentage`; `sla-breached` ignores it.
+  (`value` defaults to `target`). An omitted `atRiskPercentage` on an `at-risk`
+  escalation is emitted explicitly as 100; `sla-breached` never emits it.
 - **Conditional SLAs:** call `.sla(...)` more than once. A rule with `when: '=js:…'`
   applies only when its gate is truthy (e.g. a tighter deadline for high-priority
   cases); the **default** SLA (no `when`) must be **last** and emits the always-true
   gate `=js:true`.
-- **Guardrails (warnings, non-blocking):** `check` and `uip maestro case validate`
-  warn on an `at-risk` escalation with no `atRiskPercentage`, an escalation that
-  notifies no one, and a deadline with no escalations at all.
+- **Source guardrails:** `check` rejects an SLA `count` outside 0..1000 (engine
+  error 400019), and rejects `:` / `.` in case names or stage labels because
+  runtime event keys do not escape them. It warns when `atRiskPercentage` is 0
+  because the engine silently treats 0 as 100. Existing non-blocking warnings
+  also cover an escalation that notifies no one and a deadline with no
+  escalations at all.
+- **Do not call `.version()`.** The Case JSON schema version is owned by the
+  serializer's format profile (currently V30). The compatibility method is
+  deprecated; `check` warns on any use and rejects a value that differs from the
+  profile.
 - **`unit` is CALENDAR time, and there is no business-day unit.** `uip` enforces
   exactly `min|h|d|w|m` (`Invalid option: expected one of "min"|"h"|"d"|"w"|"m"`), so
   a requirement written in **business days** cannot be expressed exactly — `'d'` runs
@@ -1081,6 +1534,12 @@ as a case task. Same surface as the Flow SDK's connector action:
 - **Discovering connectors + field names** — identical to Flow: find the op and
   read its fields from the markdown library at `$FLOW_SDK_LIBRARY_MD`.
 
+  `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
+  (machine-readable, for compiling) point at a **separately staged** connector
+  library. It is not part of the npm package and there is no default: if the
+  variables are unset, the library is not on this machine, so search the paths
+  your environment provides and pass `--library <dir>` explicitly.
+
   ```bash
   jq '.entries[] | select(.label | test("send message"; "i")) | {label, nodeType, path}' \
      "$FLOW_SDK_LIBRARY_MD/index.json"
@@ -1117,29 +1576,63 @@ A full worked example ships at `examples/NotifyOnApproval.case.ts` (+
 `examples/bindings.json`): a human approval stage followed by a Slack
 connector task.
 
+### External agents and workflows
+
+External agents and Power Automate workflows use generated connector descriptors,
+but they are distinct Case task families with a mandatory execution mode:
+
+```text
+import { ExecuteGoogleVertexAgent } from './sdk/connectors/uipath-google-vertex.js';
+import { InvokeAMicrosoftPowerAutomateFlow } from './sdk/connectors/uipath-microsoft-powerautomate.js';
+
+.task('Ask support agent', t => t
+  .externalAgent(ExecuteGoogleVertexAgent, {
+    connection: 'vertex', folder: 'shared', mode: 'sync',
+    inputs: { parent: 'agents/support' },
+  })
+  .entryWhen(rule('current-stage-entered')))
+.task('Start approval flow', t => t
+  .externalWorkflow(InvokeAMicrosoftPowerAutomateFlow, {
+    connection: 'powerAutomate', folder: 'shared', mode: 'async',
+    inputs: { workflow_id: 'case-review' },
+  })
+  .entryWhen(rule('current-stage-entered')))
+```
+
+- Use only a generated descriptor from the matching catalog: `AgentExecution`
+  for `.externalAgent()` and `ProcessExecution` for `.externalWorkflow()`.
+- `mode` is required and closed to `'sync' | 'async'`. It selects the exact
+  runtime handler and input encoding; never substitute a service-type string.
+- `connection` and `folder` are required symbolic root bindings. These task
+  families cannot be authored as unconfigured placeholders.
+
 ## Compile & check (CLI)
 
 Author `<Name>.case.ts` with a default export ending in `.build()`, then:
 
-- **`check`** (`case/check-cli.js <Name>`) — fast static validation of the built
+Run the package's family-first CLI with `npx flow-sdk case <verb>`.
+
+- **`check`** (`npx flow-sdk case check <Name>.case.ts`) — fast static validation of the built
   case; surfaces the common validator failures (task without an entry rule,
   case/stage without a completion rule, unsatisfiable `required-tasks-completed`,
-  unresolved stage/task references) without writing a file. Exits non-zero on any
-  error.
-- **`compile`** (`case/compile-cli.js <Name> [-o caseplan.json]`) — runs the
+  unresolved stage/task references, unsafe case/stage names, and out-of-range SLA
+  counts) without writing a file. Exits non-zero on any error.
+- **`compile`** (`npx flow-sdk case compile <Name>.case.ts [-o caseplan.json]`) — runs the
   static check, then serializes to `caseplan.json` (default output name). Pair it
   with `uip maestro case validate` for the authoritative gate.
 - **`decompile`** (`uip maestro case decompile <caseplan.json> [-o Name.case.ts]`)
-  — the reverse: reads an existing V20 caseplan and emits builder source whose
-  default export re-serializes to the same caseplan. This is how you edit a case
+  — the reverse: reads an existing V20–V30 caseplan and emits builder source
+  whose default export re-serializes it losslessly. This is how you edit a case
   you did not author in this session: **decompile → edit the `.case.ts` →
   recompile**. The emitted `import` resolves to `@uipath/flow-sdk/case`; override
-  it with `--import <specifier>` when placing the file elsewhere.
+  it with `--import <specifier>` when placing the file elsewhere. The generated
+  `preserveCaseJson(...)` call carries non-authoring designer metadata alongside
+  the typed source; leave it intact except when deleting the typed construct to
+  which an identity entry belongs.
 
-  > Not reconstructed by decompile: triggers of any kind (a manual trigger is
-  > assumed), SLAs/escalations, and the Gap-E action fields (labels, catalog,
-  > form `inputs`/`outputs`). Re-add those by hand after decompiling, or the
-  > recompiled caseplan will silently drop them.
+  > Unsupported wire constructs fail decompile with a named refusal; the
+  > command does not silently drop them. Do not edit `node_modules` or a compiled
+  > `caseplan.json` to work around a refusal.
 
 Programmatic equivalents (`checkCase(built)` / `serializeCase(built)`) exist on the
 barrel, but the barrel is not importable from the authoring workspace (see the

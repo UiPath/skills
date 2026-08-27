@@ -1,0 +1,72 @@
+task_id: skill-admin-authz-check-access-smoke
+description: >
+  Smoke test (outcome-graded): agent resolves its own identity and evaluates
+  effective access scoped to a single service (Orchestrator). Graded on the
+  decision read back from the live tenant — a real PDP payload whose granted
+  services are restricted to the one asked about — not on the command string.
+  Negative guards keep the legacy identity flags out.
+
+  Distinct from identity_troubleshoot_access_denied_smoke (unrestricted
+  effective-access on a directory user): this one grades the service-restricted
+  evaluation.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, check-access]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  What can my own account — the identity this CLI is logged in as — actually do
+  in Orchestrator right now? Evaluate effective access for that account limited
+  to the Orchestrator service, and save the raw JSON output of that command
+  verbatim to ./access.json (do not summarize, wrap, or reformat it).
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "access.json holds a real effective-access decision from the PDP, restricted to Orchestrator"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('access.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'check-access not successful: Result={res}'
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      allkeys = [k.lower().replace('_', '') for k in keys(d)]
+      # A real PDP decision carries RoleAssignments AND granted-* metadata
+      # (GrantedServicesMetadata / GrantedRolesMetadata). Requiring both rejects a
+      # bare {Result,Data} envelope that merely has a RoleAssignments key.
+      assert any('roleassignment' in k for k in allkeys), 'no RoleAssignments field in the saved decision'
+      assert any('granted' in k and 'metadata' in k for k in allkeys), 'no Granted*Metadata — not a real effective-access decision'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      services = {(x.get('ServiceName') or '').lower() for x in dicts(d) if 'ServiceName' in x and 'ServiceType' in x}
+      assert services <= {'orchestrator'}, f'decision was not restricted to Orchestrator; granted services: {sorted(services)}'
+      print('OK: effective-access decision retrieved; granted services=' + str(sorted(services)))
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use the legacy --identity-id flag on check-access (the identity is positional)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+.*--identity-id'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use the legacy --principal-id flag on check-access"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+.*--principal-id'
+    weight: 2.0

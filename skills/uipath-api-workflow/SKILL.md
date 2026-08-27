@@ -285,7 +285,7 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 <!--skill-flavor:cli-reference-navigation:end-->
 <!--skill-flavor:published-reference-navigation:start-->
-| [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
+| [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), diagnose a faulted cloud run (`uip or jobs get` — `jobs logs` and `traces spans get` are dead ends here). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 <!--skill-flavor:published-reference-navigation:end-->
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
 <!--skill-flavor:reference-navigation-extra:start-->

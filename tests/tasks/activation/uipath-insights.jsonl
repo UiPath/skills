@@ -23,3 +23,9 @@
 {"id": "uipath-insights-023", "prompt": "What's the job timeline looking like for completed runs?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-024", "prompt": "Show me insights on automation health across all folders", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-025", "prompt": "Show me job metrics grouped by folder across all tenants", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-026", "prompt": "Which folders have had automation activity recently?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-027", "prompt": "Find the folder key for the Finance folder in Insights.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-028", "prompt": "Which machines show recent job activity in Insights?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-029", "prompt": "Show me which queues have been active recently.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-030", "prompt": "Which Insights alerts are set up on this tenant?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-031", "prompt": "Is this tenant entitled to Insights real-time alerting?", "expected_skill": "uipath-insights"}

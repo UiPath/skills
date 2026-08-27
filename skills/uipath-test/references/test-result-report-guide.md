@@ -5,7 +5,6 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 ## Prerequisites
 
 - Authenticated session
-- CLI surface probed (see [/uipath:uipath-test § Critical Rules #2](../SKILL.md#critical-rules)). Commands below use the post-rename shape; translate via the [Pre-rename fallbacks](../SKILL.md#pre-rename-fallbacks) table on a pre-rename CLI.
 - A Test Manager project key
 - A Test Manager test set key
 
@@ -108,4 +107,4 @@ Stop when: the user is satisfied, the response has no more data, or 3 retries ha
 
 - **Do NOT generate a report without asking for the persona** — a release manager receiving raw test logs is noise; a tester receiving only a pass/fail count is missing the detail they need.
 - **Do NOT fabricate test results** — only report data returned by the API. If executions are empty, tell the user there are no results for the selected filters.
-- **Do NOT build `--output-filter` aggregate expressions to compute counts** — a malformed filter aborts the command, and under Critical Rule 11 that stops the whole report for totals you can tally from the test case logs already fetched.
+- **Do NOT build `--output-filter` aggregate expressions to compute counts** — a malformed filter aborts the command, and under Critical Rule 10 that stops the whole report for totals you can tally from the test case logs already fetched.

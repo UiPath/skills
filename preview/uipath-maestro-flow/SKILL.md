@@ -5,28 +5,29 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ f4973f6. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ efd27ce. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
-`references/`; statically checkable rules belong in the SDK or flow-check.
+`references/`; statically checkable rules belong in the SDK's own `check`.
 -->
 
 # UiPath Flow — TypeScript Builder SDK
 
-Author a Flow as TypeScript that builds a graph. Use builder calls for runtime
-control flow and expression helpers for runtime data; native TypeScript control
-flow runs only while the graph is being constructed.
+UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/flow-sdk` package.
+The SDK provides a builder API to construct a Flow graph, allowing developers to define inputs, outputs, steps, and control flow in a type-safe manner.
+The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform.
+An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 ## Project layout
 
-The workspace installs `@uipath/flow-sdk` in `node_modules/`; `examples/`
-contains authored examples, and `references/` contains the details routed from
-this guide. Author a root-level `<Name>.flow.ts` and import the package directly.
-Connector flows also use a root-level
-[`bindings.json`](references/bindings.md). Prepared connector modules live at
-`connectors-local/<key>.ts`; their descriptor data is kept separately below
-`connectors-local/descriptors/<key>/`.
+The workspace installs `@uipath/flow-sdk` in `node_modules/`; `examples/` contains authored examples, and `references/` contains the details routed from this guide.
+To author a Flow, create a root-level `<Name>.flow.ts` and import the package directly.
+Integrations with non-UiPath systems are handled through connectors.
+Connectors require a root-level [`bindings.json`](references/bindings.md).
+Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
+
+### Hello world Flow
 
 ```ts
 import { flow, script, input, out, types } from '@uipath/flow-sdk';
@@ -35,6 +36,10 @@ export default flow('hello').name('Hello')
   .step('greet', script({ code: 'return `Hello ${$vars.start.output.name}`;' }))
   .return({ greeting: out('greet') }).build();
 ```
+
+A script is a first-class Flow node; it runs inline JavaScript and returns a value.
+The `start` step is the default name for a "manual trigger", which carries the flow's inputs.
+A Flow can have outputs, which are returned to the caller when the flow completes successfully.
 
 ## Lifecycle
 
@@ -97,7 +102,7 @@ under `examples/` resolve inside this skill folder.
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
-| Integration Service action | `uipath.connector.<key>.<action>` | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Service: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [Subflow](#subflow) | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
 | Human task | `uipath.human-in-the-loop` | `hitl(...)` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
 | Human quick form | `uipath.human-in-the-loop.quick-form` | `hitl({ variant: 'quick-form', ... })` | [Human task](#human-task) | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
@@ -141,7 +146,9 @@ Choose it when a caller, test, or another process should start each run.
 
 A platform timer starts the flow on a recurring interval.
 
-Signature: `.trigger(scheduled({ every: string }))`.
+Signature: `.trigger(scheduled({ every: string }))`. `every` takes an ISO-8601
+repeating interval, or a Quartz cron expression (e.g. `'0 0 2 * * ?'`), which
+selects the trigger's 1.2 definition automatically.
 
 ```ts
 export default flow('nightly')
@@ -153,6 +160,45 @@ export default flow('nightly')
 Prefer self-contained variables because there may be no caller supplying inputs.
 
 **Reference: [`references/scheduled-trigger.md`](references/scheduled-trigger.md)**
+
+## Form trigger
+
+A person starts the flow by submitting a form (`core.trigger.form`); the
+submitted values ARE the flow's inputs.
+
+Signature: `.trigger(formTrigger())` — no arguments; the form's fields are
+derived from `.input()` (one per input, required unless it has a default).
+
+```ts
+export default flow('expense')
+  .input({ amount: types.number, reason: types.string })
+  .trigger(formTrigger())
+  .step('log', script({ code: 'return $vars.start.output.amount;' }))
+  .build();
+```
+
+Locally `--input` supplies the values; no rung renders a form.
+
+**Reference: [`references/form-trigger.md`](references/form-trigger.md)**
+
+## Entry points (multiple triggers)
+
+A flow may have more than one root. `.trigger()` / `.input()` stay the DEFAULT
+root; `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)` adds another
+— its own trigger node, its own scoped inputs (read them with
+`entryInput('<id>', '<name>')`), and an optional prefix that runs before the
+root joins the first shared step. A prefix that ends terminally (or hands off
+with `.stepToRef(...)`) joins nothing.
+
+```ts
+flow('order-intake')
+  .input({ order: types.object })                       // default (manual) root
+  .entryPoint('nightly', scheduled({ every: 'R/P1D' }), {
+    inputs: { batchDate: types.string },
+  }, (b) => b.step('loadBatch', script({
+    code: 'return { note: $vars.nightly.output.batchDate };', returns: 'object' })))
+  .step('normalize', script({ code: 'return 1;' }))     // shared body
+```
 
 ## Connector events
 
@@ -178,16 +224,18 @@ payload can exercise downstream wiring, but it is not a subscription witness.
 Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
 them through its error port. Both expose JSON response bodies as parsed values.
 
-Signature: `http({ method?, url, managed, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
+Signature: `http({ method?, url, managed, connection?, folder?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
 ```ts
 .step('getPolicy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' } }))
-.step('limit', script({
-  code: 'return $vars.getPolicy.output.body.limit;' }))
+  managed: true, returns: { limit: 'number' },
+  branches: [{ name: 'throttled', condition: js`$vars.getPolicy.output.statusCode === 429` }] }))
+.stepToList('branch-throttled', (b) => b.return({}))
+.step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
 ```
 
-Match `managed` to the product node named by the scenario; set retry/timeouts only when requested.
+Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `bindings.json`.
+A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
 
 **Reference: [`references/http.md`](references/http.md)**
 
@@ -243,14 +291,37 @@ Copy identity fields from a freshly pulled tenant registry; never construct them
 
 **Reference: [`references/ixp.md`](references/ixp.md)**
 
+## Document classify and Dynamic Extract
+
+Classify a document (`uipath.document.classify`), or extract fields against an
+INLINE schema (`uipath.ixp.extract-document-builder`) instead of a published
+IxP project's trained fields.
+
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+`dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
+
+```ts
+.step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
+.step('extract', dynamicExtract({ fileRef: input('file'),
+  schema: { type: 'object', properties: { total: { type: 'string' } } },
+  model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
+```
+
+Dynamic Extract still needs a model deployment identity — copy `modelName` and
+`folderKey` from the tenant; never construct them.
+
+**Reference: [`references/document-pipeline.md`](references/document-pipeline.md)**
+
 ## Delay
 
-Pause this path for a duration, then continue.
+Pause this path for a duration — or until an absolute date-time — then continue.
 
-Signature: `delay({ duration: string })`.
+Signature: `delay({ duration: string })` or `delay({ until: string })`
+(exactly one; `until` is an ISO-8601 date-time, e.g. `'2026-09-01T09:00:00Z'`).
 
 ```ts
 .step('cooldown', delay({ duration: 'PT30S' }))
+.step('embargo', delay({ until: '2026-09-01T09:00:00Z' }))
 .step('resumedAt', script({ code: 'return new Date().toISOString();' }))
 ```
 
@@ -294,11 +365,30 @@ Confirm identity and exact argument casing on the tenant; `.onError(...)` is sup
 
 **Finding the key: [`references/or-processes.md`](references/or-processes.md)**
 
+## Published function
+
+Run a deployed Orchestrator **Function** — a small unit of code published as its
+own resource — as one step.
+
+Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`.
+
+```ts
+.step('echo', publishedFunction({ key: functionKey,
+  name: 'acme-echo', folderPath: 'Shared/acme-echo',
+  inputs: { message: input('message') }, returns: { echoed: 'string' } }))
+```
+
+A function is usually deployed into a folder of its OWN name — read `folderPath`
+from the tenant rather than assuming `'Shared'`, since the binding's resourceKey
+is `<folderPath>.<name>`.
+
+**Reference: [`references/published-function.md`](references/published-function.md)**
+
 ## Agentic process
 
 Run a deployed Maestro agentic process synchronously.
 
-Signature: `agenticProcess({ key, name, folderPath, inputs?, returns? })`.
+Signature: `agenticProcess({ key, name, folderPath, inputs?, returns?, form?, completion? })`.
 
 ```ts
 .step('intake', agenticProcess({ key: processKey,
@@ -306,7 +396,9 @@ Signature: `agenticProcess({ key, name, folderPath, inputs?, returns? })`.
   inputs: { productId: 1 }, returns: { status: 'boolean' } }))
 ```
 
-Confirm identity and argument names live; declared outputs may still be null, and `.onError(...)` is supported.
+Confirm identity and argument names live; declared outputs may still be null;
+`.onError(...)` is supported. `form: 'bpmn' | 'flow' | 'case'` picks the published
+form; `completion: 'fire-and-forget'` waits for nothing — see the reference.
 
 **Reference: [`references/agentic-process.md`](references/agentic-process.md)**
 
@@ -335,18 +427,20 @@ sibling before calling it. Verify resource identity and answer quality live.
 
 Define an autonomous agent inside this Flow project, with optional resources.
 
-Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, context?, tools?, escalation?, ... })`.
+Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, context?, tools?, escalation?, guardrails?, mode?, ... })`.
 
 ```ts
-.step('triage', inlineAgent({ model: 'gpt-5.4',
-  systemPrompt: 'Return JSON with category.',
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return JSON with category.',
   userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
-  returns: { category: 'string' } }))
+  returns: { category: 'string' },
+  guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
+    enabledForEvals: true, action: { $actionType: 'block', reason: 'PII detected' },
+    rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
 ```
 
-Model/tool/escalation decisions and answer quality require live judgment.
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
-**Reference: [`references/inline-agent.md`](references/inline-agent.md)**
+**Reference: [`references/inline-agent.md`](references/inline-agent.md)** — resource families: [`references/agent-resources.md`](references/agent-resources.md)
 
 ## Queue item
 
@@ -364,16 +458,37 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 
 **Reference: [`references/queue.md`](references/queue.md)**
 
+## Data Fabric
+
+Use native Data Fabric nodes only when the scenario names Data Fabric
+(`core.datafabric.read` / `.update`). “Data Service” instead names the
+`uipath-uipath-dataservice` connector; route it to `connector(...)`.
+Signatures: `dataFabricRead({ entity, filters? })` and
+`dataFabricUpdate({ entity, record, set })` — `record` is exactly one of
+`{ byId }` or `{ fromRead: '<read step name>' }`.
+
+```ts
+.step('lookup', dataFabricRead({ entity: 'Invoices',
+  filters: [{ field: 'InvoiceId', value: input('invoiceId') }] }))
+.step('markPaid', dataFabricUpdate({ entity: 'Invoices',
+  record: { fromRead: 'lookup' }, set: { Status: 'Paid' } }))
+```
+
+Filters default to `operator: '='`; `or: true` joins a row with OR. No local
+rung reads a real entity — offline validate is the acceptance bar.
+
+**Reference: [`references/data-fabric.md`](references/data-fabric.md)**
+
 ## Error handling
 
 Route the immediately preceding action's failure through a handler path.
 
-Signature: `.step(name, action).onError(handler => ... )`; handler may use `err(step, field)` and `rejoin(target)`.
+Signature: `.step(name, action).onError(handler => ... )`; handler may use `err(step, field)` and `stepToRef(target)`. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves the success path running.
 
 ```ts
 .step('fetch', http({ url, managed: true }))
 .onError((h) => h.step('recover', script({ code: 'return "cached";' }))
-  .rejoin('useValue'))
+  .stepToRef('useValue'))
 .step('useValue', script({ code: 'return "done";' }))
 ```
 
@@ -413,6 +528,25 @@ Use a script for stand-in data; use a placeholder only to expose a capability ga
 
 **Reference: [`references/placeholder.md`](references/placeholder.md)**
 
+## Unknown node type
+
+Place a node this SDK has no factory for, carrying its definition verbatim.
+
+Signature: `rawNode({ nodeType, version, manifest, inputs?, outputs? })`.
+
+```ts
+.step('exotic', rawNode({ nodeType: 'uipath.exotic.thing', version: '2.1',
+  manifest: exoticManifest,       // exactly what `registry get` returned
+  inputs: { where: input('scope') } }))
+```
+
+`manifest` must be a real definition, copied from the registry — not one you
+wrote. Prefer a typed factory when one exists: it carries the family's checks,
+defaults and output contract. `decompile` emits this for a node type it cannot
+name, so an unknown node keeps its type and version through a round trip.
+
+**Reference: [`references/placeholder.md`](references/placeholder.md#unknown-node-types)**
+
 ## Branch
 
 Split runtime control into true and false paths.
@@ -425,7 +559,7 @@ Signature: `.branch(name, condition, thenFn, elseFn?)`.
   (no) => no.step('approve', script({ code: 'return "approved";' })))
 ```
 
-Use branch for a two-way decision; decide whether arms return or rejoin shared work.
+Use branch for a two-way decision; decide whether arms return or ref back into shared work.
 
 **Reference: [`references/branch.md`](references/branch.md)**
 
@@ -471,34 +605,74 @@ Signature: `subflow(childFlow, { childInput: expression, ... })`.
 
 ```ts
 const child = flow('normalize').input({ raw: types.string })
-  .output({ clean: types.string }).step('trim', script({ code: 'return $vars.raw.trim();' }))
-  .return({ clean: out('trim') }).build();
+  .output({ clean: types.string })
+  .step('trim', script({ code: js`return ${input('raw')}.trim();`.js, returns: { clean: 'string' } }))
+  .return({ clean: out('trim', 'clean') }).build();
 export default flow('parent').input({ text: types.string }).output({ clean: types.string })
   .step('normalized', subflow(child, { raw: input('text') })).return({ clean: out('normalized', 'clean') }).build();
 ```
 
-Use a child for a meaningful contract or reuse boundary, not arbitrary splitting or speed.
+Use a child for a meaningful contract or reuse boundary, not arbitrary splitting or speed; children can be reused at any nesting depth.
+Read a child's inputs with `input(...)`: its start node is named `<callerStepId>Start`, so a bare `$vars.raw` is wrong.
 
 **Reference: [`references/subflow.md`](references/subflow.md)**
 
 ## Human task
 
-Pause for a person using an inline form, quick form, or deployed Action App.
+Pause for a person: an inline form, quick form, deployed Action App, or a
+document-validation station.
 
-Signature: `hitl({ variant?, app?, title?, priority?, fields?, outcomes })`.
+Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError? })`.
 
 ```ts
 .step('review', hitl({ title: 'Review invoice',
-  fields: [{ id: 'comment', type: 'text', direction: 'output' }],
-  outcomes: ['Approve', 'Reject'] }))
-.switch('route', out('review', 'Action'), [
-  { value: 'Approve', body: (b) => b.return({ status: 'approved' }) },
-], (other) => other.return({ status: 'rejected' }))
+  recipient: { assignee: { type: 'user', value: 'reviewer@acme.test' } },
+  fields: [{ id: 'amount', type: 'number', direction: 'inOut', value: input('amount') }],
+  outcomes: ['Approve', 'Reject'], outcomePorts: true }))
+.stepToList('outcome-reject', (b) => b.return({ status: 'rejected' }))
+.step('proceed', script({ code: 'return "approved";' }))
 ```
 
-Choose the variant from the requested human experience and deployed app; offline runs script the human.
+`outcomePorts` routes per outcome (`outcome-<slug>` exits; the FIRST continues the main path); without it, route on `out('review', 'Action')`.
 
 **Reference: [`references/hitl.md`](references/hitl.md)**
+
+## Conversational
+
+Work a live CHAT: wait for the person's message, answer it, post a reply. Every
+step is keyed by a `conversationId` — the conversation trigger publishes it.
+
+Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+
+```ts
+.trigger(conversationTrigger())
+.step('listen', waitForMessage({ conversationId: out('start', 'conversationId') }))
+.step('reply', conversationalAgent({ model: 'gpt-5.4', systemPrompt: 'Answer briefly.',
+  settings: { context: out('listen', 'conversationContext') } }))
+```
+
+`waitForMessage` SUSPENDS the flow (a catch event), it does not poll. Use `sendMessage` when the flow decides what to say, an agent when the model does.
+
+**Reference: [`references/conversational.md`](references/conversational.md)**
+
+## Voice
+
+Talk to someone on a phone call. The call is identified by a `callContext`
+OBJECT — pass the whole thing, never a field inside it.
+
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, callContext, voice?, maxIterations? })`.
+
+```ts
+.step('dial', createOutgoingCall({ from: '+15550001111', to: input('phone') }))
+.step('talk', voiceAgent({ systemPrompt: 'Confirm the delivery window.',
+  callContext: out('dial', 'callContext'),
+  voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' } }))
+.step('bye', endCall({ callContext: out('dial', 'callContext') }))
+```
+
+The incoming-call trigger publishes `out('start', 'callContext')`. A persona belongs to its voice model; `maxIterations` is capped at 8.
+
+**Reference: [`references/voice.md`](references/voice.md)**
 
 ## Transform
 
@@ -530,7 +704,8 @@ Signatures: `connector(descriptor, inputs, opts?)`;
   { connection: 'jira', folder: 'shared' }))
 ```
 
-Discover tenant-specific fields and ids rather than guessing; preserve every scenario-named input.
+Data Service uses connector key `uipath-uipath-dataservice`; never substitute
+`dataFabricRead`. Discover tenant-specific fields and ids; preserve every scenario-named input.
 
 **Reference: [`references/connector-params.md`](references/connector-params.md)**
 
@@ -540,7 +715,7 @@ Discover tenant-specific fields and ids rather than guessing; preserve every sce
 
 Run a body once for each value in a collection.
 
-Signature: `.loop(name, collection, bodyFn)`.
+Signature: `.loop(name, collection, bodyFn, options?)`.
 
 ```ts
 .loop('eachOrder', input('orders'), (body) => body
@@ -548,9 +723,32 @@ Signature: `.loop(name, collection, bodyFn)`.
     'return { id: $vars.eachOrder.currentItem.id };' })))
 ```
 
-The SDK has no per-iteration flow-variable mutation; keep per-item work in the body.
+Per-iteration flow-variable writes go through `{ updates }` on a body step.
+Options select the richer loop contract: `parallel: true`, `completionCondition`
+(checked after each iteration, stops early), and `body.break()` exits the whole
+loop from inside an arm. See the reference for the option details and examples.
 
 **Reference: [`references/loops.md`](references/loops.md)**
+
+## Do while
+
+Run a body, then repeat **while a condition is true** — checked AFTER each
+pass, so the body always runs at least once (`core.logic.dowhile`). The
+container publishes no data output: write results to a `.var()` from inside
+the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
+the platform default of 10,000), and `body.break()` works exactly as in
+`.loop()`.
+
+Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
+
+```ts
+.var('page', types.number, 1)
+.doWhile('paginate', js`$vars.fetch.output.hasNextPage === true`, (body) => body
+  .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
+    method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
+    { updates: { page: js`$vars.page + 1` } }),
+  { limit: 50 })
+```
 
 ## Return and end
 
@@ -577,5 +775,9 @@ Static diagnostics own all mechanically checkable structure; fix their cause
 rather than copying rules back into this router.
 
 Match proof to the request's acceptance bar. If one wiring question remains,
-run one bounded experiment that distinguishes it, apply the answer, and stop;
-do not grow a family of scratch solutions or repeat equivalent variants.
+a validate-only bar is complete when product validation is green and its
+required structural self-check passes; do not add debug only for confidence.
+For each behavior claim the bar names, plan at most one bounded product debug
+that answers it. If one wiring question remains, run one bounded experiment
+that distinguishes it, apply the answer, and stop; do not grow a family of
+scratch solutions or repeat equivalent variants.

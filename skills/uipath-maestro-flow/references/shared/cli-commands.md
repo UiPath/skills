@@ -152,15 +152,15 @@ uip solution upload <SolutionDir> --output json
 Debug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.**
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 
 # Pass input arguments to the flow
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 
 # Bind local files to file-typed input variables (repeatable).
 # Replace <variableId> and <localPath> with your own values.
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```

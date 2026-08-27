@@ -16,12 +16,14 @@ query commands (default `dev`):
 Typical loop: develop and validate on `--stage dev` with a subset → publish → let
 consumers read the **dashboards** on the published data.
 
-> **CLI caveat:** `uip pm query --stage published` is currently **not reachable** —
-> `/query/{id}/published` needs a completed ingestion on that stage and no `uip pm`
-> path produces one (`apps publish` answers `IngestionNeeded: true`, but a following
-> `ingestions create --wait` still leaves published querying at
-> `UserError_InvalidOrNoIngestion`; verified against a live tenant). So publishing
-> promotes the app to the **dashboards**, but **CLI-driven `query` stays on `dev`**.
+> **Querying `published`:** `/query/{id}/published` needs a **completed ingestion on
+> that stage**. `apps publish` promotes the definition and answers
+> `IngestionNeeded: true`; materialize the rows with
+> **`uip pm ingestions create <app> --stage published --wait`** — `ingestions create`
+> takes `--stage` (the stage to ingest into) — after which `query --stage published`
+> works. Before that ingestion completes it 400s `UserError_InvalidOrNoIngestion`.
+> Querying published is **optional**: `dev` stays the fast iteration loop, and
+> consumers read the **dashboards** either way.
 
 ## Publishing
 
@@ -40,8 +42,8 @@ clobbering a newer model. The result envelope carries:
   after a re-ingest; publishing alone promotes the definition, not the rows.
 
 So the full promote loop is: validate on `dev` → `uip pm apps publish <app>` →
-`uip pm ingestions create <app> --wait` when `IngestionNeeded` → analyse on
-`--stage published`.
+`uip pm ingestions create <app> --stage published --wait` when `IngestionNeeded`
+→ optionally analyse on `--stage published` (the dashboards read it either way).
 
 ## RBAC — configured at the platform layer, not in `uip pm`
 

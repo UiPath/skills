@@ -22,8 +22,8 @@ export default bpmn('notify-channel')
   .connector(
     'post',
     'uipath-salesforce-slack',
-    'send-message-to-user',
-    { channel: '@dev', messageToSend: 'BPMN says hi', send_as: 'bot' },
+    'send-message-to-channel',
+    { channel: '#general', messageToSend: 'BPMN says hi', send_as: 'bot' },
     { connection: 'slack', folder: 'shared', name: 'Post to Slack' },
   )
   .endEvent('done', { name: 'Done' })

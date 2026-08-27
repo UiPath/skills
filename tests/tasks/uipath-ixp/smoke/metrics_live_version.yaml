@@ -1,0 +1,68 @@
+task_id: skill-ixp-metrics-live-version-smoke
+description: >
+  Smoke: asked how a project is performing "in production", the agent resolves
+  the LIVE model version from `list-models` first, then scopes `get-metrics` to
+  it with `--model-version` — rather than running a bare `get-metrics`, which
+  returns the LATEST trained version (SKILL.md Critical Rule 21).
+
+  The fixture pins live at version 9 (ProjectScore 0.98) while the latest
+  trained is version 30 (ProjectScore 0.91), so the two paths produce different
+  numbers in the graded artifact, not merely different command shapes.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_versions}
+
+initial_prompt: |
+  How is the IXP project `my_invoices-f1afa9ef-ixp` performing in production
+  right now?
+
+  Write your answer to `metrics.json` in the working directory:
+
+      {"version": <the model version the score belongs to>,
+       "project_score": <that version's ProjectScore>}
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Resolved the live version from `list-models` before reading any score"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list-models\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The version selector may precede or follow the positional project name, and
+  # takes three spellings (`-m 9`, `--model-version 9`, `--model-version=9`).
+  - type: file_matches_regex
+    description: "Scoped `get-metrics` to the live version (9) instead of taking the latest-trained default"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\b(?=.*(?:--model-version[= ]|-m\s+)9\b).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Outcome, not command shape: 0.98 is reachable ONLY from version 9. A bare
+  # get-metrics yields 0.91, so this separates the two paths on the artifact.
+  - type: json_check
+    description: "Reported the live version's identity and score (9 / 0.98), not the latest-trained one (30 / 0.91)"
+    path: "metrics.json"
+    assertions:
+      - expression: "version"
+        operator: equals
+        expected: 9
+      # `gte` not `equals`: only version 9 can reach 0.95+ (latest is 0.91), so
+      # this still fully discriminates, without resting on float equality.
+      - expression: "project_score"
+        operator: gte
+        expected: 0.95
+    weight: 3.0
+    pass_threshold: 1.0

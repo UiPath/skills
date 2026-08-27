@@ -1,6 +1,6 @@
 # Transform
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`transform()`](api.md#transform-function).*
+*Exact signatures, fields, and defaults: [`transform()`](api.md#transform-function).*
 
 Transform applies filter, map, or group-by operations to an array.
 

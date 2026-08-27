@@ -20,6 +20,10 @@ EXPECTED = INPUT_A * INPUT_B  # 391
 
 def main():
     # A Script node must be present — prevents hardcoding 391 as a literal.
+    # The prompt names the Script node for this reason: an End-node output
+    # mapping (`=js:$vars.numberA * $vars.numberB`) is a skill-documented way
+    # to compute the product and does run to 391, so without that instruction
+    # this assert fails a correct flow. Keep prompt and assert in sync.
     assert_flow_has_node_type(["core.action.script"])
 
     project_dir = find_project_dir()

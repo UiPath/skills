@@ -14,7 +14,7 @@ description: >
   by its timestamp. Salesforce is not called (match status is an input), so no
   Salesforce connection is required; the Slack node is a real connector with an error
   port so a Slack hiccup cannot fault the run.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:escalation]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:escalation, path-to-ga, outcome-graded]
 
 run_limits:
   expected_turns: 80

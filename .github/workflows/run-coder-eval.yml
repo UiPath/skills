@@ -75,17 +75,23 @@ on:
       # Windows runs it in-process on the host (tempdir driver) with its own
       # delegate-stdio install, ROPC user token, and shared interop — ports of
       # coder_eval_uipath's daily.sh / daily-windows.ps1 wiring.
+      #
+      # codex is the DEFAULT: it is the harness the nightly runs daily (claude runs
+      # twice a week), and codex on the cheap tier measures at pass-rate parity with
+      # claude-sonnet-5 for a fraction of the cost. An ad-hoc run should reproduce the
+      # daily driver by default, not the twice-weekly one.
       agent:
         description: 'Agent to run.'
         type: choice
         options:
-          - claude
           - codex
+          - claude
           - antigravity
           - delegate-sdk
-        default: claude
+        default: codex
       # Overrides the model for ANY agent. Blank keeps that harness's own repo
-      # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL).
+      # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL) — which is
+      # where the default model lives, so it stays correct whichever agent is picked.
       agent_model:
         description: 'Model override (blank = default).'
         type: string
@@ -100,7 +106,7 @@ on:
 # for the full rationale. Workflow-level so both the Linux and Windows
 # install steps, and any job added later, inherit it.
 env:
-  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval,anthropic
 
 jobs:
   partition:
@@ -337,7 +343,21 @@ jobs:
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
-        run: bash .github/scripts/refresh-auth.sh
+        run: |
+          bash .github/scripts/refresh-auth.sh
+          # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
+          # containers (reference anti-cheat), so container-root can no longer
+          # read the host-owned ~/.uipath extra_mount (mounted by
+          # experiments/nightly.yaml) by capability. Widen it recursively via
+          # the "other" bits so the mounted .auth file (mode 600) is readable —
+          # mirrors coder-eval's own grant_container_access.
+          chmod -R o+rwX "$HOME/.uipath"
+
+      # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
+      # can no longer import the group-level _shared/ helper by walking up the
+      # tree. Co-locate a copy of each group's _shared into its task dirs first.
+      - name: Stage _shared grader helpers
+        run: bash tests/scripts/stage_shared.sh
 
       # TASK_GLOBS here is the partition-resolved list of *file paths* (not
       # globs). Word-splitting is intentional — do not quote.

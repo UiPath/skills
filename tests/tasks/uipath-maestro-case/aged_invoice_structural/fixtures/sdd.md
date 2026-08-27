@@ -1,9 +1,9 @@
 # SDD — AgedInvoiceResolution
 
-**Case Definition Blueprint** · Aged Invoice Payment Resolution — compact connector-free structural variant
+**Case Definition Blueprint** · Aged Invoice Payment Resolution — minimal connector-free structural variant
 
 > Derived from the Aged Invoice Payment Case Management PoV PDD, reduced to a
-> compact three-stage backbone plus the two interrupting exception lanes so it
+> minimal three-stage backbone plus the two interrupting exception lanes so it
 > builds within the agent turn budget. Every external system is modelled as an
 > `api-workflow` / `rpa` task (PDD §12.4), so no Integration Service connection
 > is required. Exercises the full connector-free task-type mix (api-workflow,

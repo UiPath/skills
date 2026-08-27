@@ -71,15 +71,19 @@ compiling from a scaffolded solution subdirectory behaves exactly as it does
 from the project root. A nested `package.json` that says nothing about `flowSdk`
 inherits; one that sets `emitOnly: false` opts out. In that mode
 `uip maestro flow compile` only serializes source, and `uip maestro flow check`
-refuses, because product validate/debug are the experiment's gates. A complete
-pass is emit, any required artifact bindings, validate, resource refresh, then
-debug:
+refuses, because product validation owns structural verification. The required
+base pass is emit, any required artifact bindings, then validate. Add resource
+refresh and debug only when the stated acceptance bar requires product-runtime
+behavior evidence:
 
 ```bash
 uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
 uip maestro flow validate <Name>Sol/<Name>/<Name>.flow --output json
+# Only for a stated runtime-behavior claim:
 ( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> --output json )
+( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+  --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
+  --output json )
 ```
 
 This loop has exactly one emitted artifact:
@@ -96,46 +100,75 @@ The JSON envelope has top-level `Result`; a successful validation also reports
 except for the reviewed shared-connection advisory. Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
-### Managed HTTP: emitted-artifact bindings in emit-only projects
+### Bounded completion
+
+Match the final evidence to the stated acceptance bar after the last edit:
+
+- For a validate-only bar, `Data.Status: "Valid"` plus the required structural
+  self-check is completion. Stop there; do not run debug only for confidence.
+- For each distinct behavior claim named by the bar, plan at most one bounded
+  debug with the inputs and attachments that exercise it. One run may cover
+  compatible claims; do not repeat equivalent inputs.
+- If one unknown still blocks the final wiring, run one bounded experiment that
+  distinguishes the choices, apply its answer, and return to the final
+  emit/validate pass. Do not create a scratch-solution family.
+
+If the requested evidence cannot be obtained inside that bound, report the
+evidence boundary instead of replacing it with repeated debug launches.
+
+### Managed HTTP: authored connection bindings
 
 `http({ managed: true, ... })` needs real connection and folder bindings for
-product debug. After **every emit**, select an enabled HTTP connection and add
-both bindings to the emitted artifact:
+connector-authenticated product debug. Select an enabled HTTP connection:
 
 ```bash
 uip is connections list --all-folders \
   --output-filter "[?ConnectorKey=='uipath-uipath-http'].{Id:Id,FolderKey:FolderKey,Name:Name}"
-
-uip maestro flow binding add <Name>Sol/<Name>/<Name>.flow \
-  "uipath-uipath-http connection" connection <connection-id> \
-  --resource-key <connection-id> --property-attribute ConnectionId --output json
-
-uip maestro flow binding add <Name>Sol/<Name>/<Name>.flow \
-  "FolderKey" folderKey <folder-key> \
-  --resource-key <folder-key> --property-attribute FolderKey --output json
 ```
 
-These are product bindings embedded in the emitted `.flow`, not the symbolic
-connector names authored in a root-level `bindings.json`. A managed-HTTP-only
-flow needs no authored `bindings.json`, but it still needs the two
-emitted-artifact bindings for product debug. Re-emission overwrites the artifact,
-so run both `binding add` commands again after the last compile.
+Declare symbolic entries in `bindings.json`, then pass both names to the node:
+
+```ts
+http({ managed: true, method: 'GET', url: '/me',
+  connection: 'spotifyHttp', folder: 'shared' })
+```
+
+Compilation resolves those names and writes both the connector-authenticated
+node detail and the required product bindings into the emitted `.flow`. Do not
+patch them into the artifact after emission; that edit would be lost on the next
+compile. Omit both options only when manual/implicit authentication is intended.
 
 ## Refresh, debug, and preserve evidence
 
 `flow debug` takes the project directory, not the `.flow` file, and resource
-refresh must run first. From the solution directory, `<Name>` names that project:
+refresh must run first. From the solution directory, `<Name>` names that project.
+These are the common flags; use only the ones the behavior claim needs:
+
+| Need | Exact form |
+|---|---|
+| JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
+| File input | `--attachment <input-name>=<path>`; repeat for multiple files |
+| Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
+| Compact read-back | `--output-filter '<JMESPath>' --output json` |
+
+For example, a direct-input claim can keep the useful status, outputs, and
+diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
 ( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> --output json )
+( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+  --inputs @inputs.json \
+  --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
+  --output json )
 ```
 
-Read and retain the debug envelope's `Result`, `Data.instanceId`,
-`Data.finalStatus`, `Data.studioWebUrl`, incomplete/faulted element executions,
-global outputs, and incidents. `Completed` with the expected outputs and no
-unexpected incidents is evidence for the product-runtime path; a bare process
-exit code is not.
+The top-level envelope still carries `Result`; the projection above selects
+from `Data`. Read and retain `Result`, the projected instance/status/URL,
+incomplete or faulted element executions, needed global outputs, and incidents.
+`Completed` with the expected outputs and no unexpected incidents is evidence
+for the product-runtime path; a bare process exit code is not. Omit the filter
+only when diagnosing a field that the compact projection did not retain.
 
 For a fault, query the backend incident payload with the returned instance id:
 

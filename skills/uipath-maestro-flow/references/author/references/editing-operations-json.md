@@ -312,7 +312,11 @@ Use `Edit` to add an entry to `variables.variableUpdates.<NODE_ID>`:
       "<NODE_ID>": [
         {
           "variableId": "<INOUT_VARIABLE_ID>",
-          "expression": "=js:<EXPRESSION>"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "<BARE_JS_NO_PREFIX>",
+            "fieldType": "<TARGET_VARIABLE_TYPE>"
+          }
         }
       ]
     }
@@ -321,6 +325,10 @@ Use `Edit` to add an entry to `variables.variableUpdates.<NODE_ID>`:
 ```
 
 Only `inout` variables can be updated. `in` variables are read-only.
+
+> **`expression` is an object here, not a `=js:` string** — unlike `inputs` and End-node `outputs[].source`, which still accept the string form. Set `fieldType` to the target variable's declared `type` (`integer` → `number`); `flow validate` does not cross-check it against the variable, so a mismatch passes silently. The string form does not: it fails with `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<NODE_ID>.0.expression`.
+
+> **There is no CLI command for variable updates.** `Edit` is the only way to write them.
 
 ---
 
@@ -440,7 +448,7 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
          "edges": [ ... ],
          "variables": {
            "globals": [
-             { "id": "<IN_VAR>", "direction": "in", "type": "..." },
+             { "id": "<IN_VAR>", "direction": "in", "type": "...", "triggerNodeId": "sfStart" },
              { "id": "<OUT_VAR>", "direction": "out", "type": "..." }
            ],
            "nodes": []

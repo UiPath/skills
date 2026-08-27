@@ -1,6 +1,6 @@
 # Connector Events
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`onEvent()`](api.md#onevent-function), [`waitForEvent()`](api.md#waitforevent-function).*
+*Exact signatures, fields, and defaults: [`onEvent()`](api.md#onevent-function), [`waitForEvent()`](api.md#waitforevent-function).*
 
 The same subscription can start a Flow or pause an already-running path.
 

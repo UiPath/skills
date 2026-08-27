@@ -1,0 +1,63 @@
+task_id: skill-gov-aops-policy-list-smoke
+description: >
+  Smoke test (outcome-graded): a marker policy is registered for the E2E product
+  in pre_run and the agent lists that product's governance policies. Graded on the
+  records read back — the seeded policy must appear with its service-assigned
+  identifier under the requested product. Registering a policy does not deploy it,
+  so nothing about which policy governs a subject changes.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, list]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-list" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Seeded for the aops-policy list scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  A tenant admin wants to see every AOps governance policy registered for the
+  `E2E` product, including the one named in `seed.json` (the `policy.name`
+  field). Retrieve them and save the complete JSON result to ./policies.json.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "policies.json holds real E2E policy records, including the seeded one"
+    command: |
+      python3 -c "
+      import json, re
+      seed = json.load(open('seed.json', encoding='utf-8-sig'))['policy']
+      d = json.load(open('policies.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      rows = [x for x in dicts(d) if x.get('Name') and x.get('Identifier')]
+      assert rows, 'saved JSON holds no policy rows (Name + Identifier)'
+      bad = [r.get('Identifier') for r in rows if not re.fullmatch(r'[0-9a-fA-F-]{36}', str(r.get('Identifier')))]
+      assert not bad, f'rows without a service-assigned identifier: {bad[:3]}'
+      wanted = seed['name']
+      hit = next((r for r in rows if r.get('Name') == wanted), None)
+      assert hit, f'the seeded policy {wanted} is not in the listing ({len(rows)} rows read)'
+      product = (hit.get('Product') or {}).get('Name')
+      assert product == 'E2E', f'seeded policy came back under product {product!r}'
+      print(f'OK: {len(rows)} policies listed; seeded {wanted} present under E2E')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

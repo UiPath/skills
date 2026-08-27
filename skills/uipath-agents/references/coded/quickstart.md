@@ -38,7 +38,7 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: Coded Function, LangGraph, LlamaIndex, or OpenAI Agents.
 - **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that path does not exist and will cause `ImportError`). Always instantiate `UiPath()` inside functions/nodes, never at module level.
 - **Refresh the CLI's Python executable path after venv changes.** If `uip codedagent` reports that the UiPath CLI/Python executable is not recognized, or any error indicates a stale `uipathExePath`, activate the project venv and run `uip codedagent setup --force`. This rewrites the CLI configuration to point at the current `.venv` executable.
-- **Auth check is one-shot.** Run `uip login status --output json` once, at step 5. If the user supplied environment + organization + tenant or explicitly asked to connect to a specific tenant, run the matching one-shot `uip login --organization "<ORG>" --tenant "<TENANT>" --output json` after the status check, even if another session is already logged in. Otherwise, the wrapper auto-refreshes tokens on subsequent cloud calls (no `uip login refresh` exists); re-auth only on a real `401`.
+- **Auth check is one-shot.** Run `uip login status --output json` once, at step 5. If the user supplied environment + organization + tenant or explicitly asked to connect to a specific tenant, have the user run the matching one-shot `uip login --organization "<ORG>" --tenant "<TENANT>" --output json` in their own terminal after the status check, even if another session is already logged in — it is a browser sign-in (see the interactive-sign-ins rule in [../authentication.md](../authentication.md)); if you run it yourself, first tell the user a browser window is about to open. Otherwise, the wrapper auto-refreshes tokens on subsequent cloud calls (no `uip login refresh` exists); re-auth only on a real `401`.
 - **Use `uip codedagent run` from non-interactive shells.** `uip codedagent dev` auto-appends `--interactive`.
 - **Runtime captures only the last node's delta as output.** `Annotated[list, operator.add]` reducers accumulate inside the graph but vanish from `--output-file` JSON and eval trajectories. Carry aggregate fields forward in each node's return (`{"items": [*state.get("items", []), x]}`) — see [frameworks/langgraph-integration.md](frameworks/langgraph-integration.md) § Runtime Output Quirk.
 - **Verify the JSON, not the streamed display.** After `uip codedagent run --output-file out.json`, inspect `out.json` — the streamed view shows per-node deltas; the JSON is the runtime's actual final result. Mismatches expose the runtime quirk above.
@@ -59,6 +59,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add <framework-package>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
 | **Build** | [lifecycle/build.md](lifecycle/build.md) | Code agent logic with framework patterns |
 | **Bindings** | [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md) | Sync resource overrides in `bindings.json` |
+| **Env vars** | [lifecycle/environment-variables.md](lifecycle/environment-variables.md) | Which store the cloud runtime reads (not `.env`); `%ASSETS/<ASSET_NAME>%` to pull a value from an Orchestrator asset |
 | **Run** | [lifecycle/running-agents.md](lifecycle/running-agents.md) | `uip codedagent run` |
 | **Evaluate** | [lifecycle/evaluate.md](lifecycle/evaluate.md) | `uip codedagent eval` |
 | **Deploy** | [lifecycle/deployment.md](lifecycle/deployment.md) | `uip codedagent deploy`, `uip codedagent invoke` |
@@ -105,11 +106,11 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask the user, even 
 
    See [lifecycle/build.md](lifecycle/build.md) § Additional Instructions for the detailed Build-stage rules. After implementing, re-run `uip codedagent init` to update schemas from the actual code.
 4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
-5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, immediately run the matching one-shot login command from [../authentication.md](../authentication.md), using both `--organization` and `--tenant` in the same `uip login` command. Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
+5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, have them run the matching one-shot login command from [../authentication.md](../authentication.md) in their own terminal, using both `--organization` and `--tenant` in the same `uip login` command (a browser sign-in — if you run it yourself, first tell the user a browser window is about to open). Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
-Then STOP and wait. On reply, run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`). Never run `uip login` without `--tenant`.
+Then STOP and wait. On reply, hand the user the matching one-shot login from [../authentication.md](../authentication.md) to run in their own terminal (maps environment → `--authority`), then confirm with `uip login status --output json`. Never run `uip login` without `--tenant`.
 6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:
    - `Input`/`Output`/`State` Pydantic models or TypedDicts — any field added, removed, renamed, or retyped counts (the class name being the same does not).
    - The entry function's signature (parameters or return type annotation).
@@ -198,7 +199,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution projects import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution projects import "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json

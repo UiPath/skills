@@ -4,7 +4,7 @@ description: >
   current license unit allocation. Verifies the agent calls
   `uip platform tenants licenses get <tenant-key> --output json`. CLI auth
   failure is expected in this offline environment.
-tags: [uipath-platform, smoke, licensing, tenants]
+tags: [uipath-platform, smoke, licensing, tenants, mode:operate, lifecycle:discover]
 
 run_limits:
   expected_turns: 5

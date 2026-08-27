@@ -7,7 +7,7 @@ description: >
   (3) calls `uip platform users licenses set <user> --input <path>
   --output json`. CLI auth failure is expected; this validates command shape
   only — no live write.
-tags: [uipath-platform, smoke, licensing, users]
+tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:setup]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
