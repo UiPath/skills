@@ -82,7 +82,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
-- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for Skip, an unresolved group, or no-Type-maps). A group/role recipient is `Type 1` and carries the bare group UUID in `Value`; dropping it leaves the task with no `assignmentCriteria` and nobody assigned
+- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for Skip, an unresolved group, or no-Type-maps). A group/role recipient is `Type 1` and carries the bare group UUID in `Value`; dropping it makes the engine skip the assignment call entirely, so the task is created and reaches nobody
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the T-entry declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))
 - `id` captured in `id-map.json`
 
