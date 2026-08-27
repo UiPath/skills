@@ -345,7 +345,7 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 This is the last segment of the [canonical T3 chain](#canonical-t3-chain--issue-this-as-one-bash-call) above. After validation passes, format must run before publishing or debugging (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)). Format:
 
 - Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
-- Sets each non-stickyNote node's `size` by its canvas shape so Studio Web renders it correctly: inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }` (skipping this leaves stale dimensions intact and produces misshapen nodes — the MST-9061 failure mode)
+- Sets each non-stickyNote node's `size` by its canvas shape so Studio Web renders it correctly: inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }` (skipping this leaves stale dimensions intact and produces misshapen nodes)
 - Recurses into subflows and rewrites `subflows[<id>].layout`
 - Backfills missing `position`/`size` entries
 
