@@ -1,0 +1,189 @@
+task_id: skill-case-supplier-onboarding
+description: >
+  GREENFIELD BUILD FROM AN SDD, LIVE TENANT — build the SupplierOnboarding case from a
+  2083-line approved SDD whose twenty resource identities and Outlook connection are
+  real, then assert five things the build can get wrong while `uip maestro case
+  validate` still reports Valid. The withdrawal scope is the centrepiece: the source
+  allows a supplier to withdraw during the three review phases and not once setup
+  begins, and the ONLY thing encoding that is which stages carry a `wait-for-user`
+  exit. Also covers guard literals taken from the deployed forms' own enums rather
+  than invented business labels, four phase breaches that each start a task inside the
+  breached stage, per-phase revised-date slots that must not cross, and connector wire
+  paths whose casing is load-bearing at runtime. Stops at validate; no debug, no
+  publish.
+tags:
+  - uipath-maestro-case
+  - integration
+  - mode:build
+  - lifecycle:generate
+  - shape:multi-node
+  - connector
+  - resource
+  - feature:escalation
+  - feature:approval-gate
+  - feature:registry
+  - feature:connections
+  - feature:api-workflow
+
+# Sized from the two existing golden-rebuild tasks: cm_golden_expense (8 stages / 15
+# tasks) measures ~60 min healthy, contract_execution (8 / 30) measures 92-150 min.
+# This case is 8 / 32 with twenty resources to describe, so it sits at the upper end.
+#
+# turn_timeout MUST NOT be smaller than task_timeout. One harness "turn" is the ENTIRE
+# agent query stream, so turn_timeout caps the whole session and is the binding limit.
+# A smaller value silently makes task_timeout dead config and kills a healthy long
+# build with status=ERROR / score 0.0 regardless of work completed (observed by the
+# contract_execution author 2026-08-21: killed at 9000s after 492 turns and 297
+# commands, mid-caseplan, nothing graded). cm_golden_expense on main still carries
+# that mismatch — do not copy its numbers.
+#
+# Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a caseplan-sized
+# extended-thinking response is not fatal.
+run_limits:
+  task_timeout: 18000
+  max_turns: 700
+  turn_timeout: 18000
+
+# The case skill delegates heavy legs (reference reading, per-resource schema pulls)
+# to sub-agents; without Agent the whole build runs inline in one context and dies to
+# "Prompt is too long". Extends the experiment's allowed_tools — keep the base list in
+# sync with experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our supplier-onboarding case-management solution — it is
+  staged as `sdd.md` in this folder. Build a UiPath Case Management solution named
+  "SupplierOnboarding" containing a project also named "SupplierOnboarding" from it.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do not
+  re-interview me, and do not redesign the process.
+
+  The tenant is LIVE and already hosts every referenced resource: the folder paths,
+  resource identities, connection ID, and connector activity type ID in the SDD are
+  real. Resolve every task and connector rule against them — skeleton or placeholder
+  bindings are NOT acceptable.
+
+  Important:
+  - The `uip` CLI is available and already authenticated against the target tenant.
+    Resolve against a FRESH registry cache; a stale local cache is not acceptable.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1 planning
+    approval, Phase 2 publish-for-review, and Phase 5 publish. Choose the continue /
+    skip-publish path and keep going.
+  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - Do NOT edit `sdd.md`. It is the input, not a working file.
+  - Do NOT publish the solution and do NOT run `uip maestro case debug` (this case
+    suspends on fourteen human tasks and seven SLA clocks).
+  - Persist each connector's `case spec` response before writing it into
+    `caseplan.json` — never reconstruct it from memory.
+  - Finish with
+    `uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json`
+    passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated SupplierOnboarding caseplan.json"
+    command: "uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
+      that edits its own input has moved the goalposts rather than met them
+    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = fdabb38a01dec03b90c60c85517bf77a572b4745e90d56dcc99e3c1550346170"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      caseplan preserves the SDD lifecycle: 8 stages (5 primary / 3 secondary), a
+      non-interrupting oversight lane, rejection guarded from three origins, the
+      corrections loop back into the checks, the withdrawal picker in exactly the three
+      review phases and not in setup, 3 case exits with one completion, and three
+      terminal stages nothing re-enters
+    command: "python3 $TASK_DIR/check_topology.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      every routing guard compares against a value its deployed form can actually emit
+      (approve / reject / sendback / verified, not an invented business label), the
+      buyer's approving and diverting exits carry complementary literals, the 500000
+      sign-off threshold is enforced case-side, and every guard subject resolves
+    command: "python3 $TASK_DIR/check_guards.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      SLA responses survived: 15d case target at 80%, seven stage SLAs at 70%, four
+      phase breaches each starting a task INSIDE the breached stage (a stage-entry rule
+      instead re-runs the stage — validate accepts both), one non-interrupting oversight
+      lane, three notify-only wrap-ups, and each phase's revised date confined to its
+      own slot
+    command: "python3 $TASK_DIR/check_sla.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      32 tasks in their declared stages and classes, all 21 resource keys bound with no
+      skeletons, every declared output written by the task the SDD assigns it to, the
+      three expression recipients carrying the {Type,Value} object (validate does NOT
+      check data.recipient), ten run-once tasks, a non-blocking child case, and four
+      on-demand tasks each locked to its own stage
+    command: "python3 $TASK_DIR/check_tasks_io.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      wire-level field names keep the casing runtime needs: all eight connector tasks
+      read the lowercase `response.status` into lastEmailStatus, and every dotted
+      dereference resolves to a variable the plan holds. Output display labels are
+      deliberately NOT part of this contract
+    command: "python3 $TASK_DIR/check_fieldnames.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands — caseplan.json is authored directly per the skill's invariant"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug — this case suspends on fourteen human tasks and cannot complete headlessly"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not publish — the task stops at validate"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|upload)\b'
+    weight: 1.0
+    pass_threshold: 1.0
