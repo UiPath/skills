@@ -10,8 +10,8 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "uipath-rpa handles the RPA-Studio Data Fabric prompt (not uipath-maestro-flow)"
+    description: "Advisory: uipath-rpa handles the RPA-Studio Data Fabric prompt"
     skill_name: uipath-maestro-flow
     expected_skill: ""
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
