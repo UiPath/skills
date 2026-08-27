@@ -73,7 +73,8 @@ class GeneratedProjectScaffoldTests(unittest.TestCase):
     def test_accepts_current_cli_metadata_shape(self) -> None:
         self.assert_scaffold()
 
-    def test_rejects_legacy_project_main_field(self) -> None:
+    def test_accepts_preserved_project_main_field(self) -> None:
+        # The CLI does not write `main` but preserves a hand-authored one (#2774).
         self._write(
             "project.uiproj",
             {
@@ -82,7 +83,18 @@ class GeneratedProjectScaffoldTests(unittest.TestCase):
                 "main": "Sample.bpmn",
             },
         )
-        with self.assertRaisesRegex(SystemExit, "must not own the BPMN main path"):
+        self.assert_scaffold()
+
+    def test_rejects_project_main_field_pointing_elsewhere(self) -> None:
+        self._write(
+            "project.uiproj",
+            {
+                "Name": "Sample",
+                "ProjectType": "ProcessOrchestration",
+                "main": "SomethingElse.bpmn",
+            },
+        )
+        with self.assertRaisesRegex(SystemExit, "must be absent or reference"):
             self.assert_scaffold()
 
     def test_rejects_legacy_package_content_list(self) -> None:
