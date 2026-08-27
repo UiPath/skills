@@ -109,6 +109,22 @@ Use these findings to select the right node types from the [Plugin Index](#plugi
 
 > **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list --all-folders` is enough to confirm connector connection availability in this phase.
 
+### Admin-editable configuration and Orchestrator Assets
+
+When requirements mention folder-scoped configuration values, exclusion lists, or "read an Orchestrator Asset from the Flow", first decide whether the value is true runtime input or admin-managed configuration.
+
+Flow does not currently have a guaranteed native Orchestrator Asset read node. `registry search asset` may return connector activities whose names contain "asset" (for example media/recording assets) rather than an Orchestrator Text Asset reader. Treat that as "no native Flow asset-read node exposed", not as permission to hand-author an imaginary node type.
+
+Use this order:
+
+1. **Confirm the registry gap once.** Run `uip maestro flow registry search asset --output json` and inspect `NodeType`/`DisplayName`. If no Orchestrator/resource asset read node appears, stop searching.
+2. **Prefer caller-supplied Flow input for simple config.** Let the caller/process that starts the Flow read the Orchestrator Asset and pass the resolved value as an `in` variable. Inside the Flow, consume `$vars.<inputName>`.
+3. **Use Data Fabric/entity configuration when admins need live edits.** Store the config row/list in Data Fabric or another system that has a real Flow connector node, then read it through that connector.
+4. **Delegate server-side asset reads to an existing automation resource.** If there is already an RPA process, API workflow, or agent that reads the asset, call it as a resource node and use its output. Search `--local` and tenant registry before deciding it does not exist.
+5. **If none exists, report a product gap.** Do not hard-code secrets or config lists in a Script node unless the user explicitly accepts redeploy-on-change. Do not expose asset access in browser-side app code.
+
+Record the chosen pattern and the unresolved native-node gap in the plan's Open Questions / Product Gaps section so reviewers understand why the Flow does not contain an asset node.
+
 ---
 
 ## Plugin Index
