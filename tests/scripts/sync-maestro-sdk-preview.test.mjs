@@ -270,6 +270,30 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
         '| Script action | `core.action.script` |',
       ),
     );
+    write(
+      upstreamRoot,
+      'typescript/sdk/skill/SKILL-bpmn.md',
+      [
+        '# BPMN fixture v2',
+        '',
+        '[API](references/bpmn-api.md).',
+        '',
+        '## Capability router',
+        '',
+        '`example/NotifyChannel.bpmn.ts` is the worked example.',
+        '',
+      ].join('\n'),
+    );
+    write(
+      upstreamRoot,
+      'typescript/sdk/skill/references/case-runtime.md',
+      '# Case runtime\n\nSee [Case API](case-api.md).\n',
+    );
+    write(
+      upstreamRoot,
+      'typescript/sdk/skill/references/bpmn-runtime.md',
+      '# BPMN runtime\n\nSee [BPMN API](bpmn-api.md).\n',
+    );
     const newPin = commit(upstreamRoot, 'drift');
 
     const result = syncSnapshots({ skillsRoot, upstreamRoot });
@@ -300,6 +324,30 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
     assert.match(
       read(skillsRoot, 'preview/uipath-maestro-case/SKILL.md'),
       /New upstream Case guidance/,
+    );
+    assert.match(
+      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      /# BPMN fixture v2[\s\S]*`examples\/NotifyChannel\.bpmn\.ts`/,
+    );
+    assert.doesNotMatch(
+      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      /representative process/,
+    );
+    assert.equal(
+      read(skillsRoot, 'preview/uipath-maestro-case/references/case-runtime.md'),
+      '# Case runtime\n\nSee [Case API](api.md).\n',
+    );
+    assert.equal(
+      read(skillsRoot, 'preview/uipath-maestro-bpmn/references/bpmn-runtime.md'),
+      '# BPMN runtime\n\nSee [BPMN API](api.md).\n',
+    );
+    assert.equal(
+      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/case-runtime.md')),
+      false,
+    );
+    assert.equal(
+      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/bpmn-runtime.md')),
+      false,
     );
     for (const skill of ['flow', 'case', 'bpmn']) {
       assert.match(
