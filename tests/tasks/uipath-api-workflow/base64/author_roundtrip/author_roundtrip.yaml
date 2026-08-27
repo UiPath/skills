@@ -1,0 +1,103 @@
+task_id: skill-api-workflow-base64-author-roundtrip
+description: >
+  Skill-guided authoring of a file-handling API workflow: a `document` file input
+  is encoded with File to Base64 and decoded back with Base64 to File, and both
+  references are returned. Tests whether the skill teaches rule 22 — files are
+  JobAttachment references, the two activities are `run.script` tasks recognised
+  by their exact `$helpers.file.fileToBase64` / `$helpers.file.base64ToFile` call
+  and `metadata.activityType`, the result is read as `$context.outputs.<Key>.output`,
+  and a `--no-auth` run is not the way to test them (they need Orchestrator blob
+  storage, so the agent must not run the workflow in this sandbox).
+
+  Graded on static artifacts only: validate passes (which also proves the helper
+  namespace is right — validate rejects `$helpers.fileToBase64`), both activity
+  types are present, the chain reads the File to Base64 output as a reference (not
+  a string), and the stale `downloadData()` API from the palette description is
+  not used. Running is deliberately out of scope here (see run_roundtrip for the
+  signed-in e2e). Tagged `path-to-ga`: the validate criterion needs the CLI release
+  whose `validate` knows the two activity types (the one bundling executor 12.26+).
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
+
+initial_prompt: |
+  Author a UiPath API Workflow in a project named `FileEcho` (its workflow file
+  will be `FileEcho/Workflow.json`) that:
+  - takes a file input named `document`
+  - converts that file to base64
+  - converts the base64 result back into a file
+  - returns { "encoded": <the base64 file reference>, "decoded": <the decoded file reference> }
+
+  Use the built-in File to Base64 and Base64 to File activities in the shape
+  Studio Web writes. Validate the workflow until it is Valid.
+
+  Important:
+  - The `uip` CLI is already available. Do NOT run the workflow — there is no
+    signed-in session in this environment; validation is enough.
+  - Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow validates (Status: Valid) — also proves the $helpers.file.* namespace is correct"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both base64 activity types are present with their Studio Web activityType"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q ''"activityType": "FileToBase64"'' "$WF" && grep -q ''"activityType": "Base64ToFile"'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Scripts call the namespaced helpers and await them"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q ''await $helpers.file.fileToBase64('' "$WF" && grep -q ''await $helpers.file.base64ToFile({'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "File to Base64 reads the file input as a reference ($workflow.input.document), and Base64 to File reads the previous output as a reference (.output)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q ''fileToBase64($workflow.input.document)'' "$WF" && grep -qE ''base64ToFile\(\{ *base64: *\$context\.outputs\.[A-Za-z0-9_]+\.output'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Response returns both references (encoded + decoded) and ends the workflow"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q ''"then": "end"'' "$WF" && grep -q ''encoded'' "$WF" && grep -q ''decoded'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Does not use the stale downloadData() API or treat the base64 file as a string"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); ! grep -q ''downloadData'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the workflow (no session in the sandbox; the prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?![^\n]*--help)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30

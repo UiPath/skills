@@ -1,0 +1,114 @@
+task_id: skill-api-workflow-base64-run-roundtrip
+description: >
+  Signed-in e2e for files in an API workflow: the agent authors a File to Base64 →
+  Base64 to File → Response workflow, then runs it against the tenant with the
+  file-input / file-output bridges of `uip api-workflow run` (`--input-file
+  document=<path>` uploads the local file as a JobAttachment, `--output-dir`
+  downloads the returned references). Tests whether the skill teaches that file
+  workflows need a session (not `--no-auth`), how to hand a local file to the run,
+  and how to get the produced files back.
+
+  Outcome-graded: the check re-runs the authored workflow itself with a fresh input
+  file and compares the decoded download byte-for-byte with the input, and checks
+  the encoded download is the base64 of the input. Tagged `path-to-ga` because it is
+  blocked until the CLI release that ships `--input-file` / `--output-dir` (the one
+  bundling executor 12.26+) is `@uipath/cli@latest`; it also needs a tenant whose
+  Attachments API accepts the session (the nightly tenant does).
+tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup, shape:multi-node, outcome-graded, path-to-ga]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 -c \"open('sample.txt','w').write('base64 round trip sample 4242\\n')\""
+    timeout: 10
+
+initial_prompt: |
+  In a project named `FileEcho` (workflow file `FileEcho/Workflow.json`), author a
+  UiPath API Workflow that takes a file input `document`, converts it to base64,
+  converts that base64 back into a file, and returns
+  { "encoded": <base64 file reference>, "decoded": <decoded file reference> }.
+
+  Then run it locally with the file `./sample.txt` (in the current directory) as
+  the `document` input, saving the files the workflow returns into `./out`. You
+  are already signed in with `uip login`; no vendor APIs are called, so running
+  is approved — do not ask for confirmation.
+
+  The task is complete when the run succeeds and `./out` contains the returned
+  files.
+
+success_criteria:
+  - type: run_command
+    description: "Workflow validates"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" -not -path "./out/*" | head -1); uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both base64 activities are present"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" -not -path "./out/*" | head -1); grep -q ''"activityType": "FileToBase64"'' "$WF" && grep -q ''"activityType": "Base64ToFile"'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent handed the local file to the run with --input-file (not --input-arguments JSON)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run\s+.*--input-file[\s=]document='
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent collected the returned files with --output-dir"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run\s+.*--output-dir'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not try to run a file workflow with --no-auth"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run\s+.*--no-auth'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The agent's run downloaded the returned files into ./out"
+    command: 'test -n "$(ls -A ./out 2>/dev/null)"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: re-running the authored workflow with a fresh input round-trips the bytes (decoded download == input; encoded download == base64(input))"
+    command: |-
+      WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" -not -path "./out/*" | head -1)
+      printf 'graded input %s\n' "$RANDOM" > graded.txt
+      rm -rf graded-out
+      uip api-workflow run "$WF" --input-file document=./graded.txt --output-dir ./graded-out --output json > graded.json
+      python3 - <<'PY'
+      import json, base64, pathlib
+      env = json.load(open('graded.json'))
+      data = env['Data']
+      enc = data.get('Encoded') or data.get('encoded')
+      dec = data.get('Decoded') or data.get('decoded')
+      src = pathlib.Path('graded.txt').read_bytes()
+      assert env['Result'] == 'Success', env
+      assert pathlib.Path(enc['LocalPath']).read_text() == base64.b64encode(src).decode(), 'encoded download is not base64(input)'
+      assert pathlib.Path(dec['LocalPath']).read_bytes() == src, 'decoded download differs from input'
+      assert enc.get('Metadata', {}).get('Encoding') == 'base64', enc
+      PY
+    timeout: 300
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
