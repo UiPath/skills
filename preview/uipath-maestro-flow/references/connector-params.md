@@ -23,10 +23,30 @@ Signatures:
 ## Discovering operations and fields
 
 `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
-(machine-readable, for compiling) point at a **separately staged** connector
-library. It is not part of the npm package and there is no default: if the
-variables are unset, the library is not on this machine, so search the paths
-your environment provides and pass `--library <dir>` explicitly.
+(machine-readable, for compiling) point at a connector library staged by the
+environment. It is not baked into the npm package, so when those variables are
+unset, fetch one into the project:
+
+```bash
+uip maestro registry pull
+```
+
+The library and its Markdown go to a shared cache
+(`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and
+`registry search` resolve them from there with no flag. The project gets only
+`./connectors/`, holding a descriptor per connector it references.
+
+To read the Markdown directly, ask where it is:
+
+```bash
+FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
+```
+
+The four library verbs are `pull`, `search`, `path` and `prepare`. Like the
+authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of
+their own — each one runs the `@uipath/flow-sdk` installed in this workspace. In
+a workspace with no `uip`, `npx flow-sdk registry <verb>` is the same command
+with the same arguments.
 
 Search that library for static contracts:
 
@@ -37,22 +57,87 @@ sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
 ```
 
 When a connection-specific field is absent, materialize the live schema rather
-than guessing or hand-editing the emitted Flow. `prepare-connector` is an
-authoring tool **provided by the environment**, not by the npm package — it
-needs a live Integration Service connection. If it is not on `PATH`, this route
-is unavailable; fall back to the curated operation in the markdown library.
+than guessing or hand-editing the emitted Flow. This reads the schema through
+the tenant, so it needs a live Integration Service connection and a logged-in
+`uip`; without one, fall back to the curated operation in the markdown library.
 
 ```bash
-prepare-connector <connector-key> <action> \
+uip maestro registry prepare <connector-key> <action> \
   --connection-id <connection-id>
 # Generic operation: materialize the one connected object the task uses.
-prepare-connector <connector-key> <action> \
+uip maestro registry prepare <connector-key> <action> \
   --connection-id <connection-id> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
+The result lands in `./connectors-local/`, which the compilers union over the
+library. Calls accumulate, so preparing a second operation keeps the first.
+
+Descriptors from either tree are imported with their real `.ts` extension — a
+`.js` specifier does not resolve, because these are sources rather than compiled
+output:
+
+```ts
+import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
+import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
+```
+
+Older environments provide the same tool as a bare `prepare-connector` on
+`PATH`. The arguments are identical apart from one name: a connector version is
+`--connector-version` here, because `--version` is Commander's own flag and
+would print the CLI version instead of reaching the generator.
+
 For many connectors that first command is **not enough on its own** — see the
 parent-field loop below before concluding a field does not exist.
+
+### A Generic operation is authored from the LIBRARY, not through registry prepare
+
+Author it directly, with the **library's** action id and the object as an option:
+
+```ts
+.step('users', connector('uipath-servicenow-servicenow', 'list-all-records',
+  {}, { connection: 'sn', folder: 'shared', object: 'acr_user' }))
+```
+
+That is the generic form, and it needs no live resolution: it compiles off the
+baked library, validates, and runs. `registry prepare` is for a **curated,
+schema-dynamic** op whose real fields the connection decides (Jira create-issue
+and friends) — a generic list usually has no connection-specific input fields at
+all, so preparing one resolves nothing and costs a round trip.
+
+Reach for it here only when a field you need is genuinely missing, and know what
+it changes. The two namespaces differ: the library calls this `list-all-records`
+and materializes it per object, while the registry serves `list-records`, so
+`registry get` finds nothing under the library id and `registry prepare` reports
+the connector's real action list with the closest matches first. Re-running with
+the registry id succeeds — and yields a CURATED descriptor pinned to one object
+(`ListAccountRecoveryEnrolledUser`), whose node type is `…list-records`. That is
+a different node from the generic one you were asked for. Author the generic call
+above unless you specifically want that.
+
+### Finding the object id for a Generic operation
+
+`--object` takes the connection's **API** name (`acr_user`), not its display
+name. Filter the catalog server-side — a real tenant has tens of thousands of
+objects, and paging them client-side is what makes this expensive:
+
+```bash
+# By API name, when the task names it outright.
+uip is resources list <connector-key> --connection-id <id> \
+  --output-filter "[?Name=='acr_user']" --output json
+# By human label, when the task only gives you that. `lower()` is available.
+uip is resources list <connector-key> --connection-id <id> \
+  --output-filter "[?contains(lower(DisplayName),'account recovery')]" --output json
+```
+
+Each row is `{Name, DisplayName, Path, Type, SubType, Custom, ElementKey}` —
+`Name` is what `--object` wants. To see one object's parameters for a single
+operation without preparing it:
+
+```bash
+uip is resources describe <connector-key> <object> --connection-id <id> \
+  --operation List --output json
+```
 
 ## Schema-dynamic operations: the parent-field loop
 
@@ -85,7 +170,7 @@ Message: No api-type ObjectAction matched for fields [fields.project.key]
 shape is accepted, the describe succeeds, and it resolves to exactly the parent
 fields again — the same 2-field answer as passing no `-f` at all, with no error.
 Treat "I passed `-f` and still got only the parents" as a wrong value, never as
-"this operation has no other inputs." `prepare-connector` fails on both cases
+"this operation has no other inputs." `registry prepare` fails on both cases
 rather than writing the overlay.
 
 **1. Find the parents.** Describe with no values and read the reference block of
@@ -106,6 +191,11 @@ uip is resources describe <connector-key> <object> \
 That placeholder is also the **ordering**: resolve `fields.project.key` before
 you can resolve `fields.issuetype.id`.
 
+Parent-field names are operation-specific. Copy each `Name` exactly from this
+operation's describe response; do not reuse the dotted names from the
+`create-issue` example for another action (for example, Jira `get-issue` uses
+`project` and `issuetype`).
+
 **2. Resolve a value for each, outermost first.** Match the collection on
 `Reference.Path`, *not* on `Reference.ObjectName` — `ObjectName` is often the
 root resource shared by several fields (both Jira parents above report
@@ -125,11 +215,11 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-prepare-connector <connector-key> <action> --connection-id <connection-id> \
+uip maestro registry prepare <connector-key> <action> --connection-id <connection-id> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
-`prepare-connector` quotes the service's rejection, and separately fails when the
+`prepare` quotes the service's rejection, and separately fails when the
 values were accepted but resolved to nothing beyond the parents — so both
 mistakes surface here rather than as a puzzling compile error later.
 
@@ -185,7 +275,7 @@ Resolve them against the same connection the flow binds instead of copying an id
 from another connection or session:
 
 **Choose the collection from the prepared action definition before the first
-`resources run list` call.** Run `prepare-connector` first and find the target
+`resources run list` call.** Run `registry prepare` first and find the target
 input's `reference` block in its generated `connectors-local/*.v1def.json`.
 `reference.path` is the contract — it names the exact collection, and any
 `{placeholder}` in it names a field whose value must be resolved first.
