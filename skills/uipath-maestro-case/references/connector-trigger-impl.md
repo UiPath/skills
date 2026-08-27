@@ -116,13 +116,15 @@ After splicing the spec subtree (`context` / `inputs` / `outputs` and their nest
 
 Every connector node: `execute-connector-activity`, `wait-for-connector` task, event trigger, connector-bound condition rule.
 
-**Exclude payload bodies from the passes above. Write each as one unit, copied from `tasks/spec-cache.<elementId>.json` — re-Read the file, never reconstruct from memory.** `replace_all` cannot separate keyword from field name (live Slack: `"Title":` 134×, `"Type":` 161×, mostly keywords). Position can — inside a body:
+**Splice one output per `caseShape.outputs[]` entry from `tasks/spec-cache.<elementId>.json`, each with its `body` complete.** Mandatory, and not negotiable against size: the `response` output carries the connector's whole JSON Schema and Studio Web writes all of it. SDD output-binding rows bind INTO that schema — they never replace it, and a node whose bound leaves appear as standalone outputs with no `response` is a failed build, not a compact one. Re-Read the cache while writing; never reconstruct from memory.
+
+Payload bodies are excluded from the re-casing passes above — not left as-is, but keyed as follows while splicing. `replace_all` cannot separate keyword from field name (live Slack: `"Title":` 134×, `"Type":` 161×, mostly keywords). Position can — inside a body:
 
 - key **of** a `properties` / `definitions` map → field name, from its authority above
 - anything else in a schema node → keyword, lower it (`type`, `properties`, `definitions`, `title`, `items`, `required`, `format`, `description`, `enum`, `default`, `$ref`, `$schema`)
 - neither → halt and report
 
-Sizes: Slack `send_message_to_channel_v2` `response` = **514 keys** (13 top-level + 118 nested property keys, 29 definitions, 29 `$ref`s); Outlook `Calendar Event Created` = 120. Check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache; mismatch → re-copy, do not patch. `validate` reports a truncated schema as `Valid`.
+Then check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache's; mismatch → re-copy, do not patch. `validate` reports a missing or truncated schema as `Valid`, so it is not a backstop.
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
