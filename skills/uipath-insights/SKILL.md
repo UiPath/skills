@@ -70,7 +70,7 @@ uip login tenant set MyTenant                                      # same enviro
 | Inspect alert definitions, alerting entitlement, trigger history, or delivery metadata | [`references/alerts-reads-guide.md`](references/alerts-reads-guide.md) |
 | Inspect Insights users, roles, or groups | [`references/rbac-reads-guide.md`](references/rbac-reads-guide.md) |
 
-Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide. A queue question that names a queue needs the filter guide for the exact name, then the queue guide. A machine question that names a machine or a type label needs the filter guide for the exact value, then the machine guide. An alert question needs the alert guide alone; it owns the full definition, history, and delivery sequence. An Insights access question needs the RBAC guide alone.
+Read only the guides the task needs. A job investigation that must first resolve a folder, process, or machine needs the filter guide, then the jobs guide. A queue question that names a queue needs the filter guide for the exact name, then the queue guide. A machine question that names a machine needs the filter guide for the exact name, then the machine guide. The machine guide also lists the five machine type labels, which `filter-machines list` does not report. An alert question needs the alert guide alone; it owns the full definition, history, and delivery sequence. An Insights access question needs the RBAC guide alone.
 
 ## Scope Boundaries
 
