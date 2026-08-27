@@ -106,7 +106,7 @@ After splicing the spec subtree (`context` / `inputs` / `outputs` and their nest
 | `properties`, every depth | ordered distinct segments of `.Data.Outputs.ResponseFields[].Name` (output) / `.Data.Inputs.*[].Name` (input) under that map's accumulated dotted path — same order, so *i*-th segment for *i*-th key |
 | `definitions` | tail of the `$ref` targeting it (`#/definitions/messageBot_profile`) — `ResponseFields` does not describe these |
 
-`Error` output: platform envelope — lower normally. `validate` accepts a wrong name, so it is not evidence.
+`Error` output: platform envelope — lower normally. A wrong field name reaches the connector API verbatim and faults at runtime (`RequestBody not found, did you mean request_body`).
 
 - **Keys only — never values.** Values are case-sensitive identifiers (`"name": "Subject"`, `"source": "=response.Subject"`, the `=jsonString:` / `=js:` blobs). Re-casing a value breaks runtime variable matching — `findVariableByVariableId` compares byte-for-byte ([global-vars/impl-json.md § Name matching](plugins/variables/global-vars/impl-json.md)). The `=jsonString:` config blob is a string value; its internal JSON is already camelCase — leave it untouched.
 - **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, variables, bindings, task scaffolding) is already camelCase — do not re-case it.
@@ -124,7 +124,9 @@ Payload bodies are excluded from the re-casing passes above — not left as-is, 
 - anything else in a schema node → keyword, lower it (`type`, `properties`, `definitions`, `title`, `items`, `required`, `format`, `description`, `enum`, `default`, `$ref`, `$schema`)
 - neither → halt and report
 
-Then check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache's; mismatch → re-copy, do not patch. `validate` reports a missing or truncated schema as `Valid`, so it is not a backstop.
+Then check the written body's `properties`-map, property-key, `definitions` and `$ref` counts against the cache's; mismatch → re-copy, do not patch.
+
+**A top-level-only schema is not a smaller correct answer — it is a broken one.** Output binding resolves an SDD path by walking this schema (`attachments[*].mimeType` → the `attachments[*]` property → its `$ref` → the definition's `mimeType`). Drop the nested levels or the `definitions` and every nested binding resolves to nothing at runtime, while the case still builds. Studio Web writes the schema in full for the same reason; match it.
 
 ### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
 
