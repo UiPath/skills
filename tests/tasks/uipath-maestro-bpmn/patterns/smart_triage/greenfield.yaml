@@ -7,6 +7,7 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "sh
 
 run_limits:
   expected_turns: 26
+  turn_timeout: 1800
   max_turns: 70
 
 sandbox:
