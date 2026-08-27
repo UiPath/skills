@@ -2150,6 +2150,32 @@
       "isDynamic": false,
       "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseManagerGuardrails\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"decisions\" value=\"{decisions}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"guardrailsOutput\" type=\"Maestro.CaseManagerGuardrails\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
       "bpmnElementNotes": "Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task."
+    },
+    "uipath:Activity": {
+      "extensionType": "uipath:Activity",
+      "label": "Canvas activity",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "serviceTask": {
+          "type": "bpmn:ServiceTask"
+        },
+        "task": {
+          "type": "bpmn:Task"
+        },
+        "boundaryEvent": {
+          "type": "bpmn:BoundaryEvent"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [],
+      "inputPattern": "none",
+      "outputSource": null,
+      "outputType": null,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": true,
+      "xmlTemplate": null,
+      "outputNotes": "Studio Web canvas can emit custom output-only activity payloads for placeholder tasks and error boundary metadata."
     }
   },
   "bpmnElements": {
