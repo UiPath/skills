@@ -72,7 +72,7 @@ success_criteria:
   # ── The delivered flow validates ────────────────────────────────────────
   - type: run_command
     description: "Generated BillingDisputeSlackAlert Flow validates without errors"
-    command: "uip maestro flow validate BillingDisputeSlackAlert/BillingDisputeSlackAlert/BillingDisputeSlackAlert.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
