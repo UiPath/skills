@@ -48,6 +48,14 @@ their own — each one runs the `@uipath/flow-sdk` installed in this workspace. 
 a workspace with no `uip`, `npx flow-sdk registry <verb>` is the same command
 with the same arguments.
 
+**`uip maestro registry` is not `uip maestro flow registry`.** The names are one
+word apart and the jobs are unrelated: this one is the connector library the
+compilers resolve operations against, while `uip maestro flow registry
+pull|search|get` syncs the tenant's **node manifests** — the node types other
+references reach for (`uipath.core.function`, `uipath.core.agent.<name>`). A
+connector operation is never in the node registry and a node type is never in
+the library, so a miss in one is not evidence about the other.
+
 Search that library for static contracts:
 
 ```bash
