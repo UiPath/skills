@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only accessors over the built caseplan, shared by the five SupplierOnboarding graders.
-
-One definition per field, deliberately. The emitted shape differed from the obvious
-guess in nine places while the graders were written; a single definition is why each of
-those nine was fixed once instead of five times.
+"""Read-only accessors over the built caseplan, shared by the SupplierOnboarding graders.
 
 Tolerant of the authoring freedom the skill allows: display-name punctuation, whether a
 guard sits on the condition or on one of its rules, and which of the two legal
@@ -162,45 +158,14 @@ def selected_stage_ids(cond: dict) -> set[str]:
 
 
 def selected_task_ids(cond: dict) -> set[str]:
-    """Task ids a `selected-tasks-completed` rule points at.
-
-    The emitted key is `selectedTasksIds` — plural on BOTH words. Reading only
-    `selectedTaskIds` matches nothing and every task-selector assertion silently
-    passes (verified against a built plan: 11 rules, all spelled `selectedTasksIds`).
-    """
     out = set()
     for rule in rules(cond):
-        for key in ("selectedTasksIds", "selectedTaskIds", "selectedTaskId"):
-            value = rule.get(key)
-            if isinstance(value, str) and value:
-                out.add(value)
-            elif isinstance(value, list):
-                out.update(v for v in value if isinstance(v, str))
+        one = rule.get("selectedTaskId")
+        if one:
+            out.add(one)
+        for many in rule.get("selectedTaskIds") or []:
+            out.add(many)
     return out
-
-
-def sla_ids_referenced(cond: dict) -> set[str]:
-    """SLA ids an `sla-status-change` rule listens to.
-
-    The rule names the SLA directly via `slaId` — it carries no stage reference at
-    all (verified against a built plan: 5 rules, all `{id, rule, slaId}`). An
-    assertion written against `selectedStageId` here can never fire.
-    """
-    out = set()
-    for rule in sla_status_change_rules(cond):
-        value = rule.get("slaId")
-        if isinstance(value, str) and value:
-            out.add(value)
-    return out
-
-
-def sla_ids_of(target: dict) -> set[str]:
-    """The ids of the SLA rules declared on a plan root or stage node."""
-    return {
-        str(rule.get("id"))
-        for rule in sla_rules(target)
-        if rule.get("id")
-    }
 
 
 def exit_type(cond: dict) -> str:

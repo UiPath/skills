@@ -350,7 +350,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** agent
 **Activation Mode:** parallel
-**Design Rationale:** Reading a free-text offering description and the attached documents to judge whether the category matches, and to flag anything that looks odd, is unstructured reasoning — so `agent`. The source calls it a helpful extra rather than a must, so it is optional and runs in parallel from stage entry on the start arguments it needs; chaining an optional task into the sequential run would let it gate required work. Its document list is built defensively: a missing document is a normal state for this case — catching it is what the intake check is for — so the binding lists only the documents actually attached and reads `None attached` when there are none, rather than dereferencing a file record that may not exist and faulting the run.
+**Design Rationale:** Reading a free-text offering description and the attached documents to judge whether the category matches, and to flag anything that looks odd, is unstructured reasoning — so `agent`. The source calls it a helpful extra rather than a must, so it is optional and runs in parallel from stage entry on the start arguments it needs; chaining an optional task into the sequential run would let it gate required work.
 **Description:** Reads the description of the offering and the supporting documents to confirm the category matches what the supplier selected, and flags anything that looks odd.
 
 **Entry Condition:**
@@ -378,7 +378,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 |-------|------|---------|
 | offeringDescription | string | =vars.offeringDescription |
 | selectedCategory | string | =vars.offeringCategory |
-| submittedDocuments | string | =js:([["Registration certificate", vars.registrationCertificate], ["Insurance", vars.insuranceDocument], ["Tax forms", vars.taxFormsDocument], ["Bank details", vars.bankDetailsDocument]].filter(function (p) { return p[1] && p[1].FullName; }).map(function (p) { return p[0] + ": " + p[1].FullName; }).join("; ") || "None attached") |
+| submittedDocuments | string | =js:("Registration certificate: " + vars.registrationCertificate.FullName + "; Insurance: " + vars.insuranceDocument.FullName + "; Tax forms: " + vars.taxFormsDocument.FullName + "; Bank details: " + vars.bankDetailsDocument.FullName) |
 
 **Outputs:**
 
@@ -1327,8 +1327,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Child Case:** SupplierContractNegotiation
 **Child Case Identifier Prefix:** SCN
-**Folder Path:** Shared/uipath-maestro-case/SupplierNegotiationKit
-**Resource Identity:** a028146a-e14f-489b-a6ca-e1ffa1d315f6
+**Folder Path:** uipath-maestro-case
+**Resource Identity:** 5330b909-49ef-498d-b2af-0a9f6526c439
 **Data Passed (parent -> child):**
 
 | Parent Variable | Child Variable |
@@ -2025,7 +2025,7 @@ director's overall-target review without either borrowing the other's dispatch. 
 
 | Child Case | Folder | Resource ID | Identifier Prefix | Wait for Completion | Used By Tasks |
 |------------|--------|-------------|-------------------|---------------------|---------------|
-| SupplierContractNegotiation | Shared/uipath-maestro-case/SupplierNegotiationKit | a028146a-e14f-489b-a6ca-e1ffa1d315f6 | SCN | No | Open contract negotiation case |
+| SupplierContractNegotiation | uipath-maestro-case | 5330b909-49ef-498d-b2af-0a9f6526c439 | SCN | No | Open contract negotiation case |
 
 ### Environments (DEV / UAT / PROD)
 

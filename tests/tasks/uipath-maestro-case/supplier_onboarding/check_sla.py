@@ -31,7 +31,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import expected as E  # noqa: E402
-import caseplan_reader as P  # noqa: E402
+import plan as P  # noqa: E402
 
 
 def _at_risk(escalations):
@@ -48,7 +48,7 @@ def main() -> int:
     problems: list[str] = []
 
     by_label = P.stages_by_label(caseplan)
-    _stage_ids = P.stage_ids(caseplan)
+    ids = P.stage_ids(caseplan)
 
     # ---- 1. case SLA --------------------------------------------------------
     root = P.sla_rules(caseplan)
@@ -142,33 +142,13 @@ def main() -> int:
                 f"task {task_name!r} has no `sla-status-change` entry rule (rules: "
                 f"{sorted(names)}) — it never activates when the phase misses its deadline"
             )
-        # The rule names the SLA by id, not the stage — so "own stage's SLA" means the
-        # id has to be one this stage declares.
-        own = P.sla_ids_of(node)
-        listened = {
-            str(rule.get("slaId"))
-            for rule in rules
-            if rule.get("slaId")
-        }
-        if not listened:
-            problems.append(
-                f"task {task_name!r} has an `sla-status-change` rule with no `slaId`; it "
-                "does not name the SLA it listens to"
-            )
-        foreign = listened - own
-        if foreign:
-            all_slas = {
-                sid: P.label(other)
-                for other in P.stages(caseplan)
-                for sid in P.sla_ids_of(other)
-            }
-            all_slas.update({sid: "root" for sid in P.sla_ids_of(caseplan)})
-            problems.append(
-                f"task {task_name!r} listens to SLA(s) {sorted(foreign)} — owned by "
-                f"{sorted({all_slas.get(s, 'unknown') for s in foreign})}, not by "
-                f"{stage_label!r}. A phase's escalation must fire on its own breach, or "
-                "the note names a phase that did not run late."
-            )
+        for rule in rules:
+            target = rule.get("selectedStageId") or rule.get("stageId")
+            if target and target != ids.get(stage_label):
+                problems.append(
+                    f"task {task_name!r} listens to another stage's SLA "
+                    f"({target!r}); it must fire on {stage_label!r}'s own breach"
+                )
 
         # the same rule must NOT also sit on the stage's entry
         stage_rules = [

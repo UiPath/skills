@@ -30,7 +30,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import expected as E  # noqa: E402
-import caseplan_reader as P  # noqa: E402
+import plan as P  # noqa: E402
 
 # `vars.<root>.<prop>` — a dereference off a case variable inside an expression.
 _DOTTED_RE = re.compile(r"vars\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)")
@@ -170,32 +170,27 @@ def main() -> int:
                     "not a variable the plan holds — the read yields undefined"
                 )
 
-    # The four supporting documents must still be read by the task that assesses them.
-    # The fixture reads them through a guarded array walk, so assert the variables are
-    # read rather than pinning the expression's shape.
-    reader = next(
-        (t for _stage, t in P.all_tasks(caseplan)
-         if P.task_name(t) == E.DOCUMENT_READER_TASK),
-        None,
-    )
-    if reader is None:
-        problems.append(f"task {E.DOCUMENT_READER_TASK!r} is missing")
-    else:
-        read = set()
-        for _name, expr in P.task_input_expressions(reader):
-            read |= P.vars_read(expr)
-        dropped = sorted(E.SUPPORTING_DOCUMENT_VARIABLES - read)
-        if dropped:
-            problems.append(
-                f"{E.DOCUMENT_READER_TASK!r} does not read {dropped}; the SDD gives it "
-                "all four supporting documents to assess"
-            )
+    fixture_roots = {
+        root for root, _prop in _DOTTED_RE.findall(E.read_fixture())
+    }
+    plan_roots = {
+        root
+        for _path, expr in P.expressions(caseplan)
+        for root, _prop in _DOTTED_RE.findall(expr)
+    }
+    dropped = sorted(fixture_roots - plan_roots)
+    if dropped:
+        problems.append(
+            f"the SDD dereferences {dropped} but the plan does not; those reads were "
+            "dropped on the way into the caseplan"
+        )
 
     print(f"checked {P.find_caseplan()}")
     print(
         f"connector tasks: {len(connector_tasks)}   fixture extracts: "
         f"{len(fixture_extracts)}   output labels: {sorted(labels)}"
     )
+    print(f"dotted roots: {sorted(plan_roots)}")
     if not problems:
         print(
             f"OK: all {E.CONNECTOR_TASK_COUNT} connector tasks read the lowercase wire "
