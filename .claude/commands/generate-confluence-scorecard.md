@@ -244,7 +244,7 @@ Do not edit this embedded table on the fly; report drift so a human updates the 
 | LLMOPS/Traces | `uipath-platform/traces` | |
 | LLM GW | `uipath-platform/llmgateway` | |
 | Notification Service | none | no tests |
-| Serverless | none dedicated | incidental in agents bindings (`uip functions`) |
+| Serverless | none dedicated | incidental in agents bindings (`uip function`) |
 | DU / Process Mining / Insights / Task Mining | planned skills (no folder) | `0% (planned)` |
 
 **Platform — split eval/pass-fail by sub-dir, keep coverage aggregate.** `uipath-platform` is one skill spanning 5 product rows, but the run's `task_path` already carries the sub-dir, so the Phase 1 script's `psub` breakdown gives **per-sub-product eval % and pass/fail directly from the run** — use it. This matters: the skill-level aggregate hides real variance (e.g. a 33% Build aggregate may be one weak sub-product dragging four healthy ones). Map sub-dir → product row:
@@ -317,7 +317,7 @@ RULES = [(r'^uip (maestro )?flow\b','Flow'),(r'^uip (maestro )?bpmn\b','BPMN'),
  (r'^uip api-workflow\b','API Workflow'),(r'^uip codedapp\b','Coded Apps'),
  (r'^uip (or|orchestrator|resource)\b','Orchestrator'),(r'^uip context-grounding\b','ECS'),
  (r'^uip tm\b','Test Manager'),(r'^uip solution\b','Solutions'),(r'^uip (gov|governance)\b','Governance'),
- (r'^uip platform\b','Licensing'),(r'^uip traces\b','LLMOPS/Traces'),(r'^uip functions\b','Serverless'),
+ (r'^uip platform\b','Licensing'),(r'^uip traces\b','LLMOPS/Traces'),(r'^uip functions?\b','Serverless'),
  (r'^uip llm-configuration\b','LLM GW'),(r'^uip admin\b','Identity & Auth Z'),(r'^uip tasks\b','Action Center Tasks')]
 def norm(p):
     p = p.replace('\\\\','\\').replace('(?s)','')

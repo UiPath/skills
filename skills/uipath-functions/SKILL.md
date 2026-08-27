@@ -1,6 +1,6 @@
 ---
 name: uipath-functions
-description: "UiPath Coded Functions — deterministic Python units built via `uip functions` (new/init/run/pack/publish); the `functions` map in `uipath.json`, `entry-points.json`, Pydantic Input/Output. Rule-based logic, data transforms, ERP/Integration Service connector calls — no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents."
+description: "UiPath Coded Functions — deterministic Python units built via `uip function` (new/init/run/pack/publish); the `functions` map in `uipath.json`, `entry-points.json`, Pydantic Input/Output. Rule-based logic, data transforms, ERP/Integration Service connector calls — no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -23,7 +23,7 @@ A Python Coded Function can be invoked from any UiPath surface:
 | Coded Agents (LangGraph / LlamaIndex / OpenAI Agents) | Called as a tool or step |
 | Other Coded Functions | Direct Python call or Orchestrator job |
 | Orchestrator API | `POST /Jobs/StartJobs` |
-| CLI | `uip functions pack` → `uip functions publish` |
+| CLI | `uip function pack` → `uip function publish` |
 
 ### Python Functions vs JS Functions
 
@@ -33,9 +33,9 @@ A Python Coded Function can be invoked from any UiPath surface:
 | **Invocation** | Maestro, Flow, Agents, Orchestrator API | HTTP endpoint (BFF for Coded Apps) |
 | **Runtime** | Serverless or Local Unattended Robot | Serverless HTTP shared tier |
 | **SDK access** | Full UiPath Python SDK (assets, buckets, queues, connections) | Workload token forwarding only |
-| **Scaffold** | `uip functions new <name> --language py` | `uip functions new <name> --language ts` (default) |
-| **Init** | `uip functions init` (generates entry-points.json) | Not needed |
-| **Local dev** | `uip functions run` | `uip functions serve` + `uip functions run` |
+| **Scaffold** | `uip function new <name> --language py` | `uip function new <name> --language ts` (default) |
+| **Init** | `uip function init` (generates entry-points.json) | Not needed |
+| **Local dev** | `uip function run` | `uip function serve` + `uip function run` |
 | **Best for** | Agentic process steps, ERP integration, document AI, data pipelines | Backend-for-Frontend for Coded Apps |
 
 Use Python when the logic needs job semantics, platform SDK access, or is invoked from Maestro/agents. Use JS when the caller is a Coded App frontend and low HTTP latency matters.
@@ -44,17 +44,17 @@ Use Python when the logic needs job semantics, platform SDK access, or is invoke
 
 ## CLI Reference
 
-All Python Coded Function lifecycle commands use `uip functions`:
+All Python Coded Function lifecycle commands use `uip function`:
 
 ```bash
-uip functions new <name> -l py     # scaffold a new Python Functions project (--language py required)
-uip functions init                 # Python only — generate entry-points.json, bindings.json, project.uiproj
-uip functions pack                 # pack to .nupkg for deployment
-uip functions publish              # upload .nupkg to Orchestrator (prompts for feed, or use --feed-id)
-uip functions push                 # sync project to Studio Web
+uip function new <name> -l py     # scaffold a new Python Functions project (--language py required)
+uip function init                 # Python only — generate entry-points.json, bindings.json, project.uiproj
+uip function pack                 # pack to .nupkg for deployment
+uip function publish              # upload .nupkg to Orchestrator (prompts for feed, or use --feed-id)
+uip function push                 # sync project to Studio Web
 ```
 
-> `uip functions run` works for both Python and JS/TS. `uip functions serve` is **JS/TS only** — it starts the local HTTP server that `run` invokes against.
+> `uip function run` works for both Python and JS/TS. `uip function serve` is **JS/TS only** — it starts the local HTTP server that `run` invokes against.
 
 ---
 
@@ -63,9 +63,9 @@ uip functions push                 # sync project to Studio Web
 ### Step 1: Scaffold
 
 ```bash
-uip functions new <name> --language py       # Python Coded Function
-uip functions new <name> --language ts       # TypeScript Function (JS/TS, no job semantics)
-uip functions new <name> --language js       # JavaScript Function (JS/TS, no job semantics)
+uip function new <name> --language py       # Python Coded Function
+uip function new <name> --language ts       # TypeScript Function (JS/TS, no job semantics)
+uip function new <name> --language js       # JavaScript Function (JS/TS, no job semantics)
 ```
 
 **`--language py` is required for Python.** The default language is TypeScript — omitting `--language` scaffolds a JS/TS project. Always pass `-l py` or `--language py` when building a Python Coded Function.
@@ -174,7 +174,7 @@ No `[build-system]` section. The project is identified as a Coded Function by th
 ### Step 6: Generate Entry Points
 
 ```bash
-uip functions init
+uip function init
 ```
 
 Python only. Discovers entrypoints and generates `entry-points.json`, `bindings.json`, and `project.uiproj`. Must run before `pack` or `push`. Re-run whenever Input/Output schemas or the entrypoint registration in `uipath.json` changes.
@@ -226,28 +226,28 @@ class Input(BaseModel):
     attachment: Attachment
 ```
 
-`uip functions init` recognizes the `Attachment` type and emits `x-uipath-resource-kind: JobAttachment` in `entry-points.json` — the schema Studio Web and Orchestrator read to render a file picker for that field. Access fields snake_case: `attachment.full_name`, `attachment.content`.
+`uip function init` recognizes the `Attachment` type and emits `x-uipath-resource-kind: JobAttachment` in `entry-points.json` — the schema Studio Web and Orchestrator read to render a file picker for that field. Access fields snake_case: `attachment.full_name`, `attachment.content`.
 
 ### Step 8: Pack and Publish
 
 ```bash
-uip functions pack                            # creates .nupkg
-uip functions publish                         # upload to Orchestrator (interactive feed picker)
-uip functions publish --feed-id <FEED_ID>     # CI/non-interactive
+uip function pack                            # creates .nupkg
+uip function publish                         # upload to Orchestrator (interactive feed picker)
+uip function publish --feed-id <FEED_ID>     # CI/non-interactive
 ```
 
 To sync to Studio Web instead of publishing to Orchestrator:
 
 ```bash
-uip functions push
+uip function push
 ```
 
 ## Important Notes
 
 - `UiPath()` must never be instantiated at module level — always inside a function body
 - The `functions` map in `uipath.json` marks the project as a Coded Function (`determine_project_type()` reads the entrypoint type from `uipath.json`)
-- `uip functions init` must run before `pack` or `push` — it generates `entry-points.json`
+- `uip function init` must run before `pack` or `push` — it generates `entry-points.json`
 - Python Functions have full job semantics: Orchestrator job ID, audit trail, retry, scheduling
 - JS Functions have no job semantics and cannot be started as Orchestrator jobs — use Python when the caller is Maestro, a Flow, or an agent
-- `uip functions run` works for both Python and JS/TS local execution; `uip functions serve` is JS/TS only (starts the local HTTP server that `run` invokes against)
+- `uip function run` works for both Python and JS/TS local execution; `uip function serve` is JS/TS only (starts the local HTTP server that `run` invokes against)
 - If cloud-backed work requires authentication, run `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
