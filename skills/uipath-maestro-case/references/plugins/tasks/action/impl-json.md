@@ -66,7 +66,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 **Step 2 — Write task:**
 
 1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
-2. Set `data.taskTitle`, `data.priority`, `data.labels` from tasks.md now (plain strings, not Phase-3 bindings); set `data.actionCatalogName` only when tasks.md references an existing catalog. **`data.recipient` is an object, NEVER a bare string.** The tasks.md `recipient:` line carries a bare value (the SDD typed prefix is stripped in planning) — wrap it as `{ "Type": <int>, "Value": <value> }`, inferring Type from the value shape (`=vars.X` → `3`, email → `2`, UUID → `0`/`1`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`. Do not copy the bare value through as `data.recipient`.
+2. Set `data.taskTitle`, `data.priority`, `data.labels` from tasks.md now (plain strings, not Phase-3 bindings); set `data.actionCatalogName` only when tasks.md references an existing catalog. **`data.recipient` is an object, NEVER a bare string.** Wrap the tasks.md `recipient:` value as `{ "Type": <int>, "Value": <value> }`. A `UserGroup:` prefix is the one prefix planning keeps, and it maps to `Type 1` with the prefix stripped from `Value`; every other value arrives bare and its Type comes from its shape (`=vars.X` → `3`, email → `2`, UUID → `0`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`, and `recipient: UserGroup:afa0eb1e-0874-47bc-9ce6-8e4c5869de39` → `{ "Type": 1, "Value": "afa0eb1e-0874-47bc-9ce6-8e4c5869de39" }`. Do not copy the bare value through as `data.recipient`.
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
@@ -82,7 +82,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
-- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for group/role, Skip, or no-Type-maps)
+- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for Skip, an unresolved group, or no-Type-maps). A group/role recipient is `Type 1` and carries the bare group UUID in `Value`; dropping it leaves the task with no `assignmentCriteria` and nobody assigned
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the T-entry declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))
 - `id` captured in `id-map.json`
 

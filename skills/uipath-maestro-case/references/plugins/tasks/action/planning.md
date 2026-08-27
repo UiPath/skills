@@ -53,13 +53,13 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 > Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
 
 - If sdd.md **names a specific user email**, record the bare email exactly as authored in `tasks.md`; never replace it with a UUID resolved for an SLA recipient or write the SLA-only `<uuid> / <email>` pair. Sets `assignmentCriteria: "user"` at execution time.
-- If sdd.md **names a group or role**, do **not** record a recipient — group assignment is configured separately via Actions app rules. Record a note in `tasks.md` so the user remembers to configure group assignment externally.
+- If sdd.md **names a group or role**, resolve it to its directory UUID with the `Resolve UserGroup` algorithm in [`plugins/sla/planning.md` § Identity Resolution](../../sla/planning.md#identity-resolution), then record `recipient: UserGroup:<uuid>` in `tasks.md` — keep the `UserGroup:` prefix, because a bare UUID cannot tell a user id from a group id. Sets `assignmentCriteria: "group"` at execution time. Leave the recipient off only when the group does not resolve; then record a note in `tasks.md` so the user patches it externally.
 - If sdd.md is **silent on assignee**, **prompt the user** using **AskUserQuestion** with a direct open-ended prompt:
   > "The action task '<display-name>' has no assignee specified in sdd.md. Who should receive it? Enter an email, a group/role name, or 'Skip' to leave it unassigned for now."
 
   Parse the user's response:
   - Looks like an email → record as `recipient: <email>`.
-  - Group / role name → omit recipient; record a note in `tasks.md` reminding the user to configure group assignment externally.
+  - Group / role name → resolve it and record as `recipient: UserGroup:<uuid>`; on no match, omit the recipient and record a note in `tasks.md`.
   - `Skip` or empty → omit recipient.
 
 For open-ended inputs like an email address, use a direct prompt rather than AskUserQuestion with a finite option list.
@@ -75,8 +75,8 @@ Resolved action task. For the unresolved placeholder shape, see [placeholder-tas
 - folder-path: "<selected-deployment-folder>"
 - task-title: "<title-shown-to-user>"
 - priority: Medium
-- recipient: user@company.com   # omit when group-assigned or when user chose Skip
-- assignment-note: "<free-form note if group-assigned>"   # optional
+- recipient: user@company.com   # or UserGroup:<uuid> for a group/role; omit when unresolved or when user chose Skip
+- assignment-note: "<free-form note, e.g. the group name behind a resolved UUID>"   # optional
 - runOnlyOnce: false   # from sdd.md "Run Only Once" column
 - inputs:
   - <input_name> <- "<Stage>"."<Task>".<output>
