@@ -17,7 +17,7 @@ import sys
 
 ENTITY = "FlowCodeEvalEntity"
 FIELD = "file1"
-SOURCE_ID = "8B4A3EEA-5E92-F111-9B33-00224822208B"
+UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 REQUIRED = {
     ".upload-file-to-record-field",
     ".download-file-from-record-field",
@@ -94,6 +94,7 @@ def main() -> int:
             t = n.get("type", "")
             detail = n.get("inputs", {}).get("detail", {})
             pp = detail.get("pathParameters") or {}
+            query = detail.get("queryParameters") or {}
             body = detail.get("bodyParameters") or {}
             if resolve_entity(pp.get("entityName"), globals_by_id) != ENTITY:
                 continue
@@ -101,7 +102,7 @@ def main() -> int:
                 create_node = n
             for suffix in REQUIRED:
                 if t.endswith(suffix):
-                    seen[suffix] = body.get("_fieldName")
+                    seen[suffix] = query.get("_fieldName") or body.get("_fieldName")
                     if suffix == ".download-file-from-record-field":
                         download_node = n
                     elif suffix == ".upload-file-to-record-field":
@@ -125,12 +126,11 @@ def main() -> int:
                   f"upload file values: {upload_file_values}", file=sys.stderr)
             return 1
 
-        # Download's recordId must be bound (literal, =js: expression, or
-        # variable). Smoke does not enforce the exact SOURCE_ID literal — that
-        # semantic belongs in integration/e2e.
+        # Download's recordId is a concrete UUID so either authoring path can
+        # choose its own neutral fixture value.
         dl_recid = (download_node.get("inputs", {}).get("detail", {}).get("queryParameters") or {}).get("recordId", "")
-        if not str(dl_recid).strip():
-            print(f"FAIL: {path} — download recordId is empty", file=sys.stderr)
+        if not UUID_RE.fullmatch(str(dl_recid)):
+            print(f"FAIL: {path} — download recordId is not a UUID literal: {dl_recid!r}", file=sys.stderr)
             return 1
 
         # create-entity-record on ENTITY must exist and upload+delete recordId must reference its output
@@ -163,7 +163,7 @@ def main() -> int:
                 print(f"FAIL: {path} — {label} recordId {rid!r} does not reference create output ({create_id})", file=sys.stderr)
                 return 1
 
-        print(f"OK: {path} — download(src={SOURCE_ID}) + create + upload/delete(recId=create.out) on {ENTITY}/{FIELD}; upload has variable binding")
+        print(f"OK: {path} — download(valid UUID) + create + upload/delete(recId=create.out) on {ENTITY}/{FIELD}; upload has variable binding")
         return 0
     print(f"FAIL: no .flow has all 3 file activities on {ENTITY}", file=sys.stderr)
     return 1
