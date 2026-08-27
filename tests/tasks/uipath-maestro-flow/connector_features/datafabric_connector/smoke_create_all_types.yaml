@@ -28,7 +28,7 @@ initial_prompt: |
   * active: true (BOOLEAN)
   * releaseDate: "2024-03-10" (DATE)
   * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
-  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (UUID)
+  * externalId: any valid UUID value of your choice
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a

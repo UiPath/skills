@@ -23,9 +23,9 @@ initial_prompt: |
   `FlowCodeEvalEntity` entity, `file1` field. Do NOT indirect the entity name
   or field name through workflow variables. Chain four operations in order:
 
-  1. DownloadFileFromRecordFieldV2 — source recordId is fixed:
-     `8B4A3EEA-5E92-F111-9B33-00224822208B`. Assign the download output to a
-     workflow-level variable of type `file`.
+  1. DownloadFileFromRecordFieldV2 — use a valid UUID literal of your choice
+     for the source recordId. Assign the download output to a workflow-level
+     variable of type `file`.
   2. CreateEntityRecord — create a new FlowCodeEvalEntity record. Populate
      the body with plausible sample values on at least `title` (STRING),
      `description` (MULTILINE_TEXT), and `score` (DECIMAL). Deterministic
