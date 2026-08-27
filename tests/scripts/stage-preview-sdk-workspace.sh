@@ -4,7 +4,9 @@ set -euo pipefail
 sdk_root=${PREVIEW_FLOW_SDK_ROOT:-/opt/preview-flow-sdk}
 assets_root=${PREVIEW_FLOW_SDK_ASSETS_ROOT:-/opt/preview-flow-sdk-assets}
 package_dir=$sdk_root/node_modules/@uipath/flow-sdk
-library_json=${FLOW_SDK_LIBRARY_JSON:-$assets_root/typescript/sdk/lib/library-json}
+library_json=${FLOW_SDK_LIBRARY_JSON:-$assets_root/library-json}
+registry_root=${UIP_MAESTRO_REGISTRY_HOME:-$assets_root/registry}
+registry_current=$registry_root/current.json
 
 [[ -f "$package_dir/package.json" ]] || {
   echo "stage-preview-sdk-workspace: missing $package_dir/package.json" >&2
@@ -18,10 +20,8 @@ library_json=${FLOW_SDK_LIBRARY_JSON:-$assets_root/typescript/sdk/lib/library-js
   echo "stage-preview-sdk-workspace: missing connector library index at $library_json" >&2
   exit 1
 }
-
-flow_builder_sdk_commit=$(tr -d '[:space:]' < "$assets_root/flow-builder-sdk.sha")
-[[ -n "$flow_builder_sdk_commit" ]] || {
-  echo "stage-preview-sdk-workspace: missing flow-builder-sdk provenance" >&2
+[[ -f "$registry_current" ]] || {
+  echo "stage-preview-sdk-workspace: missing connector registry provenance at $registry_current" >&2
   exit 1
 }
 
@@ -39,12 +39,27 @@ const fs = require('node:fs');
 console.log(JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).version);
 NODE
 )
+sdk_gitref=$(node - "$package_dir/package.json" <<'NODE'
+const fs = require('node:fs');
+console.log(JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).gitref || '');
+NODE
+)
+registry_hash=$(node - "$registry_current" <<'NODE'
+const fs = require('node:fs');
+const {libraryHash} = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+if (typeof libraryHash !== 'string' || !libraryHash) {
+  throw new Error('connector registry provenance is missing libraryHash');
+}
+console.log(libraryHash);
+NODE
+)
 
 ln -s "$sdk_root/node_modules" node_modules
-node - "$sdk_version" "$flow_builder_sdk_commit" <<'NODE'
+node - "$sdk_version" "$sdk_gitref" "$registry_hash" <<'NODE'
 const fs = require('node:fs');
 const version = process.argv[2];
-const flowBuilderSdkCommit = process.argv[3];
+const gitref = process.argv[3];
+const connectorLibraryHash = process.argv[4];
 let packageJson = {};
 if (fs.existsSync('package.json')) {
   packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -61,14 +76,14 @@ fs.writeFileSync(
   `${JSON.stringify({
     package: '@uipath/flow-sdk',
     version,
-    flow_builder_sdk_commit: flowBuilderSdkCommit,
+    gitref: gitref || null,
     connector_library: true,
+    connector_library_hash: connectorLibraryHash,
   }, null, 2)}\n`,
 );
 NODE
 
 node -e "import('@uipath/flow-sdk')"
 uip maestro flow compile --help >/dev/null
-prepare-connector --help >/dev/null
-printf 'stage-preview-sdk-workspace: @uipath/flow-sdk@%s, flow-builder-sdk@%s, connector library\n' \
-  "$sdk_version" "$flow_builder_sdk_commit"
+printf 'stage-preview-sdk-workspace: @uipath/flow-sdk@%s, connector library %s\n' \
+  "$sdk_version" "$registry_hash"
