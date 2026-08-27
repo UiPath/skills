@@ -66,9 +66,13 @@ def main() -> None:
         raise SystemExit("FAIL: seed.json must contain exactly one case")
     case = cases[0]
 
-    # retries=1: this flow POSTS to the shared Slack channel, so a whole-flow
-    # retry on a transient poll/5xx failure would post a duplicate alert.
-    payload = run_debug(inputs=case["inputs"], timeout=300, retries=1)
+    # Use run_debug's default transient-retry policy. The dominant failure mode
+    # here is a backend 5xx (e.g. HTTP 504 on POST /api/v1/debug-instances) at
+    # provisioning — BEFORE the flow runs, so nothing is posted to Slack and a
+    # retry is safe. The residual duplicate-post risk (a transient during
+    # post-execution polling) is tolerable on the sandbox coding-agent-testing
+    # channel and is far outweighed by the false-failure rate of retries=1.
+    payload = run_debug(inputs=case["inputs"], timeout=300)
 
     # DATA SERVICE outcome: the messy invoice resolved to the seeded invoice
     # with its exact line-item count, via the real query.
