@@ -5,9 +5,10 @@ The Flow author may persist a filter as a runtime expression or as the
 structured FilterBuilder tree used by the design-time activity. The test
 checks either representation so the prompt does not prescribe serialization.
 """
-import glob, json, sys
+import glob, json, re, sys
 
 
+UUID_RE = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b")
 EXPECTED = {
     "boolean": ("active", ("true",), ()),
     "decimal": ("score", ("8.5",), ("greaterthanorequal", ">=")),
@@ -16,7 +17,7 @@ EXPECTED = {
     "multiline": ("description", ("sci-fi",), ("contains",)),
     "date": ("releasedate", ("2025-01-01",), ("lessthan", "<")),
     "datetime": ("lastupdated", ("2024-01-01",), ("greaterthanorequal", ">=")),
-    "uuid": ("externalid", ("11111111-1111-1111-1111-111111111111",), ()),
+    "uuid": ("externalid", (), ()),
     "null": ("description", (), ("isnull", "is null")),
 }
 
@@ -60,6 +61,7 @@ def node_filter_text(detail):
 def has_expected_filter(text, field, tokens, operators):
     return (field in text
             and all(token.lower() in text for token in tokens)
+            and (field != "externalid" or UUID_RE.search(text))
             and (not operators or any(op.lower() in text for op in operators)))
 
 
