@@ -1,6 +1,6 @@
 # Machine Monitoring Commands
 
-The `machines` commands report on machine health: attended versus unattended runtime, per-machine status and slot inventory, availability intervals, faulted-job ranking, and runtime minutes. They answer "how are these machines doing", not "which machines exist"; use `filter-machines list` for discovery and for the exact machine names and type labels these commands filter on.
+The `machines` commands report on machine health: attended versus unattended runtime, per-machine status and slot inventory, availability intervals, faulted-job ranking, and runtime minutes. They answer "how are these machines doing", not "which machines exist"; use `filter-machines list` for discovery and for the exact machine names these commands filter on.
 
 Every command needs a time range. Results are tenant-scoped: machine commands have no folder flag and no permission scoping, unlike the `queues` commands.
 
@@ -22,19 +22,19 @@ Keys inside `Data` are PascalCase in the CLI's JSON output. Read `MachineName`, 
 
 `machines runtime-mix` returns a fixed two-row answer, so it takes no `--limit` or `--offset`. There is no `--folder-key` on any machine command.
 
-`--machine-type` takes the exact labels `filter-machines list` reports, such as `Standard Machine` or `Cloud Robot - Serverless`. Quote labels containing spaces.
+`--machine-type` takes one or more of five labels the backend builds in SQL: `Standard Machine`, `Elastic Robot Pool`, `Cloud Robot - VM`, `Cloud Robot - Serverless`, `Machine Template`. Quote every label, since all five contain spaces. `filter-machines list` reports machine names and keys only, so it cannot confirm a type label; a mistyped label returns `Success` with zero rows.
 
 ## Rules
 
 1. **A time range is required and its units are minutes or epoch milliseconds.** Same two forms and units as `queues`: `--time-range <minutes>` (60 = 1h, 1440 = 24h, 43200 = 30d), or both `--started-after` and `--started-before` in epoch milliseconds. Passing both forms is rejected. Omitting a time range is rejected locally and exits 3.
-2. **The server silently caps the window at 30 days**, the same clamping as `queues`. Never report a longer window as the window queried.
+2. **The server silently caps the window at 30 days**, the same clamping as `queues`. A longer `--time-range` is clamped to exactly 30 days, while an absolute bound is moved forward only once it is a full 31 days old. Never report a longer window as the window queried.
 3. **Results are tenant-scoped, not folder-scoped.** The backend ignores folders entirely on these routes, so there is no `--folder-key` and no permission-bounded subset. Do not carry the queue commands' folder reasoning over.
 4. **Repeat calls inside a minute return the same numbers, with no way around it.** The server caches each distinct request for 60 seconds and the machine routes expose no bypass at all. Say so before presenting a figure as current during a live incident.
 5. **Every page repeats the whole backend request.** These commands page the CLI's own copy of the list; read `Pagination.Total` and `Pagination.HasMore`.
 6. **A machine name and host pair is not a unique identity.** Two live machine keys can carry the same name, producing two rows that agree on `MachineName` and `HostMachineName`. Only `availability-timeline` returns `MachineKey`.
 7. **An empty string is an answer, not an error.** `CurrentProcess` is empty when no job is running and `MachineType` is empty when the type cannot be classified. Report the meaning, not a blank.
 8. **`top-errors` and `utilization` return at most ten rows**, ranked server-side. A machine missing from either list is not proof of zero; for `utilization` an omitted machine has no reconstructed runtime, which is not the same as a zero-minute row.
-9. **Row order is the server's on `availability-timeline`, `top-errors`, and `utilization`.** The CLI sorts only `details` (by machine, then host) before paging. Timeline timestamps are culture-formatted `GMT` strings; never parse or re-sort them.
+9. **Row order is the server's on `availability-timeline`, `top-errors`, and `utilization`.** The CLI sorts only `details` (by machine, then host) before paging. That sort has no tie-break: the backend adds no order of its own and returns no machine key for `details`, so two rows agreeing on both fields can swap between one `--offset` page and the next once the 60-second cache expires. Page through the whole list inside that minute when the split across pages matters. Timeline timestamps are culture-formatted `GMT` strings; never parse or re-sort them.
 10. **These commands need a Cloud or Dedicated SaaS deployment.** On Automation Suite and Service Fabric they return `Result: ConfigError` with `ErrorCode: configuration_error` before the tenant is consulted. That is a deployment fact, not a permission or data answer, and retrying will not change it.
 
 ## Errors
@@ -53,7 +53,9 @@ uip insights machines runtime-mix --time-range 1440 --output json
 
 `Data[]`: exactly two rows, `Unattended` then `Attended`, each with `ExecutionType`, `JobDurationMs`, `AverageUtilizationMs`.
 
-Both values are milliseconds. `AverageUtilizationMs` is the runtime divided by the distinct robot count, so it is also a duration, never a percentage. Do not compare either value against a percentage threshold.
+Both values are milliseconds. `AverageUtilizationMs` divides the runtime by the window's distinct robot count, counted across attended and unattended robots together, so the `Unattended` row is not a per-unattended-robot average. It is a duration, never a percentage; do not compare either value against a percentage threshold.
+
+Both aggregates are coalesced to zero server-side. A `0`/`0` pair therefore means no job runtime matched the filters, which is not the same as a confirmed idle machine. Re-check the filter values with `filter-machines list` before reporting zeros as a finding.
 
 ### machines details
 
