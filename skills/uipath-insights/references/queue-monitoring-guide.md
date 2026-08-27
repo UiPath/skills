@@ -23,7 +23,7 @@ Keys inside `Data` are PascalCase in the CLI's JSON output. Read `QueueName`, no
 
 ## Rules
 
-1. **A time range is required and its units are minutes or epoch milliseconds.** Pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 43200 = 30d), or both `--started-after` and `--started-before` in epoch milliseconds. Passing both forms is rejected. Omitting a time range is rejected locally and exits 3.
+1. **A time range is required and its units are minutes or epoch milliseconds.** Pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 43200 = 30d), or both `--started-after` and `--started-before` in epoch milliseconds. Passing both forms is rejected. Omitting a time range is rejected locally and exits 3. `uip insights alert-history` takes its bounds in epoch **seconds**, so do not carry a value between the two families: a seconds value here is rejected locally, with a message telling you to multiply by 1000.
 2. **The server silently caps the window at 30 days.** A longer `--time-range` is clamped and an absolute bound older than 30 days is moved forward, with nothing in the response saying so. Never report a window longer than 30 days as the window queried.
 3. **Results are permission-bounded.** Without `--folder-key` the backend substitutes every folder the caller can access, not every folder in the tenant. A `--folder-key` outside that set returns a 403 for the whole request.
 4. **Repeat calls inside a minute return the same numbers.** The server caches each distinct request for 60 seconds. Say so before presenting a figure as current during a live incident.
@@ -74,7 +74,7 @@ uip insights queues sla --time-range 1440 --output json
 
 `Data[]`: `QueueName`, `ProcessName`, `InSlaCount`, `AtRiskCount`, `OutOfSlaCount`, `FirstSlaBreachAt`, `FirstRiskBreachAt`, `AverageHandlingTimeMs`, `AveragePendingTimeMs`, `RunningRobots`, `NecessaryRobots`.
 
-This row mixes two time windows. The SLA bucket counts and the two breach times use the range you asked for. `AverageHandlingTimeMs`, `AveragePendingTimeMs`, `RunningRobots`, and `NecessaryRobots` come from queries with a fixed 30-day window and do not narrow with `--time-range`. Never present those four as figures for a shorter window.
+This row mixes two time windows. The SLA bucket counts, the two breach times, and `NecessaryRobots` use the range you asked for. `AverageHandlingTimeMs`, `AveragePendingTimeMs`, and `RunningRobots` come from queries with a fixed 30-day window and do not narrow with `--time-range`. Never present those three as figures for a shorter window.
 
 `FirstSlaBreachAt`, `FirstRiskBreachAt`, and `ProcessName` are null when the query has no answer for that queue. A null breach time means nothing is predicted to breach, which is a result worth reporting, not missing data.
 
