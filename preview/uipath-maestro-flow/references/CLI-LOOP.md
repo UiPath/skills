@@ -81,7 +81,7 @@ uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
 uip maestro flow validate <Name>Sol/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
 ( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+( cd <Name>Sol && UIP_LOG_LEVEL=warn uip maestro flow debug <Name> \
   --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
   --output json )
 ```
@@ -157,7 +157,7 @@ diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
 ( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+( cd <Name>Sol && UIP_LOG_LEVEL=warn uip maestro flow debug <Name> \
   --inputs @inputs.json \
   --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
   --output json )
