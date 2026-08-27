@@ -185,8 +185,15 @@ def assert_generated_project_scaffold(
         fail(f"project.uiproj Name must be {project_name}")
     if project.get("ProjectType") != "ProcessOrchestration":
         fail("project.uiproj ProjectType must be ProcessOrchestration")
-    if "main" in project or "Main" in project:
-        fail("project.uiproj must not own the BPMN main path")
+    # The CLI never writes `main` into project.uiproj but it preserves a
+    # hand-authored one (#2774). Tolerate a preserved key that points at the
+    # BPMN file; only a wrong target is a defect.
+    for key in ("main", "Main"):
+        if key in project and project[key] not in (bpmn_name, f"/content/{bpmn_name}"):
+            fail(
+                f"project.uiproj {key} must be absent or reference {bpmn_name}, "
+                f"found {project[key]!r}"
+            )
 
     expected_main = f"/content/{bpmn_name}#{start_id}"
     if operate.get("main") != expected_main:
