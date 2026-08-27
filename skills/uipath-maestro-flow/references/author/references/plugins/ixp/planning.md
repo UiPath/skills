@@ -38,7 +38,7 @@ Don't use IxP as a generic OCR. IxP is field-oriented — it extracts named fiel
 
 - `uip login` — IxP nodes only appear in the registry after authentication.
 - `uip maestro flow registry pull --force` must be run to cache IxP model node types locally.
-- A trained IxP model must be **deployed to an Orchestrator folder** (`deployments create`) — folder deployment, not `projects publish`, is what puts it in the flow registry (publish only marks a version inside the project). If none exists, see [No published model](#no-published-model-branch-on-documents).
+- A trained IxP model must be **deployed to an Orchestrator folder** — the flow registry lists folder deployments only. Create one via the `uipath-ixp` skill. If none exists, see [No published model](#no-published-model-branch-on-documents).
 
 ## Ports
 
