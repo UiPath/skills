@@ -72,10 +72,15 @@ for set_path in set_paths:
             problems.append(f"{label}/{name}: evaluationCriterias missing — expectedOutput belongs under it, keyed by evaluator ref")
             continue
         for key, criteria in criterias.items():
-            if key not in refs and key.removesuffix(".json") not in refs:
+            if key.endswith(".json"):
+                problems.append(f"{label}/{name}: evaluationCriterias key {key!r} must be the evaluator file base name without .json — the panel cannot match it and fails the row")
+            elif key not in refs:
                 problems.append(f"{label}/{name}: evaluationCriterias key {key!r} is not in evaluatorRefs")
             if not isinstance(criteria, dict) or "expectedOutput" not in criteria:
                 problems.append(f"{label}/{name}: evaluationCriterias[{key!r}] has no expectedOutput")
+        for ref in refs:
+            if ref not in criterias:
+                problems.append(f"{label}/{name}: no evaluationCriterias entry for evaluator {ref!r} — the panel fails the row with 'No expected output could be matched'")
 
 if total_rows < args.min_rows:
     problems.append(f"{total_rows} row(s) in total, expected at least {args.min_rows}")

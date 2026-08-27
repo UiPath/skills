@@ -13,9 +13,13 @@ description: >
   when the skill loads the gate holds, but on a one-line edit request Claude Code
   sometimes skips loading the skill entirely (observed 1 in 4 local runs — 4
   turns, no Skill call, straight to the edit), and no skill content can change
-  that; the description already says even one-line edits load it. The llm_judge needs an
-  Anthropic judge transport (ANTHROPIC_API_KEY); the deterministic criterion
-  stands on its own without it. Local-only.
+  that; the description already says even one-line edits load it. The untouched-files check is a
+  necessary condition only — an agent that does nothing also leaves the files
+  untouched — so it is paired with a deterministic "the agent inspected the
+  project" signal and the llm_judge over the final response, which is the
+  criterion that tells "asked the two questions" from "did nothing". The judge
+  needs an Anthropic judge transport (ANTHROPIC_API_KEY); without it this task
+  cannot pass, by design. Local-only.
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
 
 sandbox:
@@ -36,6 +40,14 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovery happened: the agent inspected the project / its evals folder before stopping (an agent that does nothing fails this)"
+    tool_name: "Bash"
+    command_pattern: '(ls|find|cat|tree|head|jq|python3|grep)\s[^\n]*(GradeCheck|evals|Workflow\.json)'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: llm_judge

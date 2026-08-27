@@ -115,14 +115,17 @@ def score_project(project_dir, workflow_path=None):
     results = []
     for set_path in load_eval_sets(project_dir):
         eval_set = json.loads(set_path.read_text())
-        refs = [str(r).removesuffix(".json") for r in eval_set.get("evaluatorRefs", [])]
+        # Refs and criteria keys are evaluator FILE BASE NAMES, exactly. A ".json" suffix (or any
+        # other spelling) is what the panel orphans ("No expected output could be matched to this
+        # evaluator" -> fail), so it must be an error here too, never quietly normalised.
+        refs = [str(r) for r in eval_set.get("evaluatorRefs", [])]
         for row in eval_set.get("evaluations", []):
             criterias = row.get("evaluationCriterias") or {}
             ok, raw, error = run_row(workflow_path, row.get("inputs") or {})
             actual = wrap_output(raw) if ok else None
             for ref in refs:
                 evaluator = evaluators.get(ref)
-                criteria = criterias.get(ref) or criterias.get(f"{ref}.json")
+                criteria = criterias.get(ref)
                 record = {"set": set_path.name, "row": row.get("name") or row.get("id"), "evaluator": ref,
                           "inputs": row.get("inputs"), "actual": actual, "expected": None}
                 if evaluator is None or evaluator.get("evaluatorTypeId") != "uipath-exact-match":
