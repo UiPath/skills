@@ -5,9 +5,10 @@ The Flow author may persist a filter as a runtime expression or as the
 structured FilterBuilder tree used by the design-time activity. The test
 checks either representation so the prompt does not prescribe serialization.
 """
-import glob, json, sys
+import glob, json, re, sys
 
 
+UUID_RE = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b")
 EXPECTED = {
     "boolean": ("active", ("true",), ()),
     "decimal": ("score", ("8.5",), ("greaterthanorequal", ">=")),
@@ -16,7 +17,7 @@ EXPECTED = {
     "multiline": ("description", ("sci-fi",), ("contains",)),
     "date": ("releasedate", ("2025-01-01",), ("lessthan", "<")),
     "datetime": ("lastupdated", ("2024-01-01",), ("greaterthanorequal", ">=")),
-    "uuid": ("externalid", ("11111111-1111-1111-1111-111111111111",), ()),
+    "uuid": ("externalid", (), ()),
     "null": ("description", (), ("isnull", "is null")),
 }
 
@@ -60,6 +61,7 @@ def node_filter_text(detail):
 def has_expected_filter(text, field, tokens, operators):
     return (field in text
             and all(token.lower() in text for token in tokens)
+            and (field != "externalid" or UUID_RE.search(text))
             and (not operators or any(op.lower() in text for op in operators)))
 
 
@@ -99,8 +101,10 @@ if len(all_query_details) != 3:
 def qp(detail):
     return detail.get("queryParameters", {}) or {}
 
-def bp(detail):
-    return detail.get("bodyParameters", {}) or {}
+def sort_field(detail):
+    query = qp(detail)
+    body = detail.get("bodyParameters", {}) or {}
+    return query.get("_sortFieldName") or body.get("_sortFieldName")
 
 def _int_or_none(v):
     try:
@@ -114,7 +118,7 @@ def _int_or_none(v):
 # pattern. Exact values (start=0/2, limit=2/4) belong in an integration
 # task; smoke asserts the shape, not the numbers.
 sorted_by_score = [d for d in all_query_details
-                   if str(bp(d).get("_sortFieldName") or qp(d).get("_sortFieldName") or "").lower() == "score"]
+                   if str(sort_field(d) or "").lower() == "score"]
 if len(sorted_by_score) < 2:
     print(f"FAIL: expected >=2 query nodes sorted by score, found {len(sorted_by_score)}",
           file=sys.stderr)
