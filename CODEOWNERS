@@ -136,6 +136,7 @@
 /skills/uipath-maestro-flow/references/author/references/plugins/agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh @chandusailella @mukundbayyaram
+/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector @UiPath/DatafabricCodingAgent
 
 # IXP
 /skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan
