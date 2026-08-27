@@ -188,7 +188,10 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | bankVerificationStatus | Variable | string | | | pending | Whether the bank details passed verification — verified or failed |
 | portalAccessConfirmation | Variable | string | | | | What the supplier reported about their supplier-portal access |
 | registeredAt | Variable | string | | | | When the supplier was written to the approved-supplier register |
-| revisedExpectedDate | Variable | string | | | | New expected date the procurement operations lead commits to after a phase deadline is missed |
+| applicationCheckRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the application check misses its deadline |
+| buyerReviewRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the buyer review misses its deadline |
+| complianceReviewRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the compliance review misses its deadline |
+| supplierSetupRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the supplier setup misses its deadline |
 | escalationNotes | Variable | string | | | None | Notes recorded while an application is being unblocked or reviewed after a missed deadline |
 | lastEmailStatus | Variable | string | | | | Delivery status returned by the most recent message sent from this application |
 | auditRecordId | Variable | string | | | | The audit record a rejection was written to |
@@ -474,7 +477,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Binding / Value |
 |-------|------------------|
-| newExpectedDate | -> revisedExpectedDate |
+| newExpectedDate | -> applicationCheckRevisedDate |
 | Comment | -> escalationNotes |
 
 ##### Task 1.6: Send delay note for the application check
@@ -513,7 +516,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | message.toRecipients | string | =vars.contactEmail |
 | message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
 | message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Checking the application\nNew expected date: " + vars.newExpectedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
+| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Checking the application\nNew expected date: " + vars.applicationCheckRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
 
 **Outputs:**
 
@@ -777,7 +780,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Binding / Value |
 |-------|------------------|
-| newExpectedDate | -> revisedExpectedDate |
+| newExpectedDate | -> buyerReviewRevisedDate |
 | Comment | -> escalationNotes |
 
 ##### Task 2.6: Send delay note for the buyer review
@@ -816,7 +819,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | message.toRecipients | string | =vars.contactEmail |
 | message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
 | message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Buyer review\nNew expected date: " + vars.newExpectedDate2 + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
+| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Buyer review\nNew expected date: " + vars.buyerReviewRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
 
 **Outputs:**
 
@@ -1166,7 +1169,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Binding / Value |
 |-------|------------------|
-| newExpectedDate | -> revisedExpectedDate |
+| newExpectedDate | -> complianceReviewRevisedDate |
 | Comment | -> escalationNotes |
 
 ##### Task 3.8: Send delay note for the compliance review
@@ -1205,7 +1208,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | message.toRecipients | string | =vars.contactEmail |
 | message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
 | message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Compliance and risk review\nNew expected date: " + vars.newExpectedDate3 + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
+| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Compliance and risk review\nNew expected date: " + vars.complianceReviewRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
 
 **Outputs:**
 
@@ -1426,7 +1429,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | Field | Binding / Value |
 |-------|------------------|
-| newExpectedDate | -> revisedExpectedDate |
+| newExpectedDate | -> supplierSetupRevisedDate |
 | Comment | -> escalationNotes |
 
 ##### Task 4.5: Send delay note for the supplier setup
@@ -1465,7 +1468,7 @@ task IS the confirmation and there is no second outcome to route. -->
 | message.toRecipients | string | =vars.contactEmail |
 | message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
 | message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Setting up the supplier\nNew expected date: " + vars.newExpectedDate4 + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
+| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Setting up the supplier\nNew expected date: " + vars.supplierSetupRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
 
 **Outputs:**
 
