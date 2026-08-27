@@ -25,6 +25,7 @@ The workspace installs `@uipath/flow-sdk` in `node_modules/`; `examples/` contai
 To author a Flow, create a root-level `<Name>.flow.ts` and import the package directly.
 Integrations with non-UiPath systems are handled through connectors.
 Connectors require a root-level [`bindings.json`](references/bindings.md).
+`uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
 
 ### Hello world Flow
