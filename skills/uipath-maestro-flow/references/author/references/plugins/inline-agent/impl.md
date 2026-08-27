@@ -6,6 +6,27 @@ Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory
 
 For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
 
+## Required Lifecycle — DO NOT Skip
+
+After ANY edit to `agent.json` or any `resources/*/resource.json` — and after ALL flow graph edits (nodes, edges, variables, layout) are complete — you MUST run, in this exact order, BEFORE `flow debug` / `flow upload` / `solution upload`:
+
+1. `uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json` — read-only schema check on the inline agent.
+2. `uip agent migrate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json` — **writes** `.agent-builder/agent.json` and applies migrations. **For tool-bearing inline agents**, add `--bindings-target "<FlowProjectDir>/bindings_v2.json"`.
+3. `uip solution resource refresh --output json` — required only for tool-bearing inline agents; materializes solution-level resource files from `bindings_v2.json`.
+
+**`uip maestro flow validate` does NOT replace `uip agent validate --inline-in-flow`.** Flow validate checks `.flow` JSON shape only; it does not look at `agent.json`, `.agent-builder/`, or `bindings_v2.json`. Both validators are required.
+
+### Symptom of skipping migrate
+
+`flow validate` passes, `solution upload` succeeds, `flow debug` returns:
+
+```
+[170007] Failure to start the Orchestrator job (element <agentNodeId>)
+ErrorDetails: The job's associated process could not be found
+```
+
+Root cause: `.agent-builder/agent.json` was never regenerated from your edited `agent.json`, so the runtime cannot resolve the inline agent's process when the `uipath.agent.autonomous` ServiceTask fires. Fix: re-run validate + migrate, then re-upload / re-debug.
+
 ## Prerequisite — Scaffold the Inline Agent
 
 ```bash
