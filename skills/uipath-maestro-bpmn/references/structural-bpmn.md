@@ -517,7 +517,10 @@ Re-check after any edit:
 
 ## Validation
 
-Run final file validation only after coherent diagram interchange exists:
+Generate the diagram with `uip maestro bpmn format <file.bpmn>`, then validate.
+Do not hand-author the diagram when the command is available.
+
+Validation is only meaningful once coherent diagram interchange exists:
 complete `BPMNDiagram` coverage, a finite-bounds `BPMNShape` with positive
 width and height for every rendered node, and a `BPMNEdge` with at least two
 finite waypoints for every rendered sequence flow. A semantic-only validator

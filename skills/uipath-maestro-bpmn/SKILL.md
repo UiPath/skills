@@ -176,8 +176,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    synthetic local project. Every root start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
    the project generates zero entry points.
-4. **Complete layout, then validate.** For file-based authoring, complete
-   coherent BPMN DI before the first final CLI validation; see
+4. **Complete layout, then validate.** Generate the diagram with
+   `uip maestro bpmn format <file.bpmn>` — do not hand-author it when that
+   command is available. Complete BPMN DI before the first CLI validation; see
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation)
    for the required node and flow coverage. Then run the CLI validator — it
    runs the full PO.Frontend canvas rule set (structural rules plus variable,
