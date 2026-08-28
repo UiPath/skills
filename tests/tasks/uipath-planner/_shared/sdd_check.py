@@ -414,12 +414,15 @@ def main() -> None:
     if not declared:
         sys.exit("FAIL: no §Case Variables table found")
 
-    refs = set(re.findall(r"=vars\.([A-Za-z]\w*)", text)) - {"X"}
+    # Both binding forms: the bare `=vars.X` cell and every `vars.X` inside a `=js:`
+    # expression. Anchoring on `=` saw only the first, so a broken reference written
+    # into a `=js:` string concatenation reached runtime with the check reporting OK.
+    refs = set(re.findall(r"\bvars\.([A-Za-z]\w*)", text)) - {"X"}
 
     # 1. mapping integrity
     unresolved = sorted(r for r in refs if r not in declared)
     if unresolved:
-        issues.append(f"mapping: {len(unresolved)} =vars not declared: {', '.join(unresolved)}")
+        issues.append(f"mapping: {len(unresolved)} vars not declared: {', '.join(unresolved)}")
 
     # 2. lineage closure
     produced = set(re.findall(r"->\s*([A-Za-z]\w*)", text)) | set(
@@ -585,7 +588,7 @@ def main() -> None:
         sys.exit("FAIL: sdd.md mechanical check\n  - " + "\n  - ".join(issues))
 
     print(
-        f"OK: sdd.md mechanically sound — {len(declared)} variables, {len(refs)} =vars "
+        f"OK: sdd.md mechanically sound — {len(declared)} variables, {len(refs)} vars "
         f"references all resolve, lineage closes, task types valid, "
         f"{len(stage_sections)} stages with legal entry/exit conditions, case can close"
     )

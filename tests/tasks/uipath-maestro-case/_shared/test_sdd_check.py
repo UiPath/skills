@@ -307,3 +307,77 @@ def test_tasks_sla_validation_ignores_non_sla_stage_headers():
 - stage-kind: secondary
 '''
     assert _tasks_frontend_issues(tasks, "tasks.md") == []
+
+
+def _run_checker(sdd_text: str) -> subprocess.CompletedProcess:
+    checker = Path(__file__).with_name("sdd_check.py")
+    with tempfile.TemporaryDirectory() as workdir:
+        Path(workdir, "sdd.md").write_text(sdd_text, encoding="utf-8")
+        return subprocess.run(
+            [sys.executable, str(checker)],
+            cwd=workdir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+
+_REFERENCE_SDD = """
+## Case Variables
+| Name | Category | Type | Source Trigger | Source Field | Default | Description |
+|---|---|---|---|---|---|---|
+| caseId | In | String | Manual | caseId | — | Case identifier |
+| companyName | In | String | Manual | companyName | — | Supplier name |
+
+### Stage 1: Intake
+
+#### Entry Conditions
+| WHEN | IF |
+|---|---|
+| case-entered | — |
+
+##### Task 1.1: Notify the buyer
+
+| Field | Type | Value | Required |
+|---|---|---|---|
+| Content | String | %s | No |
+
+#### Exit Conditions
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|---|---|---|---|---|
+| required-tasks-completed | — | complete-stage | Yes | Done |
+
+### Case Exit Conditions
+| WHEN | IF | Marks Case Complete | Display Name |
+|---|---|---|---|
+| required-stages-completed | — | Yes | Complete |
+"""
+
+
+def _mapping_line(sdd_text: str) -> str:
+    """The `mapping:` issue the reference scan raised, or "" when it raised none.
+
+    Keyed on that one line rather than the exit code: these fixtures are minimal and
+    trip other checks too, so a non-zero exit would pass whatever the scan did.
+    """
+    out = _run_checker(sdd_text)
+    for line in (out.stdout + out.stderr).splitlines():
+        if "mapping:" in line:
+            return line.strip()
+    return ""
+
+
+def test_reference_inside_a_js_expression_is_checked():
+    # The blind spot the scan was widened for: written into a `=js:` concatenation a
+    # reference carries no `=` in front of `vars`, so anchoring on `=vars.` missed it.
+    assert "undeclaredName" in _mapping_line(
+        _REFERENCE_SDD % '=js:("Hello " + vars.undeclaredName + "!")'
+    )
+
+
+def test_bare_binding_reference_is_still_checked():
+    assert "undeclaredName" in _mapping_line(_REFERENCE_SDD % "=vars.undeclaredName")
+
+
+def test_declared_reference_inside_a_js_expression_raises_nothing():
+    assert _mapping_line(_REFERENCE_SDD % '=js:("Hello " + vars.companyName + "!")') == ""
