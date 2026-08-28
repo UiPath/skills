@@ -16,9 +16,11 @@ run_limits:
   max_turns: 80
   turn_timeout: 900
 
-# Deliberately does NOT forbid `uip maestro flow debug` — the whole question is
-# whether the agent knows debug is not the inbound test loop. (The outbound task
-# does forbid it, because there a debug run places a real call.)
+# The prompt deliberately does not SAY "don't run flow debug" — the whole
+# question is whether the agent knows on its own that debug is not the inbound
+# test loop. Reaching for it is still graded below (a wasted turn against a CLI
+# that rejects the run); the outbound task grades the same pattern for the
+# harder reason that a debug run there places a real call.
 initial_prompt: |
   Build a UiPath Flow project named "SupportLine" that answers incoming phone
   calls to our support line, has an AI agent hold the conversation with the
@@ -63,15 +65,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "callContext comes from the incoming-call trigger, bound into BOTH the voice agent and end-call, with no dial-out node and an entryPointId on the trigger"
+    description: "callContext comes from the incoming-call trigger, bound into BOTH the voice agent and end-call, with no dial-out node, no leftover scaffolded manual trigger, and an entryPointId on the trigger"
     command: "python3 $TASK_DIR/check_voice_flow.py inbound-call-context"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
+  # Also grades the system prompt: `impl.md` says an empty messages[0].content is
+  # valid, so nothing else here stops a voice agent shipping with no persona or
+  # goal — and holding the conversation is the deliverable.
   - type: run_command
-    description: "Inline agent.json carries settings.voice and stays conversational"
+    description: "Inline agent.json carries settings.voice, keeps settings.engine and metadata.isConversational, and holds a real system prompt"
     command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
     timeout: 30
     expected_exit_code: 0
@@ -107,13 +112,19 @@ success_criteria:
       the release after deploy. Adding or enabling a number is portal-only.
 
       Score 1.0 if the answer conveys that testing means publish/deploy + bind a
-      phone number + call it, and does not suggest `flow debug` for this flow.
-      Score 0.5 if the deploy-and-bind path is roughly right but vague about the
-      number binding, or `flow debug` is mentioned alongside the correct path.
-      Score 0.0 if the answer tells the user to run `uip maestro flow debug`,
-      claims the flow can be exercised locally, or omits how to run it at all.
+      phone number + call it, and does not offer `flow debug` as a way to run
+      this flow.
+      Score 0.5 if the deploy-and-bind path is right in outline but vague about
+      the number binding (e.g. says "deploy it and call the number" without
+      naming the trunk/release binding step).
+      Score 0.0 if the answer offers `uip maestro flow debug` as a way to run
+      this flow, claims it can be exercised locally, or omits how to run it at
+      all.
     weight: 2.0
-    pass_threshold: 1.0
+    # 0.5 so the middle band is reachable — a 1.0 threshold makes a vague-but-
+    # correct answer score identically to one that sends the user to flow debug.
+    # Offering flow debug is scored 0.0 above, so it still fails outright.
+    pass_threshold: 0.5
 
   # Advisory (pass_threshold: 0) — records convention adherence without docking
   # an agent that reaches the same graded outcome another way.

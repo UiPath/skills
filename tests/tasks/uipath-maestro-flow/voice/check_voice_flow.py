@@ -46,6 +46,38 @@ VOICE_AGENT = "uipath.agent.voice"
 VOICE_TRIGGER = "core.trigger.voice"
 CREATE_CALL = "uipath.conversational.voice.create-outgoing-call"
 END_CALL = "uipath.conversational.voice.end-call"
+MANUAL_TRIGGER = "core.trigger.manual"
+
+# A node type that can own trigger-associated globals. Bindings sourced from
+# anything else (a script or connector node's output) need no globals entry.
+TRIGGER_PREFIXES = ("core.trigger.", "uipath.connector.trigger.")
+
+# Generated/staging trees the CLI writes beside the sources. Python's glob
+# already skips the dot-prefixed ones (`.cli-stage`, `.v1stage`,
+# `.agent-builder`), but `_outputs` and `v1stage` are matched, and whether a
+# staged copy sorts ahead of the real project depends on the project name.
+# Same exclusion set the other maestro-flow checkers use.
+EXCLUDED_PARTS = {
+    ".agent-builder",
+    ".cli-stage",
+    ".v1stage",
+    "_outputs",
+    "node_modules",
+    "v1stage",
+}
+
+# Lowercased, stripped placeholder prompts — same bar as `_shared/
+# check_inline_agent.py`, which grades this for autonomous inline agents.
+PLACEHOLDER_PROMPTS = {
+    "",
+    "you are an agentic assistant.",
+    "you are an assistant.",
+    "you are a helpful assistant.",
+    "you are a voice agent.",
+    "system prompt",
+    "todo",
+}
+MIN_PROMPT_LEN = 40
 
 
 def _fail(msg: str) -> int:
@@ -56,7 +88,11 @@ def _fail(msg: str) -> int:
 def _load_flow() -> tuple[str, dict]:
     """Return the (path, parsed) `.flow` that holds the voice agent node."""
     project_dir = find_project_dir()
-    paths = sorted(glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True))
+    paths = sorted(
+        path
+        for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+        if not EXCLUDED_PARTS.intersection(path.split(os.sep))
+    )
     if not paths:
         sys.exit(f"FAIL: no .flow file found under {project_dir}")
 
@@ -73,7 +109,7 @@ def _load_flow() -> tuple[str, dict]:
             print(f"Reading {path}")
             return path, flow
 
-    seen = sorted({n.get("type") for _, f in parsed for n in f.get("nodes") or []})
+    seen = sorted({str(n.get("type")) for _, f in parsed for n in f.get("nodes") or []})
     sys.exit(
         f"FAIL: no {VOICE_AGENT} node in any .flow under {project_dir}; "
         f"node types seen: {seen}"
@@ -84,14 +120,98 @@ def _nodes_of(flow: dict, node_type: str) -> list[dict]:
     return [n for n in flow.get("nodes") or [] if n.get("type") == node_type]
 
 
-def _binding_expression(value: object) -> str | None:
-    """Extract the JS expression from a callContext binding, either shape."""
+JS_STRING_RE = re.compile(r"^=js:\s*(?P<expression>.+)$", re.S)
+
+
+def _binding_expression(value: object) -> tuple[str | None, str | None]:
+    """Return (expression, warning) for a callContext binding.
+
+    The documented contract is a structured `{"type": "jsExpression",
+    "expression": ...}` object — see `shared/node-output-wiring.md` and
+    `inline-voice-agent/impl.md § The callContext wiring rule`. `type` IS graded:
+    a `"literal"` object (the shape the create-call node's `to` field uses one
+    section above in the doc, so an easy thing to copy by mistake) ships the
+    expression text to the runtime and the call context never resolves.
+
+    A bare `=js:` string carries the same expression and is accepted with a
+    warning rather than a failure — it is off-contract, not inert. Any other
+    string shape (`=jsonString:…`, an unprefixed expression) is a failure.
+    """
     if isinstance(value, dict):
+        binding_type = value.get("type")
+        if binding_type != "jsExpression":
+            return None, (
+                f'binding object has type {binding_type!r}, not "jsExpression" — '
+                f"only a jsExpression binding is evaluated; anything else ships "
+                f"the expression to the runtime as text"
+            )
         expression = value.get("expression")
-        return expression if isinstance(expression, str) else None
+        return (expression if isinstance(expression, str) else None), None
     if isinstance(value, str):
-        return re.sub(r"^=(?:js:)?", "", value.strip())
-    return None
+        match = JS_STRING_RE.match(value.strip())
+        if not match:
+            return None, (
+                f"binding is the string {value.strip()[:80]!r} — the contract is a "
+                f'{{"type": "jsExpression", "expression": …}} object'
+            )
+        return match.group("expression").strip(), (
+            "binding is a `=js:` string; the persisted Studio Web shape is a "
+            '{"type": "jsExpression", "expression": …} object'
+        )
+    return None, None
+
+
+# Strict E.164: `+`, then 7-15 digits, no separators. Not a formatting
+# preference — `impl.md` § Debug lists a malformed `to` as a cause of "outbound
+# call never dials", so a number carrying dashes or spaces is a flow that does
+# not place its call.
+E164_RE = re.compile(r"^\+[1-9]\d{6,14}$")
+
+
+def _is_e164(value: str) -> bool:
+    return bool(E164_RE.match(value.strip()))
+
+
+def _check_dial_fields(node: dict) -> list[str]:
+    """`inputs.from` is a plain string, `inputs.to` a literal binding object.
+    Both required, and the asymmetry is easy to get backwards. `fieldType` is
+    not graded — the validator does not read it."""
+    errors: list[str] = []
+    inputs = node.get("inputs") or {}
+    node_id = node.get("id")
+
+    origin_from = inputs.get("from")
+    if not isinstance(origin_from, str) or not origin_from.strip():
+        errors.append(
+            f"{CREATE_CALL} node {node_id!r} inputs.from is not a non-empty plain "
+            f"string (the SIP trunk's E.164 number): {json.dumps(origin_from)[:120]}"
+        )
+    elif not _is_e164(origin_from):
+        errors.append(
+            f"{CREATE_CALL} node {node_id!r} inputs.from is not E.164 "
+            f"(+ then 7-15 digits, no separators): {origin_from!r}"
+        )
+
+    origin_to = inputs.get("to")
+    if not isinstance(origin_to, dict):
+        errors.append(
+            f"{CREATE_CALL} node {node_id!r} inputs.to is not a literal binding "
+            f'object ({{"type": "literal", "expression": "<E164>"}}); `from` is the '
+            f"plain string, `to` is the object: {json.dumps(origin_to)[:120]}"
+        )
+    else:
+        destination = origin_to.get("expression")
+        if not isinstance(destination, str) or not destination.strip():
+            errors.append(
+                f"{CREATE_CALL} node {node_id!r} inputs.to carries no expression: "
+                f"{json.dumps(origin_to)[:120]}"
+            )
+        elif not _is_e164(destination):
+            errors.append(
+                f"{CREATE_CALL} node {node_id!r} inputs.to.expression is not E.164 "
+                f"(+ then 7-15 digits, no separators): {destination!r}"
+            )
+    return errors
 
 
 def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
@@ -99,9 +219,10 @@ def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
     it must be bound into BOTH the voice agent and the end-call node.
 
     Outbound originates at create-outgoing-call, inbound at the trigger;
-    everything downstream of the origin id is identical. Either serialization is
-    accepted (persisted Studio Web binding object or a `=js:` string) and
-    `fieldType` is not graded — the validator never reads it on a jsExpression.
+    everything downstream of the origin id is identical. The binding must be a
+    `type: "jsExpression"` object (`fieldType` is NOT graded — the validator
+    never reads it on a jsExpression); a `=js:` string passes with a warning.
+    Outbound additionally grades the dial node's `from` / `to` fields.
     """
     origins = _nodes_of(flow, origin_type)
     if len(origins) != 1:
@@ -122,6 +243,11 @@ def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
     }
 
     errors: list[str] = []
+    if origin_type == CREATE_CALL:
+        errors.extend(_check_dial_fields(origins[0]))
+        if not errors:
+            print(f"OK      {CREATE_CALL} carries a plain-string from and a literal to")
+
     for node_type in (VOICE_AGENT, END_CALL):
         matches = _nodes_of(flow, node_type)
         if len(matches) != 1:
@@ -135,13 +261,16 @@ def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
                 f"binding (rule {rules[node_type]})"
             )
             continue
-        expression = _binding_expression(raw)
+        expression, warning = _binding_expression(raw)
         if not expression:
             errors.append(
-                f"{node_type} node {node.get('id')!r} inputs.callContext carries no "
-                f"expression: {json.dumps(raw)[:200]}"
+                f"{node_type} node {node.get('id')!r} inputs.callContext "
+                + (warning or "carries no expression")
+                + f": {json.dumps(raw)[:200]}"
             )
             continue
+        if warning:
+            print(f"WARN    {node_type} node {node.get('id')!r}: {warning}")
         if not wanted.search(expression):
             errors.append(
                 f"{node_type} node {node.get('id')!r} inputs.callContext does not "
@@ -156,8 +285,19 @@ def check_call_context(flow: dict, origin_type: str = CREATE_CALL) -> int:
 
 
 def check_inbound_call_context(flow: dict) -> int:
-    """Inbound topology: trigger-originated callContext, no dial-out node, and an
-    entryPointId on the trigger (what a trunk binding resolves against)."""
+    """Inbound topology: trigger-originated callContext, no dial-out node, no
+    leftover manual trigger, and an entryPointId on the trigger (what a trunk
+    binding resolves against)."""
+    strays = _nodes_of(flow, MANUAL_TRIGGER)
+    if strays:
+        ids = ", ".join(repr(n.get("id")) for n in strays)
+        return _fail(
+            f"inbound flow still carries {len(strays)} {MANUAL_TRIGGER} node(s) "
+            f"({ids}) — `flow init` scaffolds one, and adding the voice trigger "
+            f"beside it ships a two-trigger flow. Delete the scaffolded trigger "
+            f"and its edges when the flow starts from {VOICE_TRIGGER}"
+        )
+
     dialers = _nodes_of(flow, CREATE_CALL)
     if dialers:
         ids = ", ".join(repr(n.get("id")) for n in dialers)
@@ -182,42 +322,37 @@ def check_inbound_call_context(flow: dict) -> int:
         )
     print(f"OK      {VOICE_TRIGGER} carries inputs.entryPointId")
     print(f"OK      no {CREATE_CALL} node (correct for inbound)")
+    print(f"OK      no leftover {MANUAL_TRIGGER} node")
 
     return check_call_context(flow, VOICE_TRIGGER)
 
 
+CONVERSATIONAL_ENGINE = "conversational-v1"
+
+
 def check_agent_voice(flow_path: str, flow: dict) -> int:
     """The sidecar agent.json carries settings.voice (which `uip agent init
-    --inline-in-flow --conversational` does NOT scaffold) and is still
-    conversational. Topology independent; the agent dir is a UUID, so it is
-    located through the voice node's inputs.source."""
-    agents = _nodes_of(flow, VOICE_AGENT)
-    if len(agents) != 1:
-        return _fail(f"expected exactly 1 {VOICE_AGENT} node, found {len(agents)}")
-    source = (agents[0].get("inputs") or {}).get("source")
-    if not isinstance(source, str) or not source:
-        return _fail(
-            f"{VOICE_AGENT} node {agents[0].get('id')!r} has no inputs.source "
-            f"(the inline agent directory's ProjectId)"
-        )
+    --inline-in-flow --conversational` does NOT scaffold), keeps the
+    conversational engine, and holds a real system prompt.
 
-    agent_json = os.path.join(os.path.dirname(flow_path), source, "agent.json")
-    if not os.path.exists(agent_json):
-        found = sorted(
-            glob.glob(os.path.join(os.path.dirname(flow_path), "*", "agent.json"))
-        )
-        return _fail(
-            f"inputs.source {source!r} does not resolve to an agent.json "
-            f"(looked for {agent_json}); agent.json files present: {found}"
-        )
-    try:
-        with open(agent_json, encoding="utf-8") as handle:
-            agent = json.load(handle)
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as err:
-        return _fail(f"could not read {agent_json}: {err}")
+    `settings.engine` is graded here because `flow validate` does NOT check it
+    (it checks only `metadata.isConversational`): a clobbered engine passes
+    every other criterion and drops the call at runtime. The prompt is graded
+    because an empty `messages[0].content` is legal — and a voice agent that
+    cannot hold a conversation is not the deliverable.
+
+    Topology independent; the agent dir is a UUID, so it is located through the
+    voice node's inputs.source.
+    """
+    resolved = _voice_agent_json(flow_path, flow)
+    if isinstance(resolved, int):
+        return resolved
+    _node, agent, agent_json = resolved
 
     errors: list[str] = []
-    voice = (agent.get("settings") or {}).get("voice")
+    settings = agent.get("settings") or {}
+
+    voice = settings.get("voice")
     if not isinstance(voice, dict) or not voice:
         errors.append(
             "settings.voice is missing or empty — `uip agent init "
@@ -229,6 +364,16 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     else:
         print(f"OK      settings.voice.model = {voice['model']!r} in {agent_json}")
 
+    engine = settings.get("engine")
+    if engine != CONVERSATIONAL_ENGINE:
+        errors.append(
+            f"settings.engine is {engine!r}, not {CONVERSATIONAL_ENGINE!r} — "
+            f"`flow validate` does not check it, so a clobbered engine ships and "
+            f"surfaces only as a failed call. Leave the scaffolded value in place"
+        )
+    else:
+        print(f"OK      settings.engine = {CONVERSATIONAL_ENGINE!r}")
+
     if (agent.get("metadata") or {}).get("isConversational") is not True:
         errors.append(
             "metadata.isConversational is not true — the agent was scaffolded "
@@ -237,9 +382,31 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     else:
         print("OK      metadata.isConversational is true")
 
+    errors.extend(_prompt_errors(agent, agent_json))
+
     if errors:
         return _fail("; ".join(errors))
     return 0
+
+
+def _prompt_errors(agent: dict, agent_json: str) -> list[str]:
+    """The voice agent's system prompt has to be a real prompt. Same bar as
+    `_shared/check_inline_agent.py` applies to autonomous inline agents."""
+    system = [
+        message.get("content") or ""
+        for message in agent.get("messages") or []
+        if isinstance(message, dict) and message.get("role") == "system"
+    ]
+    prompt = (system[0] if system else "").strip()
+    if prompt.lower() in PLACEHOLDER_PROMPTS or len(prompt) < MIN_PROMPT_LEN:
+        return [
+            f"{agent_json} has no real system prompt (got {prompt[:60]!r}, "
+            f"{len(prompt)} chars; the bar is {MIN_PROMPT_LEN}) — an empty prompt "
+            f"is legal but the call then has no persona or goal to hold a "
+            f"conversation with"
+        ]
+    print(f"OK      system prompt is {len(prompt)} chars")
+    return []
 
 
 def _voice_agent_json(flow_path: str, flow: dict) -> tuple[dict, dict, str] | int:
@@ -255,6 +422,14 @@ def _voice_agent_json(flow_path: str, flow: dict) -> tuple[dict, dict, str] | in
             f"(the inline agent directory's ProjectId)"
         )
     agent_json = os.path.join(os.path.dirname(flow_path), source, "agent.json")
+    if not os.path.exists(agent_json):
+        found = sorted(
+            glob.glob(os.path.join(os.path.dirname(flow_path), "*", "agent.json"))
+        )
+        return _fail(
+            f"inputs.source {source!r} does not resolve to an agent.json "
+            f"(looked for {agent_json}); agent.json files present: {found}"
+        )
     try:
         with open(agent_json, encoding="utf-8") as handle:
             return node, json.load(handle), agent_json
@@ -267,12 +442,18 @@ INPUT_TOKEN_RE = re.compile(r"\{\{\s*input\.([A-Za-z0-9_]+)\s*\}\}")
 
 
 def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
-    """Flow data reaching the voice prompt needs all four pieces aligned:
+    """Flow data reaching the voice prompt needs these pieces aligned:
 
     Delivery   node `inputs.agentInputVariables[]` binding -> BPMN JobArguments
     Contract   the same key under agent.json `inputSchema.properties`
     Resolution `{{input.<key>}}` in `messages[].content`
-    Variable   the bound `$vars.<trigger>.output.<id>` declared in globals
+    Variable   a binding sourced from a TRIGGER also needs its
+               `$vars.<trigger>.output.<id>` declared in `variables.globals[]`
+
+    `impl.md` step 4 names a fifth piece, `messages[].contentTokens[]`. It is a
+    pure derivation of `content` (`uip agent refresh` regenerates it and the doc
+    forbids hand-authoring), so it is not graded structurally here — the task's
+    advisory `agent refresh` criterion records it instead.
 
     Delivery is the piece that only `flow pack` reads: omit it and `flow debug`
     still back-fills from `inputSchema`, so the published call is the first place
@@ -324,21 +505,33 @@ def check_prompt_inputs(flow_path: str, flow: dict, min_inputs: int = 1) -> int:
             continue
         bound[key] = binding.strip()
 
-    # Variable: a trigger-associated global must exist for each bound field.
+    # Variable: a binding sourced from a TRIGGER needs a trigger-associated
+    # global. A binding sourced from any other node reads that node's own
+    # output and declares nothing — per inline-agent/impl.md, the globals rule
+    # is scoped to "when the upstream node is a trigger".
+    triggers = {
+        node.get("id")
+        for node in flow.get("nodes") or []
+        if isinstance(node.get("type"), str)
+        and node["type"].startswith(TRIGGER_PREFIXES)
+    }
     globals_ = ((flow.get("variables") or {}).get("globals")) or []
     declared = {
         (g.get("triggerNodeId"), g.get("id"))
         for g in globals_
-        if isinstance(g, dict) and g.get("direction") == "in"
+        if isinstance(g, dict) and g.get("direction") in ("in", "inout")
     }
     for key, binding in bound.items():
         match = BINDING_RE.match(binding)
-        trigger, field = match.group(1), match.group(2)
-        if (trigger, field) not in declared:
+        source, field = match.group(1), match.group(2)
+        if source not in triggers:
+            continue
+        if (source, field) not in declared:
             errors.append(
-                f"{key!r} binds $vars.{trigger}.output.{field} but no "
-                f'variables.globals entry declares it (direction "in", '
-                f"triggerNodeId {trigger!r}) — it resolves to nothing at runtime"
+                f"{key!r} binds $vars.{source}.output.{field} from trigger "
+                f"{source!r} but no variables.globals entry declares it "
+                f'(direction "in" or "inout", triggerNodeId {source!r}) — it '
+                f"resolves to nothing at runtime"
             )
 
     # Contract: every delivered key declared in the agent's inputSchema.

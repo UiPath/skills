@@ -81,7 +81,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "callContext from the create-outgoing-call node is bound into BOTH the voice agent and the end-call node"
+    description: "callContext from the create-outgoing-call node is bound into BOTH the voice agent and the end-call node as a jsExpression object, and the dial node carries a plain-string from and a literal to"
     command: "python3 $TASK_DIR/check_voice_flow.py call-context"
     timeout: 30
     expected_exit_code: 0
@@ -89,11 +89,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent.json carries settings.voice and stays conversational"
+    description: "Inline agent.json carries settings.voice, keeps settings.engine and metadata.isConversational, and holds a real system prompt"
     command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  # `flow debug` on an OUTBOUND flow dials for real. The prompt forbids it and
+  # the sandbox has no tenant, so a debug attempt is both a rule breach and a
+  # wasted turn — graded here rather than on the inbound task, where the CLI
+  # rejects the run on its own.
+  - type: command_not_executed
+    description: "Agent did not run flow debug, which would place a real outbound call"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    weight: 2.0
     pass_threshold: 1.0
 
   # Advisory (pass_threshold: 0) — record convention adherence without docking
