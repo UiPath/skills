@@ -80,15 +80,25 @@ Use `Glob` / `Grep` to find and read the entrypoint Python file. Identify:
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
-For every entry in the catalog's `guardrails[]` array, compare `when_to_use`, `use_cases`, `description`, and `security_risk_addressed` with the prompt, schemas, and tool docstrings. Read `when_not_to_use`; exclude or explain disqualifying matches. Cross-reference list status: recommend only `Available`, mention `Unauthorised` as unlicensed, and skip absent entries.
+For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
 
-For candidates, use `examples[].config` for scope, stage, action, and parameters. Translate `validator_parameters` to Python `Validator(...)` / `Middleware(...)` arguments using SDK docs. Do not use predetermined mappings.
+1. Read the entry's `when_to_use`, `use_cases`, `description`, and `security_risk_addressed`.
+2. Compare against agent context (system prompt, schemas, tool docstrings): does the agent's purpose align with `when_to_use`, do any `use_cases` describe what it does or the data it handles, does it face the `security_risk_addressed` threat?
+3. Read `when_not_to_use`; if the agent matches a disqualifying condition, exclude the validator (or mention it with an explanation).
+4. Cross-reference the Step 0 list status: `Available` → candidate; `Unauthorised` → mention as unlicensed but do NOT add; absent → skip silently.
+5. For a candidate, use `examples[].config` for scope, stage, action, and parameters; translate `validator_parameters` to Python `Validator(...)` / `Middleware(...)` arguments using the Step 0 SDK docs. Do not use predetermined mappings.
 
 When both built-in and `Available` BYO entries exist, default to the built-in SDK validator/middleware and mention the BYO alternative. Wire a specific BYO configuration only when requested; see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).
 
 ### Step 3 — De-duplicate Overlapping Validators
 
-Group candidates by `security_category`, scope, and stage. Remove catalog-deprecated entries first, using `status`, `notes`, or `when_not_to_use`; never recommend a retiring validator where an active alternative covers the category. Keep the best contextual fit and mention dropped alternatives with the catalog-derived reason. Do not hardcode validator names or preference rules.
+Group candidates by (`security_category`, scope, stage). For any group with more than one candidate:
+
+1. **Drop deprecated or unavailable entries first** — if the catalog marks an entry deprecated (`status`, or a note in `notes` / `when_not_to_use`), remove it; never recommend a retiring validator when an active alternative covers the category.
+2. **Keep the single best fit** for the agent's context (closest `when_to_use` / `use_cases` match) and recommend only that one.
+3. **Mention the dropped alternative(s)** and why (e.g. "recommending only User Prompt Attacks, not Prompt Injection — both cover adversarial input at LLM · PRE and the catalog marks Prompt Injection deprecated").
+
+Do not hardcode validator names or a fixed "prefer X over Y" rule; derive grouping and deprecation from the catalog's own fields.
 
 ### Step 4 — Style Choice
 
