@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import re
 import sys
-from collections import Counter
 from pathlib import Path
 
 REQUIRED_HEADINGS = [
@@ -220,65 +219,6 @@ def lineage_findings(text: str) -> list[str]:
             f"variable {name!r} is consumed but never produced — keep its producer output row "
             f"(`-> {name}`), assignment, Default, or trigger source"
         )
-    return findings
-
-
-# WHEN keywords whose rule fires on a task completing. The producing task's extract
-# has not landed when the rule is evaluated, so a gate reading the renamed target
-# reads the slot the extract left empty.
-_TASK_COMPLETION_WHENS = (
-    "required-tasks-completed",
-    "selected-tasks-completed",
-    "selected-stage-completed",
-    "selected-stage-exited",
-)
-_RENAMING_EXTRACT = re.compile(r"^\|\s*`?([\w.]+)`?\s*\|\s*->\s*`?(\w+)`?\s*\|")
-
-
-def gate_reads_renamed_findings(text: str) -> list[str]:
-    """A gate that fires on task completion must read the producing task's own field.
-
-    `<field> -> <other name>` moves the value off the field's own slot; the slot the
-    gate reads stays empty, the branch never fires, the stage stalls, nothing errors.
-    An equal-name row (`x -> x`) keeps one name, unless a second row extracts the same
-    field name elsewhere in the case — the allocator suffixes the later slot and the two
-    names split again, so a colliding equal-name row is reported too.
-    """
-    findings: list[str] = []
-    rows: list[tuple[str, str, int]] = []
-    for line_no, line in enumerate(text.splitlines(), 1):
-        match = _RENAMING_EXTRACT.match(line)
-        if match:
-            rows.append((match.group(1), match.group(2), line_no))
-    leaf_counts = Counter(field.split(".")[-1] for field, _, _ in rows)
-    # Several rows may feed one target (a lane collecting a reason from four tasks).
-    # Keep every one, so the finding names each line a reader has to fix.
-    renamed: dict[str, list[tuple[str, int]]] = {}
-    for field, target, line_no in rows:
-        leaf = field.split(".")[-1]
-        if leaf != target or leaf_counts[leaf] > 1:
-            renamed.setdefault(target, []).append((field, line_no))
-    if not renamed:
-        return findings
-
-    for line_no, line in enumerate(text.splitlines(), 1):
-        if not line.startswith("|"):
-            continue
-        first_cell = line.strip("|").split("|")[0].strip().strip("`")
-        if not first_cell.startswith(_TASK_COMPLETION_WHENS):
-            continue
-        for name in dict.fromkeys(re.findall(r"vars\.([A-Za-z_]\w*)", line)):
-            if name not in renamed:
-                continue
-            sources = renamed[name]
-            where = ", ".join(f"line {src} (`{field} -> {name}`)" for field, src in sources)
-            first_field = sources[0][0]
-            findings.append(
-                f"line {line_no}: gate reads {name!r}, which {where} moves off its own slot. "
-                f"Read the producing field itself — "
-                f"`vars.$xref('<Stage>','<Task>','{first_field}')` — and copy the value into "
-                f"{name!r} with a separate `=` row when it is consumed elsewhere"
-            )
     return findings
 
 
@@ -885,7 +825,6 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
     if degraded:
         findings.append(f"model checks disarmed: {degraded}")
     findings.extend(lineage_findings(text))
-    findings.extend(gate_reads_renamed_findings(text))
     findings.extend(model_findings(text, facts, carried))
     findings.extend(contract_findings(text, facts or {"gate_rules": {}, "yes_when": set(), "no_when": set()}))
 

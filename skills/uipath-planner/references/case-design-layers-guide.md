@@ -254,7 +254,7 @@ A row that relays one task's output to one consumer is the relay anti-pattern â€
 
 ### Gate on the producer, never on a renamed field
 
-A task field lands in exactly one slot. `Action -> decision` puts the value in `decision` and leaves the `Action` slot empty; an equal-name row (`Action -> Action`) keeps one slot under one name, until a second row extracts `Action` elsewhere in the case and the allocator suffixes the later slot. A rule reads the field's own slot, so a gate on a renamed field reads the empty one, whenever that gate fires. The branch silently never fires, the stage stalls, and nothing errors.
+A task field lands in exactly one slot. `Action -> decision` puts the value in `decision` and leaves the `Action` slot empty; an equal-name row keeps one slot under one name â€” equal on the source path's last segment, so `Action -> Action` and `response.status -> status` both qualify, until a second row extracts `Action` elsewhere in the case and the allocator suffixes the later slot. A rule reads the field's own slot, so a gate on a renamed field reads the empty one, whenever that gate fires. The branch silently never fires, the stage stalls, and nothing errors.
 
 | Outputs row on `Decide` | `IF` reads | At gate time |
 |---|---|---|
