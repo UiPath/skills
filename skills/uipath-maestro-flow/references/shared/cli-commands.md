@@ -311,7 +311,7 @@ See the [Author CLI editing strategy](../author/editing-operations-cli.md) for c
 
 Evaluation surface — evaluator CRUD, eval set CRUD, data point CRUD, Studio Web run start/status/results/list/compare. Local CRUD requires no login; `eval run *` requires `uip login` and a Flow solution that already exists in Studio Web.
 <!--skill-flavor:upload-safety-eval-surface-note:start-->
-**Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/upload-safety.md).
+**Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/upload-safety.md](../evaluate/upload-safety.md).
 <!--skill-flavor:upload-safety-eval-surface-note:end-->
 
 ```bash

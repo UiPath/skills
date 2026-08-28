@@ -23,8 +23,15 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROOTS = ["skills", "skill-flavors"];
 
-/** `[text](target)`, skipping images (`![alt](src)`). */
-const LINK_RE = /(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+/**
+ * `[text](target)`, skipping images (`![alt](src)`).
+ *
+ * The text portion allows one level of nested brackets so links whose label
+ * names a JSON array — `` [`bindings[]` missing](failure-modes.md) `` — still
+ * match. A flat `[^\]]*` stops at the inner `]` and silently skips the link,
+ * which lets a broken target through unnoticed.
+ */
+const LINK_RE = /(?<!!)\[(?:[^[\]]|\[[^[\]]*\])*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 /** Fenced code blocks — links inside them are illustrative, not navigation. */
 const FENCE_RE = /^```/;
 

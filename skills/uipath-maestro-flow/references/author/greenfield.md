@@ -167,7 +167,7 @@ uip solution projects add \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-If you ended up with a bare single-nested layout (e.g. `--skip-solution-registration` was passed), **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../diagnose/failure-modes.md#single-nested-layout).
+If you ended up with a bare single-nested layout (e.g. `--skip-solution-registration` was passed), **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/failure-modes.md — Single-nested layout](../diagnose/failure-modes.md#single-nested-layout).
 
 ### Expected layout after Steps 2a–2c
 
