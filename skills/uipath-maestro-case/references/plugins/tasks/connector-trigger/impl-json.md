@@ -80,6 +80,8 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 
 ### Step 7 — Build task and write to caseplan.json
 
+Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache) — placeholders and minted ids are the only permitted modifications.
+
 ```json
 {
   "id": "<taskId>",

@@ -374,7 +374,7 @@ uip maestro case registry get-connection --type typecache-triggers --activity-ty
 | `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
 | `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
 
-Output: `{ Entry, Config, Connections }` — use a `Connections[].id` value as the `connectionId` written into a connector task's `data` in `caseplan.json`.
+Output: `{ Entry, Config, Connections }` — use a `Connections[].Id` value as the `connectionId` written into a connector task's `data` in `caseplan.json`.
 
 ---
 

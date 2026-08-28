@@ -67,6 +67,8 @@ Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx`
 
 ### 7b. `data` structure
 
+Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [common § Write `context` / `inputs` / `outputs` from the spec-cache](../../../connector-trigger-impl.md#write-context--inputs--outputs-from-the-spec-cache) — placeholders and minted ids are the only permitted modifications.
+
 ```json
 {
   "typeVersion": "1.0.0",

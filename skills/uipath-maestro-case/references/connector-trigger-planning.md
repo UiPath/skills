@@ -40,7 +40,7 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 - **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection).
 - **Skip / create fails** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
 
-Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output).
+Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output). `Entry` and `Config` are verbatim subtrees — read them at `.Data.Config.connectorKey`, `.Data.Config.objectName`, `.Data.Entry.eventOperation`. `Connections` is not, so its entries read `.Data.Connections[].Name` / `.Id`.
 
 Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
