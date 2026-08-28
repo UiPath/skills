@@ -618,7 +618,7 @@ Subflows have their own variable scope. Parent variables are **not** automatical
 | `uip maestro flow variable list <flow> --output json` | Check what the flow already declares |
 | `uip maestro flow variable remove <flow> <id>` | Drop a declared global |
 
-See [evaluate/references/eval-sets-guide.md](../evaluate/eval-sets-guide.md).
+See [evaluate/eval-sets-guide.md](../evaluate/eval-sets-guide.md).
 
 > **`variable add --direction in` binds the variable to a trigger** by writing `triggerNodeId`. That binding is what puts the input in the packed entry point's contract — without it `flow pack` emits an empty `input.properties` while `validate` and `format` stay green. The CLI infers the flow's single trigger; if a flow has more than one, it fails and asks for `--trigger-node-id <nodeId>` to say which entry point the input belongs to. Hand-authored globals need the same field — see [Workflow Variables](#workflow-variables).
 

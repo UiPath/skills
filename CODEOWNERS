@@ -100,8 +100,8 @@
 /tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
-/skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
-/skills/uipath-maestro-flow/references/author/references/plugins/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 
 # Maestro BPMN skill
@@ -131,16 +131,20 @@
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
-/skills/uipath-maestro-flow/references/plugins/connector/ @chandusailella @UiPath/maestro-cli-team
-/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @chandusailella @UiPath/maestro-cli-team
-/skills/uipath-maestro-flow/references/author/references/plugins/agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
-/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/connector/ @chandusailella @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/connector-trigger/ @chandusailella @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
 
 # IXP
-/skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
+
+# Voice — inline voice agent node + the trigger, dial, and end-call nodes
+/skills/uipath-maestro-flow/references/author/plugins/inline-voice-agent/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
+/tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
