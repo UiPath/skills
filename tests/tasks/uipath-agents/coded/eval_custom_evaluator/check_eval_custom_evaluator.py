@@ -10,13 +10,15 @@ Checks:
      `evaluatorSchema`, `evaluatorTypeId`, and a non-empty `id`.
   3. The evaluator schema and evaluator type file references resolve
      relative to the evaluator JSON spec.
-  4. `evaluations/eval-sets/<file>.json` has version "1.0",
-     `evaluatorRefs` referencing the custom evaluator id, at least
+  4. The eval set under `evaluations/eval-sets/` whose `evaluatorRefs`
+     references the custom evaluator id has version "1.0", at least
      2 test cases, and each test case's `evaluationCriterias` keys
      the evaluator id.
-  5. `eval-results.json` exists with `evaluationSetResults` matching
-     the expected case count, each case having an `evaluationRunResults`
-     entry for the custom evaluator id with score > 0.
+  5. A results JSON (any name) whose `evaluationSetResults` include
+     runs for the custom evaluator id matches the expected case count;
+     every case has a numeric score from the custom evaluator and at
+     least one case scores > 0 (deliberate negative-control cases that
+     score 0 are allowed).
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.project_root import find_project_root  # noqa: E402
 
-ROOT = find_project_root("greeter")
+ROOT = find_project_root("topic-detector")
 
 
 def _load_json(path: Path) -> dict:
@@ -84,7 +86,7 @@ def check_custom_evaluator_py() -> str:
 def check_custom_evaluator_json() -> tuple[str, Path]:
     # register writes the spec to evaluations/evaluators/, not evaluations/evaluators/custom/
     evaluators_dir = ROOT / "evaluations" / "evaluators"
-    json_files = sorted(f for f in evaluators_dir.glob("*.json") if "file://" in f.read_text())
+    json_files = sorted(f for f in evaluators_dir.glob("*.json") if "evaluatorSchema" in f.read_text() and "file://" in f.read_text())
     if not json_files:
         sys.exit(f"FAIL: no JSON spec with evaluatorSchema in {evaluators_dir} — `uip codedagent register evaluator` not run")
     spec_path = json_files[0]
@@ -120,37 +122,42 @@ def check_eval_set(evaluator_id: str) -> int:
     json_files = sorted(eval_sets_dir.glob("*.json"))
     if not json_files:
         sys.exit(f"FAIL: no eval set JSON in {eval_sets_dir}")
-    doc = _load_json(json_files[0])
+    # Grade the eval set that references the custom evaluator; others may exist.
+    docs = {p: _load_json(p) for p in json_files}
+    matching = [p for p, d in docs.items() if evaluator_id in (d.get("evaluatorRefs") or [])]
+    if not matching:
+        refs = {p.name: (d.get("evaluatorRefs") or []) for p, d in docs.items()}
+        sys.exit(f"FAIL: no eval set `evaluatorRefs` includes {evaluator_id!r}. Got: {refs}")
+    set_path = matching[0]
+    doc = docs[set_path]
     if doc.get("version") != "1.0":
-        sys.exit(f'FAIL: eval set version should be "1.0", got {doc.get("version")!r}')
-    refs = doc.get("evaluatorRefs") or []
-    if evaluator_id not in refs:
-        sys.exit(f"FAIL: eval set `evaluatorRefs` does not include {evaluator_id!r}. Got: {refs}")
+        sys.exit(f'FAIL: eval set {set_path.name} version should be "1.0", got {doc.get("version")!r}')
     cases = doc.get("evaluations") or []
     if len(cases) < 2:
-        sys.exit(f"FAIL: eval set must have at least 2 test cases, got {len(cases)}")
+        sys.exit(f"FAIL: eval set {set_path.name} must have at least 2 test cases, got {len(cases)}")
     for i, case in enumerate(cases):
         crit = case.get("evaluationCriterias") or {}
         if evaluator_id not in crit:
             sys.exit(
-                f"FAIL: test case {i} (`{case.get('id', '?')}`) does not key "
+                f"FAIL: {set_path.name} test case {i} (`{case.get('id', '?')}`) does not key "
                 f"evaluationCriterias on {evaluator_id!r}. Got keys: {list(crit.keys())}"
             )
-    print(f"OK: eval set references {evaluator_id!r} across {len(cases)} test cases")
+    print(f"OK: eval set {set_path.name} references {evaluator_id!r} across {len(cases)} test cases")
     return len(cases)
 
 
-def _find_results_file() -> Path:
+def _find_results_file(evaluator_id: str) -> Path:
     """Locate the eval-results JSON by content, not a dictated filename.
 
     `uip codedagent eval --output-file <name>` lets the caller pick the
-    name (the skill's examples use `results.json`); accept any JSON in the
-    project or cwd carrying the documented `evaluationSetResults` shape so
-    the prompt doesn't have to dictate the filename.
+    name; accept any JSON in the project or cwd carrying the documented
+    `evaluationSetResults` shape whose run results include the custom
+    evaluator id.
     """
     skip = {".venv", "node_modules", "__pycache__", ".git"}
     roots = [ROOT, Path(os.getcwd())]
     seen: set[Path] = set()
+    shaped: list[Path] = []
     for base in roots:
         for p in sorted(base.rglob("*.json")):
             if p in seen or any(part in skip for part in p.parts):
@@ -160,8 +167,19 @@ def _find_results_file() -> Path:
                 doc = json.loads(p.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 continue
-            if isinstance(doc, dict) and isinstance(doc.get("evaluationSetResults"), list):
-                return p
+            cases = doc.get("evaluationSetResults") if isinstance(doc, dict) else None
+            if not isinstance(cases, list):
+                continue
+            shaped.append(p)
+            for case in cases:
+                runs = (case or {}).get("evaluationRunResults") or []
+                if any(isinstance(r, dict) and r.get("evaluatorId") == evaluator_id for r in runs):
+                    return p
+    if shaped:
+        sys.exit(
+            f"FAIL: found eval-results JSON ({', '.join(_relative(p) for p in shaped)}) "
+            f"but none contain runs for {evaluator_id!r} — the custom evaluator's eval set was not run"
+        )
     sys.exit(
         "FAIL: no eval-results JSON with a top-level `evaluationSetResults` "
         "list found — `uip codedagent eval --output-file` likely never "
@@ -170,7 +188,7 @@ def _find_results_file() -> Path:
 
 
 def check_results(evaluator_id: str, expected_case_count: int) -> None:
-    path = _find_results_file()
+    path = _find_results_file(evaluator_id)
     doc = _load_json(path)
     cases = doc.get("evaluationSetResults")
     if not isinstance(cases, list) or not cases:
@@ -181,18 +199,33 @@ def check_results(evaluator_id: str, expected_case_count: int) -> None:
         )
     bad_missing = []
     bad_score = []
+    positive = 0
     for case in cases:
         runs = case.get("evaluationRunResults") or []
         matching = [r for r in runs if isinstance(r, dict) and r.get("evaluatorId") == evaluator_id]
         if not matching:
             bad_missing.append(case.get("evaluationName") or "?")
-        elif not any((r.get("result") or {}).get("score", 0) > 0 for r in matching):
+            continue
+        scores = [(r.get("result") or {}).get("score") for r in matching]
+        if not all(isinstance(sc, (int, float)) for sc in scores):
             bad_score.append(case.get("evaluationName") or "?")
+        elif any(sc > 0 for sc in scores):
+            positive += 1
     if bad_missing:
         sys.exit(f"FAIL: no evaluationRunResults for {evaluator_id!r} in cases: {bad_missing}")
     if bad_score:
-        sys.exit(f"FAIL: custom evaluator scored 0 or missing score in cases: {bad_score}")
-    print(f"OK: eval-results.json has {len(cases)} result(s) with custom evaluator runs, all scored > 0")
+        sys.exit(f"FAIL: custom evaluator produced no numeric score in cases: {bad_score}")
+    # Negative-control cases (deliberately wrong expectation) legitimately score 0;
+    # require a positive signal on at least one case.
+    if positive < 1:
+        sys.exit(
+            f"FAIL: custom evaluator scored 0 on all {len(cases)} case(s) — "
+            "it ran but never recognised a correct answer"
+        )
+    print(
+        f"OK: eval-results has {len(cases)} result(s) with custom evaluator runs; "
+        f"{positive} scored > 0 ({len(cases) - positive} zero-score / negative-control case(s))"
+    )
 
 
 def main() -> None:
