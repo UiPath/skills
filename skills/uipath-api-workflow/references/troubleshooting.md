@@ -778,10 +778,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ## File & Base64 Pitfalls
 
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
 ### Run refused: "This workflow uses the file helpers … cannot run with --no-auth"
-- **Symptom:** `uip api-workflow run --no-auth` exits 1 before the engine starts, naming File to Base64 / Base64 to File
+- **Symptom:** the local run in no-auth mode exits 1 before the engine starts, naming File to Base64 / Base64 to File
 - **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage; there is no local file store
-- **Fix:** run signed in (`uip login`, drop `--no-auth`) — still only on the user's explicit "yes" (rule 21). Same for `--input-file` / `--output-dir`.
+- **Fix:** run signed in (sign in first, drop `--no-auth`) — still only on the user's explicit "yes" (rule 21). Same for `--input-file` / `--output-dir`.
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
 
 ### `$helpers.fileToBase64 is not a function` / validate: "does not call $helpers.file.fileToBase64("
 - **Symptom:** `validate` reports one error at `…/run/script/code`; or a signed-in run fails inside the task
@@ -823,10 +825,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** the CLI predates base64 support — the activities, `--input-file` / `--output-dir` / `--folder-key` and the base64-aware `validate` ship together in the release bundling executor 12.26+
 - **Fix:** upgrade the CLI (`npm i -g @uipath/cli@latest`) to that release or newer; the workflow itself is correct
 
+<!--skill-flavor:file-base64-cli-folder:start-->
 ### Upload / download 403 or "folder" errors with `--input-file` / `--output-dir`
 - **Symptom:** `Failed to upload input file … 403` or an Attachments API folder error
 - **Cause:** the tenant's Attachments API requires a folder context
-- **Fix:** pass `--folder-key <guid>` (from `uip or folders list --output json`)
+- **Fix:** pass `--folder-key <guid>` (the Orchestrator folder's key, visible in the folder's settings or via the platform CLI's folder listing)
+<!--skill-flavor:file-base64-cli-folder:end-->
 
 ---
 
