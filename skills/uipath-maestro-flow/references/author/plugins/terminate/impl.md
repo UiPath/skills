@@ -38,7 +38,7 @@ HTTP Request
 
 Wire the action node's implicit `error` source port straight to the handler; the Script logs `$vars.httpCall.error`, then Terminate aborts the flow. Do **not** put a Decision downstream to test for an error — a failing node has already faulted the flow before execution reaches it.
 
-Add this pattern only when the requirements state what a failure should do. With no error edge the failure faults the flow on its own, which is the correct default — and never set `inputs.errorHandlingEnabled: true` without the edge. See [file-format.md — Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+Add this pattern only when the requirements state what a failure should do. With no error edge the failure faults the flow on its own, which is the correct default — and never set `inputs.errorHandlingEnabled: true` without the edge. See [file-format.md — Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ## Debug
 

@@ -4,7 +4,7 @@ Agent nodes invoke UiPath AI agents from within a flow. Published agents appear 
 
 > **Related plugin:** [inline-agent](../inline-agent/planning.md) covers low-code agents embedded as a UUID subdirectory **inside** the flow project (`uipath.agent.autonomous`). Coded agents always use this `agent` plugin, not `inline-agent`.
 
-> **Choosing between coded and low-code, or wiring them into a flow:** see the `uipath-agents` skill — [coded-vs-lowcode-guide.md](../../../../../../uipath-agents/references/coded-vs-lowcode-guide.md) for the comparison, [coded/flow-integration.md](../../../../../../uipath-agents/references/coded/flow-integration.md) for coded-agent Flow patterns.
+> **Choosing between coded and low-code, or wiring them into a flow:** see the `uipath-agents` skill — [coded-vs-lowcode-guide.md](../../../../../uipath-agents/references/coded-vs-lowcode-guide.md) for the comparison, [coded/flow-integration.md](../../../../../uipath-agents/references/coded/flow-integration.md) for coded-agent Flow patterns.
 
 > **If the user names an existing agent, it is a published agent — not inline.** When a prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to an agent that already exists in the tenant (or in-solution). ALWAYS run `uip maestro flow registry search "<name>" --output json` BEFORE deciding to scaffold an inline agent. The words "coded" and "low-code" describe the *implementation style* of a published agent — they do NOT mean "inline". Inline (`uipath.agent.autonomous`) is only correct when the user explicitly asks to embed, inline, or create a new agent from scratch inside this flow.
 
@@ -49,7 +49,7 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 | --- | --- |
 | `input` | `output`, `error` |
 
-The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 

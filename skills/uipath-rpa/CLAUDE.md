@@ -53,7 +53,7 @@ Describe capability at the category level and route to UIA docs for concrete syn
 |-------------|------|
 | UIA authoring guidance (capture flows, pitfalls, coded/XAML patterns, control-specific interaction) | UIA package: `docs/ui-automation-guide.md` (or the reference it routes to) |
 | Target-capture orchestration + `uia-configure-target` invocation modes | UIA package: `docs/references/uia-configure-target-guide.md` |
-| CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/references/cli-reference.md` (searched for specific sections — never read in full) |
+| CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/cli-reference.md` (searched for specific sections — never read in full) |
 | Single-purpose CLI task recipe (window baseline, input methods, advancing UI state, …) | UIA package: `docs/references/<purpose>-guide.md`, listed with a purpose description in `docs/overview.md` § References |
 | Skill invocation guide for callers | UIA package: `docs/references/<skill>-guide.md` (`uia-configure-target-guide.md`, `uia-improve-selector-guide.md`) — skills ship no USAGE.md |
 | Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` — the only file under `docs/skills/<skill>/` |

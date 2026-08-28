@@ -124,7 +124,7 @@ runtime/debug API limitation when you see it.
 Start with status and incidents before verbose traces.
 Traces can be large and should be pulled only when incidents and variables are insufficient.
 
-If execution faults, hand off to [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).
+If execution faults, hand off to [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 
 ## Anti-patterns
 

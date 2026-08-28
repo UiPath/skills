@@ -65,7 +65,7 @@ outcomes: [Approve, Reject]
 priority: Low
 ```
 
-Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md).
+Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md).
 
 > **Note:** Skills are self-contained — cross-skill references are for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes; this planning guide is for topology selection only.
 

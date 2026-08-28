@@ -10,11 +10,11 @@
 uip maestro flow registry get core.action.script --output json
 ```
 
-Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../shared/action-nodes.md#registry-validation) for the shared pattern.
 
 ## JSON structure
 
-Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+Follow the [Action Node Structure — Standard JSON skeleton](../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
 
 ```json
 {
@@ -26,7 +26,7 @@ Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared
 
 ## Adding and editing
 
-See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+See [Action Node Structure — Adding and editing procedures](../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
 
 ## Script rules
 
@@ -35,7 +35,7 @@ See [Action Node Structure — Adding and editing procedures](../../../../shared
    - Wrong: `function main({ ixp1 }) { … }`
 2. **Must `return` an object** — `return { key: value }`, not a bare scalar. The return value becomes `$vars.<nodeId>.output`.
 3. **`$vars` is a global** — use it directly: `return { upper: $vars.customerName.toUpperCase() }`
-4. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../../shared/variables-and-expressions.md) for supported features and Jint constraints.
+4. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../../shared/variables-and-expressions.md) for supported features and Jint constraints.
 5. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
 6. **No external calls** — use the HTTP node or a connector node for API calls.
 7. **30-second timeout** — long-running computations will be killed.
@@ -80,7 +80,7 @@ const doc = $vars.start.output.inputDoc; // file variable → object
 return { fileName: doc.FullName };        // .FullName, not .name/.fileName
 ```
 
-Property access is **case-sensitive** — these casings resolve: `.FullName`, `.ID` (uppercase, not `.Id`), `.MimeType`, `.Metadata.size` (nested, lowercase `size`). `.name` / `.fileName` do not exist. See [variables-and-expressions.md — Runtime shape of a `file` variable](../../../../shared/variables-and-expressions.md#file-input).
+Property access is **case-sensitive** — these casings resolve: `.FullName`, `.ID` (uppercase, not `.Id`), `.MimeType`, `.Metadata.size` (nested, lowercase `size`). `.name` / `.fileName` do not exist. See [variables-and-expressions.md — Runtime shape of a `file` variable](../../../shared/variables-and-expressions.md#file-input).
 
 ## Debug
 

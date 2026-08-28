@@ -1,6 +1,6 @@
 # HTTP Request Node — Planning
 
-> **MUST READ FIRST — confirm Managed HTTP Request fits your use case before authoring:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This planning doc is the flow-specific layer on top of it.
+> **MUST READ FIRST — confirm Managed HTTP Request fits your use case before authoring:** [/uipath:uipath-platform — http-request.md](../../../../../uipath-platform/references/integration-service/http-request.md). This planning doc is the flow-specific layer on top of it.
 
 ## Node Type
 
@@ -27,7 +27,7 @@ For the two-mode concept (connector vs. manual) and the `url` / auth rules per m
 | `input` | `default`, `error`, `branch-{id}` (dynamic, one per `inputs.branches` entry) |
 
 - `default` — primary success output, or fallback when configured branches don't match.
-- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 - `branch-{id}` — HTTP-specific, configured via `inputs.branches` (response-content routing). See [Conditional Branches](#conditional-branches) below.
 
 ## Output Variables
@@ -54,7 +54,7 @@ Each branch's `conditionExpression` is a JS expression with `$self` bound to the
 
 Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `default` fires when no branch condition matches.
 
-> **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../../../shared/variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
+> **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../../shared/variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
 
 ## Dynamic values
 

@@ -83,8 +83,8 @@ If the second search still returns no activities for that connector, the fallbac
 
 Apply the canonical disambiguation ladder owned by Integration Service:
 
-- [/uipath:uipath-platform — Integration Service — connectors.md — Connector Disambiguation](../../../../../../uipath-platform/references/integration-service/connectors.md#connector-disambiguation) — classify catalog/custom/mock, intent-match by `Description`, count remaining candidates (1 → silent, >1 → AskUser, 0 catalog → STOP).
-- [/uipath:uipath-platform — Integration Service — connectors.md — JDBC Gateway — Database SQL Intent](../../../../../../uipath-platform/references/integration-service/connectors.md#jdbc-gateway--database-sql-intent) — special handling when the user's intent is a database SQL operation (native connector vs JDBC gateway, connection-name keyword matching, decision matrix, lifecycle disclosure).
+- [/uipath:uipath-platform — Integration Service — connectors.md — Connector Disambiguation](../../../../../uipath-platform/references/integration-service/connectors.md#connector-disambiguation) — classify catalog/custom/mock, intent-match by `Description`, count remaining candidates (1 → silent, >1 → AskUser, 0 catalog → STOP).
+- [/uipath:uipath-platform — Integration Service — connectors.md — JDBC Gateway — Database SQL Intent](../../../../../uipath-platform/references/integration-service/connectors.md#jdbc-gateway--database-sql-intent) — special handling when the user's intent is a database SQL operation (native connector vs JDBC gateway, connection-name keyword matching, decision matrix, lifecycle disclosure).
 
 Lock the chosen connector key in the planning notes — never re-derive per node within the same flow.
 
@@ -109,7 +109,7 @@ uip is connections list "<connector-key>" --all-folders --output json
 | --- | --- |
 | `input` | `success`, `error` |
 
-The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 

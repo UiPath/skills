@@ -25,7 +25,7 @@ Before upload, publish, deploy, or debug:
 
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
    CLI contract says otherwise. See
-   [local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md) for drift
+   [local-metadata-regeneration-guide.md](../shared/local-metadata-regeneration-guide.md) for drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
    When the BPMN references external Orchestrator processes, `uip solution
    resource refresh` expects a versioned `bindings_v2.json` object with a
@@ -93,7 +93,7 @@ BPMN project/package boundary.
 ## Import/package correlation
 
 When Studio Web import or packaging fails, inspect the generated package files against
-[shared/project-layout.md](../../shared/project-layout.md):
+[shared/project-layout.md](../shared/project-layout.md):
 
 - `bindings_v2.json` for resource and connection binding declarations generated from BPMN/enrichment.
 - `entry-points.json` for start-event entry points, schemas, and BPMN file references.
@@ -109,7 +109,7 @@ Do not hand-patch generated files as the primary fix.
 If package or upload fails:
 
 - Capture the high-level error category.
-- Check generated package files against [shared/project-layout.md](../../shared/project-layout.md).
+- Check generated package files against [shared/project-layout.md](../shared/project-layout.md).
 - Correlate import errors to BPMN diagrams, start events, entry point IDs, bindings, and package descriptor entries.
 - Return to Author for BPMN/source fixes.
 - Rerun CLI enrichment/generation for CLI-owned Integration Service or generated-file issues.

@@ -8,8 +8,8 @@ Strategy selection and shared concepts for modifying `.flow` files. Direct `.flo
 >
 > 1. **CLI-managed carve-outs only** → use the relevant plugin workflow for connector activity, connector-trigger, or managed HTTP operations when the CLI populates product-managed state (`inputs.detail`, `bindings_v2.json`, connection resources).
 > 2. **Any structural `.flow` mutation** (add/delete OOTB nodes, add/delete edges, add/edit variables, in-place value tweaks, output mapping, subflows, scheduled triggers, non-connector resources, inline-agent node/wiring) → `Edit`.
-> 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write` — but never on a flow that already contains CLI-owned nodes (connector, connector-trigger, managed HTTP): the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` and `flow validate` won't catch it. Use `Edit` (rung 2); if you do `Write`, re-run `node configure` **as the last write** to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers it). See [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
-> 4. **Anything else** → STOP and ask the user. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and present finite options — typically **Use `Edit` instead** / **Use `Write` (full rewrite)** / **Approve the script for this change** / **Cancel** / **Something else**. Only proceed after the user explicitly approves that path for this specific change. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
+> 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write` — but never on a flow that already contains CLI-owned nodes (connector, connector-trigger, managed HTTP): the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` and `flow validate` won't catch it. Use `Edit` (rung 2); if you do `Write`, re-run `node configure` **as the last write** to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers it). See [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node).
+> 4. **Anything else** → STOP and ask the user. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and present finite options — typically **Use `Edit` instead** / **Use `Write` (full rewrite)** / **Approve the script for this change** / **Cancel** / **Something else**. Only proceed after the user explicitly approves that path for this specific change. See the dropdown question rule in [SKILL.md](../../SKILL.md).
 
 ### Why not Python / Node / jq / sed?
 
@@ -43,7 +43,7 @@ Use this table to determine which strategy to follow for each operation. **Edit 
 | Add an edge | **Edit / Write** | — | Remember `targetPort` (Rule #6). |
 | Delete an edge | **Edit / Write** | — | |
 | Update node inputs | **Edit** | — | In-place edit; preserves node ID and `$vars`. **Exception:** managed HTTP `inputs.branches` / `timeout` / `retryCount` must be set at `node add --input` time — to change them, `uip maestro flow node remove` and re-add with new `--input`. |
-| Add/edit workflow variable | **Edit** | — | `Edit` when authoring. `uip maestro flow variable add\|list\|remove` exists for declaring eval inputs — see [variables-and-expressions.md § Variable Management via CLI](../../shared/variables-and-expressions.md#variable-management-via-cli). |
+| Add/edit workflow variable | **Edit** | — | `Edit` when authoring. `uip maestro flow variable add\|list\|remove` exists for declaring eval inputs — see [variables-and-expressions.md § Variable Management via CLI](../shared/variables-and-expressions.md#variable-management-via-cli). |
 | Add variable update | **Edit** | — | Edit-only. No CLI command exists. |
 | Map outputs on End node | **Edit** | — | Edit-only. |
 | Create a subflow | **Edit / Write** | — | Edit-only (or `Write` for fresh template). |
@@ -78,12 +78,12 @@ These apply regardless of which strategy you use.
 
 - Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow format` — do not hand-compute coordinates
 - When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); format rewrites it on save
-- Run `uip maestro flow format <file>.flow` after edits and before publish/debug — see [cli-commands.md](../../shared/cli-commands.md#uip-maestro-flow-format)
+- Run `uip maestro flow format <file>.flow` after edits and before publish/debug — see [cli-commands.md](../shared/cli-commands.md#uip-maestro-flow-format)
 
 ### Edge rules
 
 - `targetPort` is required on every edge — validate rejects edges without it
-- See [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type
+- See [file-format.md — Standard ports](../shared/file-format.md) for port names by node type
 - Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`start`/`continue`/`break` inner, `success`/`error` outer)
 
 ### Validation
@@ -98,7 +98,7 @@ These apply regardless of which strategy you use.
 Applies to any turn that issues more than one `Edit` against the same `.flow` (greenfield T2 and brownfield alike):
 
 - **Same-file Edits serialize in execution order** — they do not race, but each later Edit runs against the text the earlier ones already changed. An `old_string` that overlaps text a prior Edit removed or shifted fails with "string not found."
-- **Anchor each Edit on its target array's OWN opening key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`), located in the text you just `Read` — never on "the key that follows X." Top-level key order and presence are not guaranteed (see [file-format.md](../../shared/file-format.md#top-level-structure)).
+- **Anchor each Edit on its target array's OWN opening key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`), located in the text you just `Read` — never on "the key that follows X." Top-level key order and presence are not guaranteed (see [file-format.md](../shared/file-format.md#top-level-structure)).
 - **`"nodes": [` and `"edges": [` are NOT unique** — they recur inside inline `definitions[]` and inside any `subflows.<id>` block. Anchor on the 2-space-indented (top-level) occurrence and extend until the match is unique.
 - Insert at the array's head (right after `[`) so the `old_string` never spans the array's closing `]`.
 
@@ -109,7 +109,7 @@ Full per-array anchor table and worked example: [greenfield.md — Anchoring par
 - Use `=js:` on **value expressions**: end node output `source`, variable updates, HTTP input fields, node `inputs` values
 - Do NOT use `=js:` on **condition expressions**: decision `expression`, switch case `expression`, HTTP branch `conditionExpression` — these are always evaluated as JS automatically
 
-See [variables-and-expressions.md](../../shared/variables-and-expressions.md) for the full expression reference.
+See [variables-and-expressions.md](../shared/variables-and-expressions.md) for the full expression reference.
 
 ---
 
@@ -126,6 +126,6 @@ See [variables-and-expressions.md](../../shared/variables-and-expressions.md) fo
 | Replace a mock placeholder (non-connector) | [Edit/Write guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) |
 | Replace a trigger type (non-connector) | [Edit/Write guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) |
 | Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
-| Understand the `.flow` JSON schema | [file-format.md](../../shared/file-format.md) |
-| Look up CLI flags and syntax | [cli-commands.md](../../shared/cli-commands.md) |
-| Work with variables and expressions | [variables-and-expressions.md](../../shared/variables-and-expressions.md) |
+| Understand the `.flow` JSON schema | [file-format.md](../shared/file-format.md) |
+| Look up CLI flags and syntax | [cli-commands.md](../shared/cli-commands.md) |
+| Work with variables and expressions | [variables-and-expressions.md](../shared/variables-and-expressions.md) |

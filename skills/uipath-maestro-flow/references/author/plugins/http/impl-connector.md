@@ -27,7 +27,7 @@ uip is connections list "<target-connector-key>" --all-folders --output json
 
 `--all-folders` is mandatory for discovery. Selection rules, empty-result recovery, and ping verification live in the platform skill — do not duplicate them here.
 
-> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md).
+> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
 
 Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 
@@ -38,11 +38,11 @@ Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 > - **Skip this node**.
 > - **Something else**.
 >
-> Auto-try the fallback, but do not finalize a mode switch without the user's confirmation; do not invent a placeholder ID; do not skip the node without explicit selection. See the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
+> Auto-try the fallback, but do not finalize a mode switch without the user's confirmation; do not invent a placeholder ID; do not skip the node without explicit selection. See the dropdown question rule in [SKILL.md](../../../../SKILL.md).
 
 ## Step 3 — Configure the node
 
-> **STOP — open the platform skill before configuring.** Before composing `url` / `query` / `body`, read [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md) and resolve every value you don't already have (IDs from names, required body fields, endpoint path, response shape).
+> **STOP — open the platform skill before configuring.** Before composing `url` / `query` / `body`, read [/uipath:uipath-platform — http-request.md](../../../../../uipath-platform/references/integration-service/http-request.md) and resolve every value you don't already have (IDs from names, required body fields, endpoint path, response shape).
 >
 > - **If the target connector is listed in that skill's `vendor-docs-registry.json`:** you MUST follow its **Step 0 (Ground Against the Vendor's API Docs)** — read the `docsUrl` + `notes` and confirm the exact endpoint with the `http-request` probe before running `node configure`. Pass the endpoint path verbatim: vendor method names can contain literal dots (Slack ``chat.postMessage`) — the dot is part of the path segment.
 > - **If the connector is NOT listed:** the registry-grounding step does not apply — resolve missing values via the `http-request` probe / vendor docs as usual.
@@ -77,7 +77,7 @@ Skip unless you need to route downstream paths based on response content (e.g., 
 
 ## Step 5 — Wire edges
 
-The HTTP node's target port is `input`. Source ports: `default` (success), `error` (network/non-2xx), `branch-{id}` (one per Step 4 entry). Wire `default` to the next node. Wire `error` to a handler **only when the requirements say what a failed call should do** — with no `error` edge the call faults the flow, which is the correct default, and setting `inputs.errorHandlingEnabled: true` without the edge swallows the failure into a run that reports success. See [file-format.md — Default: off](../../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
+The HTTP node's target port is `input`. Source ports: `default` (success), `error` (network/non-2xx), `branch-{id}` (one per Step 4 entry). Wire `default` to the next node. Wire `error` to a handler **only when the requirements say what a failed call should do** — with no `error` edge the call faults the flow, which is the correct default, and setting `inputs.errorHandlingEnabled: true` without the edge swallows the failure into a run that reports success. See [file-format.md — Default: off](../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
 
 Edge JSON shapes and all four examples (upstream→node, default→downstream, error→handler, branch→downstream): [impl.md — Wire edges](impl.md#wire-edges).
 

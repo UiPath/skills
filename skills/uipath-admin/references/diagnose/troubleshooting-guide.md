@@ -56,7 +56,7 @@ Interpret the results:
 - Compare effective permissions against the required permission for the denied action
 - Check `ownerServiceName` on each role — cross-service grants don't apply (Orchestrator role ≠ DU access)
 
-See [check-access.md](../../authorization/check-access.md) for full interpretation guide.
+See [check-access.md](../authorization/check-access.md) for full interpretation guide.
 
 ### Step 3b: Identify the Permission the Denied Action Requires
 
@@ -67,7 +67,7 @@ uip admin authorization permissions list --output json \
   --output-filter "[?contains(Name, 'ADMINISTRATION')]"
 ```
 
-`contains` is case-sensitive: `Name` is UPPERCASE, `Description` is lowercase. A guessed `--service` returns `Data: []` and an unfiltered list is ~210 KB that truncates — neither empty result proves the permission is absent. See [permission-catalog.md — Find the Permission Governing an Action](../../authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action).
+`contains` is case-sensitive: `Name` is UPPERCASE, `Description` is lowercase. A guessed `--service` returns `Data: []` and an unfiltered list is ~210 KB that truncates — neither empty result proves the permission is absent. See [permission-catalog.md — Find the Permission Governing an Action](../authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action).
 
 State the diagnosis as: *principal holds `<roles>`, none of which carry `<PERMISSION.NAME>` (`ScopeType` `<SCOPE>`) → grant a `<SCOPE>`-shape role carrying it.* Never substitute a permission you did not find in the catalog.
 
@@ -92,7 +92,7 @@ uip admin audit tenant events \
   --output json
 ```
 
-See [audit-workflow-guide.md](../../audit-workflow-guide.md) for scope routing rules.
+See [audit-workflow-guide.md](../audit-workflow-guide.md) for scope routing rules.
 
 ## Step 5: Inspect Configuration
 

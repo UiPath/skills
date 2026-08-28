@@ -9,8 +9,8 @@ Publish journey for a Flow project. Two paths: **Studio Web upload** (default) a
 
 Before either publish path, ensure:
 
-1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow format` was run. If not, send the user back to [author/CAPABILITY.md](../../author/CAPABILITY.md).
-2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
+1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow format` was run. If not, send the user back to [author/CAPABILITY.md](../author/CAPABILITY.md).
+2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../shared/cli-conventions.md#5-login-state).
 3. **Solution resources are refreshed.** Always run this before `solution upload` or `solution publish` so that connection and process resource declarations are in sync with the project bindings:
 
    ```bash
@@ -45,13 +45,13 @@ uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip maestro flow pack <project-path> <OutputDir>
 ```
 
-For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-solution](/uipath:uipath-solution). See [shared/cli-commands.md — uip maestro flow pack](../../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.
+For `uip solution publish` and the rest of the deployment workflow, see [/uipath:uipath-solution](/uipath:uipath-solution). See [shared/cli-commands.md — uip maestro flow pack](../shared/cli-commands.md#uip-maestro-flow-pack) for `pack` flags.
 
 ## Anti-patterns
 
 - **Never run `solution upload` without `solution resources refresh` first.** Stale resource declarations cause runtime binding failures (the deployed flow can't find its connections).
-- **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. When the target is ambiguous, ask the user with **Studio Web upload** / **Orchestrator deploy** / **Something else** as options before running `flow pack` + `solution publish`. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
-- **Never publish a flow that hasn't been validated and formatted.** `flow validate` catches schema errors; `flow format` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../../author/CAPABILITY.md).
+- **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. When the target is ambiguous, ask the user with **Studio Web upload** / **Orchestrator deploy** / **Something else** as options before running `flow pack` + `solution publish`. See the dropdown question rule in [SKILL.md](../../SKILL.md).
+- **Never publish a flow that hasn't been validated and formatted.** `flow validate` catches schema errors; `flow format` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../author/CAPABILITY.md).
 
 ## What's next
 

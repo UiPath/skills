@@ -99,8 +99,8 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Look up CLI flags / output shapes** (Access) | [`references/access-policy/access-policy-commands.md`](./references/access-policy/access-policy-commands.md) |
 | **Resolve a name to a UUID for Access** | [`references/access-policy/resource-lookup-guide.md`](./references/access-policy/resource-lookup-guide.md) |
 | **Diagnose a governance failure (capability index)** | [`references/diagnose/CAPABILITY.md`](./references/diagnose/CAPABILITY.md) |
-| **Recognize a known governance failure pattern** | [`references/diagnose/references/failure-modes.md`](./references/diagnose/references/failure-modes.md) |
-| **Walk the diagnostic priority ladder** | [`references/diagnose/references/troubleshooting-guide.md`](./references/diagnose/references/troubleshooting-guide.md) |
+| **Recognize a known governance failure pattern** | [`references/diagnose/references/failure-modes.md`](references/diagnose/failure-modes.md) |
+| **Walk the diagnostic priority ladder** | [`references/diagnose/references/troubleshooting-guide.md`](references/diagnose/troubleshooting-guide.md) |
 | **Discover available compliance standards** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) |
 | **List which compliance standards are currently configured** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) — use `state list tenant <id>` |
 | **Posture analysis** — what settings are configured vs recommended | [`references/compliance-pack/coverage/impl.md`](./references/compliance-pack/coverage/impl.md) |

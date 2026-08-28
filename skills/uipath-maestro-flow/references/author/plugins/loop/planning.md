@@ -30,7 +30,7 @@ The loop is a container node, so its handles split across an outer and an inner 
 - `continue` — receives the edge returning from the last node inside the loop body
 - `break` — early exit from inside the body (only when `breakEnabled`)
 - `success` — fires after all iterations complete
-- `error` — implicit error port shared with all action nodes; fires when the loop or an iteration throws. See [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+- `error` — implicit error port shared with all action nodes; fires when the loop or an iteration throws. See [Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 > Aggregated results are an output **variable** (`$vars.<loopId>.output`), not a port.
 

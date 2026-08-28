@@ -160,5 +160,5 @@ uip maestro bpmn processes incidents <PROCESS_KEY> --output json
 ```
 
 Lifecycle commands are intentionally absent from this diagnostic command list.
-Use [operate/references/manage.md](../../operate/references/manage.md) only after the diagnosis supports a
+Use [operate/references/manage.md](../operate/manage.md) only after the diagnosis supports a
 side-effecting action and the user consents.

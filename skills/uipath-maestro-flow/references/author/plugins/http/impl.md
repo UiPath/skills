@@ -21,7 +21,7 @@ The `--detail` payload differs in two places between modes: `authentication` (`"
 
 ## Critical: Use `node configure`
 
-> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
+> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime. `core.action.http.v2` is CLI-owned per [Author capability — Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node) (same envelope rules as connector activities).
 
 ## Registry validation
 
@@ -29,7 +29,7 @@ The `--detail` payload differs in two places between modes: `authentication` (`"
 uip maestro flow registry get core.action.http.v2 --output json
 ```
 
-Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the implicit `error` port pattern shared by every action node (see [Action Node Structure](../../../../shared/action-nodes.md)). Model `serviceType` is `Intsvc.UnifiedHttpRequest`.
+Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the implicit `error` port pattern shared by every action node (see [Action Node Structure](../../../shared/action-nodes.md)). Model `serviceType` is `Intsvc.UnifiedHttpRequest`.
 
 ---
 
@@ -174,7 +174,7 @@ Use `Edit` to add edge objects to `edges[]`; do not use `uip maestro flow edge a
 
 Add the `error` edge above **only when the requirements say what should happen if the call fails.** With no error edge, a failed call faults the flow — the correct, visible default.
 
-When an HTTP node does have an outgoing `error` edge, the HTTP node instance must also include `inputs.errorHandlingEnabled: true`. `uip maestro flow edge add --source-port error` and `uip maestro flow format` set this automatically; direct JSON edits must set it explicitly. Never set the flag on an HTTP node with no error edge — it suppresses the fault, so a failed call flows on and the run reports success. See [file-format.md — Default: off](../../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
+When an HTTP node does have an outgoing `error` edge, the HTTP node instance must also include `inputs.errorHandlingEnabled: true`. `uip maestro flow edge add --source-port error` and `uip maestro flow format` set this automatically; direct JSON edits must set it explicitly. Never set the flag on an HTTP node with no error edge — it suppresses the fault, so a failed call flows on and the run reports success. See [file-format.md — Default: off](../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
 
 ```json
 {
@@ -196,6 +196,6 @@ When an HTTP node does have an outgoing `error` edge, the HTTP node instance mus
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
 | `ImplicitConnection` errors | Manual mode misconfigured | Verify `authentication: "manual"` and `url` is a full URL |
-| Flow faults on 4xx/5xx response | No `error` edge wired from the HTTP node | Expected when the requirements specify no fallback. If they do, add an edge with `sourcePort: "error"` to an error-handler node. See [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes) — same mechanism applies to all action nodes |
-| Flow reports `Completed` but the API call failed | `inputs.errorHandlingEnabled: true` with no handler, or an `error` edge routed into the happy path / the success End node | Remove the flag when there is no error edge; otherwise repoint the error edge at a distinct End node with an error/status output, or at `core.logic.terminate`. See [Do not swallow the failure](../../../../shared/file-format.md#do-not-swallow-the-failure) |
+| Flow faults on 4xx/5xx response | No `error` edge wired from the HTTP node | Expected when the requirements specify no fallback. If they do, add an edge with `sourcePort: "error"` to an error-handler node. See [Implicit error port on action nodes](../../../shared/file-format.md#implicit-error-port-on-action-nodes) — same mechanism applies to all action nodes |
+| Flow reports `Completed` but the API call failed | `inputs.errorHandlingEnabled: true` with no handler, or an `error` edge routed into the happy path / the success End node | Remove the flag when there is no error edge; otherwise repoint the error edge at a distinct End node with an error/status output, or at `core.logic.terminate`. See [Do not swallow the failure](../../../shared/file-format.md#do-not-swallow-the-failure) |
 | Edge `source-port output` rejected | Referencing the variable namespace as a port name | HTTP source ports are `default`, `error`, and `branch-{id}` — not `output`. The `output` name is only a variable namespace (`$vars.{nodeId}.output`) |

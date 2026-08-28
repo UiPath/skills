@@ -107,7 +107,7 @@ Confirm all three from `registry get` before wiring.
 }
 ```
 
-**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. Exception: `output` MAY be declared with exactly `source: "=this"` plus the agent's output schema — that form is safe; the hazard is any other hand-authored `source`. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. Exception: `output` MAY be declared with exactly `source: "=this"` plus the agent's output schema — that form is safe; the hazard is any other hand-authored `source`. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
 
 `<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 
@@ -148,7 +148,7 @@ Same shape as the published variant — no `model` on the instance.
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ## Wiring Inputs
 
@@ -206,7 +206,7 @@ return { classification: response };
 
 Create the agent first, then wire it. Three paths:
 
-- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution projects add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../../../uipath-agents/references/coded/embedding-in-flows.md).
+- **In-solution (sibling project, coded or low-code)** — scaffold via `uipath-agents`, register with `uip solution projects add` to mint the local `resource.key`, then discover via `uip maestro flow registry list --local`. For the coded pipeline, see [coded/embedding-in-flows.md](../../../../../uipath-agents/references/coded/embedding-in-flows.md).
 - **Published coded agent** — `uip codedagent deploy`, then `uip maestro flow registry pull --force`.
 - **Published low-code agent** — `uip solution deploy`, then `uip maestro flow registry pull --force`.
 
@@ -215,7 +215,7 @@ Create the agent first, then wire it. Three paths:
 To use a published agent (coded or low-code) as a **tool for another agent** rather than a standalone flow node, add it as a `uipath.agent.resource.tool.agent` resource node wired to the parent agent's `tool` handle. This lives within the agent's canvas, not at the top level of the flow.
 
 For the resource file format and wiring details, see the `uipath-agents` skill:
-- Coded agents: [coded/flow-integration.md § Pattern 3](../../../../../../uipath-agents/references/coded/flow-integration.md#pattern-3-tool-resource-for-another-agent)
+- Coded agents: [coded/flow-integration.md § Pattern 3](../../../../../uipath-agents/references/coded/flow-integration.md#pattern-3-tool-resource-for-another-agent)
 - Low-code agents: see the `uipath-agents` skill's low-code references.
 
 ## Debug

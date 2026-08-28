@@ -120,7 +120,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 2. Check effective access: `uip admin authorization check-access "<USER_ID>" --output json`
 3. Narrow to service: `uip admin authorization check-access "<USER_ID>" --service <SERVICE> --output json`
 4. Compare against required permission: `uip admin authorization permissions list --service <SERVICE> --output json`
-5. Label each result as `direct` or `inherited from <Group>` — see [check-access.md](../../authorization/check-access.md)
+5. Label each result as `direct` or `inherited from <Group>` — see [check-access.md](../authorization/check-access.md)
 
 **Fix:** Cause 1 → assign a role for the service. Cause 2 → re-assign at correct scope. Cause 3 → update custom role actions or assign additional role. Cause 4 → assign role owned by the correct service.
 

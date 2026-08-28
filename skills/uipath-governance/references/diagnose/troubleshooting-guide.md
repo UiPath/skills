@@ -16,7 +16,7 @@ Determine whether the symptom belongs to AOps (product-layer) or Access (tool-us
 | "Policy create/update rejected" | Either | Step 5 (inspect definition) |
 | "Deployed-policy returns empty" | AOps | Step 2 (check deployed) |
 
-If the branch is unclear, ask the user: "Is this about product behavior (Studio/Robot features) or tool invocation (one workflow calling another)?" See [disambiguation-guide.md](../../disambiguation-guide.md).
+If the branch is unclear, ask the user: "Is this about product behavior (Studio/Robot features) or tool invocation (one workflow calling another)?" See [disambiguation-guide.md](../disambiguation-guide.md).
 
 ## Step 2: Check What's Deployed
 
@@ -98,7 +98,7 @@ List all active policies:
 uip gov access-policy list --filter "status in ('Active')" --output json
 ```
 
-Check whether a robot/external-app actor is involved — `actorRule` only matches `User`/`Group`. See [plugins/actor/impl.md](../../access-policy/plugins/actor/impl.md).
+Check whether a robot/external-app actor is involved — `actorRule` only matches `User`/`Group`. See [plugins/actor/impl.md](../access-policy/plugins/actor/impl.md).
 
 ## Step 5: Inspect the Policy Definition
 

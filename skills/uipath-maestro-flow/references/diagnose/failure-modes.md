@@ -53,7 +53,7 @@ Do **not** add `=js:` to condition expressions (decision `expression`, switch ca
 
 ### Reference
 
-[shared/node-output-wiring.md](../../shared/node-output-wiring.md) — canonical per-node-type field reference.
+[shared/node-output-wiring.md](../shared/node-output-wiring.md) — canonical per-node-type field reference.
 
 ---
 
@@ -94,7 +94,7 @@ One entry per declared output (trigger nodes: `output` only; action nodes: `outp
 
 ### Reference
 
-[shared/file-format.md — Node outputs](../../shared/file-format.md#node-outputs), [author/CAPABILITY.md rule #14](../../author/CAPABILITY.md), [editing-operations-json.md — Pre-flight Checklist step 5–6](../../author/references/editing-operations-json.md#pre-flight-checklist).
+[shared/file-format.md — Node outputs](../shared/file-format.md#node-outputs), [author/CAPABILITY.md rule #14](../author/CAPABILITY.md), [editing-operations-json.md — Pre-flight Checklist step 5–6](../author/editing-operations-json.md#pre-flight-checklist).
 
 ---
 
@@ -125,7 +125,7 @@ Format:
 
 ### Reference
 
-[author capability](../../author/CAPABILITY.md) — see "Always run `flow format` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow format](../../shared/cli-commands.md#uip-maestro-flow-format).
+[author capability](../author/CAPABILITY.md) — see "Always run `flow format` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow format](../shared/cli-commands.md#uip-maestro-flow-format).
 
 ---
 
@@ -145,7 +145,7 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 
 ### Reference
 
-[Author HITL plugin reference](../../author/references/plugins/hitl/impl.md) — full HITL node reference including port wiring requirements.
+[Author HITL plugin reference](../author/plugins/hitl/impl.md) — full HITL node reference including port wiring requirements.
 
 ---
 
@@ -211,8 +211,8 @@ Re-run `uip maestro flow validate` and `uip maestro flow format` after either fi
 
 ### Reference
 
-- [shared/file-format.md — Default: off](../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles) and [Do not swallow the failure](../../shared/file-format.md#do-not-swallow-the-failure)
-- [Author capability — rule #16](../../author/CAPABILITY.md#critical-rules)
+- [shared/file-format.md — Default: off](../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles) and [Do not swallow the failure](../shared/file-format.md#do-not-swallow-the-failure)
+- [Author capability — rule #16](../author/CAPABILITY.md#critical-rules)
 
 ---
 
@@ -242,8 +242,8 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ### Reference
 
-- [Author connector plugin — Step 4](../../author/references/plugins/connector/impl.md)
-- [Author connector-trigger plugin — Step 3](../../author/references/plugins/connector-trigger/impl.md)
+- [Author connector plugin — Step 4](../author/plugins/connector/impl.md)
+- [Author connector-trigger plugin — Step 3](../author/plugins/connector-trigger/impl.md)
 
 ---
 
@@ -283,7 +283,7 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 
 ### Reference
 
-[Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+[Author greenfield journey — Step 2](../author/greenfield.md) — the canonical scaffold sequence.
 <!--skill-flavor:project-creation-recovery:end-->
 
 ---
@@ -308,11 +308,11 @@ For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workf
 
 ### Fix
 
-Add two entries to the top-level `bindings[]` array per resource node — `name` and `folderPath` — with `resourceKey` matching the definition's `model.bindings.resourceKey`. See the relevant resource plugin's `impl.md` for the exact shape ([rpa](../../author/references/plugins/rpa/impl.md), [agent](../../author/references/plugins/agent/impl.md), [flow](../../author/references/plugins/flow/impl.md), [agentic-process](../../author/references/plugins/agentic-process/impl.md), [api-workflow](../../author/references/plugins/api-workflow/impl.md), [hitl](../../author/references/plugins/hitl/impl.md)).
+Add two entries to the top-level `bindings[]` array per resource node — `name` and `folderPath` — with `resourceKey` matching the definition's `model.bindings.resourceKey`. See the relevant resource plugin's `impl.md` for the exact shape ([rpa](../author/plugins/rpa/impl.md), [agent](../author/plugins/agent/impl.md), [flow](../author/plugins/flow/impl.md), [agentic-process](../author/plugins/agentic-process/impl.md), [api-workflow](../author/plugins/api-workflow/impl.md), [hitl](../author/plugins/hitl/impl.md)).
 
 ### Reference
 
-[shared/file-format.md — Bindings](../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings)
+[shared/file-format.md — Bindings](../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings)
 
 ---
 

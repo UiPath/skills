@@ -19,7 +19,7 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 
 ## Step 2 — Configure the node
 
-> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md).
+> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../uipath-platform/references/integration-service/http-request.md).
 
 ```bash
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
@@ -56,7 +56,7 @@ Skip unless you need to route downstream paths based on response content (e.g., 
 
 ## Step 4 — Wire edges
 
-The HTTP node's target port is `input`. Source ports: `default` (success), `error` (network/non-2xx), `branch-{id}` (one per Step 3 entry). Wire `default` to the next node. Wire `error` to a handler **only when the requirements say what a failed call should do** — with no `error` edge the call faults the flow, which is the correct default, and setting `inputs.errorHandlingEnabled: true` without the edge swallows the failure into a run that reports success. See [file-format.md — Default: off](../../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
+The HTTP node's target port is `input`. Source ports: `default` (success), `error` (network/non-2xx), `branch-{id}` (one per Step 3 entry). Wire `default` to the next node. Wire `error` to a handler **only when the requirements say what a failed call should do** — with no `error` edge the call faults the flow, which is the correct default, and setting `inputs.errorHandlingEnabled: true` without the edge swallows the failure into a run that reports success. See [file-format.md — Default: off](../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
 
 Edge JSON shapes and all four examples (upstream→node, default→downstream, error→handler, branch→downstream): [impl.md — Wire edges](impl.md#wire-edges).
 

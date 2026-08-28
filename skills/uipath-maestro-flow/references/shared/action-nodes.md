@@ -82,7 +82,7 @@ Some plugins add dynamic source ports (e.g., HTTP `branch-{id}` from `inputs.bra
 
 ## Adding and editing procedures
 
-For step-by-step add, delete, and wiring instructions, see [editing-operations.md](../author/references/editing-operations.md) and the JSON recipes in [editing-operations-json.md](../author/references/editing-operations-json.md). Plugin `impl.md` files describe only the inputs and wiring patterns that are specific to the node type.
+For step-by-step add, delete, and wiring instructions, see [editing-operations.md](../author/editing-operations.md) and the JSON recipes in [editing-operations-json.md](../author/editing-operations-json.md). Plugin `impl.md` files describe only the inputs and wiring patterns that are specific to the node type.
 
 ## Migrating a plugin to reference this template
 
