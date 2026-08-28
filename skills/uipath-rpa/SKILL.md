@@ -282,7 +282,7 @@ UIA references live in two locations. Always cite by location so the reader know
 
 ### In the UIA activity pack (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`)
 
-- `ui-automation-guide.md` — **the entry point for all UIA authoring** (Rule 7; read in full first — also the Rule 7a availability probe: `ls` the exact path via Bash or attempt the direct Read; `Glob`/`Grep` skip gitignored `.local/`, so a miss from them NEVER proves absence — never enumerate the docs tree). Window baseline, capture orchestration, common pitfalls, control-specific interaction, coded and XAML patterns. Its § Documentation routes to everything else in the pack: target-capture orchestration, task guides, CLI command inventory, per-activity property surfaces, coded API surface, and the UIA skills (`uia-configure-target`, `uia-improve-selector`).
+- `ui-automation-guide.md` — **the entry point for all UIA authoring** (Rule 7; read in full first — also the Rule 7a availability probe: `ls` the exact path via Bash or attempt the direct Read; `Glob`/`Grep` skip gitignored `.local/`, so a miss from them NEVER proves absence — never enumerate the docs tree). Window baseline, capture orchestration, common pitfalls, control-specific interaction, coded and XAML patterns. Its § Documentation routes to everything else in the pack: target-capture orchestration, task guides, CLI command inventory, per-activity property surfaces, coded API surface, runtime selector recovery, and the bundled UIA skill (`uia-configure-target`).
 
 ## Completion Output
 

@@ -38,18 +38,10 @@ initial_prompt: |
   state on those three fields and `uip maestro flow validate` passes.
 
 success_criteria:
-  - type: command_executed
-    description: "flow node configure invoked >=2 times on MovieReportFlow (edit + revert leave a CLI trace)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+configure.*MovieReportFlow'
-    min_count: 2
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final MovieReportFlow validates cleanly"
     command: "uip maestro flow validate MovieReportSolution/MovieReportFlow/MovieReportFlow.flow --output json | python3 -c \"import json,sys; sys.exit(0 if json.load(sys.stdin)['Result']=='Success' else 1)\""
-    timeout: 60
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

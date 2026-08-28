@@ -1,0 +1,98 @@
+task_id: skill-rpa-diagnose-missing-scoped-asset
+description: >
+  Skill-guided evaluation (diagnose mode, D2/D5 config-vs-runtime triage): an
+  unattended job fails at startup because an Orchestrator asset lookup 404s — the
+  credential is mis-scoped (the robot runs in folder 'Finance' but the process
+  config points the asset at 'Shared'). The agent must correlate a static Robot
+  job log with the process config, diagnose the folder-scope mismatch, and write
+  a remediation to diagnosis.md. There is NO workflow to build or run — the
+  fixtures are two text files, so the task carries zero Studio-host cost and
+  stays fast even on the Windows lane. Exercises the "asset/config mismatch" diagnostic distinct from
+  the selector-failure log task. Adapted from the Autopilot.Evaluation RPA golden
+  scenario `diagnose-medium-missing-mis-scoped-asset`; fixtures are inlined in the
+  prompt and grading is deterministic (no LLM judge).
+tags: [uipath-rpa, windows, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  max_turns: 30
+  turn_timeout: 900
+  task_timeout: 900
+
+initial_prompt: |
+  A UiPath unattended job for the "SAPInvoicePoster" process fails at startup
+  with a "not found" error while loading its credentials — but it runs fine
+  locally. First, write these two fixture files to disk verbatim (their content
+  is authoritative — write them exactly):
+
+  `./execution.log`:
+  ```
+  2026-08-26 06:02:11.402 Info  SAPInvoicePoster Execution started (job a19e77b4, process SAPInvoicePoster, robot RPA-Unattended-03, folder Finance, folderId 4012)
+  2026-08-26 06:02:11.870 Trace SAPInvoicePoster Activity 'Get SAP Credential' started
+  2026-08-26 06:02:12.055 Info  SAPInvoicePoster Resolving Orchestrator asset 'SAP_Credentials'
+  2026-08-26 06:02:12.330 Error SAPInvoicePoster UiPath.Core.Activities.OrchestratorHttpException: The remote server returned an error: (404) Not Found. Asset 'SAP_Credentials' not found.
+  2026-08-26 06:02:12.345 Error SAPInvoicePoster Job faulted with an unhandled exception. Execution stopped.
+  ```
+
+  `./config.json`:
+  ```json
+  {
+    "process": "SAPInvoicePoster",
+    "runtimeFolder": "Finance",
+    "assets": {
+      "SAP_Credentials": { "type": "Credential", "assetFolder": "Shared" }
+    }
+  }
+  ```
+
+  Then diagnose why the asset lookup failed and write your analysis to
+  `./diagnosis.md`. Your diagnosis must name the asset, explain the
+  folder-scope mismatch (robot runs in one folder, the asset is expected in
+  another), and give a concrete remediation.
+
+  Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "The execution.log fixture was written to disk"
+    path: "execution.log"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "The config.json fixture was written to disk"
+    path: "config.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "The agent produced a diagnosis.md file"
+    path: "diagnosis.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Core outcome: names the asset and identifies the 404 / not-found symptom.
+  - type: file_contains
+    description: "Diagnosis names the asset and the not-found symptom"
+    path: "diagnosis.md"
+    includes:
+      - "SAP_Credentials"
+      - "404"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The root cause is a folder-scope mismatch (both folders referenced) and a
+  # concrete remediation is present.
+  - type: file_check
+    description: "Diagnosis identifies the folder-scope mismatch and a remediation"
+    path: "diagnosis.md"
+    patterns:
+      - pattern: '(?i)Finance'
+        must_match: true
+      - pattern: '(?i)Shared'
+        must_match: true
+      - pattern: '(?i)folder|scope|mis-?scoped'
+        must_match: true
+      - pattern: '(?i)move|create|re-?scope|same folder|correct folder|Finance folder'
+        must_match: true
+    weight: 3.0
+    pass_threshold: 1.0

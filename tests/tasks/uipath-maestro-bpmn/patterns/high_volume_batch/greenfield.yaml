@@ -1,0 +1,47 @@
+task_id: skill-bpmn-high-volume-batch
+description: >
+  A nightly batch fans out per item and aggregates. Grades per-item isolation
+  via a multi-instance container, aggregation after the block completes, and a
+  summary produced on both outcomes. The prompt never names the pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 26
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `InvoiceBatch/InvoiceBatch.bpmn` for this process:
+
+  Each night a list of invoices is fetched and every invoice is processed
+  independently of the others, several at a time. One bad invoice must not stop
+  the rest. When they have all finished, the results are totalled and a summary
+  is sent to finance. The run then ends as either completed or failed depending
+  on whether it met its policy, and finance gets the summary either way.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "InvoiceBatch/InvoiceBatch.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Load-bearing mechanisms of the pattern are present"
+    command: "python3 $TASK_DIR/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
