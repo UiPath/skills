@@ -33,10 +33,10 @@ For file-based authoring, complete coherent BPMN DI before the first final
 uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-The `validate` command runs the canvas rules offline (it was added to the CLI in
-UiPath/cli#3135). If your CLI reports `validate` as an unknown command, or it
-clearly runs only the deploy-readiness checks and not the structural rules, the
-installed CLI predates that change — update to the latest:
+The `validate` command runs the canvas rules offline. If your CLI reports
+`validate` as an unknown command, or it clearly runs only the deploy-readiness
+checks and not the structural rules, the installed CLI is too old — update to
+the latest:
 
 ```bash
 npm install -g @uipath/cli@latest   # or: bun add -g @uipath/cli
