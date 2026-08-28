@@ -13,7 +13,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Builders** — [BpmnBuilder](#bpmnbuilder-class) · [ScopeBuilder](#scopebuilder-class) · [SubProcessBuilder](#subprocessbuilder-class)
 
-**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
+**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ReceiveMessageOpts](#receivemessageopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
 **Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface)
 
@@ -118,6 +118,11 @@ declare abstract class ScopeBuilder {
      */
     executeApiWorkflow(id: string, opts: OrchestratorOpts): this;
     /**
+     * Execute a **business rule** and wait for it (`Orchestrator.BusinessRules`, on a
+     * `bpmn:businessRuleTask`).
+     */
+    businessRule(id: string, opts: OrchestratorOpts): this;
+    /**
      * Add an item to an Orchestrator **queue** (`Orchestrator.CreateQueueItem`, or
      * `Orchestrator.CreateAndWaitForQueueItem` when `wait` is set).
      */
@@ -127,6 +132,11 @@ declare abstract class ScopeBuilder {
      * `uipath:activity` / `Actions.HITL`).
      */
     humanTask(id: string, opts: HumanTaskOpts): this;
+    /**
+     * Wait for an internal message from another Maestro process
+     * (`Maestro.ReceiveMessageEvent` on a `bpmn:intermediateCatchEvent`).
+     */
+    receiveMessage(id: string, opts: ReceiveMessageOpts): this;
     /**
      * ANY registry-backed node, by extension type — the generic form the typed
      * methods are sugar over.
@@ -195,6 +205,10 @@ export interface StartOpts {
     message?: string;
     /** Start on a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
+    /** Also declare this timed start as a platform TRIGGER (`Intsvc.TimerTrigger`). */
+    trigger?: true | {
+            outputVar?: string;
+        };
 }
 ````
 
@@ -494,6 +508,26 @@ export interface HumanTaskOpts extends ActivityOpts {
 }
 ````
 
+## ReceiveMessageOpts (interface)
+
+````ts
+/** Options for `.receiveMessage()` — `Maestro.ReceiveMessageEvent`. */
+export interface ReceiveMessageOpts extends ActivityOpts {
+    /** Display name the designer shows on the event. */
+    name?: string;
+    /** The message name to wait for — the type's required `name` context field. */
+    message: string;
+    /** Correlation reference matching this receive to its sender. */
+    reference: string;
+    /** Variable the typed response lands in. Defaults to `<id>_response`. */
+    outputVar?: string;
+    /** `=`-expression that skips the event when truthy. */
+    skipCondition?: string;
+    /** There is deliberately NO `outputs` here, unlike `.humanTask()`. */
+    readonly outputs?: never;
+}
+````
+
 ## ActivityNodeOpts (interface)
 
 ````ts
@@ -639,6 +673,16 @@ export type BpmnNode = {
     id: string;
     name?: string;
     event?: EventDef;
+    /**
+     * A registry-backed TRIGGER declaration on this event, on top of its event
+     * definition — see `StartOpts.trigger`. The two are orthogonal halves
+     * of one element: the definition schedules, this names the node type and
+     * declares the payload variable.
+     */
+    trigger?: {
+        type: string;
+        outputVar?: string;
+    };
 } | {
     kind: 'boundaryEvent';
     id: string;

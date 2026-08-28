@@ -1,7 +1,7 @@
 # Diagnose — Investigate failed or misbehaving flow runs
 
 <!--skill-flavor:single-nested-intro:start-->
-Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout). Requires `uip login`.
+Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (missing `=js:`, misshapen nodes, HITL-stuck, reused reference IDs, single-nested layout). Requires `uip login`.
 <!--skill-flavor:single-nested-intro:end-->
 
 > **Where you came from / where to go next.** Diagnose is downstream of Operate (run faulted → diagnose) and points back to Author for the underlying fix (diagnose → re-author → re-ship). Re-running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md); building/editing the `.flow` file lives in [author/CAPABILITY.md](../author/CAPABILITY.md).
@@ -15,7 +15,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 - Inspect runtime variable state at the time of failure
 - Map a faulting element ID back to a node in the `.flow` file
 - Stream verbose traces for execution timeline
-- Recognize known failure modes (MST-9107 missing `=js:`, MST-9061 format skipped, etc.)
+- Recognize known failure modes (missing `=js:` prefix, `flow format` skipped, etc.)
 
 ## Critical rules
 
@@ -40,8 +40,8 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | **See data state at the time of failure** | [troubleshooting-guide.md — Step 3 Fetch runtime variable state](references/troubleshooting-guide.md#step-3--fetch-runtime-variable-state) |
 | **Map a faulting element ID to a `.flow` node** | [troubleshooting-guide.md — Step 4 Correlate with the flow definition](references/troubleshooting-guide.md#step-4--correlate-with-the-flow-definition) |
 | **Pull verbose execution timeline** | [troubleshooting-guide.md — Step 5 Traces](references/troubleshooting-guide.md#step-5--traces-last-resort) |
-| **Identify a `vars.X.output.Y` literal-string failure** | [failure-modes.md — MST-9107](references/failure-modes.md#mst-9107--js-prefix-missing) |
-| **Identify misshapen Studio Web nodes** | [failure-modes.md — MST-9061](references/failure-modes.md#mst-9061--misshapen-rectangle-nodes-in-studio-web) |
+| **Identify a `vars.X.output.Y` literal-string failure** | [failure-modes.md — `=js:` prefix missing](references/failure-modes.md#js-prefix-missing) |
+| **Identify misshapen Studio Web nodes** | [failure-modes.md — Misshapen nodes](references/failure-modes.md#misshapen-rectangle-nodes-in-studio-web) |
 | **Diagnose a hung HITL node** | [failure-modes.md — HITL `completed` port unwired](references/failure-modes.md#hitl-completed-port-unwired) |
 | **Diagnose a connector silent fault** | [failure-modes.md — Reused reference ID](references/failure-modes.md#reused-reference-id--cross-connection-id-leakage) |
 <!--skill-flavor:single-nested-task-row:start-->
@@ -64,7 +64,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 - [troubleshooting-guide.md](references/troubleshooting-guide.md) — diagnostic priority ladder (incidents → variables → flow correlation → traces) and full `instance` / `incident` CLI reference
 <!--skill-flavor:single-nested-reference-entry:start-->
-- [failure-modes.md](references/failure-modes.md) — pattern catalog for known recurring failures: MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout, "validate passes / debug faults"
+- [failure-modes.md](references/failure-modes.md) — pattern catalog for known recurring failures: missing `=js:`, misshapen nodes, HITL-stuck, reused reference IDs, single-nested layout, "validate passes / debug faults"
 <!--skill-flavor:single-nested-reference-entry:end-->
 
 ### Cross-capability (shared)
@@ -72,4 +72,4 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 - [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `instance` / `incident` / `job` subcommands
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — `--folder-key` requirement, login state, JSON output shape
 - [shared/file-format.md](../shared/file-format.md) — to correlate faulting element IDs back to `.flow` nodes
-- [shared/node-output-wiring.md](../shared/node-output-wiring.md) — referenced from MST-9107 failure mode
+- [shared/node-output-wiring.md](../shared/node-output-wiring.md) — referenced from the missing-`=js:` failure mode

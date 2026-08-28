@@ -1,0 +1,59 @@
+task_id: skill-flow-datafabric-smoke-file-activities
+description: >
+  Smoke: DF Flow connector file activities — Download + Create + Upload +
+  Delete wired against the `file1` FILE field on FlowCodeEvalEntity.
+  Exercises cross-record file transfer: Download from a fixed source record,
+  Create a new destination record, Upload the downloaded file to the new
+  record (typed file variable bridges download → upload; recordId bound to
+  create output), then Delete the file from the new record. Presence +
+  wiring enforcement lives in the verifier.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice,]
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 2400
+  task_timeout: 5400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a Flow that transfers a file between two Data Fabric records on the
+  `FlowCodeEvalEntity` entity, `file1` field. Do NOT indirect the entity name
+  or field name through workflow variables. Chain four operations in order:
+
+  1. DownloadFileFromRecordFieldV2 — source recordId is fixed:
+     `8B4A3EEA-5E92-F111-9B33-00224822208B`. Assign the download output to a
+     workflow-level variable of type `file`.
+  2. CreateEntityRecord — create a new FlowCodeEvalEntity record. Populate
+     the body with plausible sample values on at least `title` (STRING),
+     `description` (MULTILINE_TEXT), and `score` (DECIMAL). Deterministic
+     literals are fine.
+  3. UploadFileToRecordFieldV2 — bind the multipart file input to the typed
+     file variable from step 1; bind recordId to the create activity's
+     output Id (do NOT hard-code).
+  4. DeleteFileFromRecordFieldV2 — bind recordId to the same create activity
+     output Id used in step 3.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .flow has upload + download + delete file-record-field nodes on FlowCodeEvalEntity/file1 and reuses a typed file variable"
+    command: "python3 $TASK_DIR/check_smoke_file_activities.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

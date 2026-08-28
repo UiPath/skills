@@ -2,7 +2,7 @@
 
 How to reference one node's output (or any `$vars.*` value) from another node's input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
 
-> **Read this before** writing any field that needs to reference a previous node's output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of "the value at runtime was the literal string `vars.X.output.Id`" failures (MST-9107).
+> **Read this before** writing any field that needs to reference a previous node's output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of "the value at runtime was the literal string `vars.X.output.Id`" failures.
 
 ---
 

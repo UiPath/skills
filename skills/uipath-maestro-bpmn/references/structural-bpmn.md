@@ -275,11 +275,11 @@ Payload shapes the canvas serializes:
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
-  A mid-flow wait for an inbound message is a
+  A mid-process wait for an inbound message is a
   `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
   the registry-provided `Maestro.ReceiveMessageEvent` payload under
   `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
-  Do not model a mid-flow receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
+  Do not model a mid-process receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
   start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
@@ -337,18 +337,36 @@ UiPath-specific retry and error-mapping metadata live inside an activity's
 </uipath:retry>
 <uipath:errorMapping version="v1">
   <uipath:error id="Mapped_ServiceUnavailable" errorRef="Error_ServiceUnavailable"
-                priority="1" condition="=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;"
+                priority="1" condition="=vars.Error.code == &quot;SERVICE_UNAVAILABLE&quot;"
                 detail="Service unavailable" retryable="true" />
 </uipath:errorMapping>
 ```
 
 - `uipath:retry` attributes: `maxRetryCount`, `retryBackoff`, `retryBackoffType`,
   `maxDuration`, `exponentialBase`, `retryAllErrors`. Do not use stale aliases
-  (`maxAttempts`, `interval`).
+  (`maxAttempts`, `interval`). `retryAllErrors="false"` with no
+  `uipath:errorDefinition` children retries nothing at all.
 - `uipath:error` (mapping) fields: `id`, `errorRef`, `priority`, `condition`,
   `detail`, `retryable` (`true`/`false`). Conditions read the runtime error via
-  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;
+  `vars.Error` (capital `E`, lowercase fields — see
+  [expression-authoring.md](expression-authoring.md#stored-expression-shape))
+  and contain no assignments. Do not put `code=` on `uipath:error`;
   model the code on `bpmn:error errorCode` and reference via `errorRef`.
+
+### Choosing an error-handling construct
+
+Three constructs catch failures at different scopes. A failure tries them in
+order, so pick by intent:
+
+- **`uipath:retry` on the activity** — transient failures, resolved in place.
+- **Error boundary event on the activity** — recover and continue. The token
+  leaves the failed step onto a branch that rejoins the main path.
+- **Error event subprocess in the container** — escalate and terminate.
+  Code-specific nets match before a catch-all.
+
+Unhandled failures propagate outward container by container, so one net at
+process level covers every nested subprocess. Do not author a net per
+container.
 
 ## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
 

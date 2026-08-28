@@ -37,14 +37,14 @@ uip traces feedback create \
 | `--category` | No | Repeatable. Built-in values: `"Output"`, `"Agent Error"`, `"Agent Plan Execution"` |
 | `--agent-id` | No | Agent reference GUID |
 | `--agent-version` | No | Max 100 chars |
-| `--tenant` | No | Defaults to authenticated tenant |
+| `--profile <name>` | No | Named login profile. Other tenant: `uip login tenant set <tenant>` first (`--tenant` is deprecated) |
 
 ## get
 
-`--folder-key` is optional. Positional `<id>` required.
+Positional `<id>` and `--folder-key` required.
 
 ```bash
-uip traces feedback get <feedback-id> --output json
+uip traces feedback get <feedback-id> --folder-key <folder-key> --output json
 ```
 
 ## list
@@ -88,7 +88,7 @@ uip traces feedback list detailed \
   --output json
 ```
 
-Additional flags over `list`: `--since <duration>`, `--after <ISO>`, `--before <ISO>`, `--category-id <guid>` (repeatable), `--sort-by <createdAt|updatedAt>`, `--sort-order <asc|desc>`. Max 200 items.
+Additional flags over `list`: `--since <duration>`, `--after <ISO>`, `--before <ISO>`, `--category-id <guid>` (repeatable), `--sort-by <createdAt|updatedAt>` (default `createdAt`), `--sort-order <asc|desc>` (default `desc`). Max 200 items.
 
 ## update
 

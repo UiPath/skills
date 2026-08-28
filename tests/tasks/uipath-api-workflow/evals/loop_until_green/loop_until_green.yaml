@@ -1,0 +1,70 @@
+task_id: skill-api-workflow-evals-loop-until-green
+description: >
+  Diagnose: an API workflow project ships a correct `evals/` dataset and a
+  workflow with two bugs — the Response emits `Grade` while `output.schema` and
+  every row say `grade`, and the threshold is `> 60` instead of `>= 60`. The
+  agent must run the rows, score them the way the Evaluations panel does, and
+  fix the WORKFLOW until all pass, without touching the dataset.
+
+  This is the test-until-green loop of references/testing-and-evals.md §3 and
+  its two guardrails: trust the evaluator's strict deep-equal over an eyeballed
+  "the grade looks right" (the casing bug is invisible in the CLI's PascalCased
+  `Data` — `grade` and `Grade` both print as `Grade` — so an agent that reads
+  `Data` instead of the raw output declares green while the panel shows red),
+  and never "fix" a correct test to match a wrong workflow
+  (check_evals_untouched.py). Two independent bugs so a single lucky fix does
+  not pass. Local-only, no tenant.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:generate, feature:eval]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/loop_until_green/seed.py"
+    timeout: 120
+
+initial_prompt: |
+  The API workflow project in ./GradeCheck has an evaluation dataset under
+  evals/ that describes its intended behavior. The dataset is correct — do not
+  change anything under evals/.
+
+  Run the evaluations and fix the workflow until every case passes.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "Behavioral: every row passes when run and scored as the panel scores it (raw output, strict deep-equal) — both bugs fixed"
+    command: python3 $TASK_DIR/../_shared/check_rows_pass.py GradeCheck --min-rows 3
+    timeout: 300
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Guardrail: the dataset and evaluator are byte-for-byte the seeded files — the workflow was fixed, not the tests"
+    command: python3 $TASK_DIR/check_evals_untouched.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The repaired workflow validates"
+    command: 'uip api-workflow validate GradeCheck/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent drove the loop with the local runner (a shell loop over the rows counts once)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 16
+  max_turns: 45

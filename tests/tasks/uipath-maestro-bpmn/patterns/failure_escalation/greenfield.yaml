@@ -1,0 +1,51 @@
+task_id: skill-bpmn-failure-escalation
+description: >
+  A production process needs a safety net for failures nothing else recovered.
+  Grades the event subprocess, classification on the engine-seeded error
+  context, and a named outcome on every branch. The prompt never names the
+  pattern.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `PayrollRun/PayrollRun.bpmn` for this process:
+
+  A payroll run fetches timesheets, calculates pay, and posts it to the finance
+  system. Retries already handle blips.
+
+  Add the catch-all for everything retries cannot fix: any step failing anywhere
+  in this process must be caught once, centrally, without wiring anything onto
+  the individual steps. Bad data needs a person to look at it; an outage needs
+  operations told. Each of those ends the run with its own recorded outcome, so
+  a handled failure is never mistaken for a clean run.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "PayrollRun/PayrollRun.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Load-bearing mechanisms of the pattern are present"
+    command: "python3 $TASK_DIR/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

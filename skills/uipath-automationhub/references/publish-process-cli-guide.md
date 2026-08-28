@@ -24,6 +24,8 @@ Default to the entry whose `Name` contains "Business Process" (case-insensitive)
 uip ah automations schema get --idea-flow-id $IDEA_FLOW_ID --destination ./ah-schema.json --output json
 ```
 
+> 📁 **Working files (`ah-schema.json`, `ah-answers.json`, and any document files you generate for upload) go in the current working directory — never `/tmp`.** Hosted runtimes (e.g. the Delegate) sandbox their file tools to the session workspace: a file written to `/tmp` is readable by the CLI but every file-tool access to it fails with an access-denied error.
+
 Read `./ah-schema.json`: the field catalog is under `properties.schema.properties` (Assessment Type > Section > Question; enums carry `answer_option` codes) and `user_inputs` is the payload template.
 
 > ⚠️ **Do NOT submit `user_inputs` verbatim** — its example values are placeholders the API rejects (category `1`, placeholder answer codes, example emails). Shape only.
@@ -43,6 +45,8 @@ First **enumerate the tenant's actual required set from the schema file**: every
 | **Owner email** | `uip ah users list` → must be a listed `Email` (prefer `IsActive: 1`). Default to the signed-in user; confirm. |
 | **Submitter email** | Same as owner; usually the same person. |
 | **Application questions** (when tenant-required) | `uip ah applications list` → valid entries; if the material leaves systems unconfirmed, ask — never record an app the material does not support. Follow the question's own schema shape. |
+
+The discovery commands are independent — run the ones you need (`categories get`, `users list`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
 
 Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (the CLI accepts the whole schema-get document or just the answers map). Wrapping rules unchanged: most fields `{ "value": <v> }`; owner/submitter are **direct strings**; enum codes from that field's own `enum`; integers as numbers. Show the user a concise preview and get a confirm before writing.
 
@@ -78,17 +82,16 @@ When the caller wants the process linked to a Studio Web solution (or supplies o
 
 ## Step 7: Verify, then report
 
+Both verification reads are independent — run them in **one shell invocation**:
+
 ```bash
 uip ah documents list $PROCESS_ID --output json
-```
-
-Every attached document id must appear (file-backed ones with a `FileId`). Missing → report it failed; never claim an attach you didn't see in this list.
-
-The report **MUST end with both View deep links**. The URL segment is `process_slug` — fetch it:
-
-```bash
 uip ah automations get $PROCESS_ID --all-fields --output json   # read process_slug from Data
 ```
+
+Every attached document id must appear in the documents list (file-backed ones with a `FileId`). Missing → report it failed; never claim an attach you didn't see in this list.
+
+The report **MUST end with both View deep links** — the URL segment is `process_slug` from the `--all-fields` record.
 
 ```
 Published to Automation Hub:

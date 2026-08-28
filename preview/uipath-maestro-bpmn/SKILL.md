@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ b384859. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ efd27ce. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -131,6 +131,7 @@ uip maestro bpmn validate <Name>.bpmn --output json
 | `.binding(id, { name?, value?, resource?, propertyAttribute? })` | `uipath:binding` (top level only) — an identifier supplied per environment, read as `=bindings.<id>` |
 | `.http(id, { url, method?, headers?, parameters?, body?, name?, outputVar?, skipCondition?, retry?, loop? })` | `bpmn:sendTask` (`uipath:activity` / `Intsvc.UnifiedHttpRequest`) — an HTTP request. See **HTTP request** below. |
 | `.humanTask(id, { app, title?, actions?, input?, outputs?, appVersion?, key?, … })` | `bpmn:userTask` (`uipath:activity` / `Actions.HITL`) — a task a person completes. See **Human task** below. |
+| `.businessRule(id, { process, folder?, input?, outputs?, … })` | `bpmn:businessRuleTask` (`uipath:activity` / `Orchestrator.BusinessRules`) — executes a business rule. Despite the element, this is a **job start**, not a decision table. See **Orchestrator** below. |
 | `.sequenceFlow(source, target, { id?, name?, condition? })` | `bpmn:sequenceFlow` |
 
 - **Timers** accept an ISO-8601 string shorthand (`timer: 'PT15M'`) or a full
@@ -242,7 +243,7 @@ flow-debug Invoice.bpmn --mock --virtual-time --hitl-response 'approve={"Action"
 
 ## Orchestrator: start work elsewhere
 
-Six methods over nine registry types — the sync/async and wait choices are
+Seven methods over ten registry types — the sync/async and wait choices are
 options, not separate methods.
 
 | Method | What it starts |
@@ -253,6 +254,7 @@ options, not separate methods.
 | `.startCaseProcess(id, { …, async? })` | a case-management process (call activity) |
 | `.executeApiWorkflow(id, opts)` | an API workflow, fire-and-forget |
 | `.queueItem(id, { queue, folder, item?, wait? })` | adds an Orchestrator queue item |
+| `.businessRule(id, opts)` | a business rule, and waits |
 
 ```ts
 export default bpmn('nightly')
@@ -275,8 +277,16 @@ export default bpmn('nightly')
   the runtime refuses to dispatch without it.
 - `.startAgent()` needs its process and folder supplied as **bindings**; the SDK
   declares them for you from the plain names you pass, so just pass names.
-- **Business rules are not available** and are tracked separately — see
-  `docs/BPMN_BUSINESS_RULES_PLAN.md`.
+- `.businessRule()` is in this table, not a separate section, because that is what
+  it is. `Orchestrator.BusinessRules` rides a `bpmn:businessRuleTask` and its label
+  reads "Execute business rule", so it looks like a DMN decision table — but its
+  registry spec is `releaseKey`/`folderPath`/`name` + `JobArguments`, identical to
+  `.startProcess()`. `process` names a package whose Orchestrator process type is
+  `BusinessRules`; the decision logic lives inside that package, not in your `.bpmn`.
+  Nothing to do with the Case SDK's `rule()`, which declares stage lifecycle
+  conditions. Its response lands in `<id>_businessRuleResponse` — pinned by the SDK,
+  not derived, because the registry's output name for this type is its
+  `[Preview]` label. The extension type is marked `[Preview]`: its shape can change.
 - `metadata.*` (e.g. `metadata.instanceId`) is **empty in a local run**, so an
   `item`/`input` field built from it silently arrives as nothing. Use `vars.*` or a
   literal when you want to see the value in a `flow-debug` dry run.
@@ -339,17 +349,16 @@ export default bpmn('notify')
 
 ## Importing an existing `.bpmn`
 
-`bpmn-decompile <Name.bpmn>` writes `<Name>.bpmn.ts` whose default export
+`npx flow-sdk bpmn decompile <Name.bpmn>` writes `<Name>.bpmn.ts` whose default export
 recompiles to an **equivalent** process — every element, id, extension type,
 graph edge and metadata row survives. Use it to bring a process authored in
 Studio Web (or handed over as a file) under SDK authoring.
 
-There is no `uip maestro bpmn decompile`; run the package bin. It is installed into
-`node_modules/.bin`, which is not always on `PATH` — `npx` finds it either way:
+Use the package's family-first CLI for the complete round-trip:
 
 ```bash
-npx bpmn-decompile Invoice.bpmn                 # -> Invoice.bpmn.ts
-npx bpmn-compile   Invoice.bpmn.ts -o out.bpmn  # equivalent to Invoice.bpmn
+npx flow-sdk bpmn decompile Invoice.bpmn                 # -> Invoice.bpmn.ts
+npx flow-sdk bpmn compile   Invoice.bpmn.ts -o out.bpmn  # equivalent to Invoice.bpmn
 ```
 
 ### Editing an existing `.bpmn`: decompile, edit, compile, **merge**
@@ -360,11 +369,11 @@ alone — add a merge step. Recompiling rewrites every element in the file, incl
 ones you never looked at; merging rewrites only the ones you actually changed.
 
 ```bash
-npx bpmn-decompile Invoice.bpmn                             # -> Invoice.bpmn.ts
-npx bpmn-compile   Invoice.bpmn.ts -o baseline.bpmn         # BEFORE editing — keep this
+npx flow-sdk bpmn decompile Invoice.bpmn                             # -> Invoice.bpmn.ts
+npx flow-sdk bpmn compile   Invoice.bpmn.ts -o baseline.bpmn         # BEFORE editing — keep this
 #   ... make your change in Invoice.bpmn.ts ...
-npx bpmn-compile   Invoice.bpmn.ts -o edited.bpmn
-npx bpmn-merge     Invoice.bpmn edited.bpmn --baseline baseline.bpmn -o Invoice.bpmn
+npx flow-sdk bpmn compile   Invoice.bpmn.ts -o edited.bpmn
+npx flow-sdk bpmn merge     Invoice.bpmn edited.bpmn --baseline baseline.bpmn -o Invoice.bpmn
 uip maestro bpmn format Invoice.bpmn                        # only if you ADDED elements
 ```
 
@@ -390,7 +399,7 @@ preserved.
   `var` and `source` are intact, so the mapping still resolves the same way.
 
   It is harmless to the runtime. It matters if something downstream compares XML
-  attribute-by-attribute — then a round trip is not a no-op. `bpmn-merge` above is
+  attribute-by-attribute — then a round trip is not a no-op. `flow-sdk bpmn merge` above is
   the answer: on an element you did not edit, the row comes from the original and
   keeps its name.
 
@@ -409,6 +418,47 @@ preserved.
 - Types with no typed method decompile to `.activity(id, type, { … })`, the generic
   form. That is faithful, just less readable than the typed methods.
 - Comments and method order are not preserved — the source is regenerated.
+
+## Project package files (`project.uiproj`, `operate.json`, …)
+
+The SDK emits the `.bpmn` and nothing else. A Maestro BPMN **project** — what packs,
+uploads, publishes, or deploys — also needs five local metadata files alongside it:
+
+    project.uiproj  operate.json  entry-points.json  bindings_v2.json  package-descriptor.json
+
+You author these yourself. Three details are enforced, and each has a plausible-looking
+wrong answer that still parses as JSON:
+
+- **`project.uiproj`** uses lowercase `"main"` pointing at the BPMN file.
+- **`operate.json`** uses `"main"` with the **bare BPMN filename** — *not* a
+  `/content/<file>.bpmn#<start-event-id>` entry-point path — plus
+  `"contentType": "ProcessOrchestration"`. Mixing up these two `main` formats is the
+  single most common mistake here, because `entry-points.json` genuinely does use the
+  `#<start-event-id>` form.
+- **`package-descriptor.json`** uses a top-level `"content"` array of `content/<file>`
+  entries. Not `contentFiles`, and not a CLI scaffold `"files"` map.
+
+`entry-points.json` carries one entry per root start event, its `filePath` written
+`/content/<file>.bpmn#<the start event's id>` — the id you gave `.startEvent()`.
+
+A minimal, placeholder-safe set for a process whose start event is `start`:
+
+```jsonc
+// project.uiproj
+{ "name": "Demo", "main": "Demo.bpmn", "designOptions": { "projectType": "ProcessOrchestration" } }
+// operate.json          — bare filename, NOT /content/Demo.bpmn#start
+{ "main": "Demo.bpmn", "contentType": "ProcessOrchestration" }
+// entry-points.json     — here the #<start-event-id> form IS correct
+{ "entryPoints": [ { "filePath": "/content/Demo.bpmn#start", "input": [], "output": [] } ] }
+// bindings_v2.json
+{ "version": "2.0", "resources": [] }
+// package-descriptor.json
+{ "content": ["content/Demo.bpmn", "content/bindings_v2.json",
+              "content/entry-points.json", "content/operate.json"] }
+```
+
+Treat all five as **derived** from the `.bpmn`: when the process changes its start
+event id, entry points, or root bindings, refresh them rather than hand-patching.
 
 ## Notes
 

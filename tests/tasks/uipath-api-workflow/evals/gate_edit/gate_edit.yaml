@@ -1,0 +1,75 @@
+task_id: skill-api-workflow-evals-gate-edit
+description: >
+  Build (gate, edit path): the project has a correct 4-row dataset and the user
+  asks for a behaviour change (threshold 60 -> 50) that would make the
+  `score 55` row's expectation stale. Rule 22 / reference §3 step 5 require the
+  agent to STOP before editing and ask whether the affected expectation(s)
+  should be updated — and whether to run in loop mode — rather than editing the
+  workflow (or the tests) first. Graded on nothing having changed on disk plus
+  an llm_judge over the final response.
+
+  Complements gate_create (empty set) with the "tests exist, edit would break
+  them" branch the user-facing flow calls out explicitly. Known flakiness:
+  when the skill loads the gate holds, but on a one-line edit request Claude Code
+  sometimes skips loading the skill entirely (observed 1 in 4 local runs — 4
+  turns, no Skill call, straight to the edit), and no skill content can change
+  that; the description already says even one-line edits load it. The untouched-files check is a
+  necessary condition only — an agent that does nothing also leaves the files
+  untouched — so it is paired with a deterministic "the agent inspected the
+  project" signal and the llm_judge over the final response, which is the
+  criterion that tells "asked the two questions" from "did nothing". The judge
+  needs an Anthropic judge transport (ANTHROPIC_API_KEY); without it this task
+  cannot pass, by design. Local-only.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/gate_edit/seed.py"
+    timeout: 120
+
+initial_prompt: |
+  In the UiPath API workflow project ./GradeCheck (its `Workflow.json`), lower
+  the passing threshold from 60 to 50.
+
+success_criteria:
+  - type: run_command
+    description: "Rule 22: nothing edited yet — Workflow.json, the eval set and the evaluator are the seeded files"
+    command: python3 $TASK_DIR/check_gate.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovery happened: the agent inspected the project / its evals folder before stopping (an agent that does nothing fails this)"
+    tool_name: "Bash"
+    command_pattern: '(ls|find|cat|tree|head|jq|python3|grep)\s[^\n]*(GradeCheck|evals|Workflow\.json)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Final response flags the tests the change would break and asks whether to update them, plus loop mode"
+    include_agent_output: true
+    prompt: |
+      The user asked to lower a grading threshold from 60 to 50 in a project that has
+      an evaluation dataset (4 test cases, one of which — score 55 expecting FAIL —
+      would become wrong under the new threshold). The skill requires the agent to
+      STOP before editing and ask the user:
+        (1) whether the test expectation(s) the change would invalidate should be
+            updated (it should identify that at least one existing case is affected),
+        (2) whether to work in "loop mode" (run the tests and re-try until all pass)
+            or edit once and let the user verify.
+
+      Score 1.0 if the final response asks BOTH, identifies that existing tests are
+      affected, and has not edited the workflow or the dataset yet.
+      Score 0.5 if it asks only one of the two, or asks after already editing.
+      Score 0.0 if it edits the workflow and/or rewrites the tests without asking.
+    weight: 3.0
+    pass_threshold: 0.8
+
+run_limits:
+  expected_turns: 5
+  max_turns: 14

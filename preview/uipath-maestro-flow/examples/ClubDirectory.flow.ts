@@ -10,7 +10,7 @@
  *     $vars.groups.output.length           // a member of the collection
  *     $vars.each.currentItem.displayName   // the loop item, typed from the collection
  *
- * Reading a field off the collection WITHOUT indexing is refused (FC510) — it is
+ * Reading a field off the collection WITHOUT indexing is refused — it is
  * undefined at run time. `connection` / `folder` are `bindings.json` ids (see
  * that file). Narrow a call with the operation's own `where` / `pageSize`
  * parameters — one call is one page.
@@ -42,7 +42,7 @@ export default flow('club-directory')
 
   // Iterate the collection — `currentItem` is typed from what it holds, so the
   // body's field reads are CHECKED. A loop runs for effect: its results are not
-  // readable after it, so what gates the read below is `check`/`flow-check`.
+  // readable after it, so what gates the read below is `check`.
   .loop('eachClub', out('groups'), (body) =>
     body.step('poster', script({
       code: 'return { line: "This week: " + $vars.eachClub.currentItem.displayName };',

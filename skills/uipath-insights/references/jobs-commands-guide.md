@@ -41,7 +41,7 @@ All `jobs` subcommands return:
 }
 ```
 
-There is no `Pagination` field and no `Instructions` field on a successful jobs response. Both appear on `filter-*` commands only.
+There is no `Pagination` field and no `Instructions` field on a successful jobs response. The `filter-*` and alert commands carry `Instructions`, and their list subcommands also carry `Pagination`.
 
 `Code` identifies the subcommand that produced the response:
 
@@ -80,7 +80,7 @@ Null, empty, or zero across every field on a `Success` response means the query 
 
 All endpoints return the same shape. Which fields are populated depends on the endpoint.
 
-**Keys inside `Data` are PascalCase on the wire.** The CLI PascalCases every `Data` key before printing, so read `JobsCount`, not `jobsCount`. The type below is the SDK's `JobsResponse` in its camelCase source form. Every field is optional, so a field the endpoint does not populate may be absent or null.
+**Keys inside `Data` are PascalCase in the CLI's JSON output.** The CLI PascalCases every `Data` key before printing, so read `JobsCount`, not `jobsCount`. The type below is the SDK's `JobsResponse` in its camelCase source form. Every field is optional, so a field the endpoint does not populate may be absent or null.
 
 ```typescript
 interface JobsResponse {

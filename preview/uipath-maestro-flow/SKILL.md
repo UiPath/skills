@@ -5,11 +5,11 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ b384859. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ efd27ce. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
-`references/`; statically checkable rules belong in the SDK or flow-check.
+`references/`; statically checkable rules belong in the SDK's own `check`.
 -->
 
 # UiPath Flow — TypeScript Builder SDK
@@ -224,7 +224,7 @@ payload can exercise downstream wiring, but it is not a subscription witness.
 Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
 them through its error port. Both expose JSON response bodies as parsed values.
 
-Signature: `http({ method?, url, managed, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
+Signature: `http({ method?, url, managed, connection?, folder?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
 ```ts
 .step('getPolicy', http({ method: 'GET', url: policyUrl,
@@ -234,8 +234,8 @@ Signature: `http({ method?, url, managed, headers?, query?, body?, contentType?,
 .step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
 ```
 
-Match `managed` to the scenario's node. A branch is a `branch-<name>` side exit
-routed with `.stepToList`; the main path continues from the default port.
+Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `bindings.json`.
+A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
 
 **Reference: [`references/http.md`](references/http.md)**
 
@@ -612,7 +612,7 @@ export default flow('parent').input({ text: types.string }).output({ clean: type
   .step('normalized', subflow(child, { raw: input('text') })).return({ clean: out('normalized', 'clean') }).build();
 ```
 
-Use a child for a meaningful contract or reuse boundary, not arbitrary splitting or speed.
+Use a child for a meaningful contract or reuse boundary, not arbitrary splitting or speed; children can be reused at any nesting depth.
 Read a child's inputs with `input(...)`: its start node is named `<callerStepId>Start`, so a bare `$vars.raw` is wrong.
 
 **Reference: [`references/subflow.md`](references/subflow.md)**

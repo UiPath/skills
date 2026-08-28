@@ -382,7 +382,7 @@ Then follow [/uipath:uipath-platform — triggers.md > Building Filter Trees fro
 
 | Invalid input | Why it fails | Valid replacement |
 |---|---|---|
-| `"filterExpression": "(contains(subject, 'x'))"` | Legacy format — the CLI now rejects `filterExpression` as an input field (see MST-8802). It is *only* an output in the generated `.flow`. | Build a `filter` tree with a `Contains` leaf. |
+| `"filterExpression": "(contains(subject, 'x'))"` | Legacy format — the CLI now rejects `filterExpression` as an input field. It is *only* an output in the generated `.flow`. | Build a `filter` tree with a `Contains` leaf. |
 | `"filter": "(subject == 'x')"` | `filter` must be an object, not a string. | Structured tree with `filters: [...]`. |
 | `{ "id": "fields.subject", ... }` | `fields.` prefix — use the bare field name from `filterFields.fields[].name`. | `{ "id": "subject", ... }` |
 | `{ "id": "subject", "operator": "contains", ... }` | Operator is case-sensitive — use PascalCase. | `"operator": "Contains"` |
