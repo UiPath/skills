@@ -16,7 +16,7 @@ description: >
   the condition-driven diamond reachability (Triage→{Validate,Enrich}→Join,
   edges retired), both entry rules on Join, and the skeleton task types
   each in its assigned stage.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:agent, feature:case-management-task]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:agent, feature:case-management-task]
 max_iterations: 1
 
 run_limits:

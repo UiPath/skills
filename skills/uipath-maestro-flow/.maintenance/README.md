@@ -36,7 +36,7 @@ references/
     ├── CAPABILITY.md                   ← capability index
     └── references/                     ← diagnose's supporting docs
         ├── troubleshooting-guide.md    ← diagnostic priority ladder
-        └── failure-modes.md            ← pattern catalog (MST-9107, MST-9061, etc.)
+        └── failure-modes.md            ← pattern catalog (missing `=js:`, misshapen nodes, etc.)
 ```
 
 **Recursive pattern.** Skill = `SKILL.md` + `references/`. Capability = `CAPABILITY.md` + `references/`. The same "index next to its references" shape at two scales. Future capabilities (e.g., `governance/`) get the template for free.
@@ -80,7 +80,7 @@ Anchor links are computed exactly as GitHub does — getting them wrong silently
 | --- | --- | --- | --- |
 | `## 5. \`--folder-key\` requirement` | `#5--folder-key-requirement` | `#5---folder-key-requirement` | After `.` strips and backticks strip: `5 --folder-key requirement`. The space between `5` and `--` becomes a dash, joining the two literal dashes from `--folder-key` → 3 dashes |
 | `## Reused reference ID — cross-connection ID leakage` | `#reused-reference-id-cross-connection-id-leakage` | `#reused-reference-id--cross-connection-id-leakage` | The em-dash (`—`) is stripped (non-alphanumeric/space/dash), but the spaces on either side of it survive and both become dashes → 2 dashes |
-| `## MST-9107 — \`=js:\` prefix missing` | `#mst-9107-js-prefix-missing` | `#mst-9107--js-prefix-missing` | Backticks strip from around `=js:`, then the em-dash, `=`, and `:` strip (non-alphanumeric/space/dash). The space before and after the em-dash both survive → 2 consecutive dashes between `9107` and `js` |
+| `## \`variables.nodes[]\` missing → \`$vars.X.output\` resolves to undefined` | `#variablesnodes-missing-varsxoutput-resolves-to-undefined` | `#variablesnodes-missing--varsxoutput-resolves-to-undefined` | Backticks, `.`, `[`, `]`, `$` and the `→` all strip (non-alphanumeric/space/dash). The space before and after the arrow both survive → 2 consecutive dashes between `missing` and `varsxoutput` |
 
 ### Verifying anchor links
 
@@ -251,7 +251,7 @@ The checkers are not currently wired into CI or pre-commit hooks. They are kept 
 
 ## Reachability convention
 
-Plugin docs (`references/author/references/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
+Plugin docs (`references/author/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
 
 The depth checker (`check-depth.sh`) treats folder links as reachability for every `.md` file inside the folder, matching this agent-navigation model. A strict file-link-only reachability check would flag plugin docs as "unreachable" — that's a false negative.
 

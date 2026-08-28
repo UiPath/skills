@@ -1,11 +1,43 @@
 # UIA Starter Guide
 
-Read this file IN FULL before any UI-automation work (Rule 7). Then:
+Read this file from the top THROUGH § Runtime Selector Failure Recovery before any UI-automation work (Rule 7), then STOP — the § Conditional Policies marker below it gates two sections read only when their condition applies. Then:
 
-1. **Verify prerequisites** — minimum package version and upgrade-consent rules: SKILL.md § UIA Prerequisites. If the package cannot be installed, use the [Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) below.
-2. **Read the UIA package's authoring guide IN FULL** — `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`, including the mode-specific section (For Coded Workflows or For XAML Workflows). It owns authoring — window baseline, target capture, common pitfalls, control-specific interaction, Application Card patterns — and routes to the package's task guides and references. It ships with the package: if the package is installed but the file is absent, the installed version predates it — treat as below the minimum version (SKILL.md § UIA Prerequisites).
+1. **Verify prerequisites** — minimum package version and upgrade-consent rules: [§ UIA Prerequisites](#uia-prerequisites) below. If the package cannot be installed, use the [Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) below.
+2. **Read the UIA package's core guide IN FULL** — `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`. It owns the shared UIA law — window baseline, the mandatory target-generation gate, terminology, common pitfalls, control-specific interaction, reading values — and its § Documentation routes to everything else, including the per-mode authoring guides. **Before authoring UIA activities, additionally read your mode's authoring guide IN FULL** (XAML or coded, routed from § Documentation) — during capture-only phases neither mode guide is needed yet. The core guide ships with the package: if the package is installed but the file is absent, the installed version predates it — treat as below the minimum version (§ UIA Prerequisites).
 
-The sections below are the UIA policies this skill owns: running/debugging UIA workflows, the deliverable shape when live capture is unavailable, and publishing Object Repository descriptors as a shared UI Library.
+The sections below are the UIA policies this skill owns: prerequisites and upgrade consent, running/debugging UIA workflows, the deliverable shape when live capture is unavailable, and publishing Object Repository descriptors as a shared UI Library.
+
+---
+
+## UIA Prerequisites
+
+**Required package:** `UiPath.UIAutomation.Activities` — minimum version (`<MIN_VERSION>`): **`26.10.2`**, from the official UiPath NuGet feed (no prerelease flag needed). The `uip rpa uia` CLI, the package docs, and the UIA skills require `<MIN_VERSION>` or newer — before any UIA work, check the installed version in `project.json` under `dependencies`. Do not hardcode the version from memory; this section is the only source of truth.
+
+**Upgrades require explicit user consent.** Never install or upgrade UIA silently. Consent comes from one of:
+
+- **Plan-mode:** approval of a plan whose Task 0 names the upgrade explicitly — both package ID and version. Plan approval IS the consent — do NOT re-ask at execution time.
+- **Interactive mode (no plan):** a direct prompt before `packages install` runs.
+
+| Scenario | Behavior |
+|---|---|
+| No UIA installed, request needs UIA | Ask before installing `<MIN_VERSION>` from the official UiPath feed. |
+| Major-version upgrade (e.g. `25.x` → `26.x`) | Ask. Breaking changes are possible across major versions. |
+| Minor / patch / build upgrade | Ask before installing the newer build. |
+| Already at or above `<MIN_VERSION>` | Proceed without prompting. |
+
+Discovery (non-mutating, no consent required):
+
+```bash
+uip rpa packages versions --package-id UiPath.UIAutomation.Activities --include-prerelease --project-dir "$PROJECT_DIR" --output json
+```
+
+Install / upgrade (mutating — only after consent per the table above):
+
+```bash
+uip rpa packages install --packages 'id=UiPath.UIAutomation.Activities,version=<MIN_VERSION>' --project-dir "$PROJECT_DIR" --output json
+```
+
+Omit `,version=<MIN_VERSION>` to resolve the latest compatible build (at or above `<MIN_VERSION>`).
 
 ---
 
@@ -16,11 +48,11 @@ The sections below are the UIA policies this skill owns: running/debugging UIA w
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
 1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Procedure: the package guide's § Window Baseline (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`).
-2. **Run the workflow:**
+2. **Run the workflow** — always with `--output-filter`, so one call returns the verdict and the workflow's own log instead of hundreds of trace lines (filter expression and the `| tail` trap: [cli-reference.md § Capturing the verdict](cli-reference.md#capturing-the-verdict)):
    ```bash
-   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --output-filter "<verdict filter>"
    ```
-   If the run fails, [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
+   If the run fails, follow [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **cancel the debug session:**
    ```bash
    uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
@@ -49,12 +81,18 @@ When a workflow fails at runtime with a selector error:
 1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
-4. **Run the `uia-improve-selector` skill in recover mode.** Read the package's improve-selector guide (routed from the package guide § Documentation), pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
+4. **Follow the package's recover selector guide** - check ui-automation-guide.md for information on how to perform the recovery. If nothing relevant is found there, check uia-improve-selector-guide.md.
 5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
+**Recovery circuit breaker — two attempts per element.** When the SAME element fails at runtime after two recovery cycles, do not run a third: elements that keep failing recovery typically remount (dialogs, popups, re-rendered panes), and selector hardening cannot converge on them. Re-route that one element instead: re-run the capture flow for it with the CV/semantic fallback enabled (the capture flow's fallback chain owns the mechanics), re-link, and continue the run loop. Count attempts per element, not per run — three failures of one element across runs is the same signal.
+
 ---
+
+## Conditional Policies — read when the condition applies
+
+**Do NOT read past this marker in the initial read.** Read [§ Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) IN FULL the moment a workflow must ship WITHOUT live app access (app not installed, no GUI, capture deferred, or the UIA package cannot be installed — Rule 7a fallback). Read [§ Object Repository as a Published UI Library](#object-repository-as-a-published-ui-library) IN FULL when the task involves publishing or consuming shared Object Repository descriptors.
 
 ## Placeholder-Selector Stub Pattern
 

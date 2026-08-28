@@ -15,7 +15,7 @@ description: >
   (unresolved process → type "rpa", empty data) so the sink stage is not
   empty. Validates and asserts on the trigger nodes, Run's case-entered
   entry, plus the rpa task in Run.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:trigger, feature:timer, feature:multi-trigger, feature:bounded-timer, feature:scheduled-timer]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger, feature:timer, feature:multi-trigger, feature:bounded-timer, feature:scheduled-timer]
 max_iterations: 1
 
 run_limits:

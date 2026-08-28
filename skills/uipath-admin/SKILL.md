@@ -148,5 +148,5 @@ See [key-concepts.md](references/key-concepts.md) for organization hierarchy and
 | Audit pagination | [audit-commands.md](references/audit-commands.md) plus Rule 25 |
 | Troubleshooting | [identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
 | Diagnostic capability index | [diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
-| Failure modes | [failure-modes.md](references/diagnose/references/failure-modes.md) |
-| Diagnostic priority ladder | [troubleshooting-guide.md](references/diagnose/references/troubleshooting-guide.md) |
+| Failure modes | [failure-modes.md](references/diagnose/failure-modes.md) |
+| Diagnostic priority ladder | [troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md) |

@@ -35,4 +35,34 @@ while IFS= read -r f; do
   count=$((count + 1))
 done < <(git grep -lE 'from _shared|import _shared' -- 'tests/tasks/**/*.py')
 
-echo "stage_shared: co-located _shared into ${count} task dir(s)"
+# Pass 2: graders that put a `_shared` DIR itself on sys.path and then import
+# its modules bare (e.g. `sys.path.insert(0, .../"..", "_shared")` followed by
+# `from grader_common import ...`). Co-locating the _shared DIR does not help
+# those — the bare module must be importable, and only the script's own dir is
+# reliably on sys.path. Copy the nearest ancestor _shared's top-level *.py
+# files NEXT TO the grader, where sys.path[0] already points. Nearest matters:
+# e.g. tests/tasks/uipath-review/rpa/_shared (grader_common) must win over the
+# group-level tests/tasks/uipath-review/_shared (scaffold helpers).
+count2=0
+while IFS= read -r f; do
+  dir=$(dirname "$f")
+  case "$dir" in */_shared | */_shared/*) continue ;; esac
+  probe=$dir src=""
+  while [[ "$probe" == tests/tasks/* ]]; do
+    if [ -d "$probe/_shared" ]; then src="$probe/_shared"; break; fi
+    probe=$(dirname "$probe")
+  done
+  [ -n "$src" ] || continue
+  copied=0
+  for py in "$src"/*.py; do
+    [ -e "$py" ] || continue
+    base=$(basename "$py")
+    [ -e "$dir/$base" ] && continue
+    cp "$py" "$dir/$base"
+    copied=1
+  done
+  [ "$copied" -eq 1 ] && count2=$((count2 + 1))
+done < <(git grep -lE 'sys\.path\.insert\(.*_shared' -- 'tests/tasks/**/*.py' \
+           | { xargs grep -LE 'from _shared|import _shared' || true; })
+
+echo "stage_shared: co-located _shared into ${count} task dir(s), module files into ${count2}"

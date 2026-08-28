@@ -2,7 +2,7 @@
 
 How to reference one node's output (or any `$vars.*` value) from another node's input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
 
-> **Read this before** writing any field that needs to reference a previous node's output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of "the value at runtime was the literal string `vars.X.output.Id`" failures (MST-9107).
+> **Read this before** writing any field that needs to reference a previous node's output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of "the value at runtime was the literal string `vars.X.output.Id`" failures.
 
 ---
 
@@ -71,7 +71,7 @@ Three failure modes observed in agent-generated `.flow` files:
 | **Loop nodes** (`core.logic.loop`) | `inputs.collection` | **YES** |
 | **Subflow nodes** (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
 | **Script nodes** (`core.action.script`) | `inputs.script` body — `$vars.*` is read inside JS, no `=js:` wrapping | **NO** — the body is already JS |
-| **Inline-agent prompt** (`uipath.agent.autonomous` `agent.json` `messages[].content`) | Tokens reference upstream flow nodes directly: `{{ $vars.<flowNodeId>.output[.<field>] }}` (spaced braces). Mirror in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` — `rawString` must include leading and trailing space. Never `{{input.<id>}}` and never bare `{{name}}`. | **NO** — `{{ ... }}` tokens, not `=js:`. See [author/references/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts). |
+| **Inline-agent prompt** (`uipath.agent.autonomous` `agent.json` `messages[].content`) | Tokens reference upstream flow nodes directly: `{{ $vars.<flowNodeId>.output[.<field>] }}` (spaced braces). Mirror in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` — `rawString` must include leading and trailing space. Never `{{input.<id>}}` and never bare `{{name}}`. | **NO** — `{{ ... }}` tokens, not `=js:`. See [author/references/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts). |
 
 **Rule of thumb:** If the field is *value-typed* (anything other than a hardcoded condition), `=js:` is required for `$vars`/`$metadata`/`$self` references. The two condition fields (Decision, Switch) and the script body are the only exceptions — they are always parsed as JS regardless.
 

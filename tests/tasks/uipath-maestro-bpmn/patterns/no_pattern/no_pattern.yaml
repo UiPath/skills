@@ -1,0 +1,48 @@
+task_id: skill-bpmn-no-pattern
+description: >
+  A short linear process that matches none of the pattern shapes. Verifies the
+  negative gate holds: the agent authors the three steps asked for and does not
+  retrofit review branches, gateways, or escalation nets onto work that does not
+  need them. Guards against the pattern layer over-firing.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project with main file
+  `NightlyExport/NightlyExport.bpmn` for this process:
+
+  On a nightly trigger, read yesterday's transaction rows, reshape them into the
+  finance team's export format, and write the result to their reporting store.
+  Then the process is done. There are no decisions, no approvals, and no
+  variation between runs.
+
+  Author the structural BPMN yourself and get any UiPath extension payloads from
+  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
+  before finishing. Do not upload, publish, deploy, debug, run, or pack
+  anything, and do not pause for approval.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "NightlyExport/NightlyExport.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Process is well-formed, linear, and free of retrofitted pattern scaffolding
+    command: "python3 $TASK_DIR/check_no_pattern.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

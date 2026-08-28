@@ -3,7 +3,7 @@ description: >
   Quality test: agent correctly references a HITL action task's output in a
   downstream task using the `=vars.<varId>` runtime path. Tests cross-task
   binding from an action task to a follow-up task in a later stage.
-tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
   Create a UiPath Case Management project named "ExpenseApprovalCase" with
   this shape:

@@ -25,7 +25,7 @@ A clean `validate` + `build` does NOT prove runtime behavior. Known silent failu
 
 ## Journey: Greenfield XAML (no UIA)
 
-Skip the project-discovery subagent — nothing to discover yet (SKILL.md § Skip gate: no `project.json` before T1, only the untouched scaffold after it). Write `project-context.md` + `AGENTS.md` yourself at T4.
+Skip the project-discovery subagent — nothing to discover yet ([environment-setup.md § Skip gate](environment-setup.md): no `project.json` before T1, only the untouched scaffold after it). Write `project-context.md` + `AGENTS.md` yourself at T4.
 
 | Turn | Emit in ONE assistant message |
 |---|---|
@@ -44,7 +44,7 @@ Skip the project-discovery subagent — nothing to discover yet (SKILL.md § Ski
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T1 — Context** | § Precondition context check — § Skip gate first, then the discovery subagent, which writes `project-context.md` + `AGENTS.md` itself ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
+| **T1 — Context** | SKILL.md § Precondition context check — the skip gate first, then the discovery subagent, which writes `project-context.md` + `AGENTS.md` itself ([environment-setup.md § Project Context Discovery](environment-setup.md)) ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
 | **T2 — Edit** | Batched `Edit`s (anchor each on its own target block — same-file Edits serialize; overlapping anchors fail) ∥ `packages install` `Bash` if new dependencies |
 | **T3 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run` per § Gate ≠ runtime proof |
 | **T4 — Report** | Output check (if T3 ran) + § Completion Output + memory save |
@@ -70,7 +70,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check (SKILL.md § UIA Prerequisites, Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
+| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package's core guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check ([uia-starter-guide.md § UIA Prerequisites](uia-starter-guide.md), Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
 | **Per capture-screen** | (a) capture bundle — run the `uia-configure-target` flow for ALL of this screen's checklist elements in one pass, through OR registration; (b) ONE state advance via the interact CLI — only to reach the next screen, never to test behavior |
 | **T-author — after ALL screens captured** | Scaffold/authoring prerequisites (Capture-First Fast Path order) ∥ batch-author every screen's activities in one pass (Rule 18), embed path for OR target attachment |
 | **T-gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` |
@@ -79,7 +79,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 - Default is author-once-after-capture — all OR refs are already in conversation. Fall back to per-screen authoring interleave only on long captures (5+ screens) where context pressure is real; the `validate`/`build` gate still runs ONCE at the end either way.
 - Screens after the first (same window): carry the OR screen reference from the previous capture into the next `uia-configure-target` invocation — it skips the OR screen lookup. Invocation shape and argument: the package's `uia-configure-target` invocation guide (routed from the package guide § Documentation).
 - Indication fallback (user physically clicks) and every interact advance are sequential gates — never batched, never parallel.
-- Selector failures at debug time → the `uia-improve-selector` flow (never hand-edit selectors).
+- Selector failures at debug time → the recover selector flow (never hand-edit selectors).
 
 ## Failure exits
 
@@ -91,7 +91,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 | Coded `CS*` errors | [coded/operations-guide.md § Common Issues and Fixes](coded/operations-guide.md#common-issues-and-fixes) |
 | CLI error (`timeout`, `EPIPE`, `401`, `not in the project folder`) | [cli-reference.md § CLI Error Recovery](cli-reference.md#cli-error-recovery) |
 | Card snippet rejected by validate/build | Fall back to Rule 21 triple for that activity; report stale entry via `/uipath-feedback` |
-| UIA selector fails at debug time | `uia-improve-selector` flow per [uia-starter-guide.md § Runtime Selector Failure Recovery](uia-starter-guide.md#runtime-selector-failure-recovery) — never hand-edit |
+| UIA selector fails at debug time | Recover selector flow per [uia-starter-guide.md § Runtime Selector Failure Recovery](uia-starter-guide.md#runtime-selector-failure-recovery) — never hand-edit |
 
 ## Cross-session memory
 
