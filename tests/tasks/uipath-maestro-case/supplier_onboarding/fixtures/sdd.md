@@ -546,7 +546,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 |------|-----|-----------|---------------------|--------------|
 | selected-tasks-completed("Record buyer review decision") | =js:vars.$xref('Buyer review','Record buyer review decision','Action') === "reject" | exit-only | No | Buyer declined |
 | selected-tasks-completed("Record buyer review decision") | =js:vars.$xref('Buyer review','Record buyer review decision','Action') === "sendback" | exit-only | No | Sent back for corrections |
-| required-tasks-completed | =js:vars.buyerDecision === "approve" | wait-for-user | Yes | Buyer approved |
+| required-tasks-completed | =js:vars.$xref('Buyer review','Record buyer review decision','Action') === "approve" | wait-for-user | Yes | Buyer approved |
 
 #### Stage SLA
 
@@ -652,8 +652,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Binding / Value |
 |-------|------------------|
-| Action | -> buyerDecision |
 | Comment | -> buyerComments |
+| — | buyerDecision = =js:vars.$xref('Buyer review','Record buyer review decision','Action') |
 
 ##### Task 2.3: Request more information from supplier
 
@@ -841,14 +841,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| selected-stage-completed("Buyer review") | =js:vars.buyerDecision === "approve" | No | Buyer approved |
+| selected-stage-completed("Buyer review") | =js:vars.$xref('Buyer review','Record buyer review decision','Action') === "approve" | No | Buyer approved |
 
 #### Stage Exit Conditions
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
 | selected-tasks-completed("Record compliance review decision") | =js:vars.$xref('Compliance and risk review','Record compliance review decision','Action') === "reject" | exit-only | No | Compliance rejected |
-| required-tasks-completed | =js:vars.complianceDecision === "approve" | wait-for-user | Yes | Sent to setup |
+| required-tasks-completed | =js:vars.$xref('Compliance and risk review','Record compliance review decision','Action') === "approve" | wait-for-user | Yes | Sent to setup |
 
 #### Stage SLA
 
@@ -1082,8 +1082,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Binding / Value |
 |-------|------------------|
-| Action | -> complianceDecision |
 | Comment | -> complianceComments |
+| — | complianceDecision = =js:vars.$xref('Compliance and risk review','Record compliance review decision','Action') |
 
 ##### Task 3.6: Obtain legal opinion
 
@@ -1230,14 +1230,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| selected-stage-completed("Compliance and risk review") | =js:vars.complianceDecision === "approve" | No | Compliance approved |
+| selected-stage-completed("Compliance and risk review") | =js:vars.$xref('Compliance and risk review','Record compliance review decision','Action') === "approve" | No | Compliance approved |
 
 #### Stage Exit Conditions
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
 | selected-tasks-completed("Register supplier in ERP") | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') !== "verified" | exit-only | No | Bank verification failed |
-| required-tasks-completed | =js:vars.bankVerificationStatus === "verified" | exit-only | Yes | Setup complete |
+| required-tasks-completed | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') === "verified" | exit-only | Yes | Setup complete |
 
 #### Stage SLA
 
