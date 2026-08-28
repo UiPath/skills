@@ -257,9 +257,11 @@ def ixp_node_identifiers(document: dict[str, Any]) -> list[str]:
 DOMAIN_MARKERS = ("falcon", "raptor", "mews", "bird-of-prey", "bird_of_prey")
 
 # Registry deletion propagation can lag behind a folder delete, so a self-heal
-# re-probes a few times before giving up. Same env knob as the folder-delete
-# retry so the unit-test suite runs sleep-free.
-DOMAIN_RECHECK_ATTEMPTS = 3
+# re-probes a few times before giving up. Two attempts, not more: the pre_run
+# hook timeout is hard-capped at 300s and the whole self-heal path must fit
+# under it. Same env knob as the folder-delete retry so the unit-test suite
+# runs sleep-free.
+DOMAIN_RECHECK_ATTEMPTS = 2
 DOMAIN_RECHECK_SECONDS = float(os.environ.get("HANDOFF_RETRY_SECONDS", "15"))
 
 _GUID_RE = re.compile(

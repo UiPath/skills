@@ -63,11 +63,11 @@ run_limits:
 
 # Hook and criterion timeouts must exceed handoff.UIP_TIMEOUT_SECONDS (120), or
 # the harness kills the wrapper mid-`uip` call and the failure reads as a skill
-# defect. Seed's worst case is the self-heal path — folder-delete retries
-# (4 x 5s) plus up to 3 re-probe cycles (15s sleep + pull/search/get each).
+# defect. 300 is the harness's hard cap for hook timeouts; seed's self-heal
+# path (delete retries + 2 re-probe cycles) is budgeted to fit under it.
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py seed"
-    timeout: 420
+    timeout: 300
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py teardown"
