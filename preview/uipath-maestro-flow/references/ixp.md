@@ -48,9 +48,15 @@ Scalar results are under `ExtractionResult.ResultsDocument.Fields[]`; table
 results are under `ExtractionResult.ResultsDocument.Tables[]`. In both arrays,
 `FieldName` identifies the model field and `Values` carries its extracted values.
 
-If the registry has no suitable published extractor, report the missing
-capability. `pageRange` is a product string; examples such as `1-5` are
-illustrative because no local grammar is published.
+If the registry has no suitable published extractor, the requested acceptance
+bar determines the next step. For a runtime or published-model requirement,
+report the missing capability and stop. For a validate-only topology whose
+purpose is to show where extraction belongs, put `mock()` in the extraction
+position, complete and validate the surrounding flow, and report the placeholder
+as the capability gap. Do not block a validate-only topology on an unavailable
+extractor or downstream endpoint when placeholders preserve the requested graph.
+`pageRange` is a product string; examples such as `1-5` are illustrative because
+no local grammar is published.
 
 ## File input from a connector event
 
