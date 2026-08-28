@@ -266,7 +266,8 @@ marks definitions that the skill keeps but does not author for new files.
 
 Every root-level `bpmn:startEvent` is an entry point, whether it is manual,
 timer-triggered, or connector-triggered. Give it exactly one stable GUID in
-`<uipath:entryPointId value="..." />`. Subprocess start events do not carry an
+`<uipath:entryPointId value="..." />`, declared as a direct child of that start
+event's own `<bpmn:extensionElements>`. Subprocess start events do not carry an
 entry-point id. When replacing the initializer's manual start with a timer or
 connector start, move or create the entry-point id on the replacement and
 remove the manual start; do not retain a second start event.
