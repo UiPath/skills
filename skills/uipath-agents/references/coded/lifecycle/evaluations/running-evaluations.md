@@ -1,10 +1,10 @@
 # Running Evaluations
 
-This guide covers how to execute your evaluation sets and understand the results.
+Run evaluation sets and interpret their results.
 
-## Running Evaluations
+## Run Evaluations
 
-### Command
+Run an evaluation set:
 
 ```bash
 uip codedagent eval <entrypoint> <eval-file> \
@@ -12,14 +12,15 @@ uip codedagent eval <entrypoint> <eval-file> \
   --output-file eval-results.json
 ```
 
-**Parameters:**
-- `<entrypoint>` - Agent entry point name from `entry-points.json`
-- `<eval-file>` - Path to evaluation set file
-- `--workers` - Number of parallel workers (default: 1)
-- `--eval-ids` - Python/JSON-style list of evaluation case IDs to run, for example `'["test-1-basic", "test-3-edge-case"]'` (default: `[]`, meaning all cases)
-- `--no-report` - Don't report to UiPath Cloud
-- `--output-file` - Save results to JSON file
-- `--enable-mocker-cache` - Cache LLM responses for reproducibility
+`<entrypoint>` is the agent entry point name from `entry-points.json`; `<eval-file>` is the evaluation-set path. The system discovers sets in `evaluations/eval-sets/*.json`.
+
+Supported options:
+
+- `--workers`: Parallel workers; default `1`.
+- `--eval-ids`: Python/JSON-style case-ID list, such as `'["test-1-basic", "test-3-edge-case"]'`; default `[]` (all cases).
+- `--no-report`: Do not report to UiPath Cloud.
+- `--output-file`: Save results to a JSON file.
+- `--enable-mocker-cache`: Cache LLM responses for reproducibility.
 
 Run a subset while debugging:
 
@@ -27,37 +28,24 @@ Run a subset while debugging:
 uip codedagent eval <entrypoint> <eval-file> --no-report --eval-ids '["test-1-basic"]'
 ```
 
-### Evaluation Discovery
+## Interpret Results
 
-The system scans for evaluation sets in:
+Evaluators return numeric scores:
 
-```
-evaluations/eval-sets/*.json
-```
+- `1.0`: Perfect pass; all criteria are met.
+- `0.5-0.9`: Partial success; common for similarity-based evaluators.
+- `0.0`: Complete failure; criteria are not met.
 
-## Understanding Results
+For `ExactMatchEvaluator` and `ContainsEvaluator`, `1.0` means the requirement is met and `0.0` means it is not. For similarity-based evaluators (`JSON`, `LLM Judge`, and `Trajectory`):
 
-### Numeric Scores
+- `1.0`: Perfect match.
+- `0.9-0.5`: Good match with minor differences.
+- `0.4-0.1`: Weak match with significant differences.
+- `0.0`: No match.
 
-All evaluators return scores:
+A test passes only when all required evaluators produce their expected scores, pass-fail outputs satisfy their criteria, and similarity scores exceed the acceptance threshold. It fails when any criterion is unmet or a similarity score is below the acceptable threshold.
 
-- **1.0** - Perfect pass (evaluator criteria fully met)
-- **0.5-0.9** - Partial success (similarity-based evaluators show partial match)
-- **0.0** - Complete failure (evaluator criteria not met)
-
-### Score Interpretation
-
-**For ExactMatchEvaluator & ContainsEvaluator:**
-- 1.0 - Requirement met
-- 0.0 - Requirement not met
-
-**For Similarity-Based Evaluators (JSON, LLM Judge, Trajectory):**
-- 1.0 - Perfect match
-- 0.9-0.5 - Good match with minor differences
-- 0.4-0.1 - Weak match with significant differences
-- 0.0 - No match
-
-### Example Detailed Result
+Detailed results contain fields such as:
 
 ```json
 {
@@ -78,68 +66,57 @@ All evaluators return scores:
 }
 ```
 
-## Pass vs Fail
+## Optimize Performance
 
-A test passes if:
-- All required evaluators produce their expected scores
-- Output matches criteria for pass-fail evaluators (ExactMatch, Contains)
-- Similarity scores are above your acceptance threshold
-
-A test fails if:
-- Any evaluator criteria are not met
-- Similarity scores are below acceptable thresholds
-
-## Performance Optimization
-
-### Using Parallel Workers
+Run with parallel workers when dependencies and rate limits support concurrency:
 
 ```bash
 uip codedagent eval <entrypoint> <eval-file> --workers 4
 ```
 
-**Worker count recommendations:**
-- `1` - Default sequential execution, useful for debugging and rate-limit-sensitive evaluators
-- `4` - Good balance for larger evaluation sets when dependencies and rate limits allow parallelism
-- Higher values - Use only when the agent, evaluators, and external services can safely handle the extra concurrency
+- Use `1` for sequential execution, debugging, or rate-limit-sensitive evaluators.
+- Use `4` as a practical balance for larger sets.
+- Use higher values only when the agent, evaluators, and external services safely support concurrency.
 
-### Caching LLM Responses
-
-For evaluators using LLMs (LLMJudge, Trajectory), enable mocker cache:
+For `LLMJudge` and `Trajectory`, run with mocker cache:
 
 ```bash
 uip codedagent eval <entrypoint> <eval-file> --enable-mocker-cache
 ```
 
-Benefits: Faster re-runs, reproducible results, lower API costs.
+Caching makes reruns faster and more reproducible and reduces API costs.
 
-## Integration with UiPath Cloud
+## Report to UiPath Cloud
 
-To report evaluation results to Studio Web for visualization and tracking, use `--report`. This requires authentication and `UIPATH_PROJECT_ID` set in `.env` (obtained by pushing the agent to Studio Web via `uip codedagent push`).
+Authenticate, set `UIPATH_PROJECT_ID` in `.env`, and obtain it by pushing the agent to Studio Web with `uip codedagent push`. Report results to Studio Web:
 
 ```bash
 uip codedagent eval <entrypoint> <eval-file> --report --workers 4
 ```
 
-For local-only evaluations (no cloud connection needed), use `--no-report`:
+Run local-only evaluation:
 
 ```bash
 uip codedagent eval <entrypoint> <eval-file> --no-report
 ```
 
-## Troubleshooting
+## Troubleshoot
 
 ### All Tests Fail
-- Verify agent is working correctly with `uip codedagent run`
-- Check evaluation set references correct agent
-- Ensure evaluator files exist and are valid
-- Review agent input/output schemas
+
+- Verify the agent with `uip codedagent run`.
+- Check that the evaluation set references the correct agent.
+- Ensure evaluator files exist and are valid.
+- Review agent input and output schemas.
 
 ### Performance Issues
-- Reduce number of workers if hitting rate limits
-- Enable mocker cache for LLM evaluators
-- Run subset of tests first to debug
+
+- Reduce workers when hitting rate limits.
+- Enable mocker cache for LLM evaluators.
+- Run a subset of tests first to debug.
 
 ### LLM Evaluator Issues
-- Verify API credentials are configured
-- Check model name is valid
-- Enable cache to reduce API calls
+
+- Verify API credentials.
+- Check that the model name is valid.
+- Enable cache to reduce API calls.

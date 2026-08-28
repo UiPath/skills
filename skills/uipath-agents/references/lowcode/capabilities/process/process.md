@@ -1,113 +1,99 @@
 # Process Tool Capability
 
-Tools that call a runnable process — RPA workflows, agents, API workflows, or agentic processes (process orchestration). All process tools share the `$resourceType: "tool"` envelope; the `type` field selects the subtype.
+Tools that call runnable processes—RPA workflows, agents, API workflows, or agentic processes. All use the `$resourceType: "tool"` envelope; `type` selects the subtype.
 
-For Integration Service connector tools (separate capability), see [../integration-service/integration-service.md](../integration-service/integration-service.md). For built-in tools that ship pre-built (e.g. `analyze-attachments`), see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) — those use `type: "internal"` and need no solution-level files.
+For Integration Service connector tools, see [../integration-service/integration-service.md](../integration-service/integration-service.md). For built-in tools such as `analyze-attachments`, see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md); these use `type: "internal"` and require no solution-level files.
 
 ## When to Use
 
-- Agent needs to invoke an RPA process, another agent, an API workflow, or an agentic process
-- Target lives in the **same solution** (`Source: "Local"` from discovery) or is **already deployed in Orchestrator** (`Source: "Remote"`)
+Use this capability when an agent invokes an RPA process, another agent, an API workflow, or an agentic process in the same solution (`Source: "Local"`) or deployed in Orchestrator (`Source: "Remote"`). Both use the same discovery, declaration, validation, and refresh flow; only `resource.json.location` differs: `"solution"` for local and `"external"` for remote.
 
 ## Subtypes
 
-| `type` (resource.json) | Calls | Process declaration directory | Schema flavor |
+| `resource.json` `type` | Calls | Declaration directory | Schema fields |
 |---|---|---|---|
-| `process` | RPA process (XAML) | `process/process/` | Raw .NET — `inputArgumentsSchema` / `outputArgumentsSchema` |
-| `agent` | Low-code autonomous agent / coded agent | `process/agent/` | JSON Schema — `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` |
-| `api` | API workflow | `process/api/` | JSON Schema — V2 fields |
-| `processOrchestration` | Agentic process / process orchestration | `process/processOrchestration/` | JSON Schema — V2 fields |
-
-**Local and external resources follow the same flow.** Discovery, `resource.json` shape, validation, and refresh are identical. The only difference is the `location` value written into `resource.json`: `"solution"` for local (in-solution) resources, `"external"` for resources already deployed in Orchestrator.
+| `process` | RPA process (XAML) | `process/process/` | Raw .NET: `inputArgumentsSchema` / `outputArgumentsSchema` |
+| `agent` | Low-code autonomous or coded agent | `process/agent/` | JSON Schema: `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` |
+| `api` | API workflow | `process/api/` | JSON Schema V2 fields |
+| `processOrchestration` | Agentic process / process orchestration | `process/processOrchestration/` | JSON Schema V2 fields |
 
 ## Discovery
 
-Two `uip` calls — identity from `resource list`, full configuration from `resource get`.
+Use two `uip` calls: obtain identity with `resource list`, then configuration with `resource get`.
 
-### 1. Find the process
-
-Two supported invocations — pick one based on where you're looking:
-
-**Local (in-solution):**
+For local resources, run:
 
 ```bash
 uip solution resources list --source local --output json
 ```
 
-**Remote (Orchestrator / RCS):**
+For remote Orchestrator/RCS resources, run:
 
 ```bash
 uip solution resources list --source remote --kind Process --search "<NAME>" --output json
 ```
 
-> **`--kind` and `--search` only work with `--source remote`.** With `--source local` or `--source all` (default), both flags must be omitted — list everything and filter `.Data[]` client-side by `Kind` and `Name`.
+`--kind` and `--search` work only with `--source remote`. With `--source local` or `--source all` (the default), omit both flags, list everything, and filter `.Data[]` client-side by `Kind` and `Name`. The response is `{Result, Code: "ResourceList", Data: [...]}`; parse `.Data[]`.
 
-Response wrapper: `{Result, Code: "ResourceList", Data: [...]}` — parse `.Data[]`.
+`--source` values:
 
-`--source` selects where the resource lives:
+- `local`: solution resources; no `--kind` or `--search`.
+- `remote`: Orchestrator/RCS resources; supports `--kind` and `--search`.
+- `all`: local and remote; no `--kind` or `--search`.
 
-- `local` — resources already in the solution. No `--kind` / `--search`.
-- `remote` — only Orchestrator / RCS. Supports `--kind` / `--search`.
-- `all` (default) — both local and remote. No `--kind` / `--search`.
+Map results as follows:
 
-The row's `Source` field (`"Local"` or `"Remote"`) determines the `location` value for `resource.json`.
+| Result field | Use |
+|---|---|
+| `Source` | `"Local"` → `location: "solution"`; `"Remote"` → `location: "external"`. |
+| `Key` | Release Key GUID; lowercase it as `referenceKey` and pass it to `resource get`. |
+| `Name` | Display name; use as `properties.processName` and binding `name`. |
+| `Type` | Lowercase; maps 1:1 to `process`, `agent`, `api`, or `processOrchestration`. |
+| `Folder` | Literal folder path; use as `properties.folderPath` and binding `folderPath`. Local resources typically return `solution_folder`; remote resources return the literal Orchestrator folder. Refresh resolves RCS by `(name, folderPath)`, disambiguating same-named processes. |
+| `FolderKey` | Folder GUID; refresh resolves it, so do not pass it yourself. |
 
-Per entry:
+When a name repeats in one folder, select by `Key`.
 
-| Field | Use as |
-|-------|--------|
-| `Source` | `"Local"` → `location: "solution"`. `"Remote"` → `location: "external"`. |
-| `Key` | Release Key GUID. Used as `referenceKey` in the agent resource and as the argument to step 2. |
-| `Name` | Process display name → `properties.processName` and binding `name`. |
-| `Type` | Lowercase. Maps 1:1 to the agent resource `type`: `"process"` / `"agent"` / `"api"` / `"processOrchestration"`. |
-| `Folder` | Literal folder path → `properties.folderPath` and binding `folderPath`. Local resources typically return `"solution_folder"` (their declared folder in the solution); external resources return the literal Orchestrator folder (e.g., `"Shared/Sales"`). Refresh resolves RCS by `(name, folderPath)`, so this disambiguates same-named processes. |
-| `FolderKey` | Folder GUID. Refresh handles folder resolution; you don't pass it yourself. |
-
-When the same `Name` repeats in one folder, pick by `Key`.
-
-### 2. Get the resource configuration
+Run:
 
 ```bash
 uip solution resources get <KEY> --output json
 ```
 
-Response wrapper: `{Result, Code: "ResourceConfiguration", Data: {...}}`. `Data` is the solution-level resource declaration.
-
-#### `Data.spec` — process declaration
-
-| Field | Use as |
-|-------|--------|
-| `name` | Display name. |
-| `type` | PascalCase here (`Process` / `Agent` / `Api` / `ProcessOrchestration`); lowercase it when copying into the agent-level `resource.json`. |
-| `package.name` / `package.key` | Package identity. Refresh writes the package decl from this. |
-| `entryPointUniqueId` / `entryPointName` | Entry point IDs. Refresh embeds these in the solution-level decl. |
-| `inputArgumentsSchemaV2` | JSON Schema string (Agent / API / Agentic). Parse → agent-level `inputSchema`. |
-| `outputArgumentsSchemaV2` | JSON Schema string. Parse → agent-level `outputSchema`. |
-| `inputArgumentsSchema` / `outputArgumentsSchema` | Raw .NET type arrays for RPA. Map .NET types to JSON Schema per [solution-files.md § How to Get the Values](solution-files.md#how-to-get-the-values). |
-| `entryPoints` | Already-serialized JSON array string. Refresh writes it verbatim. |
-| RPA-only spec: `jobPriority`, `jobRecording`, `duration`, `frequency`, `quality`, `remoteControlAccess`, `targetFrameworkValue` | Refresh copies into the RPA decl. |
-| Agent-only spec: `agentMemory`, `targetRuntime`, `environmentVariables` | Refresh copies into the agent decl. |
-
-If both V2 and raw schemas are absent, the deployed process truly has no arguments — leave the agent-level schemas as empty objects.
-
-#### Optional: `--include-dependencies`
+The response is `{Result, Code: "ResourceConfiguration", Data: {...}}`; `Data` is the solution-level declaration. With dependencies, run:
 
 ```bash
 uip solution resources get <KEY> --include-dependencies --output json
 ```
 
-Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` containing the process plus each dependency (the package, `kind: "package"`).
+This returns `Code: "ResourceConfigurations"` and `Data.resources[]`, containing the process and each dependency, including the package with `kind: "package"`.
 
-## Tool resource.json Shape
+From `Data.spec`, use:
 
-**Path:** `<AGENT_NAME>/resources/{ToolName}/resource.json`
+| Field | Use |
+|---|---|
+| `name` | Display name. |
+| `type` | PascalCase (`Process`, `Agent`, `Api`, or `ProcessOrchestration`); lowercase it for agent-level `resource.json`. |
+| `package.name` / `package.key` | Package identity; refresh writes the package declaration. |
+| `entryPointUniqueId` / `entryPointName` | Entry-point IDs; refresh embeds them in the solution declaration. |
+| `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` | Parse JSON Schema strings into agent-level `inputSchema` / `outputSchema` for Agent, API, and Agentic resources. |
+| `inputArgumentsSchema` / `outputArgumentsSchema` | Raw .NET type arrays for RPA; map them to JSON Schema per [solution-files.md § How to Get the Values](solution-files.md#how-to-get-the-values). |
+| `entryPoints` | Already-serialized JSON array string; refresh writes it verbatim. |
+| RPA-only: `jobPriority`, `jobRecording`, `duration`, `frequency`, `quality`, `remoteControlAccess`, `targetFrameworkValue` | Refresh copies these into the RPA declaration. |
+| Agent-only: `agentMemory`, `targetRuntime`, `environmentVariables` | Refresh copies these into the agent declaration. |
+
+If both V2 and raw schemas are absent, use empty objects for the agent-level schemas.
+
+## Tool `resource.json`
+
+Create `<AGENT_NAME>/resources/{ToolName}/resource.json`:
 
 ```jsonc
 {
   "$resourceType": "tool",
   "name": "MyProcess",
   "description": "What this tool does (shown to LLM for tool selection)",
-  "location": "external",       // "solution" if Source: "Local", "external" if Source: "Remote"
+  "location": "external",       // "solution" for Source: "Local"
   "type": "process",            // "process" | "agent" | "api" | "processOrchestration"
   "inputSchema": {
     "type": "object",
@@ -120,131 +106,131 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
   },
   "settings": {},
   "guardrail": {
-    "policies": []              // Must always be present and empty — required for backward-compatible solution loading
+    "policies": []              // Must always be present and empty
   },
   "properties": {
     "processName": "MyProcess",
-    "folderPath": "Shared/Sales",     // Literal Folder from `resource list`. Local: typically "solution_folder". External: literal Orchestrator folder.
+    "folderPath": "Shared/Sales",     // Literal Folder; local typically "solution_folder"
     "exampleCalls": []                // Required
   },
-  "id": "<uuid>",               // Stable; generate once, never change
-  "referenceKey": "<release-key-guid>", // Lowercase `Key` GUID from `resource list`
+  "id": "<uuid>",               // Stable; generate once and never change
+  "referenceKey": "<release-key-guid>", // Lowercase Key GUID
   "isEnabled": true,
   "argumentProperties": {}
 }
 ```
 
-**Only `location` differs between local and external tools.** All other fields follow the same rules:
+For local and remote resources, use lowercase `Type` for `type`, lowercase `Key` for `referenceKey`, literal `Folder` for `properties.folderPath`, parsed V2 schemas or .NET-mapped RPA schemas for `inputSchema` and `outputSchema`, and required `properties.exampleCalls` (which may be `[]`). Only `location` differs.
 
-| Field | Source | Same rule for local & external |
-|---|---|---|
-| `type` | lowercase `Type` from `resource list` | yes |
-| `referenceKey` | lowercase `Key` GUID from `resource list` | yes |
-| `properties.folderPath` | literal `Folder` from `resource list` | yes |
-| `properties.exampleCalls` | required (can be `[]`) | yes |
-| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA) | yes |
+## Solution-Level Files and Required Flow
 
-## Solution-Level Files
+After creating the agent-level resource file:
 
-**Auto-generated by `uip agent refresh` + `uip solution resources refresh`.** After creating the agent-level `resource.json`:
-
-1. Run `uip agent refresh` — regenerates `entry-points.json` and `bindings_v2.json` with a `resource: "process"` binding.
-2. Run `uip agent validate` — read-only check. Fails with `AgentValidationOutdated` if refresh is needed.
-3. Run `uip solution resources refresh` — for each Process binding, looks up the matching resource (in RCS for remote, in the solution for local) and writes:
+1. Run `uip agent refresh` to regenerate `entry-points.json` and `bindings_v2.json` with a `resource: "process"` binding.
+2. Run `uip agent validate`; it is read-only and fails with `AgentValidationOutdated` when refresh is required.
+3. Run `uip solution resources refresh`; for each Process binding it resolves the resource (RCS for remote, solution for local) and writes:
    - `resources/solution_folder/process/<type_dir>/<ToolName>.json` (declaration)
    - `resources/solution_folder/package/<PackageName>.json` (package declaration)
-   - an entry in `userProfile/<userId>/debug_overwrites.json` with real `folderKey`, `folderFullyQualifiedName`, and `folderPath` so Studio Web can resolve the process at runtime. An entry missing `folderFullyQualifiedName` or `folderPath` will cause "Could not find process for tool '<name>'" — refresh from current uipcli populates both correctly.
+   - an entry in `userProfile/<userId>/debug_overwrites.json` containing real `folderKey`, `folderFullyQualifiedName`, and `folderPath` for Studio Web runtime resolution. Missing `folderFullyQualifiedName` or `folderPath` causes `Could not find process for tool '<name>'`.
 
-For in-solution agents already registered with the parent solution — auto-registered by `uip agent init` (when run from inside a solution directory; verify via `Data.SolutionRegistration.Status` = `Registered` / `AlreadyRegistered`) or via the `uip solution projects add` fallback — the package + process declarations are pre-existing; refresh resolves the binding against them.
+For in-solution agents registered with the parent solution, run `uip agent init` inside a solution directory; it auto-registers. Verify `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`. Run `uip solution projects add` only as the fallback for `NotInSolution`, `Skipped`, or `Failed`; do not use it for `OptedOut`, which indicates intentional `--skip-solution-registration`. Package and process declarations are then pre-existing, and refresh resolves the binding.
 
-**Type-to-directory mapping for process declarations:**
+Declaration directories map as follows:
 
-| `Data.spec.type` (from `resource get`) | Agent resource `type` | `spec.type` | Process declaration directory |
+| `Data.spec.type` | Agent `type` | Declaration `spec.type` | Directory |
 |---|---|---|---|
 | `Process` | `process` | `Process` | `process/process/` |
 | `Agent` | `agent` | `Agent` | `process/agent/` |
 | `Api` | `api` | `Api` | `process/api/` |
 | `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/processOrchestration/` |
 
-**Hand-authoring fallback** — when refresh cannot run (offline, missing RCS match, custom deployment), see [solution-files.md](solution-files.md) for the full Templates A (RPA) and B (Agent / API / Agentic), package declaration, and debug_overwrites templates.
+If refresh cannot run because of offline operation, a missing RCS match, or custom deployment, use the full Templates A (RPA) and B (Agent / API / Agentic), package declaration, and `debug_overwrites` templates in [solution-files.md](solution-files.md).
 
 ## Walkthrough
 
+1. Scaffold the solution and agent per [project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
+2. Discover the process by running either:
+
 ```bash
-# 1. Scaffold solution + agent per [project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
-
-# 2. Discover the process
-# Remote: --kind / --search supported server-side.
 uip solution resources list --source remote --kind Process --search "<NAME>" --output json
-# Local: --kind and --search NOT supported — list, then filter .Data[] client-side.
 uip solution resources list --source local --output json
-# Parse .Data[]. Each entry: Source, Key, Name, Kind, Type (lowercase), Folder, FolderKey.
-# Source: "Local" → location: "solution". "Remote" → location: "external".
-# Use Key as referenceKey, Name as processName, Type for the agent-level type,
-# Folder as properties.folderPath.
-
-# 3. Pull the full configuration
-uip solution resources get <KEY> --output json
-# Parse .Data.spec for:
-#   inputArgumentsSchemaV2 / outputArgumentsSchemaV2  → JSON Schema strings (Agent / API / Agentic)
-#   inputArgumentsSchema   / outputArgumentsSchema    → raw .NET arrays (RPA)
-#   package.name / package.key, entryPointUniqueId / entryPointName
 ```
 
-Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (lowercase), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA).
+For local discovery, omit `--kind` and `--search` and filter `.Data[]` client-side. Map `Source`, `Key`, `Name`, `Kind`, `Type`, `Folder`, and `FolderKey` as described above.
+3. Run:
 
 ```bash
-# 4. Configure agent.json (system prompt, model, schemas)
+uip solution resources get <KEY> --output json
+```
 
-# 5. Refresh — regenerates entry-points.json and bindings_v2.json.
+Parse `Data.spec` for V2 or raw schemas, package identity, and entry-point fields. Create the agent-level resource file with `location` from `Source`, lowercase `type` from `Type`, `folderPath` from `Folder`, `referenceKey` from `Key`, and the appropriate schemas.
+4. Configure `agent.json` with the system prompt, model, and schemas.
+5. Run:
+
+```bash
 uip agent refresh "<AGENT_NAME>" --output json
+```
 
-# 6. Validate — read-only check.
+6. Run:
+
+```bash
 uip agent validate "<AGENT_NAME>" --output json
+```
 
-# 7. Refresh solution resources — resolves each Process binding and produces
-#    `resources/solution_folder/process/<type>/<Name>.json`,
-#    `resources/solution_folder/package/<PackageName>.json`, and an entry in
-#    `userProfile/<userId>/debug_overwrites.json`. No hand-authoring needed.
+7. Run:
+
+```bash
 uip solution resources refresh --output json
+```
 
-# 8. Bundle + upload
+8. Bundle and upload by running:
+
+```bash
 uip solution bundle . -d ./dist --output json
 uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 ```
 
 ## Multi-Agent Solution Example
 
-When two agent projects in the same solution call each other (parent-tool topology), use the unified flow with a `--source local` discovery:
+For two agents in one solution where a parent calls a child:
+
+1. Scaffold the solution per `project-lifecycle.md`.
+2. Add the child agent by running:
 
 ```bash
-# 1. Scaffold the solution per project-lifecycle.md.
-# 2. Add a second agent. When run from inside the solution directory,
-#    `uip agent init` auto-registers the project with the parent `.uipx`
-#    (confirm via `Data.SolutionRegistration.Status` in the response).
-#    `uip solution projects add` is the fallback when registration was
-#    `NotInSolution` / `Skipped` / `Failed` (not for `OptedOut`, which means
-#    `--skip-solution-registration` was passed and the skip was intentional).
 uip agent init "ToolAgent" --output json
-# (fallback) uip solution projects add "ToolAgent" --output json
-# Either path creates resources/solution_folder/package/ToolAgent.json and
-# resources/solution_folder/process/agent/ToolAgent.json automatically.
+```
 
-# 3. From ParentAgent, add ToolAgent as a tool — discovery via the unified flow.
-# `--source local` accepts neither --kind nor --search; list then filter client-side.
+Run this inside the solution directory and confirm `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`. If it is `NotInSolution`, `Skipped`, or `Failed`, run the fallback:
+
+```bash
+uip solution projects add "ToolAgent" --output json
+```
+
+Do not use the fallback for `OptedOut`. Either path creates `resources/solution_folder/package/ToolAgent.json` and `resources/solution_folder/process/agent/ToolAgent.json`.
+3. From the parent agent, discover the child by running:
+
+```bash
 uip solution resources list --source local --output json
-# Pick the row with Kind="Process" and Name="ToolAgent", then:
-uip solution resources get <KEY> --output json
-# Then create ParentAgent/resources/ToolAgent/resource.json with location: "solution".
+```
 
-# 4. Refresh and validate both agents, then bundle/upload as usual.
+Filter client-side for `Kind="Process"` and `Name="ToolAgent"`, then run:
+
+```bash
+uip solution resources get <KEY> --output json
+```
+
+Create `ParentAgent/resources/ToolAgent/resource.json` with `location: "solution"`.
+4. Refresh and validate both agents by running:
+
+```bash
 uip agent refresh  ParentAgent --output json
 uip agent validate ParentAgent --output json
 uip agent refresh  ToolAgent --output json
 uip agent validate ToolAgent --output json
 ```
 
-UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<ToolAgent>.json.projectKey`, and `process/agent/<ToolAgent>.json.projectKey` are auto-managed by project registration (`uip agent init` auto-registration, or the `uip solution projects add` fallback) and `uip agent refresh` — do not hand-edit. See [../../solution-resources.md](../../solution-resources.md) § UUID Cross-References.
+Bundle and upload as usual. Do not hand-edit UUID cross-references among `SolutionStorage.Projects[].ProjectId`, `package/<ToolAgent>.json.projectKey`, and `process/agent/<ToolAgent>.json.projectKey`; project registration and `uip agent refresh` manage them. See [../../solution-resources.md](../../solution-resources.md) § UUID Cross-References.
 
 ## Gotchas
 
@@ -252,7 +238,7 @@ See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules
 
 ## References
 
-- [solution-files.md](solution-files.md) — hand-authored Templates A/B + package + debug_overwrites + How to Get the Values
+- [solution-files.md](solution-files.md) — hand-authored Templates A/B, package, `debug_overwrites`, and How to Get the Values
 - [../../solution-resources.md](../../solution-resources.md) § Refresh Mechanics, § UUID Cross-References
 - [../../project-lifecycle.md](../../project-lifecycle.md) § Resource Discovery
 - [../../agent-definition.md](../../agent-definition.md) § Resources Convention

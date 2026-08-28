@@ -1,12 +1,12 @@
 # Coded Agents in Flow Projects (Sibling Folder)
 
-A coded agent can live as a sibling folder to a flow project inside the same solution. The flow references it via `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. The flow's `uip maestro flow registry list --local` discovers the agent by reading `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution projects add`.
+A coded agent can be a sibling folder to a flow project in the same solution. The flow references it as `uipath.core.agent.<resourceKey>` with `section: "In this solution"`. `uip maestro flow registry list --local` discovers it from `resources/solution_folder/process/agent/<CodedAgentProject>.json`, written by `uip solution projects add`.
 
-For the published-agent path (deployed standalone via `uip codedagent deploy`), see [coded/flow-integration.md § Pattern 2](flow-integration.md#pattern-2-published-coded-agent).
+For the published-agent path (`uip codedagent deploy`), see [coded/flow-integration.md § Pattern 2](flow-integration.md#pattern-2-published-coded-agent).
 
 ## Sibling Folder Structure
 
-The `<resourceKey>` is the local UUID minted by `uip solution projects add` — stable the moment the agent joins the solution.
+`<resourceKey>` is the local UUID minted by `uip solution projects add`; it remains stable after the agent joins the solution.
 
 ```
 <SolutionDir>/
@@ -32,12 +32,12 @@ The `<resourceKey>` is the local UUID minted by `uip solution projects add` — 
     └── .venv/                      # local virtualenv (created by `uv sync`)
 ```
 
-### Key differences from a published coded agent
+### Differences from a published coded agent
 
-- **`resource.key`** is minted locally at `uip solution projects add` time, not by Orchestrator at `uip codedagent deploy` time
-- **No `codedagent deploy`** — the agent ships inside the solution package
-- **Registry discovery is `--local`** (reads `resources/solution_folder/process/` files); no login or `registry pull` required
-- **`model.section`** is `"In this solution"`
+- `resource.key` is minted by `uip solution projects add`, not by Orchestrator during `uip codedagent deploy`.
+- Do not run `codedagent deploy`; the agent ships inside the solution package.
+- Use registry discovery with `--local`; it reads `resources/solution_folder/process/` offline, without login or `registry pull`.
+- Set `model.section` to `"In this solution"`.
 
 ## Scaffolding the Sibling-Folder Coded Agent
 
@@ -46,10 +46,10 @@ The full end-to-end workflow (solution init → flow scaffold → agent scaffold
 <!--skill-flavor:flow-integration-ownership:end-->
 
 <!--skill-flavor:flow-project-creation:start-->
-If the solution and flow project don't yet exist, run `uip solution init "<SolutionName>"` and then `uip maestro flow init "<FlowName>"` from inside the solution **before** the steps below — those calls are the start of Scenario 2.
+If the solution and flow project don't yet exist, run `uip solution init "<SolutionName>"` and then run `uip maestro flow init "<FlowName>"` from inside the solution **before** the steps below — those calls are the start of Scenario 2.
 <!--skill-flavor:flow-project-creation:end-->
 
-1. From the solution directory, create the agent folder and scaffold inside it:
+1. From the solution directory, create `<CodedAgentProject>` and run:
 
    ```bash
    mkdir <CodedAgentProject>
@@ -62,33 +62,30 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    uv sync
    ```
 
-   For a simple stub with no LLM call, use the Coded Function framework
-   (`uipath` package). This avoids downloading the full LangGraph or
-   LlamaIndex stack and keeps the setup fast.
+   For a simple stub with no LLM call, install the Coded Function framework (`uipath` package), rather than the full LangGraph or LlamaIndex stack.
 
-2. Implement `main.py`. Use lazy LLM initialization (create clients inside functions, never at module level).
+2. Implement `main.py`. Initialize LLM clients lazily inside functions, never at module level.
 
-3. Generate entry points:
+3. Run:
 
    ```bash
    uip codedagent init
    ```
 
 <!--skill-flavor:flow-solution-registration-paths:start-->
-4. Register the agent in the solution — **this is the step that mints the `resource.key`** the flow will reference:
+4. From `<SolutionDir>`, register the agent and mint the `resource.key` referenced by the flow:
 
    ```bash
    cd <SolutionDir>
    uip solution projects add <CodedAgentProject> <SolutionName>.uipx --output json
    ```
 
-   After this command, `resources/solution_folder/process/agent/<CodedAgentProject>.json` holds the `resource.key` UUID.
+   The command writes the UUID to `resources/solution_folder/process/agent/<CodedAgentProject>.json` as `resource.key`.
 <!--skill-flavor:flow-solution-registration-paths:end-->
 
+## Flow Discovery
 
-### Flow Discovery
-
-From inside the flow project directory, the agent is discoverable via the in-solution registry. The `--local` flag tells the registry commands to walk up from CWD to find a `.uipx`, read the `resources/solution_folder/process/` files written by step 4, and surface every sibling project as a discoverable node type — all offline, without a tenant registry round-trip:
+From the flow project directory, run:
 
 ```bash
 # list every in-solution node type (all sibling projects)
@@ -98,13 +95,13 @@ uip maestro flow registry list --local --output json
 uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
 ```
 
-The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see the uipath-maestro-flow skill agent-plugin reference (In-solution variant).
+`--local` makes the commands walk up from CWD to find a `.uipx`, read the `resources/solution_folder/process/` files written by step 4, and discover sibling projects offline. Paste the second command's `Data.Node` object into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see the uipath-maestro-flow skill agent-plugin reference (In-solution variant).
 
-Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator-published resources only) and will not surface the sibling project.
+Without `--local`, `registry list` and `registry get` query the tenant registry for Orchestrator-published resources and do not surface sibling projects.
 
 ## Wiring the Agent's Inputs
 
-One `inputs.<field>` entry per property in the agent's input schema (`entry-points.json`, mirrored in the definition's `inputDefinition.properties`). Two valid value shapes, same binding:
+Create one `inputs.<field>` entry for each property in the agent's input schema (`entry-points.json`, mirrored in the definition's `inputDefinition.properties`). Use either valid value shape with the same binding:
 
 ```json
 "inputs": {
@@ -116,10 +113,10 @@ One `inputs.<field>` entry per property in the agent's input schema (`entry-poin
 }
 ```
 
-- `jsExpression` — bare `$vars...` expression, no `=js:` prefix. Upstream values read as `$vars.<nodeId>.output.<field>`; flow globals as `$vars.<global>`.
-- `literal` — text template; static text mixable with `{{ }}` interpolations: `{ "type": "literal", "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}", "fieldType": "<FIELD_TYPE>" }`.
-- `<FIELD_TYPE>` is the property's JSON-schema type from the agent's input schema (e.g. `string`, `boolean`, `number`) — read it from there, do not invent it.
+- For `jsExpression`, use a bare `$vars...` expression with no `=js:` prefix. Read upstream values as `$vars.<nodeId>.output.<field>` and flow globals as `$vars.<global>`.
+- For `literal`, use a text template; static text may mix with `{{ }}` interpolations: `{ "type": "literal", "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}", "fieldType": "<FIELD_TYPE>" }`.
+- Set `<FIELD_TYPE>` to the property's JSON-schema type from the agent's input schema, such as `string`, `boolean`, or `number`; do not invent it.
 
-NEVER a plain `"=js:..."` string value — it ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. Complete worked example (trigger → agent → end): uipath-maestro-flow skill, agent-plugin reference § Wiring Inputs.
+Never use a plain `"=js:..."` string value. It is sent as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. For a complete trigger → agent → end example, see the uipath-maestro-flow skill, agent-plugin reference § Wiring Inputs.
 
-Input-only rule. Mapping the agent's output back to a flow-level global on an End node DOES use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).
+**Input-only rule.** Mapping the agent's output to a flow-level global on an End node does use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).

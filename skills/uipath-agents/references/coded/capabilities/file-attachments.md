@@ -1,12 +1,12 @@
 # File Attachments
 
-How to work with files in a coded agent — as input, as output, or created mid-run.
+How to use files as input, output, or artifacts created during a coded-agent run.
 
 For the low-code equivalent, see `../../lowcode/capabilities/built-in-tools/analyze-attachments.md`.
 
 ## File as Input
 
-Use `Attachment` on the `Input` model. `uip codedagent init` emits the `job-attachment` schema in `entry-points.json` so Studio Web and Orchestrator render a file picker at runtime.
+Declare an `Attachment` on the `Input` model. After editing, run `uip codedagent init` to refresh `entry-points.json`; it emits the `job-attachment` schema so Studio Web and Orchestrator render a file picker.
 
 ```python
 from pydantic import BaseModel
@@ -16,11 +16,7 @@ class Input(BaseModel):
     attachment: Attachment
 ```
 
-Run `uip codedagent init` after the edit to refresh `entry-points.json`.
-
-Access fields as snake_case, e.g. `input.attachment.full_name`.
-
-`Attachment` carries metadata only. Fetch bytes via `sdk.attachments` (instantiate inside the function, never at module level):
+`Attachment` contains metadata only. Use snake_case fields such as `input.attachment.full_name`, and fetch bytes through `sdk.attachments`. Instantiate `UiPath` inside the function, never at module level:
 
 ```python
 from uipath.platform import UiPath
@@ -32,11 +28,11 @@ async def main(input: Input) -> Output:
             ...
 ```
 
-Sync equivalent: `sdk.attachments.open(...)`.
+Use `sdk.attachments.open(...)` for synchronous code.
 
 ## Creating Attachments
 
-Produce a file from the agent and attach it to the current job:
+Attach generated files to the current job:
 
 ```python
 from uipath.platform.common import UiPathConfig
@@ -49,11 +45,11 @@ await uipath.jobs.create_attachment_async(
 )
 ```
 
-Standalone uploads (not tied to a job) go through `sdk.attachments` — see the SDK reference.
+For standalone uploads not tied to a job, use `sdk.attachments`; see the SDK reference.
 
 ## Local Testing
 
-`uip codedagent run` / `invoke` cannot upload attachments — the platform file picker only exists in Studio Web / Orchestrator. To exercise attachment logic locally without making `Input.attachment` optional, detect the run context via `UiPathConfig.job_key` (`None` outside a platform job, populated inside Orchestrator / Studio Web) and load bytes from an environment variable. Pass a placeholder `Attachment` in the CLI input just to satisfy validation — the agent ignores its fields on the local branch.
+`uip codedagent run` and `invoke` cannot upload attachments because the file picker exists only in Studio Web / Orchestrator. To test locally without making `Input.attachment` optional, check `UiPathConfig.job_key`: it is `None` outside a platform job and populated inside Orchestrator / Studio Web. Locally, read bytes from `UIPATH_LOCAL_ATTACHMENT`; pass a placeholder `Attachment` only for validation and ignore its fields.
 
 ```python
 import os
@@ -70,13 +66,13 @@ async def read_attachment_bytes(input: Input) -> bytes:
         return b"".join([chunk async for chunk in response.aiter_raw()])
 ```
 
-Invoke locally — placeholder `Attachment` satisfies the schema, env var provides the real file:
+Run locally with a placeholder attachment and an environment variable containing the real file:
 
 ```bash
 UIPATH_LOCAL_ATTACHMENT=C:/tmp/sample.pdf uip codedagent run main '{"attachment": {"ID": "00000000-0000-0000-0000-000000000000", "FullName": "placeholder", "MimeType": "application/octet-stream"}}'
 ```
 
-Same pattern for **creating** attachments — when `job_key is None`, write to disk instead of calling `jobs.create_attachment_async`:
+For created attachments, write locally to `UIPATH_LOCAL_OUTPUT_DIR` (or `.`); in a platform job, call `jobs.create_attachment_async`:
 
 ```python
 if UiPathConfig.job_key is None:
@@ -89,10 +85,6 @@ else:
         job_key=UiPathConfig.job_key,
     )
 ```
-
-## Gotchas
-
-- `uip codedagent run` / `invoke` cannot upload attachments — use the env-var fallback above, or test the platform path via Studio Web / Orchestrator.
 
 ## References
 

@@ -1,155 +1,153 @@
 # Index Context (Context Grounding RAG)
 
-Walkthrough for adding a context resource backed by an ECS Context Grounding index. Used for RAG (retrieval-augmented generation) — the agent issues queries against the index and gets back relevant chunks.
-
-For other context variants, see [context.md](context.md).
+Walkthrough for adding a context resource backed by an ECS Context Grounding index for retrieval-augmented generation (RAG). For other variants, see [context.md](context.md).
 
 ## When to Use
 
-- Agent needs to retrieve from a knowledge base of indexed documents
-- The index already exists in Context Grounding and is backed by an Orchestrator storage bucket. To create or manage that index from the CLI, see [uipath-platform/references/context-grounding/index-management.md](../../../../../uipath-platform/references/context-grounding/index-management.md)
+Use this skill when an agent retrieves from an indexed knowledge base. The index must already exist in Context Grounding and be backed by an Orchestrator storage bucket. To create or manage the index from the CLI, see [uipath-platform/references/context-grounding/index-management.md](../../../../../uipath-platform/references/context-grounding/index-management.md).
 
-`uip solution resources refresh` emits an `index` binding into `bindings_v2.json`, resolves the backing storage bucket via ECS + Orchestrator, and writes all three artifacts automatically: `resources/solution_folder/index/<IndexName>.json`, `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`, and two `debug_overwrites.json` entries (`kind: "index"`, `kind: "bucket"`). No manual solution-level authoring is required.
+`uip solution resources refresh` emits an `index` binding into `bindings_v2.json`, resolves the backing storage bucket through ECS and Orchestrator, and writes `resources/solution_folder/index/<IndexName>.json`, `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`, and two `debug_overwrites.json` entries (`kind: "index"`, `kind: "bucket"`). Do not manually author solution-level resources for supported indexes.
 
-**Only `contextType: "index"` with a StorageBucket data source is supported.** `attachments` and `datafabricentityset` contexts, and indexes backed by GoogleDrive / OneDrive / Dropbox / Confluence, emit a warning from refresh and must be hand-authored.
+Only `contextType: "index"` with a StorageBucket data source is supported. `attachments`, `datafabricentityset`, and indexes backed by GoogleDrive / OneDrive / Dropbox / Confluence emit a refresh warning and must be hand-authored.
 
 ## Discovery
 
-Two `uip` calls — identity from `resource list`, full configuration from `resource get`. Symmetric with [../process/process.md § Discovery](../process/process.md#discovery).
+Use two `uip` calls: identity from `resource list`, then configuration from `resource get`. This is symmetric with [../process/process.md § Discovery](../process/process.md#discovery).
 
 ### Step 1 — Verify login and scaffold (if not already done)
 
-Run `uip login status --output json`. If a solution and agent do not yet exist, scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
+Run:
+
+```bash
+uip login status --output json
+```
+
+If the solution or agent does not exist, scaffold it per [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
 
 ### Step 2 — Find the index (identity)
+
+Run:
 
 ```bash
 uip solution resources list --kind Index --source remote --search "<INDEX_NAME>" --output json
 ```
 
-Response wrapper: `{Result, Code: "ResourceList", Data: [...]}` — parse `.Data[]`.
+Parse `.Data[]` from `{Result, Code: "ResourceList", Data: [...]}`:
 
-| Field | Use as |
-|-------|--------|
-| `Key` | index GUID — pass to `resource get` in Step 3. Not stored in the agent resource. |
-| `Name` | exact `indexName` to set in the context resource → also propagates as binding `name` |
-| `Folder` | literal folder path → top-level `folderPath` (e.g., `"Shared/Knowledge"`) and binding `folderPath`. Refresh uses `(name, folderPath)` jointly to look up the index in ECS. |
-| `FolderKey` | folder GUID. Refresh resolves it from `Folder`; informational here. |
+| Field | Use |
+|---|---|
+| `Key` | Index GUID; pass it to `resource get` in Step 3. Do not store it in the agent resource. |
+| `Name` | Exact, case-sensitive `indexName`; also becomes binding `name`. |
+| `Folder` | Literal folder path; set top-level `folderPath` and binding `folderPath` (for example, `"Shared/Knowledge"`). Refresh uses `(name, folderPath)` jointly for ECS lookup. |
+| `FolderKey` | Folder GUID; refresh resolves it from `Folder`. |
 
-When the same `Name` repeats across folders, pick by `Key`.
+When `Name` repeats across folders, select by `Key`.
 
 ### Step 3 — Get the index configuration
+
+Run:
 
 ```bash
 uip solution resources get <KEY> --output json
 ```
 
-Response wrapper: `{Result, Code: "ResourceConfiguration", Data: {...}}`. `Data.spec` is the source-of-truth that `uip solution resources refresh` round-trips into `resources/solution_folder/index/<IndexName>.json` — confirm it before authoring.
+Use `Data.spec` from `{Result, Code: "ResourceConfiguration", Data: {...}}` as the source of truth; refresh round-trips it into `resources/solution_folder/index/<IndexName>.json`.
 
-| `Data.spec` field | Confirms / Use as |
-|-------|------------------|
-| `dataSourceType` | MUST equal `"StorageBucket"`. Anything else (GoogleDrive / OneDrive / Dropbox / Confluence / Attachments) — refresh warns + skips. Hand-author solution-level files or escalate. |
-| `storageBucketReference.name` | Bucket display name. Refresh writes this as the bucket manifest's `name`. Optionally cross-check with `uip solution resources list --kind Bucket --source remote --search "<NAME>" --output json` to confirm the bucket is reachable. |
-| `storageBucketReference.key` | Bucket GUID — refresh writes this verbatim as `key` in the bucket manifest and as `dependencies[].key` / `spec.storageBucketReference.key` in the index manifest. |
-| `storageBucketReference.folderKey` | Folder GUID containing the bucket. Matches the index's `FolderKey` from Step 2 (the bucket lives in the same folder as the index). |
-| `fileNameGlob` | File-extension filter on the index itself. Sanity-check — does not need to match the agent resource's `settings.fileExtension.value`. |
-| `includeSubfolders`, `ingestionType`, `encrypted` | Reference fields — refresh round-trips them into the solution-level index manifest. |
+| `Data.spec` field | Confirm / use |
+|---|---|
+| `dataSourceType` | Must equal `"StorageBucket"`. GoogleDrive / OneDrive / Dropbox / Confluence / Attachments require hand-authored solution-level files or escalation; refresh warns and skips them. |
+| `storageBucketReference.name` | Bucket display name and bucket-manifest `name`. Optionally cross-check with `uip solution resources list --kind Bucket --source remote --search "<NAME>" --output json`. |
+| `storageBucketReference.key` | Bucket GUID; refresh writes it verbatim to the bucket manifest and to `dependencies[].key` and `spec.storageBucketReference.key` in the index manifest. |
+| `storageBucketReference.folderKey` | Bucket folder GUID; it matches the index `FolderKey`. |
+| `fileNameGlob` | Index file-extension filter; sanity-check it, but it need not match `settings.fileExtension.value`. |
+| `includeSubfolders`, `ingestionType`, `encrypted` | Reference fields round-tripped into the solution-level index manifest. |
 
-Wrapper-level `apiVersion` is `"ecs.uipath.com/v2"` — matches what refresh writes.
+The wrapper-level `apiVersion` is `"ecs.uipath.com/v2"`.
 
 ## Agent-Level Resource Shape
 
-**Path:** `<AgentName>/resources/<ContextName>/resource.json`
+Path: `<AgentName>/resources/<ContextName>/resource.json`
 
 ```jsonc
 {
   "$resourceType": "context",
-  "id": "<uuid>",                       // stable; generate once
-  "referenceKey": null,                 // leave null; refresh resolves the ECS index GUID by indexName
-  "name": "<ContextName>",              // display name; matches the folder under resources/
+  "id": "<uuid>",
+  "referenceKey": null,
+  "name": "<ContextName>",
   "description": "",
   "contextType": "index",
-  "folderPath": "Shared/Knowledge",     // Literal Folder from `uip solution resources list`. Propagates verbatim into bindings_v2.json.
-  "indexName": "<IndexName>",           // MUST match the ECS index Name exactly (case-sensitive)
+  "folderPath": "Shared/Knowledge",
+  "indexName": "<IndexName>",
   "settings": {
-    "retrievalMode": "semantic",        // "semantic" | "structured" | "deeprag" | "batchtransform"
+    "retrievalMode": "semantic",
     "query": { "variant": "dynamic", "description": "Query for retrieval" },
     "folderPathPrefix": { "variant": "static" },
-    "fileExtension": { "value": "All" },  // object, not string
+    "fileExtension": { "value": "All" },
     "threshold": 0,
     "resultCount": 3
   }
 }
 ```
 
-**`retrievalMode` values (all lowercase) and per-mode `fileExtension.value` + extra fields:**
+Generate `id` once and keep it stable. Leave `referenceKey` null; refresh resolves the ECS index GUID by `indexName`. `name` is the display name and resource-folder name. `folderPath` is the literal `Folder` from Step 2 and propagates verbatim to `bindings_v2.json`. `indexName` must exactly match the ECS index `Name`.
+
+`retrievalMode` values are lowercase and constrain `fileExtension.value` and extra fields:
 
 | `retrievalMode` | Legal `fileExtension.value` | Extra required fields |
 |---|---|---|
 | `"semantic"` | `"All"`, `"pdf"`, `"csv"`, `"json"`, `"docx"`, `"xlsx"`, `"txt"` | none |
 | `"structured"` | `"csv"` | none |
-| `"deeprag"` | `"pdf"`, `"txt"` | `"citationMode": { "value": "Inline" }` (or `"Skip"`) |
-| `"batchtransform"` | `"csv"` | `"webSearchGrounding": { "value": "Enabled" }` (or `"Disabled"`), `"outputColumns": [{ "name": "...", "description": "..." }, ...]` |
+| `"deeprag"` | `"pdf"`, `"txt"` | `"citationMode": { "value": "Inline" }` or `"Skip"` |
+| `"batchtransform"` | `"csv"` | `"webSearchGrounding": { "value": "Enabled" }` or `"Disabled"`; `"outputColumns": [{ "name": "...", "description": "..." }, ...]` |
 
-**`query.variant`:** `"dynamic"` (LLM supplies at runtime), `"argument"` (bound to an input field), or `"static"` (pre-set value).
-
-**`folderPathPrefix.variant`:** `"static"` (no prefix) or `"argument"` (scope by a folder path provided at runtime).
-
-**Casing matters.** All `contextType` and `retrievalMode` values are lowercase. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+`query.variant` may be `"dynamic"` (LLM supplies it), `"argument"` (bound to an input field), or `"static"` (preset). `folderPathPrefix.variant` may be `"static"` (no prefix) or `"argument"` (runtime folder path). `fileExtension` is an object, not a string. Casing matters: `contextType` and `retrievalMode` are lowercase. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
 ## Solution-Level Files
 
-For `contextType: "index"` with a StorageBucket-backed ECS index, `uip agent refresh` emits:
+For `contextType: "index"` with a StorageBucket-backed ECS index, `uip agent refresh` emits this binding into the agent project root `bindings_v2.json`:
 
 ```json
 {
   "resource": "index",
   "key": "<IndexName>",
   "value": {
-    "name":       { "defaultValue": "<IndexName>", "isExpression": false, "displayName": "Index Name" },
-    "folderPath": { "defaultValue": "<Folder>",    "isExpression": false }
+    "name": { "defaultValue": "<IndexName>", "isExpression": false, "displayName": "Index Name" },
+    "folderPath": { "defaultValue": "<Folder>", "isExpression": false }
   },
   "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
 }
 ```
 
-into `bindings_v2.json` at the agent project root. `folderPath` is propagated verbatim from the agent-level `resource.json`'s top-level `folderPath` field. `uip solution resources refresh` then:
+`folderPath` comes verbatim from the agent resource. `uip solution resources refresh` then:
 
-1. Calls ECS `GET ecs_/v2/indexes/AllAcrossFolders?$filter=Name eq '<IndexName>'&$expand=dataSource` — resolves the index GUID, folder key, and data source type. With the binding's `folderPath` set, refresh narrows multi-folder name collisions to the exact deployment.
-2. If `dataSource.@odata.type` is not `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource`, warns + skips (other data sources — GoogleDrive, OneDrive, Dropbox, Confluence, Attachments — are not yet wired).
-3. Calls Orchestrator `GET orchestrator_/odata/Buckets?$filter=Name eq '<BucketName>'` with the index's `folderKey` as `X-UIPATH-FolderKey` — gets the bucket `Identifier` GUID.
-4. Registers the bucket as a solution resource via the resource-builder SDK — writes `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`.
-5. Hand-writes `resources/solution_folder/index/<IndexName>.json` with `kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name: "<BucketName>", kind: "bucket"}]`, `spec.storageBucketReference: { name, key }`, `dataSourceType: "StorageBucket"`.
-6. Appends two entries (`kind: "index"` + `kind: "bucket"`) to `userProfile/<userId>/debug_overwrites.json`.
+1. Calls ECS `GET ecs_/v2/indexes/AllAcrossFolders?$filter=Name eq '<IndexName>'&$expand=dataSource` to resolve the index GUID, folder key, and data source. Binding `folderPath` narrows duplicate names to the deployment folder.
+2. Warns and skips when `dataSource.@odata.type` is not `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource`.
+3. Calls Orchestrator `GET orchestrator_/odata/Buckets?$filter=Name eq '<BucketName>'` with the index `folderKey` as `X-UIPATH-FolderKey` to obtain the bucket `Identifier` GUID.
+4. Registers the bucket and writes `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`.
+5. Writes `resources/solution_folder/index/<IndexName>.json` with `kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name: "<BucketName>", kind: "bucket"}]`, `spec.storageBucketReference: { name, key }`, and `dataSourceType: "StorageBucket"`.
+6. Appends `kind: "index"` and `kind: "bucket"` entries to `userProfile/<userId>/debug_overwrites.json`.
 
-All failures (index not found, ambiguous name match, non-StorageBucket data source, bucket missing in Orchestrator) warn + continue — the command never aborts.
+All failures—index not found, ambiguous name match, non-StorageBucket data source, or missing bucket—warn and continue; the command never aborts.
 
 ### Index Definition (refresh fallback)
 
-**Path:** `resources/solution_folder/index/{IndexName}.json`
+Path: `resources/solution_folder/index/{IndexName}.json`
 
 ```jsonc
 {
   "docVersion": "1.0.0",
   "resource": {
-    "name": "MyIndex",
+    "name": "<IndexName>",
     "kind": "index",
     "apiVersion": "ecs.uipath.com/v2",
     "isOverridable": true,
     "dependencies": [
-      {
-        "name": "my_storage_bucket",
-        "kind": "bucket",
-        "key": "<bucket-resource-uuid>"
-      }
+      { "name": "<BucketName>", "kind": "bucket", "key": "<bucket-resource-uuid>" }
     ],
     "spec": {
-      "name": "MyIndex",
+      "name": "<IndexName>",
       "description": "",
-      "storageBucketReference": {
-        "name": "my_storage_bucket",
-        "key": "<bucket-resource-uuid>"
-      },
+      "storageBucketReference": { "name": "<BucketName>", "key": "<bucket-resource-uuid>" },
       "fileNameGlob": "All",
       "dataSourceType": "StorageBucket",
       "includeSubfolders": true,
@@ -162,22 +160,18 @@ All failures (index not found, ambiguous name match, non-StorageBucket data sour
 
 ### Storage Bucket Definition (refresh fallback)
 
-**Path:** `resources/solution_folder/bucket/orchestratorBucket/{BucketName}.json`
+Path: `resources/solution_folder/bucket/orchestratorBucket/{BucketName}.json`
 
 ```jsonc
 {
   "docVersion": "1.0.0",
   "resource": {
-    "name": "my_storage_bucket",
+    "name": "<BucketName>",
     "kind": "bucket",
     "type": "orchestratorBucket",
     "apiVersion": "orchestrator.uipath.com/v1",
     "isOverridable": true,
-    "spec": {
-      "type": "Orchestrator",
-      "description": null,
-      "tags": []
-    },
+    "spec": { "type": "Orchestrator", "description": null, "tags": [] },
     "key": "<unique-uuid>"
   }
 }
@@ -187,80 +181,71 @@ All failures (index not found, ambiguous name match, non-StorageBucket data sour
 
 ### Step 4 — Create the agent-level context resource
 
-**Path:** `<AgentName>/resources/<ContextName>/resource.json`
-
-```jsonc
-{
-  "$resourceType": "context",
-  "id": "<uuid>",                       // generate a fresh UUID
-  "referenceKey": null,
-  "name": "<ContextName>",
-  "description": "",
-  "contextType": "index",
-  "folderPath": "<FOLDER>",             // literal Folder from Step 2 (e.g., "Shared/Knowledge")
-  "indexName": "<INDEX_NAME>",          // exact ECS index name from Step 2
-  "settings": {
-    "retrievalMode": "semantic",
-    "query": { "variant": "dynamic" },
-    "folderPathPrefix": { "variant": "static" },
-    "fileExtension": { "value": "All" },
-    "threshold": 0,
-    "resultCount": 3
-  }
-}
-```
-
-See § Agent-Level Resource Shape above for the full field reference, including the three variants (`index`/`attachments`/`datafabricentityset`) and per-`retrievalMode` settings (`citationMode` for `deeprag`, `webSearchGrounding` + `outputColumns` for `batchtransform`).
+Create `<AgentName>/resources/<ContextName>/resource.json` using the schema above. At minimum, set `contextType` to `"index"`, `folderPath` to the literal Step 2 `Folder`, `indexName` to the exact Step 2 `Name`, `retrievalMode` to `"semantic"`, `query.variant` to `"dynamic"`, `folderPathPrefix.variant` to `"static"`, `fileExtension.value` to `"All"`, `threshold` to `0`, and `resultCount` to `3`. See **Agent-Level Resource Shape** for all variants and per-mode settings (`citationMode` for `deeprag`; `webSearchGrounding` and `outputColumns` for `batchtransform`).
 
 ### Step 4b — Inline agents only: wire the context flow node
 
-**Skip if the agent is standalone.** If the context is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add a `uipath.agent.resource.context.index.<index-name>.<index-id>` flow node connected to the autonomous node's `context` handle (bottom port). Fetch its manifest with `uip maestro flow registry get "<NodeType>" --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 5's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+Skip this step for standalone agents. For an **inline** agent embedded in a flow, `resource.json` alone is never reached at runtime. Add a `uipath.agent.resource.context.index.<index-name>.<index-id>` flow node connected to the autonomous node's `context` handle (bottom port). Fetch its manifest by running:
+
+```bash
+uip maestro flow registry get "<NodeType>" --output json
+```
+
+Delegate node and edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16; this skill does not author `.flow` graphs). Run Step 5 with `--inline-in-flow` and `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
 
 ### Step 5 — Refresh and validate
+
+Run:
 
 ```bash
 uip agent refresh  "<AGENT_NAME>" --output json
 uip agent validate "<AGENT_NAME>" --output json
 ```
 
-Refresh writes the binding. Validate is read-only. Confirm `Validated.resources` includes the context, then inspect the emitted binding:
+Confirm `Validated.resources` includes the context. Validation is read-only. Inspect the binding:
 
 ```bash
 cat "<AGENT_NAME>/bindings_v2.json"
-# Expect: resources[0] with {resource: "index", key: "<INDEX_NAME>", ...}
 ```
 
+Expect `resources[0]` with `{resource: "index", key: "<INDEX_NAME>", ...}`.
+
 ### Step 6 — Refresh solution resources
+
+Run:
 
 ```bash
 uip solution resources refresh --output json
 ```
 
-Refresh resolves the index via ECS `$expand=dataSource`, locates its backing StorageBucket in Orchestrator, and writes:
+Confirm it writes:
 
-- `resources/solution_folder/index/<INDEX_NAME>.json` — manifest with `kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name, kind: "bucket"}]`, `spec.storageBucketReference.{name,key}`.
-- `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json` — standard bucket manifest.
-- `userProfile/<userId>/debug_overwrites.json` — two entries (`kind: "index"` and `kind: "bucket"`), both referencing the index's folder.
+- `resources/solution_folder/index/<INDEX_NAME>.json` with `kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name, kind: "bucket"}]`, and `spec.storageBucketReference.{name,key}`.
+- `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`.
+- `userProfile/<userId>/debug_overwrites.json` with `kind: "index"` and `kind: "bucket"` entries referencing the index folder.
 
-Check the `Warnings` array in the refresh output. Common warnings:
-- `Index "<NAME>" not found in ECS` — exact-name mismatch. Re-check the index name.
-- `Index uses <type>, which is not yet supported` — data source is GoogleDrive/OneDrive/Dropbox/Confluence/Attachments; hand-author the solution-level files. Step 3's `dataSourceType` check should have caught this earlier.
-- `Storage bucket "<NAME>" not found in Orchestrator folder` — the bucket was deleted or lives in a different folder than the index.
+Check the `Warnings` array. Common warnings are:
+
+- `Index "<NAME>" not found in ECS` — exact-name mismatch; re-check `indexName`.
+- `Index uses <type>, which is not yet supported` — GoogleDrive/OneDrive/Dropbox/Confluence/Attachments; hand-author solution-level files. Step 3 should detect this.
+- `Storage bucket "<NAME>" not found in Orchestrator folder` — bucket deleted or in another folder.
 
 ### Step 7 — Bundle and upload
+
+Run:
 
 ```bash
 uip solution bundle . -d ./dist --output json
 uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 ```
 
-The upload response includes a `Data.DesignerUrl` — open it to verify the context appears wired to the ECS index in Studio Web.
+Open `Data.DesignerUrl` from the upload response and verify in Studio Web that the context is wired to the ECS index.
 
 ## Gotchas
 
-`contextType` and `retrievalMode` values MUST be lowercase — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+`contextType` and `retrievalMode` values MUST be lowercase. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
-**Cap retrievals in the system prompt.** Wiring the index is not enough: "ground your answer in the retrieved guidance" with no call limit makes the agent re-query with new phrasings until the runtime terminates it — `AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS` (in a flow: node Failed, incident `170002`). Raising `settings.maxIterations` only moves the failure — 5 dies at 5, 25 dies at 25. State a cap and a fallback:
+**Cap retrievals in the system prompt.** Without a call limit, the agent may re-query until runtime termination at `AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS` (in a flow: node Failed, incident `170002`). Raising `settings.maxIterations` only moves the failure: 5 dies at 5 and 25 dies at 25. State a cap and fallback:
 
 ```text
 Call <toolName> at most <N> times (N ≤ 3 for a single decision). After the last call, stop retrieving and decide with the evidence you already have.

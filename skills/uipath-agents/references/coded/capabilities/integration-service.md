@@ -1,98 +1,75 @@
 # Integration Service (Coded)
 
-Call IS connector activities (Slack, Jira, Web Search, …) from a coded Python agent via `sdk.connections.invoke_activity()`.
+Call Integration Service (IS) connector activities—Slack, Jira, Salesforce, ServiceNow, Web Search, and others—from a coded Python agent with `sdk.connections.invoke_activity()`.
 
 ## When to Use
 
-- Coded Python agent needs SaaS / API via IS (Slack, Salesforce, Jira, ServiceNow, Web Search, …).
-- Connection exists or user creates one via `uip is connections create <CONNECTOR_KEY>`.
+Use this skill when a coded Python agent needs a SaaS/API through IS and a connection exists or the user will create one with `uip is connections create <CONNECTOR_KEY>`.
 
 ## When NOT to Use
 
-- Calling an Orchestrator process / queue / asset → [process-invocation.md](process-invocation.md), `sdk.processes` / `sdk.queues` / `sdk.assets`.
-- LLM-step-bound static IS tool inside Studio Web (no Python agent, just a tool resource) → [../../lowcode/capabilities/integration-service/integration-service.md](../../lowcode/capabilities/integration-service/integration-service.md).
-- Vendor exposes a stable public REST API and you do NOT need IS auth/governance → call the vendor directly with `httpx`; IS adds no value.
+- Orchestrator processes, queues, or assets → [process-invocation.md](process-invocation.md), `sdk.processes` / `sdk.queues` / `sdk.assets`.
+- An LLM-step-bound static IS tool in Studio Web with no Python agent → [../../lowcode/capabilities/integration-service/integration-service.md](../../lowcode/capabilities/integration-service/integration-service.md).
+- A vendor’s stable public REST API when IS auth/governance is unnecessary → call the vendor directly with `httpx`.
 
-## Discovery — Use the `uipath-platform` Skill First (Mandatory)
+## Mandatory Discovery
 
-Integration Service discovery — connector → connection → ping → describe, reference-field resolution, parent-driven custom fields — is owned by the **`uipath-platform`** skill. Run its IS discovery workflow before authoring any `invoke_activity` create/update call; do not infer the shape from the worked examples below. If those reads fail, stop and surface — do not improvise.
+Run the `uipath-platform` skill’s IS discovery workflow before authoring any `invoke_activity` create/update call. Do not infer activity shape from examples. If discovery reads fail, stop and surface the failure; do not improvise.
 
-Discovery is auth-gated (`uip login` + connection selection precede `describe`). **Coded consequence:** you can't author `body_fields` / `ActivityMetadata` without `describe` output, so for IS-using agents do auth + discovery *before* Build, not after.
+Authenticate with `uip login` and select a connection before auth-gated `describe`. Authenticate and discover before Build: `body_fields` and `ActivityMetadata` require `describe` output.
 
-Read these from the `uipath-platform` skill (`references/integration-service/`) — required even for tenant-free / shape-only authoring (you read them for the workflow, field-resolution, and error-recovery contract regardless of tenant; only the live `describe` step and `uip login` defer when no tenant is available).
+Read these files from the `uipath-platform` skill (`references/integration-service/`) even for tenant-free or shape-only authoring:
 
-**`agent-workflow.md` is ALWAYS mandatory. Reading it does not excuse skipping `reference-resolution.md`** when the target activity carries reference or required fields — that second read is the contract for curated create/update calls, and skipping it is the #1 cause of rejections:
+- Read `agent-workflow.md` **always**; run Steps 1–4: connector → connection → ping → describe.
+- Read `reference-resolution.md` before any create/update whose schema has reference or required fields—Jira `project`/`issuetype`/`versions`/`components`, Salesforce lookups, and similar. It defines reference-field resolution and **Validate Required Fields Before Executing**. Flat-body activities with no reference fields, such as Slack `send_message_to_channel_v2`, do not require it.
+- Read `resources.md` § Parent-Field-Driven Custom Fields when applicable: Jira project/issuetype, Salesforce SOQL, Dataservice V3.
+- Read `connectors.md` for connector disambiguation and option-label format.
 
-- `agent-workflow.md` — **(always)** Steps 1–4: connector → connection → ping → describe.
-- `reference-resolution.md` — **(mandatory before any create/update whose schema has reference or required fields — Jira `project`/`issuetype`/`versions`/`components`, Salesforce lookups, etc.)** reference-field resolution + **Validate Required Fields Before Executing**. Flat-body activities with no reference fields (e.g. Slack `send_message_to_channel_v2`) do not need it.
+Reading `agent-workflow.md` does not replace `reference-resolution.md` when the target has reference or required fields.
 
-Then, as needed:
+Coded-specific rules:
 
-- `resources.md` § Parent-Field-Driven Custom Fields — Jira project/issuetype, Salesforce SOQL, Dataservice V3.
-- `connectors.md` — connector disambiguation + option-label format.
-
-Coded-specific layers:
-
-1. **Reuse before discover** — grep cwd for existing `ActivityMetadata` constants before re-running describe.
-2. **Present concrete options, then echo every pick.** At each stop point ask the user, presenting the actual candidates as concrete options (one per candidate: short label + one-line description, per the option-label format in the `uipath-platform` skill's `connectors.md`). Recommend the safest default; let the user choose. Never ask open-ended — derive options from the discovery output. After the pick, echo the chosen option back before the next step. Ambiguous answer or "other" → follow up to narrow; do not infer.
-   - **Stop points:** connector (multi-hit on `connectors list --filter`), curated-vs-raw object, ambiguous operation verb (`Update` vs `Replace`), parent-field `-f` values, custom-field-by-name with >1 candidate.
-   - Silent inference produces wrong-connector / wrong-form / wrong-customfield writes.
+1. **Reuse before discover:** grep the cwd for existing `ActivityMetadata` constants before rerunning `describe`.
+2. **Present concrete options, then echo every pick:** at every stop point, ask the user using actual discovery candidates, one candidate per option with a short label and one-line description, following `connectors.md`. Recommend the safest default and let the user choose. Echo the chosen option before continuing. Never ask open-ended questions or infer an ambiguous answer; “other” requires narrowing.
+3. Stop points are: connector when `connectors list --filter` returns multiple hits; curated versus raw object; ambiguous operation verb such as `Update` versus `Replace`; parent-field `-f` values; and custom-field-by-name when more than one candidate exists.
+4. Do not silently infer selections: wrong connector or wrong form can create incorrect writes.
 
 ## Coded vs Low-code IS Tools
 
 | | Coded | Low-code |
 |---|---|---|
 | Artifact | Inline `ActivityMetadata` literal in Python | `resources/<Tool>/resource.json` |
-| Selection | Author code or LLM tool-call routing | Studio Web binds tool to LLM step |
-| Runtime | `sdk.connections.invoke_activity(...)` | Engine dispatches via `properties.toolPath` |
-| Bindings | `bindings.json` `resource: "connection"` | Solution-level `connection/<KEY>/…json` (auto-generated) |
+| Selection | Author code or LLM tool-call routing | Studio Web binds tool to an LLM step |
+| Runtime | `sdk.connections.invoke_activity(...)` | Engine dispatches through `properties.toolPath` |
+| Bindings | `bindings.json`, `resource: "connection"` | Solution-level `connection/<KEY>/…json` (auto-generated) |
 
-## `describe` Output → `ActivityMetadata` Mapping
+## Build `ActivityMetadata` from `describe`
 
 ```python
 from uipath.platform.connections import ActivityMetadata, ActivityParameterLocationInfo
 ```
 
-| `describe` field | → | `ActivityMetadata` | Notes |
-|---|---|---|---|
-| `operation.path` | → | `object_path` | direct |
-| `operation.method` | → | `method_name` | direct |
-| (not surfaced) | → | `content_type` | `"application/json"` for non-multipart |
-| `parameters[type=query][].name` | → | `query_params` | direct |
-| `parameters[type=path][].name` | → | `path_params` | direct |
-| `parameters[type=header][]` | → | `header_params` | filtered out of compact summary; raw cache only — see Limitations |
-| `parameters[type=multipart][]` | → | `multipart_params` | same filter — see Limitations |
-| `requestFields[].name` first-segment, deduped | → | `body_fields` | see Body-Field Reframing |
-| (not surfaced) | → | `json_body_section` | Multipart only — name of the form-part that holds the JSON body. `None` → SDK defaults to `"body"`. Override only when the connector expects a different wrapper (e.g., `"RagRequest"`). Ignored for non-multipart. |
+| `describe` field | `ActivityMetadata` field | Rule |
+|---|---|---|
+| `operation.path` | `object_path` | Direct |
+| `operation.method` | `method_name` | Direct |
+| Not surfaced | `content_type` | Use `"application/json"` for non-multipart |
+| `parameters[type=query][].name` | `query_params` | Direct |
+| `parameters[type=path][].name` | `path_params` | Direct |
+| `parameters[type=header][].name` | `header_params` | Compact summary filters these; use raw cache, see Limitations |
+| `parameters[type=multipart][].name` | `multipart_params` | Compact summary filters these; use raw cache, see Limitations |
+| First segment of deduplicated `requestFields[].name` | `body_fields` | See Body-Field Reframing |
+| Not surfaced | `json_body_section` | Multipart only; form-part holding JSON, default `"body"` |
 
-### Body-Field Reframing (Non-Obvious)
+For multipart, override `json_body_section` only when the connector expects another wrapper, such as `"RagRequest"`; it is ignored for non-multipart.
 
-`requestFields[].name` from describe is emitted as **dotted leaf paths** (`fields.project.key`, `attachment.image_url`) — a flat encoding of a nested schema, NOT routing keys.
+### Body-Field Reframing
 
-`body_fields` is the **top-level envelope whitelist**: first segment of each `requestFields[].name`, deduped. Match is against `activity_input.items()` top-level keys only. Caller pre-nests the body and passes it as one input value; SDK slots it in as-is.
+Treat dotted `requestFields[].name` values such as `fields.project.key` or `attachment.image_url` as flat encodings of nested schemas, not routing keys. Set `body_fields` to the deduplicated top-level envelope whitelist, match top-level `activity_input.items()` keys, pre-nest the body, and pass it as one input value for the SDK to insert as-is.
 
-## Constructing `ActivityMetadata` — Worked Examples
+For flat activities, use deduplicated top-level request-field names. For Jira curated activities whose fields begin with `fields.`, use `body_fields=["fields"]` and pass `{"fields": {...}}`; never use dotted input keys.
 
-**Slack `send_message_to_channel_v2`** — flat body schema; `body_fields` is the full deduped top-level set; single `query_params=["send_as"]`.
-
-```python
-SLACK_SEND_MESSAGE = ActivityMetadata(
-    object_path="/send_message_to_channel_v2",
-    method_name="POST",
-    content_type="application/json",
-    parameter_location_info=ActivityParameterLocationInfo(
-        query_params=["send_as"],
-        body_fields=[
-            "channel", "messageToSend", "attachment", "buttons", "fields",
-            "icon_emoji", "icon_url", "image", "link_names", "metadata",
-            "mrkdwn", "parse", "reply_broadcast", "thread_ts",
-            "unfurl_links", "unfurl_media", "username",
-        ],
-    ),
-)
-```
-
-**Jira `curated_create_issue`** — every requestField starts with `fields.`; `body_fields` collapses to one entry. First run GenerateSchema discovery (auth-required) to surface the project- and issuetype-specific custom + reference fields — do this BEFORE writing the literal:
+Run GenerateSchema before writing the literal:
 
 ```bash
 uip is resources describe "uipath-atlassian-jira" "curated_create_issue" \
@@ -101,7 +78,7 @@ uip is resources describe "uipath-atlassian-jira" "curated_create_issue" \
   --action GenerateSchema --output json
 ```
 
-Resolve any reference fields it reports (`versions`, `components`, assignee, …) per the `uipath-platform` skill's `reference-resolution.md` — passing a name where the connector wants a reference ID is the most common curated-activity rejection.
+Resolve reference fields such as `versions`, `components`, and assignee using `reference-resolution.md`; do not pass a name when the connector requires a reference ID. A Jira-style result is:
 
 ```python
 JIRA_CREATE_ISSUE = ActivityMetadata(
@@ -112,52 +89,49 @@ JIRA_CREATE_ISSUE = ActivityMetadata(
 )
 ```
 
-**Pass the body NESTED, not as dotted keys.** `body_fields=["fields"]` + a pre-nested `{"fields": {...}}` is the shape `curated_create_issue` accepts. Passing flat dotted keys (`body_fields=["fields.project.key", ...]` + `activity_input={"fields.project.key": "ENGCE"}`) is rejected by the connector with `project: Specify a valid project ID or key` — the SDK ships dotted keys as literal top-level JSON keys, which the curated activity does not unflatten.
+Pass nested input, not dotted keys:
 
 ```python
-sdk.connections.invoke_activity(
-    activity_metadata=JIRA_CREATE_ISSUE,
-    connection_id=connection.id,
-    activity_input={
-        "fields": {
-            "project": {"key": "ENGCE"},
-            "issuetype": {"id": "3"},
-            "summary": "Triage: agent failure",
-            "description": "Auto-filed by coded agent.",
-        }
-    },
-)
+activity_input={
+    "fields": {
+        "project": {"key": "<PROJECT_KEY>"},
+        "issuetype": {"id": "<ISSUE_TYPE_ID>"},
+        "summary": "<SUMMARY>",
+        "description": "<DESCRIPTION>",
+    }
+}
 ```
 
-## Runtime Invocation Pattern
+Do not set `body_fields` to dotted keys or pass dotted keys in `activity_input`; the SDK sends them as literal top-level JSON keys and curated activities reject them.
+
+## Runtime Invocation
 
 ```python
 from uipath.platform import UiPath
 from uipath.platform.connections import ActivityMetadata, ActivityParameterLocationInfo
 
-# SLACK_SEND_MESSAGE literal: see "Worked Examples" above.
+# Define the discovered ActivityMetadata literal inline.
 
-def post_to_slack(channel: str, message: str) -> dict:
+def post_to_service(value: str) -> dict:
     sdk = UiPath()
-    # The connection id (the `Id` from `uip is connections list`) — the same
-    # value as bindings.json `ConnectionId.defaultValue`. Let it raise; don't
-    # wrap in try/except.
     connection = sdk.connections.retrieve("<connection_id>")
     return sdk.connections.invoke_activity(
-        activity_metadata=SLACK_SEND_MESSAGE,
+        activity_metadata=ACTIVITY_METADATA,
         connection_id=connection.id,
-        activity_input={"channel": channel, "messageToSend": message},
+        activity_input={"<body_field>": value},
     )
 ```
 
-- **`activity_input` is the single bucket** for query, path, header, multipart, and body values. SDK routes by `parameter_location_info`. No `query=`/`path=`/`header=` kwarg exists.
-- **`invoke_activity` calls `retrieve()` internally** (`_connections_service.py:675`). The pattern above (explicit retrieve, then pass `connection.id`) is preferred because it gives the agent a typed `Connection` for `metadata()` / `retrieve_token()`; one-shots can pass the connection id straight to `invoke_activity(connection_id="<connection_id>", ...)`.
-- **Return value** is `response.json()` — keys mirror `responseFields[].name`. Flat connectors return top-level; some wrap in `Data` / `result`. Auto-traced via `@traced`; see [tracing.md](tracing.md).
-- **Silent drops** — `None` values and any key not in `parameter_location_info` are skipped (`_connections_service.py:753-770`). Mistyped keys never surface as errors; echo-check writes per Error Handling § "Silent rename / typo".
+- Instantiate `UiPath()` lazily inside the function that needs it.
+- Get the connection `Id` from `uip is connections list`; use it in `retrieve()` and as `bindings.json` `ConnectionId.defaultValue`. A one-shot may pass it directly to `invoke_activity(connection_id="<connection_id>", ...)`.
+- Put query, path, header, multipart, and body values in the single `activity_input` bucket. The SDK routes them by `parameter_location_info`; there are no `query=`, `path=`, or `header=` keyword arguments.
+- `invoke_activity` calls `retrieve()` internally (`_connections_service.py:675`). Prefer explicit `retrieve()` because it provides a typed `Connection` for `metadata()` and `retrieve_token()`.
+- The return value is `response.json()`, with keys matching `responseFields[].name`; connectors may wrap results in `Data` or `result`. Calls are auto-traced via `@traced`; see [tracing.md](tracing.md).
+- `None` values and keys absent from `parameter_location_info` are silently skipped (`_connections_service.py:753-770`). Echo-check writes as described in Error Handling.
 
-### Multipart endpoints (silent in describe)
+### Multipart
 
-Compact `describe` omits `contentType`. Curated file-attachment activities (Outlook `send-mail-v2`, Slack `send_files_to_channel`, …) are multipart/form-data — `content_type="application/json"` returns `400 "Unable to parse multipart body"`. Read the raw cache (path under Limitations) and set `content_type="multipart/form-data"` with `multipart_params` + `json_body_section`:
+Compact `describe` omits `contentType`. For curated file activities such as Outlook `send-mail-v2` and Slack `send_files_to_channel` (sending `content_type="application/json"` to these returns `400 "Unable to parse multipart body"`), read the raw cache and set `content_type="multipart/form-data"`, `multipart_params`, and `json_body_section`:
 
 ```python
 ActivityMetadata(
@@ -169,38 +143,36 @@ ActivityMetadata(
 )
 ```
 
-Each `multipart_params` value (`_connections_service.py:800-815`) is a 3-tuple `(filename, bytes, content_type)` for file uploads (preferred), raw `bytes` (filename defaults to the field name, `application/octet-stream`), or a scalar string (plain form field, e.g. `saveAsDraft="true"`). The JSON body section (default `"body"`) auto-injects as `(filename="", json.dumps(body), "application/json")`.
+Each `multipart_params` value (`_connections_service.py:800-815`) may be `(filename, bytes, content_type)` for file uploads (preferred), raw `bytes` (defaulting to the field name and `application/octet-stream`), or a scalar string for a plain form field such as `saveAsDraft="true"`. The JSON body section, default `"body"`, is injected as `(filename="", json.dumps(body), "application/json")`.
 
-### Async variant
+### Async
 
-Suffix `_async` and `await` the call. Identical semantics, same args. Use inside `async def` framework nodes.
+Use the `_async` suffix and `await` with identical arguments inside `async def` framework nodes.
 
-### Other `sdk.connections` methods
+### Other `sdk.connections` Methods
 
-| Method | Use when | Cite |
+| Method | Use | Cite |
 |---|---|---|
-| `list(name=, folder_path=, connector_key=, skip=, top=)` | Connection key unknown — enumerate or filter. Sync + `list_async`. Returns `List[Connection]`. | `_connections_service.py:152` |
-| `retrieve_token(key, token_type=ConnectionTokenType.DIRECT)` | Need the raw bearer to call the vendor's own REST API directly (e.g., Microsoft Graph) — bypasses `invoke_activity`. Sync + `retrieve_token_async`. Returns `ConnectionToken{access_token,...}`. | `_connections_service.py:368` |
-| `retrieve_event_payload(event_args: EventArguments)` | Agent invoked by an IS trigger / webhook — input carries `EventArguments`; unwrap the inbound payload before processing. Sync + `retrieve_event_payload_async`. | `_connections_service.py:421` |
-| `metadata(element_instance_id, connector_key, tool_path, parameters=, schema_mode=True, max_jit_depth=5)` | Compact `describe` dropped headers / multipart / JIT-cascaded custom fields. Pass `parameters={...}` to auto-walk JIT URLs up to depth 5. Sync + `metadata_async`. | `_connections_service.py:79` |
+| `list(name=, folder_path=, connector_key=, skip=, top=)` | Enumerate/filter connections when the key is unknown; sync and `list_async`; returns `List[Connection]` | `_connections_service.py:152` |
+| `retrieve_token(key, token_type=ConnectionTokenType.DIRECT)` | Get a bearer token for the vendor’s own REST API, such as Microsoft Graph; sync and `retrieve_token_async`; returns `ConnectionToken{access_token,...}` | `_connections_service.py:368` |
+| `retrieve_event_payload(event_args: EventArguments)` | Unwrap inbound payload for an IS trigger/webhook; sync and `retrieve_event_payload_async` | `_connections_service.py:421` |
+| `metadata(element_instance_id, connector_key, tool_path, parameters=, schema_mode=True, max_jit_depth=5)` | Recover compact-describe omissions and JIT-cascaded custom fields; pass `parameters={...}` to auto-walk JIT URLs up to depth 5; sync and `metadata_async` | `_connections_service.py:79` |
 
-**`retrieve_token` escape hatch** is the supported way to fall back to the vendor's own API when an IS curated activity is missing (canonical example: `uipath-langchain-python/samples/email-triage-agent/graph.py` calls Microsoft Graph with the connection's bearer). Distinct from the anti-pattern of hitting `/elements_/v3/…` directly.
+Use `retrieve_token` as the supported escape hatch when a curated activity is missing, then call the vendor API. Do not call `/elements_/v3/…` directly.
 
 ## Framework Integration
 
-Wrap `invoke_activity_async` in the framework's tool primitive — runtime body identical, only decorator/registration differs.
+Wrap `invoke_activity_async` in the framework’s tool primitive; only decoration/registration changes.
 
 | Framework | Primitive | Reference |
 |---|---|---|
-| LangGraph | Writes (LLM judgment) = node via conditional edge; reads = LLM-callable tool. `invoke_activity_async` inside `async def node(state)`. | [../frameworks/langgraph-integration.md](../frameworks/langgraph-integration.md) |
+| LangGraph | LLM judgment writes: node via conditional edge; reads: LLM-callable tool; call `invoke_activity_async` inside `async def node(state)` | [../frameworks/langgraph-integration.md](../frameworks/langgraph-integration.md) |
 | LlamaIndex | `FunctionTool.from_defaults(fn=<RUNTIME_FN>)` | [../frameworks/llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
 | OpenAI Agents | `@function_tool` on `<RUNTIME_FN>` | [../frameworks/openai-agents-integration.md](../frameworks/openai-agents-integration.md) |
 
-## Connection Resolution — `bindings.json`
+## `bindings.json` and Required Outputs
 
-Write the connection's id (the `Id` from `uip is connections list`, a GUID) as the `retrieve()` argument in code AND as `ConnectionId.defaultValue` in `bindings.json` — the two must match. That way it resolves locally (no override) and `bindings.json` lets users rebind the resource per environment when deployed. `uip codedagent init` writes `resources: []` — author the connection entry after picking the connection.
-
-Minimal connection entry (`uip codedagent init` writes `resources: []`; add this). The entry-type field is **`resource`** (NOT `type`) — the CLI bindings schema is `{ resource, key, value, metadata }`:
+`uip codedagent init` writes `resources: []`; add a connection resource. Use the same connection id in code, `ConnectionId.defaultValue`, and binding `key`:
 
 ```jsonc
 {
@@ -208,74 +180,61 @@ Minimal connection entry (`uip codedagent init` writes `resources: []`; add this
   "resources": [
     {
       "resource": "connection",
-      "key": "jira-coded-eval",
-      "value": { "ConnectionId": { "defaultValue": "jira-coded-eval" } },
+      "key": "<CONNECTION_KEY>",
+      "value": { "ConnectionId": { "defaultValue": "<CONNECTION_ID>" } },
       "metadata": { "UseConnectionService": "True", "Connector": "", "BindingsVersion": "2.2" }
     }
   ]
 }
 ```
 
-Full JSON schema lives in [`../lifecycle/bindings-reference.md`](../lifecycle/bindings-reference.md) § Connection. Coded-agent-specific points only:
+The binding schema is `{ resource, key, value, metadata }`; use `resource`, never `type`. Set `key` to `<CONNECTION_KEY>` with no `<NAME>.<FOLDER>` suffix. Set `value.ConnectionId.defaultValue` to the connection id; use capital-C `ConnectionId`, not `name`, and do not add `folderPath`. Set `metadata.UseConnectionService: "True"`, `Connector: ""`, and `BindingsVersion: "2.2"`; `BindingsVersion: "2.2"` is independent of top-level `version: "2.0"`.
 
-- Entry type field is `resource` (`"resource": "connection"`), never `type` — matches every other binding entry.
-- `key` is just `<CONNECTION_KEY>` (no `<NAME>.<FOLDER>` dot suffix used by other resources). Same string passed positionally to `retrieve()`.
-- `value.ConnectionId.defaultValue` is the connection id — the same value passed to `retrieve()` in code (and the binding `key`). Capital-C `ConnectionId` (other resources use `name`); no `folderPath`.
-- `metadata.UseConnectionService: "True"` is mandatory; `Connector: ""` (empty); `BindingsVersion: "2.2"` is the per-resource rev and is independent of the top-level envelope `version: "2.0"`.
-- `uip codedagent deploy` repackages as `content/bindings_v2.json` — never hand-author that path.
+Read [`../lifecycle/bindings-reference.md`](../lifecycle/bindings-reference.md) § Connection for the full schema. `uip codedagent deploy` repackages this as `content/bindings_v2.json`; never hand-author that path.
 
-### Connection value: code and bindings must match
+Get the id from the `Id` field of `uip is connections list --output json`. Obtain `Connection.element_instance_id`, needed by `sdk.connections.metadata()`, only from the live `Connection` returned by `retrieve()`; never hardcode it.
 
-Write the **same connection id** in code and in `bindings.json`:
+Every coded IS agent ships:
 
-- In code, pass it to `retrieve()` — `sdk.connections.retrieve("<connection_id>")`.
-- In `bindings.json`, use it as the connection's `ConnectionId.defaultValue` (and the binding `key`).
-
-Because they match, the agent resolves the connection both **locally** (run uses the code value directly, no override) and **when deployed** (`bindings.json` lets Studio Web / Orchestrator override the resource per environment). Get the connection id from the `Id` field of `uip is connections list --output json` (a GUID).
-
-`Connection.element_instance_id` (needed for `sdk.connections.metadata()` calls) comes from the live IS API response after `retrieve()` — never hardcode it.
-
-**Required outputs — every coded IS agent ships these three:**
-
-| File | Read by | Must contain |
-|---|---|---|
-| `main.py` | runtime | lazy `UiPath()` (not module-scope), inline `ActivityMetadata` literal, `retrieve("<connection_id>")` + `invoke_activity` |
-| `bindings.json` | `uip codedagent deploy` | connection resource, `key` + `ConnectionId.defaultValue` = the same connection id, `UseConnectionService: "True"` |
-| `uipath.json` | `uip` pack/deploy | `functions`, `packOptions` |
+| File | Must contain |
+|---|---|
+| `main.py` | Lazy `UiPath()`; inline `ActivityMetadata` literal; `retrieve("<connection_id>")` and `invoke_activity` |
+| `bindings.json` | Connection resource; `key` and `ConnectionId.defaultValue` equal the same connection id; `UseConnectionService: "True"` |
+| `uipath.json` | `functions`, `packOptions` |
 
 ## Error Handling
 
-SDK does NO preflight schema validation — it routes the keys it recognises (per `parameter_location_info`), drops `None` and unknown keys, ships the request. All field-shape validation happens server-side. Four outcomes:
+The SDK performs no preflight schema validation. It routes recognized keys, drops `None` and unknown keys, and sends the request; IS and vendor validation happen server-side.
 
-| Outcome | When | Surfaces as | Recover |
-|---|---|---|---|
-| **Misconfigured `ActivityMetadata`** | `content_type` not `*/json` or `*/multipart*` | `ValueError("Unsupported content type: <ct>")` (`_connections_service.py:826`) | Fix the literal; do not retry. |
-| **IS schema reject** | Caller omits a `requestFields[].required: true`, sends wrong dataType | `RuntimeError` with IS-validator body (NOT a pre-HTTP `ValueError`) | Re-run describe; add the field / fix the shape. |
-| **Vendor reject** | Shape OK by IS, vendor's own validators reject (workflow rules, custom validators, auth) | `RuntimeError` with vendor body | Parse vendor message; per `agent-workflow.md § Error Recovery` retry once with the fix. |
-| **Silent rename / typo** | Curated rename (Jira `customfield_10004` → `storyPoints_Customfield10004`) or mistyped key — dropped by `_connections_service.py:753-770` | **No exception. 2xx with field missing.** | Echo-check: re-read created resource; assert the field you sent is present and equal. Mismatch → switch curated⇄raw or fix the key. |
+| Outcome | Surface | Recovery |
+|---|---|---|
+| Misconfigured `ActivityMetadata`, where `content_type` is not `*/json` or `*/multipart*` | `ValueError("Unsupported content type: <ct>")` from `_connections_service.py:826` | Fix the literal; do not retry |
+| IS schema rejection: missing `requestFields[].required: true` or wrong `dataType` | `RuntimeError` containing the IS-validator body, not a pre-HTTP `ValueError` | Rerun `describe`; add/fix the field or shape |
+| Vendor rejection after IS accepts the shape | `RuntimeError` containing the vendor body | Parse the message and follow `agent-workflow.md § Error Recovery`; retry once with the fix |
+| Silent rename/typo, including curated renames such as `customfield_10004` → `storyPoints_Customfield10004` | No exception; possible 2xx with the field missing | Echo-check by rereading the created resource and assert the sent field is present and equal; mismatch means switch curated↔raw or fix the key |
 
-Network / 5xx are retried with exponential backoff by `BaseService.request`; only exhausted retries propagate (as `httpx.HTTPError` subclasses, not `RuntimeError`). For LLM-facing tools return error strings rather than re-raising — keeps the agent loop alive. Cap semantic retries at 2 per `agent-workflow.md § Error Recovery`; never retry the same query unchanged.
+`BaseService.request` retries network/5xx failures with exponential backoff; exhausted failures propagate as `httpx.HTTPError` subclasses, not `RuntimeError`. For LLM-facing tools, return error strings rather than re-raising to keep the agent loop alive. Cap semantic retries at 2 per `agent-workflow.md § Error Recovery`; never retry the same query unchanged.
 
-## Anti-patterns — silent failures only
+## Anti-patterns
 
-These six are the ones the SDK / IS / vendor will NOT tell you about. Positive guidance for everything else lives in the relevant section above; do not pad this list.
+1. Never hardcode `element_instance_id`; obtain it from the live `Connection.element_instance_id` after `retrieve()`.
+2. Never hand-author `object_path`, `method_name`, or `body_fields`; source them from `uip is resources describe` and rerun after connector upgrades. Keep `ActivityMetadata` literals inline in `.py`; `pack` bundles them and mypy/pyright catch shape errors.
+3. Never use typos or unknown `activity_input` keys; `_connections_service.py:753-770` silently drops them. Echo-check writes by reading the created object.
+4. Never use `invoke_activity` to receive trigger payloads. IS-triggered jobs receive `EventArguments`; unwrap with `sdk.connections.retrieve_event_payload(event_args)` (`_connections_service.py:421`).
+5. Never bypass `invoke_activity` with raw `httpx` to `/elements_/v3/…`; this loses retry, tracing, and S2S auth. Vendor API calls using `retrieve_token` are supported and distinct.
+6. Never instantiate `UiPath()` at module scope; `uip codedagent init` and `pack` import modules to inspect entry points, so module-level construction fires HTTP during import. Instantiate lazily inside the needed function.
 
-1. **Hardcoding `element_instance_id`.** The `element_instance_id` needed for `sdk.connections.metadata()` comes from the live `Connection.element_instance_id` after `retrieve()` — never hardcode it.
-2. **Hand-authoring `object_path` / `method_name` / `body_fields`.** Curated activities rename fields silently between connector versions. Always source from `uip is resources describe` and re-run after upgrades. Sidecar-JSON literals also drift — keep `ActivityMetadata` literals inline in a `.py` file; `pack` bundles them and mypy / pyright catch shape errors at edit time.
-3. **Typos and unknown keys in `activity_input`.** Anything not in `parameter_location_info` is silently dropped (`_connections_service.py:753-770`); the request goes out missing the field, vendor returns 2xx, the data is just gone. Echo-check writes by reading back the created object (see Error Handling § "Silent rename / typo").
-4. **`invoke_activity` for trigger payloads.** IS-triggered jobs receive `EventArguments` as input — unwrap with `sdk.connections.retrieve_event_payload(event_args)` (`_connections_service.py:421`). Calling `invoke_activity` to "receive" anything is a category error.
-5. **Bypassing `invoke_activity` with raw `httpx` to `/elements_/v3/…`.** Loses retry, tracing, S2S auth. Distinct from the supported escape hatch of calling the **vendor's own** API with `retrieve_token` (see Other `sdk.connections` methods) — that is a different URL space.
-6. **Instantiating `UiPath()` at module level.** `uip codedagent init` and `pack` import the module to introspect entry points; module-level construction fires HTTP at import time and breaks scaffold / deploy. Always lazy: build inside the function that needs it.
+## Limitations of Compact `describe`
 
-## Limitations of the compact describe
-
-`uip is resources describe --output json` filters `parameters` to `path|query` only — multipart and header params survive only in the raw cache at:
+`uip is resources describe --output json` retains only `path|query` parameters. Header and multipart parameters remain in:
 
 ```text
 ~/.uipath/cache/integrationservice/<TENANT_ID>/<CONNECTOR_KEY>/<CONNECTION_ID>/<OBJECT>.schema.json
 ```
 
-Example: `uipath-salesforce-slack` (NOT `uipath-slack` — that key does not exist on the catalog; the SDK docstring example is misleading) / `send_files_to_channel` lists `parameters[type=multipart][0].name = "file"` only in the cache. Workaround — hand-populate from `data.metadata.method.<VERB>.parameters[]`: `type=="multipart"` → `multipart_params`, `type=="header"` → `header_params`. When the cache is empty, runtime fallback:
+Read `data.metadata.method.<VERB>.parameters[]`; map `type=="multipart"` to `multipart_params` and `type=="header"` to `header_params`. For example, `uipath-salesforce-slack` (not `uipath-slack`, which is not a catalog key) / `send_files_to_channel` exposes `parameters[type=multipart][0].name = "file"` only in the cache.
+
+When the cache is empty, use:
 
 ```python
 md = sdk.connections.metadata(
@@ -287,18 +246,20 @@ md = sdk.connections.metadata(
 
 Pass `parameters={"<KEY>": "<VALUE>"}` only for connectors with cascading JIT custom fields.
 
-**`-f` precondition.** `uip is resources describe ... -f <KEY>=<VALUE>` fails with `No api-type ObjectAction matched for fields [...]` on connectors without a matching api-type ObjectAction, and requires `--connection-id` + `--operation`. Enumerate valid actions on the cached schema before retrying — the path is `.data.metadata.method.<VERB>.design.actions[]` (NOT `.connectorMethodInfo.design.actions[]`, which does not exist in the cache shape):
+### `-f` precondition
+
+`uip is resources describe ... -f <KEY>=<VALUE>` requires `--connection-id` and `--operation`, and fails with `No api-type ObjectAction matched for fields [...]` when no matching api-type ObjectAction exists. Enumerate valid actions in the cached schema before retrying:
 
 ```bash
 jq '.data.metadata.method.<VERB>.design.actions[] | select(.actionType=="api") | .name' <CACHED_DESCRIBE>
 ```
 
-Replace `<VERB>` with the operation's HTTP method (e.g. `POST` for Create). Full discovery flow lives in `uipath-platform` `resources.md`.
+Use `.data.metadata.method.<VERB>.design.actions[]`, not `.connectorMethodInfo.design.actions[]`; the latter does not exist in the cache shape. Replace `<VERB>` with the operation’s HTTP method, such as `POST` for Create. The complete discovery flow is in `uipath-platform` `resources.md`.
 
 ## Reference
 
 - [sdk-services.md](sdk-services.md) § Connections — service surface.
 - [../frameworks/langgraph-integration.md](../frameworks/langgraph-integration.md), [llamaindex-integration.md](../frameworks/llamaindex-integration.md), [openai-agents-integration.md](../frameworks/openai-agents-integration.md) — framework wiring.
 - [../lifecycle/bindings-reference.md](../lifecycle/bindings-reference.md) § Connection — full `bindings.json` schema.
-- `uipath-platform` skill, `references/integration-service/` — `agent-workflow.md` + `resources.md` for the discovery workflow + parent-driven custom fields.
-- [../../lowcode/capabilities/integration-service/integration-service.md](../../lowcode/capabilities/integration-service/integration-service.md) — low-code IS tool (different artifact).
+- `uipath-platform` skill, `references/integration-service/` — `agent-workflow.md` + `resources.md` for discovery and parent-driven custom fields.
+- [../../lowcode/capabilities/integration-service/integration-service.md](../../lowcode/capabilities/integration-service/integration-service.md) — low-code IS tool, a different artifact.

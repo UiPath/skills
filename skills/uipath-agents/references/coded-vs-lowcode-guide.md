@@ -1,39 +1,39 @@
 # Coded vs Low-Code Agent Selection Guide
 
-Reference for comparing **coded** (Python) and **low-code** (agent.json) agents. Use this when the user needs help deciding which mode to choose.
+Use this reference to choose between **coded** (Python) and **low-code** (`agent.json`) agents.
 
-## Capability Matrix
+## Capability matrix
 
 | Capability | Low-code | Coded |
 |---|:---:|:---:|
-| Build without writing Python | ✅ | ❌ |
-| Call UiPath processes / API workflows as tools | ✅ | ✅ |
-| Use Integration Service connectors | ✅ | ✅ |
+| Build without Python | ✅ | ❌ |
+| Call UiPath processes/API workflows as tools | ✅ | ✅ |
+| Integration Service connectors | ✅ | ✅ |
 | RAG over Context Grounding index | ✅ | ✅ |
-| Use third-party Python libraries | ❌ | ✅ |
-| Custom LLM state machine (LangGraph StateGraph) | ❌ | ✅ |
+| Third-party Python libraries | ❌ | ✅ |
+| Custom LLM state machine (`LangGraph StateGraph`) | ❌ | ✅ |
 | Human-in-the-loop | ✅ escalation | ✅ `interrupt()` |
 | Complex conditional HITL resume logic | ❌ | ✅ |
 | Studio Web Agent Builder canvas | ✅ | Optional |
-| `@mockable` for evaluation isolation | ❌ | ✅ |
-| Full runtime control over LLM prompts | ❌ | ✅ |
-| Multi-model / multi-framework strategies | ❌ | ✅ |
-| Fastest path to first working agent | ✅ | ❌ |
-| Conversational (chat-style, multi-turn) use-cases | ✅ | currently not recommended for production, use low-code |
-| Embed inline in a flow project | ✅ | ❌ |
-| Embed as sibling project in same solution | ✅ | ✅ |
-| Invoke as published agent node in a flow | ✅ | ✅ |
-| Use as tool resource for another agent in a flow | ✅ | ✅ |
-| Solution-level deployment with resource provisioning | ✅ | ❌ |
+| `@mockable` evaluation isolation | ❌ | ✅ |
+| Full LLM prompt runtime control | ❌ | ✅ |
+| Multi-model/framework strategies | ❌ | ✅ |
+| Fastest path to a working agent | ✅ | ❌ |
+| Conversational, multi-turn use cases | ✅ | Currently not recommended for production; use low-code |
+| Inline flow embedding | ✅ | ❌ |
+| Sibling project in the same solution | ✅ | ✅ |
+| Published agent node in a flow | ✅ | ✅ |
+| Tool resource for another flow agent | ✅ | ✅ |
+| Solution-level deployment and resource provisioning | ✅ | ❌ |
 
-## Key Differences
+## Key differences
 
 | Aspect | Coded | Low-code |
-|--------|-------|----------|
+|---|---|---|
 | Language | Python | Declarative JSON (`agent.json`) |
 | CLI | `uip codedagent` | `uip agent` + `uip solution` |
 | Project marker | `pyproject.toml` + `.py` files | `agent.json` + `project.uiproj` |
-| Frameworks | LangGraph, LlamaIndex, OpenAI Agents, Coded Function | None (prompt + tools config) |
+| Frameworks | LangGraph, LlamaIndex, OpenAI Agents, Coded Function | None; prompt + tools configuration |
 | Deployment | `uip codedagent deploy` | `uip solution pack/publish/deploy` |
 | Local testing | `uip codedagent run` | Studio Web only |
 | Evaluations | `uip codedagent eval` (13 evaluator types) | Not available |
@@ -42,13 +42,13 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Custom code | Full Python | None |
 | Sync | `uip codedagent push/pull` | `uip solution upload` |
 
-## Solution-Level Mixing
+## Solution-level mixing
 
-A UiPath solution can contain **both** coded and low-code agent projects. Each project is independently one mode or the other — there is no hybrid within a single project.
+A solution may contain both agent types, but each project is exclusively coded or low-code; no hybrid project exists.
 
-### Pattern 1: Low-code orchestrator calling coded agent as tool
+### Low-code orchestrator calling a coded agent
 
-The low-code agent adds the coded agent as an **external tool** in its `resources[]` array:
+Add the deployed coded agent as an external tool in `resources[]`:
 
 ```jsonc
 {
@@ -62,11 +62,11 @@ The low-code agent adds the coded agent as an **external tool** in its `resource
 }
 ```
 
-The coded agent must be deployed to Orchestrator first via `uip codedagent deploy`.
+Run `uip codedagent deploy` before using the coded agent.
 
-### Pattern 2: Coded agent invoking low-code agent via SDK
+### Coded agent invoking a low-code agent
 
-The coded agent calls the deployed low-code agent as an Orchestrator process:
+Invoke the deployed low-code agent as an Orchestrator process:
 
 ```python
 sdk = UiPath()
@@ -77,11 +77,11 @@ result = await sdk.processes.invoke(
 )
 ```
 
-The low-code agent must be deployed via `uip solution deploy` first.
+Run `uip solution deploy` before invoking the low-code agent.
 
-### Pattern 3: Mixed solution
+### Mixed solution deployment
 
-A solution contains both project types, deployed together:
+A mixed solution can contain:
 
 ```
 MySolution/
@@ -91,26 +91,26 @@ MySolution/
 └── MySolution.uipx
 ```
 
-Each agent type uses its own CLI and lifecycle. The solution's `uip solution deploy` handles both.
+Each project retains its own CLI and lifecycle. Run `uip solution deploy` to deploy both through the solution.
 
-## Interop Mechanisms
+## Interop mechanisms
 
 | From | To | Mechanism |
-|------|----|-----------|
+|---|---|---|
 | Low-code | Coded (deployed) | Agent tool resource with `location: "external"` in `agent.json` |
 | Coded | Low-code (deployed) | `sdk.processes.invoke()` targeting the deployed agent process |
 | Low-code | Low-code (same solution) | Agent tool resource with `location: "solution"` in `agent.json` |
 | Low-code | Low-code (different solution) | Agent tool resource with `location: "external"` in `agent.json` |
 | Coded | Coded | `workflows.*` or `sdk.processes.invoke()` |
-| Flow | Coded (deployed) | Published agent node (`uipath.core.agent.{key}`) in the flow |
-| Flow | Low-code (deployed) | Published agent node (`uipath.core.agent.{key}`) in the flow |
+| Flow | Coded (deployed) | Published agent node (`uipath.core.agent.{key}`) |
+| Flow | Low-code (deployed) | Published agent node (`uipath.core.agent.{key}`) |
 | Flow (inline low-code agent) | Coded (deployed) | Tool resource (`uipath.agent.resource.tool.agent`) wired to the agent |
 
-### Flow Integration Details
+## Flow integration
 
-- **Low-code agents** support 5 Flow patterns: inline embedding, published node, solution-level, external, and tool resource
-- **Coded agents** support 3 Flow patterns: in-solution sibling project (`uipath.core.agent.<resourceKey>` with `section: "In this solution"`), published node (`uipath.core.agent.<resourceKey>` via `uip codedagent deploy`), and tool resource
-- **Low-code inline embedding**: `uip agent init --inline-in-flow` creates a `<projectId-uuid>` subdirectory inside the flow project
-- **Coded solution-level embedding**: The coded agent lives as a sibling folder to the flow project; `uip solution projects add` mints the `resource.key` that the flow's `uipath.core.agent.<resourceKey>` node references, discoverable via `uip maestro flow registry list --local` (see [coded/embedding-in-flows.md](coded/embedding-in-flows.md))
-- Node types differ by pattern: inline low-code uses `uipath.agent.autonomous`; every other case (published low-code, in-solution coded, published coded) uses `uipath.core.agent.{key}`
-- For coded agent Flow integration details, see [coded/flow-integration.md](coded/flow-integration.md)
+- Low-code supports five patterns: inline embedding, published node, solution-level, external, and tool resource.
+- Coded supports three patterns: in-solution sibling project (`uipath.core.agent.<resourceKey>` with `section: "In this solution"`), published node (`uipath.core.agent.<resourceKey>` via `uip codedagent deploy`), and tool resource.
+- Run `uip agent init --inline-in-flow` to create a `<projectId-uuid>` subdirectory inside the flow project for inline low-code embedding.
+- For coded solution-level embedding, place the coded agent in a sibling folder to the flow project. Run `uip solution projects add` to mint the `resource.key` referenced by the flow's `uipath.core.agent.<resourceKey>` node. Discover it with `uip maestro flow registry list --local` (see [coded/embedding-in-flows.md](coded/embedding-in-flows.md)).
+- Inline low-code uses `uipath.agent.autonomous`; published low-code, in-solution coded, and published coded use `uipath.core.agent.{key}`.
+- For coded Flow integration, see [coded/flow-integration.md](coded/flow-integration.md).

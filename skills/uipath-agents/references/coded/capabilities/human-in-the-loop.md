@@ -2,30 +2,30 @@
 
 Pause agent execution for human approval, external processes, or job monitoring.
 
-> **Guardrail-triggered escalation is separate.** If the human review should fire automatically on a *guardrail violation* (e.g. PII/harmful-content detected → send to a reviewer), use `EscalateAction` as a guardrail action — see [guardrails § Escalation action (HITL)](guardrails/guardrails.md#escalation-action-human-in-the-loop). This page covers **manual** pause points you place in agent code via `interrupt(...)`.
+> **Guardrail-triggered escalation is separate.** For automatic review on a guardrail violation (for example, PII or harmful content), use `EscalateAction` as a guardrail action — see [guardrails § Escalation action (HITL)](guardrails/guardrails.md#escalation-action-human-in-the-loop). This page covers **manual** pause points placed in agent code with `interrupt(...)`.
 
-## Pause Patterns
+## Choose a pause pattern
 
-**HITL pattern selection MUST be an interactive question unless the user named a specific pattern.** "Human in the loop", "approval", "confirmation", "review", "escalation" alone do NOT name a pattern.
+**HITL pattern selection MUST be an interactive question unless the user named a specific pattern.** “Human in the loop”, “approval”, “confirmation”, “review”, and “escalation” alone do **not** name a pattern.
 
-If the user has not named one, your ENTIRE response must be a question that lists ONLY the patterns available for the already-selected framework (use the column matching the framework in the table below). Do NOT wrap it in headers, status summaries, or "I'll go with X". Just ask and stop.
+If no pattern was named, make your ENTIRE response a question listing ONLY the patterns available for the already-selected framework, using that framework’s column below. Do not add headers, status summaries, or “I’ll go with X”; ask and stop.
 
 | Pattern | When | LangGraph | LlamaIndex |
 |---|---|---|---|
-| API trigger | Resumed via an Orchestrator inbox URL; no Action Center involved | `interrupt({...})` | `InputRequiredEvent(...)` |
+| API trigger | Resume via an Orchestrator inbox URL; no Action Center involved | `interrupt({...})` | `InputRequiredEvent(...)` |
 | Action Center task | Structured form for a human reviewer | `interrupt(CreateTask(...))` | `CreateTaskEvent(...)` |
-| Escalation task | Task flagged as escalation | `interrupt(CreateEscalation(...))` | use `CreateTaskEvent` (no event-level distinction) |
-| Wait for existing task | A task was already created elsewhere; resume when it completes | `interrupt(WaitTask(...))` | `WaitTaskEvent(...)` |
+| Escalation task | Task flagged as escalation | `interrupt(CreateEscalation(...))` | `CreateTaskEvent` (no event-level distinction) |
+| Wait for existing task | A task was created elsewhere; resume when it completes | `interrupt(WaitTask(...))` | `WaitTaskEvent(...)` |
 | Invoke a process | Trigger an RPA process; resume on completion | `interrupt(InvokeProcess(...))` | `InvokeProcessEvent(...)` |
-| Wait for existing job | A job is running elsewhere; resume on its completion | `interrupt(WaitJob(...))` | `WaitJobEvent(...)` |
+| Wait for existing job | A job is running elsewhere; resume when it completes | `interrupt(WaitJob(...))` | `WaitJobEvent(...)` |
 
-OpenAI Agents has no first-class HITL support. Coded Function (no framework) has no checkpoint/resume — call `sdk.tasks.create()` then `sdk.tasks.retrieve()` synchronously if a synchronous human step is needed.
+OpenAI Agents has no first-class HITL support. Coded Function (no framework) has no checkpoint/resume; call `sdk.tasks.create()` then `sdk.tasks.retrieve()` synchronously when a synchronous human step is needed.
 
-LangGraph models live in `uipath.platform.common`; LlamaIndex events live in `uipath_llamaindex.models.events`.
+LangGraph models are in `uipath.platform.common`; LlamaIndex events are in `uipath_llamaindex.models.events`.
 
 ## API Trigger
 
-No Action Center app, no platform resource — pass a plain payload. The runtime allocates an inbox UUID and exposes it via an Orchestrator API URL; resume by POSTing JSON to that URL or via `--resume` (for local runs).
+Use a plain payload: no Action Center app or platform resource. The runtime allocates an inbox UUID and exposes it through an Orchestrator API URL. Resume by POSTing JSON to that URL or with `--resume` for local runs.
 
 ### LangGraph
 
@@ -48,45 +48,46 @@ response = await ctx.wait_for_event(HumanResponseEvent)
 ## CreateTask — Send Work to a Human
 
 ```python
-from langgraph.graph import START, END, StateGraph, MessagesState
 from langgraph.types import Command, interrupt
 from uipath.platform.common import CreateTask
 
-class GraphState(MessagesState):
-    request: str
-    approval_status: str | None = None
-
-async def escalate_to_human(state: GraphState) -> Command:
-    task_output = interrupt(CreateTask(
-        app_name="RequestReview",
-        app_folder_path="MyFolderPath",
-        title=f"Review Request: {state['request'][:50]}",
-        data={
-            "request": state["request"],
-            "timestamp": str(datetime.now())
-        },
-        assignee="approver@example.com"
-    ))
-    return Command(update={
-        "approval_status": task_output.get("status", "pending"),
-    })
+task_output = interrupt(CreateTask(
+    app_name="RequestReview",
+    app_folder_path="MyFolderPath",
+    title=f"Review Request: {state['request'][:50]}",
+    data={"request": state["request"], "timestamp": str(datetime.now())},
+    assignee="approver@example.com",
+))
+return Command(update={"approval_status": task_output.get("status", "pending")})
 ```
 
-**Fields:**
-- `title` — short task title
-- `data` — payload shown to the human (dict). Keys must match the Action Center app's input schema, otherwise Orchestrator renders empty fields in the "Human review required" view.
-- `app_name`, `app_folder_path` — target Action Center app and folder (use `app_folder_key` / `app_key` when the GUIDs are known)
-- `assignee` — email of the user to assign (optional)
-- `recipient`, `priority`, `labels`, `source_name`, `is_actionable_message_enabled`, `actionable_message_metadata` — optional metadata
+Fields:
 
-**Return value:**
+- `title` — short task title.
+- `data` — dict shown to the human. Keys must match the Action Center app’s input schema; otherwise Orchestrator renders empty fields in the “Human review required” view.
+- `app_name`, `app_folder_path` — target Action Center app and folder. Use `app_folder_key` / `app_key` when GUIDs are known.
+- `assignee` — optional email of the assigned user.
+- Optional metadata: `recipient`, `priority`, `labels`, `source_name`, `is_actionable_message_enabled`, `actionable_message_metadata`.
+
+Normal-task resume output:
+
 ```python
 {"status": "approved|rejected|pending", "assigned_to": "user@example.com", "completed_at": "...", ...}
 ```
 
-### Escalation Variant
+LlamaIndex equivalent:
 
-Swap `CreateTask` for `CreateEscalation` when the task is an escalation. It is the same task shape: `CreateEscalation` extends `CreateTask` with the same fields. Difference is the resume return value: escalation returns the full `Task`; normal task returns `task.data`.
+```python
+ctx.write_event_to_stream(CreateTaskEvent(
+    app_name=..., app_folder_path=..., title=..., data={...}
+))
+```
+
+Use the same fields as `CreateTask`.
+
+### Escalation variant
+
+Use `CreateEscalation` for an escalation. It extends `CreateTask` with the same fields. An escalation resumes with the full `Task`; a normal task resumes with `task.data`.
 
 ```python
 from uipath.platform.common import CreateEscalation
@@ -101,19 +102,18 @@ task_output = interrupt(CreateEscalation(
 ))
 ```
 
-**LlamaIndex equivalent:** `ctx.write_event_to_stream(CreateTaskEvent(app_name=..., app_folder_path=..., title=..., data={...}))` — same fields as `CreateTask`.
+LlamaIndex uses `CreateTaskEvent` because it has no event-level escalation distinction.
 
-## WaitTask — Monitor Existing Task
+## WaitTask — Monitor an Existing Task
 
 ```python
 from uipath.platform.common import WaitTask
 
-async def monitor_task(state: GraphState) -> Command:
-    task_output = interrupt(WaitTask(action=state["existing_task"]))
-    return Command(update={"task_result": task_output})
+task_output = interrupt(WaitTask(action=state["existing_task"]))
+return Command(update={"task_result": task_output})
 ```
 
-**LlamaIndex equivalent:** `ctx.write_event_to_stream(WaitTaskEvent(action=...))`
+LlamaIndex: `ctx.write_event_to_stream(WaitTaskEvent(action=...))`.
 
 ## InvokeProcess — Call RPA Automation
 
@@ -123,13 +123,13 @@ from uipath.platform.common import InvokeProcess
 result = interrupt(InvokeProcess(
     name="MyProcess",
     process_folder_path="Workflows",
-    input_arguments={"data": request_data}
+    input_arguments={"data": request_data},
 ))
 ```
 
-**LlamaIndex equivalent:** `ctx.write_event_to_stream(InvokeProcessEvent(name=..., process_folder_path=..., input_arguments={...}))`
+LlamaIndex: `ctx.write_event_to_stream(InvokeProcessEvent(name=..., process_folder_path=..., input_arguments={...}))`.
 
-## WaitJob — Monitor Existing Job
+## WaitJob — Monitor an Existing Job
 
 ```python
 from uipath.platform.common import WaitJob
@@ -137,40 +137,38 @@ from uipath.platform.common import WaitJob
 output = interrupt(WaitJob(job=background_job, process_folder_path="Workflows"))
 ```
 
-**LlamaIndex equivalent:** `ctx.write_event_to_stream(WaitJobEvent(job=..., process_folder_path=...))`
+LlamaIndex: `ctx.write_event_to_stream(WaitJobEvent(job=..., process_folder_path=...))`.
 
-## Composite Examples
+## Composition
 
-### Conditional Interrupt
-
-```python
-async def conditional_workflow(state: GraphState) -> Command:
-    if state["amount"] > 10000:
-        result = interrupt(CreateTask(
-            assignee="finance-director@example.com",
-            title="Approve Large Request",
-            app_name="ApprovalProcess",
-            app_folder_path="Finance",
-            data={"amount": state["amount"]}
-        ))
-    else:
-        result = interrupt(InvokeProcess(name="AutoApprovalProcess"))
-    return Command(update={"approval": result})
-```
-
-### Chained Interrupts
+### Conditional interrupt
 
 ```python
-async def multi_step_workflow(state: GraphState) -> Command:
-    task1 = interrupt(CreateTask(...))  # Step 1: human input
-    process_result = interrupt(InvokeProcess(
-        input_arguments={"decision": task1.get("decision")}
-    ))  # Step 2: RPA based on input
-    task2 = interrupt(CreateTask(...))  # Step 3: final approval
-    return Command(update={"result": task2})
+if state["amount"] > 10000:
+    result = interrupt(CreateTask(
+        assignee="finance-director@example.com",
+        title="Approve Large Request",
+        app_name="ApprovalProcess",
+        app_folder_path="Finance",
+        data={"amount": state["amount"]},
+    ))
+else:
+    result = interrupt(InvokeProcess(name="AutoApprovalProcess"))
+return Command(update={"approval": result})
 ```
 
-### Error Handling
+### Chained interrupts
+
+```python
+task1 = interrupt(CreateTask(...))
+process_result = interrupt(InvokeProcess(
+    input_arguments={"decision": task1.get("decision")}
+))
+task2 = interrupt(CreateTask(...))
+return Command(update={"result": task2})
+```
+
+### Error handling
 
 ```python
 result = interrupt(InvokeProcess(...))
@@ -178,7 +176,7 @@ if result.get("status") != "success":
     return Command(update={"error": result.get("error")})
 ```
 
-## State Management
+## State management
 
 Track interrupt context in graph state:
 
@@ -190,20 +188,20 @@ class GraphState(MessagesState):
     final_response: str | None = None
 ```
 
-## Best Practices
+## Best practices
 
-- Pass complete context in `data` to avoid human back-and-forth
-- Use specific, actionable task titles
-- Provide structured choices (approve/reject), not open-ended questions
-- Handle all possible return statuses in resumption logic
-- Route to appropriate assignees based on task type
+- Pass complete context in `data` to avoid human back-and-forth.
+- Use specific, actionable task titles.
+- Provide structured choices such as approve/reject, not open-ended questions.
+- Handle every possible return status in resumption logic.
+- Route work to appropriate assignees based on task type.
 
 ## Troubleshooting
 
-- **"Task not found"**: Verify `app_name` and `app_folder_path` match Action Center config
-- **"Assignee not found"**: Check email exists in UiPath org with Action Center access
-- **Tasks not completing**: Check Action Center UI; verify assignee can see the task
-- **Agent doesn't resume**: Ensure resumption logic handles all return values
+- **“Task not found”**: Verify `app_name` and `app_folder_path` match Action Center configuration.
+- **“Assignee not found”**: Confirm the email exists in the UiPath organization and has Action Center access.
+- **Tasks not completing**: Check the Action Center UI and verify the assignee can see the task.
+- **Agent does not resume**: Ensure resumption logic handles all return values.
 
 ## Reference
 

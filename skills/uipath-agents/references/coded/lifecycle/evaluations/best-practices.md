@@ -1,114 +1,41 @@
 # Best Practices & Common Patterns
 
-This guide covers best practices for effective evaluation design and common patterns for different agent types.
+Use these patterns to design effective evaluations for different agent types.
 
 ## Evaluation Best Practices
 
 ### Do
 
-- **Use multiple evaluators** for comprehensive validation
-  - Don't rely on a single evaluator
-  - Combine output-based and trajectory-based evaluators for complex agents
-  - Example: Use both ExactMatchEvaluator and JsonSimilarityEvaluator
-
-- **Create separate eval sets for different scenarios**
-  - Happy path scenarios
-  - Edge cases
-  - Error scenarios
-  - Performance tests
-  - This makes it easier to maintain and debug
-
-- **Mix evaluator types appropriately**
-  - Output-based evaluators for result validation
-  - Trajectory evaluators for multi-step agents
-  - LLM evaluators for natural language outputs
-
-- **Use trajectory evaluators for multi-step agents**
-  - Validates execution flow and tool usage
-  - Ensures agent takes expected decision paths
-  - Useful for orchestration agents
-
-- **Use LLM evaluators for natural language or fuzzy matching**
-  - Better for semantic equivalence
-  - More flexible than exact matching
-  - Handles variations in wording
-
-- **Start with ExactMatch, then add flexibility**
-  - Begin with strict ExactMatchEvaluator during development
-  - Add LLM evaluators for production as needed
-  - Allows refinement as agent matures
-
-- **Mock external dependencies consistently**
-  - Mock all external API calls
-  - Use mocking for deterministic testing
-  - Cache LLM responses in CI/CD
-
-- **Version your evaluation sets**
-  - Use semantic versioning in IDs
-  - Track changes over time
-  - Example: `calculator-v1`, `calculator-v2`
-
-- **Document test purposes clearly**
-  - Use descriptive test names
-  - Explain what each test validates
-  - Make it easy for others to understand
-
-- **Review failed tests carefully**
-  - Examine execution traces
-  - Understand why tests failed
-  - Fix either the agent or test expectations
+- Use multiple evaluators when appropriate, combining output- and trajectory-based evaluators for complex agents (for example, `ExactMatchEvaluator` and `JsonSimilarityEvaluator`).
+- Create focused eval sets for happy paths, edge cases, errors, and performance.
+- Match evaluators to the task: output-based for results, trajectory-based for multi-step execution, and LLM evaluators for natural-language or fuzzy matching.
+- Use trajectory evaluators when execution flow, tool usage, or orchestration decisions matter.
+- Start development with `ExactMatchEvaluator`; add LLM evaluators for production flexibility as the agent stabilizes.
+- Mock all external API calls consistently for deterministic testing, and cache LLM responses in CI/CD.
+- Version evaluation sets with semantic versioning in IDs (for example, `calculator-v1`, `calculator-v2`).
+- Use descriptive test names and document each test’s purpose.
+- Review failed tests and execution traces to determine whether the agent or expectations need correction.
 
 ### Don't
 
-- **Use only ExactMatch for natural language outputs**
-  - Too strict, fails on minor variations
-  - Use LLMJudgeOutputEvaluator instead
-
-- **Forget to test edge cases and error scenarios**
-  - Test boundary values (0, min, max)
-  - Test empty/null values
-  - Test invalid inputs
-
-- **Use trajectory evaluators when output-based is sufficient**
-  - Trajectory evaluation is more expensive
-  - Only use when execution path matters
-  - For simple agents, output validation is enough
-
-- **Set too strict criteria early in development**
-  - Allow flexibility while agent is evolving
-  - Tighten criteria as agent stabilizes
-  - Start with 80%, improve to 95%+
-
-- **Skip schema validation during test creation**
-  - Always validate inputs against schema
-  - Prevents invalid test data
-  - Catches type mismatches early
-
-- **Mix unrelated tests in one eval set**
-  - Keep eval sets focused and organized
-  - Separate happy path from error cases
-  - Makes debugging easier
+- Do not use only `ExactMatchEvaluator` for natural-language output; use `LLMJudgeOutputEvaluator` for semantic variation.
+- Do not omit boundary, empty/null, invalid-input, or error scenarios; test 0, minimum, and maximum values.
+- Do not use trajectory evaluation when output validation is sufficient; reserve it for cases where the path matters because it is more expensive.
+- Do not set overly strict criteria early. Allow flexibility while the agent evolves, then tighten criteria as it stabilizes; start with 80% and improve toward 95%+.
+- Do not skip schema validation during test creation; validate inputs to catch invalid data and type mismatches early.
+- Do not mix unrelated scenarios in one eval set; separate happy paths from error cases for easier debugging.
 
 ## Common Evaluation Patterns
 
-### Pattern 1: Calculator/Deterministic Agents
+### 1. Calculator/Deterministic Agents
 
-For agents that always produce the same output for the same input:
+For identical outputs given identical inputs:
 
-**Evaluator Selection:**
-- **Primary:** ExactMatchEvaluator
-- **Secondary:** (optional) JsonSimilarityEvaluator for complex outputs
+- **Primary evaluator:** `ExactMatchEvaluator`
+- **Optional secondary evaluator:** `JsonSimilarityEvaluator` for complex outputs
+- **Scoring:** 1.0 (pass) or 0.0 (fail); exact match receives no partial credit.
 
-**Test Cases:**
-```
-Happy Path: Basic addition, subtraction, multiplication, division
-Edge Cases: Zero values, negative numbers, very large numbers, decimal results
-Error Scenarios: Non-numeric input, missing parameters, division by zero
-```
-
-**Scoring:** 1.0 (pass) or 0.0 (fail). No partial credit for exact match.
-
-**Example Eval Set:**
+Test basic arithmetic; zero, negative, very large, and decimal values; non-numeric input; missing parameters; and division by zero.
 
 ```json
 {
@@ -141,58 +68,35 @@ Error Scenarios: Non-numeric input, missing parameters, division by zero
 }
 ```
 
-### Pattern 2: Natural Language Agents
+### 2. Natural Language Agents
 
-For agents that generate text, summaries, or natural language output:
+For text, summaries, and other natural-language output:
 
-**Evaluator Selection:**
-- **Primary:** LLMJudgeOutputEvaluator (semantic matching)
-- **Secondary:** ContainsEvaluator (keyword checks)
+- **Primary evaluator:** `LLMJudgeOutputEvaluator`
+- **Secondary evaluator:** `ContainsEvaluator`
+- Test semantic equivalence, required keywords or concepts, and format constraints such as length and required fields.
+- Score from 0.0 to 1.0 based on semantic similarity; accept 0.7+ for a good match.
 
-**Test Cases:**
-```
-Semantic Equivalence: Different phrasings of same concept, synonymous expressions
-Keyword Validation: Must contain specific terms, key concepts
-Format Validation: Output length constraints, required fields
-```
+### 3. Multi-Step Orchestration Agents
 
-**Scoring:** 0.0-1.0 range based on semantic similarity. Accept 0.7+ for good match.
+For agents coordinating tools or services:
 
-### Pattern 3: Multi-Step Orchestration Agents
+- **Primary evaluator:** `LLMJudgeTrajectoryEvaluator`
+- **Secondary evaluator:** `JsonSimilarityEvaluator`
+- Test expected tool order and arguments, passing one tool’s output to the next, fallback paths, and graceful degradation after failures.
 
-For agents that coordinate multiple tools or services:
+### 4. API Integration Agents
 
-**Evaluator Selection:**
-- **Primary:** LLMJudgeTrajectoryEvaluator (execution path validation)
-- **Secondary:** JsonSimilarityEvaluator (output structure)
+For agents interacting with external APIs:
 
-**Test Cases:**
-```
-Tool Sequence: Tools called in expected order, correct arguments
-Tool Interaction: Output of one tool becomes input to next
-Error Handling: Fallback paths when tool fails, graceful degradation
-```
-
-### Pattern 4: API Integration Agents
-
-For agents that interact with external APIs:
-
-**Evaluator Selection:**
-- **Primary:** JsonSimilarityEvaluator (response structure)
-- **Secondary:** ExactMatchEvaluator (specific fields)
-
-**Mocking Strategy:** Mock all external API calls using mockito type.
-
-**Test Cases:**
-```
-Success Paths: Valid API responses, different formats, pagination
-Error Handling: API errors (500, 404, 403), timeouts, malformed responses
-Edge Cases: Empty results, large responses, rate limiting
-```
+- **Primary evaluator:** `JsonSimilarityEvaluator`
+- **Secondary evaluator:** `ExactMatchEvaluator` for specific fields
+- Mock all external API calls using mockito type.
+- Test valid responses and formats, pagination, 500/404/403 errors, timeouts, malformed responses, empty and large results, and rate limiting.
 
 ## Test Organization
 
-### By Scenario Type
+Organize eval sets by scenario:
 
 ```
 eval-sets/
@@ -203,6 +107,8 @@ eval-sets/
 ```
 
 ## CI/CD Integration
+
+Run:
 
 ```bash
 uip codedagent eval <agent> evaluations/eval-sets/smoke-tests.json \

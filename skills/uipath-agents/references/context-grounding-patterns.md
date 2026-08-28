@@ -1,52 +1,45 @@
 # Context Grounding Patterns — When to Use What
 
-Shared decision logic for picking the right context-grounding mode and surface.
+Shared decision logic for selecting the context-grounding mode and execution surface.
 
-## BatchTransform vs DeepRAG — Pick by File Type
+## Choose the Mode by File Type
 
-| Input file | Mode |
-|---|---|
-| `.csv` | **BatchTransform** |
-| `.pdf` / `.txt` | **DeepRAG** |
+| Input | Mode | Use |
+|---|---|---|
+| `.csv` | **BatchTransform (BT)** | Iterate every row with the same prompt, optionally add per-row web search, and write original plus LLM-filled columns to an Orchestrator bucket attachment. Use for bulk extraction, classification, address-match validation, vendor enrichment, and sales-order triage. One row in, one row out. |
+| `.pdf` / `.txt` | **DeepRAG (DR)** | Research and synthesize an ephemeral index built from runtime attachments into one grounded narrative with citations and optional bounding-box anchors. Use for summaries or research across documents, especially large files or citation-heavy answers. Prefer over `analyze-attachments` because of its lower page limits and one-shot synthesis. |
+| Pre-built index, no file upload | **Index search** | Query a stable context-grounding index for policies, manuals, FAQs, and other knowledge bases whose corpus does not change per run. |
 
 Hard rule: BatchTransform accepts CSV only; DeepRAG accepts PDF or TXT only. No subjective tiebreaker.
 
-## The Three Modes
-
-| Mode | Input | What it does | Best for |
-|---|---|---|---|
-| **BatchTransform (BT)** | CSV | Iterate every row of the CSV (CSV is the datasource — hosted in a context-grounding index purely so the runtime can iterate), apply the same prompt to each row, optionally augment with a per-row web search, write augmented rows (original columns + new LLM-filled columns) to an Orchestrator bucket attachment. | Bulk extraction, per-row classification, address-match validation, vendor enrichment, sales-order triage. One row in, one row out. |
-| **DeepRAG** | PDF / TXT | Iterative research-and-synthesis pass over an ephemeral index built from runtime attachments. Returns a single grounded narrative with citations (optional bounding-box anchors). Handles large files and produces longer / denser output than `analyze-attachments`. | Summarize / research / synthesize across one or more runtime documents — especially when the file is large or the answer needs citations. One question, one answer. Prefer over `analyze-attachments` (lower page limits, one-shot synthesis). |
-| **Index search** (semantic / structured) | Pre-built index | Query a stable, pre-built context-grounding index. Returns ranked snippets. | Stable knowledge bases (policies, manuals, FAQs) — corpus does not change per run. |
+For BatchTransform, host the CSV as the datasource in a context-grounding index so the runtime can iterate it; per-row external grounding comes from `enable_web_search_grounding`, not the index.
 
 ## Decision Matrix
 
-Route by file type first, signal second:
+Route by file type first, then user signal:
 
-| File type | User signal | Mode | Where to go |
+| File type | User signal | Mode | Planning reference |
 |---|---|---|---|
 | `.csv` | "add columns" / "classify every row" / "enrich vendor addresses" / "MCC categorization" / "1000 rows of structured output" | **BatchTransform** | Coded: [coded/capabilities/batch-transform/planning.md](coded/capabilities/batch-transform/planning.md). Low-code: [lowcode/capabilities/built-in-tools/batch-transform/planning.md](lowcode/capabilities/built-in-tools/batch-transform/planning.md). |
 | `.pdf` / `.txt` | "summarize" / "research across these docs" / "one narrative answer" | **DeepRAG** | Coded: [coded/capabilities/deeprag/planning.md](coded/capabilities/deeprag/planning.md). Low-code: [lowcode/capabilities/built-in-tools/deeprag/planning.md](lowcode/capabilities/built-in-tools/deeprag/planning.md). |
-| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Consume: `sdk.context_grounding.unified_search_async` or low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). Create / ingest / inspect the index from the CLI: [uipath-platform/references/context-grounding/index-management.md](../../uipath-platform/references/context-grounding/index-management.md). |
+| Pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Consume: `sdk.context_grounding.unified_search_async` or the low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). Create, ingest, or inspect the index from the CLI: [uipath-platform/references/context-grounding/index-management.md](../../uipath-platform/references/context-grounding/index-management.md). |
 
-## Surface Selection
+## Select the Execution Surface
 
-Once the mode is picked, route by execution surface:
+After choosing the mode, route by project or user signal:
 
-| Surface signal | BatchTransform | DeepRAG |
+| Signal | BatchTransform | DeepRAG |
 |---|---|---|
 | Project has `pyproject.toml` + `langgraph.json`, or user wants Python | [coded/capabilities/batch-transform/planning.md](coded/capabilities/batch-transform/planning.md) | [coded/capabilities/deeprag/planning.md](coded/capabilities/deeprag/planning.md) |
 | Project has `agent.json` with `"type": "lowCode"`, or user is building in Studio Web Agent Builder | [lowcode/capabilities/built-in-tools/batch-transform/planning.md](lowcode/capabilities/built-in-tools/batch-transform/planning.md) | [lowcode/capabilities/built-in-tools/deeprag/planning.md](lowcode/capabilities/built-in-tools/deeprag/planning.md) |
 
-Both surfaces hit the same backend per mode. The difference is **how** the agent invokes the mode, not what the mode does.
+Both surfaces use the same backend per mode; only invocation differs.
 
 ## Cross-Surface Invariants
 
-These hold regardless of mode or surface:
-
-1. **The hosted file is a datasource for iteration (BT) or grounding (DR), not the other way around.** BatchTransform iterates rows from a CSV-backed context-grounding index; DeepRAG synthesizes across a PDF/TXT-backed index. Per-row external grounding for BT comes from `enable_web_search_grounding`, not the index.
-2. **`prompt` is required.** Empty → `400 "The Prompt field is required."` BatchTransform additionally requires `output_columns` (each with `name` + `description`).
-3. **Output destination differs by mode.** BatchTransform produces an augmented CSV server-side. Coded resume: the runtime downloads it to the local `destination_path` you supplied. Low-code: it is delivered as an Orchestrator bucket attachment for downstream consumers. DeepRAG returns content (`text` + optional `citations`) inline on the resume value.
-4. **Folder context is required.** Explicit folder key/path or env var. Missing → `400 "A folder is required for this action."`
-5. **Permissions live on the folder.** Coded: the invoking user's role must grant the index permission. Low-code: the agent's runtime identity must have it in the folder where the agent is published. `403 "User is missing required index permissions."` → switch folders (personal workspace is the safe default for self-serve).
-6. **Async / event-driven.** Both modes are long-running. Coded agents use plain `interrupt()` with the matching `Create*` / `Wait*` resume-trigger models from `uipath.platform.common`; low-code agents get this for free via the runtime.
+1. **Use the hosted file as a datasource for iteration (BT) or grounding (DR), not the other way around.** BatchTransform iterates rows from a CSV-backed context-grounding index; DeepRAG synthesizes across a PDF/TXT-backed index. Per-row external grounding for BT comes from `enable_web_search_grounding`, not the index.
+2. **Require `prompt`.** Empty → `400 "The Prompt field is required."` BatchTransform additionally requires `output_columns`, each with `name` + `description`.
+3. **Respect the output destination.** BatchTransform produces an augmented CSV server-side. Coded agents download it to the supplied local `destination_path`; low-code agents receive it as an Orchestrator bucket attachment for downstream consumers. DeepRAG returns inline content (`text` plus optional `citations`) in the resume value.
+4. **Provide folder context.** Use an explicit folder key/path or environment variable. Missing → `400 "A folder is required for this action."`
+5. **Use folder permissions.** Coded agents require the invoking user's role to grant the index permission. Low-code agents require the published agent's runtime identity to have it in the agent's folder. `403 "User is missing required index permissions."` → switch folders; a personal workspace is the safe default for self-serve.
+6. **Handle both modes asynchronously/event-driven.** Coded agents use plain `interrupt()` with the matching `Create*` / `Wait*` resume-trigger models from `uipath.platform.common`; low-code agents receive this behavior from the runtime.

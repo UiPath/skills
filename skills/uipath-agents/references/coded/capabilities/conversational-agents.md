@@ -2,15 +2,11 @@
 
 > **Coded conversational agents are currently not intended for production use-cases.** For conversational use-cases, use **low-code conversational agents** by referring to [../../lowcode/lowcode.md](../../lowcode/lowcode.md). Only use coded conversational agents if the user is strongly requesting to use coded agents and the agent will only be tested and ran on a local machine.
 
-Chat-style coded agents where the UiPath runtime feeds **one message per turn** and threads history across turns.
-
-Supported on **LangGraph** and **LlamaIndex**. Coded Function and OpenAI Agents are not conversational.
+Chat-style coded agents receive one message per turn from the UiPath runtime, which threads conversation history across turns. They are supported on **LangGraph** and **LlamaIndex**. Coded Function and OpenAI Agents are not conversational.
 
 ## Contract (framework-agnostic)
 
-Two requirements:
-
-1. **Flag the agent as conversational** — set `runtimeOptions.isConversational: true` in `uipath.json`:
+1. **Flag the agent as conversational.** Set `runtimeOptions.isConversational: true` in `uipath.json` before running `uip codedagent init`, so the emitted `entry-points.json` reflects the chat shape:
 
    ```json
    {
@@ -20,15 +16,13 @@ Two requirements:
    }
    ```
 
-   Without it, Studio Web / Orchestrator render a single-shot input form and history is not threaded.
+   Without this setting, Studio Web / Orchestrator render a single-shot input form and history is not threaded.
 
-2. **Type the graph/workflow input as the framework's message envelope.** The runtime fills it with one new message per turn; prior turns are threaded in by the runtime. The exact shape is framework-specific — see the framework reference below.
-
-Set `isConversational: true` in `uipath.json` **before** running `uip codedagent init` so the emitted `entry-points.json` reflects the chat shape.
+2. **Type the graph/workflow input as the framework's message envelope.** The runtime supplies one new message per turn and threads prior turns. See the framework references below for the exact in-process shape.
 
 ### Wire Envelope (`--input-file` payload)
 
-The minimal payload accepted by `uip codedagent run --input-file <file>.json`:
+The minimal payload accepted by `uip codedagent run --input-file <file>.json` is:
 
 ```json
 {
@@ -46,11 +40,10 @@ The minimal payload accepted by `uip codedagent run --input-file <file>.json`:
 }
 ```
 
-- `role` is `"user"` for client input.
-- `data.inline` carries the text content; `mimeType` describes its format.
-- `messageId` and `contentPartId` may be supplied as GUIDs to address specific entities in the conversation hierarchy; if omitted the runtime fills them with fresh UUIDs.
-
-The same envelope is used for both LangGraph and LlamaIndex on the wire. Each framework's runtime converts it to the in-process shape its graph/workflow expects (`HumanMessage` for LangGraph, `user_msg: str` for LlamaIndex). `uip codedagent dev` builds this envelope automatically.
+- Use `"user"` for client input in `role`.
+- Put text in `data.inline`; `mimeType` describes its format.
+- `messageId` and `contentPartId` may be supplied as GUIDs to address entities in the conversation hierarchy; if omitted, the runtime fills them with fresh UUIDs.
+- Use this envelope on the wire for both LangGraph and LlamaIndex. The runtime converts it to `HumanMessage` for LangGraph and `user_msg: str` for LlamaIndex. `uip codedagent dev` builds it automatically.
 
 ## Framework-Specific Implementation
 
@@ -61,28 +54,20 @@ The same envelope is used for both LangGraph and LlamaIndex on the wire. Each fr
 
 ## Running Locally
 
-Inline JSON payloads on the CLI are fragile across shells (single vs. double quotes, brace escaping on cmd.exe / PowerShell). Two cleaner options:
-
-- **`--input-file`** on `uip codedagent run` — pass a `.json` file:
-
-  ```bash
-  uip codedagent run agent --input-file turn1.json --keep-state-file
-  ```
-
-- **`uip codedagent dev`** — opens a local chat window that wires up the runtime, lets you send turns interactively, and preserves thread state between messages. Preferred for iterative chat development.
+Avoid fragile inline JSON on the CLI, especially across cmd.exe and PowerShell. Use `--input-file` with `uip codedagent run` or run `uip codedagent dev`, which opens a local chat window, wires up the runtime, supports interactive turns, and preserves thread state. Prefer `uip codedagent dev` for iterative chat development.
 
 ### Preserving State Across Turns
 
-Local CLI runs lose conversation state between invocations unless you keep the runtime's checkpoint / state file. Pass `--keep-state-file` on **every** turn (including the first) — without it, each `uip codedagent run` starts from scratch and history is dropped.
+Pass `--keep-state-file` on **every** `uip codedagent run` turn, including the first; otherwise each invocation starts from scratch and drops history:
 
 ```bash
 uip codedagent run agent --input-file turn1.json --keep-state-file
 uip codedagent run agent --input-file turn2.json --keep-state-file
 ```
 
-The state file is per-project; deleting it resets the conversation. `uip codedagent dev` handles this automatically — the flag is only needed for the headless `uip codedagent run` path.
+The state file is per-project; delete it to reset the conversation. `uip codedagent dev` preserves state automatically, so the flag is needed only for the headless `uip codedagent run` path.
 
 ## Gotchas
 
-- `isConversational` lives under `runtimeOptions` in `uipath.json` — not in `langgraph.json` / `llama_index.json` / `pyproject.toml`.
-- LangGraph and LlamaIndex per-message shapes differ — do not transplant a payload from one framework to the other.
+- Put `isConversational` under `runtimeOptions` in `uipath.json`, not in `langgraph.json`, `llama_index.json`, or `pyproject.toml`.
+- LangGraph and LlamaIndex per-message shapes differ; do not transplant an in-process payload from one framework to the other.

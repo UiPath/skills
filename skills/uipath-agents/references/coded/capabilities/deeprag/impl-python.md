@@ -1,7 +1,6 @@
 # DeepRAG in a Coded Agent — Implementation
 
-LangGraph + `interrupt()` pattern. **No polling** — runtime suspends on `Create*` resume-trigger models and resumes on the DeepRAG completion event.
-
+LangGraph + `interrupt()` pattern. **Do not poll.** Runtime suspends on `Create*` resume-trigger models and resumes on the DeepRAG completion event.
 
 ## Dependencies
 
@@ -10,13 +9,21 @@ LangGraph + `interrupt()` pattern. **No polling** — runtime suspends on `Creat
 dependencies = ["uipath", "uipath-langchain"]
 ```
 
-## Flavour A — Ephemeral index (attachment-backed, one-shot)
+## Flavour A — Ephemeral index
 
-### Node: create_index
+Use for attachment-backed, one-shot indexing.
+
+1. **fetch_file** — accept or download the PDF/TXT to a local path.
+2. **upload_attachment** — run `await sdk.attachments.upload_async(name=..., source_path=local, folder_key=folder_key)` and obtain the attachment UUID.
+3. **create_index** — run `create_ephemeral_index_async`, check `in_progress_ingestion()`, and conditionally interrupt with `WaitEphemeralIndex` to obtain an ingested `ContextGroundingIndex`.
+4. **run_deep_rag** — interrupt `CreateDeepRag` with `is_ephemeral_index=True` to obtain `DeepRagContent`.
+5. **finalize** — shape the agent's `GraphOutput`.
+
+Instantiate `UiPath()` inside nodes only; never instantiate it at module level.
 
 ```python
 from uipath.platform import UiPath
-from uipath.platform.common import UiPathConfig, WaitEphemeralIndex
+from uipath.platform.common import UiPathConfig, WaitEphemeralIndex, CreateDeepRag
 from uipath.platform.context_grounding import EphemeralIndexUsage
 from langgraph.types import interrupt
 
@@ -31,13 +38,6 @@ ephemeral_index = await sdk.context_grounding.create_ephemeral_index_async(
 )
 if ephemeral_index.in_progress_ingestion():
     ephemeral_index = interrupt(WaitEphemeralIndex(index=ephemeral_index))  # → ContextGroundingIndex (ingested)
-```
-
-### Node: run_deep_rag
-
-```python
-from uipath.platform.common import CreateDeepRag
-from langgraph.types import interrupt
 
 content = interrupt(CreateDeepRag(
     name=task_name,
@@ -48,13 +48,11 @@ content = interrupt(CreateDeepRag(
 ))  # → DeepRagContent — has .text, .citations
 ```
 
-`is_ephemeral_index=True` is required when `index_id` came from an ephemeral index — missing it surfaces server-side at execution.
+Set `is_ephemeral_index=True` whenever `index_id` came from an ephemeral index; otherwise execution fails server-side.
 
 ## Flavour B — Existing named index
 
-Skip the `fetch_file`, `upload_attachment`, and `create_index` nodes entirely.
-
-### Node: run_deep_rag
+Skip `fetch_file`, `upload_attachment`, and `create_index` entirely.
 
 ```python
 from uipath.platform.common import CreateDeepRag
@@ -68,17 +66,7 @@ content = interrupt(CreateDeepRag(
 ))  # → DeepRagContent — has .text, .citations
 ```
 
-## Procedure (Flavour A)
-
-1. **fetch_file** — accept / download the PDF/TXT → local path
-2. **upload_attachment** — `await sdk.attachments.upload_async(name=..., source_path=local, folder_key=folder_key)` → attachment uuid
-3. **create_index** — `create_ephemeral_index_async` → check `in_progress_ingestion()` → conditionally `interrupt(WaitEphemeralIndex(...))` → `ContextGroundingIndex`
-4. **run_deep_rag** — `interrupt(CreateDeepRag(... is_ephemeral_index=True, index_id=..., prompt=..., index_folder_key=...))` → `DeepRagContent` (`text`, `citations`)
-5. **finalize** — shape the agent's `GraphOutput`
-
-Instantiate `UiPath()` inside nodes only — never at module level.
-
-## Resume Values
+## Resume values and errors
 
 | Yielded model | Resume value | Useful fields |
 |---|---|---|
@@ -86,11 +74,9 @@ Instantiate `UiPath()` inside nodes only — never at module level.
 | `CreateDeepRag` | `DeepRagContent` (validated) or `dict` | `text`, `citations` |
 | `CreateDeepRagRaw` | `DeepRagResponse` raw | full response, no status validation |
 
-Runtime raises `UiPathFaultedTriggerError` (imported as `from uipath.core.errors import UiPathFaultedTriggerError`) on terminal `Failed`. Use `*Raw` variants only to inspect a failed status without raising.
+Runtime raises `UiPathFaultedTriggerError` on terminal `Failed`; import it with `from uipath.core.errors import UiPathFaultedTriggerError`. Use `*Raw` variants only to inspect a failed status without raising.
 
-## Defensive Resume-Value Access
-
-Resume value may be the typed model or a dict depending on SDK version. Read both shapes:
+Resume values may be typed models or dicts, depending on SDK version:
 
 ```python
 text = content.get("text", "") if isinstance(content, dict) else getattr(content, "text", "")
@@ -98,17 +84,24 @@ raw_citations = content.get("citations") if isinstance(content, dict) else getat
 citations = [c if isinstance(c, dict) else c.model_dump() for c in (raw_citations or [])]
 ```
 
-## Citation Modes
+## Citation modes
 
-Pass `citation_mode=CitationMode.SKIP | INLINE` on `CreateDeepRag`. Default `SKIP` (lowest latency, no citations). `INLINE` interleaves citations in `content.text`. Verify the available enum values at your SDK version: `from uipath.platform.context_grounding import CitationMode; list(CitationMode)`.
+Pass `citation_mode=CitationMode.SKIP | INLINE` to `CreateDeepRag`. The default is `SKIP` for lowest latency and no citations. `INLINE` interleaves citations in `content.text`. Verify enum values for the installed SDK:
 
-## Local-Run Verification
+```python
+from uipath.platform.context_grounding import CitationMode
+list(CitationMode)
+```
+
+## Local-run verification
+
+Run:
 
 ```bash
 uip codedagent run agent '{"instructions":"<PROMPT>"}' --output-file out.json
 ```
 
-Runtime executes pre-interrupt nodes synchronously, then suspends at `create_index` with the `WaitEphemeralIndex` model captured as the suspend value (Flavour A) or at `run_deep_rag` with `CreateDeepRag` (Flavour B). That output is correct — not a failure. End-to-end completion happens only on a deployed agent or via `uip codedagent dev`.
+The runtime executes pre-interrupt nodes synchronously, then suspends at `create_index` with `WaitEphemeralIndex` (Flavour A) or at `run_deep_rag` with `CreateDeepRag` (Flavour B). This is correct, not a failure. End-to-end completion occurs only on a deployed agent or through `uip codedagent dev`.
 
 ## Resources
 

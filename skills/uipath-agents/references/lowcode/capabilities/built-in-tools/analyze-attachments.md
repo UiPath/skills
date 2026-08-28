@@ -1,17 +1,17 @@
 # Analyze Files (`analyze-attachments`)
 
-Built-in tool that analyzes one or more `job-attachment` files with an LLM. Use it to extract, synthesize, or answer queries about file contents — the only way for a low-code agent to read attachment contents at runtime.
+Built-in tool that uses an LLM to analyze one or more `job-attachment` files. It is the only way for a low-code agent to read attachment contents at runtime. Use it to extract, synthesize, summarize, classify, or answer questions about runtime files.
 
 For the built-in-tools capability overview, see [built-in-tools.md](built-in-tools.md).
 
 ## When to Use
 
-- Agent has a `job-attachment` input field (or receives attachments inside a tool call) and must read contents
-- Agent must summarize, classify, or extract from PDFs, images, documents passed at runtime
+- The agent has a `job-attachment` input field or receives attachments inside a tool call and must read their contents.
+- The agent must summarize, classify, or extract from runtime PDFs, images, or documents.
 
 ## Pairing Pattern
 
-Typical low-code shape: one `job-attachment` input field on the agent + one `analyze-attachments` tool resource. The user message references the attachment metadata with `{{input.<field>}}`; the agent calls `analyze-attachments`, passing the same attachment in `attachments[]` along with an `analysisTask`.
+Use one `job-attachment` input field and one `analyze-attachments` tool resource. Reference the input metadata in the user message with `{{input.<field>}}`, then pass the same attachment in `attachments[]` with an `analysisTask`.
 
 ## Resource Shape
 
@@ -104,9 +104,9 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 ## Gotchas
 
 - `properties.toolType` MUST be exactly `"analyze-attachments"` (kebab-lowercase). Anything else is silently ignored.
-- The `definitions.job-attachment` block belongs inside the tool's `inputSchema`, not at the agent root. Each schema (agent input, agent output, tool input) carries its own copy.
-- `{{input.<field>}}` only surfaces metadata; without this tool the agent has no way to read file contents. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 17.
-- Agents can return a `job-attachment` from `outputSchema` (e.g. a generated file), but `analyze-attachments` itself only reads — it does not produce attachments.
+- Put the `definitions.job-attachment` block inside the tool's `inputSchema`, not at the agent root. Each schema (agent input, agent output, tool input) carries its own copy.
+- `{{input.<field>}}` only surfaces metadata; without this tool the agent cannot read file contents. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 17.
+- Agents can return a `job-attachment` from `outputSchema` (for example, a generated file), but `analyze-attachments` only reads and does not produce attachments.
 
 ## References
 
