@@ -239,5 +239,5 @@ For per-area full checklists, follow the table's inline links: Identity → [ide
 | Paginate audit events beyond 200 | [references/audit-commands.md](references/audit-commands.md) + Rule 25 |
 | Troubleshoot access denied, login failures, role misconfig, IP lockout, PAT/app auth | [references/identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
 | Diagnose capability index (structured) | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
-| Failure mode lookup (12 named patterns) | [references/diagnose/references/failure-modes.md](references/diagnose/references/failure-modes.md) |
-| Diagnostic priority ladder (sequential triage) | [references/diagnose/references/troubleshooting-guide.md](references/diagnose/references/troubleshooting-guide.md) |
+| Failure mode lookup (12 named patterns) | [references/diagnose/failure-modes.md](references/diagnose/failure-modes.md) |
+| Diagnostic priority ladder (sequential triage) | [references/diagnose/troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md) |
