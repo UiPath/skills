@@ -36,7 +36,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-> **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array's own key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`) located in the text you just `Read` — never on "the key that follows X." See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+> **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array's own key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`) located in the text you just `Read` — never on "the key that follows X." See [greenfield.md — Anchoring parallel `.flow` Edits](../author/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
 
 Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
 
@@ -48,7 +48,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by the project scaffold and packaging. Preserve the generated values.
 
-> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/references/plugins/connector/impl.md) for the connector-binding shape.
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/plugins/connector/impl.md) for the connector-binding shape.
 
 ## Project structure (generated scaffold)
 
@@ -136,7 +136,7 @@ Example — manual start trigger:
 
 ### Node outputs
 
-`$vars.<sourceNodeId>.<outputId>` resolution at runtime is driven by **`variables.nodes[]`**, not by the node instance's `outputs` block. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; the action-node instance `outputs` block is ignored at serialization (the manifest's `outputDefinition` supplies the activity-side mapping). End / terminate nodes are the exception — their instance `outputs` block IS consumed to map workflow-level `out` variables. See [end/impl.md](../author/references/plugins/end/impl.md).
+`$vars.<sourceNodeId>.<outputId>` resolution at runtime is driven by **`variables.nodes[]`**, not by the node instance's `outputs` block. The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; the action-node instance `outputs` block is ignored at serialization (the manifest's `outputDefinition` supplies the activity-side mapping). End / terminate nodes are the exception — their instance `outputs` block IS consumed to map workflow-level `out` variables. See [end/impl.md](../author/plugins/end/impl.md).
 
 The canonical recipe for a data-producing node is therefore:
 
@@ -187,7 +187,7 @@ Trigger nodes (manual, scheduled, connector triggers) have a single output — n
 }
 ```
 
-End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see the [Author end plugin reference](../author/references/plugins/end/impl.md)).
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see the [Author end plugin reference](../author/plugins/end/impl.md)).
 
 ## Layout
 
@@ -223,7 +223,7 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Format handles both passes. See the [Author subflow plugin reference](../author/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -271,7 +271,7 @@ Copy the returned node definition object into your `definitions` array. Dependin
 
 > The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
 
-For full details on each node (ports, inputs, outputs, when to use), see the [Author planning architecture guide](../author/references/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see the [Author planning implementation guide](../author/references/planning-impl.md).
+For full details on each node (ports, inputs, outputs, when to use), see the [Author planning architecture guide](../author/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see the [Author planning implementation guide](../author/planning-impl.md).
 
 Discover all available types:
 ```bash
@@ -327,7 +327,7 @@ An `error` edge must not rejoin the happy path. When it does, every failure walk
 | ✗ | The next node on the happy path | Failure is invisible; downstream nodes run on missing data |
 | ✗ | The same End node the success path reaches | Success path's output mappings run against the failed node's empty output |
 | ✓ | A **distinct** End node mapping an error/status `out` variable | Caller can tell failure from success |
-| ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/references/plugins/terminate/impl.md) |
+| ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/plugins/terminate/impl.md) |
 | ✓ | A recovery branch that rejoins **only after obtaining valid data** — a retry that succeeded, or a fallback source that returned data | Downstream runs on real data, not on the failed node's empty output |
 
 ```text
@@ -554,7 +554,7 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [author/CAPABILITY.md](../author/CAPABILITY.md).
 
-See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/references/plugins/rpa/impl.md), [agent](../author/references/plugins/agent/impl.md), [flow](../author/references/plugins/flow/impl.md), [agentic-process](../author/references/plugins/agentic-process/impl.md), [api-workflow](../author/references/plugins/api-workflow/impl.md), [hitl](../author/references/plugins/hitl/impl.md).
+See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/plugins/rpa/impl.md), [agent](../author/plugins/agent/impl.md), [flow](../author/plugins/flow/impl.md), [agentic-process](../author/plugins/agentic-process/impl.md), [api-workflow](../author/plugins/api-workflow/impl.md), [hitl](../author/plugins/hitl/impl.md).
 
 **Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 

@@ -251,7 +251,7 @@ The checkers are not currently wired into CI or pre-commit hooks. They are kept 
 
 ## Reachability convention
 
-Plugin docs (`references/author/references/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
+Plugin docs (`references/author/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
 
 The depth checker (`check-depth.sh`) treats folder links as reachability for every `.md` file inside the folder, matching this agent-navigation model. A strict file-link-only reachability check would flag plugin docs as "unreachable" — that's a false negative.
 
