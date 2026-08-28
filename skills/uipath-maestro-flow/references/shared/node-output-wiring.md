@@ -4,7 +4,7 @@ Use this reference whenever a `.flow` JSON field references a previous node outp
 
 ## Core rule
 
-In value-typed fields, every `$vars.*`, `$metadata.*`, or `$self.*` reference must start with `=js:`. Otherwise, runtime treats the rewritten value as a literal.
+In value-typed fields, every `$vars.*`, `$metadata.*`, or `$self.*` reference must start with `=js:`. Otherwise, runtime treats the rewritten value as a literal. A missing prefix is silent: the serializer rewrites `$vars`→`vars` with or without `=js:`, so `flow validate` passes and the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
 
 Use `$vars.<sourceNodeId>.output.<field>`—never `nodes.X.output.Y`. `<sourceNodeId>` is the producing node's `id`; `output` is the standard output port (`error` is the error port); `<field>` is the output path.
 

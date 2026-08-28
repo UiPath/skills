@@ -214,7 +214,7 @@ Every edge requires `sourcePort` and `targetPort`.
 9. Merge accepts one input per parallel path.
 10. Do not create cycles except through Loop's `continue` handle.
 11. No dangling nodes: every node appears in the edge table as source or target.
-12. Add an `error` edge only for a specified failure fallback. Do not set `inputs.errorHandlingEnabled: true` without an error edge. When an error edge exists, set `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands do this automatically, while direct JSON edits must include it. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
+12. Add an `error` edge only for a specified failure fallback. Do not set `inputs.errorHandlingEnabled: true` without an error edge. When an error edge exists, set `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands do this automatically, while direct JSON edits must include it. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 Error handlers must produce a distinguishable failure terminal: a distinct End mapping an error/status `out`, `core.logic.terminate`, or a recovery path that rejoins only after valid data is obtained. Never route failure into the happy path or success End. Use Decision/Switch for successful-content routing, not failure detection. Plan required error edges in Phase 1.
 

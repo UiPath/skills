@@ -243,7 +243,7 @@ uip maestro flow eval run list --set <set> --path <flow_project> --output json
 uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --path <flow_project> --output json
 ```
 
-Evaluators: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `strict-json`, `trajectory`, `trajectory-simulation`. For full flag tables, evaluator details, eval-set JSON shape, and run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
+Evaluators: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`. For full flag tables, evaluator details, eval-set JSON shape, and run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
 
 ## uip maestro flow registry
 

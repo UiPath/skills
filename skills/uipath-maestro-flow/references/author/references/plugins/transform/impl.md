@@ -238,4 +238,4 @@ Aggregation operations:
 | Collection is null/empty | `collection` uses `=js:` or an inline array literal | Use a plain path such as `"$vars.loadCatalog.output.catalog"` or `"$vars.catalog"`; store static arrays in a variable default or upstream node |
 | Map output missing fields | `keepOriginalFields: false` and the field is unmapped | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match `groupByField` | Check that `groupByField` matches the actual data fields |
-| Chained transform gets empty input although upstream had rows | Used `$vars.<transform>.output.items`; transform output is a bare array | Use `$vars.<transform>.output`; see [Output Shape](#output-shape) |
+| Chained transform gets empty input although upstream had rows | Used `$vars.<transform>.output.items`; transform output is a bare array | Use `$vars.<transform>.output`; see [Output Shape](#collection-input-and-output-shape) |

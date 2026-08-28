@@ -115,19 +115,30 @@ Run the matching action with `-f, --field` before Step 5 and reuse the same valu
 
 Do not skip this for Get/Retrieve: runtime may succeed while Studio Web lacks the design-time schema and downstream `$vars.<thisNode>.output.<custom-field>` resolves to undefined. `flow validate` does not catch this.
 
-### Step 4 — Resolve every reference field
+### Step 4 — Resolve reference fields
 
-Inspect both `requestFields` and `parameters` for `reference`. Preserve `reference` when projecting `connectorMethodInfo.parameters[]` from `registry get`.
+Check **BOTH `requestFields` AND `parameters`** from the metadata for entries with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
 
-Resolve every reference immediately before Step 6, freshly against the current flow connection. IDs are connection-scoped; never reuse IDs from another connection. Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full workflow.
+> **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
 
-Run `uip is resources run list` with the current `--connection-id` and use resolved IDs, not display names. If multiple matches exist, ask the user with one option per match and **"Something else"** last, following the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
+> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
-If a user-supplied value has zero matches after `Data.Pagination.HasMore` is `"false"`, ask with closest candidates and **"Something else"** last; use the unverified value only after confirmation.
+```bash
+# Example: resolve Slack channel "#test-slack" to its ID
+uip is resources run list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
+  --connection-id "<id>" --output json
+# -> { "id": "C1234567890", "name": "test-slack" }
+```
 
-If `reference.filterPattern` exists, substitute `{filter}` and pass the result as `--query`. `filterPattern` exists only in describe metadata, not the flow registry reference. Do not invent `searchTerm=`, `where=`, or `filter=` parameters.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, ask the user, with one option per match plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)).
 
-Without `filterPattern`, paginate with `Data.Pagination.HasMore` and `NextPageToken`, using `--query "nextPage=<token>"`; stop on match and do not report not-found until `HasMore` is `"false"`. See [reference-resolution.md — Search References (filterPattern)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern) and [reference-resolution.md](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Zero matches on a user-supplied value** — if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching a value the user provided, do NOT configure the node with it silently. Ask the user, presenting the closest candidates as options plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)). Proceed with the unverified value only if the user confirms it.
+
+> **Filter server-side before paginating.** If the field's `reference` carries a `filterPattern` (e.g. Teams `userId`: `"$filter=startswith(userPrincipalName,'{filter}')"`), substitute the search term for `{filter}` and pass the result as `--query` — one targeted call instead of walking a large directory. `filterPattern` appears only in `is resources describe` output; the flow `registry get` reference object strips it (keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`), so read it from the Step 3 describe metadata. Guessed params (`searchTerm=`/`where=`/`filter=`) are silently ignored. See [reference-resolution.md — Search References (filterPattern)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern).
+
+> **Paginate only when there is no `filterPattern`.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
+
+**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).
 
 ### Step 5 — Validate required fields
 
@@ -175,6 +186,14 @@ Prefer, in order:
 1. `node configure --detail.filter` with a structured tree.
 2. A hand-authored `=js:` string only when a runtime value requires it, using bare field names, single-quoted values, and no OData aliases. Map `eq`→`=`, `ne`→`!=`, `gt`→`>`, `ge`→`>=`, `lt`→`<`, and `le`→`<=`. See [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
+Canonical template for a dynamic value:
+
+```text
+=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
+```
+
+Single quotes delimit a value; double quotes mark a column reference. The whole value must start with `=js:` and wrap the interpolation — a plain string containing `${…}` is never resolved and silently matches nothing.
+
 #### Step 6b — Run configure
 
 Run:
@@ -189,7 +208,7 @@ For generic nodes include `objectName`; concrete nodes ignore it if supplied. Us
 
 Supply endpoint placeholders through `pathParameters` and resolve their IDs with `uip is resources run list` using the current connection. Body names come from `inputDefinition.fields[].name` or `requestFields[].name`.
 
-For array fields, strip trailing `[*]` from the authored key and use a `=js:` expression returning the array; literal JSON arrays do not bind. Names containing `[*].` are not authorable. This applies to body, query, and path buckets; `customFieldsRequestDetails.parameterValues` uses `_array` encoding. The expression may return the whole array or wrap one element.
+For array fields, strip trailing `[*]` from the authored key and use a `=js:` expression returning the array; literal JSON arrays do not bind. Names containing `[*].` are not authorable. This applies to body, query, and path buckets; `customFieldsRequestDetails.parameterValues` uses `_array` encoding. The expression may return the whole array or wrap one element — wrap a literal array in parentheses, `"fields.labels": "=js:(['shield', 'p0'])"`; pass a whole array from a variable as `"=js:$vars.allTags"`; wrap a single element as `"=js:([$vars.priorityTag])"`.
 
 Derive connector output shape from `connectorMethodInfo.operation`, not vendor intuition or `outputDefinition.output.type`: `list` returns a bare array; other operations return one object. Use `=js:$vars.<node>.output` for list collections and `=js:$vars.<node>.output.<field>` otherwise.
 
@@ -219,7 +238,7 @@ Encode tokens longest-first: `:::` → `_sub_`; `[*]` → `_array`; `::` → `_s
 }
 ```
 
-`customFieldsRequestDetails` complements runtime parameters: put raw parent values in `bodyParameters`, `queryParameters`, or `pathParameters`, and encoded values in the design-time cache. Values are strings or `null`; `parameterValues` is never an object map. The cache is embedded in `essentialConfiguration.customFieldsRequestDetails`, not set as a top-level `inputs.detail` field. Pass runtime values and the cache in the same configure call. The CLI does not validate action existence or token coverage, so Step 3a is mandatory.
+`customFieldsRequestDetails` complements runtime parameters: put raw parent values in `bodyParameters`, `queryParameters`, or `pathParameters`, and encoded values in the design-time cache. Values are strings or `null`; `parameterValues` is never an object map. The cache is embedded in `essentialConfiguration.customFieldsRequestDetails`, not set as a top-level `inputs.detail` field. Pass runtime values and the cache in the same configure call — omitting the runtime bucket is the most common mistake; the design-time cache alone does not feed the connector at runtime. The CLI does not validate action existence or token coverage, so Step 3a is mandatory.
 
 ## IS CLI commands
 
