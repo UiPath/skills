@@ -99,12 +99,14 @@ success_criteria:
     pass_threshold: 1.0
 
   # Version 12 is Pinned and tagged `live`; version 9 is the older trained one.
-  # Accepts `version 12`, `version: 12` and `v12`; the 12 inside 128 cannot match.
+  # Accepts `version 12`, `version: 12`, `v12`, and markdown decoration between
+  # the word and the number (`**Live version:** **12**`, `| Live version | 12 |`,
+  # `` `12` ``); the 12 inside 128 cannot match.
   - type: file_matches_regex
     description: "Summary names version 12 as the live/published model version"
     path: "project_summary.md"
     pattern: >-
-      (?mi)^[^\r\n]*\b(?:version|v)\s*:?\s*12\b[^\r\n]*$
+      (?mi)^[^\r\n]*\b(?:version|v)[\s*_`|:]*12\b[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
@@ -114,7 +116,7 @@ success_criteria:
     description: "Did NOT report the older version 9 as the live one"
     path: "project_summary.md"
     pattern: >-
-      (?mi)^(?![^\r\n]*\b(?:version|v)\s*:?\s*12\b)[^\r\n]*\blive\b[^\r\n]*\b(?:version|v)\s*:?\s*9\b[^\r\n]*$
+      (?mi)^(?![^\r\n]*\b(?:version|v)[\s*_`|:]*12\b)[^\r\n]*\blive\b[^\r\n]*\b(?:version|v)[\s*_`|:]*9\b[^\r\n]*$
     must_match: false
     weight: 1.5
     pass_threshold: 1.0
