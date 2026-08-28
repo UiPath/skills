@@ -55,6 +55,11 @@ sandbox:
 run_limits:
   max_turns: 100
   turn_timeout: 1500
+  # Caps end-to-end wall clock (hooks + turn + criteria). Omitting it inherits
+  # the experiment's 1200s, which is below turn_timeout alone — the pdd_to_sdd
+  # trap. The harness's "cannot extend the agent's single iteration" warning is
+  # about iteration extension, not this cap.
+  task_timeout: 3000
 
 # Hook and criterion timeouts must exceed handoff.UIP_TIMEOUT_SECONDS (120), or
 # the harness kills the wrapper mid-`uip` call and the failure reads as a skill

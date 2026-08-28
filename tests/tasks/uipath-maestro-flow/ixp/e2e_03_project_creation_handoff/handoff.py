@@ -286,6 +286,8 @@ def folder_identity(folder_key: str) -> str | None:
         data = json.loads(completed.stdout)["Data"]
     except (json.JSONDecodeError, KeyError, TypeError):
         return None
+    if not isinstance(data, dict):
+        return None
     parts = [
         str(data.get(field) or "")
         for field in ("DisplayName", "Name", "FullyQualifiedName", "Path")
@@ -383,9 +385,10 @@ def require_domain_uncovered() -> None:
         # delete failed). A live project still carrying a domain marker means a
         # real extractor covers the domain; deleting its folder would destroy
         # someone's work, so refuse and demand a deliberate manual action.
+        live_projects = list_project_names()
         live_marker_projects = sorted(
             name
-            for name in list_project_names()
+            for name in live_projects
             if any(marker in name.lower() for marker in DOMAIN_MARKERS)
         )
         if live_marker_projects:
@@ -403,6 +406,21 @@ def require_domain_uncovered() -> None:
                 print(
                     f"cannot self-heal '{node_type}' — no trailing folder-key GUID "
                     "in the NodeType"
+                )
+                continue
+            # A live project embedded in the node's type means a real, living
+            # extractor whose project name happens to lack a marker — not
+            # residue. (Coverage matches DisplayName too, so marker-liveness
+            # alone can miss this.)
+            backing_live = [
+                name
+                for name in live_projects
+                if sanitize_registry_segment(name) in node_type.lower()
+            ]
+            if backing_live:
+                print(
+                    f"self-heal: '{node_type}' embeds live project(s) {backing_live} "
+                    "— a real extractor, refusing to delete its folder"
                 )
                 continue
             # Second attribution guard: positively identify the folder and
@@ -615,7 +633,8 @@ def run_node_in_registry(names: list[str]) -> str | None:
             node_type = str(node["NodeType"])
             haystack = f"{node.get('DisplayName', '')} {node_type}".lower()
             if any(
-                name.lower() in haystack or sanitize_registry_segment(name) in node_type
+                name.lower() in haystack
+                or sanitize_registry_segment(name) in node_type.lower()
                 for name in names
             ):
                 completed = run_uip(
