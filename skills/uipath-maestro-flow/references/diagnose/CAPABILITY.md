@@ -47,7 +47,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 <!--skill-flavor:single-nested-task-row:start-->
 | **Diagnose a publish/upload structural error** | [failure-modes.md — Single-nested layout](failure-modes.md#single-nested-layout) |
 <!--skill-flavor:single-nested-task-row:end-->
-| **Diagnose `Folder does not exist` on a resource node** | [failure-modes.md — Missing `bindings[]` on resource node](references/failure-modes.md#missing-bindings-on-resource-node) |
+| **Diagnose `Folder does not exist` on a resource node** | [failure-modes.md — Missing `bindings[]` on resource node](failure-modes.md#missing-bindings-on-resource-node) |
 | **Triage "validate passes, debug faults"** | [failure-modes.md — `flow validate` passes, `flow debug` faults](failure-modes.md#flow-validate-passes-flow-debug-faults) |
 | **Look up `instance` / `incident` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) + [troubleshooting-guide.md — CLI command reference](troubleshooting-guide.md#cli-command-reference) |
 
