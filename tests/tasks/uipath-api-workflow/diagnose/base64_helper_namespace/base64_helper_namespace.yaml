@@ -11,9 +11,9 @@ description: >
 
   The fixture's only fault is the namespace: fixing that one token makes it Valid.
   Grading keeps the activityType and requires the namespaced, awaited call. Running
-  is out of scope (needs a session). Tagged `path-to-ga`: `validate` only knows the
+  is out of scope (needs a session). `validate` only knows the
   activity type from the CLI release bundling executor 12.26+.
-tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover, path-to-ga]
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:
   python: {}

@@ -14,9 +14,9 @@ description: >
   types are present, the chain reads the File to Base64 output as a reference (not
   a string), and the stale `downloadData()` API from the palette description is
   not used. Running is deliberately out of scope here (see run_roundtrip for the
-  signed-in e2e). Tagged `path-to-ga`: the validate criterion needs the CLI release
+  signed-in e2e). The validate criterion needs the CLI release
   whose `validate` knows the two activity types (the one bundling executor 12.26+).
-tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 initial_prompt: |
   Author a UiPath API Workflow in a project named `FileEcho` (its workflow file

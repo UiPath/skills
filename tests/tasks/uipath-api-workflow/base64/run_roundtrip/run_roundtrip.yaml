@@ -10,11 +10,10 @@ description: >
 
   Outcome-graded: the check re-runs the authored workflow itself with a fresh input
   file and compares the decoded download byte-for-byte with the input, and checks
-  the encoded download is the base64 of the input. Tagged `path-to-ga` because it is
-  blocked until the CLI release that ships `--input-file` / `--output-dir` (the one
+  the encoded download is the base64 of the input. Blocked until the CLI release that ships `--input-file` / `--output-dir` (the one
   bundling executor 12.26+) is `@uipath/cli@latest`; it also needs a tenant whose
   Attachments API accepts the session (the nightly tenant does).
-tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup, shape:multi-node, outcome-graded, path-to-ga]
+tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup, shape:multi-node, outcome-graded]
 
 sandbox:
   python: {}
