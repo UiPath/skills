@@ -27,7 +27,7 @@ FIXTURE_SDD = os.path.join(HERE, "fixtures", "sdd.md")
 
 # sha256 of the fixture as committed. The YAML asserts this separately; the graders
 # do not, so a deliberate fixture edit does not have to touch every checker.
-FIXTURE_SHA256 = "b140437081436511c79cd71eb77233e9eac4a73ed15f861308cf5adaf3273a2c"
+FIXTURE_SHA256 = "7a6e0312a846ed2a69cf287c94396ebafe3daeb75fa096a7f011c0d892390a24"
 
 CASEPLAN_GLOB = "**/caseplan.json"
 
