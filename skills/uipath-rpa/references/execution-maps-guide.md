@@ -79,7 +79,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 - Default is author-once-after-capture — all OR refs are already in conversation. Fall back to per-screen authoring interleave only on long captures (5+ screens) where context pressure is real; the `validate`/`build` gate still runs ONCE at the end either way.
 - Screens after the first (same window): carry the OR screen reference from the previous capture into the next `uia-configure-target` invocation — it skips the OR screen lookup. Invocation shape and argument: the package's `uia-configure-target` invocation guide (routed from the package guide § Documentation).
 - Indication fallback (user physically clicks) and every interact advance are sequential gates — never batched, never parallel.
-- Selector failures at debug time → the `uia-improve-selector` flow (never hand-edit selectors).
+- Selector failures at debug time → the recover selector flow (never hand-edit selectors).
 
 ## Failure exits
 
@@ -91,7 +91,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 | Coded `CS*` errors | [coded/operations-guide.md § Common Issues and Fixes](coded/operations-guide.md#common-issues-and-fixes) |
 | CLI error (`timeout`, `EPIPE`, `401`, `not in the project folder`) | [cli-reference.md § CLI Error Recovery](cli-reference.md#cli-error-recovery) |
 | Card snippet rejected by validate/build | Fall back to Rule 21 triple for that activity; report stale entry via `/uipath-feedback` |
-| UIA selector fails at debug time | `uia-improve-selector` flow per [uia-starter-guide.md § Runtime Selector Failure Recovery](uia-starter-guide.md#runtime-selector-failure-recovery) — never hand-edit |
+| UIA selector fails at debug time | Recover selector flow per [uia-starter-guide.md § Runtime Selector Failure Recovery](uia-starter-guide.md#runtime-selector-failure-recovery) — never hand-edit |
 
 ## Cross-session memory
 
