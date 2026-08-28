@@ -62,7 +62,7 @@ success_criteria:
     description: "Agent retrieved the Intsvc.TimerTrigger registry template"
     tool_name: "Bash"
     command_pattern: >-
-      uip\s+maestro\s+bpmn\s+registry\s+get\s+["']?Intsvc\.TimerTrigger["']?
+      uip\s+maestro\s+bpmn\s+registry\s+get\s+["']?Intsvc\.TimerTrigger(["']|\s|$)
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
