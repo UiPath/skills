@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""Occurrence-resolving `uip` mock for the uipath-ixp renumbering task.
+
+Overlays the base mock_template (list it SECOND in template_sources so this file
+wins). Python, not sh, because it has to parse a `--updates` JSON payload and
+maintain ordered state — neither is worth hand-rolling in `/bin/sh`.
+
+WHY A RESOLVER RATHER THAN A RESPONDER
+--------------------------------------
+Critical Rule 18 says `Occurrence` is scoped to the read that produced it: the
+server returns annotation-prediction matched pairs FIRST, so confirming one row
+of a repeatable group renumbers the rest on the next read. Carrying an index
+across a write therefore lands on a DIFFERENT row than the agent intended.
+
+A mock that only replays canned predictions cannot grade that. The index in the
+call log looks identical whether it was fresh or stale; only the server knows
+which row it resolves to. So this mock does what the server does — it keeps the
+ordering, resolves every occurrence index against the CURRENT ordering, and
+writes the row it landed on to `mocks/resolved.log`. The task's criteria then
+read row NAMES, not indices, and a stale index fails by naming the wrong row.
+
+FIXTURE
+-------
+Project `freight_docs-df33115f-ixp`, document `doc-freight-7`, repeatable group
+`Invoice > Line Items` (the FULL label path — Rule 13). Four rows in document
+order, one already annotated:
+
+  idx  row                          state
+  ---  -------------------------    ---------------------------------------
+  0    Premium freight surcharge    unannotated, INVENTED (not on the page)
+  1    Steel bolts                  unannotated, correct -> must be confirmed
+  2    Pallet wrap                  unannotated, correct -> must be confirmed
+  3    Copper wire                  ANNOTATED already
+
+Read order is annotated-first, so the first `get-predictions` reports:
+
+  Occurrence 0 = Copper wire   (matched pair, sorts to the front)
+  Occurrence 1 = Premium freight surcharge
+  Occurrence 2 = Steel bolts
+  Occurrence 3 = Pallet wrap
+
+The row order is chosen so a stale index lands on the INVENTED row, which is the
+one outcome the task can grade unambiguously. Confirming occurrence 3 (Pallet
+wrap) moves it into the annotated block, so the next read is:
+
+  0 = Copper wire, 1 = Pallet wrap, 2 = Premium freight surcharge, 3 = Steel bolts
+
+An agent that now reuses occurrence 2 for Steel bolts — the index it read BEFORE
+the write — confirms the invented surcharge instead. Reordering these rows
+without re-deriving that walk turns the trap into a no-op.
+
+Only one of the two sequential orders bites (confirming Steel bolts first leaves
+Pallet wrap's index unmoved, correct by luck), and the batched updates path is
+correct by construction. So this mock never fails a correct run; it catches the
+mistake when the agent makes it.
+
+Both log sinks are written, in the base mock's exact format, so anchored
+`^uip\\s+ixp …` criteria keep matching. Change one and change both.
+"""
+
+import json
+import os
+import re
+import sys
+import time
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")
+JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
+RESOLVED_LOG = os.path.join(MOCK_DIR, "resolved.log")
+STATE = os.path.join(MOCK_DIR, ".annotated.json")
+
+PROJECT = "freight_docs-df33115f-ixp"
+DOCUMENT = "doc-freight-7"
+GROUP = "Invoice > Line Items"
+
+# Document order. INITIALLY_ANNOTATED is the STARTING state; writes append to the
+# state file rather than mutating this table.
+ROWS = [
+    {"name": "Premium freight surcharge", "qty": "1", "total": "9999.00 AUD"},
+    {"name": "Steel bolts", "qty": "200", "total": "400.00 AUD"},
+    {"name": "Pallet wrap", "qty": "12", "total": "36.00 AUD"},
+    {"name": "Copper wire", "qty": "50", "total": "150.00 AUD"},
+]
+INITIALLY_ANNOTATED = ["Copper wire"]
+
+FIELD_IDS = {"name": "ln-desc-01", "qty": "ln-qty-02", "total": "ln-total-03"}
+STDERR_MESSAGE = "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+
+
+def record(tool, args, exit_code):
+    """Append to both sinks, byte-compatible with ../mock_template/mocks/uip."""
+    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    try:
+        with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as fh:
+            fh.write(flat + "\n")
+    except OSError:
+        pass
+    try:
+        with open(JSON_LOG, "a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps({"ts": round(time.time(), 3), "tool": tool, "argv": list(args), "exit": exit_code}) + "\n")
+    except OSError:
+        pass
+
+
+def load_annotated():
+    """Ordered list of annotated row names — the matched-pairs block."""
+    try:
+        with open(STATE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return list(INITIALLY_ANNOTATED)
+
+
+def save_annotated(names):
+    try:
+        with open(STATE, "w", encoding="utf-8", newline="\n") as fh:
+            json.dump(names, fh)
+    except OSError:
+        pass
+
+
+def read_order(annotated):
+    """The server's order: matched pairs first, then the rest in document order."""
+    by_name = {row["name"]: row for row in ROWS}
+    ordered = [by_name[name] for name in annotated if name in by_name]
+    ordered += [row for row in ROWS if row["name"] not in annotated]
+    return ordered
+
+
+def flag_value(argv, name):
+    for i, token in enumerate(argv):
+        if token == name and i + 1 < len(argv):
+            return argv[i + 1]
+        if token.startswith(name + "="):
+            return token.split("=", 1)[1]
+    return None
+
+
+def requested_occurrences(argv):
+    """Every occurrence index this invocation targets, in the order given.
+
+    Accepts both documented spellings: one row via `--occurrence N`, or several
+    rows against ONE read via a `--updates` JSON array.
+    """
+    single = flag_value(argv, "--occurrence")
+    if single is not None and single.lstrip("-").isdigit():
+        return [int(single)]
+
+    payload = flag_value(argv, "--updates")
+    if payload is None:
+        return []
+    try:
+        parsed = json.loads(payload)
+        if isinstance(parsed, list):
+            found = [entry.get("occurrence") for entry in parsed if isinstance(entry, dict)]
+            return [int(n) for n in found if isinstance(n, int)]
+    except ValueError:
+        # An agent-built payload that is not quite JSON (a trailing comma, smart
+        # quotes) still tells us which rows it meant. Falling back keeps a
+        # formatting slip from reading as "targeted no rows", which would let the
+        # invented-row guard pass vacuously.
+        pass
+    return [int(n) for n in re.findall(r'"occurrence"\s*:\s*(\d+)', payload)]
+
+
+def resolve(argv, verb):
+    """Resolve this call's indices against the CURRENT order and record the rows."""
+    annotated = load_annotated()
+    ordered = read_order(annotated)
+    lines = []
+    for index in requested_occurrences(argv):
+        if 0 <= index < len(ordered):
+            row = ordered[index]["name"]
+            lines.append("{} occurrence={} -> {}".format(verb, index, row))
+            if verb == "confirm" and row not in annotated:
+                annotated.append(row)
+            elif verb == "unconfirm" and row in annotated:
+                annotated.remove(row)
+        else:
+            lines.append("{} occurrence={} -> OUT_OF_RANGE".format(verb, index))
+
+    if not lines:
+        # Neither --occurrence nor --updates: the plain form, which applies to
+        # EVERY occurrence of the listed fields — including the invented row.
+        # Recorded by name so the guard sees it.
+        names = ", ".join(row["name"] for row in ordered)
+        lines.append("{} ALL_OCCURRENCES -> {}".format(verb, names))
+
+    try:
+        with open(RESOLVED_LOG, "a", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n".join(lines) + "\n")
+    except OSError:
+        pass
+    save_annotated(annotated)
+
+
+def predictions_payload(annotated):
+    labels = []
+    for occurrence, row in enumerate(read_order(annotated)):
+        labels.append({
+            "Name": GROUP,
+            "Occurrence": occurrence,
+            "Fields": [
+                {"FieldId": FIELD_IDS["name"], "FieldName": "Description", "FormattedValue": row["name"]},
+                {"FieldId": FIELD_IDS["qty"], "FieldName": "Quantity", "FormattedValue": row["qty"]},
+                {"FieldId": FIELD_IDS["total"], "FieldName": "Line Total", "FormattedValue": row["total"]},
+            ],
+        })
+    return {
+        "Result": "Success",
+        "Data": {
+            "ProjectName": PROJECT,
+            "TotalDocuments": 1,
+            "DocumentsWithPredictions": 1,
+            "Predictions": [{"DocumentId": DOCUMENT, "Labels": labels}],
+        },
+    }
+
+
+def main(argv):
+    args = argv[1:]
+    verb = " ".join(args[:3])
+
+    if verb == "ixp labellings get-predictions":
+        record("uip", args, 0)
+        print(json.dumps(predictions_payload(load_annotated())))
+        return 0
+
+    if verb in ("ixp labellings confirm", "ixp labellings unconfirm"):
+        record("uip", args, 0)
+        resolve(args, args[2])
+        print(json.dumps({"Result": "Success"}))
+        return 0
+
+    record("uip", args, 1)
+    sys.stderr.write(STDERR_MESSAGE)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

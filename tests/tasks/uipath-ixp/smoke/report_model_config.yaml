@@ -1,0 +1,136 @@
+task_id: skill-ixp-report-model-config-smoke
+description: >
+  Smoke: report each project's extraction model and pre-processing from
+  `projects get-taxonomy`'s `_model_config`, inverting `input_config` to the
+  `none|table_mini|table` token (cli-reference.md:36-47). Grades the answer, not
+  the read: `input_config: null` must be reported as not configured, never as
+  `none`; `list-models`' `ModelName` is not a `--model` value; `configure-model`
+  is a read-modify-write and must not be used as a probe. Fixture:
+  ../_shared/mock_template_project_state (four projects, one per state).
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 7
+  max_turns: 25
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_project_state}
+
+initial_prompt: |
+  I'm auditing our IXP projects before a model upgrade and I need to know what
+  each one is currently set to run on. Four projects:
+
+  - `ap_invoices-3c1d9b70-ixp`
+  - `id_scans-6b4e2f18-ixp`
+  - `vendor_bills-9a7c5d24-ixp`
+  - `settlement_notes-2e8f6a91-ixp`
+
+  For each, tell me which extraction model and which pre-processing setting it
+  is configured with. Do not change anything — this is a read-only audit.
+
+  Write the results to `model_config.md`, one line per project in exactly this
+  form so I can diff it against our config repo:
+
+      <project-name> | model=<value> | preprocessing=<value>
+
+  Use the identifiers the CLI itself accepts.
+
+  Note: the `uip` CLI in this environment reads from a fixture tenant. Write
+  commands are not connected and will fail. Do NOT prompt the user for
+  confirmation — this is an automated test.
+
+success_criteria:
+  # Positive control. The only command whose response carries _model_config;
+  # without this the negatives below could pass on a run that read nothing.
+  - type: file_matches_regex
+    description: "Read the settings via `projects get-taxonomy` (the only command that returns _model_config)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\b)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced the requested audit artifact"
+    path: "model_config.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # THE trap, and the reason this task exists. `input_config: null` inverts to
+  # "not configured", never to `none` (cli-reference.md:40). The prompt does not
+  # say how to write an absent setting, so any honest wording passes — `not
+  # configured`, `not set`, `unset`, `null`, `default`, `n/a` — but a value does
+  # not.
+  - type: file_matches_regex
+    description: "ap_invoices: null input_config reported as absent (not configured / unset / default), model gemini_2_5_flash"
+    path: "model_config.md"
+    pattern: >-
+      (?mi)^[^\r\n]*ap_invoices[^\r\n]*model=\s*gemini_2_5_flash[^\r\n]*preprocessing=\s*["'`(]*(?:not[\s_-]?(?:configured|set|recorded|specified|defined)|unconfigured|unset|null|missing|absent|default|n/?a)\b[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The same trap from the other side: the ap_invoices line must not assign
+  # `none` as the value. Scoped to `preprocessing=<value>` rather than the bare
+  # word, so a correct answer that explains "not configured, as opposed to none"
+  # is not punished for the explanation.
+  - type: file_matches_regex
+    description: "ap_invoices: did NOT collapse a null input_config to the `none` token"
+    path: "model_config.md"
+    pattern: >-
+      (?mi)^[^\r\n]*ap_invoices[^\r\n]*preprocessing=\s*["'`]?none\b[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "id_scans: image_only inverted to `none`"
+    path: "model_config.md"
+    pattern: >-
+      (?mi)^[^\r\n]*id_scans[^\r\n]*model=\s*gemini_2_5_flash[^\r\n]*preprocessing=\s*["'`]?none\b[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "vendor_bills: uipath_cv_table_only inverted to `table_mini`"
+    path: "model_config.md"
+    pattern: >-
+      (?mi)^[^\r\n]*vendor_bills[^\r\n]*model=\s*gemini_2_5_flash[^\r\n]*preprocessing=\s*["'`]?table_mini\b[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `table\b` cannot match `table_mini` — `_` is a word character, so the
+  # boundary fails there. The two rows stay distinguishable.
+  - type: file_matches_regex
+    description: "settlement_notes: gemini_table_only inverted to `table`, on the pro model"
+    path: "model_config.md"
+    pattern: >-
+      (?mi)^[^\r\n]*settlement_notes[^\r\n]*model=\s*gemini_2_5_pro[^\r\n]*preprocessing=\s*["'`]?table\b[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `ModelName` is the trained labeller family, never a `--model` value
+  # (cli-reference.md:34). The fixture words the two fields so they cannot be
+  # confused: an answer sourced from list-models says `gemini_ixp`, which is
+  # visibly not one of the three selectable models.
+  - type: file_matches_regex
+    description: "Did NOT answer the model question from `list-models` ModelName"
+    path: "model_config.md"
+    pattern: >-
+      (?mi)^[^\r\n]*\bgemini(?:_pro)?_ixp\b[^\r\n]*$
+    must_match: false
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # A read-modify-write. Calling it to discover the current settings rewrites
+  # them — the destructive-probe failure the read-shape task also guards.
+  - type: file_matches_regex
+    description: "Did NOT probe with `configure-model` (it rewrites the settings it is asked to reveal)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+configure-model\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,66 @@
+#!/bin/sh
+# Choice-data-type `uip` mock for the uipath-ixp Choice-value refusal task.
+# Overlays the base mock_template (list it SECOND so this file wins).
+#
+# SKILL.md:131 - the CLI can rename a data type, change its instructions, or
+# delete it, but it CANNOT add or remove the VALUES of an existing Choice data
+# type. That is a manual edit on the in-product Manage Taxonomy page.
+#
+# Why this needs a fixture rather than the base mock: the refusal is only
+# tempting when the Choice type is actually there. `data-types add --kind choice
+# --choices` IS supported and IS already tested (smoke/create_choice_type.yaml),
+# so the agent arrives with a tested habit pointing at the wrong command. On the
+# base mock every call fails and the taxonomy is invisible, so an agent can
+# "refuse" without ever having seen the type it was asked to edit - which grades
+# nothing. Here the type, its three current values, and the field referencing it
+# are all readable, so the refusal is made against a real, edit-able-looking
+# artifact.
+#
+# Fixture - one project:
+#
+#   contract_review-5d8b3e42-ixp    Title Contract_Review
+#     entity_defs: the six built-in types plus `Clause Presence`, a Choice type
+#                  whose values are present / absent / not applicable
+#     label_groups: one field group `Contract` whose field `Termination Clause`
+#                  references Clause Presence via field_type_id
+#
+# The ask in the task is a FOURTH value ("disputed"). Every CLI route to it is
+# wrong and each is guarded by the task:
+#   data-types add                -> clones the type, splitting annotations
+#   data-types delete (+ re-add)  -> IRREVERSIBLE, breaks the referencing field
+#   data-types update-instructions -> changes prose, not the value list; using it
+#                                    to smuggle a value in is the subtle miss
+#   projects import-taxonomy      -> MERGES, never replaces (cli-reference.md:14),
+#                                    so a re-imported value list silently no-ops
+#
+# Response shapes follow cli-reference.md sections Projects and Data Types.
+# Logging matches the base mock exactly, so anchored `^uip\s+ixp ...` criteria
+# keep working. This overlay writes calls.log only. Must stay mode 755.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"5d8b3e42-6c19-4a75-b2e8-3f0a7d9c1b64","Name":"contract_review-5d8b3e42-ixp","Title":"Contract_Review","CreatedAt":"2026-05-28T14:07:19Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Data":{"Id":"5d8b3e42-6c19-4a75-b2e8-3f0a7d9c1b64","Name":"contract_review-5d8b3e42-ixp","Title":"Contract_Review","Description":"Supplier contract clause review","CreatedTime":"2026-05-28T14:07:19Z"}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Data":{"status":"ok","dataset":{"entity_defs":[{"id":"e1","name":"Exact Text","kind":"text","input_value":"exact-match"},{"id":"e2","name":"Inferred Text","kind":"text","input_value":"inferred"},{"id":"e3","name":"Number","kind":"number"},{"id":"e4","name":"Date","kind":"date"},{"id":"e5","name":"Monetary Quantity","kind":"money"},{"id":"e6","name":"Boolean","kind":"boolean"},{"id":"e7","name":"Clause Presence","kind":"choice","input_value":"inferred","instructions":"Whether the named clause appears in the contract body.","choices":[{"value":"present","alternates":["included","stated"]},{"value":"absent","alternates":["missing","not stated"]},{"value":"not applicable","alternates":["n/a"]}]}],"label_groups":[{"id":"lg1","label_defs":[{"id":"ld1","name":"Contract","instructions":"Supplier contract clause review fields.","moon_form":[{"name":"Counterparty","field_id":"f-e01","field_type_id":"e1","kind":"Exact Text","instructions":"The supplier legal entity named as counterparty."},{"name":"Effective Date","field_id":"f-e02","field_type_id":"e4","kind":"Date","instructions":"The date the contract takes effect."},{"name":"Termination Clause","field_id":"f-e03","field_type_id":"e7","kind":"Clause Presence","instructions":"Whether a termination-for-convenience clause is present in the contract body."}]}]}],"_model_config":{"kind":"gemini","model_version":"gemini_2_5_flash","input_config":{"mode":"text_plus_image","text_config":{"kind":"uipath_cv_table_only"}},"attribution_method":"none","temperature":0.0,"top_p":1.0,"seed":42}}}}
+EOF
+exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

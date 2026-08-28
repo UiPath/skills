@@ -1,0 +1,139 @@
+task_id: skill-ixp-selective-prompt-rollback-smoke
+description: >
+  Smoke (diagnose): the improve loop's compare-and-decide step. The agent
+  applies two field instructions, re-reads metrics after the retrain, finds a
+  mixed result (Vendor Name +0.37, Invoice Date -0.26), and must roll back only
+  the regressed field by restoring its prior instruction.
+  check_selective_rollback.py grades the order — baseline read, both updates,
+  re-read, rollback of Invoice Date only — which no single regex can. Fixture:
+  ../_shared/mock_template_regression moves the scores between reads (v15 ->
+  v16 -> v17).
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_regression}
+
+initial_prompt: |
+  Two header fields on IXP project `my_invoices-f1afa9ef-ixp` are scoring badly
+  and I've had a writer draft better extraction instructions for both. Put them
+  in, then check whether they actually helped.
+
+  `Vendor Name`:
+    "Extract the supplier's registered business name from the letterhead or the
+    From block at the top of the invoice. Do not use the bill-to party."
+
+  `Invoice Date`:
+    "Extract the date the invoice was issued. If several dates appear, prefer the
+    one adjacent to the words Invoice Date, Date of Issue, or Tax Invoice."
+
+  Apply both and act on what you find — I want to end up better off than we
+  started, not just different. Tell me what moved and what you did about it.
+
+  Note: the `uip` CLI in this environment reads from a fixture tenant and
+  accepts instruction updates. Do NOT prompt the user for confirmation — this is
+  an automated test.
+
+success_criteria:
+  # The core assertion: the whole P7 sequence, in order, with the right final
+  # scope. Regex can express neither the ordering nor "Vendor Name absent from
+  # the LAST call" — a whole-iteration revert still contains an Invoice Date
+  # entry, so a content-only check passes it.
+  - type: run_command
+    description: "P7 sequence: baseline read -> both fields updated -> re-read -> rollback of the regressed field only"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/check_selective_rollback.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # A rollback must RESTORE the prior instruction, not paraphrase it. The
+  # baseline text is in the fixture's taxonomy; this quotes a phrase from it that
+  # appears in neither of the prompt's two new instructions, so a partial revert
+  # or a fresh rewrite fails.
+  - type: file_matches_regex
+    description: "Rollback restored Invoice Date's prior instruction verbatim, not a fresh rewrite"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*"name"\s*:\s*"Invoice Date")(?=[^\r\n]*printed in the header block near the invoice number)[^\r\n]*)$
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Positive control that the graded iteration actually happened, and the only
+  # criterion that pins the NEW text. Anchored on a phrase unique to the
+  # prompt's Vendor Name instruction.
+  - type: file_matches_regex
+    description: "Applied the requested Vendor Name instruction"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*"name"\s*:\s*"Vendor Name")(?=[^\r\n]*registered business name from the letterhead)[^\r\n]*)$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Critical Rule 4's taxonomy snapshot — `get-taxonomy` redirected into
+  # /tmp/ixp/<project>/taxonomies/ — is what makes a rollback possible on a real
+  # tenant, where the prior instruction is gone once the write lands. Graded on
+  # Bash text like update_prompts_heredoc.yaml: /tmp is outside the sandbox
+  # paths the file criteria can read.
+  - type: command_executed
+    description: "Snapshotted the taxonomy: `projects get-taxonomy` redirected into /tmp/ixp/<project>/taxonomies/ (Critical Rule 4)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+get-taxonomy\s+(?:\\?["''])*my_invoices-f1afa9ef-ixp(?:\\?["''])*[^\n]*[>|]\s*(?:tee\s+(?:-a\s+)?)?(?:\\?["''])*/tmp/ixp/my_invoices-f1afa9ef-ixp/taxonomies/\S+\.json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Nobody asked for a release. Publishing mid-iteration makes a model live on
+  # the strength of a score the agent was still in the middle of investigating.
+  - type: file_matches_regex
+    description: "Did NOT publish a model version — the task was to evaluate, not release"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+publish\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reported the mixed result per field and explained the selective rollback"
+    include_agent_output: true
+    include_tool_calls: true
+    weight: 2.5
+    pass_threshold: 1.0
+    prompt: |
+      The agent updated the extraction instructions for two fields on an IXP
+      project, then re-read the validation metrics. The fixture's numbers were:
+
+      | Field | Before (v15) | After (v16) |
+      |---|---|---|
+      | Vendor Name | 0.34 | 0.71 — improved by +0.37 |
+      | Invoice Date | 0.88 | 0.62 — regressed by −0.26 |
+
+      The Improve Prompts Guide treats a drop of more than 0.1 F1 as a
+      regression to roll back. So the correct action is: keep the Vendor Name
+      instruction, restore Invoice Date's prior instruction, leave Invoice Number
+      alone. A correct run then sees Invoice Date recover to 0.86 at v17.
+
+      Score the agent's final answer to the user:
+
+      1.0 — States per field what moved and in which direction, identifies
+            Invoice Date as the regression, and says it rolled back that field
+            only while keeping the Vendor Name gain. Approximate numbers are
+            fine; the directions and the field attribution must be right.
+      0.5 — Gets the action right but reports it vaguely — e.g. "metrics were
+            mixed so I reverted one field" without saying which field moved
+            which way, or quoting no numbers at all.
+      0.0 — Any of: reports the iteration as an overall success or an overall
+            failure without separating the two fields; attributes the regression
+            to the wrong field; says it reverted everything; says it kept
+            everything; or claims it could not tell whether anything changed.
+
+      Ignore whether the agent mentioned waiting for the retrain — the fixture
+      returns the new numbers immediately. Judge the reported diagnosis and the
+      reported action.

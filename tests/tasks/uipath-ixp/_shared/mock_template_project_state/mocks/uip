@@ -1,0 +1,169 @@
+#!/bin/sh
+# Project-state `uip` mock for the uipath-ixp READ-AND-REPORT smoke tasks.
+# Overlays the base mock_template (list it SECOND so this file wins).
+#
+# The base mock fails every call, so a task on it can only grade that the agent
+# typed the right command. That is enough for a write (`configure-model --model
+# X` is the whole deliverable), but not for a READ whose deliverable is a
+# DERIVED answer. Two such reads exist:
+#
+#   "which model / pre-processing is this project on?"  (SKILL.md:88)
+#   "describe this project / what's in it?"             (SKILL.md:103)
+#
+# Neither has a command that returns the answer directly. Both require reading a
+# raw artifact and deriving it. This fixture serves the artifacts so the
+# derivation itself can be graded.
+#
+# Fixture - four projects, one per documented `input_config` state, because the
+# pre-processing answer is an INVERSION of that field (cli-reference.md:38-43)
+# and the four rows invert differently:
+#
+#   ap_invoices-3c1d9b70-ixp        _model_config.input_config = null
+#       -> "not configured" (the project uses the IXP default). Explicitly NOT
+#          `none`; reporting `none` is the documented wrong answer and the
+#          single most likely failure this fixture exists to catch.
+#   id_scans-6b4e2f18-ixp           {"mode":"image_only"}
+#       -> none
+#   vendor_bills-9a7c5d24-ixp       text_plus_image + uipath_cv_table_only
+#       -> table_mini
+#   settlement_notes-2e8f6a91-ixp   text_plus_image + gemini_table_only
+#       -> table
+#
+# The ModelName trap, on every project: `list-models` reports the trained
+# labeller FAMILY (`gemini_ixp` / `gemini_pro_ixp`), which is never a `--model`
+# value and says nothing about pre-processing. `_model_config.model_version`
+# holds the real answer (`gemini_2_5_flash` / `gemini_2_5_pro`). The two
+# deliberately disagree in wording, so an answer sourced from the wrong field is
+# visible in the graded output instead of being coincidentally right.
+#
+# The paging trap, on `documents list`: Total (128 on vendor_bills) exceeds the
+# default Limit of 50, so the envelope looks incomplete to an agent that has not
+# read the contract. The skill says use `Total` for a count and do NOT page
+# (SKILL.md:103) - so a follow-up call carrying `--offset` is the failure, and
+# the fixture is shaped to invite it.
+#
+# vendor_bills carries the full taxonomy (2 field groups / 7 fields) and a
+# published+tagged model, so it serves the describe-a-project task on its own.
+# The other three need only `_model_config` to differ.
+#
+# Response shapes follow cli-reference.md sections Projects and Documents.
+# Logging matches the base mock exactly, so anchored `^uip\s+ixp ...` criteria
+# keep working. This overlay writes calls.log only. Must stay mode 755.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+# Shared by every get-taxonomy response: the six built-in data types every IXP
+# project ships with (cli-reference.md section Default data types).
+ENTITY_DEFS='[{"id":"e1","name":"Exact Text","kind":"text","input_value":"exact-match"},{"id":"e2","name":"Inferred Text","kind":"text","input_value":"inferred"},{"id":"e3","name":"Number","kind":"number"},{"id":"e4","name":"Date","kind":"date"},{"id":"e5","name":"Monetary Quantity","kind":"money"},{"id":"e6","name":"Boolean","kind":"boolean"}]'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"3c1d9b70-4a11-4c72-9d08-1e5b7f2a6c31","Name":"ap_invoices-3c1d9b70-ixp","Title":"AP_Invoices","CreatedAt":"2026-07-03T08:22:15Z"},{"Id":"6b4e2f18-9d40-4b13-8a67-2f9c4e1d7b58","Name":"id_scans-6b4e2f18-ixp","Title":"ID_Scans","CreatedAt":"2026-07-19T13:05:44Z"},{"Id":"9a7c5d24-1b83-4e60-92f5-7d3a8c6e0f19","Name":"vendor_bills-9a7c5d24-ixp","Title":"Vendor_Bills","CreatedAt":"2026-06-11T10:41:02Z"},{"Id":"2e8f6a91-7c25-4f38-b104-6a9d2e5b8c47","Name":"settlement_notes-2e8f6a91-ixp","Title":"Settlement_Notes","CreatedAt":"2026-08-01T16:58:30Z"}],"Total":4,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+    case "$4" in
+    *ap_invoices*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Id":"3c1d9b70-4a11-4c72-9d08-1e5b7f2a6c31","Name":"ap_invoices-3c1d9b70-ixp","Title":"AP_Invoices","Description":"Accounts-payable invoices, EU suppliers","CreatedTime":"2026-07-03T08:22:15Z"}}
+EOF
+        exit 0
+        ;;
+    *id_scans*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Id":"6b4e2f18-9d40-4b13-8a67-2f9c4e1d7b58","Name":"id_scans-6b4e2f18-ixp","Title":"ID_Scans","Description":"Passport and driving-licence scans","CreatedTime":"2026-07-19T13:05:44Z"}}
+EOF
+        exit 0
+        ;;
+    *vendor_bills*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Id":"9a7c5d24-1b83-4e60-92f5-7d3a8c6e0f19","Name":"vendor_bills-9a7c5d24-ixp","Title":"Vendor_Bills","Description":"Vendor bills with line-item tables","CreatedTime":"2026-06-11T10:41:02Z"}}
+EOF
+        exit 0
+        ;;
+    *settlement_notes*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Id":"2e8f6a91-7c25-4f38-b104-6a9d2e5b8c47","Name":"settlement_notes-2e8f6a91-ixp","Title":"Settlement_Notes","Description":"Multi-page settlement statements","CreatedTime":"2026-08-01T16:58:30Z"}}
+EOF
+        exit 0
+        ;;
+    esac
+;;
+"ixp projects get-taxonomy")
+    case "$4" in
+    *ap_invoices*)
+        # input_config ABSENT (null) -> "not configured", NOT `none`.
+        printf '{"Result":"Success","Data":{"status":"ok","dataset":{"entity_defs":%s,"label_groups":[{"id":"lg1","label_defs":[{"id":"ld1","name":"Invoice","instructions":"Supplier invoice header fields.","moon_form":[{"name":"Invoice Number","field_id":"f-a01","field_type_id":"e1","kind":"Exact Text","instructions":"The unique invoice identifier in the header area."},{"name":"Invoice Date","field_id":"f-a02","field_type_id":"e4","kind":"Date","instructions":"The date the invoice was issued."}]}]}],"_model_config":{"kind":"gemini","model_version":"gemini_2_5_flash","input_config":null,"attribution_method":"none","temperature":0.0,"top_p":1.0,"seed":42}}}}\n' "$ENTITY_DEFS"
+        exit 0
+        ;;
+    *id_scans*)
+        printf '{"Result":"Success","Data":{"status":"ok","dataset":{"entity_defs":%s,"label_groups":[{"id":"lg1","label_defs":[{"id":"ld1","name":"Identity Document","instructions":"Photo ID pages.","moon_form":[{"name":"Full Name","field_id":"f-b01","field_type_id":"e1","kind":"Exact Text","instructions":"The holder name as printed on the document."},{"name":"Date Of Birth","field_id":"f-b02","field_type_id":"e4","kind":"Date","instructions":"The holder date of birth."}]}]}],"_model_config":{"kind":"gemini","model_version":"gemini_2_5_flash","input_config":{"mode":"image_only"},"attribution_method":"none","temperature":0.0,"top_p":1.0,"seed":42}}}}\n' "$ENTITY_DEFS"
+        exit 0
+        ;;
+    *vendor_bills*)
+        # The describe-a-project fixture: 2 field groups (label_defs), 7 fields.
+        printf '{"Result":"Success","Data":{"status":"ok","dataset":{"entity_defs":%s,"label_groups":[{"id":"lg1","label_defs":[{"id":"ld1","name":"Invoice Header","instructions":"Header block at the top of the bill.","moon_form":[{"name":"Invoice Number","field_id":"f-c01","field_type_id":"e1","kind":"Exact Text","instructions":"The unique bill identifier in the header area, labelled Invoice #."},{"name":"Invoice Date","field_id":"f-c02","field_type_id":"e4","kind":"Date","instructions":"The date the bill was issued, next to the invoice number."},{"name":"Supplier Name","field_id":"f-c03","field_type_id":"e1","kind":"Exact Text","instructions":"The supplier legal name from the letterhead."},{"name":"Total Amount","field_id":"f-c04","field_type_id":"e5","kind":"Monetary Quantity","instructions":"The grand total payable, bottom-right of the totals block."}]},{"id":"ld2","name":"Line Items","instructions":"One extraction per physical line in the charges table.","moon_form":[{"name":"Description","field_id":"f-c05","field_type_id":"e1","kind":"Exact Text","instructions":"The line description text in the charges table."},{"name":"Quantity","field_id":"f-c06","field_type_id":"e3","kind":"Number","instructions":"The quantity column for this line."},{"name":"Line Total","field_id":"f-c07","field_type_id":"e5","kind":"Monetary Quantity","instructions":"The extended amount for this line."}]}]}],"_model_config":{"kind":"gemini","model_version":"gemini_2_5_flash","input_config":{"mode":"text_plus_image","text_config":{"kind":"uipath_cv_table_only"}},"attribution_method":"none","temperature":0.0,"top_p":1.0,"seed":42}}}}\n' "$ENTITY_DEFS"
+        exit 0
+        ;;
+    *settlement_notes*)
+        printf '{"Result":"Success","Data":{"status":"ok","dataset":{"entity_defs":%s,"label_groups":[{"id":"lg1","label_defs":[{"id":"ld1","name":"Settlement","instructions":"Settlement statement summary.","moon_form":[{"name":"Statement Period","field_id":"f-d01","field_type_id":"e1","kind":"Exact Text","instructions":"The period covered by the statement."},{"name":"Net Settlement","field_id":"f-d02","field_type_id":"e5","kind":"Monetary Quantity","instructions":"The net amount settled."}]}]}],"_model_config":{"kind":"gemini","model_version":"gemini_2_5_pro","input_config":{"mode":"text_plus_image","text_config":{"kind":"gemini_table_only"}},"attribution_method":"none","temperature":0.0,"top_p":1.0,"seed":42}}}}\n' "$ENTITY_DEFS"
+        exit 0
+        ;;
+    esac
+;;
+"ixp projects list-models")
+    # ModelName is the labeller FAMILY, never a `--model` value. It disagrees in
+    # wording with _model_config.model_version on purpose.
+    case "$4" in
+    *ap_invoices*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":4,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-05T07:19:44Z","Description":""}],"Tags":[],"MaxPublished":0}}
+EOF
+        exit 0
+        ;;
+    *id_scans*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":2,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-07-28T15:33:07Z","Description":""}],"Tags":[],"MaxPublished":0}}
+EOF
+        exit 0
+        ;;
+    *vendor_bills*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":9,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-07-22T09:02:51Z","Description":"pre-table-preprocessing"},{"Version":12,"ModelName":"gemini_ixp","Pinned":true,"TrainedTime":"2026-08-14T11:36:20Z","Description":"table_mini enabled"}],"Tags":[{"Name":"live","Version":12,"UpdatedAt":"2026-08-14T12:01:09Z"}],"MaxPublished":12}}
+EOF
+        exit 0
+        ;;
+    *settlement_notes*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":3,"ModelName":"gemini_pro_ixp","Pinned":true,"TrainedTime":"2026-08-15T18:44:12Z","Description":""}],"Tags":[{"Name":"staging","Version":3,"UpdatedAt":"2026-08-15T19:10:00Z"}],"MaxPublished":3}}
+EOF
+        exit 0
+        ;;
+    esac
+;;
+"ixp documents list")
+    # Paged envelope. Total > Limit on vendor_bills so the page looks partial -
+    # the skill says read Total, do not page.
+    case "$4" in
+    *vendor_bills*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Documents":[{"DocumentId":"3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22","AttachmentRef":"att-9001","Filename":"bill_10432.pdf"},{"DocumentId":"4564658a4649afce.2ad996718a3bbd732b9c3e4fa2958c33","AttachmentRef":"att-9002","Filename":"bill_10433.pdf"},{"DocumentId":"5675769b5750badf.3be007829b4cce843c0d4f5ab3069d44","AttachmentRef":"att-9003","Filename":"bill_10434.png"}],"Total":128,"Offset":0,"Limit":50}}
+EOF
+        exit 0
+        ;;
+    *)
+cat <<'EOF'
+{"Result":"Success","Data":{"Documents":[{"DocumentId":"7781200a4419cbde.5df229940c6eeb065d2e6f7ac5281b66","AttachmentRef":"att-7001","Filename":"sample_001.pdf"}],"Total":12,"Offset":0,"Limit":50}}
+EOF
+        exit 0
+        ;;
+    esac
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

@@ -1,0 +1,141 @@
+task_id: skill-ixp-occurrence-renumber-smoke
+description: >
+  Smoke: Critical Rule 18 — `Occurrence` is scoped to the read that produced it.
+  A partly-confirmed repeatable group has two correct rows to confirm and one
+  invented row to leave alone. Batching both targets into one `--updates` call is
+  the recommended path; confirming them one at a time is legal only with a fresh
+  `get-predictions` in between, because the first write renumbers the group.
+
+  The prompt does not say which shape to use, so the agent has to choose it and
+  live with the consequences — unlike `labelling_correctness`, whose prompt
+  instructs "in a single batched call" outright.
+
+  Supersedes smoke/per_occurrence_confirm.yaml (deleted): same project, document
+  and invented row, and every one of its criteria has a stronger counterpart here.
+
+  Grading needs more than the call log. `--occurrence 2` is byte-identical whether
+  the 2 came from a fresh read or a stale one, so the mock resolves each index
+  against the CURRENT ordering and records the ROW it landed on — see
+  ../_shared/mock_template_occurrence/README.md. Reads are served; the mock
+  accepts confirms and renumbers accordingly.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_occurrence}
+
+initial_prompt: |
+  Document `doc-freight-7` on IXP project `freight_docs-df33115f-ixp` has a
+  repeatable `Line Items` group. I went through it against the paper invoice
+  this morning and here is where it stands:
+
+  - "Copper wire", Qty 50 — matches the invoice, and I already confirmed it
+    yesterday.
+  - "Steel bolts", Qty 200 — matches a line on the invoice. Not confirmed yet.
+  - "Pallet wrap", Qty 12 — matches a line on the invoice. Not confirmed yet.
+  - "Premium freight surcharge", Qty 1, $9,999 — there is NO such line anywhere
+    on the invoice. The model invented the row.
+
+  Confirm the two that are correct and still outstanding. Leave the invented row
+  alone.
+
+  Note: the `uip` CLI in this environment reads from a fixture tenant and accepts
+  labelling writes. Do NOT prompt the user for confirmation — this is an
+  automated test.
+
+success_criteria:
+  # Positive control, and the read the indices must come from. Without it there
+  # is no Occurrence value to target at all — the prompt names rows by value and
+  # never states an index.
+  - type: file_matches_regex
+    description: "Read the current predictions for the document"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The two assertions that matter, and the reason this task has a resolving
+  # mock. These read the ROW the index landed on, not the index — so an agent
+  # that carries an index across a write fails here even though its command
+  # looks identical to a correct one in the call log.
+  - type: file_matches_regex
+    description: "The confirm landed on Steel bolts"
+    path: "mocks/resolved.log"
+    pattern: >-
+      (?m)^(?:confirm\s+occurrence=\d+\s+->\s+Steel bolts)\s*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The confirm landed on Pallet wrap"
+    path: "mocks/resolved.log"
+    pattern: >-
+      (?m)^(?:confirm\s+occurrence=\d+\s+->\s+Pallet wrap)\s*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The invented row must never be confirmed — by a stale index, by the plain
+  # `--fields` form (which hits EVERY occurrence and is recorded here as
+  # ALL_OCCURRENCES), or deliberately.
+  - type: file_matches_regex
+    description: "No confirm landed on the invented Premium freight surcharge row"
+    path: "mocks/resolved.log"
+    pattern: >-
+      (?m)^(?:confirm\s+[^\r\n]*Premium freight surcharge)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Rule 18 as a rule about METHOD. The resolver above only catches a stale index
+  # when the ordering happens to shift under it; confirming Steel bolts before
+  # Pallet wrap leaves Pallet wrap's index unmoved, so a run can land on the right
+  # rows by luck. Batching passes this trivially — one call, one read, nothing to
+  # invalidate.
+  - type: run_command
+    description: "Sequential per-occurrence writes each followed a fresh read (Critical Rule 18)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/check_occurrence_reread.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # `--group` takes the FULL label path from the prediction's `Name` field, not
+  # the leaf. The fixture reports `Invoice > Line Items`, so an agent that copies
+  # the leaf out of the prompt instead of the path out of the read gets caught.
+  - type: file_matches_regex
+    description: "Used the full label path from the prediction's Name field, not the leaf (Critical Rule 13)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b[^\r\n]*--group\s+["']?Invoice > Line Items["']?)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The invented row is not OCR garble — its values are not a misreading of a
+  # real line — so `--corrections` is forbidden (Critical Rule 8). The row is left
+  # unannotated, never "fixed".
+  - type: file_matches_regex
+    description: "Did NOT use --corrections to 'fix' the invented row"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b[^\r\n]*--corrections)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `unconfirm` on the already-correct Copper wire row would undo the user's own
+  # prior review. Nothing in the prompt asks for it.
+  - type: file_matches_regex
+    description: "Did NOT roll back the row the user had already confirmed"
+    path: "mocks/resolved.log"
+    pattern: >-
+      (?m)^(?:unconfirm\s+[^\r\n]*Copper wire)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0

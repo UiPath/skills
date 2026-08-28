@@ -1,0 +1,106 @@
+#!/bin/sh
+# Contradicting-instructions `uip` mock for the uipath-ixp prompt-alignment task.
+# Overlays the base mock_template (list it SECOND so this file wins).
+#
+# SKILL.md:112 (Common Pitfalls) and improve-prompts-guide.md:29 - each field
+# group (label_def) has its OWN `instructions` that the model sees alongside the
+# per-field ones. `fields update-prompts` edits only the per-field text. When the
+# two contradict, the model gets opposing signals, and no amount of rewriting the
+# FIELD prompt fixes it: the group instruction keeps overriding.
+#
+# smoke/update_group_instructions.yaml asserts that `groups update-prompts
+# --updates` ran with the requested text, which grades the WRITE on a project
+# with no contradiction. This fixture builds the contradiction.
+#
+# Fixture - one project, freight_bills-8e2a4c67-ixp:
+#
+#   field group `Freight Charges`
+#     instructions: "...only the charges shown on the FIRST page... Ignore any
+#                    continuation or summary pages that follow."
+#
+#   field `Fuel Surcharge` (inside that group)
+#     instructions: "...listed in the accessorial summary table on the LAST page
+#                    of the bill, after the line-item detail..."
+#
+# The group forbids exactly where the field says to look. get-metrics scores it
+# accordingly: Fuel Surcharge F1 0.19 on Precision 0.86 / Recall 0.11 - a RECALL
+# problem, which is the guide's signal for "the model cannot find it", not "the
+# model picks the wrong one". The two sibling fields score 0.91+ so the diagnosis
+# points at one field, and the only explanation in the artifact is the clash.
+#
+# The trap: an agent that follows the improve loop mechanically reads the metrics,
+# sees low recall, and rewrites the FIELD instruction with a better location hint
+# - which is the documented RECALL fix and is still wrong here, because the group
+# instruction excludes that location. A correct run fixes the GROUP too.
+#
+# Writes are accepted (Success, exit 0) rather than failed, because the write IS
+# the graded action - a failing write would push the agent into retry loops
+# instead of the diagnosis. Same choice as ../mock_template_regression.
+#
+# Response shapes follow cli-reference.md. Logging matches the base mock exactly,
+# so anchored `^uip\s+ixp ...` criteria keep working. This overlay writes
+# calls.log only. Must stay mode 755.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+ENTITY_DEFS='{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}'
+
+# The group instruction restricts extraction to page 1 and explicitly rules out
+# the later pages. This is the half an agent iterating on field prompts never
+# reads.
+GROUP_INSTRUCTIONS='Extract only the charges shown on the FIRST page of the freight bill. Ignore any continuation or summary pages that follow.'
+
+# ...and the field instruction sends the model to the last page. Same taxonomy,
+# opposite directions.
+F_CARRIER='{"field_id":"a1c4e70b93d28f56","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Carrier Name","instructions":"The carrier legal name from the bill letterhead, top-left of the first page.","rule_set":null}'
+F_BASE='{"field_id":"c7f2a95e10b6d483","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Base Freight","instructions":"The base linehaul charge, shown in the charges block on the first page. Example: 1240.00.","rule_set":null}'
+F_FUEL='{"field_id":"d9b3c60f42a85e17","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Fuel Surcharge","instructions":"The fuel surcharge amount, listed in the accessorial summary table on the LAST page of the bill, after the line-item detail. Example: 84.50.","rule_set":null}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"8e2a4c67-3b90-4d51-a7f2-6c1e9b0d4a38","Name":"freight_bills-8e2a4c67-ixp","Title":"Freight_Bills","CreatedAt":"2026-06-02T09:33:41Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"freight_bills-8e2a4c67-ixp","Title":"Freight_Bills","Description":"Carrier freight bills, multi-page with accessorial summaries","CreatedTime":"2026-06-02T09:33:41Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":8,"ModelName":"gemini_ixp","Pinned":true,"TrainedTime":"2026-08-12T06:18:52Z","Description":""}],"Tags":[{"Name":"live","Version":8,"UpdatedAt":"2026-08-12T07:02:14Z"}],"MaxPublished":8}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    # Fuel Surcharge: low F1 driven by RECALL (0.11), not precision (0.86) - the
+    # guide's signal for "the model cannot find the value". Its two siblings are
+    # healthy, so the diagnosis lands on one field and the taxonomy holds the only
+    # available explanation.
+cat <<'EOF'
+{"Result":"Success","Data":{"ProjectScore":0.68,"ProjectScoreQuality":"Fair","ValidatedDocuments":40,"ModelVersion":8,"FieldGroups":[{"FieldGroup":"Freight Charges","F1":0.68,"Precision":0.88,"Recall":0.56,"ErrorRate":0.12,"Documents":40}],"Fields":[{"FieldGroup":"Freight Charges","FieldId":"a1c4e70b93d28f56","F1":0.94,"Precision":0.95,"Recall":0.93,"ErrorRate":0.05,"Documents":40,"Annotations":40,"Quality":"Good"},{"FieldGroup":"Freight Charges","FieldId":"c7f2a95e10b6d483","F1":0.91,"Precision":0.93,"Recall":0.89,"ErrorRate":0.07,"Documents":40,"Annotations":40,"Quality":"Good"},{"FieldGroup":"Freight Charges","FieldId":"d9b3c60f42a85e17","F1":0.19,"Precision":0.86,"Recall":0.11,"ErrorRate":0.14,"Documents":40,"Annotations":38,"Quality":"Poor"}]}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+    printf '{"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[%s],"label_groups":[{"name":"default","label_defs":[{"name":"Freight Charges","id":"7c40e1b529af6d38","instructions":"%s","moon_form":[%s,%s,%s]}]}],"_model_config":{"kind":"gemini","model_version":"gemini_2_5_flash","input_config":{"mode":"text_plus_image","text_config":{"kind":"uipath_cv_table_only"}},"attribution_method":"none","temperature":0.0,"top_p":1.0,"seed":42}}}}\n' \
+        "$ENTITY_DEFS" "$GROUP_INSTRUCTIONS" "$F_CARRIER" "$F_BASE" "$F_FUEL"
+    exit 0
+;;
+"ixp groups update-prompts")
+    echo '{"Result":"Success","Data":{"Updated":["Freight Charges"],"Unmatched":[]}}'
+    exit 0
+;;
+"ixp fields update-prompts")
+    echo '{"Result":"Success","Data":{"Updated":["Fuel Surcharge"],"Unmatched":[]}}'
+    exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

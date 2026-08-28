@@ -6,8 +6,8 @@ description: >
   (0-based, extraction order) and roll back ONLY that one with
   `unconfirm --group + --occurrence` (or `--updates`) — NOT plain
   `--fields` (which removes the field id from every occurrence,
-  un-confirming the correct lines too). Mirrors per_occurrence_confirm;
-  locks in the unconfirm half of Critical Rules 13/14.
+  un-confirming the correct lines too). Mirrors occurrence_renumber on the
+  confirm side; locks in the unconfirm half of Critical Rules 13/14.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

@@ -1,0 +1,153 @@
+task_id: skill-ixp-align-group-field-instructions-smoke
+description: >
+  Smoke (diagnose): one field scores badly because its field group's
+  instructions ("only the FIRST page") contradict its own ("on the LAST page").
+  `fields update-prompts` edits only per-field text, so the fix is `groups
+  update-prompts` (SKILL.md:112, improve-prompts-guide.md:29). The metrics read
+  as a recall problem, whose documented fix — a sharper field-level location
+  hint — points at the page the group excludes. Grades that the group
+  instruction is rewritten without the first-page restriction and that the
+  contradiction is named. Fixture: ../_shared/mock_template_prompt_conflict
+  (prompt writes accepted).
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_prompt_conflict}
+
+initial_prompt: |
+  Extraction quality on IXP project `freight_bills-8e2a4c67-ixp` is dragging and
+  I'm told it's down to one field. Find out which, work out why, and fix it.
+
+  One pass — diagnose and apply the fix, don't loop waiting for a retrain. Tell
+  me what was wrong and what you changed.
+
+  Note: the `uip` CLI in this environment reads from a fixture tenant. Do NOT
+  prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Supporting reads. The metrics identify the field; the taxonomy is the only
+  # place the contradiction is visible, so a run that never reads it cannot have
+  # diagnosed anything.
+  - type: file_matches_regex
+    description: "Read metrics to locate the failing field"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+["']?freight_bills-8e2a4c67-ixp)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Read the taxonomy — the only artifact carrying the group instructions"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\s+["']?freight_bills-8e2a4c67-ixp)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # THE assertion. Fixing the group instruction is the step the mechanical loop
+  # skips, and the only step that can actually resolve the conflict.
+  - type: file_matches_regex
+    description: "Fixed the GROUP instruction with `groups update-prompts` on Freight Charges"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+update-prompts\b[^\r\n]*Freight\s+Charges)[^\r\n]*$
+    weight: 3.5
+    pass_threshold: 1.0
+
+  # The replacement group text must not re-impose the restriction it is being
+  # rewritten to remove. Scoped to the groups update-prompts line so the phrase
+  # appearing in the agent's prose explanation is not penalised.
+  - type: file_matches_regex
+    description: "New group instruction does NOT re-state the first-page-only restriction"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?mi)^(?:uip\s+ixp\s+groups\s+update-prompts\b[^\r\n]*(?:only[^\r\n]{0,40}first\s+page|first\s+page\s+only|ignore[^\r\n]{0,40}(?:continuation|summary)))[^\r\n]*$
+    must_match: false
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The taxonomy-wide prompt is a different level again (SKILL.md:101). Reaching
+  # for it here changes every field group in the project instead of the one whose
+  # instruction contradicts.
+  - type: file_matches_regex
+    description: "Did NOT reach for the taxonomy-wide prompt instead of the group's"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+update-prompt\b)[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Deleting and re-adding the group destroys every field in it along with their
+  # annotations (cli-reference.md:137). Never the right way to change its text.
+  - type: file_matches_regex
+    description: "Did NOT delete or re-add the field group to change its instructions"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+groups\s+(?:add|delete)\b)[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # import-taxonomy merges, never replaces (cli-reference.md:14), so editing the
+  # exported artifact and re-importing it silently leaves the old text in place.
+  - type: file_matches_regex
+    description: "Did NOT try to re-import an edited taxonomy (import merges, never replaces)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Named the group-vs-field instruction contradiction as the root cause"
+    include_agent_output: true
+    include_tool_calls: true
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      On IXP project `freight_bills-8e2a4c67-ixp`, the field `Fuel Surcharge`
+      scores F1 0.19 with Precision 0.86 and Recall 0.11. Its two sibling fields
+      in the same field group score 0.91 and 0.94.
+
+      The actual cause is a contradiction inside the taxonomy:
+
+      - The field group `Freight Charges` has instructions saying to extract only
+        the charges on the FIRST page and to ignore continuation or summary pages.
+      - The field `Fuel Surcharge` has instructions saying it is in the
+        accessorial summary table on the LAST page, after the line-item detail.
+
+      The model sees both, so it is being told to look somewhere it is also told
+      to ignore. `fields update-prompts` edits only the per-field text, so
+      rewriting the field instruction cannot resolve it — the group instruction
+      keeps overriding. The fix requires updating the GROUP instruction
+      (`groups update-prompts`).
+
+      Score the agent's explanation to the user:
+
+      1.0 — Identifies `Fuel Surcharge` as the failing field AND names the
+            conflict between the group instruction and the field instruction as
+            the reason, in substance: that the group restricts extraction to the
+            first page / excludes the later pages while the field points at the
+            last page. It must be clear the agent read BOTH levels, not just the
+            field.
+      0.5 — Identifies the failing field and correctly diagnoses a recall /
+            "model cannot locate it" problem, and changes the group instruction,
+            but never explains that the two instructions contradicted — so the
+            fix reads as a guess rather than a diagnosis.
+      0.0 — Any of: identifies the wrong field; attributes the problem only to a
+            vague or insufficient field prompt and rewrites only the field;
+            blames OCR, the model choice, pre-processing, or missing labels
+            without reference to the instruction conflict; or claims the field is
+            genuinely absent from the documents.
+
+      Note: naming the recall classification is fine and expected — but on its
+      own it is not the root cause. The contradiction is.

@@ -1,0 +1,112 @@
+#!/bin/sh
+# Regression-producing `uip` mock for the uipath-ixp improve-loop rollback task.
+# Overlays the base mock_template (list it SECOND so this file wins).
+#
+# Workflow step P7 of the Improve Prompts Guide — update instructions, wait out the
+# retrain, re-read metrics, and roll back only the fields that REGRESSED — cannot
+# be reached on a static fixture: the branch only exists once the same field has
+# two different scores, so the mock moves between reads.
+#
+# State machine, kept in marker files beside this script:
+#
+#   (no marker)  v15  Vendor Name F1 0.34   Invoice Date F1 0.88   <- baseline
+#   .iter1       v16  Vendor Name F1 0.71   Invoice Date F1 0.62   <- mixed result
+#   .iter2       v17  Vendor Name F1 0.71   Invoice Date F1 0.86   <- after rollback
+#
+# The mixed result is the point: Vendor Name gained 0.37 and must be kept, Invoice
+# Date lost 0.26 — past the guide's 0.1 threshold — and must be rolled back.
+# .iter2 exists so a correct run converges, rather than the agent seeing 0.62 again
+# and rolling back a second time.
+#
+# State advances per ITERATION, not per call — see README.md, along with the
+# deliberate limitation that `projects get-taxonomy` is not stateful.
+#
+# Response shapes follow the skill's cli-reference. Logging matches the base mock
+# exactly, so anchored `^uip\s+ixp …` criteria keep working. This overlay writes
+# calls.log only. Must stay mode 755.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+ITER1="$(dirname "$0")/.iter1"
+ITER2="$(dirname "$0")/.iter2"
+# Set by get-metrics, cleared when an update consumes it. Its presence is what
+# makes the NEXT update a new iteration rather than another write in this one.
+READ="$(dirname "$0")/.read"
+
+ENTITY_DEFS='{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}'
+
+# Baseline instructions. `Vendor Name` is deliberately threadbare — that is why
+# it scores 0.34. `Invoice Date` is the specific text a correct rollback must
+# restore, so the task's criteria quote a phrase from it.
+F_INVOICE_NUMBER='{"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The unique invoice identifier printed in the document header.","rule_set":null}'
+F_INVOICE_DATE='{"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Invoice Date","instructions":"The issue date of the invoice, printed in the header block near the invoice number.","rule_set":null}'
+F_VENDOR_NAME='{"field_id":"2b6f8c04e9a17d53","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Vendor Name","instructions":"The vendor.","rule_set":null}'
+
+metrics() {
+    # $1 ModelVersion  $2 ProjectScore  $3 Vendor Name F1  $4 Invoice Date F1
+    printf '{"Result":"Success","Data":{"ProjectScore":%s,"ProjectScoreQuality":"Fair","ValidatedDocuments":52,"ModelVersion":%s,"FieldGroups":[{"FieldGroup":"Invoice Header","F1":%s,"Precision":%s,"Recall":%s,"ErrorRate":0.0,"Documents":52}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"9a3f5d2c81b7e604","F1":0.97,"Precision":0.98,"Recall":0.96,"ErrorRate":0.03,"Documents":52,"Annotations":52,"Quality":"Good"},{"FieldGroup":"Invoice Header","FieldId":"1d8e42b7c3a95f60","F1":%s,"Precision":%s,"Recall":%s,"ErrorRate":0.0,"Documents":52,"Annotations":52,"Quality":"Fair"},{"FieldGroup":"Invoice Header","FieldId":"2b6f8c04e9a17d53","F1":%s,"Precision":%s,"Recall":%s,"ErrorRate":0.0,"Documents":52,"Annotations":51,"Quality":"Fair"}]}}\n' \
+        "$2" "$1" "$2" "$2" "$2" "$4" "$4" "$4" "$3" "$3" "$3"
+}
+
+case "$1 $2 $3" in
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","Description":"Supplier invoices","CreatedTime":"2026-06-11T08:42:19Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+    # Pinned is true only at 15, the version tagged `live` — SKILL.md:80 tells the
+    # agent to find published versions that way. v16 and v17 are trained but not
+    # published: retraining does not change what serves production.
+    if [ -f "$ITER2" ]; then
+        version=17; trained="2026-08-18T14:41:07Z"; pinned=false
+    elif [ -f "$ITER1" ]; then
+        version=16; trained="2026-08-18T13:22:48Z"; pinned=false
+    else
+        version=15; trained="2026-08-09T04:12:55Z"; pinned=true
+    fi
+    printf '{"Result":"Success","Data":{"Models":[{"Version":%s,"ModelName":"gemini_ixp","Pinned":%s,"TrainedTime":"%s","Description":""}],"Tags":[{"Name":"live","Version":15,"UpdatedAt":"2026-08-09T05:00:03Z"}],"MaxPublished":15}}\n' \
+        "$version" "$pinned" "$trained"
+    exit 0
+;;
+"ixp projects get-metrics")
+    if [ -f "$ITER2" ]; then
+        metrics 17 0.85 0.71 0.86
+    elif [ -f "$ITER1" ]; then
+        metrics 16 0.77 0.71 0.62
+    else
+        metrics 15 0.73 0.34 0.88
+    fi
+    # Arm the next promotion: scores have now been observed, so the next write is
+    # a new iteration rather than another field in the current one.
+    : > "$READ"
+    exit 0
+;;
+"ixp projects get-taxonomy")
+    printf '{"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[%s],"label_groups":[{"name":"default","label_defs":[{"name":"Invoice Header","id":"5f21c88ab90d4e17","instructions":"Header-level fields of the supplier invoice.","moon_form":[%s,%s,%s]}]}]}}}\n' \
+        "$ENTITY_DEFS" "$F_INVOICE_NUMBER" "$F_INVOICE_DATE" "$F_VENDOR_NAME"
+    exit 0
+;;
+"ixp fields update-prompts")
+    # Advance one step per iteration, not per call. `.read` is set by get-metrics
+    # and consumed here, so an agent updating one field per call — legal, nothing
+    # requires batching — stays in the same iteration and sees the same scores as
+    # one batched call.
+    if [ -f "$READ" ]; then
+        if [ -f "$ITER1" ]; then
+            : > "$ITER2"
+        else
+            : > "$ITER1"
+        fi
+        rm -f "$READ"
+    fi
+    echo '{"Result":"Success"}'
+    exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

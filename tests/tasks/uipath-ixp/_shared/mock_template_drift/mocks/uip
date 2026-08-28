@@ -1,0 +1,100 @@
+#!/bin/sh
+# Metrics- and deployment-serving `uip` mock for the uipath-ixp diagnose smoke
+# tasks. Overlays the base mock_template (list it SECOND so this file wins).
+#
+# The base mock fails every call, which leaves a diagnose task ungradeable: the
+# behavior under test is reading real numbers and acting on what they say.
+#
+# Fixture — project my_invoices-f1afa9ef-ixp, live version 15:
+#
+#   projects get-taxonomy       5 fields, including Withholding Tax
+#   deployments --version 15    4 fields; Withholding Tax absent, added after v15
+#   deployments --version 14    3 fields; Total Amount absent as well
+#   projects get-metrics        Vendor Name F1 0.34, the others >= 0.93, and
+#                               Withholding Tax has NO row — unscored, not healthy
+#
+# `--version` is honored, so a comparison against the wrong version gives a wrong
+# answer rather than the right one by accident. v15 is `Pinned: true` because
+# SKILL.md:80 tells the agent to find published versions that way.
+#
+# Response shapes follow the skill's cli-reference. See README.md for the two
+# diagnoses this fixture supports and why each value is what it is.
+#
+# Logging matches the base mock exactly, so anchored `^uip\s+ixp …` criteria keep
+# working. This overlay writes calls.log only — never calls.jsonl, which sh cannot
+# produce safely. Must stay mode 755.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+ENTITY_DEFS='{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"c128ad65bd8af3f8","name":"Date","title":"","inherits_from":["0000000000000007"],"trainable":true,"color":1,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}'
+
+F_INVOICE_NUMBER='{"field_id":"9a3f5d2c81b7e604","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The unique invoice identifier printed in the document header.","rule_set":null}'
+F_INVOICE_DATE='{"field_id":"1d8e42b7c3a95f60","id":"c128ad65bd8af3f8","field_type_id":"c128ad65bd8af3f8","kind":"Date","name":"Invoice Date","instructions":"The issue date of the invoice.","rule_set":null}'
+F_TOTAL_AMOUNT='{"field_id":"6e0b74a1f83c2d95","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Total Amount","instructions":"The grand total payable on the invoice, including tax.","rule_set":null}'
+F_VENDOR_NAME='{"field_id":"2b6f8c04e9a17d53","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Vendor Name","instructions":"The vendor.","rule_set":null}'
+F_WITHHOLDING_TAX='{"field_id":"8d15a7be03c4f927","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Withholding Tax","instructions":"Tax withheld at source and remitted on the payer behalf.","rule_set":null}'
+
+taxonomy_envelope() {
+    printf '{"Result":"Success","Data":{"status":"ready","dataset":{"entity_defs":[%s],"label_groups":[{"name":"default","label_defs":[{"name":"Invoice Header","id":"5f21c88ab90d4e17","instructions":"Header-level fields of the supplier invoice.","moon_form":[%s]}]}]}}}\n' \
+        "$ENTITY_DEFS" "$1"
+}
+
+case "$1 $2 $3" in
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":15,"ModelName":"gemini_ixp","Pinned":true,"TrainedTime":"2026-08-09T04:12:55Z","Description":""},{"Version":14,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-07-28T19:02:41Z","Description":""}],"Tags":[{"Name":"live","Version":15,"UpdatedAt":"2026-08-09T05:00:03Z"}],"MaxPublished":15}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+cat <<'EOF'
+{"Result":"Success","Data":{"ProjectScore":0.79,"ProjectScoreQuality":"Fair","ValidatedDocuments":48,"ModelVersion":15,"FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.79,"Precision":0.81,"Recall":0.77,"ErrorRate":0.21,"Documents":48}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"9a3f5d2c81b7e604","F1":0.97,"Precision":0.98,"Recall":0.96,"ErrorRate":0.03,"Documents":48,"Annotations":48,"Quality":"Good"},{"FieldGroup":"Invoice Header","FieldId":"1d8e42b7c3a95f60","F1":0.95,"Precision":0.96,"Recall":0.94,"ErrorRate":0.05,"Documents":48,"Annotations":48,"Quality":"Good"},{"FieldGroup":"Invoice Header","FieldId":"6e0b74a1f83c2d95","F1":0.93,"Precision":0.94,"Recall":0.92,"ErrorRate":0.07,"Documents":48,"Annotations":47,"Quality":"Good"},{"FieldGroup":"Invoice Header","FieldId":"2b6f8c04e9a17d53","F1":0.34,"Precision":0.37,"Recall":0.31,"ErrorRate":0.66,"Documents":48,"Annotations":46,"Quality":"Poor"}]}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+    taxonomy_envelope "$F_INVOICE_NUMBER,$F_INVOICE_DATE,$F_TOTAL_AMOUNT,$F_VENDOR_NAME,$F_WITHHOLDING_TAX"
+    exit 0
+;;
+"ixp deployments get-taxonomy")
+    # A fixture that answers the same whatever the version is does not test the
+    # version. Parses both `--version N` and `--version=N`.
+    version=""
+    prev=""
+    for a in "$@"; do
+        case "$a" in
+        --version=*) version="${a#--version=}" ;;
+        *) if [ "$prev" = "--version" ]; then version="$a"; fi ;;
+        esac
+        prev="$a"
+    done
+    version="$(printf '%s' "$version" | sed "s/[\"']//g")"
+
+    case "$version" in
+    15)
+        # As-trained at the live version: Withholding Tax absent. The D10 answer.
+        taxonomy_envelope "$F_INVOICE_NUMBER,$F_INVOICE_DATE,$F_TOTAL_AMOUNT,$F_VENDOR_NAME"
+        exit 0
+    ;;
+    14)
+        # Deliberately different, so comparing against v14 shows two missing
+        # fields and cannot explain why only Withholding Tax comes back empty.
+        taxonomy_envelope "$F_INVOICE_NUMBER,$F_INVOICE_DATE,$F_VENDOR_NAME"
+        exit 0
+    ;;
+    "")
+        printf '{"Result":"Failure","ErrorCode":"missing_argument","Message":"--version is required for deployments get-taxonomy."}\n'
+        exit 1
+    ;;
+    *)
+        printf '{"Result":"Failure","ErrorCode":"not_found","Message":"No deployed taxonomy for version %s; trained versions are 14 and 15."}\n' "$version"
+        exit 1
+    ;;
+    esac
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

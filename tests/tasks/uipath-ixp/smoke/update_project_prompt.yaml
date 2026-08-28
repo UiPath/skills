@@ -1,0 +1,82 @@
+task_id: skill-ixp-update-project-prompt-smoke
+description: >
+  Smoke: set the taxonomy-wide "Overall extraction instructions" with
+  `projects update-prompt --prompt`. Only assertion on that verb. The two other
+  prompt levels — `fields update-prompts` and `groups update-prompts` — also
+  return Success, so writing the wrong level is a silent no-op; both are guarded,
+  as is `import-taxonomy` (merges, never replaces).
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  Every document in IXP project `my_invoices-f1afa9ef-ixp` is an Australian
+  supplier invoice, and the model keeps reading the ABN as the invoice number.
+  Set the project-wide extraction instructions to exactly:
+
+    "All documents in this project are Australian supplier invoices. Amounts
+    are in AUD unless the document states another currency. The ABN is a
+    business registration number, never an invoice number."
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Positive control for the guards below. Anchored on two distant phrases from
+  # the requested text, so a truncated or paraphrased prompt fails; `\s+` between
+  # words because the text wraps across lines in the prompt.
+  - type: cli_called
+    description: "Set the project-wide prompt with `projects update-prompt --prompt` carrying the requested text"
+    verb: "ixp projects update-prompt"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      prompt: {matches_regex: 'Australian\s+supplier\s+invoices[\s\S]*ABN\s+is\s+a\s+business\s+registration\s+number'}
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Wrong level #1: per-field instructions.
+  - type: cli_called
+    description: "Did NOT edit per-field instructions instead (`fields update-prompts` is the wrong level)"
+    verb: "ixp fields update-prompts"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Wrong level #2: field-group (label_def) instructions.
+  - type: cli_called
+    description: "Did NOT edit field-group instructions instead (`groups update-prompts` is the wrong level)"
+    verb: "ixp groups update-prompts"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # import-taxonomy merges and ignores a posted field_id, so it cannot replace a
+  # prompt — it reports success on a no-op.
+  - type: cli_called
+    description: "Did NOT try to rewrite the prompt through `projects import-taxonomy`"
+    verb: "ixp projects import-taxonomy"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
