@@ -19,7 +19,8 @@ npm install -g @uipath/cli@latest
 
 If global installation fails with a permission error, prompt the user to rerun it with appropriate privileges; do not retry automatically.
 
-Use `uip maestro flow` for CLI version **≥ 0.3.4** and `uip flow` for versions **< 0.3.4**:
+Use `uip maestro flow` for CLI version **≥ 0.3.4** and `uip flow` for versions **< 0.3.4**: <!-- uip-check-skip -->
+
 
 ```bash
 MIN_VERSION="0.3.4"
