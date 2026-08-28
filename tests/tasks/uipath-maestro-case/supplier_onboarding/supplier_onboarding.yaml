@@ -25,9 +25,10 @@ tags:
   - feature:connections
   - feature:api-workflow
 
-# Sized from the two existing golden-rebuild tasks: cm_golden_expense (8 stages / 15
-# tasks) measures ~60 min healthy, contract_execution (8 / 30) measures 92-150 min.
-# This case is 8 / 32 with twenty resources to describe, so it sits at the upper end.
+# Measured, not estimated: two runs of this exact task took 3689s and 3703s at 515
+# assistant turns, building a 123 KB caseplan and describing twenty tenant resources.
+# 7200 is roughly double the measured wall clock. For scale, the nearest sibling
+# e2e_expense_runnable takes 2290s for a 54 KB caseplan and five resources.
 #
 # turn_timeout MUST NOT be smaller than task_timeout. One harness "turn" is the ENTIRE
 # agent query stream, so turn_timeout caps the whole session and is the binding limit.
@@ -40,9 +41,9 @@ tags:
 # Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a caseplan-sized
 # extended-thinking response is not fatal.
 run_limits:
-  task_timeout: 18000
-  max_turns: 700
-  turn_timeout: 18000
+  task_timeout: 7200
+  max_turns: 800
+  turn_timeout: 7200
 
 # The case skill delegates heavy legs (reference reading, per-resource schema pulls)
 # to sub-agents; without Agent the whole build runs inline in one context and dies to
