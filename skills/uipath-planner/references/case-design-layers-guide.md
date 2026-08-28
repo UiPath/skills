@@ -262,7 +262,12 @@ A task field lands in exactly one slot. `Action -> decision` puts the value in `
 | `Action -> decision` | `vars.$xref(...,'Action')` — the emptied slot | ✗ `null` |
 | no Outputs row for `Action` | `vars.$xref(...,'Action')` — one slot, one name | ✓ populated |
 
-**Rule:** a gate reads the producing task's own field as `vars.$xref('<Stage>','<Task>','<field>')`, and that field carries no renaming Outputs row — either no row at all, or an equal-name row whose target is unique case-wide. When the value is also consumed elsewhere (Case App, audit, a later stage), add a separate `=` row that copies it into a Case variable; a copy leaves the field's own slot intact. Applies to every WHEN that fires on a task completing: `required-tasks-completed`, stage-exit and task-entry `selected-tasks-completed`, `selected-stage-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit — that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay exact inverses of each other.
+**Rule** — all four hold for a gate that fires on a task completing:
+
+1. The `IF` reads the producing task's own field as `vars.$xref('<Stage>','<Task>','<field>')`.
+2. That field carries no renaming Outputs row — no row at all, or an equal-name row whose target is unique case-wide.
+3. A value consumed elsewhere (Case App, audit, a later stage) gets a separate `=` row that copies it into a Case variable; a copy leaves the field's own slot intact.
+4. The WHENs this covers are `required-tasks-completed`, stage-exit and task-entry `selected-tasks-completed`, `selected-stage-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit — that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay exact inverses of each other.
 
 ### Trigger payloads
 
