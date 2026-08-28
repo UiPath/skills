@@ -2,12 +2,12 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 <!--skill-flavor:flow-init-command:start-->
 ## uip maestro flow init
 
-Scaffold a new Flow project directory. Prefer creating the solution first so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)):
+Scaffold a new Flow project directory. Prefer creating the solution first so its name matches the project name (see the [Author greenfield journey — Step 2](../author/greenfield.md)):
 
 ```bash
 uip solution init "<SolutionName>" --output json
@@ -209,21 +209,21 @@ Success output:
 { "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop.quick-form", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
-After adding, wire the `completed` port; an unwired `completed` blocks the flow. See the [Author HITL plugin reference](../author/references/plugins/hitl/impl.md).
+After adding, wire the `completed` port; an unwired `completed` blocks the flow. See the [Author HITL plugin reference](../author/plugins/hitl/impl.md).
 
 ## uip maestro flow instance / uip maestro flow incident
 
-See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-guide.md) for the diagnostic workflow and `instance`/`incident` command reference.
+See the [Diagnose troubleshooting guide](../diagnose/troubleshooting-guide.md) for the diagnostic workflow and `instance`/`incident` command reference.
 
 ## uip maestro flow node / uip maestro flow edge
 
-See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/editing-operations-cli.md) for `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow eval
 
 Evaluation surface: evaluator, eval-set, and data-point CRUD; Studio Web run start/status/results/list/compare. Local CRUD needs no login; `eval run *` requires `uip login` and a Flow solution already in Studio Web.
 <!--skill-flavor:upload-safety-eval-surface-note:start-->
-**Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/references/upload-safety.md).
+**Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/upload-safety.md).
 <!--skill-flavor:upload-safety-eval-surface-note:end-->
 
 ```bash

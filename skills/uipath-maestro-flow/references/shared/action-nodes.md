@@ -65,7 +65,7 @@ For action nodes, the instance `outputs` block is documentation, not the runtime
 
 **Exceptions:** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function) have their instance `outputs` read by the converter, which copies each `source` verbatim. A wrong `source` (for example, `=result.response`) breaks `$vars.{nodeId}.output`; declare `error` only there. End / terminate nodes also have their instance `outputs` consumed to map workflow-level `out` variables.
 
-`uip maestro flow format` regenerates `variables.nodes[]` from the current node graph (MST-9972), so running format after structural edits self-heals an omitted entry.
+`uip maestro flow format` regenerates `variables.nodes[]` from the current node graph, so running format after structural edits self-heals an omitted entry.
 
 ## Standard ports
 
@@ -79,7 +79,7 @@ Plugins may add dynamic source ports, such as HTTP `branch-{id}` from `inputs.br
 
 ## Adding and editing procedures
 
-Use [editing-operations.md](../author/references/editing-operations.md) and [editing-operations-json.md](../author/references/editing-operations-json.md) for step-by-step add, delete, and wiring instructions. Plugin `impl.md` files should describe only node-type-specific inputs and wiring patterns.
+Use [editing-operations.md](../author/editing-operations.md) and [editing-operations-json.md](../author/editing-operations-json.md) for step-by-step add, delete, and wiring instructions. Plugin `impl.md` files should describe only node-type-specific inputs and wiring patterns.
 
 ## Migrating a plugin to reference this template
 

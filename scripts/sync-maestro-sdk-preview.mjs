@@ -47,6 +47,16 @@ const oldSiblingParagraph = [
   '`@uipath/flow-sdk/bpmn`. Neither is needed to build a Flow.',
 ].join('\n');
 
+const currentSiblingParagraph = [
+  'The sibling authoring surfaces have their own:',
+  '[`references/case-api.md`](references/case-api.md) for `@uipath/flow-sdk/case`',
+  'and [`references/bpmn-api.md`](references/bpmn-api.md) for',
+  '`@uipath/flow-sdk/bpmn`; their runtime-only decisions are in',
+  '[`references/case-runtime.md`](references/case-runtime.md) and',
+  '[`references/bpmn-runtime.md`](references/bpmn-runtime.md). None are needed to',
+  'build a Flow.',
+].join('\n');
+
 const newSiblingParagraph = [
   'The sibling authoring surfaces have their own skills:',
   '`uipath-maestro-case` for `@uipath/flow-sdk/case` and `uipath-maestro-bpmn`',
@@ -173,7 +183,12 @@ function collectMappings(upstreamRoot, refs) {
     const referencesRoot = `${sourceRoot}/skill/references`;
     for (const source of gitFiles(upstreamRoot, ref, referencesRoot)) {
       const name = path.posix.basename(source);
-      if (!source.endsWith('.md') || ['case-api.md', 'bpmn-api.md'].includes(name)) continue;
+      if (!source.endsWith('.md') || [
+        'case-api.md',
+        'case-runtime.md',
+        'bpmn-api.md',
+        'bpmn-runtime.md',
+      ].includes(name)) continue;
       const relative = path.posix.relative(referencesRoot, source);
       add(source, `preview/uipath-maestro-flow/references/${relative}`);
     }
@@ -206,6 +221,12 @@ function collectMappings(upstreamRoot, refs) {
     `${sourceRoot}/skill/references/bpmn-api.md`,
     'preview/uipath-maestro-bpmn/references/api.md',
   );
+  for (const [source, target] of [
+    [`${sourceRoot}/skill/references/case-runtime.md`, 'preview/uipath-maestro-case/references/case-runtime.md'],
+    [`${sourceRoot}/skill/references/bpmn-runtime.md`, 'preview/uipath-maestro-bpmn/references/bpmn-runtime.md'],
+  ]) {
+    if (refs.some((ref) => gitObjectExists(upstreamRoot, ref, source))) add(source, target);
+  }
   return [...mappings.values()].sort((left, right) => left.target.localeCompare(right.target));
 }
 
@@ -293,6 +314,23 @@ function mergeMapping({ skillsRoot, upstreamRoot, oldPin, newCommit, mapping }) 
     fail(`Snapshot deleted ${mapping.target} while upstream still contains ${mapping.source}`);
   }
 
+  if (skillMappings.some(({ target }) => target === mapping.target)) {
+    const oursText = ours.toString('utf8');
+    const baseText = snapshotBase.toString('utf8');
+    const theirsText = snapshotTheirs.toString('utf8');
+    const oursBody = bodyFromFirstHeading(oursText, mapping.target);
+    const baseBody = bodyFromFirstHeading(baseText, mapping.source);
+    const theirsBody = bodyFromFirstHeading(theirsText, mapping.source);
+    if (oursBody === theirsBody) return false;
+    if (oursBody === baseBody) {
+      const heading = oursText.indexOf('# ');
+      return writeIfChanged(
+        targetPath,
+        oursText.slice(0, heading) + theirsBody,
+      );
+    }
+  }
+
   const merged = mergeBuffers(ours, snapshotBase, snapshotTheirs, {
     ours: `${mapping.target} (snapshot)`,
     base: `${mapping.source}@${oldPin}`,
@@ -309,12 +347,17 @@ function replaceRequired(text, before, after, label) {
 
 export function adaptFlowSkill(text) {
   let adapted = text.replaceAll('`example/', '`examples/');
-  adapted = replaceRequired(
-    adapted,
-    oldSiblingParagraph,
-    newSiblingParagraph,
-    'Flow sibling-skill adaptation',
-  );
+  if (!adapted.includes(newSiblingParagraph)) {
+    const siblingParagraph = adapted.includes(currentSiblingParagraph)
+      ? currentSiblingParagraph
+      : oldSiblingParagraph;
+    adapted = replaceRequired(
+      adapted,
+      siblingParagraph,
+      newSiblingParagraph,
+      'Flow sibling-skill adaptation',
+    );
+  }
   adapted = replaceRequired(
     adapted,
     oldStagingParagraph,
@@ -327,13 +370,15 @@ export function adaptFlowSkill(text) {
 export function adaptCaseSkill(text) {
   return text
     .replaceAll('references/case-api.md', 'references/api.md')
-    .replaceAll('example/NotifyOnApproval.case.ts', 'examples/NotifyOnApproval.case.ts')
-    .replaceAll('example/case-bindings.json', 'examples/bindings.json');
+    .replaceAll('example/case-bindings.json', 'examples/bindings.json')
+    .replaceAll('`example/', '`examples/');
 }
 
 export function adaptBpmnSkill(text) {
-  let adapted = text.replaceAll('references/bpmn-api.md', 'references/api.md');
-  if (!adapted.includes(bpmnWorkedExample)) {
+  let adapted = text
+    .replaceAll('references/bpmn-api.md', 'references/api.md')
+    .replaceAll('`example/', '`examples/');
+  if (!adapted.includes('`examples/NotifyChannel.bpmn.ts`')) {
     adapted = replaceRequired(
       adapted,
       '## Authoring\n\n',
@@ -352,12 +397,22 @@ export function adaptCaseExample(text) {
   return text.replaceAll('example/case-bindings.json', 'examples/bindings.json');
 }
 
+function adaptCaseRuntime(text) {
+  return text.replaceAll('case-api.md', 'api.md');
+}
+
+function adaptBpmnRuntime(text) {
+  return text.replaceAll('bpmn-api.md', 'api.md');
+}
+
 const snapshotAdaptations = new Map([
   ['preview/uipath-maestro-flow/SKILL.md', adaptFlowSkill],
   ['preview/uipath-maestro-case/SKILL.md', adaptCaseSkill],
   ['preview/uipath-maestro-bpmn/SKILL.md', adaptBpmnSkill],
   ['preview/uipath-maestro-flow/references/api.md', adaptFlowApi],
   ['preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
+  ['preview/uipath-maestro-case/references/case-runtime.md', adaptCaseRuntime],
+  ['preview/uipath-maestro-bpmn/references/bpmn-runtime.md', adaptBpmnRuntime],
 ]);
 
 function snapshotAdaptationFor(target) {
@@ -417,6 +472,8 @@ function verifyExactMappings(skillsRoot, upstreamRoot, newCommit, mappings) {
   const adaptedTargets = new Map([
     ['preview/uipath-maestro-flow/references/api.md', adaptFlowApi],
     ['preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
+    ['preview/uipath-maestro-case/references/case-runtime.md', adaptCaseRuntime],
+    ['preview/uipath-maestro-bpmn/references/bpmn-runtime.md', adaptBpmnRuntime],
   ]);
   const skillTargets = new Set(skillMappings.map(({ target }) => target));
   for (const mapping of mappings) {

@@ -34,21 +34,21 @@ Capability index for diagnosing identity/auth failures, permission denials, IP r
 
 | Journey | Read |
 |---------|------|
-| Triage an identity/auth failure (sequential ladder) | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Recognize a known failure pattern (lookup) | [references/failure-modes.md](references/failure-modes.md) |
+| Triage an identity/auth failure (sequential ladder) | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Recognize a known failure pattern (lookup) | [references/failure-modes.md](failure-modes.md) |
 
 ## Common tasks
 
 | I need to... | Read |
 |---|---|
-| Investigate why a user can't log in | [troubleshooting guide → Step 1](references/troubleshooting-guide.md#step-1-identify-the-failure-domain) |
-| Diagnose HTTP 403 / permission denied | [troubleshooting guide → Step 3](references/troubleshooting-guide.md#step-3-check-effective-access) |
-| Check why a role assignment isn't working | [failure modes → Role assignment not taking effect](references/failure-modes.md#role-assignment-not-taking-effect) |
-| Diagnose an external app OAuth2 failure | [failure modes → External app OAuth2 failing](references/failure-modes.md#external-app-oauth2-flow-failing) |
-| Investigate PAT rejection | [failure modes → PAT rejected](references/failure-modes.md#pat-rejected) |
-| Diagnose SMTP delivery failure | [failure modes → SMTP not delivering](references/failure-modes.md#smtp-emails-not-delivering) |
-| Recover from IP restriction lockout | [failure modes → IP restriction lockout](references/failure-modes.md#ip-restriction-lockout) |
-| Investigate a stuck tenant operation | [failure modes → Tenant operation stuck](references/failure-modes.md#tenant-operation-stuck-or-failed) |
+| Investigate why a user can't log in | [troubleshooting guide → Step 1](troubleshooting-guide.md#step-1-identify-the-failure-domain) |
+| Diagnose HTTP 403 / permission denied | [troubleshooting guide → Step 3](troubleshooting-guide.md#step-3-check-effective-access) |
+| Check why a role assignment isn't working | [failure modes → Role assignment not taking effect](failure-modes.md#role-assignment-not-taking-effect) |
+| Diagnose an external app OAuth2 failure | [failure modes → External app OAuth2 failing](failure-modes.md#external-app-oauth2-flow-failing) |
+| Investigate PAT rejection | [failure modes → PAT rejected](failure-modes.md#pat-rejected) |
+| Diagnose SMTP delivery failure | [failure modes → SMTP not delivering](failure-modes.md#smtp-emails-not-delivering) |
+| Recover from IP restriction lockout | [failure modes → IP restriction lockout](failure-modes.md#ip-restriction-lockout) |
+| Investigate a stuck tenant operation | [failure modes → Tenant operation stuck](failure-modes.md#tenant-operation-stuck-or-failed) |
 
 ## Anti-patterns
 
@@ -62,8 +62,8 @@ Capability index for diagnosing identity/auth failures, permission denials, IP r
 
 ### Diagnose-scoped
 
-- [troubleshooting-guide.md](references/troubleshooting-guide.md) — diagnostic priority ladder
-- [failure-modes.md](references/failure-modes.md) — recurring failure patterns
+- [troubleshooting-guide.md](troubleshooting-guide.md) — diagnostic priority ladder
+- [failure-modes.md](failure-modes.md) — recurring failure patterns
 
 ### Cross-capability
 

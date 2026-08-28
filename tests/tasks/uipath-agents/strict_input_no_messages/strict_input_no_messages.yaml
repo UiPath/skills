@@ -16,8 +16,8 @@ initial_prompt: |
   I want to build a UiPath coded agent that takes an address and breaks it
   down into its parts: street, city, postal code, and country.
 
-  It'll be called by another automation that passes the address in a single
-  named input field called `address`.
+  It'll be called by another automation, so the agent's input must be a single
+  `address` field with no other input arguments.
 
   I'd like to use OpenAI Agents since that's the framework I know best. Is it
   complicated?

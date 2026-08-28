@@ -34,7 +34,7 @@ Static values do not need `=js:`. For mixed strings, use `=js:` with JavaScript 
 | Loop nodes (`core.logic.loop`) | `inputs.collection` | **YES** |
 | Subflow nodes (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
 | Script nodes (`core.action.script`) | `inputs.script` body | **NO**; the body is already JS and reads `$vars.*` directly |
-| Inline-agent prompt (`uipath.agent.autonomous` `agent.json` `messages[].content`) | Flow-node tokens | **NO**; use `{{ $vars.<flowNodeId>.output[.<field>] }}` with spaced braces and mirror it in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }`. `rawString` must include leading and trailing space. Never use `{{input.<id>}}` or bare `{{name}}`. See [author/references/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts). |
+| Inline-agent prompt (`uipath.agent.autonomous` `agent.json` `messages[].content`) | Flow-node tokens | **NO**; use `{{ $vars.<flowNodeId>.output[.<field>] }}` with spaced braces and mirror it in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }`. `rawString` must include leading and trailing space. Never use `{{input.<id>}}` or bare `{{name}}`. See [author/references/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts). |
 
 Do not add `=js:` to Decision, Switch, or HTTP branch conditions, script bodies, variable-update expressions, or inline-agent tokens; these formats are parsed separately.
 

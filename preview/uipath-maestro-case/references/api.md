@@ -9,13 +9,27 @@ Exact `@uipath/flow-sdk/case` authoring signatures and option shapes, from the p
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
+> **This page is compact on purpose, and it is not the whole truth.** `@remarks`
+> and `@example` bodies are omitted here. The package's own **`.d.ts` files carry
+> them in full**, they are installed alongside your project, and they are the
+> authoritative declarations this page is generated from — so when a signature
+> names a type whose members or rules you need, read the declaration:
+>
+> ```bash
+> grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
+> #  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts
+> ```
+>
+> Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no
+> types and no comments.
+
 **Case authoring** — [rule](#rule-function) · [when](#when-function) · [escalation](#escalation-function) · [toUser](#touser-function) · [toGroup](#togroup-function) · [manualTrigger](#manualtrigger-function) · [timerTrigger](#timertrigger-function) · [eventTrigger](#eventtrigger-function) · [jsonSchema](#jsonschema-function) · [casePlan](#caseplan-function)
 
 **Builders** — [CaseBuilder](#casebuilder-class) · [StageBuilder](#stagebuilder-class) · [TaskBuilder](#taskbuilder-class)
 
 **Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ExternalTaskOptions](#externaltaskoptions-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-type) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
 
 ## rule (function)
 
@@ -26,6 +40,8 @@ generated from the built types; longer tutorials stay in the node references.
  * `entryWhen`/`exitWhen`/etc.
  */
 export declare function rule(type: CaseRuleType, opts?: RuleOpts): CaseRule;
+
+// CaseRuleType = 'case-entered' | 'required-tasks-completed' | 'required-stages-completed' | 'selected-stage-completed' | 'selected-stage-exited' | 'selected-tasks-completed' | 'current-stage-entered' | 'adhoc' | 'runs-sequentially' | 'user-selected-stage' | 'wait-for-connector' | 'sla-status-change'
 ````
 
 ## when (function)
@@ -94,6 +110,8 @@ export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
  * `TypeDesc` is expected.
  */
 export declare function jsonSchema(body: unknown): JsonSchemaType;
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## casePlan (function)
@@ -178,6 +196,8 @@ declare class CaseBuilder {
     /** Finish the plan and return the description the serializer writes. */
     build(): BuiltCase;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## StageBuilder (class)
@@ -276,7 +296,7 @@ declare class TaskBuilder {
     /** A wait-for-connector task in placeholder or stringly-resolved form. */
     waitForConnector(spec?: WaitConnectorSpec): this;
     /** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`). */
-    waitForTimer(spec?: TimerSpecData): this;
+    waitForTimer(spec: TimerSpecData): this;
     /** Mark this task required, so its stage cannot complete without it. */
     required(value?: boolean): this;
     /** Run this task at most once, even if its entry condition is met again. */
@@ -317,6 +337,8 @@ declare class TaskBuilder {
             displayName?: string;
         }): this;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## RuleOpts (interface)
@@ -370,6 +392,8 @@ export interface EscalationOpts {
     atRiskPercentage?: number;
     displayName?: string;
 }
+
+// EscalationTrigger = 'at-risk' | 'sla-breached'
 ````
 
 ## ManualTriggerOpts (interface)
@@ -414,6 +438,8 @@ export interface ResolvedEventTriggerOpts<W extends Record<string, string> = Rec
             type?: TypeDesc;
         }>;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## EventTriggerOpts (interface)
@@ -439,6 +465,8 @@ export interface EventTriggerOpts {
             type?: TypeDesc;
         }>;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## EventSubscription (interface)
@@ -518,6 +546,8 @@ export interface SlaOpts {
     /** Escalations fired off this deadline. */
     escalations?: BuiltEscalation[];
 }
+
+// SlaUnit = 'min' | 'h' | 'd' | 'w' | 'm'
 ````
 
 ## EntryOpts (interface)
@@ -556,6 +586,8 @@ export interface ExitOpts {
      */
     selectNextStage?: SelectNextStageSpec;
 }
+
+// StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin'
 ````
 
 ## ExternalTaskOptions (interface)
@@ -572,6 +604,8 @@ export interface ExternalTaskOptions<I extends Record<string, unknown>> {
     /** Inputs statically checked by the generated connector descriptor. */
     inputs: I;
 }
+
+// ExternalExecutionMode = 'sync' | 'async'
 ````
 
 ## ConnectorOpts (interface)
@@ -604,6 +638,8 @@ export type CaseRuleType = 'case-entered' | 'required-tasks-completed' | 'requir
 export interface CaseRule extends RuleOpts {
     rule: CaseRuleType;
 }
+
+// CaseRuleType = 'case-entered' | 'required-tasks-completed' | 'required-stages-completed' | 'selected-stage-completed' | 'selected-stage-exited' | 'selected-tasks-completed' | 'current-stage-entered' | 'adhoc' | 'runs-sequentially' | 'user-selected-stage' | 'wait-for-connector' | 'sla-status-change'
 ````
 
 ## WhenExpression (interface)
@@ -643,6 +679,8 @@ export interface BuiltTrigger {
     eventOutputs?: TaskOutputBinding[];
     eventSubscription?: EventSubscription;
 }
+
+// CaseTriggerKind = 'manual' | 'timer' | 'event'
 ````
 
 ## TriggerDescriptor (type)
@@ -689,6 +727,8 @@ export interface TaskOutputBinding {
     source: string;
     type: TypeDesc;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## TriggerMeta (interface)
@@ -706,6 +746,8 @@ export interface TriggerMeta {
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## CaseAppConfig (interface)
@@ -839,6 +881,8 @@ export interface CaseVarDecl {
     body?: unknown;
     sourceTrigger?: BuiltTrigger;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## BuiltCaseExitCondition (interface)
@@ -861,6 +905,8 @@ export interface BuiltSla {
     expression: string;
     escalations: BuiltEscalation[];
 }
+
+// SlaUnit = 'min' | 'h' | 'd' | 'w' | 'm'
 ````
 
 ## CaseAppDetailValue (type)
@@ -899,16 +945,26 @@ export interface ActionField {
             label: string;
         }>;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
-## TimerSpecData (interface)
+## TimerSpecData (type)
 
 ````ts
-export interface TimerSpecData {
-    duration?: string;
-    date?: string;
-    cycle?: string;
-}
+export type TimerSpecData = {
+    duration: string;
+    date?: never;
+    cycle?: never;
+} | {
+    duration?: never;
+    date: string;
+    cycle?: never;
+} | {
+    duration?: never;
+    date?: never;
+    cycle: string;
+};
 ````
 
 ## BuiltTask (interface)
@@ -931,6 +987,8 @@ export interface BuiltTask {
     outputs?: TaskOutputBinding[];
     entry: BuiltTaskEntryCondition[];
 }
+
+// TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'flow-process' | 'external-agent' | 'external-workflow' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector'
 ````
 
 ## StageExitType (type)
@@ -978,6 +1036,8 @@ export interface BuiltExitCondition {
     selectNextStage?: SelectNextStageSpec;
     rules: CaseRule[][];
 }
+
+// StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin'
 ````
 
 ## ConnectorMeta (interface)
@@ -1045,6 +1105,8 @@ export interface ExternalTaskSpecData {
     mode: ExternalExecutionMode;
     connector: ConnectorSpecData;
 }
+
+// ExternalExecutionMode = 'sync' | 'async'
 ````
 
 ## TaskInputBinding (interface)
@@ -1055,6 +1117,8 @@ export interface TaskInputBinding {
     value: string;
     type: TypeDesc;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## BuiltTaskEntryCondition (interface)

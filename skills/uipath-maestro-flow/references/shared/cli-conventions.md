@@ -88,7 +88,7 @@ Verify the shape before parsing; most parsing retries result from an incorrect s
 
 ### Cross-references
 
-Keep the broad-discovery recipe aligned with [author/references/plugins/connector/planning.md](../author/references/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/references/plugins/connector/impl.md](../author/references/plugins/connector/impl.md) for connection-resource lookup. Both files use the `--output-filter` preference and the `registry search` flat-array/PascalCase shape; each may use a task-specific projection.
+Keep the broad-discovery recipe aligned with [author/references/plugins/connector/planning.md](../author/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/references/plugins/connector/impl.md](../author/plugins/connector/impl.md) for connection-resource lookup. Both files use the `--output-filter` preference and the `registry search` flat-array/PascalCase shape; each may use a task-specific projection.
 
 ## 4. Check the JSON response shape
 
