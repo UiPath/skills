@@ -267,6 +267,37 @@ _GUID_RE = re.compile(
 )
 
 
+# Folders self-heal must never delete, whatever residue they carry: the
+# tenant-standard roots every suite shares. Matched against every path segment
+# of the folder's identity, so a subfolder of Shared is refused too.
+PROTECTED_FOLDER_NAMES = {"shared", "default"}
+
+
+def folder_identity(folder_key: str) -> str | None:
+    """The folder's readable identity (name/path fields joined), or None.
+
+    None means the folder could not be positively identified — the caller must
+    treat that as "do not delete".
+    """
+    completed = run_uip(["or", "folders", "get", folder_key, "--output", "json"])
+    if completed.returncode != 0:
+        return None
+    try:
+        data = json.loads(completed.stdout)["Data"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return None
+    parts = [
+        str(data.get(field) or "")
+        for field in ("DisplayName", "Name", "FullyQualifiedName", "Path")
+    ]
+    return " ".join(part for part in parts if part)
+
+
+def folder_is_protected(identity: str) -> bool:
+    segments = re.split(r"[/\s]+", identity)
+    return any(segment.lower() in PROTECTED_FOLDER_NAMES for segment in segments)
+
+
 def folder_key_from_node_type(node_type: str) -> str | None:
     """The deployment folder's key: the trailing GUID of an IxP NodeType.
 
@@ -347,6 +378,24 @@ def require_domain_uncovered() -> None:
     """
     covered, total, matched = resolvable_covering_nodes()
     if covered:
+        # Attribution guard: self-heal only fires on residue — a node whose
+        # backing project is GONE (teardown deleted the project but the folder
+        # delete failed). A live project still carrying a domain marker means a
+        # real extractor covers the domain; deleting its folder would destroy
+        # someone's work, so refuse and demand a deliberate manual action.
+        live_marker_projects = sorted(
+            name
+            for name in list_project_names()
+            if any(marker in name.lower() for marker in DOMAIN_MARKERS)
+        )
+        if live_marker_projects:
+            raise RuntimeError(
+                f"the fixture domain is covered by {covered} and live IXP project(s) "
+                f"{live_marker_projects} still carry a domain marker — that is a real "
+                "extractor, not this task's leaked residue, so seed will NOT delete "
+                "its folder. Delete it deliberately if it is disposable, or rotate "
+                "the fixture domain (documents/README.md)."
+            )
         deleted_any = False
         for node_type in covered:
             folder_key = folder_key_from_node_type(node_type)
@@ -354,6 +403,23 @@ def require_domain_uncovered() -> None:
                 print(
                     f"cannot self-heal '{node_type}' — no trailing folder-key GUID "
                     "in the NodeType"
+                )
+                continue
+            # Second attribution guard: positively identify the folder and
+            # never touch a protected root — residue proves the NODE is
+            # orphaned, not that the FOLDER is ours (a prior run could have
+            # deployed into Shared against the prompt's steer).
+            identity = folder_identity(folder_key)
+            if identity is None:
+                print(
+                    f"self-heal: cannot read folder {folder_key} — refusing to "
+                    "delete a folder that can't be identified"
+                )
+                continue
+            if folder_is_protected(identity):
+                print(
+                    f"self-heal: folder {folder_key} ('{identity}') is a protected "
+                    "root — refusing to delete; remove the leaked deployment by hand"
                 )
                 continue
             completed = delete_folder_with_retry(folder_key)
@@ -520,6 +586,48 @@ def candidate_names() -> tuple[list[str], list[str]]:
     return names, deployment_names
 
 
+def sanitize_registry_segment(name: str) -> str:
+    """The registry's tail-segment sanitization: lowercase, non-alnum runs → '-'.
+
+    NodeTypes embed the deployment name in this form (`falconry_licences-x` →
+    `falconry-licences-x`), so a raw name never substring-matches its own
+    NodeType when it carries an underscore.
+    """
+    return re.sub(r"[^a-z0-9]+", "-", name.lower())
+
+
+def run_node_in_registry(names: list[str]) -> str | None:
+    """The NodeType the registry currently serves for this run, or None.
+
+    Pulls fresh, finds a uipath.ixp.* node that embeds one of this run's
+    identifiers — matching the raw name against DisplayName + NodeType and the
+    sanitized name against NodeType — and confirms it resolves via
+    `registry get`. Deliberately tolerant: any error reads as "not served" —
+    this probe decides whether the degraded fallback is available, and a broken
+    registry is exactly the case the fallback exists for.
+    """
+    try:
+        run_uip(["maestro", "flow", "registry", "pull", "--force"])
+        payload = run_uip_json(
+            ["maestro", "flow", "registry", "search", "uipath.ixp", "--output", "json"]
+        )
+        for node in payload["Data"]:
+            node_type = str(node["NodeType"])
+            haystack = f"{node.get('DisplayName', '')} {node_type}".lower()
+            if any(
+                name.lower() in haystack or sanitize_registry_segment(name) in node_type
+                for name in names
+            ):
+                completed = run_uip(
+                    ["maestro", "flow", "registry", "get", node_type, "--output", "json"]
+                )
+                if completed.returncode == 0:
+                    return node_type
+    except Exception as exc:
+        print(f"registry probe failed ({exc}); treating this run's node as not served")
+    return None
+
+
 def check_main() -> int:
     names, deployment_names = candidate_names()
     if not names:
@@ -555,6 +663,20 @@ def check_main() -> int:
         for node in document.get("nodes", [])
     )
     if has_mock and deployment_names:
+        # The fallback is only legitimate while the registry genuinely does not
+        # serve this run's node — otherwise the agent could (and should) have
+        # wired the real one. Probe now rather than trusting the precondition.
+        served = run_node_in_registry(names)
+        if served:
+            print(
+                f"FAIL: the registry serves this run's node ('{served}'), so the "
+                f"{MOCK_NODE_TYPE} fallback is not acceptable — the agent should have "
+                "wired the real uipath.ixp.* node.",
+                file=sys.stderr,
+            )
+            for flow_path, document in parsed.items():
+                print(f"  {describe(flow_path, document)}", file=sys.stderr)
+            return 1
         breadcrumbs = []
         for artifact_path in project_files("**/*.flow", "**/*.md", "**/*.json", "**/*.txt"):
             with open(artifact_path, encoding="utf-8", errors="replace") as handle:
