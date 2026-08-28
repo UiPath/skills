@@ -23,8 +23,8 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDE
 	fi
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
-	@echo "Some tasks route their llm_judge through checker_context.api_route: {route: litellm}"
-	@echo "(see tests/README.md#checker-context) — set CODEX_BASE_URL/CODEX_API_KEY in your env for those."
+	@echo "checker_context.api_route defaults llm_judge to litellm -> gpt-5.6-luna (see tests/README.md#checker-context)."
+	@echo "Set CODEX_BASE_URL/CODEX_API_KEY in your env before running tasks locally."
 
 all:  ## Run all tests in a single run (uses the full default budget)
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v

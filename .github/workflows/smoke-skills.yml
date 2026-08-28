@@ -472,10 +472,7 @@ jobs:
           # gating on a model nobody configured reports a verdict about the wrong thing,
           # so an unset variable fails the guard step above. NOT $BEDROCK_MODEL: that
           # is the evaluation-side model (llm_judge + the simulated user), which stays
-          # on Claude on purpose — the grader must not move with the agent. Exception:
-          # a handful of tasks set their own task-level `checker_context.api_route:
-          # {route: litellm}` (see tests/README.md#checker-context) to grade off this
-          # same CODEX_* endpoint instead — deliberate per-task, not a gate-wide move.
+          # on Claude on purpose — the grader must not move with the agent.
           AGENT_MODEL: ${{ vars.CODEX_MODEL }}
         working-directory: tests
         id: smoke

@@ -240,7 +240,7 @@ initial_prompt: |
 
 ## Checker Context
 
-`checker_context.api_route` (coder_eval >= 0.11.3) overrides which backend grades a task's `llm_judge` criteria, decoupled from the agent's own route. This repo uses it to route a subset of tasks' `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in default judge (Bedrock/Anthropic):
+`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires a coder_eval version with the simulator decoupled from this override (`Orchestrator.simulator_route`, unreleased as of `tests/.coder-eval-version` — bump the pin once released). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
 
 ```yaml
 checker_context:
@@ -254,9 +254,9 @@ checker_context:
       api_key: CODEX_API_KEY
 ```
 
-**Set this per-task, never as an experiment default.** coder_eval rejects `route: litellm` outright on any task that also has `simulation.enabled: true` or an enabled `agent_judge` criterion — the simulator and `agent_judge` run as real Claude Code subprocesses that speak the Anthropic Messages protocol, incompatible with an arbitrary litellm-fronted gateway. Most `llm_judge` tasks in this repo have simulation enabled, so a `defaults.checker_context` block in an experiment file breaks every one of them at setup. Add the block directly to the task YAML instead, and only on tasks whose `llm_judge` criteria should grade off the codex-side model.
+`route: litellm` is `llm_judge`-only and safe as an experiment default even when `simulation.enabled: true`: the simulator resolves its own route independently of `checker_context.api_route` (coder_eval `_resolve_routes`/`simulator_route`), so it's unaffected by this override. It is **not** safe combined with an enabled `agent_judge` criterion — coder_eval still rejects that combination at setup, since `agent_judge` shares `eval_route` with `llm_judge`. This repo has no `agent_judge` criteria today; if one is added, override `checker_context.api_route` back to `bedrock`/`direct` on that specific task.
 
-Running one of these tasks (locally, or a docker-driven experiment) requires:
+Running these tasks (locally, or a docker-driven experiment) requires:
 
 - The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
 - `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
