@@ -31,38 +31,41 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Agent recognises OpenAI Agents cannot satisfy the messages-free input contract and does not proceed to build"
+    description: "Agent identifies that OpenAI Agents cannot satisfy the messages-free input contract, attributes it to the framework, asks the user, and does not proceed"
     include_agent_output: true
     prompt: |
       The user asked for an OpenAI Agents coded agent whose input is a single
       named field (`address`), invoked programmatically by another automation —
       explicitly NOT a chatbot and with no conversation.
 
-      OpenAI Agents cannot satisfy this: its runner only accepts conversation
-      input, so the generated input schema always carries a required `messages`
-      field. The correct response is to tell the user that OpenAI Agents cannot
-      meet the contract and stop for their decision — optionally naming an
-      alternative framework (e.g. LangGraph) — instead of building anything.
+      OpenAI Agents cannot satisfy this: the OpenAI Agents SDK runner only
+      accepts conversation input, so the generated input schema always carries a
+      required `messages` field. UiPath merely surfaces that constraint in the
+      schema; it does not originate it. The correct response is to tell the user
+      that OpenAI Agents cannot meet the contract, ask them how to proceed
+      (optionally naming an alternative such as LangGraph), and stop.
 
       Score the response in exactly one band:
 
-      Score 1.0 if the agent states that OpenAI Agents is incompatible with /
-      cannot meet the requested messages-free single-field input contract, AND
-      does not proceed to build — it stops and leaves the framework decision to
-      the user. Wording, level of detail, which layer it blames for the
-      `messages` requirement, and whether it names an alternative framework do
-      NOT affect the score. Offering a `messages`-based OpenAI Agents workaround
-      as an option is fine.
+      Score 1.0 if the agent identifies the limitation (OpenAI Agents cannot
+      meet the messages-free single-field input contract), attributes it to the
+      OpenAI Agents framework/SDK/runner itself, asks the user how to proceed,
+      and does not build anything. Offering a `messages`-based OpenAI Agents
+      workaround as one of the options is fine.
+      Score 0.5 if the agent identifies the limitation, asks the user, and does
+      not build anything, but attributes the `messages` requirement to the wrong
+      layer (e.g. UiPath, the platform, the UiPath integration/adapter, or coded
+      agents in general) or gives no attribution at all.
       Score 0.0 if the agent does not identify the limitation (builds or plans an
       OpenAI Agents project as if it satisfies the request, maps the input into
       `messages` without flagging it, or claims OpenAI Agents can produce a
-      messages-free schema), OR identifies the limitation but proceeds anyway —
-      e.g. silently switches to another framework and builds without asking.
+      messages-free schema), or identifies it but proceeds without asking — e.g.
+      silently switches to another framework and builds.
     weight: 3.0
-    # Binary on purpose: the graded invariants are "detects the limitation" and
-    # "does not proceed". Attribution/phrasing varied run to run on the same
-    # model and produced false failures when graded in finer bands.
-    pass_threshold: 1.0
+    # 0.5 passes: the gating invariants are "identifies the limitation" and
+    # "asks and stops". Attribution is graded but not gating — it varies run to
+    # run on the same model and would make this smoke task flaky.
+    pass_threshold: 0.5
 
   - type: command_not_executed
     description: "Agent did not scaffold a project despite the infeasible request"
