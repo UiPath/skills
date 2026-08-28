@@ -61,7 +61,7 @@ The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (
 > { "id": "invoiceNumber", "direction": "in", "type": "string", "triggerNodeId": "start" }
 > ```
 >
-> Bind it on the agent node (`agentInputVariables[]`, `=$vars.start.output.invoiceNumber`) and reference it in the prompt as `{{input.start__output__invoiceNumber}}`. Likewise, flow outputs the agent feeds (e.g. `determination`, `rationale`) must be declared as `direction: "out"` globals and mapped on every reachable End node. Full schema and the `$vars.{triggerNodeId}.output.{id}` access rule: [../../../../shared/variables-and-expressions.md](../../../shared/variables-and-expressions.md) (§ Input associated with a trigger); declaring/mapping mechanics: [../../editing-operations-json.md § Add a workflow variable](../../editing-operations-json.md#add-a-workflow-variable).
+> Bind it on the agent node (`agentInputVariables[]`, `=$vars.start.output.invoiceNumber`) and reference it in the prompt as `{{input.start__output__invoiceNumber}}`. Likewise, flow outputs the agent feeds (e.g. `determination`, `rationale`) must be declared as `direction: "out"` globals and mapped on every reachable End node. Full schema and the `$vars.{triggerNodeId}.output.{id}` access rule: [../../../shared/variables-and-expressions.md](../../../shared/variables-and-expressions.md) (§ Input associated with a trigger); declaring/mapping mechanics: [../../editing-operations-json.md § Add a workflow variable](../../editing-operations-json.md#add-a-workflow-variable).
 
 | Where | What | Example |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (
 | `agent.json` `messages[].content` | `{{input.<trigger>__output__<var>}}` (the `input.` form — never `$vars`). | `"Invoice: {{input.start__output__invoiceNumber}}"` |
 | `agent.json` `messages[].contentTokens[]` | One `{ "type": "variable", "rawString": "input.<trigger>__output__<var>" }` per `{{ ... }}` token in `content` (brace-free `rawString`). | `{ "type": "variable", "rawString": "input.start__output__invoiceNumber" }` |
 
-Each binding's source `$vars.<node>.output.<field>` must reference a real node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../../shared/node-output-wiring.md](../../../shared/node-output-wiring.md) for the full expression contract.
+Each binding's source `$vars.<node>.output.<field>` must reference a real node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../shared/node-output-wiring.md](../../../shared/node-output-wiring.md) for the full expression contract.
 
 ### The `content` ↔ `contentTokens` mirror invariant
 
