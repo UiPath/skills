@@ -17,7 +17,7 @@ Administrative operations through `uip admin` for Identity Server, Authorization
 - **Audit:** Use `uip admin audit`, never `uip or audit-logs`, for organization or tenant audit events, sources, targets, types, queries, login history, membership/license activity, tenant activity, investigations, and exports. `uip or audit-logs` is Orchestrator-operational audit and belongs to `uipath-platform`.
 - **Troubleshooting:** Use the [diagnose capability index](references/diagnose/CAPABILITY.md) and [identity troubleshooting guide](references/identity-troubleshoot-guide.md) for access, authentication, identity, tenant operations, provisioning, robot authentication, SMTP, PAT, external-app, or IP-lockout symptoms.
 
-For audit availability, run `uip admin audit <scope> sources`; discover live catalogs instead of relying on memory. Route `org` versus `tenant` with [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing) and Rule 23. Natural-language investigations may cover resource changes/deletions, sign-ins, tenant changes, compliance windows, and cross-scope requests; run once per requested scope and combine results.
+For audit availability, run `uip admin audit <scope> sources`; discover live catalogs instead of relying on memory. Route `org` versus `tenant` with [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#scope-selection) and Rule 23. Natural-language investigations may cover resource changes/deletions, sign-ins, tenant changes, compliance windows, and cross-scope requests; run once per requested scope and combine results.
 
 Troubleshooting routes: access denied → resolve the principal, check access, and inspect assignments ([Playbook 1](references/identity-troubleshoot-guide.md#playbook-1--user-cant-access-resource-x)); suspicious logins → organization audit ([Playbook 2](references/identity-troubleshoot-guide.md#playbook-2--suspicious-login-activity)); role misconfiguration → actions and scope ([Playbook 3](references/identity-troubleshoot-guide.md#playbook-3--role-misconfiguration)); IP lockout → `my-ip`, ranges, and enforcement ([Playbook 4](references/identity-troubleshoot-guide.md#playbook-4--ip-restriction-lockout)); PAT/external-app failure → expiry, scopes, and revocation audit ([Playbook 5](references/identity-troubleshoot-guide.md#playbook-5--pat-or-external-app-not-working)). SMTP uses `smtp get` and `smtp test`; poll stuck tenant operations; for provisioning no-ops check platform-pinned services; distinguish robot identity issues from credential-model issues.
 
@@ -31,7 +31,7 @@ Each rule is part of the agent contract.
 2. **Verify login first:** Run `uip login status --output json`. If unauthenticated, stop and ask the user to run `uip login`; it opens an interactive browser flow and must not run in automated/non-interactive sessions. Environment-authenticated sessions are already logged in. Resolve the organization from the active session.
 3. **Use `--output json` on every command.** Parse programmatically and present conversationally.
 4. **Stop on error and show it verbatim.** Never retry authentication failures; ask the user to run `uip login`.
-5. **Resolve named principals before high-risk operations:** users, groups, robot accounts, and external apps, including assignment create/delete, user/group deletion, membership changes, robot deletion, external-app deletion, and secret generation. Search first and echo `Principal: <displayName> (<userName>) — <id>`. Zero matches: stop and ask. Multiple matches: show a numbered list and wait for a digit. Never substitute the current login user. See [Resolving Principal IDs](references/authorization/role-assignment-management.md#resolving-principal-ids).
+5. **Resolve named principals before high-risk operations:** users, groups, robot accounts, and external apps, including assignment create/delete, user/group deletion, membership changes, robot deletion, external-app deletion, and secret generation. Search first and echo `Principal: <displayName> (<userName>) — <id>`. Zero matches: stop and ask. Multiple matches: show a numbered list and wait for a digit. Never substitute the current login user. See [Resolving Principal IDs](references/authorization/role-assignment-management.md#resolve-principals-before-mutation).
 
 ### Identity
 
@@ -43,13 +43,13 @@ Each rule is part of the agent contract.
 
 ### Authz
 
-11. **Built-in roles are read-only.** Create/update/delete only `Custom` roles. The CLI rejects service-managed or platform-level authoring; see [Services That Manage Their Own Roles](references/authorization/role-management.md#services-that-manage-their-own-roles).
+11. **Built-in roles are read-only.** Create/update/delete only `Custom` roles. The CLI rejects service-managed or platform-level authoring; see [Services That Manage Their Own Roles](references/authorization/role-management.md#services-and-role-ownership).
 12. **`roles create/update` are PUT-style upserts.** Build the body from flags and `--file ./actions.json`; always `roles get` before update because omitted flags overwrite fields.
 13. **`--service` infers scope** (for example, `studio` → `Tenant`, `apps` → `Organization`); use `--scope` only to override. **Never guess a `serviceName`** — valid values and the re-derive command: [permission-catalog.md → serviceNames](references/authorization/permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
 14. **Listing supports every service; authoring does not.** `roles list --service <svc>` and `roles assignments list --service <svc>` accept every service. Use `check-access` for effective access.
 15. **Scope vocabularies differ:** `roles create --scope` = `Organization|TenantGlobal|Tenant|Project`; assignment create adds `Folder|App`; assignment list excludes `TenantGlobal`; `check-access --scope` supports only `Tenant|Folder`.
 16. **Assignment create/delete requires principal resolution** under Rule 5; `--identity-id` is an unchecked raw UUID.
-17. **Assignment ownership must match the scope path:** `ownerServiceName` must match the path service segment. `CentralizedAccess` has no service segment (`/` or `/tenant/<tid>`); others require lowercase `ownerServiceName` in the path. Apply display-name mappings such as `Reinfer` → `IXP`. See [Validate Role's Owning Service](references/authorization/role-assignment-management.md#validate-roles-owning-service-vs-assignment-scope-path).
+17. **Assignment ownership must match the scope path:** `ownerServiceName` must match the path service segment. `CentralizedAccess` has no service segment (`/` or `/tenant/<tid>`); others require lowercase `ownerServiceName` in the path. Apply display-name mappings such as `Reinfer` → `IXP`. See [Validate Role's Owning Service](references/authorization/role-assignment-management.md#validate-role-service-binding-and-scope-path).
 
 ### OMS
 
@@ -57,16 +57,16 @@ Each rule is part of the agent contract.
 19. **`tenants delete` is soft-only.** Restoration requires support; no hard-delete flag exists.
 20. **Tenant commands default to the login tenant.** Always provide explicit `<TENANT_ID>` for tenant delete/disable and `tenants services remove`.
 21. **Resolve region before tenant creation:** Run `organizations regions list` first because `--region` is required and region-aware.
-22. **Service disable/remove can falsely report Success.** Always re-list afterward. See [Tenants concepts](references/tenants-commands.md#concepts).
+22. **Service disable/remove can falsely report Success.** Always re-list afterward. See [Tenants concepts](references/tenants-commands.md#concepts-and-safety-rules).
 
 ### Audit
 
-23. **Disambiguate `org` versus `tenant` before querying.** If vague and no prior turn fixes scope, ask one clarifying question, using AskUserQuestion when available; do not silently default. If non-interactive clarification is impossible, query both and combine. Scope is positional: `uip admin audit org sources` or `uip admin audit tenant events`; `--scope` is invalid. See [Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing).
+23. **Disambiguate `org` versus `tenant` before querying.** If vague and no prior turn fixes scope, ask one clarifying question, using AskUserQuestion when available; do not silently default. If non-interactive clarification is impossible, query both and combine. Scope is positional: `uip admin audit org sources` or `uip admin audit tenant events`; `--scope` is invalid. See [Audit scope disambiguation](references/audit-workflow-guide.md#scope-selection).
 24. **Events return `{auditEvents, next, previous}`**, not a bare array. Read `Data.auditEvents[]`; `next` is newer, `previous` older, and newest-backward traversal follows `previous`.
 25. **`--limit` paginates internally.** Do not date-loop for pagination. Each server request is clamped to `[10, 200]`; CLI limits are up to 10000. `--limit` must be `[1, 10000]`; above 10000 returns `Result: "ValidationError"`. Omit it or stay within range for “everything.”
 26. **Run `audit <scope> sources` first.** Never invent source, target, or type GUIDs; use live catalog GUIDs. The response also answers availability questions.
 27. **Bound event windows in UTC ISO 8601.** Do not query noisy tenants without `--from-date` and `--to-date`. Accept date-only or timestamp forms such as `2026-04-01T14:30:00Z`. `--to-date` includes the exact instant; use the next day’s start or `T23:59:59.999Z` for a full final day. Resolve relative dates using actual UTC (`date -u`), never guessing, and echo the window.
-27b. **An empty targeted query is complete.** State that no matching event was found, with scope, filters, and window; offer widening, the other scope, or checking resource existence. Never infer an actor from adjacent resources, event types, or broad searches, and never loosen filters merely to find a culprit. Name an actor only when the matching event supports both requested resource and verb; quote `createdOn` and identifying `eventDetails`. See [Step 5](references/audit-workflow-guide.md#step-5--when-nothing-matches-say-so).
+27b. **An empty targeted query is complete.** State that no matching event was found, with scope, filters, and window; offer widening, the other scope, or checking resource existence. Never infer an actor from adjacent resources, event types, or broad searches, and never loosen filters merely to find a culprit. Name an actor only when the matching event supports both requested resource and verb; quote `createdOn` and identifying `eventDetails`. See [Step 5](references/audit-workflow-guide.md#step-5--report-no-match-safely).
 28. **`--tenant-id` is ignored for org audit.** Use `audit tenant` instead.
 29. **On audit 401, do not retry.** The token lacks `Audit.Read`; tell the user to run `uip logout && uip login`.
 29b. **Retry transient audit 5xx errors** (`ErrorCode: server_error` / `Retry: RetryLater`, such as 503/504) up to two more times with several seconds of backoff, using the identical query. Do not change limit or window. Never present or save an error envelope as data; report failed retrieval.
@@ -83,7 +83,12 @@ Each rule is part of the agent contract.
 1. **Never pass resource IDs as flags.** IDs and names are positional, for example `groups members add <GROUP_ID> --user-ids ...`; apply this to get/update/delete/create commands.
 2. **Never present authz results without provenance:** role name, `scopeType`, `ownerServiceName`, and tenant binding using names rather than UUIDs. See [Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output).
 
-Avoid wrong audit surfaces or default scopes, event-array parsing, manual date pagination, invented GUIDs, unbounded events, unsupported actor attribution, `--tenant-id` on org audit, 401 retries, saved error envelopes, next-day export ends, partial PUT updates, and confusing provisioned services with `list-available`. Echo the resolved target before OMS mutations.
+The rest are the inverse of the Critical Rules — never:
+- use `uip or audit-logs` for org/tenant audit (R1), or default the audit scope when ambiguous (R23);
+- treat `audit events` as a bare array (R24), hand-loop dates to paginate (R25), invent source/target/type GUIDs (R26), or query events unbounded on a noisy tenant (R27);
+- name an actor the query didn't return (R27b), pass `--tenant-id` to `org` audit (R28), retry a 401 (R29), or save/report an error envelope as data (R29b);
+- use the next-day `--to-date` trick on `export` (R30), or `roles update` with only the changed flag (R12);
+- confuse provisioned `services list` with the `list-available` catalog (R22), or run an OMS mutation without echoing the resolved target (Output Etiquette).
 
 ## Quick Start
 
@@ -112,7 +117,7 @@ See [key-concepts.md](references/key-concepts.md) for organization hierarchy and
 | Authz reads/mutations | Role name, `scopeType`, `ownerServiceName` from the response, translated display name where applicable, and tenant binding resolved to a name. For `check-access`, label each row `direct` or `inherited from <Group name>` using nested `roleAssignments[].securityPrincipalType`. See [Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output). |
 | OMS reads | Lead with `Organization: <ORG_NAME>`; separate provisioned services with status from the available catalog without status. Tenant reads also show name, UUID, and lifecycle status. |
 | OMS mutations | Echo resolved target; auto-poll async operations three times at five-second intervals, then offer a numbered menu; re-list synchronous services to verify state. |
-| Audit queries/exports | State scope, count, resolved UTC window, filters, and cursor state; obey Rules 23, 26, and 27. After reporting, wait for the user's next-step choice and do not chain mutations. For exports report `Path` and `GeneratedAt`. See [audit output etiquette](references/audit-workflow-guide.md#output-etiquette--after-an-audit-query-or-export). |
+| Audit queries/exports | State scope, count, resolved UTC window, filters, and cursor state; obey Rules 23, 26, and 27. After reporting, wait for the user's next-step choice and do not chain mutations. For exports report `Path` and `GeneratedAt`. See [audit output etiquette](references/audit-workflow-guide.md#output-etiquette--after-every-audit-query-or-export). |
 | IP Restriction mutations | Before enabling, state impact and obtain explicit confirmation; afterward rerun `my-ip` and `ip-ranges list` to confirm coverage; never say APMS. |
 
 ## Task Navigation

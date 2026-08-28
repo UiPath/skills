@@ -99,7 +99,7 @@ This lists provisioning regions in which Portal can stand up tenants and orgs.
 
 This surface is read-only: only `list` and `list-available` exist. Do not use org-level `add`, `enable`, `disable`, or `remove`; mutate services on a tenant with [`tenants services` →](tenants-commands.md#tenant-level-services--uip-admin-tenants-services).
 
-Keep result sets separate: `services list` returns currently provisioned org-level instances with status `Enabled`, `Disabled`, or `Deleted`; `services list-available` returns provisionable catalog types with no status. Present them as clearly labeled sections. See [organization-management.md — List Org-Level Services](organization-management.md#workflow-list-org-level-services--provisioned-vs-available).
+Keep result sets separate: `services list` returns currently provisioned org-level instances with status `Enabled`, `Disabled`, or `Deleted`; `services list-available` returns provisionable catalog types with no status. Present them as clearly labeled sections. See [organization-management.md — List Org-Level Services](organization-management.md#list-org-level-services).
 
 ### `services list`
 

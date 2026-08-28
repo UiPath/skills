@@ -25,7 +25,7 @@ Toggling is idempotent. Enabling can lock out callers whose IP is not allowliste
    ```bash
    uip admin ip-restriction ip-ranges list --output json
    ```
-   Compare `my-ip`'s `ipAddress` with every entry's `ipNetwork` CIDR. If none covers the caller's IP, add one before enabling; see [ip-range-management.md — Workflow: Add an Entry](ip-range-management.md#workflow-add-an-entry-idempotent-on-cidr).
+   Compare `my-ip`'s `ipAddress` with every entry's `ipNetwork` CIDR. If none covers the caller's IP, add one before enabling; see [ip-range-management.md — Workflow: Add an Entry](ip-range-management.md#add-an-entry-idempotent-on-cidr).
 
 ## Workflow: Enable Enforcement
 

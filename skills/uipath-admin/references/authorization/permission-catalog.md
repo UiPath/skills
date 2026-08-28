@@ -117,4 +117,4 @@ To build a custom role actions file:
    ```
 4. Pass it with `--file ./actions.json` to `roles create` or `roles update`. See [role-management.md](role-management.md).
 
-For interactive selection, present one numbered table grouped by `serviceDisplayName`, with columns `# | Service | Permission | Scope | Description`; see [role-management.md — Step 3](role-management.md#step-3--present-permissions-as-a-numbered-menu). Map selected numbers to permission `name` strings internally; never ask the user to copy UUIDs.
+For interactive selection, present one numbered table grouped by `serviceDisplayName`, with columns `# | Service | Permission | Scope | Description`; see [role-management.md — Step 3](role-management.md#step-3--present-a-numbered-permission-menu). Map selected numbers to permission `name` strings internally; never ask the user to copy UUIDs.

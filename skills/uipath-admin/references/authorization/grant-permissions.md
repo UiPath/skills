@@ -8,7 +8,7 @@ For per-command flag tables and output codes, see [authorization-commands.md](au
 
 Use when the user names permissions without naming a role or scope, such as *"grant me DOCUMENTUNDERSTANDING.PROJECTS.READ"*, *"give alice DU projects read and update"*, or *"what's the minimal grant for licensing reads?"* If the user names a role shape first, use [role-management.md — Workflow: Create a Custom Role](role-management.md#workflow-create-a-custom-role); its Step 1a-1d substeps cover the role-first path.
 
-> **Sibling workflow.** [Step 1b of Workflow: Create a Custom Role](role-management.md#step-1b--hoist-check-prefer-the-umbrella-when-permissions-overlap) is the binary service-versus-umbrella form of the scope-selection problem solved here with a full N-scope intersection (Steps G2-G3). Keep them synchronized.
+> **Sibling workflow.** [Step 1b of Workflow: Create a Custom Role](role-management.md#step-1b--hoist-overlapping-permissions-to-the-umbrella) is the binary service-versus-umbrella form of the scope-selection problem solved here with a full N-scope intersection (Steps G2-G3). Keep them synchronized.
 >
 > **Never skip the scope menu.** A permission may appear in both service and Tenant / TenantGlobal umbrella catalogs. Do not default to `--service <svc>`; probe every applicable scope and let the user choose.
 
@@ -69,7 +69,7 @@ When the intersection has ≥2 shapes, render the presence matrix first, then a 
 | Service | `<SERVICE>` (for example, `DocumentUnderstanding`) | Intersection includes the service catalog and every selected permission shares one service prefix; omit for multi-service or cross-cutting permissions such as `AUTHZ.*` |
 | Project | `<SERVICE>` | Intersection is `{Project:<service>}` only; normally handled by the Project-only branch in Step G2.5 rather than shown with umbrella rows |
 
-**Owning Service** is the `ownerServiceName` returned by `roles get`: umbrella scopes without `--service` resolve to `CentralizedAccess`; service-shape roles resolve to the named service. See [role-management.md — Step 6](role-management.md#step-6--summarize-highlight-the-resolved-service).
+**Owning Service** is the `ownerServiceName` returned by `roles get`: umbrella scopes without `--service` resolve to `CentralizedAccess`; service-shape roles resolve to the named service. See [role-management.md — Step 6](role-management.md#step-6--summarize-the-resolved-service).
 
 **Artifact 1 — Intersection matrix.** Use columns `Scope/Service`, `Owning Service`, and `Perm present?`; use ✅ for intersection shapes and ❌ for probed but excluded shapes. Always include the Service row when all selected permissions share one service prefix:
 
@@ -108,7 +108,7 @@ Recommend Tenant because it can later bundle tenant-scope permissions from other
 | Service | `--service <SERVICE>` (no `--scope`; registry infers) |
 | Project | `--scope Project --service <SERVICE>` |
 
-Author `actions.json` as a JSON array containing **every** permission `name` confirmed in Step G1. Then run [Steps 2-5 of Workflow: Create a Custom Role](role-management.md#step-2--suggest-a-role-name): name suggestion, action-file authoring, create, and verify. After the role exists, run [Workflow: Create a Single Assignment](role-assignment-management.md#workflow-create-a-single-assignment), including the [Echo-before-mutate protocol](role-assignment-management.md#echo-before-mutate-protocol) for the principal.
+Author `actions.json` as a JSON array containing **every** permission `name` confirmed in Step G1. Then run [Steps 2-5 of Workflow: Create a Custom Role](role-management.md#step-2--suggest-a-role-name): name suggestion, action-file authoring, create, and verify. After the role exists, run [Workflow: Create a Single Assignment](role-assignment-management.md#create-one-assignment), including the [Echo-before-mutate protocol](role-assignment-management.md#echo-before-mutate-protocol) for the principal.
 
 ## Step G5 — Summarize: state the resolved scope, service, and full permission list
 
@@ -118,4 +118,4 @@ In the post-create / post-assign summary, include:
 - The resolved `--service` value, or “no `--service` — multi-service <scope> role” when omitted.
 - The **full list of permissions** in the role, not only the first named permission.
 
-Apply the same rule as [Step 6 of Workflow: Create a Custom Role](role-management.md#step-6--summarize-highlight-the-resolved-service).
+Apply the same rule as [Step 6 of Workflow: Create a Custom Role](role-management.md#step-6--summarize-the-resolved-service).

@@ -245,7 +245,7 @@ After success, run `roles get <NEW_ROLE_ID>` and read canonical `ownerServiceNam
 | `ownerServiceName` | `service: <ownerServiceName>` |
 | `ownerServiceName == "CentralizedAccess"` | `service: CentralizedAccess — multi-service <scope> role` |
 
-For Centralized Access, any assignment scope-path must omit the service segment. This value is validated by [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-roles-owning-service-vs-assignment-scope-path). Apply the same requirement to `roles update`.
+For Centralized Access, any assignment scope-path must omit the service segment. This value is validated by [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-role-service-binding-and-scope-path). Apply the same requirement to `roles update`.
 
 ## Workflow: Update a Custom Role
 

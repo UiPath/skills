@@ -18,7 +18,7 @@ Inspect every nested `roleAssignments[]` entry; do not collapse paths:
 
 For group entries, resolve `securityPrincipalId` with `uip admin groups get <id> --output json`, cache lookups within one report, and treat the entry as a group of which the user is a member. Explain that revoking a direct grant targets the user’s assignment; revoking an inherited grant requires changing group membership or the group’s role binding.
 
-Group roles by the response’s `serviceName`, verbatim. When only `ownerServiceName` is available from `roles get`, translate it using [authorization-commands.md — Service display-name mapping](authorization-commands.md#service-display-name-mapping-cli-ownerservicename--user-facing-label). Include scope and service span where useful:
+Group roles by the response’s `serviceName`, verbatim. When only `ownerServiceName` is available from `roles get`, translate it using [authorization-commands.md — Service display-name mapping](authorization-commands.md#service-display-name-mapping). Include scope and service span where useful:
 
 ```text
 Effective access for <user> at tenant <tenant> — spans <N> services: <service labels>
@@ -112,4 +112,4 @@ uip admin authorization check-access --file ./check-access.json --output json
 
 ## Resolving Principal IDs
 
-To verify a UUID or obtain IDs for non-User principals, see [role-assignment-management.md — Resolving Principal IDs](role-assignment-management.md#resolving-principal-ids).
+To verify a UUID or obtain IDs for non-User principals, see [role-assignment-management.md — Resolving Principal IDs](role-assignment-management.md#resolve-principals-before-mutation).

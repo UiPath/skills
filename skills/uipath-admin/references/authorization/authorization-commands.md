@@ -71,7 +71,7 @@ Run:
 uip admin authorization roles get <ROLE_ID> --output json
 ```
 
-`<ROLE_ID>` is required and comes from `roles list`. Read `ownerServiceId` and `ownerServiceName` before creating assignments; see [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-roles-owning-service-vs-assignment-scope-path).
+`<ROLE_ID>` is required and comes from `roles list`. Read `ownerServiceId` and `ownerServiceName` before creating assignments; see [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-role-service-binding-and-scope-path).
 
 **Output code:** `AuthzRoleGet`.
 
@@ -175,7 +175,7 @@ For multi-service tenant assignments, omit `--service` and use `--scope Tenant`.
 
 ### `roles assignments create`
 
-Before submitting, run `roles get <ROLE_ID>` and validate that the scope-path service segment matches `ownerServiceName` case-insensitively: `lowercase(ownerServiceName) == <svc>` segment. If `ownerServiceName == "CentralizedAccess"`, the path must omit a service segment. Follow [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-roles-owning-service-vs-assignment-scope-path).
+Before submitting, run `roles get <ROLE_ID>` and validate that the scope-path service segment matches `ownerServiceName` case-insensitively: `lowercase(ownerServiceName) == <svc>` segment. If `ownerServiceName == "CentralizedAccess"`, the path must omit a service segment. Follow [role-assignment-management.md — Validate Role's Owning Service vs. Assignment Scope-Path](role-assignment-management.md#validate-role-service-binding-and-scope-path).
 
 Run:
 
