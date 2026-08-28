@@ -52,7 +52,7 @@ Omit `,version=<MIN_VERSION>` to resolve the latest compatible build (at or abov
    ```bash
    uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --output-filter "<verdict filter>"
    ```
-   If the run fails, [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
+   If the run fails, follow [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **cancel the debug session:**
    ```bash
    uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
@@ -81,12 +81,12 @@ When a workflow fails at runtime with a selector error:
 1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
-4. **Run the `uia-improve-selector` skill in recover mode.** Read the package's improve-selector guide (routed from the package guide § Documentation), pick the appropriate invocation form for this context, run the staging CLI command from that form, spawn a subagent with the Agent tool to run the skill in recover mode against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
+4. **Follow the package's recover selector guide** - check ui-automation-guide.md for information on how to perform the recovery. If nothing relevant is found there, check uia-improve-selector-guide.md.
 5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
-**Recovery circuit breaker — two attempts per element.** When the SAME element fails at runtime after two recover-mode cycles, do not run a third: elements that keep failing recovery typically remount (dialogs, popups, re-rendered panes), and selector hardening cannot converge on them. Re-route that one element instead: re-run the capture flow for it with the CV/semantic fallback enabled (the capture flow's fallback chain owns the mechanics), re-link, and continue the run loop. Count attempts per element, not per run — three failures of one element across runs is the same signal.
+**Recovery circuit breaker — two attempts per element.** When the SAME element fails at runtime after two recovery cycles, do not run a third: elements that keep failing recovery typically remount (dialogs, popups, re-rendered panes), and selector hardening cannot converge on them. Re-route that one element instead: re-run the capture flow for it with the CV/semantic fallback enabled (the capture flow's fallback chain owns the mechanics), re-link, and continue the run loop. Count attempts per element, not per run — three failures of one element across runs is the same signal.
 
 ---
 
