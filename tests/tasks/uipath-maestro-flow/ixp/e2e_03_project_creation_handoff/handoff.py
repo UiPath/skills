@@ -760,8 +760,13 @@ def wired_ixp_references() -> str:
     """
     references: list[str] = []
     for flow_path in glob.glob("**/*.flow", recursive=True):
-        with open(flow_path, encoding="utf-8") as handle:
-            references.extend(ixp_node_identifiers(json.load(handle)))
+        try:
+            with open(flow_path, encoding="utf-8") as handle:
+                references.extend(ixp_node_identifiers(json.load(handle)))
+        except Exception as exc:
+            # One malformed .flow (a plausible failed-run artifact) must not
+            # abort cleanup — attribution just proceeds without this file.
+            print(f"skipping unreadable flow {flow_path} during cleanup: {exc}")
     return " ".join(references)
 
 

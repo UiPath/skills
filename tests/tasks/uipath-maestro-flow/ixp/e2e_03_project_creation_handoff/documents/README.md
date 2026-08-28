@@ -16,8 +16,9 @@ Teardown now deletes the run-scoped Orchestrator folder, which removes the
 deployment's registry node, so falconry should never burn.
 
 If it ever does (a failed teardown leaks): pick a replacement domain absent
-from and semantically distant to the tenant's published nodes, regenerate
-matching fixtures, and update the seed DOMAIN_MARKERS, the prompt, and this
+from and semantically distant to the tenant's published nodes, produce
+replacement fixtures (the Rendering section below is the spec — there is no
+committed generator), and update the seed DOMAIN_MARKERS, the prompt, and this
 file.
 
 ## Extractable fields
