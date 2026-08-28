@@ -1,6 +1,6 @@
 task_id: skill-test-link-automation-and-run
 description: >
-  Integration test: agent uses the uipath-testcloud skill to link a published
+  Integration test: agent uses the uipath-test skill to link a published
   automation to a Test Manager testcase and trigger an automated execution.
   Asserts that the agent (a) checks login status with --output json, (b) discovers
   the folder key via `uip or folders list -n <folder-name> --all`,
@@ -16,11 +16,97 @@ run_limits:
   expected_turns: 18
   max_turns: 35
 
+# EVFX-LINKRUN owns its own folder and TM test case rather than reading the
+# unowned "uipath-test-folder-feed" folder and "Claim Approval - Manager
+# Escalation" test case. That combination failed the 2026-08-19, 2026-08-25 and
+# 2026-08-28 nightlies identically: `uip or folders list -n uipath-test-folder-feed
+# --all` returned nothing, and the agent correctly stopped rather than guess a
+# folder key. Three failures on the exact same call is an unowned-fixture problem,
+# not agent or skill behaviour.
+#
+# The folder and TM test case are cheap to own and pre_run creates them
+# idempotently. The PUBLISHED AUTOMATION PACKAGE is not: fixtures/README.md's
+# "Automation-linked fixtures" section already documents, for the release-signoff
+# task's own automation link, that this "requires a package published to
+# Orchestrator and a robot able to serve the folder" and that pre_run cannot
+# bootstrap it. So the package name stays a tenant
+# prerequisite -- like tests/README.md's E2E_PROCESS_KEY pattern -- and pre_run
+# verifies it resolves to at least one entry point via `list-automations` before
+# the task starts. If it does not, pre_run exits non-zero so a missing
+# prerequisite is a provisioning failure, not a scored agent regression -- the
+# same convention flaky_tests_analysis and failed_run_triage_diagnose use.
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      P = "CLAIM"
+      FOLDER = "EVFX-LINKRUN-FOLDER"
+      TC_NAME = "EVFX-LINKRUN-TC1"
+      PACKAGE = "Testcases.with.parameters"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      folders = call("folder.find", "or", "folders", "list", "-n", FOLDER, "--all").get("Data") or []
+      folder = next((f for f in folders if f.get("Name") == FOLDER), None)
+      if not folder:
+          call("folder.create", "or", "folders", "create", FOLDER,
+               "--description", "EVFX eval fixture - owned by link_automation_and_run")
+          folders = call("folder.refind", "or", "folders", "list", "-n", FOLDER, "--all").get("Data") or []
+          folder = next((f for f in folders if f.get("Name") == FOLDER), None)
+      if not folder:
+          fail(f"could not create or find Orchestrator folder {FOLDER}")
+      folder_key = folder.get("Key") or folder.get("Id")
+
+      # Verify the published-package prerequisite BEFORE the agent starts, so a
+      # missing package is a provisioning failure rather than 18 turns of the
+      # agent correctly giving up and scoring a red the skill did not cause.
+      entries = call("automations.check", "tm", "testcases", "list-automations",
+                     "--project-key", P, "--folder-key", folder_key,
+                     "--package-name", PACKAGE).get("Data") or []
+      if not entries:
+          fail(f"package '{PACKAGE}' has no automation entry points in folder {FOLDER} - "
+               f"publish it to this folder before running this task "
+               f"(see fixtures/README.md 'Automation-linked fixtures')")
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      tc = by_name("tc.find", "testcases", TC_NAME)
+      if not tc:
+          call("tc.create", "tm", "testcases", "create", "--project-key", P, "--name", TC_NAME)
+          tc = by_name("tc.refind", "testcases", TC_NAME)
+      if not tc:
+          fail(f"could not create or find test case {TC_NAME}")
+
+      print(f"FIXTURE: folder={FOLDER} ({folder_key}), package={PACKAGE} "
+            f"({len(entries)} entry point(s)), test case={TC_NAME} ({tc.get('TestCaseKey')})",
+            flush=True)
+      PYEOF
+    timeout: 180
+
 initial_prompt: |
-  Link the testcase "TestCase1" from the orchestrator package "Testcases.with.parameters" published to the Orchestrator folder "uipath-test-folder-feed" to the Test Manager testcase
-  "Claim Approval - Manager Escalation" in the project CLAIM. Then trigger an automated execution of
-  that testcase — name the execution "Eval Link Run - Manager Escalation"
-  and set the execution type to automated.
+  Link the test entry point "TestCase1" from the Orchestrator package
+  "Testcases.with.parameters" published to the Orchestrator folder
+  "EVFX-LINKRUN-FOLDER" to the Test Manager testcase "EVFX-LINKRUN-TC1" in the
+  project CLAIM. Then trigger an automated execution of that testcase — name
+  the execution "Eval Link Run - EVFX-LINKRUN-TC1" and set the execution type
+  to automated.
 
 success_criteria:
   - type: command_executed
@@ -56,9 +142,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran the testcase with --test-case-id (UUID), --execution-type automated, and the requested execution name"
+    description: "Agent ran the testcase with --test-case-id (UUID) and --execution-type automated"
     tool_name: "Bash"
-    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+(["\x27])Eval Link Run - Manager Escalation\1)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
