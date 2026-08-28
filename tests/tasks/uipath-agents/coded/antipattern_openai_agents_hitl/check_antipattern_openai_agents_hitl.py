@@ -57,8 +57,7 @@ def main() -> None:
         fail(
             "main.py still calls `interrupt(...)`. "
             "OpenAI Agents has no first-class HITL — `interrupt` is a LangGraph "
-            "primitive and does not work here. Remove the interrupt call (or, if "
-            "HITL is essential, migrate the project to LangGraph)."
+            "primitive and does not work here. Remove the interrupt call."
         )
     print("OK: main.py no longer contains an `interrupt(...)` call")
 
