@@ -254,7 +254,7 @@ A row that relays one task's output to one consumer is the relay anti-pattern �
 
 ### Gate on the producer, never on a renamed field
 
-A task field lands in exactly one slot. `Action -> decision` puts the value in `decision` and leaves the `Action` slot empty; an equal-name row (`Action -> Action`) keeps one slot under one name, until a second row extracts `Action` elsewhere in the case and the allocator suffixes the later slot. A rule that fires on task completion reads the field's own slot, so a gate on a renamed field reads the empty one. The branch silently never fires, the stage stalls, and nothing errors.
+A task field lands in exactly one slot. `Action -> decision` puts the value in `decision` and leaves the `Action` slot empty; an equal-name row (`Action -> Action`) keeps one slot under one name, until a second row extracts `Action` elsewhere in the case and the allocator suffixes the later slot. A rule reads the field's own slot, so a gate on a renamed field reads the empty one, whenever that gate fires. The branch silently never fires, the stage stalls, and nothing errors.
 
 | Outputs row on `Decide` | `IF` reads | At gate time |
 |---|---|---|
@@ -262,7 +262,7 @@ A task field lands in exactly one slot. `Action -> decision` puts the value in `
 | `Action -> decision` | `vars.$xref(...,'Action')` — the emptied slot | ✗ `null` |
 | no Outputs row for `Action` | `vars.$xref(...,'Action')` — one slot, one name | ✓ populated |
 
-**Rule** — all four hold for a gate that fires on a task completing:
+**Rule** — all four hold for a gate whose `IF` reads a task's output:
 
 1. The `IF` reads the producing task's own field as `vars.$xref('<Stage>','<Task>','<field>')`.
 2. That field carries no renaming Outputs row — no row at all, or an equal-name row whose target is unique case-wide.

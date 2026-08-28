@@ -232,7 +232,7 @@ _TASK_COMPLETION_WHENS = (
     "selected-stage-completed",
     "selected-stage-exited",
 )
-_RENAMING_EXTRACT = re.compile(r"^\|\s*`?([\w.]+)`?\s*\|\s*->\s*`?(\w+)`?\s*\|", re.M)
+_RENAMING_EXTRACT = re.compile(r"^\|\s*`?([\w.]+)`?\s*\|\s*->\s*`?(\w+)`?\s*\|")
 
 
 def gate_reads_renamed_findings(text: str) -> list[str]:
@@ -251,11 +251,13 @@ def gate_reads_renamed_findings(text: str) -> list[str]:
         if match:
             rows.append((match.group(1), match.group(2), line_no))
     leaf_counts = Counter(field.split(".")[-1] for field, _, _ in rows)
-    renamed: dict[str, tuple[str, int]] = {}
+    # Several rows may feed one target (a lane collecting a reason from four tasks).
+    # Keep every one, so the finding names each line a reader has to fix.
+    renamed: dict[str, list[tuple[str, int]]] = {}
     for field, target, line_no in rows:
         leaf = field.split(".")[-1]
         if leaf != target or leaf_counts[leaf] > 1:
-            renamed[target] = (field, line_no)
+            renamed.setdefault(target, []).append((field, line_no))
     if not renamed:
         return findings
 
@@ -268,11 +270,13 @@ def gate_reads_renamed_findings(text: str) -> list[str]:
         for name in dict.fromkeys(re.findall(r"vars\.([A-Za-z_]\w*)", line)):
             if name not in renamed:
                 continue
-            field, src_line = renamed[name]
+            sources = renamed[name]
+            where = ", ".join(f"line {src} (`{field} -> {name}`)" for field, src in sources)
+            first_field = sources[0][0]
             findings.append(
-                f"line {line_no}: gate reads {name!r}, which line {src_line} moves off its own "
-                f"slot with `{field} -> {name}`. Read the producing field itself — "
-                f"`vars.$xref('<Stage>','<Task>','{field}')` — and copy the value into "
+                f"line {line_no}: gate reads {name!r}, which {where} moves off its own slot. "
+                f"Read the producing field itself — "
+                f"`vars.$xref('<Stage>','<Task>','{first_field}')` — and copy the value into "
                 f"{name!r} with a separate `=` row when it is consumed elsewhere"
             )
     return findings
