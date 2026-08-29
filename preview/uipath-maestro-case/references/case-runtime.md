@@ -9,9 +9,12 @@ make from syntax alone. Exact signatures remain in [the generated API](api.md).
 - A connector event without a subscription is a placeholder. A resolved event
   needs a generated descriptor or connector key/event plus symbolic connection
   and folder bindings. For an unresolved placeholder, preserve the requested
-  source system and object in the trigger description; the service-type-only
-  runtime bag cannot carry that intent. Only a live subscription proves the
-  payload shape.
+  source system, object, and event verbatim in the trigger name or description;
+  the service-type-only runtime bag cannot carry that intent. Do not fabricate
+  a connector descriptor or node type. For example,
+  `eventTrigger({ name: 'aged_invoice_cases record created' })` preserves the
+  unresolved source while remaining a valid placeholder. Only a live
+  subscription proves the payload shape.
 
 ## Human and on-demand work
 
@@ -61,7 +64,10 @@ make from syntax alone. Exact signatures remain in [the generated API](api.md).
   metadata and bindings that the typed surface does not own. Strict decompile
   fails closed on unresolved references. For an explicitly broken input, rerun
   with `--best-effort`, inspect every reported diagnostic, and replace every
-  `__UNRESOLVED_*` marker before checking or compiling the repair.
+  `__UNRESOLVED_*` marker before checking or compiling the repair. Removing or
+  repointing a bound task also requires the orphan cleanup under
+  [Connections and external work](#connections-and-external-work); compilation
+  and resource refresh do not remove solution declarations.
 
 ## Product boundary
 

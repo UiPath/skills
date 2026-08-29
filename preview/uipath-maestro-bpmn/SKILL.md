@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ 48e87bc. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ e2ab916. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -42,7 +42,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/NotifyChannel.bpmn.ts` |
 | Generic registry activity | `activity` | [ActivityNodeOpts](references/api.md#activitynodeopts-interface) | `examples/NotifyChannel.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
-| Project package and layout | project metadata, `bpmn format` | [Packaging](references/bpmn-runtime.md#packaging-and-layout) | `examples/NotifyChannel.bpmn.ts` |
+| Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 
 ## Minimal shape
 
