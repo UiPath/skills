@@ -540,9 +540,11 @@ dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.b
 
 ### Canonical shape dimensions
 
-These are the `dc:Bounds` `width`/`height` values the Studio Web canvas
-serializes. Match them exactly so a generated diagram renders identically to a
-canvas-authored one; an off-size shape imports misaligned against its neighbors.
+These are the `dc:Bounds` `width`/`height` values the Studio Web canvas uses.
+The source of truth is the canvas front end — `EVENT_NODE_SIZE` in
+`src/constants.ts` and the size fields in `BpmnNodes.tsx` — not this table.
+Match them so a generated diagram renders identically to a canvas-authored one;
+an off-size shape imports misaligned against its neighbors.
 
 | Element | `width`×`height` |
 |---------|------------------|
@@ -558,13 +560,16 @@ Size these to fit their contents instead of a fixed box — the shape must
 enclose every element it contains, or the canvas renders children outside their
 container:
 
-- Expanded `subProcess` (`isExpanded="true"`).
+- Expanded `subProcess` (`isExpanded="true"`) — fit to contents, minimum
+  350×200. That floor is the creation default for an empty expanded
+  sub-process; 100×80 is the collapsed variant, not a small expanded one.
 - `participant` and `lane`.
 - `group`.
 - `textAnnotation` whose text needs more room than the 100×80 default.
 
-`uip maestro bpmn format <file.bpmn>` emits these sizes. Preserve them when
-editing a shape by hand, and never resize a fixed-size element to fit a label.
+`uip maestro bpmn format <file.bpmn>` lays the diagram out; author DI by hand
+only when it is unavailable. Preserve these sizes when editing a shape by hand,
+and never resize a fixed-size element to fit a label.
 
 Example:
 
