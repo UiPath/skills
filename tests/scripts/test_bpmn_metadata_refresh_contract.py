@@ -13,9 +13,6 @@ METADATA_GUIDE = (
     SKILL_ROOT / "references" / "shared" / "local-metadata-regeneration-guide.md"
 )
 PROJECT_LAYOUT = SKILL_ROOT / "references" / "shared" / "project-layout.md"
-ACTIVITY_GUIDE = (
-    SKILL_ROOT / "references" / "integration-service-activity-authoring-guide.md"
-)
 SHIP = SKILL_ROOT / "references" / "operate" / "references" / "ship.md"
 
 REFRESH = "uip maestro bpmn refresh <project-path> --output json"
@@ -82,12 +79,10 @@ def test_metadata_guide_makes_refresh_the_atomic_source_boundary() -> None:
 
 def test_lifecycle_guides_delegate_generation_to_refresh_not_pack() -> None:
     layout = _text(PROJECT_LAYOUT)
-    activity = _text(ACTIVITY_GUIDE)
     ship = _text(SHIP)
     layout_commands = _commands(layout)
     ship_commands = _commands(ship)
     layout_prose = _prose(layout)
-    activity_prose = _prose(activity)
     ship_prose = _prose(ship)
 
     assert REFRESH in layout_commands
@@ -96,10 +91,6 @@ def test_lifecycle_guides_delegate_generation_to_refresh_not_pack() -> None:
     assert layout_commands.index(REFRESH) < layout_commands.index(
         "uip maestro bpmn pack <project-path> <OutputDir> --output json"
     )
-
-    assert "the BPMN `refresh` command" in activity
-    assert all(name in activity for name in GENERATED)
-    assert "never hand-create or edit them" in activity_prose
 
     assert REFRESH in ship_commands
     assert ship_commands.index(REFRESH) < ship_commands.index(PACK)

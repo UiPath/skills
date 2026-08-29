@@ -233,7 +233,7 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
    If the user asks for the package metadata files, or to package or operate,
-   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
+   run `uip maestro bpmn refresh <project-path>` to generate the
    files, and keep its output as written — that shape is the contract `pack`
    consumes. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)

@@ -87,6 +87,9 @@ Do not derive metadata from stale package files first. Use existing generated fi
    uip maestro bpmn refresh <project-path>                  # regenerate + materialize IS connection bindings
    ```
 
+   A successful response reports `Status`, `ProjectPath`, `BpmnFile`,
+   `WrittenFiles`, and `UnchangedFiles`.
+
    Use `refresh` — it materializes `Intsvc.*` connection bindings (including
    triggers) and validates before writing. The deprecated
    `uip maestro bpmn update-metadata <file.bpmn>` (with `--dry-run` for a

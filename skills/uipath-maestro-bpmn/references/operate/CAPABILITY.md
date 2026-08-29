@@ -34,7 +34,7 @@ These actions may contact UiPath services or external systems.
    explicitly accepts known draft warnings.
 4. **Refresh package metadata before cloud actions** - after source validation,
    run `uip maestro bpmn refresh <project-path> --output json`
-   (`uip maestro bpmn update-metadata <file.bpmn> --dry-run` checks drift
+   (the deprecated `uip maestro bpmn update-metadata <file.bpmn> --dry-run` checks drift
    without writing). Stale `bindings_v2.json`, `entry-points.json`,
    `operate.json`, or `package-descriptor.json` can break import or runtime
    even when the BPMN source is correct.

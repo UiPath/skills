@@ -65,7 +65,7 @@ shape (`isExecutable` omitted, or the equivalent `"false"` — never forced to
 `"true"`), each root start event carries
 `<uipath:entryPointId value="<uuid>" />`, `operate.json` has `"main"` plus
 `"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
-BPMN file and generated JSON. `uip maestro bpmn update-metadata <file.bpmn>`
+BPMN file and generated JSON. `uip maestro bpmn refresh <project-path>`
 produces that shape; for the exact JSON, see
 [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#source-only-fallback).
 Prefer the files produced by `uip maestro bpmn init`, and do not translate a
