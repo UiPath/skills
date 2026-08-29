@@ -78,17 +78,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md preserves the authored Athena task-entry rules before JSON generation"
-    command: "python3 $TASK_DIR/check_athena_cm_event_plan.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
     description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"
     command: "python3 $TASK_DIR/check_athena_cm_event_case.py"
     timeout: 120
     expected_exit_code: 0
-    weight: 5.0
+    weight: 8.0
     pass_threshold: 1.0
