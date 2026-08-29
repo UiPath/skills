@@ -71,8 +71,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md uses the maestro-case compact plan grammar — H2 T-entries with quoted task display names"
-    command: "grep -Eq '^## T[0-9]+.*\"Post Invoice\"' tasks/tasks.md && grep -Eq '^## T[0-9]+.*\"Draft Notification\"' tasks/tasks.md && grep -Eq '^## T0?1' tasks/tasks.md"
+    description: "tasks.md preserves both SDD task names without pinning an authoring-loop heading format"
+    command: "grep -Fq 'Post Invoice' tasks/tasks.md && grep -Fq 'Draft Notification' tasks/tasks.md"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
