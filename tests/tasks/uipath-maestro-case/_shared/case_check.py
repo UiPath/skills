@@ -31,10 +31,42 @@ def find_caseplan(pattern: str = "**/caseplan.json") -> str:
     )
     if not matches:
         _fail(f"No caseplan.json found matching {pattern}")
-    if len(matches) > 1:
-        joined = "\n  - ".join(matches)
-        _fail(f"Multiple caseplan.json files match {pattern!r}:\n  - {joined}")
-    return matches[0]
+    if len(matches) == 1:
+        return matches[0]
+
+    parsed: list[tuple[str, dict | None]] = []
+    for path in matches:
+        try:
+            with open(path, encoding="utf-8") as f:
+                value = json.load(f)
+            parsed.append((path, value if isinstance(value, dict) else None))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            parsed.append((path, None))
+
+    substantive = [
+        (path, plan)
+        for path, plan in parsed
+        if plan is not None and len(plan.get("nodes") or []) > 1
+    ]
+    husks = [
+        (path, plan)
+        for path, plan in parsed
+        if plan is not None and len(plan.get("nodes") or []) <= 1
+    ]
+    if len(substantive) == 1 and len(substantive) + len(husks) == len(parsed):
+        return substantive[0][0]
+
+    candidates = substantive or parsed
+    if all(plan is not None for _, plan in candidates):
+        signatures = {
+            json.dumps(plan, sort_keys=True, separators=(",", ":"))
+            for _, plan in candidates
+        }
+        if len(signatures) == 1:
+            return min((path for path, _ in candidates), key=lambda path: (path.count(os.sep), len(path), path))
+
+    joined = "\n  - ".join(matches)
+    _fail(f"Multiple distinct caseplan.json files match {pattern!r}:\n  - {joined}")
 
 
 def read_caseplan(path: str | None = None) -> dict:
@@ -216,6 +248,15 @@ def find_node_by_label(plan: dict, label: str) -> dict:
     _fail(f"no node with data.label={label!r}; available labels: {labels}")
 
 
+def selected_stage_ids(rule: dict) -> list[str]:
+    """Return canonical V30 stage references with legacy-schema compatibility."""
+    selected = rule.get("selectedStageIds")
+    if isinstance(selected, list):
+        return [value for value in selected if isinstance(value, str) and value]
+    legacy_selected = rule.get("selectedStageId")
+    return [legacy_selected] if isinstance(legacy_selected, str) and legacy_selected else []
+
+
 def stage_transitions(plan: dict) -> list[dict]:
     """Stage→stage transitions derived from entry/exit conditions.
 
@@ -224,7 +265,7 @@ def stage_transitions(plan: dict) -> list[dict]:
     exists when EITHER:
 
     - ``Y``'s ``entryConditions`` carries a ``selected-stage-completed`` /
-      ``selected-stage-exited`` rule with ``selectedStageId == X``, OR
+      ``selected-stage-exited`` rule with ``X`` in ``selectedStageIds``, OR
     - ``X``'s ``exitConditions`` carries ``exitToStageId == Y``.
 
     ``case-entered`` entries are NOT transitions — their source is the case
@@ -244,8 +285,7 @@ def stage_transitions(plan: dict) -> list[dict]:
         for cond in iter_stage_entry_conditions(node):
             for group in cond.get("rules") or []:
                 for rule in group or []:
-                    src = (rule or {}).get("selectedStageId")
-                    if src:
+                    for src in selected_stage_ids(rule or {}):
                         pairs.add((src, nid))
         for cond in iter_stage_exit_conditions(node):
             dst = cond.get("exitToStageId")
