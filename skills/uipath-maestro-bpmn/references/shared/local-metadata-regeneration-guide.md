@@ -97,6 +97,7 @@ Do not derive metadata from stale package files first. Use existing generated fi
    uip maestro bpmn refresh <project-path> --output json    # regenerate + materialize IS connection bindings
    ```
 
+<<<<<<< HEAD
    `refresh` materializes `Intsvc.*` connection bindings (including triggers)
    and validates before writing. It needs `project.uiproj` — without one it
    exits `BpmnRefreshFailed` / `RetryWillNotFix`; for a bare `.bpmn`, write the
@@ -104,6 +105,16 @@ Do not derive metadata from stale package files first. Use existing generated fi
    stale and `Data.UnchangedFiles` the ones already current, so a drift answer
    needs no separate command. Never fall back to the deprecated
    `update-metadata`.
+=======
+   A successful response reports `Status`, `ProjectPath`, `BpmnFile`,
+   `WrittenFiles`, and `UnchangedFiles`.
+
+   Use `refresh` — it materializes `Intsvc.*` connection bindings (including
+   triggers) and validates before writing. The deprecated
+   `uip maestro bpmn update-metadata <file.bpmn>` (with `--dry-run` for a
+   drift check) only rewrites the BPMN-derived fields and does **not** materialize
+   connection bindings.
+>>>>>>> 0770c04c1 (docs(bpmn): make refresh the single documented metadata contract)
 
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
