@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ 2f06df8. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ 48e87bc. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -32,7 +32,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](references/api.md#bpmnbuilder-class) | `examples/NotifyChannel.bpmn.ts` |
-| Variables, inputs, and outputs | `var`, `input`, `output` | [ScopeBuilder](references/api.md#scopebuilder-class) | `examples/NotifyChannel.bpmn.ts` |
+| Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [ScopeBuilder](references/api.md#scopebuilder-class) | `examples/NotifyChannel.bpmn.ts` |
 | Start, end, catch, throw, boundary | event methods | [Events](references/bpmn-runtime.md#events-and-timers) | `examples/NotifyChannel.bpmn.ts` |
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](references/api.md#gatewayopts-interface) | `examples/NotifyChannel.bpmn.ts` |
 | Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](references/api.md#scopebuilder-class) | `examples/NotifyChannel.bpmn.ts` |
