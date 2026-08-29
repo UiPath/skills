@@ -3,7 +3,7 @@
 # paired limit envelope. Cross-arm parity is enforced by the sync gate.
 task_id: skill-flow-devcon-billing-resolution-writer
 description: |
-  Build a Maestro Flow whose single work node is an inline low-code agent (uipath.agent.autonomous) that drafts a customer-facing billing-dispute resolution email. Graded by flow validate plus one flow debug run: the inline agent node must be present and the drafted email must cite the disputed invoice number.
+  Build a Maestro Flow whose inline low-code agent (uipath.agent.autonomous) drafts a customer-facing billing-dispute resolution and then posts it to Slack. Graded by flow validate plus one flow debug run: the inline agent node must be present, the drafted email must cite the disputed invoice number, and the Slack Send-Message activity must have ACTUALLY posted (verified via a real message ts).
 tags:
   - uipath-maestro-flow
   - e2e
@@ -11,27 +11,35 @@ tags:
   - lifecycle:execute
   - shape:multi-node
   - node:inline-agent
+  - connector
   - path-to-ga
+  - outcome-graded
 run_limits:
-  max_turns: 120
-  turn_timeout: 1200
-  task_timeout: 3300
+  max_turns: 150
+  turn_timeout: 3000
+  task_timeout: 3600
 post_run:
   - command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
   Build a Maestro Flow "BillingResolutionWriter" (in a solution of the same
-  name) whose single work node is an inline low-code agent embedded in the flow
-  project that drafts a customer-facing billing-dispute resolution email.
+  name) whose inline low-code agent drafts a customer-facing billing-dispute
+  resolution and then posts that resolution to Slack.
 
   - Trigger inputs: `customerName` (string), `invoiceNumber` (string),
-    `creditAmount` (number).
-  - The inline agent reads those inputs and returns two strings: the email
+    `creditAmount` (number), `correlationId` (string).
+  - An inline low-code agent embedded in the flow project (not a separate
+    published agent) reads those inputs and returns two strings: the email
     `subject` and the email `body`. The body must state the invoice number and
     the approved credit amount. Map them to flow outputs `emailSubject` and
     `emailBody`.
-  - The agent must be embedded in the flow project (inline), not a separate
-    published agent.
+  - Post the resolution to Slack using the Slack "Send Message to channel"
+    activity: channel "coding-agent-testing", the Slack connection named
+    "is-sandboxes", send as `user`. The message must include the correlationId,
+    the invoice number, and the approved credit amount.
+  - Also map these flow outputs: `caseKey` = the incoming correlationId, and
+    `slackMessageId` = the identifier of the Slack message that was posted (from
+    the Slack Send Message node's output).
 
   Validate the final flow file — the task is not complete until `uip maestro
   flow validate` passes. Grading then runs the flow under debug, so build it to
@@ -48,7 +56,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Check debugs the flow: an inline uipath.agent.autonomous node is present, the flow completes, and the drafted email cites invoice MCS-2026-04872'
+    description: 'Check debugs the flow: an inline uipath.agent.autonomous node is present, the drafted email cites invoice MCS-2026-04872 and the approved credit, and the Slack Send-Message activity actually posted (real message ts carrying the correlationId + invoice)'
     command: python3 $TASK_DIR/check_billing_resolution_writer.py
     timeout: 600
     expected_exit_code: 0
