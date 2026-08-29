@@ -24,7 +24,9 @@ Use this guide when BPMN source changed and local package metadata must be refre
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
 consumes it as written:
 
-- The root process must be `<bpmn:process ... isExecutable="true">`.
+- The CLI initializer omits `bpmn:process@isExecutable`; preserve that shape.
+  An existing `isExecutable="false"` is the equivalent default and is also
+  fine. Do not force `isExecutable="true"`.
 - `project.uiproj` carries `"Name"` and `"ProjectType":
   "ProcessOrchestration"`. The CLI does not write `"main"` here; it preserves a
   hand-authored one, so do not add one expecting it to be required.

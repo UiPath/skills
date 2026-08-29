@@ -221,8 +221,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
    files, and keep its output as written — that shape is the contract `pack`
    consumes. Only fall back to the equivalent hand-authored shape in
-   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
-   when the CLI is unavailable. Every root start event needs a
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
+   when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
+   synthetic local project. Every root start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
    the project generates zero entry points.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas

@@ -51,13 +51,14 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 ## Package content
 
 A synthetic local project authored without a CLI generator must still match the
-executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, each root start event carries
+metadata contract before packing: the root process follows the initializer's
+shape (`isExecutable` omitted, or the equivalent `"false"` — never forced to
+`"true"`), each root start event carries
 `<uipath:entryPointId value="<uuid>" />`, `operate.json` has `"main"` plus
 `"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
 BPMN file and generated JSON. `uip maestro bpmn update-metadata <file.bpmn>`
 produces that shape; for the exact JSON, see
-[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#source-only-fallback).
 Prefer the files produced by `uip maestro bpmn init`, and do not translate a
 descriptor shape from another UiPath project type.
 
