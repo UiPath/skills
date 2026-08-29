@@ -165,46 +165,33 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "releaseKey",
-          "displayName": "Process",
+          "name": "name",
+          "displayName": "Agent",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
+          "binding": true,
           "defaultValue": null,
           "bindingInfo": {
             "resource": "process",
             "resourceKeyPattern": "${metadata.key}",
-            "propertyAttribute": "Key"
+            "propertyAttribute": "name"
           }
-        },
-        {
-          "name": "folderId",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
         },
         {
           "name": "folderPath",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
-        },
-        {
-          "name": "name",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "folderPath"
+          }
         }
       ],
       "inputPattern": "mergedBody",
@@ -218,12 +205,12 @@
       "bindingInfo": {
         "resource": "process",
         "resourceKeyPattern": "${metadata.key}",
-        "propertyAttribute": "Key",
-        "contextField": "releaseKey"
+        "propertyAttribute": "name",
+        "contextField": "name"
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartAgentJob\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <uipath:activity type=\"Orchestrator.StartAgentJob\" version=\"v1\">\n    <uipath:context>\n      <uipath:input name=\"name\" value=\"=bindings.{nameBindingId}\" />\n      <uipath:input name=\"folderPath\" value=\"=bindings.{folderPathBindingId}\" />\n    </uipath:context>\n    <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n  </uipath:activity>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
       "discoveryNotes": "Uses getSupportedOrchestratorTasks('agent', search) to list available agents"
     },
     "Orchestrator.BusinessRules": {
