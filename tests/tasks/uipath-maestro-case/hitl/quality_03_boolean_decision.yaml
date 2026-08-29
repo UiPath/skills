@@ -258,12 +258,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Both branch expressions reference the approved boolean"
-    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
-    includes:
-      - "vars.approved === true"
-      - "vars.approved === false"
+  - type: run_command
+    description: "Both semantic boolean branches reference approved"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/hitl/check_boolean_routing.py VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
