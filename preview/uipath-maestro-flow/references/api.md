@@ -1261,10 +1261,16 @@ export interface EndCallInputs {
 export interface VoiceAgentInputs {
     /**
      * The agent's standing instructions — who it is on the call and what it must
-     * do. Written as plain text; a voice agent has no `{{input.…}}` templating,
-     * because its turn comes from the live call rather than from flow arguments.
+     * do. Use `{{input.<name>}}` placeholders for values declared in `inputs`;
+     * the caller's audio remains the conversational turn.
      */
     systemPrompt: string;
+    /**
+     * Flow values made available to `systemPrompt` placeholders. Each key must
+     * be referenced as `{{input.<key>}}`; the compiler emits the node's runtime
+     * argument binding and the matching agent.json input contract together.
+     */
+    inputs?: Record<string, unknown>;
     /**
      * The call to attach the agent to — the `callContext` from the incoming-call
      * trigger or `createOutgoingCall`. Required: without it the agent has no

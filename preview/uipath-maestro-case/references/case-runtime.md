@@ -8,7 +8,10 @@ make from syntax alone. Exact signatures remain in [the generated API](api.md).
 <!-- RULE:case.trigger.event-resolution -->
 - A connector event without a subscription is a placeholder. A resolved event
   needs a generated descriptor or connector key/event plus symbolic connection
-  and folder bindings. Only a live subscription proves the payload shape.
+  and folder bindings. For an unresolved placeholder, preserve the requested
+  source system and object in the trigger description; the service-type-only
+  runtime bag cannot carry that intent. Only a live subscription proves the
+  payload shape.
 
 ## Human and on-demand work
 
@@ -20,17 +23,31 @@ make from syntax alone. Exact signatures remain in [the generated API](api.md).
 
 <!-- RULE:case.connector.bindings -->
 - Source connection and folder ids from `bindings.json`; TypeScript uses symbolic
-  names. A live run is the evidence that those environment resources resolve.
+  names. Compiling into a scaffolded project regenerates its existing
+  `bindings_v2.json`; then run `uip solution resources refresh --solution-folder
+  {solution} --output json`. A live run is the evidence that those environment
+  resources resolve.
 
 <!-- RULE:case.resources.live -->
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
   references are tenant facts. Static validation cannot prove they exist.
+
+- Resource refresh is additive. After removing or repointing a resource-bound
+  task, list local solution resources and remove each orphaned process or app by
+  its listed key with `uip solution resources remove {key} --solution-folder
+  {solution} --output json`, then refresh again. Never remove the Case project's
+  own process/package pair, and never target package entries directly.
 
 ## SLA and runtime semantics
 
 <!-- RULE:case.sla.calendar -->
 - SLA `d`, `w`, and `m` are calendar units. A business-day requirement needs an
   explicit product decision or live calendar service; do not invent a conversion.
+
+- An `sla-status-change` breach response uses only `{ sla }`; an at-risk response
+  also names `{ escalation }`. Put an enter-stage response on an
+  `exceptionStage(...)` and call `.required(false)` so the secondary stage does
+  not gate `required-stages-completed`.
 
 <!-- RULE:case.skip.live -->
 - Whether a skipped task satisfies a completion rule is runtime behavior. For a

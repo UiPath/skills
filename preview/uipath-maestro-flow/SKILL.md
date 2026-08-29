@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 2f06df8. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 48e87bc. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -680,11 +680,12 @@ Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId,
 Talk to someone on a phone call. The call is identified by a `callContext`
 OBJECT — pass the whole thing, never a field inside it.
 
-Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, callContext, voice?, maxIterations? })`.
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
 
 ```ts
 .step('dial', createOutgoingCall({ from: '+15550001111', to: input('phone') }))
-.step('talk', voiceAgent({ systemPrompt: 'Confirm the delivery window.',
+.step('talk', voiceAgent({ systemPrompt: 'Confirm {{input.customerName}}\'s delivery window.',
+  inputs: { customerName: input('customerName') },
   callContext: out('dial', 'callContext'),
   voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' } }))
 .step('bye', endCall({ callContext: out('dial', 'callContext') }))

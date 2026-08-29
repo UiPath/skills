@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ 2f06df8. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ 48e87bc. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -29,6 +29,8 @@ need, then let TypeScript and `case check` provide the detailed contract.
 3. Start from the closest staged `examples/*.case.ts` and change only the scenario data.
 4. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
 5. Compile into the scaffolded Case project, then run `uip maestro case validate`.
+   Compile keeps existing `entry-points.json` and `bindings_v2.json` sidecars in
+   sync. When resource bindings changed, refresh the solution resources too.
 6. Run live debug only when the task requires runtime evidence and provides tenant resources.
 
 ## Capability router
@@ -82,6 +84,8 @@ export default casePlan('loan-approval')
 uip maestro case check <Name>.case.ts --source
 uip maestro case compile <Name>.case.ts -o <project>/caseplan.json
 uip maestro case validate <project>/caseplan.json --output json
+# After adding, removing, or repointing a resource-bound task or connector:
+uip solution resources refresh --solution-folder <solution> --output json
 ```
 
 `check` owns source-level invariants and emits teaching diagnostics. Product
