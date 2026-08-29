@@ -376,7 +376,7 @@ export interface ScriptTaskOpts extends ActivityOpts {
     scriptFormat?: string;
     /** `uipath:input` rows: field name → `=`-expression read into the script. */
     inputs?: Record<string, string>;
-    /** `uipath:output` rows: variable id → `=`-expression (usually `=result.<x>`). */
+    /** `uipath:output` rows: variable id → `=`-expression. */
     outputs?: Record<string, string>;
     /**
      * Output rows spelled out, replacing the ones `outputs` derives — see
@@ -388,7 +388,10 @@ export interface ScriptTaskOpts extends ActivityOpts {
      * Schema for the `args` the script receives. Real script tasks all carry one.
      */
     inputSchema?: unknown;
-    /** The mapping's extension type. Defaults to `'BPMN.ScriptTask'`. */
+    /**
+     * The mapping's extension type. Defaults to `'BPMN.Variables'`, which is the
+     * only value the runtime contract defines.
+     */
     type?: string;
 }
 ````
