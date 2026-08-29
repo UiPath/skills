@@ -3,7 +3,7 @@ description: >
   Quality test: agent maps a business description to a correctly-shaped
   `action` task — taskTitle, priority, recipient, and the planned input/
   output fields. Verifies that even when the action-app is unresolved
-  (skeleton path), the agent still records the planning fields in tasks.md
+  (skeleton path), the agent records the intended contract in report.json
   and writes valid JSON. Tests action-task field design (priority enum,
   recipient handling, taskTitle requirement).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
@@ -181,12 +181,11 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+  - Treat any generated plan as pre-approved — do not block on any HARD STOP
     / AskUserQuestion approval step.
   - If the action-app or the process resource is unresolved, write a
-    skeleton task per the skeleton-tasks reference. The `tasks.md` plan
-    must still capture taskTitle, priority, recipient, and the intended
-    inputs/outputs in a fenced wiring-notes block.
+    skeleton task per the skeleton-tasks reference. `report.json` must still
+    capture taskTitle, priority, recipient, and the intended inputs/outputs.
   - Do NOT run `uip maestro case debug`.
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
@@ -223,32 +222,8 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "tasks.md captures the task-title (resolved or skeleton path)"
-    command: "grep -i 'task-title\\|taskTitle\\|Task Title' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md captures priority: High"
-    command: "grep -i 'priority.*high' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md captures the recipient email"
-    command: "grep -i 'po-approvals@corp.com' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: json_check
-    description: "report.json schema has at least 3 input fields, 1 output field, priority High"
+    description: "report.json preserves the HITL task contract"
     path: "report.json"
     assertions:
       - expression: "validation_passed"
@@ -263,8 +238,14 @@ success_criteria:
       - expression: "priority"
         operator: equals
         expected: "High"
-    weight: 2.5
-    pass_threshold: 0.75
+      - expression: "task_title"
+        operator: equals
+        expected: "Please review this PO and approve or reject"
+      - expression: "recipient"
+        operator: equals
+        expected: "po-approvals@corp.com"
+    weight: 7.5
+    pass_threshold: 0.85
 
 run_limits:
   expected_turns: 66
