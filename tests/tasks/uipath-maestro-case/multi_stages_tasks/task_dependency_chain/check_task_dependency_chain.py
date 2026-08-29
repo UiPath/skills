@@ -61,6 +61,12 @@ def _task_entry_rule(task: dict) -> str | None:
     return None
 
 
+def _task_is_non_required(task: dict) -> bool:
+    # The Case SDK omits isRequired for the default non-required state.
+    value = task.get("isRequired")
+    return value is None or value is False
+
+
 def main():
     plan = read_caseplan()
 
@@ -158,7 +164,7 @@ def main():
         (first_rule_of_condition(condition) or {}).get("rule")
         for condition in (optional_audit.get("entryConditions") or [])
     ]
-    if adhoc_rules != ["adhoc"] or optional_audit.get("isRequired") is not False:
+    if adhoc_rules != ["adhoc"] or not _task_is_non_required(optional_audit):
         sys.exit(
             "FAIL: Optional Audit must be an adhoc-only, non-required task; "
             f"rules={adhoc_rules!r}, isRequired={optional_audit.get('isRequired')!r}"
