@@ -51,7 +51,7 @@ def _timeout(stdout=b"partial", stderr=b"stub stderr"):
 
 
 def _stub(monkeypatch, results, *, flows=("a.flow",)):
-    """Feed validate_flow a queue of results, stub discovery, sleep, and glob.
+    """Feed validate_flow a queue of results and stub discovery and time.
 
     A queued ``BaseException`` is raised rather than returned, which is how the
     ``subprocess.TimeoutExpired`` path is exercised.
@@ -67,8 +67,7 @@ def _stub(monkeypatch, results, *, flows=("a.flow",)):
     calls = {"n": 0, "timeouts": [], "flows": [], "clock": 0.0, "overruns": []}
     queue = list(results)
 
-    monkeypatch.setattr(validate_flow, "find_project_dir", lambda: "/tmp/proj")
-    monkeypatch.setattr(validate_flow.glob, "glob", lambda *a, **k: list(flows))
+    monkeypatch.setattr(validate_flow, "find_flow_files", lambda: list(flows))
     monkeypatch.setattr(validate_flow.time, "sleep", lambda *_: None)
     monkeypatch.setattr(validate_flow.time, "monotonic", lambda: calls["clock"])
     monkeypatch.delenv(validate_flow._BUDGET_ENV, raising=False)
