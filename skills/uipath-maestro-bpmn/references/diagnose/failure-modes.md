@@ -77,7 +77,7 @@ The model may adjust BPMN structure around the connector but must not invent con
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
-Run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to identify drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate before upload or deploy.
+Run `uip maestro bpmn refresh <project-path> --output json` to regenerate the derived files. `update-metadata` is deprecated and does not materialize Integration Service connection bindings, so a connector-bound project regenerated with it passes `validate` but faults at runtime with a null connection.
 
 Signs:
 
