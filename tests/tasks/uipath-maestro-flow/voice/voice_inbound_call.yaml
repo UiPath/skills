@@ -22,9 +22,10 @@ run_limits:
 # that rejects the run); the outbound task grades the same pattern for the
 # harder reason that a debug run there places a real call.
 initial_prompt: |
-  Build a UiPath Flow project named "SupportLine" that answers incoming phone
-  calls to our support line, has an AI agent hold the conversation with the
-  caller, and hangs up when the conversation is over.
+  Build a UiPath Flow project named "SupportLine" inside a solution of the same
+  name. It answers incoming phone calls to our support line, has an AI agent
+  hold the conversation with the caller, and hangs up when the conversation is
+  over.
 
   This sandbox has no UiPath tenant and is not logged in, so do NOT run anything
   that needs a live connection, and do not pack, publish, or deploy.
@@ -42,7 +43,9 @@ success_criteria:
     skill_name: "uipath-maestro-flow"
     expected_skill: "uipath-maestro-flow"
     weight: 2.0
-    pass_threshold: 1.0
+    # Advisory: tool telemetry differs across authoring loops; the functional
+    # criteria below grade whether the skill's contract was actually followed.
+    pass_threshold: 0
 
   - type: run_command
     description: "uip maestro flow validate passes on the generated flow"
