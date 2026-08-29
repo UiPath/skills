@@ -112,7 +112,7 @@ BPMN files** — it is the main reason authoring runs out of time.
       <bpmn:extensionElements>
         <uipath:mapping version="v1">
           <uipath:type value="BPMN.Variables" version="v1" />
-          <uipath:output name="Echo" type="double" var="Var_Echo" source="=vars.Var_Amount" custom="true" />
+          <uipath:output name="Echo" type="double" var="Var_Echo" source="=vars.Var_Amount" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming>

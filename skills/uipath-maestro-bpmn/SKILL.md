@@ -245,11 +245,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    once; fix only error-severity findings. Do not re-validate in a loop chasing
    warnings.
 
-   Validation is a structural preflight, not runtime proof. It does not prove
-   that entry-point values reach mutable variables or public outputs contain
-   the intended business values.
-   When execution is authorized, inspect runtime variables, element executions,
-   and incidents before reporting behavioral success.
+   Validation is structural preflight, not runtime proof — see
+   [references/cli-conventions.md](references/cli-conventions.md). When
+   execution is authorized, inspect runtime variables, element executions, and
+   incidents before reporting behavioral success.
 
    If `validate` reports "unknown command" or clearly skips the
    structural rules, the installed CLI predates them — update it (see
