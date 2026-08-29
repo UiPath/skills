@@ -225,17 +225,17 @@ def test_validate_flow_uses_root_fallback(tmp_path, monkeypatch):
     monkeypatch.setattr(validate_flow.subprocess, "run", fake_run)
 
     assert validate_flow.main() == 0
-    assert calls == [
-        (
-            [
-                "uip",
-                "maestro",
-                "flow",
-                "validate",
-                "BareEmit.flow",
-                "--output",
-                "json",
-            ],
-            {"capture_output": True, "text": True},
-        )
+    assert len(calls) == 1
+    command, kwargs = calls[0]
+    assert command == [
+        "uip",
+        "maestro",
+        "flow",
+        "validate",
+        "BareEmit.flow",
+        "--output",
+        "json",
     ]
+    assert kwargs["capture_output"] is True
+    assert kwargs["text"] is True
+    assert 0 < kwargs["timeout"] <= 80
