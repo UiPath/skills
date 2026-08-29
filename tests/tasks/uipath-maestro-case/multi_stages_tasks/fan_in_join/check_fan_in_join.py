@@ -15,6 +15,7 @@ from _shared.case_check import (  # noqa: E402
     first_rule_of_condition,
     iter_stage_entry_conditions,
     read_caseplan,
+    selected_stage_ids,
     start_debug,
     task_is_skeleton,
 )
@@ -71,9 +72,7 @@ def main():
             sys.exit(
                 f"FAIL: Join entry rule must be 'selected-stage-completed'; got {rule.get('rule')!r}"
             )
-        sid = rule.get("selectedStageId")
-        if sid:
-            referenced_stage_ids.add(sid)
+        referenced_stage_ids.update(selected_stage_ids(rule))
 
     if not {validate["id"], enrich["id"]}.issubset(referenced_stage_ids):
         sys.exit(
