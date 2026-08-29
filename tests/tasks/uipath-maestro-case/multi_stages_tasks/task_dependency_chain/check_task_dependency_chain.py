@@ -14,6 +14,7 @@ from _shared.case_check import (  # noqa: E402
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
     read_caseplan,
+    selected_stage_ids,
     start_debug,
     task_is_skeleton,
 )
@@ -115,10 +116,12 @@ def main():
             f"FAIL: Done should have entry rule 'selected-stage-completed'; "
             f"got {sorted(r.get('rule') for r in done_entry_rules if r.get('rule'))}"
         )
-    if finalize["id"] not in {r.get("selectedStageId") for r in done_entry_rules}:
+    if finalize["id"] not in {
+        stage_id for rule in done_entry_rules for stage_id in selected_stage_ids(rule)
+    }:
         sys.exit(
             f"FAIL: Done selected-stage-completed entry must reference Finalize id "
-            f"{finalize['id']!r}; got {[r.get('selectedStageId') for r in done_entry_rules]}"
+            f"{finalize['id']!r}; got {[selected_stage_ids(r) for r in done_entry_rules]}"
         )
 
     first_step = _stage_task_by_label(process, "First Step")
