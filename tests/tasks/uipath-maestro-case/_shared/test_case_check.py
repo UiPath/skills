@@ -10,6 +10,7 @@ opt-out). A checker must not depend on which CLI build the eval image runs.
 """
 
 import os
+import json
 import subprocess
 import sys
 
@@ -20,10 +21,46 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
+    find_caseplan,
     partition_return_to_origin_conditions,
     run_debug,
 )
 import case_check  # noqa: E402
+
+
+def _write_caseplan(path, nodes):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"nodes": nodes}), encoding="utf-8")
+
+
+def test_find_caseplan_prefers_one_substantive_plan_over_scaffold_husk(tmp_path, monkeypatch):
+    authored = tmp_path / "Case" / "Case" / "caseplan.json"
+    husk = tmp_path / "CaseSolution" / "Case" / "caseplan.json"
+    _write_caseplan(authored, [{"id": "trigger"}, {"id": "stage"}])
+    _write_caseplan(husk, [{"id": "trigger"}])
+    monkeypatch.chdir(tmp_path)
+
+    assert find_caseplan() == os.path.join("Case", "Case", "caseplan.json")
+
+
+def test_find_caseplan_accepts_identical_packaging_copy(tmp_path, monkeypatch):
+    authored = tmp_path / "caseplan.json"
+    packaged = tmp_path / "CaseSolution" / "Case" / "caseplan.json"
+    nodes = [{"id": "trigger"}, {"id": "stage"}]
+    _write_caseplan(authored, nodes)
+    _write_caseplan(packaged, nodes)
+    monkeypatch.chdir(tmp_path)
+
+    assert find_caseplan() == "caseplan.json"
+
+
+def test_find_caseplan_rejects_distinct_substantive_plans(tmp_path, monkeypatch):
+    _write_caseplan(tmp_path / "First" / "caseplan.json", [{"id": "trigger"}, {"id": "first"}])
+    _write_caseplan(tmp_path / "Second" / "caseplan.json", [{"id": "trigger"}, {"id": "second"}])
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit, match="Multiple distinct caseplan.json"):
+        find_caseplan()
 
 
 def test_get_ci_reads_camelcase_and_pascalcase():

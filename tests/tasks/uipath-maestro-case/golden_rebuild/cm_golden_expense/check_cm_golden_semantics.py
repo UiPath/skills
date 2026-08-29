@@ -26,7 +26,7 @@ import sys
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from _shared.case_check import find_stages, read_caseplan  # noqa: E402
+from _shared.case_check import find_stages, read_caseplan, selected_stage_ids  # noqa: E402
 
 EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
 FIXTURE_SDD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "sdd.md")
@@ -370,9 +370,7 @@ def _selected_tasks(rule: dict, task_ids: dict) -> tuple[tuple[str, str], ...]:
 
 
 def _selected_stages(rule: dict, stage_ids: dict) -> tuple[str, ...]:
-    ids = list(rule.get("selectedStagesIds") or [])
-    if rule.get("selectedStageId"):
-        ids.append(rule["selectedStageId"])
+    ids = selected_stage_ids(rule)
     logical = []
     for stage_id in ids:
         if stage_id not in stage_ids:
