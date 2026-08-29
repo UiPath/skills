@@ -32,6 +32,15 @@ def require_uipath_element(root: ET.Element, local_name: str, description: str) 
         fail(f"missing {description}")
 
 
+def has_preserve_only_generic_activity(root: ET.Element) -> bool:
+    if root.findall(".//uipath:Activity", NS):
+        return True
+    return any(
+        has_typed_uipath_extension(task, "activity", "uipath:Activity")
+        for task in elements(root, "serviceTask")
+    )
+
+
 def require_uipath_attr_value(
     root: ET.Element, local_name: str, attr_name: str, expected_value: str, description: str
 ) -> None:
@@ -75,7 +84,8 @@ def main() -> None:
         root, "scriptVersion", "value", "v2", "preserved legacy scriptVersion"
     )
     require_uipath_element(root, "caseManagement", "preserve-only uipath:caseManagement payload")
-    require_uipath_element(root, "Activity", "preserve-only generic uipath:Activity payload")
+    if not has_preserve_only_generic_activity(root):
+        fail("missing preserve-only generic uipath:Activity payload")
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)
