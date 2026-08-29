@@ -50,6 +50,16 @@ make from syntax alone. Exact signatures remain in [the generated API](api.md).
 - Format after adding elements that need diagram shapes. Avoid formatting a
   metadata-only edit because it replaces preserved geometry.
 
+## Contract metadata
+
+<!-- RULE:bpmn.metadata.case-management -->
+- A process-level `uipath:caseManagement` marker is distinct from a typed
+  `Orchestrator.StartCaseMgmtProcess` or `Orchestrator.StartCaseMgmtProcessAsync`
+  call activity. When a contract or fixture explicitly requires that marker,
+  author it with synthetic content through
+  `.metadata({ caseManagement: { version: 'v1', value: '{"mode":"preserve-only"}' } })`.
+  A case-process call does not emit or replace the marker.
+
 ## Packaging and layout
 
 <!-- RULE:bpmn.package.derived -->
