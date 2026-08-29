@@ -16,6 +16,8 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
+FIRST_VALIDATION_SNAPSHOT = ".first-validation-input.bpmn"
+
 # Import shared helpers from the task suite's _shared module.
 _shared = (os.path.join(os.environ["SKILLS_REPO_PATH"],
                         "tests", "tasks", "uipath-maestro-bpmn", "_shared")
@@ -101,6 +103,16 @@ def require_complete_di_geometry(root: ET.Element) -> None:
 
 def main() -> None:
     path, root = load_bpmn()
+
+    # The first-validation snapshot is graded on DI completeness only: it proves
+    # layout existed before `validate` ran. Structural authoring (gateways,
+    # routing) is graded on the final file, so a legitimate early validate of a
+    # partially authored graph is not penalised here.
+    if os.path.basename(path) == FIRST_VALIDATION_SNAPSHOT:
+        require_di_for_visible_elements(root)
+        require_complete_di_geometry(root)
+        print(f"OK: {os.path.basename(path)} had complete DI at first validation")
+        return
 
     if not elements(root, "startEvent"):
         fail("no start event")
