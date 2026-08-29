@@ -3510,23 +3510,26 @@ def main() -> None:
     if len(processes) != 1:
         fail(f"expected exactly one root process, found {len(processes)}")
     process = processes[0]
-    if process.attrib.get("isExecutable") != "false":
+    # `uip maestro bpmn init` omits the attribute; Studio serializes the
+    # equivalent default "false". Only an explicit "true" is wrong.
+    if process.attrib.get("isExecutable") not in (None, "false"):
         fail(
-            "BPMN process must use the current Studio serializer "
-            "isExecutable='false' contract"
+            "BPMN process must omit isExecutable or use the serializer default "
+            f"'false', found {process.attrib.get('isExecutable')!r}"
         )
     migration = process.find(
         f"./{q(BPMN_NS, 'extensionElements')}/"
         f"{q(UIPATH_NS, 'migrationVersion')}"
     )
-    if migration is None:
-        fail("BPMN process is missing uipath:migrationVersion")
-    try:
-        migration_version = int(migration.attrib.get("version", ""))
-    except ValueError:
-        fail("uipath:migrationVersion must be an integer")
-    if migration_version < 15:
-        fail("BPMN process uses a pre-runtime-contract migration version")
+    # The initializer omits this optional marker, and its documented form is a
+    # decimal (version="11.5"). Only validate it when present.
+    if migration is not None:
+        try:
+            migration_version = float(migration.attrib.get("version", ""))
+        except ValueError:
+            fail("uipath:migrationVersion must be numeric")
+        if migration_version < 15:
+            fail("BPMN process uses a pre-runtime-contract migration version")
 
     starts = process.findall(f"./{q(BPMN_NS, 'startEvent')}")
     ends = process.findall(f"./{q(BPMN_NS, 'endEvent')}")
