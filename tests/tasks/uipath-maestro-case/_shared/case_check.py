@@ -75,6 +75,35 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+def is_non_required(item: dict) -> bool:
+    """Accept the Case SDK's omitted default and the explicit false form."""
+    value = item.get("isRequired")
+    return value is None or value is False
+
+
+def registry_audit_entries(payload: object) -> list[dict]:
+    """Read equivalent flat and enveloped registry-audit representations."""
+    if isinstance(payload, list):
+        entries = payload
+    elif isinstance(payload, dict):
+        entries = next(
+            (
+                payload[key]
+                for key in ("resolutions", "resources")
+                if isinstance(payload.get(key), list)
+            ),
+            None,
+        )
+        if entries is None:
+            _fail("registry-resolved.json has no resolutions/resources list")
+    else:
+        _fail("registry-resolved.json must be a list or object envelope")
+
+    if not all(isinstance(entry, dict) for entry in entries):
+        _fail("registry-resolved.json entries must be objects")
+    return entries
+
+
 def iter_tasks(plan: dict):
     """Yield every task dict from every Stage node (and legacy ExceptionStage).
 
@@ -456,7 +485,9 @@ def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
 def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     """Return the directory holding the Case `project.uiproj`. Filters by
     ``ProjectType`` so a sibling Agent / RPA / Coded project in the same
-    solution does not collide with the Case project we want to debug.
+    solution does not collide with the Case project we want to debug. When a
+    preview author leaves both a substantive project and a generated
+    trigger-only scaffold, select the substantive project.
     """
     candidates = sorted(
         p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
@@ -472,6 +503,12 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
             f"\n  - {joined}"
         )
     if len(case_projects) > 1:
+        selected, husks = _split_case_project_husks(case_projects)
+        if selected is not None:
+            print(
+                f"note: ignoring {len(husks)} abandoned Case project scaffold(s)"
+            )
+            return os.path.dirname(selected)
         joined = "\n  - ".join(case_projects)
         _fail(
             f"Multiple Case projects match {pattern!r} — refusing to guess:"
@@ -482,7 +519,9 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
 
 def find_solution_dir(pattern: str = "**/*.uipx") -> str:
     """Return the directory holding the ``*.uipx`` solution manifest.
-    Used as ``--solution-folder`` for ``uip solution resources refresh``.
+    Used as ``--solution-folder`` for ``uip solution resources refresh``. A
+    solution whose Case project is substantive wins over generated solutions
+    that contain only a trigger scaffold.
     """
     matches = sorted(
         p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
@@ -490,9 +529,67 @@ def find_solution_dir(pattern: str = "**/*.uipx") -> str:
     if not matches:
         _fail(f"No solution manifest found matching {pattern}")
     if len(matches) > 1:
+        selected, husks = _split_case_solution_husks(matches)
+        if selected is not None:
+            print(
+                f"note: ignoring {len(husks)} abandoned Case solution scaffold(s)"
+            )
+            return os.path.dirname(selected)
         joined = "\n  - ".join(matches)
         _fail(f"Multiple solution manifests match {pattern!r}:\n  - {joined}")
     return os.path.dirname(matches[0])
+
+
+def _split_case_project_husks(
+    project_uiprojs: list[str],
+) -> tuple[str | None, list[str]]:
+    counts = [
+        (path, _caseplan_node_count(os.path.dirname(path)))
+        for path in project_uiprojs
+    ]
+    return _split_case_husks(counts)
+
+
+def _split_case_solution_husks(
+    solution_uipxs: list[str],
+) -> tuple[str | None, list[str]]:
+    counts = [
+        (path, _caseplan_node_count(os.path.dirname(path)))
+        for path in solution_uipxs
+    ]
+    return _split_case_husks(counts)
+
+
+def _split_case_husks(
+    counts: list[tuple[str, int | None]],
+) -> tuple[str | None, list[str]]:
+    substantive = [path for path, count in counts if count is None or count > 1]
+    husks = [path for path, count in counts if count is not None and count <= 1]
+    if len(substantive) != 1:
+        return None, []
+    selected = substantive[0]
+    selected_count = next(count for path, count in counts if path == selected)
+    if selected_count is None:
+        return None, []
+    return selected, husks
+
+
+def _caseplan_node_count(root: str) -> int | None:
+    """Return the node count for one unambiguous Case plan under ``root``."""
+    plans = sorted(
+        path
+        for path in glob.glob(os.path.join(root, "**/caseplan.json"), recursive=True)
+        if "/.venv/" not in path
+    )
+    if len(plans) != 1:
+        return None
+    try:
+        with open(plans[0], encoding="utf-8") as f:
+            plan = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    nodes = plan.get("nodes") if isinstance(plan, dict) else None
+    return len(nodes) if isinstance(nodes, list) else None
 
 
 def run_debug(
