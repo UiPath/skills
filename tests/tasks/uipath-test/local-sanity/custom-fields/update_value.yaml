@@ -1,0 +1,35 @@
+task_id: skill-test-update-value
+description: >
+  P&E GA-validation scenario 10.4 (custom fields).
+  Updated a custom-field value in HEALTH (customfield value/label). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:customfield-value-update]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  We just shipped 4.7.1. In Test Manager, update the Deployment Version field on that test case in the HEALTH project to match.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated a custom-field value in HEALTH (customfield value update)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--object-type\s+TestCase)(?=.*--value)(?=.*--output\s+json)uip\s+tm\s+customfield\s+value\s+(?:update|create)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

@@ -1,0 +1,35 @@
+task_id: skill-test-duplicate-prevention
+description: >
+  P&E GA-validation scenario 7.4 (defects).
+  Checked for an existing defect flag on the HEALTH case before adding one (objectlabel list, then add only if missing). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:objectlabel-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, I want to flag the PDF 500 case in the HEALTH project as a bug, but check first. If it's already flagged, just point me at it instead of doubling up.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked existing defect flags before re-tagging (objectlabel list/add)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+(?:list|add)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
