@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.md"
+---
+
 # Token Optimization — Terse Documentation Mode
 
 All skill documentation and agent-facing prose in this repo MUST follow these rules. Technical accuracy stays. Fluff dies.
