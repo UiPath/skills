@@ -289,7 +289,7 @@ uip solution publish "<packagePath>" --wait --output json
 
 > `uip maestro case pack` is **not** the publish artifact. It emits a single project `.nupkg`, which `solution publish` does not accept — `solution pack` produces its own project `.nupkg` internally and wraps it in the `.zip`. Run `case pack` for the BPMN recompile only; always publish the `solution pack` `.zip`.
 
-Phase 7 stops at publish. `uip solution deploy run` (the step that installs the solution into an Orchestrator folder) is out of scope — report the published package and tell the user to deploy it from Orchestrator.
+Phase 7 stops at publish. Installing the package into an Orchestrator folder (`uip solution deploy run`) is out of scope — report the published package, then hand off to [`uipath-solution`](/uipath:uipath-solution). Not the Orchestrator UI: a cancelled upgrade wizard leaves the deployment in `Draft`, which blocks every later deploy with no CLI verb to clear it.
 
 ### On failure
 
@@ -297,7 +297,7 @@ If `case pack`, `solution pack`, or `publish` fails, print the CLI error verbati
 
 ### Suggested next steps
 
-Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: verify the package with 'uip solution packages list', then deploy it to an Orchestrator folder.` On `Done`: `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
+Before the prompt: `Suggested next steps: publish to Orchestrator when you want the case on the tenant solution feed, or stop here if Studio Web and debug are enough.` After a successful publish: `Suggested next steps: verify the package with 'uip solution packages list', then load the uipath-solution skill to deploy it.` On `Done`: `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
 
 ### Publish-to-Orchestrator notes
 
@@ -305,7 +305,7 @@ Before the prompt: `Suggested next steps: publish to Orchestrator when you want 
 - A Phase 7 publish does **not** replace Phase 5 — Studio Web (`uip solution upload`) and the solution feed are separate destinations. A case can go to both, neither, or one.
 - If a Phase 6 fix changed the build after a Phase 7 publish, re-run Phase 7 with a bumped `--version`; the feed rejects duplicate `name+version` pairs.
 
-Deployment and activation are platform lifecycle concerns. Use the platform workflow for `uip solution deploy ...` commands and keep this case skill focused on the case project/package boundary.
+Deployment and activation belong to the solution lifecycle. Load [`uipath-solution`](/uipath:uipath-solution) for every `uip solution deploy ...` command; keep this skill at the case project/package boundary.
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.
 
