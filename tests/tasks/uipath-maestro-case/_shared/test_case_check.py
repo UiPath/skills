@@ -22,7 +22,9 @@ from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
     find_caseplan,
+    is_non_required,
     partition_return_to_origin_conditions,
+    registry_audit_entries,
     run_debug,
 )
 import case_check  # noqa: E402
@@ -61,6 +63,31 @@ def test_find_caseplan_rejects_distinct_substantive_plans(tmp_path, monkeypatch)
 
     with pytest.raises(SystemExit, match="Multiple distinct caseplan.json"):
         find_caseplan()
+
+
+def test_non_required_accepts_omitted_or_explicit_false():
+    assert is_non_required({})
+    assert is_non_required({"isRequired": False})
+
+
+def test_non_required_rejects_required_or_invalid_values():
+    assert not is_non_required({"isRequired": True})
+    assert not is_non_required({"isRequired": "false"})
+
+
+def test_registry_audit_entries_accepts_flat_and_named_envelopes():
+    entries = [{"task": "Post Invoice"}]
+
+    assert registry_audit_entries(entries) == entries
+    assert registry_audit_entries({"resolutions": entries}) == entries
+    assert registry_audit_entries({"resources": entries}) == entries
+
+
+def test_registry_audit_entries_rejects_missing_or_non_object_entries():
+    with pytest.raises(SystemExit, match="no resolutions/resources list"):
+        registry_audit_entries({"status": "resolved"})
+    with pytest.raises(SystemExit, match="entries must be objects"):
+        registry_audit_entries({"resources": ["Post Invoice"]})
 
 
 def test_get_ci_reads_camelcase_and_pascalcase():

@@ -75,6 +75,35 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+def is_non_required(item: dict) -> bool:
+    """Accept the Case SDK's omitted default and the explicit false form."""
+    value = item.get("isRequired")
+    return value is None or value is False
+
+
+def registry_audit_entries(payload: object) -> list[dict]:
+    """Read equivalent flat and enveloped registry-audit representations."""
+    if isinstance(payload, list):
+        entries = payload
+    elif isinstance(payload, dict):
+        entries = next(
+            (
+                payload[key]
+                for key in ("resolutions", "resources")
+                if isinstance(payload.get(key), list)
+            ),
+            None,
+        )
+        if entries is None:
+            _fail("registry-resolved.json has no resolutions/resources list")
+    else:
+        _fail("registry-resolved.json must be a list or object envelope")
+
+    if not all(isinstance(entry, dict) for entry in entries):
+        _fail("registry-resolved.json entries must be objects")
+    return entries
+
+
 def iter_tasks(plan: dict):
     """Yield every task dict from every Stage node (and legacy ExceptionStage).
 
