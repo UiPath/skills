@@ -35,9 +35,7 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
    reveal the likely root cause.
 2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,
    and `incident get` requires `--folder-key`.
-3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture
-   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you
-   are explicitly debugging the mock harness.
+3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads.
 4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.
 5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,
    or extension that needs Author work.
