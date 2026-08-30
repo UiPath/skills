@@ -1,0 +1,64 @@
+task_id: skill-test-execution-rerun-and-stats-integration
+description: >
+  Integration test: agent uses the uipath-test skill to investigate and act on
+  recent test executions in the CLAIM project — discover executions, pull
+  aggregated stats for the latest one, re-run its failed test cases, and drill
+  into step-level logs. Asserts the discover → get-stats → (retry|run) → step
+  inspection chain, exercising the `executions get-stats`, `executions
+  list-filtered`, `executions retry`/`executions run`, and `teststeplog list`
+  verbs that the existing suite does not cover. Read-and-act on pre-existing
+  CLAIM executions (does not seed its own).
+tags: [uipath-test, integration, mode:diagnose, lifecycle:triage, feature:execution]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 50
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Something's flaky in the CLAIM project. Look at the most recent test
+  executions, pull the pass/fail statistics for the latest one, and re-run just
+  the test cases that failed in it. While you're in there, dig into the
+  step-level logs for one of the failed cases so we can see where it broke.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered recent executions: `uip tm executions list ... --project-key CLAIM --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+CLAIM)(?=.*--output\s+json)uip\s+tm\s+executions?\s+list(-filtered)?\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pulled aggregated stats: `uip tm executions get-stats --execution-id <id> --project-key CLAIM --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S+)(?=.*--project-key\s+CLAIM)(?=.*--output\s+json)uip\s+tm\s+executions?\s+get-stats\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-ran failed cases via retry, or re-ran the execution: `uip tm executions retry --execution-id <id> ...` or `uip tm executions run --execution-id <id> --execution-type <type> ...` (`--output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+executions?\s+retry\b|(?=.*--execution-id\s+\S+)(?=.*--execution-type\s+\S+)(?=.*--output\s+json)uip\s+tm\s+executions?\s+run\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected step-level logs: `uip tm teststeplog list --project-key CLAIM --test-case-log-id <id> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-case-log-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+teststeplog\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

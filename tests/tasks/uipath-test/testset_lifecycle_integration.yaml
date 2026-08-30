@@ -1,0 +1,91 @@
+task_id: skill-test-testset-lifecycle-integration
+description: >
+  Integration test: agent uses the uipath-test skill to manage a test set
+  through its full lifecycle in the CLAIM project — create the set, populate it
+  by discovering test case keys via a filtered `list` and adding them, confirm
+  membership with `list-testcases`, rename the set, remove a case, then delete
+  the set. Self-seeding (creates its own set with a fixed name) and
+  self-cleaning. Asserts the create → testcases add → list-testcases → update →
+  testcases remove → delete chain, exercising the `testsets update`/`delete`
+  verbs and the `--test-set-key` / `--test-case-keys` (plural) flag shapes the
+  skill must teach. Covers testset update/delete not exercised by the existing
+  suite.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:test-set]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 50
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  In the CLAIM project, create a test set called "Eval Lifecycle Set". Find the
+  test cases whose names contain "disbursement" and add them to the set, then
+  show me what's in the set. Rename the set to "Eval Lifecycle Set (v2)", drop
+  one of the test cases back out of it, and finally delete the set — it's a
+  scratch set, don't leave it behind.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command: `uip tm testsets create --project-key CLAIM --name \"Eval Lifecycle Set\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+CLAIM)(?=.*--name\s+["\x27]?Eval Lifecycle Set)(?=.*--output\s+json)uip\s+tm\s+testsets?\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered cases server-side: `uip tm testcases list --project-key CLAIM --filter disbursement --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+CLAIM)(?=.*--filter)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent populated the set: `uip tm testcases add --test-set-key <key> --test-case-keys <K1,K2,...> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-set-key\s+\S+)(?=.*--test-case-keys\s+\S+)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+add\b|(?=.*--test-set-key\s+\S+)(?=.*--output\s+json)uip\s+tm\s+testsets?\s+add-testcases\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent confirmed membership: `uip tm testsets list-testcases --project-key CLAIM --test-set-key <key> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-set-key\s+\S+)(?=.*--output\s+json)uip\s+tm\s+testsets?\s+list-testcases\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete rename command: `uip tm testsets update --test-set-key <key> --name \"Eval Lifecycle Set (v2)\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-set-key\s+\S+)(?=.*--name\s+["\x27]?Eval Lifecycle Set \(v2\))(?=.*--output\s+json)uip\s+tm\s+testsets?\s+update\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed a case: `uip tm testcases remove --test-set-key <key> --test-case-keys <key> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-set-key\s+\S+)(?=.*--test-case-keys\s+\S+)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+remove\b|(?=.*--test-set-key\s+\S+)(?=.*--output\s+json)uip\s+tm\s+testsets?\s+remove-testcases\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete delete command: `uip tm testsets delete --test-set-key <key> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--test-set-key\s+\S+)(?=.*--output\s+json)uip\s+tm\s+testsets?\s+delete\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
