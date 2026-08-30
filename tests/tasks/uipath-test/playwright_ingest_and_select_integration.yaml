@@ -1,0 +1,91 @@
+# Prerequisites (see PR description):
+#   - a CLI carrying the external-package commands (npm `latest` on 1.200+)
+#   - the eval tenant's Test Manager has Playwright support enabled
+#   - the released CLI registers `testsets playwright-context` on stable
+#     (UiPath/cli#3336) — this task's assertion reads that command's output
+# Does NOT need serverless execution — it stops before running the test set.
+task_id: skill-test-playwright-ingest-and-select
+description: >
+  Integration test for the Playwright first mile up to (not including)
+  execution: package a suite, upload it, let ingestion auto-create the test
+  cases, fill a test set by the ingestion-applied labels, and confirm the set
+  resolves to a single Playwright package. Grades the recorded context rather
+  than tenant state, and the agent cleans the project up afterwards.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case]
+
+initial_prompt: |
+  I have a Playwright suite I want to run from Test Manager. Create a minimal
+  one in ./pw-suite with two passing tests and a config defining the projects
+  "chromium" and "firefox", get it into the Test Manager project PWINT
+  (create it if needed), and collect its smoke tests into a test set.
+  Save what Test Manager reports about that test set's Playwright packaging to
+  ./context.json, then delete the project so my tenant stays clean.
+
+success_criteria:
+  - type: command_executed
+    description: "Packaged the suite as an external test package"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+pack\s+.*--type\s+playwright'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Uploaded the package to Orchestrator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+packages\s+upload'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Waited for ingestion by listing the project's test cases"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--project-key\s+PWINT'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not filter that list by package name — the filter never matches ingested test cases"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--filter'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filled the test set by label rather than hand-collected keys"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add\s+.*--labels'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Recorded what Test Manager reported about the test set"
+    path: "context.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Test set resolves to a single Playwright package, with its projects listed"
+    command: "grep -qiE '\"IsPlaywright\"[^,}]*true' context.json && grep -qi 'chromium' context.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Cleaned up the project it created"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+delete\s+.*PWINT'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not use the Studio/RPA link-automation pipeline"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation'
+    weight: 1.0
+    pass_threshold: 1.0
