@@ -16,7 +16,7 @@ Hardcoded inputs in Canary/Canary/Canary.flow:
 
 Lifecycle: Canary.uipx is gitignored — bootstrapped from UIPX_TEMPLATE at
 start (no SolutionId → CLI always imports fresh), then cleaned up in
-finally (uip solution delete + local file removal).
+finally (uip solution delete --yes + local file removal).
 """
 
 import json
@@ -36,7 +36,7 @@ DELETE_TIMEOUT = 60
 # Projects[0].Id must match the projectKey committed in
 # Canary/resources/solution_folder/*/Canary.json — those files reference it.
 # SolutionId is generated fresh per run in bootstrap_uipx() so each run
-# imports a new solution that cleanup() tears down via uip solution delete.
+# imports a new solution that cleanup() tears down via uip solution delete --yes.
 UIPX_TEMPLATE = {
     "DocVersion": "1.0.0",
     "StudioMinVersion": "2025.10.0",
@@ -149,10 +149,18 @@ def bootstrap_uipx() -> None:
 
 def cleanup(solution_id: str | None) -> None:
     if solution_id:
-        print(f"$ uip solution delete {solution_id}", flush=True)
+        print(f"$ uip solution delete {solution_id} --yes --output json", flush=True)
         try:
             r = subprocess.run(
-                ["uip", "solution", "delete", solution_id, "--output", "json"],
+                [
+                    "uip",
+                    "solution",
+                    "delete",
+                    solution_id,
+                    "--yes",
+                    "--output",
+                    "json",
+                ],
                 capture_output=True,
                 text=True,
                 timeout=DELETE_TIMEOUT,
