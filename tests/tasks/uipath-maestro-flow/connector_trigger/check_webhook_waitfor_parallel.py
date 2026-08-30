@@ -5,7 +5,8 @@ The flow must be:
 
   manual start trigger
     ├─ branch 1: Wait-for-event node (HTTP Webhook, uipath-http-webhook) -> End
-    └─ branch 2: Managed HTTP Request (core.action.http.v2, manual GET to the
+    └─ branch 2: Managed HTTP Request (core.action.http or
+                 core.action.http.v2, manual GET to the
                  HTTP Webhook connection's webhook URL, no headers / no query) -> End
 
 Branch 2's GET hits the webhook URL, which delivers the event that completes
@@ -17,8 +18,9 @@ Static assertions (read from the `.flow` source):
      branches (the event wait and the HTTP request).
   2. A Wait-for-event node of the HTTP Webhook connector event exists
      (`uipath.connector.event.uipath-http-webhook.http-webhook`).
-  3. A `core.action.http.v2` node is a MANUAL `GET` whose `url` is the webhook
-     URL, with NOTHING in headers or query (per the prompt).
+  3. A `core.action.http` or `core.action.http.v2` node is a MANUAL `GET` whose
+     `url` is the webhook URL, with NOTHING in headers or query (per the
+     prompt).
   4. Both branch tails reach an End node (`core.control.end`).
 """
 
@@ -33,7 +35,7 @@ from _shared.flow_check import find_flow_file  # noqa: E402
 
 FLOW_GLOB = "**/WebhookSelfTest*.flow"
 EVENT_MARKERS = ("uipath.connector.event", "uipath-http-webhook")
-HTTP_TYPE = "core.action.http.v2"
+HTTP_TYPES = ("core.action.http", "core.action.http.v2")
 END_TYPE = "core.control.end"
 TRIGGER_PREFIX = "core.trigger."
 
@@ -96,20 +98,33 @@ def main() -> None:
     print("OK: HTTP Webhook wait-for-event node present")
 
     # 3. Manual GET HTTP node to the webhook URL, no headers / no query.
-    http_nodes = [n for n in nodes if str(n.get("type", "")) == HTTP_TYPE]
+    http_nodes = [n for n in nodes if str(n.get("type", "")) in HTTP_TYPES]
     if not http_nodes:
-        _fail(f"no {HTTP_TYPE} node. Types seen: {types_seen}")
+        _fail(
+            f"no managed HTTP node ({' or '.join(HTTP_TYPES)}). "
+            f"Types seen: {types_seen}"
+        )
 
     good_http = None
     for n in http_nodes:
-        body = ((n.get("inputs") or {}).get("detail") or {}).get("bodyParameters") or {}
+        inputs = n.get("inputs") or {}
+        body = ((inputs.get("detail") or {}).get("bodyParameters") or inputs)
         if not isinstance(body, dict):
             continue
-        auth = str(body.get("authentication", "")).lower()
+        auth = str(
+            body.get("authentication")
+            or body.get("authenticationType")
+            or body.get("mode")
+            or ""
+        ).lower()
         method = str(body.get("method", "")).lower()
         url = str(body.get("url", ""))
         headers = body.get("headers")
-        query = body.get("query") or body.get("queryParameters")
+        query = (
+            body.get("query")
+            or body.get("queryParameters")
+            or body.get("queryParams")
+        )
         if auth != "manual" or method != "get":
             continue
         if "webhook" not in url.lower():
@@ -123,7 +138,7 @@ def main() -> None:
 
     if good_http is None:
         _fail(
-            "no core.action.http.v2 node configured as a manual GET to the "
+            "no managed HTTP node configured as a manual GET to the "
             "webhook URL (authentication=manual, method=GET, url contains 'webhook')"
         )
     print("OK: manual GET HTTP node to webhook URL, no headers / no query")
