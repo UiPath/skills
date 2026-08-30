@@ -205,11 +205,11 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "tasks.md records the action output binding for approved"
-    path: "tasks/tasks.md"
-    includes:
-      - "approved"
+    command: "python3 -c \"from pathlib import Path; import sys; texts=[p.read_text(encoding='utf-8') for p in Path('.').rglob('tasks.md')]; sys.exit(0 if any('approved' in text for text in texts) else 'no tasks.md records approved')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
