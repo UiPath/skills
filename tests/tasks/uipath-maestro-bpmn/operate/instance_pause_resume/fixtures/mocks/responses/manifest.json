@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN operate pause then resume of one instance.",
+  "rules": [
+    {
+      "match": "login status",
+      "file": "auth-status.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance pause inst-run-003 -f folder-public",
+      "file": "instance-pause.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance pause inst-run-003 --folder-key folder-public",
+      "file": "instance-pause.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance resume inst-run-003 -f folder-public",
+      "file": "instance-resume.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance resume inst-run-003 --folder-key folder-public",
+      "file": "instance-resume.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

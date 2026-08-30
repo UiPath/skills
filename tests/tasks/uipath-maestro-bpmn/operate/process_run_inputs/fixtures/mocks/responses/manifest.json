@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN operate: list processes, then run one with inputs.",
+  "rules": [
+    {
+      "match": "login status",
+      "file": "auth-status.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn process list",
+      "file": "process-list.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn process run process-invoice-triage folder-public",
+      "file": "process-run.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

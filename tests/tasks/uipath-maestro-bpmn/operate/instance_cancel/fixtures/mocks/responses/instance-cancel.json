@@ -1,0 +1,7 @@
+{
+  "instanceId": "inst-run-002",
+  "folderKey": "folder-public",
+  "status": "Cancelled",
+  "operation": "cancel",
+  "succeeded": true
+}

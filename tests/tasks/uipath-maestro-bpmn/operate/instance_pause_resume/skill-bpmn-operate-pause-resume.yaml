@@ -1,0 +1,61 @@
+task_id: skill-bpmn-operate-pause-resume
+description: >
+  Consent-gated operate mutation for the uipath-maestro-bpmn skill. The agent
+  pauses then resumes the same running BPMN instance with folder context via a
+  mocked CLI, and reports the resulting state after each action.
+tags: [uipath-maestro-bpmn, integration, "mode:operate", "lifecycle:setup"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 24
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  The user has already approved pausing and then resuming the running UiPath
+  Maestro BPMN instance inst-run-003 in folder folder-public. Pause it, then
+  resume it.
+
+  After each action, report the instance's new state from the command output.
+  Write a short summary to state-summary.md listing the state after the pause and
+  the state after the resume.
+
+  Use the mocked `uip maestro bpmn ...` CLI on PATH with `--output json`. Do NOT
+  read files under mocks/, fixtures/, or any response JSON directly — obtain all
+  data by running the CLI.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent paused the instance with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+pause\s+inst-run-003\s+(-f|--folder-key)\s+folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resumed the instance with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+resume\s+inst-run-003\s+(-f|--folder-key)\s+folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Summary reports the post-pause and post-resume states"
+    path: "state-summary.md"
+    includes:
+      - "inst-run-003"
+      - "Paused"
+      - "Running"
+    weight: 2.0
+    pass_threshold: 1.0

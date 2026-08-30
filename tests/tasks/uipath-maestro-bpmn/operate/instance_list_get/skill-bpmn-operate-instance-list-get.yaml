@@ -1,0 +1,68 @@
+task_id: skill-bpmn-operate-instance-list-get
+description: >
+  Read-only operate discovery for the uipath-maestro-bpmn skill. The agent lists
+  live BPMN process instances from a mocked CLI, then gets full details for the
+  faulted one by id with folder context, before any lifecycle action.
+tags: [uipath-maestro-bpmn, smoke, "mode:operate", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 20
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  List the live UiPath Maestro BPMN process instances using the mocked `uip`
+  CLI already on PATH, then get full details for the faulted one. Public-safe
+  context:
+  - folder key: folder-public
+
+  Write a short summary to instance-summary.md naming the faulted instance's id
+  and its status. This is read-only discovery: do NOT cancel, pause, resume,
+  retry, migrate, move a cursor, or run any process.
+
+  Use the `uip maestro bpmn ...` commands with `--output json`. Do NOT read
+  files under mocks/, fixtures/, or any response JSON directly — obtain all data
+  by running the CLI.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed live BPMN instances"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent got the faulted instance by id with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+get\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Summary names the faulted instance id and its status"
+    path: "instance-summary.md"
+    includes:
+      - "inst-triage-001"
+      - "Faulted"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent performed no lifecycle mutation during discovery"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+(cancel|pause|resume|retry|migrate|goto)'
+    weight: 1.0
+    pass_threshold: 1.0
