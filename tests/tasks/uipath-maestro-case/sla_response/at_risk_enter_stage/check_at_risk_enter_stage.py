@@ -13,6 +13,7 @@ from _shared.sla_response_check import (  # noqa: E402
     assert_stage_count,
     fail,
     iter_sla_status_change,
+    is_non_required,
     label_of,
     read_plan,
     secondary_stages,
@@ -33,7 +34,7 @@ def main() -> None:
     lane = lanes[0]
     lane_data = lane["data"]
 
-    if lane_data.get("isRequired") is not False:
+    if not is_non_required(lane_data):
         fail(
             f"lane {label_of(lane)!r} has isRequired={lane_data.get('isRequired')!r}; an SLA lane "
             "must stay out of the happy-path required-stages-completed set"
