@@ -180,6 +180,12 @@ Test runs require valid `uip` auth on the host (set via `.env` or environment) f
 
 Every new scenario's `task.yaml` MUST satisfy the following.
 
+The machine-checkable subset lives in [`tests/contracts/troubleshoot-scenario-contract.yaml`](../../contracts/troubleshoot-scenario-contract.yaml) — required simulation constraints, required/forbidden success-criteria types, the canonical `llm_judge` shape, structural keys. `scripts/check-troubleshoot-tasks.py` enforces it against every scenario AND against the generator template (CI gate: `troubleshoot-task-contract.yml`). Run it before opening a PR:
+
+```bash
+python3 scripts/check-troubleshoot-tasks.py
+```
+
 ### `run_limits`
 
 ```yaml
@@ -256,7 +262,7 @@ The mock machinery itself is never readable in the sandbox — its source would 
 
 The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
 
-`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
+`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it. The seal step (with `fail_on_error: true`) is a required rule in [`tests/contracts/troubleshoot-scenario-contract.yaml`](../../contracts/troubleshoot-scenario-contract.yaml), so `scripts/check-troubleshoot-tasks.py` (CI: `troubleshoot-task-contract.yml`) blocks a PR that drops it.
 
 Sealing also removes the scenario's `README.md`, which lives at `data/m/r/README.md` for exactly that reason — `seal` deletes the whole `r/` directory, so the write-up describing the root cause never reaches the agent even though `data/` is staged. Keep it there; a README at the task root sits in the task dir that coder-eval bind-mounts read-only into the container (`$TASK_DIR`), and one at `data/` root lands in the agent's working directory unsealed.
 
@@ -327,7 +333,7 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
 
 That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
 
-`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. `scripts/check-judge-dialog.py` (CI: `judge-dialog-gate.yml`) blocks a PR that reintroduces it.
+`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. The flag is a required rule in [`tests/contracts/troubleshoot-scenario-contract.yaml`](../../contracts/troubleshoot-scenario-contract.yaml), so `scripts/check-troubleshoot-tasks.py` (CI: `troubleshoot-task-contract.yml`) blocks a PR that reintroduces it.
 
 **Forbidden on `llm_judge`:**
 

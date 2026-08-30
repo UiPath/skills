@@ -152,6 +152,7 @@ success_criteria:
     files:
       - $REFERENCE_DIR/RESOLUTION.md
     include_agent_output: true
+    include_dialog: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
 

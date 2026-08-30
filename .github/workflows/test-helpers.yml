@@ -9,6 +9,7 @@ on:
       - 'tests/tasks/uipath-agents/**'
       - 'tests/tasks/uipath-admin/**'
       - 'tests/scripts/**'
+      - 'tests/contracts/**'  # a contract edit changes what its checker enforces
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
@@ -161,3 +162,23 @@ jobs:
       # sanitization).
       - name: Run telemetry hook tests
         run: pytest tests/scripts/test_send_telemetry_hook.py tests/scripts/test_set_session_env_hook.py -v
+
+  troubleshoot-contract-tests:
+    runs-on: ubuntu-latest
+    name: troubleshoot contract checker unit tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest pyyaml
+
+      # Every test reproduces a false negative found in code review: a scenario
+      # that broke the contract while the gate still reported OK - a duplicate
+      # criterion carrying the violation, a forbidden key set to [] or null, an
+      # unreachable generator template, an empty scan.
+      - name: Run troubleshoot contract guard tests
+        run: pytest tests/scripts/test_troubleshoot_contract.py -v
