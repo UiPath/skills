@@ -1523,17 +1523,46 @@ def find_flow_files(
 ) -> list[str]:
     """Return flow artifacts from the selected solution, or one root emit.
 
-    A Flow solution project wins whenever one exists. This keeps a root-level
-    SDK scratch file from competing with the linked solution copy.
-    When no project exists, validate and source-structure checks may consume a
-    root-level SDK emit. Multiple genuinely distinct root emits are ambiguous
-    and fail with their paths rather than selecting one by glob order.
+    A substantive Flow solution project wins whenever one exists. This keeps a
+    root-level SDK scratch file from competing with the linked solution copy.
+    When no project exists, or every project is only an abandoned scaffold,
+    validate and source-structure checks may consume a substantive root-level
+    SDK emit. Multiple genuinely distinct root emits are ambiguous and fail
+    with their paths rather than selecting one by glob order.
 
     Debug callers intentionally do not use this helper: ``uip maestro flow
     debug`` is project-scoped and must continue through :func:`find_project_dir`.
     """
     project_candidates = sorted(glob.glob(project_pattern, recursive=True))
-    if any(_is_flow_project(path) for path in project_candidates):
+    flow_projects = [path for path in project_candidates if _is_flow_project(path)]
+    root_matches = _dedupe_flow_candidates(
+        sorted(glob.glob(os.path.basename(flow_glob)))
+    )
+
+    # A preview author may compile a complete root-level SDK source before a
+    # later CLI command leaves an untouched trigger-only project scaffold. For
+    # file-scoped checks the substantive artifact is the build; the scaffold is
+    # not allowed to shadow it merely because it carries project.uiproj.
+    if flow_projects and len(root_matches) == 1:
+        project_counts = [
+            _flow_node_count(os.path.dirname(path)) for path in flow_projects
+        ]
+        root_count = _flow_file_node_count(root_matches[0])
+        if (
+            root_count is not None
+            and root_count > _HUSK_MAX_NODES
+            and all(
+                count is not None and count <= _HUSK_MAX_NODES
+                for count in project_counts
+            )
+        ):
+            print(
+                "note: ignoring abandoned project scaffold(s) in favor of "
+                f"substantive root Flow emit: {root_matches[0]}"
+            )
+            return root_matches
+
+    if flow_projects:
         project_dir = _find_project(project_pattern)
         matches = sorted(
             glob.glob(
@@ -1548,9 +1577,6 @@ def find_flow_files(
             )
         return matches
 
-    root_matches = _dedupe_flow_candidates(
-        sorted(glob.glob(os.path.basename(flow_glob)))
-    )
     if not root_matches:
         _fail(
             f"No Flow project found matching {project_pattern!r}, and no "
@@ -1676,8 +1702,9 @@ def _find_project(pattern: str) -> str:
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
 
-    Two Flow projects can also mean one build plus one abandoned scaffold —
-    see :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
+    Two Flow projects can also mean byte-identical copies, or one build plus one
+    abandoned scaffold — see :func:`_dedupe_flow_projects` and
+    :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
     candidates = sorted(glob.glob(pattern, recursive=True))
     if not candidates:
@@ -1690,6 +1717,15 @@ def _find_project(pattern: str) -> str:
             f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
+        original_count = len(flow_projects)
+        flow_projects = _dedupe_flow_projects(flow_projects)
+        if len(flow_projects) == 1:
+            print(
+                "note: ignoring "
+                f"{original_count - 1} byte-identical Flow project duplicate(s)"
+            )
+            return os.path.dirname(flow_projects[0])
+
         counts = [(p, _flow_node_count(os.path.dirname(p))) for p in flow_projects]
         selected, husks = _split_off_scaffold_husks(counts)
         if selected is not None:
@@ -1736,16 +1772,52 @@ def _flow_node_count(project_dir: str) -> int | None:
         return None
     total = 0
     for path in flows:
-        try:
-            with open(path, encoding="utf-8") as f:
-                flow = json.load(f)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        count = _flow_file_node_count(path)
+        if count is None:
             return None
-        nodes = flow.get("nodes") if isinstance(flow, dict) else None
-        if not isinstance(nodes, list):
-            return None
-        total += len(nodes)
+        total += count
     return total
+
+
+def _flow_file_node_count(path: str) -> int | None:
+    """Return one Flow file's node count, or ``None`` when unreadable."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            flow = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    nodes = flow.get("nodes") if isinstance(flow, dict) else None
+    return len(nodes) if isinstance(nodes, list) else None
+
+
+def _dedupe_flow_projects(project_uiprojs: list[str]) -> list[str]:
+    """Collapse projects whose relative Flow files are byte-for-byte equal.
+
+    Missing or unreadable Flow files stay distinct so project-scoped debug never
+    guesses across candidates whose equivalence cannot be proved.
+    """
+    by_content: dict[tuple[tuple[str, str], ...] | tuple[str, str], str] = {}
+    for project_uiproj in project_uiprojs:
+        project_dir = os.path.dirname(project_uiproj)
+        flows = sorted(
+            glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+        )
+        fingerprints: list[tuple[str, str]] = []
+        try:
+            for path in flows:
+                with open(path, "rb") as f:
+                    digest = hashlib.sha256(f.read()).hexdigest()
+                fingerprints.append((os.path.relpath(path, project_dir), digest))
+        except OSError:
+            fingerprints = []
+
+        key: tuple[tuple[str, str], ...] | tuple[str, str]
+        if fingerprints:
+            key = tuple(fingerprints)
+        else:
+            key = ("unknown", project_uiproj)
+        by_content.setdefault(key, project_uiproj)
+    return sorted(by_content.values())
 
 
 def _describe_candidate(project_uiproj: str, node_count: int | None) -> str:

@@ -92,6 +92,25 @@ def test_refuses_when_two_candidates_are_substantive(tmp_path, monkeypatch):
         _find_project(PATTERN)
 
 
+def test_collapses_byte_identical_substantive_projects(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    body = json.dumps(
+        {"nodes": [{"id": f"n{i}", "type": "core.action.script"} for i in range(3)]}
+    )
+    first = _make_flow_project(
+        tmp_path, "SolutionA", "Build", 3, flow_body=body
+    )
+    _make_flow_project(tmp_path, "SolutionB", "Build", 3, flow_body=body)
+
+    assert _find_project(PATTERN) == os.path.relpath(first, tmp_path)
+    assert (
+        "ignoring 1 byte-identical Flow project duplicate(s)"
+        in capsys.readouterr().out
+    )
+
+
 def test_refuses_when_a_candidate_flow_is_unreadable(tmp_path, monkeypatch):
     """Unknown node count is not a husk — stay conservative and refuse."""
     monkeypatch.chdir(tmp_path)
@@ -176,6 +195,34 @@ def test_solution_flow_beats_root_scratch_emit(tmp_path, monkeypatch):
     (tmp_path / "Build.flow").write_text(json.dumps({"nodes": [{"id": "scratch"}]}))
 
     assert find_flow_files() == [os.path.join("Solution", "Build", "Build.flow")]
+    assert find_flow_file() == os.path.join("Solution", "Build", "Build.flow")
+    assert project.name == "Build"
+
+
+def test_substantive_root_emit_beats_abandoned_project_scaffold(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "GeneratedSolution", "Build", 1)
+    root = tmp_path / "Build.flow"
+    root.write_text(
+        json.dumps(
+            {"nodes": [{"id": f"n{i}", "type": "core.action.script"} for i in range(4)]}
+        )
+    )
+
+    assert find_flow_files() == ["Build.flow"]
+    assert find_flow_file() == "Build.flow"
+    assert "ignoring abandoned project scaffold(s)" in capsys.readouterr().out
+
+
+def test_root_husk_does_not_override_project_husk(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    project = _make_flow_project(tmp_path, "Solution", "Build", 1)
+    (tmp_path / "Build.flow").write_text(
+        json.dumps({"nodes": [{"id": "start", "type": "core.trigger.manual"}]})
+    )
+
     assert find_flow_file() == os.path.join("Solution", "Build", "Build.flow")
     assert project.name == "Build"
 
