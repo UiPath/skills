@@ -16,6 +16,7 @@ from _shared.case_check import (  # noqa: E402
     get_variables,
     iter_stage_entry_conditions,
     iter_tasks,
+    is_non_required,
     read_caseplan,
     start_debug,
 )
@@ -110,7 +111,7 @@ def main():
             f"FAIL: 'Hold For 1 Hour' skipCondition should reference skipReview; "
             f"got {skip!r}"
         )
-    if notify.get("isRequired") is not False:
+    if not is_non_required(notify):
         sys.exit(
             f"FAIL: 'Notify Reviewer' should have isRequired=false (task-level "
             f"flag explicitly set); got {notify.get('isRequired')!r}"
