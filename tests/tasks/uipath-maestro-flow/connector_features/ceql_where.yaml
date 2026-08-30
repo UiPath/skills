@@ -9,8 +9,10 @@ description: >
   operation with a `displayName = "active"` filter, following the canonical
   shape documented in the Filter Trees (CEQL) section of the
   uipath-platform skill. The flow must reference the registered connector
-  key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate
-  for routing, and pass `uip maestro flow validate`.
+  key (`uipath-microsoft-azureactivedirectory`) and use Decision + Terminate
+  for routing. This is an offline structure test: product validation is not
+  graded because the two authoring loops persist an unconfigured connector
+  differently.
 tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe, mode:build]
 
 run_limits:
@@ -30,7 +32,9 @@ initial_prompt: |
 
   Branch on the result: if the call fails, stop the flow immediately;
   if it succeeds, log "CeqlWhere test passed".
-  Validate the final flow file.
+  Compile the final flow file. Do not fabricate a tenant connection merely to
+  make product validation pass; the generated structure and the separately
+  reviewable filter are the deliverables in this offline task.
 
 success_criteria:
   - type: run_command
@@ -39,12 +43,4 @@ success_criteria:
     timeout: 60
     expected_exit_code: 0
     weight: 8.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
