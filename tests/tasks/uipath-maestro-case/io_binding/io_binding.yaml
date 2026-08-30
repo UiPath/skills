@@ -58,6 +58,13 @@ success_criteria:
     weight: 6.0
     pass_threshold: 1.0
 
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
     timeout: 120
