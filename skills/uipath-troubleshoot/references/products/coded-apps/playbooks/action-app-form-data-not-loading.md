@@ -58,9 +58,4 @@ What to look for:
   npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
   ```
 
-- **If published as the wrong type:** republish and deploy as an action app:
-
-  ```bash
-  uip codedapp publish -t Action
-  uip codedapp deploy
-  ```
+- **If published as the wrong type:** choose and package an explicit new candidate version, then prepare a fresh guarded publish/deploy operation bound to the exact profile, organization, tenant, folder, package, OAuth client, deployment, and route. Publish that candidate with app type `Action` (`-t Action`). Reconcile remote package and deployment state before the write and again before deploy; never republish an ambiguous version or issue a bare deploy against local defaults.
