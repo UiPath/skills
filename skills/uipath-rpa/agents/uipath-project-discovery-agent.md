@@ -25,10 +25,31 @@ You are a project discovery agent. Analyze a UiPath automation project, write th
 
 ## Workflow
 
+### Invoking the `uip` CLI (when needed)
+
+A couple of steps below use the `uip` CLI (`@uipath/cli` on npm) as an optional enhancement. On
+Windows, the global `uip` command is a `uip.cmd`/`uip.ps1` **shell wrapper** that npm generates
+around the CLI's real Node.js entry point (`bin: { uip: "dist/index.js" }`). Running `uip ...`
+through the Bash tool spawns `cmd.exe`/`powershell.exe` to interpret that wrapper — which is
+unavailable or blocked in some hosts/policies, even though the CLI itself is plain Node.js.
+
+Prefer invoking the CLI's entry point directly with `node`, bypassing the shell wrapper entirely:
+
+1. Resolve the entry file: check `UIPATH_TS_CLI_PATH`-style env vars first, then
+   `node_modules/@uipath/cli/dist/index.js` relative to the project, then the global npm root
+   (`npm root -g`) equivalent, e.g. `.../node_modules/@uipath/cli/dist/index.js`.
+2. Run it as `node <resolved-entry.js> <args...>` (no `cmd /c`, no `powershell -Command`, no shell
+   string interpolation).
+3. If no entry point can be resolved, or `node`/Bash isn't available at all, **skip the step** —
+   every `uip`-based step in this workflow is an optional enhancement with a documented fallback,
+   never a hard requirement.
+
 ### Step 1: Locate the Project
 
 1. If the user provided an explicit path, use it
-2. Try `uip rpa list-instances --format json` to find an open Studio Desktop project
+2. Optionally try locating an open Studio Desktop project via `rpa list-instances --format json`,
+   invoking the CLI's Node entry directly per "Invoking the `uip` CLI" above. If it can't be
+   resolved or invoked, skip this and continue — it is a best-effort enhancement, not required.
 3. Fall back to current working directory
 4. Verify `project.json` exists and contains UiPath dependencies before proceeding
 
@@ -233,7 +254,7 @@ If `.objects/` directory exists at the project root:
 
 Check `project.json` dependencies for UILibrary packages:
 - **Naming patterns**: packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation` (non-UiPath packages)
-- **Inspection**: Use `uip rpa inspect-package --package-name <PackageName>` to discover apps, screens, and elements
+- **Inspection (optional)**: run `rpa inspect-package --package-name <PackageName>` to discover apps, screens, and elements, invoking the CLI's Node entry directly per "Invoking the `uip` CLI" above. If it can't be resolved or invoked, skip the inspection and just record the package name/version from `project.json` — this enhancement is never required.
 - **Using statement pattern**: `using <PackageName>.ObjectRepository;`
 
 **Integration Service Connections**
@@ -346,6 +367,11 @@ Show 1-2 representative code skeletons that demonstrate how to write new code in
 ```
 
 ## Quick Reference
+
+> The commands below are for a human (or other tooling) to run in a terminal — they use the
+> public `uip` command. The discovery agent itself never depends on shell/cmd.exe/PowerShell
+> access; see "Invoking the `uip` CLI" earlier in this document for how the agent runs `uip`
+> functionality directly through Node.js when it needs to.
 
 - **Run**: `uip rpa run-file --file-path "{{MAIN_FILE}}" --project-dir "{{PROJECT_DIR}}"`
 - **Validate**: `uip rpa get-errors --project-dir "{{PROJECT_DIR}}"`
