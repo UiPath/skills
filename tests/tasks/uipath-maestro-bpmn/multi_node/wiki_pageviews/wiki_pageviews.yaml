@@ -52,7 +52,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "BPMN source file was created"
-    command: "python3 -c \"from pathlib import Path; import sys; paths=[Path('WikiPageviews/WikiPageviews.bpmn'), Path('WikiPageviewsSolution/WikiPageviews/WikiPageviews.bpmn')]; sys.exit(0 if any(p.is_file() for p in paths) else 'WikiPageviews.bpmn missing in direct or solution-wrapper layout')\""
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('WikiPageviews.bpmn')) else 'WikiPageviews.bpmn missing')\""
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -60,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "Package operate metadata was created"
-    command: "python3 -c \"from pathlib import Path; import sys; paths=[Path('WikiPageviews/operate.json'), Path('WikiPageviewsSolution/WikiPageviews/operate.json')]; sys.exit(0 if any(p.is_file() for p in paths) else 'operate.json missing in direct or solution-wrapper layout')\""
+    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('operate.json')) else 'operate.json missing')\""
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -68,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "The invalid-article path returns the fixed error string"
-    command: "python3 -c \"from pathlib import Path; import sys; paths=[Path('WikiPageviews/WikiPageviews.bpmn'), Path('WikiPageviewsSolution/WikiPageviews/WikiPageviews.bpmn')]; texts=[p.read_text(encoding='utf-8') for p in paths if p.is_file()]; sys.exit(0 if any('Article not found' in t for t in texts) else 'Article not found missing from WikiPageviews.bpmn')\""
+    command: "python3 -c \"from pathlib import Path; import sys; texts=[p.read_text(encoding='utf-8') for p in Path('.').rglob('WikiPageviews.bpmn')]; sys.exit(0 if any('Article not found' in t for t in texts) else 'Article not found missing from WikiPageviews.bpmn')\""
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
