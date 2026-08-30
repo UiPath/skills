@@ -7,9 +7,10 @@ description: >
   E2E self-testing flow: a manual start trigger fans out into two parallel
   branches. Branch 1 is a mid-flow Wait-for-event node bound to the HTTP Webhook
   connector (`uipath.connector.event.uipath-http-webhook.http-webhook`). Branch 2
-  is a Managed HTTP Request (`core.action.http.v2`, manual GET) whose URL is the
-  webhook URL of that same HTTP Webhook connection, with nothing in headers or
-  query. The GET self-delivers the event that completes the wait at runtime.
+  is a Managed HTTP Request (`core.action.http` or `core.action.http.v2`, manual
+  GET) whose URL is the webhook URL of that same HTTP Webhook connection, with
+  nothing in headers or query. The GET self-delivers the event that completes
+  the wait at runtime.
   Exercises the connector-trigger plugin's "Wait for events" variant, parallel
   branch fan-out from the start trigger, manual-mode HTTP, and the CLI
   webhook-URL wiring. Validates the static two-branch shape.
