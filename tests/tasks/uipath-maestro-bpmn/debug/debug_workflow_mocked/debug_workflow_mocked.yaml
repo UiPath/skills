@@ -61,13 +61,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Summary reports the runtime variable values only obtainable from the debug session"
-    path: "summary.md"
-    includes:
-      - "1875"
-      - "AutoApproved"
-      - "Tier2"
+    command: "python3 -c \"from pathlib import Path; import sys; texts=[p.read_text(encoding='utf-8') for p in Path('.').rglob('summary.md')]; required=('1875', 'AutoApproved', 'Tier2'); sys.exit(0 if any(all(value in text for value in required) for text in texts) else 'no summary.md contains all runtime values')\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
