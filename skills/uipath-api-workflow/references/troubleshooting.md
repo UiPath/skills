@@ -805,7 +805,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** for a *reference* input the engine strips `.base64` and sniffs the MIME type from the bytes; plain text has no signature, and `fileName` / `mimeType` are ignored for references
 - **Fix:** acceptable for opaque payloads; when the name matters, decode a raw base64 **string** with `fileName` / `mimeType` (e.g. `{ base64: $context.variables.payload, fileName: 'notes.txt', mimeType: 'text/plain' }`)
 
-### `Invalid base64 string`
+### `The provided value is not a valid base64 string: <task name>`
 - **Symptom:** Base64 to File fails on a string input
 - **Cause:** URL-safe alphabet (`-` / `_`), non-base64 characters, bad padding, or an empty string. A `data:…;base64,` prefix and whitespace are NOT the problem — the engine strips both before decoding
 - **Fix:** convert URL-safe base64 to the standard alphabet (`-`→`+`, `_`→`/`) in a JavaScript activity; make sure the field really holds the payload and is not empty
@@ -817,13 +817,8 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### File too large
 - **Symptom:** the helper fails with a size error
-- **Cause:** the in-memory conversion path is capped at 50 MB — it applies to raw base64 strings and to references with a small declared `Metadata.Size`; references above 1 MB or with no declared size stream instead and bypass the cap
+- **Cause:** the in-memory conversion path is capped at 50 MB — it applies only to raw base64 strings and to references with a small declared `Metadata.Size`; references above 1 MB or with no declared size stream instead, with no size cap
 - **Fix:** pass the file as a reference (streamed) rather than as an inline string; keep inline strings under the cap
-
-### `Unknown activityType 'FileToBase64'` from `validate` (or `unknown option '--input-file'`)
-- **Symptom:** an older `uip` rejects the two activity types or the file flags
-- **Cause:** the CLI predates base64 support — the activities, `--input-file` / `--output-dir` / `--folder-key` and the base64-aware `validate` ship together in the release bundling executor 12.26+
-- **Fix:** upgrade the CLI (`npm i -g @uipath/cli@latest`) to that release or newer; the workflow itself is correct
 
 <!--skill-flavor:file-base64-cli-folder:start-->
 ### Upload / download 403 or "folder" errors with `--input-file` / `--output-dir`

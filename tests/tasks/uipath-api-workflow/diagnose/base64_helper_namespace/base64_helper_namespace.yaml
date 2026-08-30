@@ -4,7 +4,7 @@ description: >
   `$helpers.fileToBase64(...)` — the `.file.` namespace is missing. `validate`
   reports a single error at `.../run/script/code` ("does not call
   $helpers.file.fileToBase64("); at runtime it would fail with `is not a function`.
-  Tests whether the skill teaches rule 22's exact helper shape and the
+  Tests whether the skill teaches rule 23's exact helper shape and the
   troubleshooting entry for it, and whether the agent repairs the call instead of
   relabelling the task as JavaScript (which validates but is no longer the File to
   Base64 activity in Studio Web) or deleting the conversion.

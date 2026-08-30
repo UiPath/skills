@@ -568,5 +568,5 @@ For a file-reference input drop `fileName` / `mimeType`: `base64ToFile({ base64:
 **Common mistakes:**
 - `$helpers.base64ToFile(...)` (namespace dropped)
 - Expecting `fileName` / `mimeType` to rename a reference input — they are ignored for references
-- URL-safe base64 (`-` / `_`), non-base64 characters, bad padding or an empty string → `Invalid base64 string` at runtime (a `data:…;base64,` prefix and whitespace are tolerated and stripped)
+- URL-safe base64 (`-` / `_`), non-base64 characters, bad padding or an empty string → `The provided value is not a valid base64 string: <task name>` at runtime (a `data:…;base64,` prefix and whitespace are tolerated and stripped)
 - Chaining it directly on a *binary* reference — a reference without `Encoding: "base64"` is returned unchanged (no-op), so nothing happens

@@ -2,7 +2,7 @@ task_id: skill-api-workflow-base64-author-roundtrip
 description: >
   Skill-guided authoring of a file-handling API workflow: a `document` file input
   is encoded with File to Base64 and decoded back with Base64 to File, and both
-  references are returned. Tests whether the skill teaches rule 22 — files are
+  references are returned. Tests whether the skill teaches rule 23 — files are
   JobAttachment references, the two activities are `run.script` tasks recognised
   by their exact `$helpers.file.fileToBase64` / `$helpers.file.base64ToFile` call
   and `metadata.activityType`, the result is read as `$context.outputs.<Key>.output`,

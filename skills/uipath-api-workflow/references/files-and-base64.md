@@ -139,11 +139,10 @@ Example output:
 
 ## 6. Limits and gotchas
 
-- **Size:** raw base64 *strings* and small references are converted in memory, capped at 50 MB per conversion; references with a declared `Metadata.Size` above 1 MB — or with **no** declared size, which is common for job inputs — stream with bounded memory and bypass the cap.
+- **Size:** file references have no practical size cap — a reference with a declared `Metadata.Size` above 1 MB, or with **no** declared size (common for job inputs), streams with bounded memory at any size. Only in-memory inputs are capped at 50 MB per conversion: a raw base64 *string*, or a reference small enough to be buffered.
 - **Namespace:** `$helpers.fileToBase64` (no `.file.`) fails with `is not a function` and fails `validate`.
-- **Invalid base64:** a `data:…;base64,` prefix and whitespace/line breaks are **tolerated** (stripped before decoding). What is rejected as `Invalid base64 string`: the URL-safe alphabet (`-` / `_`), other non-base64 characters, bad padding, and an empty string.
+- **Invalid base64:** a `data:…;base64,` prefix and whitespace/line breaks are **tolerated** (stripped before decoding). What is rejected with `The provided value is not a valid base64 string: <task name>`: the URL-safe alphabet (`-` / `_`), other non-base64 characters, bad padding, and an empty string.
 - **Names:** `fileName` / `mimeType` never rename a reference input; a decoded text file loses its extension.
-- **Preview feature:** in Studio Web the two activities sit behind the `FE.EnableBase64Activities` flag and are marked "in preview". In the CLI the activities, `--input-file` / `--output-dir` / `--folder-key` and the base64-aware `validate` arrive together in the release that bundles executor 12.26+; earlier CLIs have none of them.
-- **Older CLI:** `Unknown activityType 'FileToBase64'` from `validate` (or `unknown option '--input-file'`) means the CLI predates this feature — upgrade it; the workflow itself is fine.
+- **Preview feature:** in Studio Web the two activities sit behind the `FE.EnableBase64Activities` flag and are marked "in preview".
 
 Pitfalls with symptoms and fixes: [troubleshooting.md](troubleshooting.md#file--base64-pitfalls).
