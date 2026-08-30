@@ -18,11 +18,11 @@ initial_prompt: |
        output.riskScore = 72
        output.country = "DE"
   3. HITL node — compliance officer reviews the supplier:
-       Input fields (read-only, MUST be bound to upstream script output):
-         - Supplier Name: bound to fetchSupplier node's supplierName output
-         - Risk Score:    bound to fetchSupplier node's riskScore output (number)
-         - Country:       bound to fetchSupplier node's country output
-       Output fields (filled by the officer, NO binding — the officer fills these in):
+       The officer sees the supplier data collected in step 2:
+         - Supplier Name
+         - Risk Score
+         - Country
+       The officer enters their assessment:
          - approved (boolean, required)
          - risk_notes (text, optional)
        Outcomes: Approve (primary), Reject
