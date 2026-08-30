@@ -19,10 +19,11 @@ initial_prompt: |
   Build a flow that retrieves WooCommerce product reviews and lets the caller 
   choose whether they come back oldest-first or newest-first, picking from friendly 
   labels rather than raw codes. Discover the get-product-reviews operation and set 
-  its sort-order field. Validate the final flow file.
+  its sort-order field. Compile the final flow file.
   If the WooCommerce operation exists in the registry but the tenant has no
-  live connection, keep the real WooCommerce operation node with its inputs left unset, 
-  confirm that shape validates, and stop there.
+  live connection, keep the real WooCommerce operation node with its inputs left unset
+  and stop there. Do not fabricate a tenant connection merely to make product
+  validation pass; the connector shape is the deliverable in this offline task.
 
 success_criteria:
   - type: run_command
@@ -39,12 +40,4 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "The completed flow validates"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
