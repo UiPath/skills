@@ -81,6 +81,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `data.taskTitle` non-empty
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
+- `bindings_v2.json.resources[]` has this task's converted entry (`key` == the pair's `resourceKey`; `key`+`value` shape, no `propertyAttribute`/`id`) — [bindings-v2-sync.md](../../../bindings-v2-sync.md)
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for Skip or no-Type-maps). A group/role is `Type 1` carrying the group **name**; dropping it leaves the task created and reaching nobody
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the T-entry declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))

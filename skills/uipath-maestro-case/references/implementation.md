@@ -71,7 +71,7 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 4. Refresh entry-points.json input/output (Step 6.3)
 5. Add stages (Step 7)
 6. Write task shapes (Step 9)
-7. Regenerate bindings_v2.json (Step 9.4)
+7. Verify bindings_v2.json parity (Step 9.4)
 8. Write SLA + escalation objects (Step 11)
 9. Add conditions with connector-rule stubs (Step 10)
 10. Preview validate + boundary (Step 11.9)
@@ -171,9 +171,9 @@ Placeholder tasks integrate with the rest of the graph:
 - **Stage-exit `selected-tasks-completed`** rules reference placeholder `TaskId`s normally.
 - **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
 
-## Step 9.4 — Regenerate bindings_v2.json (batch)
+## Step 9.4 — Verify bindings_v2.json parity
 
-After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass converts all root bindings accumulated during Step 9 — no per-task regeneration needed.
+Step 9 tasks appended sidecar entries as their bindings were written ([bindings-v2-sync.md](bindings-v2-sync.md)). Verify: every `resourceKey` group in `bindings[]` has exactly one `key`+`value` entry in `resources[]` (no `propertyAttribute` / `id`). On drift, regenerate once (§ Regenerate) and re-verify.
 
 ## Step 11 — Write SLA and escalation objects (per-target Edit batch)
 
@@ -243,9 +243,9 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries, then append that connection's converted entry to `bindings_v2.json` ([bindings-v2-sync.md § Append one resource entry](bindings-v2-sync.md)). Skip the re-Read between sibling Edits.
 
-**Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
+**Phase C — cache + verify + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Verify sidecar parity for the connections written in Phase B (every Connection `resourceKey` has its converted `resources[]` entry; on drift regenerate once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md)). Run validate.
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector tasks without `data.context` populated, re-run Phase A for those only.
 
@@ -268,7 +268,7 @@ Read `caseplan.json` and scan all four condition scopes for `wait-for-connector`
 
 For each matched rule whose connector resolved in planning, run the connector-trigger `case spec --type trigger --input-details` procedure, mint its output IDs/element IDs, and gather its root Connection/Folder bindings. Then Edit **only that rule's `uipath` block**. Preserve the enclosing condition array plus the rule's `id`, `rule`, `conditionExpression`, scope, and placement. Apply declared rule-output bindings after the real outputs exist.
 
-If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
+If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and verify sidecar parity — each upgrade appended its Connection entry when its root bindings were written ([bindings-v2-sync.md § Append one resource entry](bindings-v2-sync.md)); on drift regenerate once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
