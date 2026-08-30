@@ -5,7 +5,8 @@ description: >
   Exercises the connector-activity plugin: registry pull, activity-type-id
   lookup, connection resolution via `case spec --input-details`, and direct
   caseplan.json write of a resolved `type: "execute-connector-activity"` node
-  (real `data.typeId` + `data.connectionId`, no fabricated IDs). Stops at
+  (spliced `caseShape` carrying the activity metadata Studio Web renders, no
+  fabricated IDs). Stops at
   validate + resolution assertions — NOT debug: executing a connector activity
   has real side effects (Rule 12), so this task verifies the BUILD, not runtime.
   Requires cloud auth + a healthy Integration Service connection for the named
@@ -150,7 +151,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a RESOLVED execute-connector-activity task (real typeId + connectionId, not a skeleton)"
+    description: "Caseplan has a RESOLVED execute-connector-activity task (not a skeleton) whose spliced activity metadata makes it editable in Studio Web"
     command: "python3 $TASK_DIR/check_connector_activity.py"
     timeout: 60
     expected_exit_code: 0

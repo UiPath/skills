@@ -268,7 +268,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata` — but NOT `operation` or `_label`
 4. `data.context[name="connection"].value` is `=bindings.<connBindingId>` (substituted from `{{CONN_BINDING_ID}}`)
 5. `data.context[name="folderKey"].value` is `=bindings.<folderBindingId>` (substituted from `{{FOLDER_BINDING_ID}}`); entry absent when `spec.connection.folderKey` was null
-6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
+6. `data.context[name="metadata"].body` carries both: `activityPropertyConfiguration.configuration` as a `=jsonString:…` string (CLI-produced; do not modify), and `activityMetadata.activity.displayName` as a non-empty string. That display name is the only path Studio Web reads for the node's **Select activity** field (`PO.Frontend` `src/utils/IntsvcCommonUtils.ts:267-273`). Absent, empty, or left PascalCase (`ActivityMetadata` — Step 8.a skipped) → the picker renders blank, the node is not editable in Studio Web, and `validate` still reports `Valid` (MST-13544)
 7. Root bindings exist for ConnectionId + folderKey with the minted ids
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)

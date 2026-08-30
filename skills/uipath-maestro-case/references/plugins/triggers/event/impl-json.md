@@ -170,7 +170,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
 5. **Placeholder:** all four `data.inputs` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
-6. `data.inputs.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
+6. `data.inputs.context[name="metadata"].body` carries both: `activityPropertyConfiguration.configuration` as a `=jsonString:…` string (CLI-produced; do not modify), and `activityMetadata.activity.displayName` as a non-empty string. That display name is the only path Studio Web reads for the trigger's **Select activity** field (`PO.Frontend` `src/utils/IntsvcCommonUtils.ts:267-273`; the Studio-Web-authored trigger shape asserts it in `useTriggerTypeToolbox.test.tsx:256`). Absent, empty, or left PascalCase (`ActivityMetadata`) → the picker renders blank, the trigger is not editable in Studio Web, and `validate` still reports `Valid` (MST-13544).
 7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. `schema.edges` stays `[]` (Rule 20) — no edge from this trigger.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.

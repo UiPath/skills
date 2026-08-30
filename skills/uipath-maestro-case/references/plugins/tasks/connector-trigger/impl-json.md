@@ -124,7 +124,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 1. `type` is `"wait-for-connector"` and `data.serviceType` is `"Intsvc.WaitForEvent"`
 2. `data.context[]` populated from `caseShape.context` with placeholders substituted (`=bindings.<connBindingId>`, etc.)
-3. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
+3. `data.context[name="metadata"].body` carries both: `activityPropertyConfiguration.configuration` as a `=jsonString:…` string (CLI-produced; do not modify), and `activityMetadata.activity.displayName` as a non-empty string. That display name is the only path Studio Web reads for the node's **Select activity** field (`PO.Frontend` `src/utils/IntsvcCommonUtils.ts:267-273`; the Studio-Web-authored trigger shape asserts it in `useTriggerTypeToolbox.test.tsx:256`). Absent, empty, or left PascalCase (`ActivityMetadata` — re-casing skipped) → the picker renders blank, the node is not editable in Studio Web, and `validate` still reports `Valid` (MST-13544)
 4. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`)
 5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs

@@ -1,0 +1,113 @@
+{
+    "id": "case-Sp1Ce00Ab7",
+    "version": "27.0.0",
+    "name": "ConnectorSpliceCase",
+    "description": "Single connector activity left at its Phase 2 shape, awaiting the Phase 3 splice.",
+    "metadata": {
+        "caseIdentifier": "CSC",
+        "caseIdentifierType": "constant",
+        "caseAppEnabled": false,
+        "publishVersion": 2,
+        "caseUnifiedSchemaEnabled": true,
+        "caseDirectlyPassTaskOutputs": true,
+        "intsvcActivityConfig": "v2",
+        "caseExitRules": [
+            {
+                "id": "Condition_Cs1Ex1",
+                "displayName": "Complete Rule 1",
+                "marksCaseComplete": true,
+                "rules": [
+                    [
+                        { "id": "Rule_Cs1Ex1", "rule": "required-stages-completed" }
+                    ]
+                ]
+            }
+        ]
+    },
+    "bindings": [],
+    "variables": {
+        "inputs": [],
+        "outputs": [],
+        "inputOutputs": []
+    },
+    "nodes": [
+        {
+            "id": "trigger_Sp1Ce0",
+            "type": "uipath.case.trigger",
+            "data": {
+                "parentElement": { "id": "root", "type": "case-management:root" },
+                "description": "Operator starts the case by hand.",
+                "typeVersion": "1.0.0",
+                "display": { "label": "Trigger 1" },
+                "inputs": { "serviceType": "None" }
+            }
+        },
+        {
+            "id": "Stage_Sp1Ce8",
+            "type": "case-management:Stage",
+            "data": {
+                "label": "Notify",
+                "description": "Holds the connector activity under test.",
+                "isRequired": true,
+                "parentElement": { "id": "root", "type": "case-management:root" },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": [
+                    [
+                        {
+                            "id": "tSp1Ce001",
+                            "type": "execute-connector-activity",
+                            "displayName": "Post Slack message",
+                            "elementId": "Stage_Sp1Ce8-tSp1Ce001",
+                            "isRequired": true,
+                            "shouldRunOnlyOnce": false,
+                            "data": {
+                                "serviceType": "Intsvc.ActivityExecution",
+                                "typeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+                                "connectionId": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4"
+                            },
+                            "entryConditions": [
+                                {
+                                    "id": "cSp1Ce001",
+                                    "displayName": "Entry Rule 1",
+                                    "rules": [
+                                        [
+                                            { "id": "rSp1Ce001", "rule": "current-stage-entered" }
+                                        ]
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                ],
+                "entryConditions": [
+                    {
+                        "id": "Condition_Cs1En1",
+                        "displayName": "Entry Rule 1",
+                        "isInterrupting": false,
+                        "rules": [
+                            [
+                                { "id": "Rule_Cs1En1", "rule": "case-entered" }
+                            ]
+                        ]
+                    }
+                ],
+                "exitConditions": [
+                    {
+                        "id": "Condition_Cs1Xt1",
+                        "displayName": "Complete Rule 1",
+                        "type": "exit-only",
+                        "marksStageComplete": true,
+                        "rules": [
+                            [
+                                { "id": "Rule_Cs1Xt1", "rule": "required-tasks-completed" }
+                            ]
+                        ]
+                    }
+                ]
+            }
+        }
+    ],
+    "edges": [],
+    "layout": {}
+}
