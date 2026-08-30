@@ -13,6 +13,7 @@ from _shared.sla_response_check import (  # noqa: E402
     assert_stage_count,
     fail,
     iter_sla_status_change,
+    is_non_required,
     label_of,
     read_plan,
     secondary_stages,
@@ -31,7 +32,7 @@ def main() -> None:
             f"{[label_of(n) for n in lanes]}"
         )
     lane = lanes[0]
-    if lane["data"].get("isRequired") is not False:
+    if not is_non_required(lane["data"]):
         fail(f"lane {label_of(lane)!r} must be isRequired False")
 
     hits = [(n, c, r) for n, c, r in iter_sla_status_change(plan) if n is lane]
