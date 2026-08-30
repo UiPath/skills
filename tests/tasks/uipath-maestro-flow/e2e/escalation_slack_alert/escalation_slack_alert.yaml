@@ -73,8 +73,8 @@ success_criteria:
 
   # ── The delivered flow validates ────────────────────────────────────────
   - type: run_command
-    description: "Generated EscalationSlackAlert Flow validates without errors"
-    command: "uip maestro flow validate EscalationSlackAlert/EscalationSlackAlert/EscalationSlackAlert.flow --output json"
+    description: "Generated EscalationSlackAlert Flow validates without errors, independent of solution layout"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
