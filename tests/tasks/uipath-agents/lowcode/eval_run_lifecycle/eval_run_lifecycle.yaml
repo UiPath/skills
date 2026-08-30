@@ -1,0 +1,133 @@
+task_id: skill-agent-lowcode-eval-run-lifecycle
+description: >
+  Tenant-backed low-code Agent eval run coverage for `uip agent eval run`:
+  push prerequisite, non-wait start, status polling, failed/verbose results,
+  run listing, second run, and compare.
+tags: [uipath-agents, e2e, mode:operate, low-code, lifecycle:execute, feature:eval]
+
+run_limits:
+  expected_turns: 55
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Create a tenant-backed low-code UiPath agent eval run lifecycle project.
+
+  Project:
+  - Solution: `EvalLowCodeRunSol`
+  - Agent: `EvalLowCodeRunAgent`
+  - Input schema: one required string field `request`
+  - Output schema: one string field `content`
+  - Agent instructions should make the agent respond concisely with a
+    `content` value based on the request.
+
+  Create a `Runtime Regression` eval set with at least `happy-alpha` and
+  `wrong-beta` test cases, then validate the agent. I explicitly authorize
+  pushing this single demo agent for the eval run.
+
+  Exercise the full tenant-backed eval run lifecycle: non-wait start with
+  status polling, failed-row triage, a second wait-mode run, run listing, and
+  cross-run comparison. Save the lifecycle responses as:
+  `agent-run-a-start.json`, `agent-run-a-status.json`,
+  `agent-only-failed-results.json`, `agent-run-b-start.json`,
+  `agent-run-b-status.json`, `agent-run-list.json`, and
+  `agent-run-compare.json`.
+
+  Important:
+  - Start exactly two eval runs, both against the same eval set.
+  - Do not publish, deploy, or push any other artifact.
+  - Use `--output json` on every `uip` command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent confirmed login status without re-login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+(?!status)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pushed the authorized low-code agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+push\s+.*EvalLowCodeRunSol/EvalLowCodeRunAgent'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started exactly two low-code eval runs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+start'
+    min_count: 2
+    max_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --wait for the second low-code eval run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+start[\s\S]*--wait'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent polled low-code eval run status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+status'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched low-code failed results with verbose output"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+results(?=[\s\S]*--only-failed)(?=[\s\S]*--verbose)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed low-code eval runs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+list\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent compared low-code eval runs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+compare[\s\S]*--compare-to'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Saved low-code run lifecycle JSON proves status, results, list, and compare worked"
+    command: "python3 $TASK_DIR/check_eval_run_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 7.0
+    pass_threshold: 1.0
