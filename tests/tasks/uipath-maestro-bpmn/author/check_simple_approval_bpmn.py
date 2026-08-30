@@ -2,6 +2,7 @@
 
 import os
 import sys
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
@@ -16,6 +17,15 @@ from _shared.bpmn_check import (  # noqa: E402
     require_no_private_connector_values,
     require_sequence_integrity,
 )
+
+
+def root_variable_identifiers(process: ET.Element) -> set[str]:
+    return {
+        identifier
+        for var in process.findall("bpmn:extensionElements/uipath:variables/*", NS)
+        for identifier in (var.attrib.get("id"), var.attrib.get("name"))
+        if identifier
+    }
 
 
 def main() -> None:
@@ -57,13 +67,9 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process element")
-    variable_names = {
-        var.attrib.get("name")
-        for var in process.findall("bpmn:extensionElements/uipath:variables/*", NS)
-        if var.attrib.get("name")
-    }
+    variable_identifiers = root_variable_identifiers(process)
     for required in ("expenseId", "amount", "decision"):
-        if required not in variable_names:
+        if required not in variable_identifiers:
             fail(f"missing root variable named {required!r}")
 
     migration_versions = {
