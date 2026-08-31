@@ -21,7 +21,6 @@ tags:
   - connector
   - resource
   - outcome-graded
-  - path-to-ga
   - feature:escalation
   - feature:approval-gate
   - feature:registry
