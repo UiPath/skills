@@ -80,7 +80,6 @@ ROUTES = {
         ("Validate application details", "approve"),
         ("Record buyer review decision", "approve"),
         ("Record compliance review decision", "approve"),
-        ("Confirm supplier portal access", "approve"),
     ],
 }
 
