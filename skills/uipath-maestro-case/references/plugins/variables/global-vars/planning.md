@@ -35,7 +35,7 @@ Never default missing categories to a guess. The pre-α "Listed in Trigger Initi
 
 ## Phase 2 Structural Validation
 
-Validate at planning time (before tasks.md is finalized). All checks operate on SDD content alone — no spec data needed yet.
+Validate at resolution time (before Phase 2 begins). All checks operate on SDD content alone — no spec data needed yet.
 
 | Check | Severity | Action |
 |---|---|---|
@@ -45,11 +45,11 @@ Validate at planning time (before tasks.md is finalized). All checks operate on 
 | `Category=Variable` row has `sourceTriggers` but no matching `sourceFields` entry per trigger | ERROR | Reject — multi-trigger requires per-trigger sourceField. |
 | `Category=In` row has CSV `sourceTriggers` (more than one T-number) | ERROR | Reject — an In-arg binds to exactly one trigger; CSV is the multi-trigger `Variable` form. |
 | `Category=In` row has non-empty `sourceFields` | ERROR | Reject — In-args select a trigger but extract no payload field; use `Category=Variable` for extraction. |
-| `sourceTriggers` references a T-number that doesn't exist in tasks.md (any category) | ERROR | Reject — orphan reference. |
+| `sourceTriggers` references a trigger that doesn't exist in the SDD (any category) | ERROR | Reject — orphan reference. |
 
 Phase 3 (implementation) catches spec-dependent issues — see [`impl-json.md`](impl-json.md) § Phase 3 Validation.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 One T-entry per Case Variables row. Place after the case file (T01) and all trigger T-entries (T02+), before stages. T-number for the first variable depends on trigger count.
 
@@ -99,7 +99,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 - `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
 - `default` — initial value, **always written as a quoted string, for every `type`**. Drives the `default` field on the companion `inputOutputs[]` entry. This is the one field where **string-encoding overrides losslessness**: an SDD Default cell holding a bare JSON object, number, or boolean is re-encoded here rather than copied verbatim, because the downstream field is string-typed and a non-primitive value is silently deleted at BPMN serialization (see [`impl-json.md` § `default` encoding](impl-json.md#default-encoding-every-type-mandatory)). Record the re-encoding — it is the only Rule 6 exception in this plugin.
 
-  | SDD Default cell | `tasks.md` `default:` |
+  | SDD Default cell | caseplan variable `default` |
   |---|---|
   | `{"amount":125.5}` | `"{\"amount\":125.5}"` |
   | `5` | `"5"` |

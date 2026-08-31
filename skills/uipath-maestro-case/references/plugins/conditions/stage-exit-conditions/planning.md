@@ -10,7 +10,7 @@ For when a stage **enters**, use [stage-entry-conditions](../stage-entry-conditi
 
 ## No omission — one T-task per sdd.md Exit Condition row
 
-Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exit-condition T-task — **including type `exit-only`, rule-type `required-tasks-completed`, and `marks-stage-complete: true`**. Never skip a condition because it looks like "the obvious default completion." If sdd.md wrote the row, `tasks.md` emits the T-task.
+Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exit-condition T-task — **including type `exit-only`, rule-type `required-tasks-completed`, and `marks-stage-complete: true`**. Never skip a condition because it looks like "the obvious default completion." If sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
@@ -25,7 +25,7 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs. Selected tasks must be non-adhoc siblings in the same stage. |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Exit Type Catalog
 
@@ -61,7 +61,7 @@ Before planning `selected-tasks-completed`, verify the selected tasks are not ad
 
 Stage exit conditions are created **after** all tasks in the stage have been added (so `selected-tasks-ids` can resolve). Planning records task names; implementation looks up captured IDs.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add stage-exit condition for "<stage>" — <summary>
@@ -77,6 +77,6 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 <!-- END: planning.md -->

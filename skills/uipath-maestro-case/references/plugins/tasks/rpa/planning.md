@@ -19,7 +19,7 @@ Same shape as [process/planning.md](../process/planning.md):
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` — NOT the sdd.md "Folder" (which may be a parent path). Binds to `data.folderPath`; Orchestrator starts the job here at runtime. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | from registry (`entityKey` in `process-index.json`) |
 | `inputs` | see [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list) |
+| `outputs` | follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list) |
 | `runOnlyOnce`, `isRequired` | from sdd.md (`runOnlyOnce` defaults false if omitted; do not infer true from task type) |
 
 ## Registry Resolution
@@ -36,7 +36,7 @@ Same shape as [process/planning.md](../process/planning.md):
 
 Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add rpa task "<display-name>" to "<stage>"

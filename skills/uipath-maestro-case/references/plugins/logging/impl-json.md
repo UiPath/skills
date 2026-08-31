@@ -84,7 +84,7 @@ Read the journal back, group by `plugin`, and replace **only** the block between
 
 ## Recovery — journal missing at Step 12.1
 
-If `tasks/build-issues.md` does not exist when Step 12.1 runs, the incremental flush was skipped. Reconstruct what the artifacts prove — `<UNRESOLVED>` markers in `tasks.md`, placeholder tasks (`data: {}`) in `caseplan.json`, `selected: null` entries in `tasks/registry-resolved.json`, and any surviving connector stub — and stamp the file:
+If `tasks/build-issues.md` does not exist when Step 12.1 runs, the incremental flush was skipped. Reconstruct what the artifacts prove — `<UNRESOLVED>` markers in `registry-resolved.json`, placeholder tasks (`data: {}`) in `caseplan.json`, `selected: null` entries in `tasks/registry-resolved.json`, and any surviving connector stub — and stamp the file:
 
 ```
 NOTE: reconstructed at Step 12.1 from on-disk artifacts — the incremental journal was not written. Severity and step attribution are approximate.

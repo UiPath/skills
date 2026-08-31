@@ -28,11 +28,11 @@ The user reviews structure first, then attaches real resources once they exist.
 | Task-entry conditions | ✓ | ✓ | ✓ |
 | Referenced by stage-exit `selected-tasks-completed` | ✓ | ✓ | ✓ |
 
-**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `tasks.md`, explicit upgrade path.
+**Mocks are forbidden for tasks** because Case's typed cross-task outputs reject references to non-existent output schemas at validation time. A fabricated task-type-id causes `uip maestro case validate` to emit errors about unknown bindings. A placeholder sidesteps this by having no bindings at all — clean validation, clear `<UNRESOLVED>` markers in `registry-resolved.json`, explicit upgrade path.
 
 ## When a Placeholder Is Created
 
-During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
+During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
 
 1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
@@ -79,7 +79,7 @@ Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.servi
 
 When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
-## `tasks.md` Planning-Entry Shape
+## `registry-resolved.json` Entry Shape
 
 A placeholder-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
 

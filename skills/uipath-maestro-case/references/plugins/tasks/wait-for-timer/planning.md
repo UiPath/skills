@@ -56,7 +56,7 @@ Accepted `--time-cycle` values: raw ISO 8601 repeating interval (e.g., `R/PT1H` 
 
 Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations + "Something else".
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add wait-for-timer task "<display-name>" to "<stage>"

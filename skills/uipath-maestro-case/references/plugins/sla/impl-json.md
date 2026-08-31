@@ -8,7 +8,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 Compose the `slaRules[]` array for each target (root or stage) in one write. Group all SLA T-entries by target and emit the full array in a single mutation.
 
-## Input spec (from `tasks.md §4.8`)
+## Input spec (from the SDD's SLA tables)
 
 | T-entry kind | Required fields | Notes |
 |---|---|---|
@@ -114,17 +114,17 @@ Emission rules:
 
 ## Unresolved recipients (placeholder-style)
 
-Phase 1 runs the identity resolver (see [`planning.md` § Identity Resolution](planning.md#identity-resolution)) and normally writes a UUID into `tasks.md`. When `tasks.md` still carries an `<UNRESOLVED: ...>` sentinel for a recipient (resolver failed, user declined, or sdd input was unresolvable), emit the recipient with a sentinel `target`:
+Phase 1 runs the identity resolver (see [`planning.md` § Identity Resolution](planning.md#identity-resolution)) and normally writes a UUID into `registry-resolved.json`. When it still carries an `<UNRESOLVED: ...>` sentinel for a recipient (resolver failed, user declined, or sdd input was unresolvable), emit the recipient with a sentinel `target`:
 
 ```json
 { "scope": "User", "target": "<UNRESOLVED: user-uuid for manager@corp.com>", "value": "manager@corp.com" }
 ```
 
-List every unresolved recipient in the completion report (per SKILL.md § Completion Output step 4) so the user can patch externally. Do not call an identity service from the JSON path — resolution is Phase 1's responsibility; Phase 2 just transcribes whatever `tasks.md` carries.
+List every unresolved recipient in the completion report (per SKILL.md § Completion Output step 4) so the user can patch externally. Do not call an identity service from the JSON path — resolution is Phase 1's responsibility; Phase 2 just transcribes whatever the SDD carries.
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for a case-variable comparison — this covers any SDD-declared field, including ones the SDD's "Case Metadata" table lists for readability (e.g. `Priority`: `=js:vars.priority === 'Urgent'`); `=js:true` for the default rule; `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). Reserve `=js:metadata.<field>` for the closed set of structural fields in [case-schema.md § 1](../../case-schema.md#1-top-level--metadata) (e.g. `metadata.caseAppEnabled`) — it is NOT a namespace for arbitrary business data. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
+SDD SLA rows carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for a case-variable comparison — this covers any SDD-declared field, including ones the SDD's "Case Metadata" table lists for readability (e.g. `Priority`: `=js:vars.priority === 'Urgent'`); `=js:true` for the default rule; `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). Reserve `=js:metadata.<field>` for the closed set of structural fields in [case-schema.md § 1](../../case-schema.md#1-top-level--metadata) (e.g. `metadata.caseAppEnabled`) — it is NOT a namespace for arbitrary business data. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
 
 ## The clock is not the response
 

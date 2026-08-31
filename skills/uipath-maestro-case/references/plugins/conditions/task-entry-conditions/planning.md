@@ -10,7 +10,7 @@ For **stage-level** conditions (entire stage enters/exits), use [stage-entry-con
 
 ## No omission — one T-task per sdd.md Entry Condition row
 
-Every task in sdd.md that declares an **Entry Condition** row gets its own task-entry-condition T-task — **including rule-type `current-stage-entered`**. Do NOT skip, collapse, or omit a condition because the rule-type looks like a default. If sdd.md wrote the row, `tasks.md` emits the T-task. "The default behavior would already cover it" is not a valid reason to omit.
+Every task in sdd.md that declares an **Entry Condition** row gets its own task-entry-condition T-task — **including rule-type `current-stage-entered`**. Do NOT skip, collapse, or omit a condition because the rule-type looks like a default. If sdd.md wrote the row, the build emits the element. "The default behavior would already cover it" is not a valid reason to omit.
 
 ## Required Fields from sdd.md
 
@@ -26,7 +26,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Rule-Type Catalog (task-entry scope)
 
@@ -57,7 +57,7 @@ While authoring a new SDD, any requirement that says `then`, `after`, `before`, 
 
 ## Phase 1 Plan Presentation Contract
 
-The task T-entry in `tasks.md §4.6` must already expose the task mode before this condition T-entry is created:
+The task's **Activation Mode** in the SDD must already be settled before its entry condition is written:
 
 ```markdown
 - activation-mode: sequential
@@ -85,7 +85,7 @@ Task entry conditions are created **after** all tasks in the stage have been add
 
 For sequential tasks, preserve the frontend's ordered `data.tasks` structure, including any explicitly parallel sibling sets; do not flatten the stage into one global chain and do not group a strict chain into one inner array. Add one `runs-sequentially` entry condition to each sequential task. The first task uses the rule as its stage-entry trigger; later tasks use it as the upstream-task-set-completed trigger. Do not add a separate `current-stage-entered` condition to the first sequential task. Lane or task-set placement is structural; the entry rule carries the sequential intent.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add task-entry condition for "<task>" in "<stage>" — <summary>
@@ -101,6 +101,6 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 <!-- END: planning.md -->

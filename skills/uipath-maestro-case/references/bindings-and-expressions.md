@@ -70,7 +70,7 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 
 In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing — and validation passes either way (loose `==` is valid JS), so nothing flags it.
 
-SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
+SDD IF columns use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
 
 ### Null-safe task-output references
 
@@ -100,13 +100,13 @@ The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is N
 
 ### Planner-emit form
 
-The planner emits `tasks.md` using SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
+The SDD uses SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
 
 ## Cross-Task References
 
 Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase resolves to variable IDs via direct JSON lookup.
 
-### Planning syntax (in `tasks.md`)
+### Planning syntax (in `sdd.md`)
 
 ```
 input_name <- "Stage Name"."Task Name".output_name
@@ -125,11 +125,11 @@ uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
 uip maestro case tasks describe --type connector-activity --id "<typeId>" --connection-id "<uuid>" --output json
 ```
 
-Output names appear in the response under the output schema. Record them in the source task's `outputs:` field in `tasks.md` so downstream references can be validated.
+Output names appear in the response under the output schema. Record them on the source task's `data.outputs[]` in `caseplan.json` so downstream references can be validated.
 
 ### Validation rule
 
-Every cross-task reference in `tasks.md` MUST point to:
+Every cross-task reference in the SDD MUST point to:
 1. A stage that exists (created by an earlier `Create stage "..."` task).
 2. A task inside that stage that exists (created by an earlier `Add ... task "..." to "<stage>"` task).
 3. An output name listed in that task's `outputs:` field.

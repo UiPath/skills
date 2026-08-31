@@ -51,7 +51,7 @@ Do NOT create edges for any stage. If the sdd.md describes a stage "connected vi
 
 `isRequired` is written into the stage node's `data.isRequired` and is consumed downstream by case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages flagged `isRequired: true` have completed.
 
-Record `isRequired` in `tasks.md` for each stage. Use:
+Read `Required for Case Completion` from the SDD for each stage. Use:
 - `true` — **Default for regular stages.** Stage is on the main flow path and must complete for case completion.
 - `false` — **Default for secondary stages.** Secondary / fallback / rework / terminal stages only reached via interrupting entry conditions.
 
@@ -67,9 +67,9 @@ Stage position is auto-computed by the impl-json recipe: `x = 100 + (existingSta
 
 ## Ordering
 
-Stages are created **after** the root case (T01) and **before** any tasks or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (tasks, conditions, SLA) use the stage **name** in `tasks.md`; the implementation phase resolves the name to the captured `StageId`.
+Stages are created **after** the root case (T01) and **before** any tasks or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (tasks, conditions, SLA) use the stage **name** from the SDD; the implementation phase resolves the name to the captured `StageId`.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Create stage "<label>"

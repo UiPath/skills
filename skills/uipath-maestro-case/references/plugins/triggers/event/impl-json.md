@@ -8,16 +8,16 @@ For shared CLI invocation, placeholder substitution, anti-patterns, and the cano
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides: `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, `event-mode`, `input-values`, `filter`.
+The SDD row provides: `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, `event-mode`, `input-values`, `filter`.
 
-## Step 1 — Build `--input-details` JSON from tasks.md
+## Step 1 — Build `--input-details` JSON from the resolved entry
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from `registry-resolved.json`:
 
 ```jsonc
 {
     "eventParameters": "<input-values.eventParameters or omit>",
-    "filter": "<filter from tasks.md or omit>"
+    "filter": "<filter from registry-resolved.json or omit>"
 }
 ```
 
@@ -63,7 +63,7 @@ For a **single-trigger case**, configure the existing `trigger_1` node. For **mu
 - ID: `trigger_` + 6 alphanumeric chars
 - No node-level layout fields (Rule 18 — `position`, `style`, `measured`, etc. omitted)
 
-Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — incl. the global-vars plugin resolving this event trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or, when this event trigger is the primary trigger T02, an In-arg with blank `sourceTriggers`).
+Set the trigger's display name from the SDD's Case Triggers row. Record `T<N> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — incl. the global-vars plugin resolving this event trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or, when this event trigger is the primary trigger T02, an In-arg with blank `sourceTriggers`).
 
 ### 7b. `data` structure
 
@@ -155,7 +155,7 @@ Three distinct conditions can trigger placeholder fallback for an event trigger.
 
 | Trigger | What's happening | Placeholder action | Log |
 |---|---|---|---|
-| **Planning-time unresolved** (tasks.md T-entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
+| **Planning-time unresolved** (the resolved entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
 | **`case spec` failure at Phase 3** (T-entry was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
 | **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="eventParameters"].body` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
 

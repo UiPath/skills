@@ -19,7 +19,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
 | `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `isRequired` | sdd.md (default `true`) |  |
 
 ## Task Title Fallback
@@ -65,9 +65,9 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 > **A group must already have folder access, which this skill cannot grant.** It reaches the task only when it exists in Orchestrator **and** holds a role on the task's folder; `uip admin groups create` gives it neither. Without both the task is created and reaches nobody — the same visible outcome as omitting the recipient, and `validate` sees neither. Record an `assignment-note` naming the group so the user can grant it access.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](../../../placeholder-tasks.md#tasksmd-planning-entry-shape).
+Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
 
 ```markdown
 ## T<n>: Add action task "<display-name>" to "<stage>"

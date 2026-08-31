@@ -27,7 +27,7 @@ Write the Phase 2 stage-entry condition directly to the target stage's `data.ent
 
 Rules use DNF — outer array is OR, inner array is AND.
 
-> **One row = one condition object.** Each entry-condition row in tasks.md/SDD maps to a **separate** object in `entryConditions[]`. Never merge multiple rows into a single condition's `rules` AND group.
+> **One row = one condition object.** Each entry-condition row in the SDD maps to a **separate** object in `entryConditions[]`. Never merge multiple rows into a single condition's `rules` AND group.
 
 ## Procedure
 
@@ -35,8 +35,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
-5. Read `rule-type` and `is-interrupting` from tasks.md; pick the recipe below
-6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+5. Read the rule type and interrupting flag from the SDD's Stage Entry Conditions row; pick the recipe below
+6. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.entryConditions[]`. **When the table has multiple rows, repeat steps 1–7 once per row** — append one condition object per row. Never fold multiple rows into a single condition's `rules` group.
 
 ## Rule Types

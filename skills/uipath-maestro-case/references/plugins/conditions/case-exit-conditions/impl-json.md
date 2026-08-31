@@ -30,8 +30,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 1. Generate condition ID: `Condition_` + 6 alphanumeric chars
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Read `caseplan.json`. Locate top-level `metadata` object (initialize `metadata: {}` if missing — should already exist from T01). Initialize `metadata.caseExitRules = []` if absent.
-4. Read `rule-type` and `marks-case-complete` from tasks.md; pick the recipe below
-5. Set `displayName`: use tasks.md `display-name` if present; else default by `marks-case-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `metadata.caseExitRules[]` whose `marksCaseComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
+4. Read the rule type and marks-case-complete flag from the SDD's Case Exit Conditions row; pick the recipe below
+5. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-case-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `metadata.caseExitRules[]` whose `marksCaseComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
 6. Append the condition object to `metadata.caseExitRules[]`
 
 ## Rule Types

@@ -16,7 +16,7 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 | `task-type-id` | Registry resolution (below) | Enables auto-enrichment via `tasks describe` |
 | `element-id` | (optional) | Required only when the agent has multiple element bindings |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type.  |
 | `isRequired` | sdd.md (default `true`) |  |
 
@@ -103,7 +103,7 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). Agent tokens for that procedure: init verb `uip agent init`; kind markers `Category: "agent"` (registered) / `agent.json` on disk (unregistered).
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add agent task "<display-name>" to "<stage>"

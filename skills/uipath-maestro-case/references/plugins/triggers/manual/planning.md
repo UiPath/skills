@@ -25,7 +25,7 @@ Position is NOT a T-entry input. It is auto-computed at execution time following
 
 **None.** Manual triggers have no registry representation.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T02: Configure manual trigger "Start Manually"

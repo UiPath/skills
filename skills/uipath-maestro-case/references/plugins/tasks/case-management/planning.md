@@ -20,7 +20,7 @@ If sdd.md describes a simple stage-to-stage flow within the same case, do not us
 | `folder-path` | Selected registry `folders[0].fullyQualifiedName` | Binds to `data.folderPath`; use the SDD `Folder Path` only as a concrete lookup hint. `<UNRESOLVED>` means name-only discovery. |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `caseManagement-index.json`; mirrors sdd.md `Resource Identity` when already resolved. |
 | `inputs` | sdd.md task data mapping | Passed as case-instance inputs to the sub-case |
-| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 | `isRequired` | sdd.md (default `true`) | |
 
@@ -38,7 +38,7 @@ Case-management lookups stay in `caseManagement-index.json` — never adopt a sa
 
 Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagement-index.json>`, using the preserved sdd.md `Child Case` name even when folder/identity are unresolved. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md). Note: if the referenced sub-case has not been deployed yet, it will not appear in the registry — the user must deploy it before the parent case can reference it.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add case-management task "<display-name>" to "<stage>"

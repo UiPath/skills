@@ -22,9 +22,9 @@ Distinguish from:
 
 Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list).
+Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list).
 
 ```markdown
 ## T<n>: Add connector-trigger task "<display-name>" to "<stage>"

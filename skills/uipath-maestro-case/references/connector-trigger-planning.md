@@ -1,6 +1,6 @@
 # Connector Trigger — Shared Planning Pipeline
 
-Shared **planning** logic for connector-based triggers: TypeCache lookup, connection pick, `case spec` discovery, reference resolution, the required-param gate, SDD mapping, and input-values + filter authoring. It ends at `tasks.md`.
+Shared **planning** logic for connector-based triggers: TypeCache lookup, connection pick, `case spec` discovery, reference resolution, the required-param gate, SDD mapping, and input-values + filter authoring. It ends at `tasks/registry-resolved.json`.
 
 > **This file is half the contract.** Every JSON shape written to `caseplan.json` — the populated `caseShape` splice, placeholder substitution, binding-ID mint, the connector-bound condition-rule block, the placeholder stub, and root bindings — lives in the companion [connector-trigger-impl.md](connector-trigger-impl.md). Planning alone never produces a runnable connector node.
 
@@ -70,7 +70,7 @@ The response carries everything the planning phase needs:
 |---|---|
 | `inputs.eventParameters[]` | Trigger event params with `name`, `dataType`, `required`, `description`, optional `defaultValue` / `enum` / `reference`. The `required` flag drives the [Mandatory-filter contract](#mandatory-filter-contract-required-event-params) in Step 7 |
 | `outputs.responseFields[]` | Response shape (incoming event payload). `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
-| `operation.eventMode` | `"polling"` or `"webhooks"` — authoritative source for `event-mode` in `tasks.md` |
+| `operation.eventMode` | `"polling"` or `"webhooks"` — authoritative source for `event-mode` in `registry-resolved.json` |
 | `filter` | `undefined` when the trigger does NOT support server-side filtering. Present when it does, with `builder: "jmes"` and `fields[]` listing every searchable field |
 | `references[]` | Cross-references for any event params with lookups. Each entry carries a pre-built `discoverCommand` runnable string |
 | `diagnostics.fetched` / `fallbacks` | Surface fallbacks to the user when meaningful |
@@ -92,7 +92,7 @@ Check `inputs.eventParameters[]` for entries with a `reference` object. Each car
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -100,7 +100,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ### 5. Validate required event parameters (HARD GATE)
 
-This is a hard gate — do NOT proceed to writing tasks.md until every required event parameter has a value.
+This is a hard gate — do NOT proceed to writing the resolved entry until every required event parameter has a value.
 
 1. Collect every `inputs.eventParameters[?required]` entry from the spec output.
 2. For each, check whether sdd.md names a value (literal, resolved reference id, or — in `filter:` only — a `=vars.X` runtime reference; impl compiles this to `` =js:`...${vars.X}...` `` template-literal form when writing `body.filters.expression`, see § Dynamic variable limitation).
@@ -130,9 +130,9 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 
 `groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
 
-The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details.filter`. The CLI compiles it into all three trigger filter sinks (see § Trigger filter sinks below).
+The filter tree goes into `registry-resolved.json` under `filter` as a literal JSON object — Phase 3 passes it to `case spec --input-details.filter`. The CLI compiles it into all three trigger filter sinks (see § Trigger filter sinks below).
 
-No filter (trigger fires on all events): omit `filter` from the tasks.md entry entirely.
+No filter (trigger fires on all events): omit `filter` from the resolved entry entirely.
 
 #### Mandatory-filter contract (REQUIRED event params)
 
@@ -144,7 +144,7 @@ The CLI derives a "mandatory-filter expression" from **required** event-param va
 Worked example. Required param `parentFolderId` + a freeform `subject` filter:
 
 ```jsonc
-// tasks.md authored shape
+// registry-resolved.json authored shape
 {
     "input-values": { "eventParameters": { "parentFolderId": "AAMkAD..." } },
     "filter": {
@@ -169,7 +169,7 @@ After the Phase 3 `case spec --input-details` call, both filter sinks contain th
 
 The CLI's filter compiler only accepts `isLiteral: true` clauses in the FilterTree (`case-spec-input-details.md § WorkflowValue`). When a filter requires runtime case variable references, the impl step writes the canonical FE template-literal form into `body.filters.expression` (and `activityPropertyConfiguration.filterExpression`) directly post-CLI, and leaves `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
 
-**Planner-side authoring contract.** When translating an SDD filter clause to the `tasks.md` FilterTree, the planner classifies each clause by value shape:
+**Resolution-side authoring contract.** When translating an SDD filter clause to the FilterTree, classify each clause by value shape:
 
 | SDD clause value | Encoded as `WorkflowValue` |
 |---|---|
@@ -189,7 +189,7 @@ Example (SDD with mixed literal + var-bearing clauses):
 filter: subject contains =vars.urgentKeyword AND from contains "VIP"
 ```
 
-Planner emits to `tasks.md`:
+Resolution emits to `registry-resolved.json`:
 
 ```json
 {
@@ -220,7 +220,7 @@ Impl composes (after CLI processes the literal-only subset):
 - Outer wrap: `` =js:`...` `` — JS prefix + template-literal backticks. The template literal evaluates at runtime to a JMESPath string.
 - Sub-clauses each wrapped in parens for operator-precedence grouping.
 - References appear as `${vars.X}` / `${metadata.X}` / `${bindings.X}` template-literal interpolations — NOT as `=vars.X` / `=metadata.X` (plain prefix doesn't get evaluated inside the body sink). All `=js:<ref>` forms get the same transformation via FE's `wrapJsVariablesInTemplateLiteral` (`IntsvcCommonUtils.ts:251-258`).
-- For each `=<prefix>.X` reference in the SDD/tasks.md filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
+- For each `=<prefix>.X` reference in the SDD/resolved filter, the impl emits `${<prefix>.X}` inside the appropriate JMESPath clause.
 
 > **String-operand quoting (mandatory).** FE's `wrapJsVariablesInTemplateLiteral` does pure substitution — `=js:vars.X` → `${vars.X}` with NO surrounding quotes added (regex at `IntsvcCommonUtils.ts:257`; behavior confirmed by `IntsvcActivityConfigurationUtils.test.ts:986` → `:996`, which asserts the substituted output is unquoted). For JMESPath string operands (`contains(field, <string>)`, `field == '<string>'`), the impl MUST emit single quotes around the `${vars.X}` substitution. For numeric / boolean / JMESPath-literal-backtick operands, no surrounding quotes. Examples:
 >
@@ -271,7 +271,7 @@ The expression is duplicated in two non-config sinks because both have load-bear
 
 ---
 
-## tasks.md fields (planning)
+## registry-resolved.json fields (resolution)
 
 A connector-bound rule's condition T-entry records these (alongside the scope's normal fields):
 

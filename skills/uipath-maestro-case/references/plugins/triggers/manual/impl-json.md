@@ -13,7 +13,7 @@ Append one secondary manual trigger to the schema. This plugin performs **two fi
 
 The sibling-file sync is the main reason this plugin needs a dedicated JSON recipe rather than reusing a generic "add node" primitive — orchestrator discovers entry points via `entry-points.json`, so a trigger node without a matching entry is invisible to runtime.
 
-## Input spec (from `tasks.md`)
+## Input spec (from `sdd.md`)
 
 | Field | Required | Notes |
 |---|---|---|

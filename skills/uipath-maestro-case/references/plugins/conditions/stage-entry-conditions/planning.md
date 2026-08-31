@@ -10,7 +10,7 @@ For when a stage **exits**, use [stage-exit-conditions](../stage-exit-conditions
 
 ## No omission — one T-task per sdd.md Entry Condition row
 
-Every stage with an **Entry Condition** declared in sdd.md gets its own stage-entry-condition T-task — **including rule-type `case-entered`** and stages with `is-interrupting: false`. Never skip a condition because the rule-type or field values look like defaults. If sdd.md wrote the row, `tasks.md` emits the T-task.
+Every stage with an **Entry Condition** declared in sdd.md gets its own stage-entry-condition T-task — **including rule-type `case-entered`** and stages with `is-interrupting: false`. Never skip a condition because the rule-type or field values look like defaults. If sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
@@ -27,7 +27,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response. A breach rule references the SLA alone; supplying an escalation converts it into an at-risk rule ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — resolved via [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Rule-Type Catalog (stage-entry scope)
 
@@ -52,7 +52,7 @@ Allowed `ruleType` values and when to pick each:
 
 Stage entry conditions are created **after** all stages exist (Step 7 in implementation.md). Source/target stage IDs must both be captured by then.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T<n>: Add stage-entry condition for "<stage>" — <summary>
@@ -67,7 +67,7 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 `sla-status-change` example:
 

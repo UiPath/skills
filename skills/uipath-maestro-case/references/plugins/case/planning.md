@@ -4,7 +4,7 @@ The root case definition — the top-level container that every other node lives
 
 ## When to Use
 
-Always. This plugin is invoked for the very first T-entry (`T01`) in every `tasks.md`. It creates the case file and the implicit Trigger node.
+Always. This plugin is invoked for the very first build step (`T01`). It creates the case file and the implicit Trigger node.
 
 ## Required Fields from sdd.md
 
@@ -42,7 +42,7 @@ A referenced variable must have its own §4.2.1 T-entry (the completeness cross-
 
 The case plugin writes a pure skeleton at T01 — no trigger node. The primary trigger is added by the triggers plugin at T02 via the matching [triggers plugin](../triggers/). Every case (single-trigger or multi-trigger) has at least one T02 entry for the primary trigger.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T01: Create case file "<name>"

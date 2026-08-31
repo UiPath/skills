@@ -4,7 +4,7 @@
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
-## Input spec (from `tasks.md`)
+## Input spec (from `sdd.md`)
 
 | Field | Required | Notes |
 |---|---|---|

@@ -26,7 +26,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Action-Specific Fields
@@ -38,8 +38,8 @@
 | `data.taskTitle` | Required on **resolved** action tasks — validator rejects empty. Placeholders omit it (along with every other `data.*` action-specific key); see [placeholder-tasks.md](../../../placeholder-tasks.md). |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
 | `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. See fallback below for unresolved-UUID handling. |
-| `data.actionCatalogName` | **Optional.** Must bind to an existing action catalog resource. Omit unless tasks.md references a known catalog. |
-| `data.labels` | Label set from tasks.md |
+| `data.actionCatalogName` | **Optional.** Must bind to an existing action catalog resource. Omit unless the SDD references a known catalog. |
+| `data.labels` | Label set from the SDD |
 
 `recipient.Type` values: `0` = user ID (sdd `User:`), `1` = group ID (sdd `UserGroup:` / `Role:`), `2` = email address, `3` = `"=vars.<varId>"` (sdd `Expression:`). **Fallback when sdd.md value is not a resolved UUID:** write `{ "Type": <picked>, "Value": "<sdd-string-as-is>" }` — schema-conformant placeholder, user resolves Value later. Drop `data.recipient` only when no Type maps. **Never invent a non-conforming shape** (`{ kind, id }`, `{ scope, target, value }`, etc.) — Studio Web canvas crashes silently; CLI validate misses it.
 
@@ -51,7 +51,7 @@
 uip maestro case tasks describe --type action --id "<action-app-id>" --output json
 ```
 
-Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
+Fallback: planning-captured schema from `registry-resolved.json`. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 **Step 1 — Root-level bindings:**
 
@@ -59,14 +59,14 @@ Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../..
 
 - `resource`: `"app"`
 - `resourceSubType`: omit (no resourceSubType for action tasks)
-- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
+- `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 
 1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
-2. Set `data.taskTitle`, `data.priority`, `data.labels` from tasks.md now (plain strings, not Phase-3 bindings); set `data.actionCatalogName` only when tasks.md references an existing catalog. **`data.recipient` is an object, NEVER a bare string.** Wrap the tasks.md `recipient:` value as `{ "Type": <int>, "Value": <value> }`. `UserGroup:` is the one prefix planning keeps: strip it and emit `Type 1` with the **group name** in `Value`, never a UUID. Every other value arrives bare and its Type comes from its shape (`=vars.X` → `3`, email → `2`, user UUID → `0`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`, and `recipient: UserGroup: Compliance` → `{ "Type": 1, "Value": "Compliance" }`. Do not copy the bare value through as `data.recipient`.
+2. Set `data.taskTitle`, `data.priority`, `data.labels` from the SDD now (plain strings, not Phase-3 bindings); set `data.actionCatalogName` only when the SDD references an existing catalog. **`data.recipient` is an object, NEVER a bare string.** Wrap the SDD's recipient value as `{ "Type": <int>, "Value": <value> }`. `UserGroup:` is the one prefix planning keeps: strip it and emit `Type 1` with the **group name** in `Value`, never a UUID. Every other value arrives bare and its Type comes from its shape (`=vars.X` → `3`, email → `2`, user UUID → `0`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`, and `recipient: UserGroup: Compliance` → `{ "Type": 1, "Value": "Compliance" }`. Do not copy the bare value through as `data.recipient`.
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
@@ -82,13 +82,13 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
-- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for Skip or no-Type-maps). A group/role is `Type 1` carrying the group **name**; dropping it leaves the task created and reaching nobody
+- `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever the SDD recorded a recipient (omitted only for Skip or no-Type-maps). A group/role is `Type 1` carrying the group **name**; dropping it leaves the task created and reaching nobody
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the T-entry declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))
 - `id` captured in `id-map.json`
 
 ## Anti-patterns
 
-- **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` written at Step 2 (not an io-binding target). The tasks.md value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task. Symptoms: `data.recipient` is a string, or missing while `tasks.md` has `recipient: =vars.X`.
+- **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` written at Step 2 (not an io-binding target). The SDD value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task. Symptoms: `data.recipient` is a string, or missing while the SDD names a recipient.
 - **CLI `validate` does NOT check `data.recipient`** — verify presence/shape explicitly (Post-Write Verification).
 
 <!-- END: impl-json.md -->

@@ -63,7 +63,7 @@ R[<count>]/[<start-iso>/]<duration>
 
 When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat count), **AskUserQuestion** with 2–3 candidate interpretations + "Something else". Do not silently default timezone or count.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ```markdown
 ## T02: Configure timer trigger "<display-name>"

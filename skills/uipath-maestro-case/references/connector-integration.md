@@ -75,7 +75,7 @@ uip is connections create "<connector-key>" --output json
 4. **On failure — surface and re-prompt, never stall.** The create failed if the command **exits non-zero**, the JSON `Result` is `"Failure"`, or no `Data.ConnectionId` is returned (e.g. OAuth denied/failed, browser closed, connector misconfigured). On auth failure the command **exits** (verified: exit 1) — it does not hang. Do NOT silently proceed and do NOT leave planning incomplete:
    1. Show the user the failure `Message` (and `Instructions` if present) verbatim — do not invent a cause. Example: `{ "Result": "Failure", "Message": "Authentication failed", "Instructions": "Check credentials and try again." }`.
    2. Re-prompt via **AskUserQuestion**: **Retry create** (re-run `is connections create`) / **Skip (defer)**.
-   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `tasks.md`** so planning completes.
+   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `registry-resolved.json`** so resolution completes.
 
 **Headless / no-browser fallback** (CI, remote sandbox, no display) — the agent cannot complete browser OAuth. Either ask the user to run `! uip is connections create "<connector-key>" --output json` in their own terminal and paste back the `ConnectionId`, or run with `--no-wait` to get the pending authorization URL, surface it, and poll until `State: Enabled`.
 
@@ -133,7 +133,7 @@ Each `inputs.*` entry with a `reference` carries a pre-built `discoverCommand`:
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing `registry-resolved.json` / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -169,7 +169,7 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ## Output Contract to Tasks.md
 
-Record the resolved values in `tasks.md` under the task entry:
+Record the resolved values in `registry-resolved.json` under the task entry:
 
 ```markdown
 ## T25: Add connector-activity task "Create Jira Issue" to "Triage"

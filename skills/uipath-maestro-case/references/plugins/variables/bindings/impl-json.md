@@ -96,8 +96,8 @@ The FolderKey binding is **omitted entirely** when `spec.connection.folderKey` i
 
 | Field | Source |
 |---|---|
-| `name` | `tasks.md` `name` field (captured from registry during planning: `entry.name` for process types, `entry.deploymentTitle` for action) |
-| `folderPath` | `tasks.md` `folder-path` field (captured from registry during planning: `entry.folders[0].fullyQualifiedName` for process types, `entry.deploymentFolder.fullyQualifiedName` for action) |
+| `name` | `registry-resolved.json` `name` field (captured from registry during planning: `entry.name` for process types, `entry.deploymentTitle` for action) |
+| `folderPath` | `registry-resolved.json` `folder-path` field (captured from registry during planning: `entry.folders[0].fullyQualifiedName` for process types, `entry.deploymentFolder.fullyQualifiedName` for action) |
 
 ### resourceKey construction — non-connector tasks
 
@@ -117,8 +117,8 @@ Examples:
 
 | Binding | `name` | `propertyAttribute` | `default` | `resourceKey` |
 |---|---|---|---|---|
-| ConnectionBinding | `` `${connectorKey} connection` `` (templated, e.g. `"uipath-microsoft-outlook365 connection"`) | `"ConnectionId"` | `connection-id` from `tasks.md` | `connection-id` from `tasks.md` |
-| FolderKey binding (omit when `spec.connection.folderKey === null`) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — different from `name`) | `folderKey` from `get-connection` (Step 1) | `connection-id` from `tasks.md` (same as ConnectionBinding) |
+| ConnectionBinding | `` `${connectorKey} connection` `` (templated, e.g. `"uipath-microsoft-outlook365 connection"`) | `"ConnectionId"` | `connection-id` from `registry-resolved.json` | `connection-id` from `registry-resolved.json` |
+| FolderKey binding (omit when `spec.connection.folderKey === null`) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — different from `name`) | `folderKey` from `get-connection` (Step 1) | `connection-id` from `registry-resolved.json` (same as ConnectionBinding) |
 
 ### Task references
 

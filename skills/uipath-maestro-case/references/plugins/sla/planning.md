@@ -72,11 +72,11 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 
 ## Identity Resolution
 
-When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
+When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the escalation rule. Resolved UUIDs land in `recipients-resolved.json`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
 
 ### Skip — UUID pass-through
 
-Recipient value already matches `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` → skip CLI. Write `<uuid> / <uuid>` in tasks.md. Audit rationale: `uuid-pass-through`.
+Recipient value already matches `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` → skip CLI. Write `<uuid> / <uuid>` in `recipients-resolved.json`. Audit rationale: `uuid-pass-through`.
 
 ### Resolve `User`
 
@@ -135,13 +135,13 @@ Rationale values: `auto-exact-email`, `auto-exact-name`, `user-picked-from-N`, `
 
 ## Ordering
 
-SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each target, order within the target:
+SLA is the **last** element class written, after conditions. For each target, order within the target:
 
 1. Default SLA T-entry
 2. Conditional SLA rule T-entries for that target
 3. Escalation rule T-entries (one per rule)
 
-## tasks.md Entry Format
+## Fields to Resolve
 
 ### Default SLA
 
@@ -204,7 +204,7 @@ Before emitting SLA T-entries, reject or repair the same cases the Case App reje
 ## Anti-Patterns
 
 - **Do not fabricate expression syntax.** Describe conditional SLA rules in natural language during planning; the execution phase handles the exact syntax.
-- **Do not lose the conditional rule's target.** Root and stage rules have the same entry shape but different destinations (`metadata.slaRules[]` vs `node.data.slaRules[]`). Preserve `target` through `tasks.md`.
+- **Do not lose the conditional rule's target.** Root and stage rules have the same entry shape but different destinations (`metadata.slaRules[]` vs `node.data.slaRules[]`). Preserve the SDD row's target through to the caseplan write.
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.
