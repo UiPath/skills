@@ -501,9 +501,12 @@ def main() -> int:
     # anything. A build missing a task title or an escalation task cannot be driven, and
     # discovering that after starting the case costs a solution upload and a live instance per
     # route for a fact that was in the file all along.
+    # Only the tasks this route COMPLETES need an Action Center title. The sla route also asserts
+    # a delay note ran, but that is a connector task: it fires on its own and carries no title,
+    # so requiring one would reject a plan that is perfectly drivable.
     needed = [name for name, _action in steps]
     if args.route == "sla":
-        needed += ["Escalate delayed application check", "Send delay note for the application check"]
+        needed.append("Escalate delayed application check")
     missing = [name for name in needed if not task_title(name)]
     if missing:
         fail(f"the plan cannot be driven: {missing}. Each is a task this route has to complete, "

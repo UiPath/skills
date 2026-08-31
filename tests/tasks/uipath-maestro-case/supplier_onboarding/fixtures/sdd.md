@@ -11,6 +11,7 @@
 | 1.0 | 2026-08-26 | uipath-planner | Initial case design |
 | 1.1 | 2026-08-30 | uipath-planner | SLA revision: overall and phase targets restated in minutes at the source's proportions, scaled to the smallest whole multiple clearing the platform minimum; case at-risk threshold re-derived |
 | 1.2 | 2026-08-30 | uipath-planner | Representative `In` defaults added so a case started with no caller data still describes a real supplier; the four `file` arguments stay blank per the platform contract |
+| 1.3 | 2026-08-30 | uipath-planner | Simplification: phase-delay escalation and delay notice kept on the intake check and buyer review only; three of the four manually launched optional tasks dropped, keeping the supplier's document upload because it is the only one that lets a send-back for corrections be answered; the financial-health agent dropped; the overall-SLA oversight lane dropped; the director sign-off dropped together with the sign-off tier calculation that fed it. Consequential edits to the compliance decision's entry, the case-breach response, variables, personas, app views and integrations |
 
 ---
 
@@ -37,14 +38,13 @@
 1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage 1: Checking the application](#stage-1-checking-the-application-checking_application) — 6 tasks
-   - [Stage 2: Buyer review](#stage-2-buyer-review-buyer_review) — 6 tasks
-   - [Stage 3: Compliance and risk review](#stage-3-compliance-and-risk-review-compliance_risk_review) — 8 tasks
-   - [Stage 4: Setting up the supplier](#stage-4-setting-up-the-supplier-supplier_setup) — 5 tasks
+   - [Stage 2: Buyer review](#stage-2-buyer-review-buyer_review) — 4 tasks
+   - [Stage 3: Compliance and risk review](#stage-3-compliance-and-risk-review-compliance_risk_review) — 2 tasks
+   - [Stage 4: Setting up the supplier](#stage-4-setting-up-the-supplier-supplier_setup) — 3 tasks
    - [Stage 5: Supplier onboarded](#stage-5-supplier-onboarded-supplier_onboarded) — 2 tasks
    - [Secondary Stage: Application rejected](#secondary-stage-application-rejected-application_rejected) — 2 tasks
    - [Secondary Stage: Application withdrawn](#secondary-stage-application-withdrawn-application_withdrawn) — 2 tasks
-   - [Secondary Stage: Overall SLA review](#secondary-stage-overall-sla-review-overall_sla_review) — 1 task
-3. [Personas & App Views](#section-3-personas--app-views) — 7 Personas, Process App Views
+3. [Personas & App Views](#section-3-personas--app-views) — 5 Personas, Process App Views
 4. [Integrations](#section-4-integrations) — IS Connectors, API Workflows, Agents, Child Cases
 
 ---
@@ -56,9 +56,9 @@
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
 | 1 | **Scope** (Level 1) | Case Management | The process is a staged application lifecycle with per-phase SLAs, human decision gates, back-routing and three terminal dispositions — the shape Case Management exists for. |
-| 2 | **Stage model** | Five primary stages ending in `Supplier onboarded`, plus four secondary lanes — two terminal dispositions, one phase-delay response lane and one overall-SLA oversight lane | Rejection and withdrawal are reachable from several different phases, so they are exception lanes with non-completing case exits rather than extra primary stages. |
-| 3 | **Task classification** | Human actions for every review, decision and sign-off; API workflows for screening, policy, ERP and register writes; agents for the two optional assessments; Outlook connector activities for supplier and buyer correspondence; one child case for contract negotiation | Each classification follows the deployed resource the appendix names for that step. |
-| 4 | **Resource resolution posture** | live-resolved | All twenty appendix resource identities and the Outlook connection resolved against the tenant registry at design time. |
+| 2 | **Stage model** | Five primary stages ending in `Supplier onboarded`, plus two secondary lanes, both terminal dispositions | Rejection and withdrawal are reachable from several different phases, so they are exception lanes with non-completing case exits rather than extra primary stages. Phase-delay remediation is not a lane: it is answered inside the breached stage by a `start-task` response. |
+| 3 | **Task classification** | Human actions for every review and decision; API workflows for screening, policy, ERP and register writes; one agent for the optional category-match assessment; Outlook connector activities for supplier and buyer correspondence; one child case for contract negotiation | Each classification follows the deployed resource the appendix names for that step. |
+| 4 | **Resource resolution posture** | live-resolved | Every resource this SDD binds (six API workflows, one agent, six Action Apps and one child case) plus the Outlook connection, resolved against the tenant registry at design time. |
 
 ---
 
@@ -67,7 +67,7 @@
 **Recommendation:** SINGLE_PRODUCT — Case Management
 **Delivery model:** cloud
 **Blocked by platform:** none
-**Need profile:** Resolve every supplier application within 120 minutes across a five-phase lifecycle, with automatic escalation on phase breach and an explicit human decision before any supplier reaches the ERP.
+**Need profile:** Resolve every supplier application within 120 minutes across a five-phase lifecycle, with automatic escalation on the two front-end phase deadlines and an explicit human decision before any supplier reaches the ERP.
 
 ---
 
@@ -80,7 +80,7 @@
 | Property | Value |
 |----------|-------|
 | Case Name | SupplierOnboarding |
-| Case Description | Handles a prospective supplier's application from the moment it is submitted until it is fully resolved — the supplier is onboarded and ready to trade, the application is rejected, or the supplier withdraws it. Every application carries its own reference number so everyone involved can track it. Each phase is time-boxed, and a missed phase deadline starts real remediation work rather than only changing a status. |
+| Case Description | Handles a prospective supplier's application from the moment it is submitted until it is fully resolved — the supplier is onboarded and ready to trade, the application is rejected, or the supplier withdraws it. Every application carries its own reference number so everyone involved can track it. Each phase is time-boxed; missing the intake-check or buyer-review deadline starts real remediation work, and the remaining phases raise a warning and a breach notification only. |
 | Case Identifier | Type: constant. Constant → Prefix: SUP |
 | Priority | Choiceset: Low, Medium, High, Critical — Default: Medium |
 | Case-Level SLA | 120 min |
@@ -94,7 +94,7 @@
 
 ### Case-Level SLA Escalation Rules
 
-**Design Rationale:** The source sets one overall target — an application should be fully resolved within 120 minutes of being submitted. No at-risk threshold is stated for the overall target, so the default band for targets of 3 days or less applies (75%), warning the procurement operations group with 30 minutes left to recover. The overall target and every phase target are the source's own figures multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA; the five primary stages still sum exactly to the overall target (16 + 32 + 32 + 24 + 16), so a phase breaches and its escalation fires long before the case itself breaches. The source is explicit about breach: if the application misses its overall 120-minute target, the procurement director also gets a task to review what went wrong before the application closes — so the breach status is answered by the interrupting-free oversight lane `Overall SLA review` (`overall_sla_review`) entered through `sla-status-change`, and the breach escalation additionally pages the director so the task is never the only signal.
+**Design Rationale:** The source sets one overall target — an application should be fully resolved within 120 minutes of being submitted. No at-risk threshold is stated for the overall target, so the default band for targets of 3 days or less applies (75%), warning the procurement operations group with 30 minutes left to recover. The overall target and every phase target are the source's own figures multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA; the five primary stages still sum exactly to the overall target (16 + 32 + 32 + 24 + 16), so a phase breaches and its warning fires long before the case itself breaches. Missing the overall target creates no case work: it notifies procurement leadership and nothing else. No stage is entered, no task is started and the application runs on to its own disposition unchanged.
 
 | SLA Status | Threshold | Action | Display Name |
 |------------|-----------|--------|--------------|
@@ -109,15 +109,15 @@ duration and points here; nothing restates a response.
 | Scope | SLA | Status | Response | Target | Interrupting | Rationale |
 |-------|-----|--------|----------|--------|--------------|-----------|
 | case | Supplier Onboarding SLA | At-Risk | notify-only | — | — | No overall-target warning behavior is stated; the source only creates work at breach, so at-risk stays a notification. |
-| case | Supplier Onboarding SLA | Breached | enter-stage | Overall SLA review | No | The procurement director reviews what went wrong before the application closes; the application must still run on to its own disposition, so the lane is parallel oversight and pauses nothing. |
+| case | Supplier Onboarding SLA | Breached | notify-only | — | — | The overall-target review lane was removed from scope, so nothing is authored to carry work on an overall breach; procurement leadership is notified and the application continues to its own disposition. |
 | stage: Checking the application | Application check SLA | At-Risk | notify-only | — | — | At 70% of the phase target the people handling the application see a warning so they can act before the deadline passes. |
 | stage: Checking the application | Application check SLA | Breached | start-task | Escalate delayed application check | — | A missed phase deadline must act on its own — an escalation task for the procurement operations lead and a status note to the supplier. Both tasks live inside this stage and activate on its own SLA event, so the phase they name is a literal rather than something a shared lane has to infer, and the checks keep running while the lead unblocks them. |
 | stage: Buyer review | Buyer review SLA | At-Risk | notify-only | — | — | If the buyer sits on it too long the application is bumped up to the Category Management group so it does not stall; placed at at-risk so it fires before the deadline rather than after it. |
 | stage: Buyer review | Buyer review SLA | Breached | start-task | Escalate delayed buyer review | — | Same phase-breach remediation, owned by this stage; the buyer's review is not paused by the escalation meant to unblock it. |
 | stage: Compliance and risk review | Compliance review SLA | At-Risk | notify-only | — | — | 70% warning to the Compliance group. |
-| stage: Compliance and risk review | Compliance review SLA | Breached | start-task | Escalate delayed compliance review | — | Escalation task plus supplier status note, owned by this stage; the review continues in parallel. |
+| stage: Compliance and risk review | Compliance review SLA | Breached | notify-only | — | — | Phase-delay remediation is deliberately limited to the intake check and the buyer review, so a missed compliance deadline raises a breach notification and starts no work. |
 | stage: Setting up the supplier | Supplier setup SLA | At-Risk | notify-only | — | — | 70% warning to the procurement operations group. |
-| stage: Setting up the supplier | Supplier setup SLA | Breached | start-task | Escalate delayed supplier setup | — | Escalation task plus supplier status note, owned by this stage; ERP registration and portal confirmation continue. |
+| stage: Setting up the supplier | Supplier setup SLA | Breached | notify-only | — | — | Phase-delay remediation is deliberately limited to the intake check and the buyer review, so a missed setup deadline raises a breach notification and starts no work. |
 | stage: Supplier onboarded | Onboarding wrap-up SLA | At-Risk | notify-only | — | — | The wrap-up phase carries the source's 2-minute wrap-up target scaled to 16 minutes and warns at 70%. |
 | stage: Supplier onboarded | Onboarding wrap-up SLA | Breached | notify-only | — | — | Deliberately not routed into the delay lane: apologising for a delay and promising a new expected date on an application that is already finished would be wrong. |
 | stage: Application rejected | Rejection wrap-up SLA | At-Risk | notify-only | — | — | Same 16-minute wrap-up target, warning at 70%. |
@@ -174,17 +174,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | reviewNotes | Variable | string | | | Not assessed | Anything that looks odd about the offering or the documents |
 | buyerDecision | Variable | string | | | | The buyer's call — approve, reject, or sendback (the deployed app's Action enum) |
 | buyerComments | Variable | string | | | None | The buyer's comments on the application |
-| referenceCheckFindings | Variable | string | | | None ordered | Findings from a reference check ordered by the buyer |
 | riskRating | Variable | string | | | | The risk this application carries — Low, Medium, or High |
 | complianceFlags | Variable | string | | | None | Concerns the policy check raised |
-| financialHealthSummary | Variable | string | | | Not assessed | A short read on the supplier's financial standing |
-| fraudIndicators | Variable | string | | | Not assessed | Signs of a shell company, or financials that do not line up with the size of business claimed |
-| concernLevel | Variable | string | | | none | How much concern the financial findings warrant — none, low, medium, or high |
-| signOffTier | Variable | string | | | | Which sign-off the application needs — auto, buyer, or director |
-| directorSignOffRequired | Variable | boolean | | | false | True when the expected annual spend puts the application at or above the director threshold |
-| directorSignOffDecision | Variable | string | | | Not required | The procurement director's call on a high-value application |
-| directorSignOffNotes | Variable | string | | | None | The procurement director's notes on their sign-off decision |
-| legalOpinion | Variable | string | | | None requested | Legal counsel's opinion on the application |
 | complianceDecision | Variable | string | | | | The compliance reviewer's explicit choice — approve (send to setup) or reject (the deployed app's Action enum) |
 | complianceComments | Variable | string | | | None | The compliance reviewer's comments on the application |
 | bankVerificationStatus | Variable | string | | | pending | Whether the bank details passed verification — verified or failed |
@@ -192,9 +183,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | registeredAt | Variable | string | | | | When the supplier was written to the approved-supplier register |
 | applicationCheckRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the application check misses its deadline |
 | buyerReviewRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the buyer review misses its deadline |
-| complianceReviewRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the compliance review misses its deadline |
-| supplierSetupRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the supplier setup misses its deadline |
-| escalationNotes | Variable | string | | | None | Notes recorded while an application is being unblocked or reviewed after a missed deadline |
+| escalationNotes | Variable | string | | | None | Notes recorded while an application is being unblocked after a missed deadline |
 | lastEmailStatus | Variable | string | | | | Delivery status returned by the most recent message sent from this application |
 | auditRecordId | Variable | string | | | | The audit record a rejection was written to |
 | cleanupSummary | Variable | string | | | | What the withdrawal clean-up did |
@@ -213,7 +202,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 > `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
 > `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
 
-**The `In` defaults describe one representative application.** The platform's debug entry point supplies no arguments, so a case started for testing reads these defaults or reads nothing. Every non-`file` `In` argument therefore carries a value: Northwind Components Ltd, a United Kingdom registered supplier offering Components, expecting to spend 120000 USD. `Pull supplier records and screening` is the first automated task and reads `companyName`, `countryOfRegistration` and `offeringCategory`; with no default behind them it receives null and fails on the first one it touches. The 120000 spend sits below the 500000 director threshold, so a default-started application takes the buyer sign-off path and `Obtain procurement director sign-off` is skipped on its `=js:vars.expectedAnnualSpend < 500000` guard.
+**The `In` defaults describe one representative application.** The platform's debug entry point supplies no arguments, so a case started for testing reads these defaults or reads nothing. Every non-`file` `In` argument therefore carries a value: Northwind Components Ltd, a United Kingdom registered supplier offering Components, expecting to spend 120000 USD. `Pull supplier records and screening` is the first automated task and reads `companyName`, `countryOfRegistration` and `offeringCategory`; with no default behind them it receives null and fails on the first one it touches. The expected annual spend no longer routes anything — the sign-off tier calculation and the director sign-off it fed are both out of scope — so 120000 is carried for display in the buyer and compliance review forms and in the ERP registration, and every application follows the same path whatever it is worth.
 
 **The four `file` arguments stay blank, and that decides the outcome.** A `file` default must be blank, so a default-started case carries no registration certificate, insurance document, tax forms or bank details. The example is a supplier whose paperwork has not arrived, not a complete application. `Register supplier in ERP` reads `bankDetailsDocument`, so `bankVerificationStatus` returns something other than `verified`, `Setting up the supplier` exits on its verification guard without completing, and `Application rejected` enters. A case started from defaults alone therefore runs the full lifecycle through to a rejection; reaching `Supplier onboarded` needs a caller that pre-uploads the four attachments.
 
@@ -444,7 +433,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** action
 **Activation Mode:** event-triggered
-**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared across all five escalation tasks and code-switched by `actionType`, so one form serves every one of them without any borrowing the others' fields.
+**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared by the two phase escalations still in scope, both dispatched on the same `phase-escalation` `actionType`: they are the same piece of work on a different phase, take the identical field set, and differ only in the phase they name and the revised-date variable they write.
 **Description:** Raises a task for the procurement operations lead to step in and unblock this phase, and captures the new expected date they commit to.
 
 **Entry Condition:**
@@ -570,10 +559,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Notify buyer of application | execute-connector-activity | sequential | Stage enters — first task in the sequential run | Yes | No | system | — |
 | 2 | Record buyer review decision | action | sequential | After Notify buyer of application | Yes | No | Buyer | 32 min |
-| 3 | Request more information from supplier | action | adhoc | The buyer launches it while this phase is active | No | No | Buyer | — |
-| 4 | Order reference check | action | adhoc | The buyer launches it while this phase is active | No | No | Buyer | — |
-| 5 | Escalate delayed buyer review | action | event-triggered | This stage's SLA breaches | No | No | Procurement Operations Lead | — |
-| 6 | Send delay note for the buyer review | execute-connector-activity | conditional-gate | After Escalate delayed buyer review | No | No | system | — |
+| 3 | Escalate delayed buyer review | action | event-triggered | This stage's SLA breaches | No | No | Procurement Operations Lead | — |
+| 4 | Send delay note for the buyer review | execute-connector-activity | conditional-gate | After Escalate delayed buyer review | No | No | system | — |
 
 ##### Task 2.1: Notify buyer of application
 
@@ -651,7 +638,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Type | Binding | Required |
 |-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + "\nCompany: " + vars.companyName + "\nContact: " + vars.contactName + " <" + vars.contactEmail + ">\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\nOffering: " + vars.offeringDescription + "\n\nIntake check: " + vars.validationOutcome + " - " + vars.validationIssues + "\nDocuments added during the checks: " + vars.addedDocumentName + "\nPossible duplicates: " + vars.duplicateSupplierIds + "\nScreening: " + vars.sanctionsFindings + "\nCategory match: " + vars.categoryMatches + " (suggested: " + vars.suggestedCategory + ")\nReview notes: " + vars.reviewNotes + "\nReference check: " + vars.referenceCheckFindings + "\n\nApprove, decline, or send the application back for corrections, and record your comments.") | No |
+| Content | String | =js:("Application " + metadata.ExternalId + "\nCompany: " + vars.companyName + "\nContact: " + vars.contactName + " <" + vars.contactEmail + ">\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\nOffering: " + vars.offeringDescription + "\n\nIntake check: " + vars.validationOutcome + " - " + vars.validationIssues + "\nDocuments added during the checks: " + vars.addedDocumentName + "\nPossible duplicates: " + vars.duplicateSupplierIds + "\nScreening: " + vars.sanctionsFindings + "\nCategory match: " + vars.categoryMatches + " (suggested: " + vars.suggestedCategory + ")\nReview notes: " + vars.reviewNotes + "\n\nApprove, decline, or send the application back for corrections, and record your comments.") | No |
 | Comment | String | =vars.buyerComments | No |
 
 **Output Schema:**
@@ -661,93 +648,11 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | Comment | -> buyerComments |
 | — | buyerDecision = =js:vars.$xref('Buyer review','Record buyer review decision','Action') |
 
-##### Task 2.3: Request more information from supplier
-
-**Type:** action
-**Activation Mode:** adhoc
-**Design Rationale:** The buyer decides when clarification is needed, so it is manually triggered and optional rather than sequenced. It is authored inside this stage because the source restricts reaching out to the supplier to the period while the application is with the buyer.
-**Description:** Lets the buyer reach out to the supplier for clarification or missing information while the application is with them.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| adhoc | — | Buyer requests information |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: Supplier Information Request
-**Action App ID:** 5bcb5523-93b1-459f-ad66-3bd947b32995
-**Deployment Folder:** Shared/uipath-maestro-case/Supplier Information Request
-**actionType:** —
-**Recipient:** Expression:=vars.assignedBuyerEmail
-**Priority:** Medium · **Task Title:** Request more information from the supplier · **Labels:** buyer, clarification
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " - " + vars.companyName + "\nSupplier contact: " + vars.contactName + " <" + vars.contactEmail + ">\nOffering: " + vars.offeringDescription + "\n\nSet out the clarification or missing information you need from the supplier.") | No |
-| Comment | String | =vars.buyerComments | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| Comment | -> buyerComments |
-
-##### Task 2.4: Order reference check
-
-**Type:** action
-**Activation Mode:** adhoc
-**Design Rationale:** A buyer who wants extra certainty launches it on their own judgement, so it is manually triggered and optional. It is authored inside this stage because the source restricts ordering a reference check to the period while the application is with the buyer, and its findings are written to case state so the next decision-maker sees them.
-**Description:** Has the supplier's existing customers contacted for references; the findings are added to the application for the next decision-maker to see.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| adhoc | — | Buyer orders reference check |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: Supplier Reference Check
-**Action App ID:** 741e6c61-65ee-4c6e-8ce5-855e743b50dd
-**Deployment Folder:** Shared/uipath-maestro-case/Supplier Reference Check
-**actionType:** —
-**Recipient:** Expression:=vars.assignedBuyerEmail
-**Priority:** Medium · **Task Title:** Order a reference check for the supplier · **Labels:** buyer, references
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " - " + vars.companyName + "\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nSupplier contact: " + vars.contactName + "\n\nContact the supplier's existing customers for references and record the findings so the next decision-maker can see them.") | No |
-| Comment | String | =vars.referenceCheckFindings | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| Comment | -> referenceCheckFindings |
-
-##### Task 2.5: Escalate delayed buyer review
+##### Task 2.3: Escalate delayed buyer review
 
 **Type:** action
 **Activation Mode:** event-triggered
-**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared across all five escalation tasks and code-switched by `actionType`, so one form serves every one of them without any borrowing the others' fields.
+**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared by the two phase escalations still in scope, both dispatched on the same `phase-escalation` `actionType`: they are the same piece of work on a different phase, take the identical field set, and differ only in the phase they name and the revised-date variable they write.
 **Description:** Raises a task for the procurement operations lead to step in and unblock this phase, and captures the new expected date they commit to.
 
 **Entry Condition:**
@@ -789,7 +694,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | newExpectedDate | -> buyerReviewRevisedDate |
 | Comment | -> escalationNotes |
 
-##### Task 2.6: Send delay note for the buyer review
+##### Task 2.4: Send delay note for the buyer review
 
 **Type:** execute-connector-activity
 **Activation Mode:** conditional-gate
@@ -840,8 +745,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary and required — the deeper look every application gets before the supplier goes anywhere near our systems. The stage deliberately carries no unguarded completion: both of its exits are guarded on the compliance reviewer's own recorded choice, so the application never advances on its own from here. Rejection is a guarded diverting exit carrying the exact complement of the send-to-setup guard. Completion is user-routed so the supplier's withdrawal lane stays reachable during the review.
-**Description:** Checks the application against company policy, produces a risk rating, works out the level of sign-off the expected spend requires, and puts the whole picture in front of a compliance reviewer who explicitly chooses whether the application goes to setup or is rejected.
+**Design Rationale:** Primary and required — the deeper look every application gets before the supplier goes anywhere near our systems. The stage deliberately carries no unguarded completion: both of its exits are guarded on the compliance reviewer's own recorded choice, so the application never advances on its own from here. Rejection is a guarded diverting exit carrying the exact complement of the send-to-setup guard. Completion is user-routed so the supplier's withdrawal lane stays reachable during the review. With the sign-off tier and the director sign-off out of scope, the stage is a straight two-step sequential run (the policy check, then the reviewer's decision) and there is no longer any branch on the value of the application.
+**Description:** Checks the application against company policy, produces a risk rating, and puts that picture in front of a compliance reviewer who explicitly chooses whether the application goes to setup or is rejected.
 
 #### Stage Entry Conditions
 
@@ -858,7 +763,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives compliance and risk review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the Compliance group can act before the deadline passes. The breach is answered by this stage's own escalation task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead.
+**Design Rationale:** The source gives compliance and risk review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the Compliance group can act before the deadline passes. Phase-delay remediation is limited to the intake check and the buyer review, so the breach here raises its breach escalation as a notification and starts no work.
 **SLA Type:** time-based
 **SLA Title:** Compliance review SLA
 
@@ -871,13 +776,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Run compliance and risk check | api-workflow | sequential | Stage enters — first task in the sequential run | Yes | No | system | — |
-| 2 | Analyze supplier financial health | agent | parallel | Stage enters, alongside the sequential run | No | No | system | — |
-| 3 | Determine sign-off tier | api-workflow | sequential | After Run compliance and risk check | Yes | No | system | — |
-| 4 | Obtain procurement director sign-off | action | conditional-gate | After Determine sign-off tier, only when normalized spend is 500000 or more | No | No | Procurement Director | — |
-| 5 | Record compliance review decision | action | fan-in | After the director sign-off, or directly after Determine sign-off tier below the director threshold | Yes | No | Compliance Reviewer | — |
-| 6 | Obtain legal opinion | action | adhoc | A reviewer launches it while this phase is active | No | No | Legal Counsel | — |
-| 7 | Escalate delayed compliance review | action | event-triggered | This stage's SLA breaches | No | No | Procurement Operations Lead | — |
-| 8 | Send delay note for the compliance review | execute-connector-activity | conditional-gate | After Escalate delayed compliance review | No | No | system | — |
+| 2 | Record compliance review decision | action | sequential | After Run compliance and risk check | Yes | No | Compliance Reviewer | — |
 
 ##### Task 3.1: Run compliance and risk check
 
@@ -922,145 +821,18 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | riskRating | -> riskRating |
 | complianceFlags | -> complianceFlags |
 
-##### Task 3.2: Analyze supplier financial health
+##### Task 3.2: Record compliance review decision
 
-**Type:** agent
-**Activation Mode:** parallel
-**Design Rationale:** Judging whether financials line up with the size of business claimed, and comparing them against known fraud patterns such as signs of a shell company, is unstructured reasoning — so `agent`. The source calls it a helpful extra rather than a must, so it is optional and runs in parallel from stage entry rather than gating the sequential run.
-**Description:** Analyzes the supplier's financial health and compares it against known fraud patterns — signs of a shell company, or financials that do not line up with the size of business the supplier claims.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| current-stage-entered | — | Stage enters |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Process / Agent / RPA / API Workflow Task Detail
-
-**Resolved Resource:** SupplierFinancialHealthCheck
-**Folder Path:** Shared/uipath-maestro-case/SupplierOnboardingKit
-**Resource Identity:** c6f0ecb7-26e2-4365-bc51-a03d5b2edafc
-**Dispatch / Operation:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| companyName | string | =vars.companyName |
-| registrationCountry | string | =vars.countryOfRegistration |
-| expectedAnnualSpend | number | =vars.expectedAnnualSpend |
-| spendCurrency | string | =vars.spendCurrency |
-| offeringDescription | string | =vars.offeringDescription |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| financialHealthSummary | -> financialHealthSummary |
-| fraudIndicators | -> fraudIndicators |
-| concernLevel | -> concernLevel |
-
-##### Task 3.3: Determine sign-off tier
-
-**Type:** api-workflow
+**Type:** action
 **Activation Mode:** sequential
-**Design Rationale:** Banding the expected annual spend against fixed thresholds is deterministic rule evaluation packaged by a deployed API workflow, so `api-workflow`. The deployed workflow owns the threshold values and returns both the tier and a `directorSignOffRequired` flag; the director task's own skip condition carries the 500000 numeral executably so the policy is enforced on the case side too, not only inside the workflow.
-**Description:** Works out the right level of sign-off from the expected annual spend — under 50000 approved automatically, under 500000 covered by the buyer's earlier approval, 500000 or more requiring the procurement director's sign-off.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| runs-sequentially | — | After compliance check |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | No | — |
-
-###### Process / Agent / RPA / API Workflow Task Detail
-
-**Resolved Resource:** SupplierSignOffTierRules
-**Folder Path:** Shared/uipath-maestro-case/SupplierOnboardingKit
-**Resource Identity:** b3e2c59b-c3bd-4794-86d1-689de7bc2d6c
-**Dispatch / Operation:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| expectedAnnualSpend | number | =vars.expectedAnnualSpend |
-| spendCurrency | string | =vars.spendCurrency |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| signOffTier | -> signOffTier |
-| directorSignOffRequired | -> directorSignOffRequired |
-
-##### Task 3.4: Obtain procurement director sign-off
-
-**Type:** action
-**Activation Mode:** conditional-gate
-**Design Rationale:** A named human role signs off, and the tenant carries a deployed Action App for exactly that — so `action`. It activates only above the director threshold, so its entry is a conditional gate guarded on the tier task's own normalized spend output rather than on a case variable that would still be stale at gate time. It is optional because most applications never reach the threshold, and the reviewer's decision task converges over both paths so completion resolves either way.
-**Description:** Obtains the procurement director's sign-off on applications whose expected annual spend is 500000 or more.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| selected-tasks-completed("Determine sign-off tier") | =js:vars.$xref('Compliance and risk review','Determine sign-off tier','directorSignOffRequired') === true | Director threshold reached |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | =js:vars.expectedAnnualSpend < 500000 |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: Procurement Director Sign-off
-**Action App ID:** c20d48bf-4860-420c-b629-3ec8284acdc1
-**Deployment Folder:** Shared/uipath-maestro-case/Procurement Director Sign-off
-**actionType:** spend-tier-signoff
-**Recipient:** Role:Procurement Director
-**Priority:** High · **Task Title:** Sign off on a high-value supplier application · **Labels:** compliance, signoff
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " needs your sign-off because the expected annual spend is 500000 or more.\n\nCompany: " + vars.companyName + "\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\nSign-off tier: " + vars.signOffTier + "\n\nRisk rating: " + vars.riskRating + "\nCompliance flags: " + vars.complianceFlags + "\nFinancial health: " + vars.financialHealthSummary + "\nFraud indicators: " + vars.fraudIndicators + " (concern level " + vars.concernLevel + ")\nBuyer comments: " + vars.buyerComments) | No |
-| Comment | String | =vars.directorSignOffNotes | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| Action | -> directorSignOffDecision |
-| Comment | -> directorSignOffNotes |
-
-##### Task 3.5: Record compliance review decision
-
-**Type:** action
-**Activation Mode:** fan-in
-**Design Rationale:** The source is explicit that a person decides the path and the application waits for them to explicitly choose what happens next, so `action` and required. Its entry is an OR over both upstream paths — after the director signs off when the threshold was reached, and directly after the tier task with the exact inverse guard when it was not — so the stage resolves on every route without the optional director task being able to strand it.
+**Design Rationale:** The source is explicit that a person decides the path and the application waits for them to explicitly choose what happens next, so `action` and required. With the sign-off tier and the director sign-off out of scope there is no longer a second upstream path to converge, so the task is the second step of this stage's sequential run rather than a fan-in: it takes one `runs-sequentially` entry behind the policy check, whose risk rating is what the reviewer decides on. Every application now reaches this one reviewer on the same route, whatever it is worth.
 **Description:** Puts the whole picture in front of a compliance reviewer — the application, the compliance results, and the risk rating — who explicitly chooses whether the application goes to setup or is rejected.
 
 **Entry Condition:**
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| selected-tasks-completed("Obtain procurement director sign-off") | — | After director sign-off |
-| selected-tasks-completed("Determine sign-off tier") | =js:vars.$xref('Compliance and risk review','Determine sign-off tier','directorSignOffRequired') === false | Below director threshold |
+| runs-sequentially | — | After compliance check |
 
 **Task envelope**
 
@@ -1081,7 +853,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Type | Binding | Required |
 |-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + "\nCompany: " + vars.companyName + "\nContact: " + vars.contactName + " <" + vars.contactEmail + ">\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\n\nRisk rating: " + vars.riskRating + "\nCompliance flags: " + vars.complianceFlags + "\nScreening: " + vars.sanctionsFindings + "\nPossible duplicates: " + vars.duplicateSupplierIds + "\nFinancial health: " + vars.financialHealthSummary + "\nFraud indicators: " + vars.fraudIndicators + " (concern level " + vars.concernLevel + ")\n\nSign-off tier: " + vars.signOffTier + "\nDirector sign-off: " + vars.directorSignOffDecision + " - " + vars.directorSignOffNotes + "\nBuyer comments: " + vars.buyerComments + "\nReference check: " + vars.referenceCheckFindings + "\nLegal opinion: " + vars.legalOpinion + "\n\nChoose explicitly whether this application goes to setup or is rejected, and record why.") | No |
+| Content | String | =js:("Application " + metadata.ExternalId + "\nCompany: " + vars.companyName + "\nContact: " + vars.contactName + " <" + vars.contactEmail + ">\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\n\nRisk rating: " + vars.riskRating + "\nCompliance flags: " + vars.complianceFlags + "\nScreening: " + vars.sanctionsFindings + "\nPossible duplicates: " + vars.duplicateSupplierIds + "\nBuyer comments: " + vars.buyerComments + "\n\nChoose explicitly whether this application goes to setup or is rejected, and record why.") | No |
 | Comment | String | =vars.complianceComments | No |
 
 **Output Schema:**
@@ -1090,138 +862,6 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 |-------|------------------|
 | Comment | -> complianceComments |
 | — | complianceDecision = =js:vars.$xref('Compliance and risk review','Record compliance review decision','Action') |
-
-##### Task 3.6: Obtain legal opinion
-
-**Type:** action
-**Activation Mode:** adhoc
-**Design Rationale:** A reviewer who wants a legal opinion launches it on their own judgement, so it is manually triggered and optional. It is authored inside this stage because the source restricts pulling in counsel to the period while the application is in compliance and risk review. The application waits for the opinion by construction: the reviewer's own decision task is what holds the stage, and the opinion is bound into that task's inputs, so no decision is recorded before counsel has weighed in.
-**Description:** Asks legal counsel to weigh in on the application; their opinion is added to the case and read by the compliance reviewer before the decision is recorded.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| adhoc | — | Reviewer pulls in counsel |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: Supplier Legal Opinion
-**Action App ID:** cb2ddeb4-75d2-4ec1-95cb-533c6d8bf2e7
-**Deployment Folder:** Shared/uipath-maestro-case/Supplier Legal Opinion
-**actionType:** —
-**Recipient:** Role:Legal Counsel
-**Priority:** High · **Task Title:** Give a legal opinion on a supplier application · **Labels:** compliance, legal
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " - " + vars.companyName + "\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nOffering: " + vars.offeringDescription + "\n\nRisk rating: " + vars.riskRating + "\nCompliance flags: " + vars.complianceFlags + "\n\nGive your legal opinion on this application; the compliance reviewer will read it before deciding.") | No |
-| Comment | String | =vars.legalOpinion | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| Comment | -> legalOpinion |
-
-##### Task 3.7: Escalate delayed compliance review
-
-**Type:** action
-**Activation Mode:** event-triggered
-**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared across all five escalation tasks and code-switched by `actionType`, so one form serves every one of them without any borrowing the others' fields.
-**Description:** Raises a task for the procurement operations lead to step in and unblock this phase, and captures the new expected date they commit to.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| sla-status-change("Compliance and risk review","Compliance review SLA") | — | Compliance and risk review deadline missed |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: supplier-delay-escalation
-**Action App ID:** fb171d7c-33a1-4bb6-b09a-030044a7c0b6
-**Deployment Folder:** Shared/uipath-maestro-case
-**actionType:** phase-escalation
-**Recipient:** Role:Procurement Operations Lead
-**Priority:** Critical · **Task Title:** Unblock a supplier application that has missed the Compliance and risk review deadline · **Labels:** sla, escalation
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " for " + vars.companyName + " has missed the Compliance and risk review deadline.\n\nCategory: " + vars.offeringCategory + "\nAssigned buyer: " + vars.assignedBuyerEmail + "\nSubmitted: " + vars.submittedDate + "\nSupplier contact: " + vars.contactName + " <" + vars.contactEmail + ">\n\nStep in to unblock it and commit a new expected date for the supplier.") | No |
-| applicationReference | String | =metadata.ExternalId | No |
-| stageName | String | Compliance and risk review | No |
-| deadlineMissedOn | Any | =js:(new Date().toISOString()) | No |
-| daysOverdue | Number | 0 | No |
-| Comment | String | =vars.escalationNotes | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| newExpectedDate | -> complianceReviewRevisedDate |
-| Comment | -> escalationNotes |
-
-##### Task 3.8: Send delay note for the compliance review
-
-**Type:** execute-connector-activity
-**Activation Mode:** conditional-gate
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is gated on this stage's own escalation task completing rather than sequenced into the stage's ordered run, because it must send only after a deadline was actually missed and only once the operations lead has committed the new date. It reads that date directly from the escalation task's own `newExpectedDate` output, so it can never quote a date another phase's escalation set.
-**Description:** Sends the supplier a status note apologizing for the delay on this phase and giving the new expected date the operations lead committed to.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| selected-tasks-completed("Escalate delayed compliance review") | — | After escalation raised |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Connector Task Detail (type: `execute-connector-activity`)
-
-**Connector:** Microsoft Outlook 365 · **Connector Key:** uipath-microsoft-outlook365
-**Connection:** is-sandboxes-test@uipathsandboxes.onmicrosoft.com · **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
-**Activity Type ID:** c7ce0a96-2091-3d94-b16f-706ebb1eb351
-**Auth Method:** OAuth2
-**Account / Endpoint:** —
-**Operation:** Send email
-**Trigger / Event:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| message.toRecipients | string | =vars.contactEmail |
-| message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
-| message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Compliance and risk review\nNew expected date: " + vars.complianceReviewRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| response.status | -> lastEmailStatus |
-
 
 ---
 
@@ -1247,7 +887,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives supplier setup a 3-minute target, scaled to 24 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the procurement operations group can act before the deadline passes. The breach is answered by this stage's own escalation task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead.
+**Design Rationale:** The source gives supplier setup a 3-minute target, scaled to 24 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the procurement operations group can act before the deadline passes. Phase-delay remediation is limited to the intake check and the buyer review, so the breach here raises its breach escalation as a notification and starts no work.
 **SLA Type:** time-based
 **SLA Title:** Supplier setup SLA
 
@@ -1262,8 +902,6 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | 1 | Register supplier in ERP | api-workflow | sequential | Stage enters — first task in the sequential run | Yes | Yes | system | — |
 | 2 | Open contract negotiation case | case-management | parallel-after-predecessor | After Register supplier in ERP, alongside the portal confirmation | No | Yes | system | — |
 | 3 | Confirm supplier portal access | action | parallel-after-predecessor | After Register supplier in ERP, alongside the contract negotiation case | Yes | Yes | Supplier | — |
-| 4 | Escalate delayed supplier setup | action | event-triggered | This stage's SLA breaches | No | No | Procurement Operations Lead | — |
-| 5 | Send delay note for the supplier setup | execute-connector-activity | conditional-gate | After Escalate delayed supplier setup | No | No | system | — |
 
 ##### Task 4.1: Register supplier in ERP
 
@@ -1390,97 +1028,6 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 <!-- No decision buttons: the source makes the supplier's confirmation itself the completion signal
 ("waits for the supplier to confirm their access works, then setup is marked complete"), so completing the
 task IS the confirmation and there is no second outcome to route. -->
-
-
-##### Task 4.4: Escalate delayed supplier setup
-
-**Type:** action
-**Activation Mode:** event-triggered
-**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared across all five escalation tasks and code-switched by `actionType`, so one form serves every one of them without any borrowing the others' fields.
-**Description:** Raises a task for the procurement operations lead to step in and unblock this phase, and captures the new expected date they commit to.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| sla-status-change("Setting up the supplier","Supplier setup SLA") | — | Setting up the supplier deadline missed |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: supplier-delay-escalation
-**Action App ID:** fb171d7c-33a1-4bb6-b09a-030044a7c0b6
-**Deployment Folder:** Shared/uipath-maestro-case
-**actionType:** phase-escalation
-**Recipient:** Role:Procurement Operations Lead
-**Priority:** Critical · **Task Title:** Unblock a supplier application that has missed the Setting up the supplier deadline · **Labels:** sla, escalation
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " for " + vars.companyName + " has missed the Setting up the supplier deadline.\n\nCategory: " + vars.offeringCategory + "\nAssigned buyer: " + vars.assignedBuyerEmail + "\nSubmitted: " + vars.submittedDate + "\nSupplier contact: " + vars.contactName + " <" + vars.contactEmail + ">\n\nStep in to unblock it and commit a new expected date for the supplier.") | No |
-| applicationReference | String | =metadata.ExternalId | No |
-| stageName | String | Setting up the supplier | No |
-| deadlineMissedOn | Any | =js:(new Date().toISOString()) | No |
-| daysOverdue | Number | 0 | No |
-| Comment | String | =vars.escalationNotes | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| newExpectedDate | -> supplierSetupRevisedDate |
-| Comment | -> escalationNotes |
-
-##### Task 4.5: Send delay note for the supplier setup
-
-**Type:** execute-connector-activity
-**Activation Mode:** conditional-gate
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is gated on this stage's own escalation task completing rather than sequenced into the stage's ordered run, because it must send only after a deadline was actually missed and only once the operations lead has committed the new date. It reads that date directly from the escalation task's own `newExpectedDate` output, so it can never quote a date another phase's escalation set.
-**Description:** Sends the supplier a status note apologizing for the delay on this phase and giving the new expected date the operations lead committed to.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| selected-tasks-completed("Escalate delayed supplier setup") | — | After escalation raised |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Connector Task Detail (type: `execute-connector-activity`)
-
-**Connector:** Microsoft Outlook 365 · **Connector Key:** uipath-microsoft-outlook365
-**Connection:** is-sandboxes-test@uipathsandboxes.onmicrosoft.com · **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
-**Activity Type ID:** c7ce0a96-2091-3d94-b16f-706ebb1eb351
-**Auth Method:** OAuth2
-**Account / Endpoint:** —
-**Operation:** Send email
-**Trigger / Event:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| message.toRecipients | string | =vars.contactEmail |
-| message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
-| message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Setting up the supplier\nNew expected date: " + vars.supplierSetupRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| response.status | -> lastEmailStatus |
 
 
 ---
@@ -1866,81 +1413,6 @@ task IS the confirmation and there is no second outcome to route. -->
 
 ---
 
-
-### Secondary Stage: Overall SLA review (`overall_sla_review`)
-
-**Type:** Stage
-**Stage Kind:** secondary
-**Design Rationale:** The source requires the procurement director to get a task to review what went wrong when an application misses its overall 120-minute target, so the case-level breach is answered with work rather than a notification and lives in its own lane keyed on ONE `sla-status-change` entry against the root SLA. It is parallel oversight — the application must still run on to its own disposition while the review happens — so the stage and its entry row read `Interrupting: No` and the lane completes `exit-only`. Because a secondary stage is excluded from required-stage completion, this review orders itself before closure rather than hard-blocking it; making it required would block every application that never breached.
-**Description:** Raises a task for the procurement director to review what went wrong on an application that has missed its overall 120-minute target.
-**Required for Case Completion:** No
-**Interrupting:** No
-
-#### Stage Entry Conditions
-
-| WHEN | IF | Interrupting | Display Name |
-|------|-----|-------------|--------------|
-| sla-status-change("root","Supplier Onboarding SLA") | — | No | Overall target missed |
-
-#### Stage Exit Conditions
-
-| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
-|------|-----|-----------|---------------------|--------------|
-| required-tasks-completed | — | exit-only | Yes | Overall review complete |
-
-#### Tasks
-
-| # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
-|---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | Review overall SLA breach | action | parallel | Stage enters | Yes | Yes | Procurement Director | — |
-
-##### Task S4.1: Review overall SLA breach
-
-**Type:** action
-**Activation Mode:** parallel
-**Design Rationale:** A named human role reviews what went wrong, and the tenant carries a deployed escalation Action App for it — so `action`. It is the lane's only task, so it starts with the stage. The escalation app is shared with the phase-delay lane and code-switched by a distinct `actionType`, so the director's overall review and the operations lead's phase escalation stay distinguishable on one form. `Run Only Once` is Yes because the overall target can only be missed once.
-**Description:** Puts the whole application timeline in front of the procurement director to review what went wrong before the application closes.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| current-stage-entered | — | Stage enters |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | Yes | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: supplier-delay-escalation
-**Action App ID:** fb171d7c-33a1-4bb6-b09a-030044a7c0b6
-**Deployment Folder:** Shared/uipath-maestro-case
-**actionType:** overall-sla-review
-**Recipient:** Role:Procurement Director
-**Priority:** Critical · **Task Title:** Review a supplier application that missed its overall 120-minute target · **Labels:** sla, director-review
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " for " + vars.companyName + " has missed its overall 120-minute target.\n\nSubmitted: " + vars.submittedDate + "\nCategory: " + vars.offeringCategory + "\nAssigned buyer: " + vars.assignedBuyerEmail + "\nIntake check: " + vars.validationOutcome + "\nBuyer decision: " + vars.buyerDecision + "\nCompliance decision: " + vars.complianceDecision + "\nBank verification: " + vars.bankVerificationStatus + "\nEscalation history: " + vars.escalationNotes + "\n\nReview what went wrong before the application closes.") | No |
-| applicationReference | String | =metadata.ExternalId | No |
-| stageName | String | Overall case | No |
-| deadlineMissedOn | Any | =js:(new Date().toISOString()) | No |
-| daysOverdue | Number | 0 | No |
-| Comment | String | =vars.escalationNotes | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| Comment | -> escalationNotes |
-
----
-
 ## Section 3: Personas & App Views
 
 **Purpose:** Who interacts with the case and through what interfaces.
@@ -1950,24 +1422,22 @@ task IS the confirmation and there is no second outcome to route. -->
 | Persona | Stage Scope | Permissions | Description |
 |---------|-------------|-------------|-------------|
 | Supplier | Checking the application, Setting up the supplier | View, Act, Comment | The prospective supplier. Attaches further documents while the application is being checked, confirms their supplier-portal access during setup, and can withdraw the application during any of the three review phases. |
-| Buyer | Buyer review | View, Act, Comment | The buyer assigned to the application's category. Approves, declines, or sends the application back for corrections, and may request more information or order a reference check while the application is with them. |
+| Buyer | Buyer review | View, Act, Comment | The buyer assigned to the application's category. Approves, declines, or sends the application back for corrections. Reaching out to the supplier for clarification is done in the case comment thread rather than as a task. |
 | Category Manager | Buyer review | View, Comment | Notified via the Category Management group when buyer review reaches 70% of its target so a stalled review is bumped up before the deadline passes. |
-| Compliance Reviewer | Compliance and risk review | View, Act, Comment | Sees the whole picture — the application, the compliance results, and the risk rating — and explicitly chooses whether the application goes to setup or is rejected. May pull in legal counsel. |
-| Legal Counsel | Compliance and risk review | View, Act | Gives a legal opinion when a reviewer asks counsel to weigh in. |
-| Procurement Director | Compliance and risk review (normalized spend >= 500000 only), Overall SLA review | View, Act, Comment | Signs off on applications whose expected annual spend is 500000 or more, and reviews what went wrong when an application misses its overall 120-minute target. |
-| Procurement Operations Lead | Checking the application, Buyer review, Compliance and risk review, Setting up the supplier | View, Act, Reassign, Comment | Runs the intake check, and steps in to unblock any phase that has missed its deadline, committing a new expected date for the supplier. |
+| Compliance Reviewer | Compliance and risk review | View, Act, Comment | Sees the whole picture — the application, the compliance results, and the risk rating — and explicitly chooses whether the application goes to setup or is rejected. |
+| Procurement Operations Lead | Checking the application, Buyer review | View, Act, Reassign, Comment | Runs the intake check, and steps in to unblock the intake check or the buyer review when either misses its deadline, committing a new expected date for the supplier. |
 
-<!-- The Procurement Director's spend-gated scope is encoded executably in Task 3.4's entry condition
-(`vars.expectedAnnualSpend < 500000` skips it) and in its entry guard on the tier task's own
-`directorSignOffRequired` output, not only in this table. -->
+<!-- The Procurement Director and Legal Counsel are no longer personas of this case: the director sign-off,
+the sign-off tier that gated it and the overall-SLA review lane are all out of scope, and the legal opinion
+task with them, so neither role now holds a task, a recipient cell or an escalation on any element. -->
 
 ### Process App Views
 
 | App | View | Persona | Purpose | Key Components |
 |-----|------|---------|---------|----------------|
 | Supplier Onboarding | Case List | Procurement Operations Lead | Track every open application and spot the ones running out of time | Reference, company, category, current stage, expected annual spend, time remaining against the 120-minute target, phase SLA status, assigned buyer |
-| Supplier Onboarding | Case Detail | Supplier, Buyer, Compliance Reviewer, Procurement Director, Legal Counsel, Procurement Operations Lead | Work the application and leave comments on it at any point while it is open | Application summary, supporting documents, screening and risk results, decision history, phase SLA warnings, comment thread, phase-scoped actions |
-| Supplier Onboarding | Dashboard | Procurement Director | See where applications resolve and where they run late | Outcome mix (onboarded, rejected, withdrawn), time-to-resolution against 120 minutes, phase breach counts, applications above the director sign-off threshold |
+| Supplier Onboarding | Case Detail | Supplier, Buyer, Compliance Reviewer, Procurement Operations Lead | Work the application and leave comments on it at any point while it is open | Application summary, supporting documents, screening and risk results, decision history, phase SLA warnings, comment thread, phase-scoped actions |
+| Supplier Onboarding | Dashboard | Procurement Operations Lead | See where applications resolve and where they run late | Outcome mix (onboarded, rejected, withdrawn), time-to-resolution against 120 minutes, phase breach counts |
 
 ---
 
@@ -1979,7 +1449,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | Connector | Connector Key | System | Connection (ID) | Auth Method | Operations Used | Used By Tasks |
 |-----------|---------------|--------|-----------------|-------------|-----------------|---------------|
-| Microsoft Outlook 365 | uipath-microsoft-outlook365 | Microsoft 365 mail | is-sandboxes-test@uipathsandboxes.onmicrosoft.com (dd657127-91f5-4568-a3a3-c024bc03fb0f) | OAuth2 | Send email | Notify buyer of application, Send supplier welcome message, Send rejection notice to supplier, Send withdrawal confirmation, Send delay status note to supplier |
+| Microsoft Outlook 365 | uipath-microsoft-outlook365 | Microsoft 365 mail | is-sandboxes-test@uipathsandboxes.onmicrosoft.com (dd657127-91f5-4568-a3a3-c024bc03fb0f) | OAuth2 | Send email | Notify buyer of application, Send supplier welcome message, Send rejection notice to supplier, Send withdrawal confirmation, Send delay note for the application check, Send delay note for the buyer review |
 
 #### Microsoft Outlook 365
 
@@ -1995,7 +1465,6 @@ task IS the confirmation and there is no second outcome to route. -->
 |----------|--------|------------------------|------------------|---------------|
 | SupplierMasterScreeningLookup | Shared/uipath-maestro-case/SupplierOnboardingKit | 919ff26e-8bb4-4755-9bfd-0d04a51d6639 | caseId, companyName, registrationCountry, offeringCategory → duplicateSupplierIds, sanctionsFindings, assignedBuyerEmail, Error | Pull supplier records and screening |
 | SupplierComplianceRiskCheck | Shared/uipath-maestro-case/SupplierOnboardingKit | 69027bbb-2c90-43c3-93af-a09ba7821892 | caseId, companyName, registrationCountry, sanctionsFindings, duplicateSupplierIds → riskRating, complianceFlags, Error | Run compliance and risk check |
-| SupplierSignOffTierRules | Shared/uipath-maestro-case/SupplierOnboardingKit | b3e2c59b-c3bd-4794-86d1-689de7bc2d6c | expectedAnnualSpend, spendCurrency → signOffTier, directorSignOffRequired, Error | Determine sign-off tier |
 | SupplierErpRegistration | Shared/uipath-maestro-case/SupplierOnboardingKit | d5c07b08-d673-477c-b047-de330699a183 | caseId, companyName, contactName, contactEmail, registrationCountry, spendCurrency, bankDetailsDocument → supplierId, bankVerificationStatus, Error | Register supplier in ERP |
 | SupplierApprovedRegisterUpdate | Shared/uipath-maestro-case/SupplierOnboardingKit | 0c3faaff-8e3e-4b68-bf69-2e3b869fb301 | caseId, supplierId, companyName → registeredAt, Error | Record supplier in approved register |
 | SupplierRejectionAuditLog | Shared/uipath-maestro-case/SupplierOnboardingKit | 1279ba08-7d7d-4cb2-ba52-2fe9809dce00 | caseId, companyName, rejectedBy, rejectionReason, rejectedAt → auditRecordId, Error | Log rejection for audit |
@@ -2006,26 +1475,22 @@ task IS the confirmation and there is no second outcome to route. -->
 | Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks |
 |-------|--------|------------------------|----------------------------------------|---------------|
 | SupplierOfferingCategoryMatch | Shared/uipath-maestro-case/SupplierOnboardingKit | 567afdb0-ee17-4c27-9b69-09b2bc7a34c8 | offeringDescription, selectedCategory, submittedDocuments → categoryMatches, suggestedCategory, reviewNotes, Error | Confirm offering category match |
-| SupplierFinancialHealthCheck | Shared/uipath-maestro-case/SupplierOnboardingKit | c6f0ecb7-26e2-4365-bc51-a03d5b2edafc | companyName, registrationCountry, expectedAnnualSpend, spendCurrency, offeringDescription → financialHealthSummary, fraudIndicators, concernLevel, Error | Analyze supplier financial health |
 
 ### Action Apps
 
 | Action App | Folder | Action App ID | actionType | Used By Tasks |
 |------------|--------|---------------|------------|---------------|
 | Supplier Application Validation | Shared/uipath-maestro-case/Supplier Application Validation | 604acda5-8894-447f-b007-1989ec74a7e2 | — | Validate application details |
-| supplier-document-upload | Shared/uipath-maestro-case | e0145242-77aa-40b5-8752-e037ec022d40 | — | Attach supporting documents |
 | buyer-supplier-review-v2 | Shared/uipath-maestro-case | ec16bdfe-6f7b-4f4e-9988-70ee7c86b803 | — | Record buyer review decision |
-| Supplier Information Request | Shared/uipath-maestro-case/Supplier Information Request | 5bcb5523-93b1-459f-ad66-3bd947b32995 | — | Request more information from supplier |
-| Supplier Reference Check | Shared/uipath-maestro-case/Supplier Reference Check | 741e6c61-65ee-4c6e-8ce5-855e743b50dd | — | Order reference check |
-| Supplier Legal Opinion | Shared/uipath-maestro-case/Supplier Legal Opinion | cb2ddeb4-75d2-4ec1-95cb-533c6d8bf2e7 | — | Obtain legal opinion |
+| supplier-document-upload | Shared/uipath-maestro-case | e0145242-77aa-40b5-8752-e037ec022d40 | — | Attach supporting documents |
 | Supplier Compliance Review | Shared/uipath-maestro-case/Supplier Compliance Review | 1229c1ed-ca6b-4a89-9776-883bd0669684 | — | Record compliance review decision |
-| Procurement Director Sign-off | Shared/uipath-maestro-case/Procurement Director Sign-off | c20d48bf-4860-420c-b629-3ec8284acdc1 | spend-tier-signoff | Obtain procurement director sign-off |
 | Supplier Portal Access Confirmation | Shared/uipath-maestro-case/Supplier Portal Access Confirmation | 8bfee375-9973-446d-b409-6799688ffe49 | — | Confirm supplier portal access |
-| supplier-delay-escalation | Shared/uipath-maestro-case | fb171d7c-33a1-4bb6-b09a-030044a7c0b6 | phase-escalation, overall-sla-review | Escalate delayed application, Review overall SLA breach |
+| supplier-delay-escalation | Shared/uipath-maestro-case | fb171d7c-33a1-4bb6-b09a-030044a7c0b6 | phase-escalation | Escalate delayed application check, Escalate delayed buyer review |
 
-<!-- supplier-delay-escalation is deliberately shared across two tasks and code-switched by a distinct
-actionType per task, so one deployed escalation form serves the operations lead's phase escalation and the
-director's overall-target review without either borrowing the other's dispatch. -->
+<!-- supplier-delay-escalation is shared by the two remaining phase escalations under one
+phase-escalation dispatch. They are the same work on a different phase and declare the identical field
+set, so neither borrows a field the other owns; the phase is carried in the stageName input and the
+revised date lands in a per-phase variable. -->
 
 ### Child Cases
 
@@ -2047,30 +1512,30 @@ director's overall-target review without either borrowing the other's dispatch. 
 | Dimension | Requirement / Design decision |
 |---|---|
 | Security | Supplier-supplied documents (registration certificate, insurance, tax forms, bank details) are job attachments carried on the case, not copied into task payloads; the bank details document is bound only to ERP registration, the one task that needs it. Recipients are typed roles rather than named individuals, except the buyer, who is resolved at runtime from the category lookup. |
-| Performance | Five phases, at most fifteen tasks on any single path, four of them optional. Both agent assessments run in parallel with required work so neither adds to the critical path. |
+| Performance | Five phases, at most twelve tasks on any single path, two of them optional. The one agent assessment runs in parallel with required work so it does not add to the critical path. |
 | Scalability | Every human task routes to a role rather than a single named user, so throughput is not bounded by one person; the buyer is the exception and is resolved per category by the intake lookup. |
 | Availability / Resilience | ERP registration and the contract-negotiation child case are marked `Run Only Once`, so a re-entered setup phase cannot mint a second supplier record or a second negotiation case. Stage-1 tasks are re-runnable because a send-back for corrections is a genuine new attempt. |
-| Logging & Monitoring | Case SLA plus a per-phase SLA on all seven primary and terminal stages; at-risk warnings at 70% (75% at case level) and breach responses that create real work on the four in-flight phases. Every rejection is written to the company's audit records with what, who, why and when. |
-| Compliance | The compliance reviewer's decision is the only way out of compliance and risk review — the stage carries no unguarded completion, so the application never advances on its own. Sign-off above 500000 requires the procurement director. Every rejection is auditable. |
+| Logging & Monitoring | Case SLA plus a per-phase SLA on all seven primary and terminal stages; at-risk warnings at 70% (75% at case level). Breach creates real work on the intake check and the buyer review only; every other breach, the overall case target included, is a notification. Every rejection is written to the company's audit records with what, who, why and when. |
+| Compliance | The compliance reviewer's decision is the only way out of compliance and risk review — the stage carries no unguarded completion, so the application never advances on its own. That reviewer is now the only approval gate: no value threshold routes an application to a second approver, so a high-value and a low-value application are treated alike. Every rejection is auditable. |
 
 ## Testing Strategy
 
 | Scenario | Setup | Expected Outcome |
 |---|---|---|
 | Happy path — supplier onboarded | Well-formed application, no duplicates, clean screening, spend 120000 USD, buyer approves, compliance sends to setup, ERP verifies bank details, supplier confirms portal access | Case reaches `Supplier onboarded`, welcome message sent with the supplier ID, register updated, case marked complete and closed |
-| High-value path — director sign-off | Same as happy path with expected annual spend 750000 USD | `Obtain procurement director sign-off` activates, the compliance decision waits for it, then the application proceeds to setup |
-| Below-threshold path — no director step | Expected annual spend 30000 USD | `Obtain procurement director sign-off` does not activate; `Record compliance review decision` starts directly off the tier task's inverse guard and the stage still completes |
+| Spend does not route | Run the happy path twice, at 30000 USD and at 750000 USD | Both applications take the identical route: `Record compliance review decision` starts off the policy check in both, no second approver is involved, and the two runs differ only in the spend figure displayed on the review forms |
 | Buyer declines | Buyer picks Decline | Buyer review exits without completing, `Application rejected` enters on the decline guard, rejection notice sent and audit logged, case closed **not** marked complete |
 | Compliance rejects | Compliance reviewer picks Reject | Compliance and risk review exits without completing, `Application rejected` enters on the reject guard, case closed not marked complete |
 | Bank details fail verification | ERP registration returns bankVerificationStatus failed | Setup exits without completing, portal confirmation never starts, `Application rejected` enters on the verification guard, case closed not marked complete |
 | Supplier withdraws mid-review | Supplier withdraws while the application is in each of Checking the application, Buyer review, and Compliance and risk review | `Application withdrawn` enters from the stage picker in all three phases, confirmation sent, pending reviews cancelled and timers switched off, case closed not marked complete |
 | Withdrawal blocked after setup begins | Attempt to withdraw while the application is in Setting up the supplier | The withdrawal lane is not offered — setup exposes no stage picker |
-| Sent back for corrections and resubmitted | Buyer picks Send back for corrections, the supplier fixes the issues and adds a document, the application is re-checked and approved | Buyer review exits without completing, `Checking the application` re-enters on the send-back guard, its tasks re-run, and the application reaches a decision again |
-| Phase deadline missed | Hold each of the four in-flight phases past its target in turn | The breached stage's own `Escalate delayed <phase>` task activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the <phase>` sends the supplier a note naming that phase and carrying the lead's revised date; the phase's own work continues meanwhile and its required tasks are unaffected |
+| Sent back for corrections and resubmitted | Buyer picks Send back for corrections, the supplier fixes the issues and adds a document, the application is re-checked and approved | Buyer review exits without completing, `Checking the application` re-enters on the send-back guard, its tasks re-run, and the application reaches a decision again. The supplier answers the send-back through `Attach supporting documents`, which they launch while the re-entered phase is active, so the corrected paperwork reaches the intake check that re-runs |
+| Phase deadline missed (escalating phases) | Hold `Checking the application`, then `Buyer review`, past its target | The breached stage's own `Escalate delayed <phase>` task activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the <phase>` sends the supplier a note naming that phase and carrying the lead's revised date, read from that stage's own revised-date variable; the phase's own work continues meanwhile and its required tasks are unaffected |
+| Phase deadline missed (notifying phases) | Hold `Compliance and risk review`, then `Setting up the supplier`, past its target | Breach escalation notification only; no task is started, no note reaches the supplier, and the phase's work is untouched |
 | Phase at risk | Hold Buyer review past 70% of 32 minutes | At-risk warning raised and the Category Manager notified; no lane entered and no routing change |
-| Overall target missed | Hold the application past 120 minutes | `Overall SLA review` enters non-interruptively and the procurement director receives the review task while the application continues to its disposition |
+| Overall target missed | Hold the application past 120 minutes | Procurement leadership is notified; no stage is entered, no task is raised, and the application continues to its disposition |
 | Wrap-up breach does not escalate | Hold `Application rejected` past 16 minutes | At-risk and breach notifications only; no delay note is sent to a supplier already rejected |
-| Phase-scoped actions | Attempt each optional action from every phase | Document upload only in Checking the application; information request and reference check only in Buyer review; legal opinion only in Compliance and risk review |
+| Phase-scoped actions | Attempt the optional document upload from every phase | The supplier's document upload is offered only while the application is in Checking the application; it is the case's only manually launched task |
 | Closed case is immovable | Reach each of the three terminal outcomes and attempt to move the case | No entry condition matches; the case stays closed |
 
 ---

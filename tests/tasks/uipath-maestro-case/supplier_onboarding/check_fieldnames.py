@@ -8,7 +8,7 @@ status`, taking every task that reads it.
 
 Four assertions:
 
- 1. Each of the eight connector tasks reads its delivery status from the lowercase
+ 1. Each of the six connector tasks reads its delivery status from the lowercase
     wire path `response.status`.
  2. That path lands in the one variable the SDD names for it.
  3. `displayName` is NOT part of this contract. This build labels the output

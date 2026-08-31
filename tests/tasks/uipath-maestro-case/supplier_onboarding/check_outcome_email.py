@@ -14,7 +14,7 @@ depends on the contactEmail default the build chose, and the sandbox address in 
 SDD bounces, so every send lands a bounce notice in the Inbox. Grading the Inbox would fail
 a correct build for a fixture's choice of address.
 
-Attribution is by the case's own ExternalId. Of the eight connector tasks only 'Notify
+Attribution is by the case's own ExternalId. Of the six connector tasks only 'Notify
 buyer of application' puts it in the subject; every other subject carries just the company
 name, which is identical across runs and cannot identify one. That one message is enough:
 it is the first sequential task in 'Buyer review', so every route that leaves the intake

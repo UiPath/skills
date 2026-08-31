@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 """SupplierOnboarding: did the SLA responses and their per-phase wiring survive?
 
-Seven assertions. `uip maestro case validate` accepts every failure below.
+Six assertions. `uip maestro case validate` accepts every failure below.
 
  1. The case SLA is 120 minutes and warns at 75%. Stages warn at 70%, a figure the
     source states rather than one derived from a band; copying the stage band onto
     the case fires the overall warning six minutes early.
- 2. Seven stages carry an SLA, each at its own duration. The oversight lane carries
-    none.
- 3. Four phase breaches start a task INSIDE the breached stage: the task holds the
-    `sla-status-change` rule on its OWN entry. A stage-entry rule instead re-enters
-    the stage and re-runs its other tasks. Both shapes validate.
- 4. The case breach enters the oversight lane, exactly once, non-interruptively.
- 5. The three wrap-up phases notify on breach and start nothing. Apologising for a
+ 2. All seven stages carry an SLA, each at its own duration.
+ 3. The two front-end phase breaches start a task INSIDE the breached stage: the
+    task holds the `sla-status-change` rule on its OWN entry. A stage-entry rule
+    instead re-enters the stage and re-runs its other tasks. Both shapes validate.
+ 4. The remaining five phases notify on breach and start nothing. Apologising for a
     delay and promising a new date on an application already closed is wrong.
- 6. The buyer's at-risk warning reaches the Category Management group, so a stalled
+ 5. The buyer's at-risk warning reaches the Category Management group, so a stalled
     review is bumped up before the deadline rather than after it.
- 7. Each phase writes its revised date into its OWN slot and its delay note reads
+ 6. Each phase writes its revised date into its OWN slot and its delay note reads
     that same slot. One shared slot, or a note reading a sibling's slot, makes the
     note quote a date that phase never committed to. This is the regression guard
-    for a defect that shipped once already: four notes read a name the case held no
-    slot for, so every one of them would have gone out with the date blank.
+    for a defect that shipped once already: every delay note read a name the case
+    held no slot for, so all of them would have gone out with the date blank.
 
 Read-only. Exit 0 clean, 1 on findings.
 """
@@ -182,27 +180,7 @@ def main() -> int:
                 "stage and re-runs its other tasks"
             )
 
-    # ---- 4. the case breach enters the oversight lane ----------------------
-    lane = by_label.get(E.SLA_REVIEW)
-    if lane is not None:
-        lane_rules = [
-            (cond, r)
-            for cond in P.entry_conditions(lane)
-            for r in P.sla_status_change_rules(cond)
-        ]
-        if len(lane_rules) != 1:
-            problems.append(
-                f"{E.SLA_REVIEW!r} has {len(lane_rules)} `sla-status-change` entry rule(s); "
-                "the SDD keys the lane on exactly one, against the root SLA"
-            )
-        for cond, _rule in lane_rules:
-            if cond.get("isInterrupting"):
-                problems.append(
-                    f"{E.SLA_REVIEW!r} entry interrupts; the review runs alongside the "
-                    "application, which must still reach its own disposition"
-                )
-
-    # ---- 5. wrap-up phases notify and start nothing ------------------------
+    # ---- 4. the remaining phases notify and start nothing -------------------
     escalation_task_names = set(E.START_TASK_ON_BREACH)
     for label in sorted(E.NOTIFY_ONLY_BREACH_STAGES):
         node = by_label.get(label)
@@ -233,7 +211,7 @@ def main() -> int:
                     f"phase-escalation task {name!r} appears in wrap-up stage {label!r}"
                 )
 
-    # ---- 6. the buyer's at-risk warning reaches Category Management --------
+    # ---- 5. the buyer's at-risk warning reaches Category Management --------
     buyer = by_label.get(E.BUYER)
     if buyer is not None:
         recipients = {
@@ -248,7 +226,7 @@ def main() -> int:
                 f"stalled review up to {E.BUYER_AT_RISK_GROUP!r} before the deadline passes"
             )
 
-    # ---- 7. each phase's revised date stays in its own phase ---------------
+    # ---- 6. each phase's revised date stays in its own phase ---------------
     names_to_task = {P.task_name(t): t for _stage, t in P.all_tasks(caseplan)}
     declared = P.variable_names(caseplan) | P.variable_ids(caseplan)
 
@@ -304,8 +282,8 @@ def main() -> int:
             f"OK: SLA responses survived — {E.CASE_SLA[0]}{E.CASE_SLA[1]} case target "
             f"warning at {E.CASE_AT_RISK_PERCENT}%, {len(E.STAGE_SLA)} stage SLAs at "
             f"{E.STAGE_AT_RISK_PERCENT}%, {len(E.START_TASK_ON_BREACH)} phase breaches "
-            "starting a task on that stage's own event, one non-interrupting oversight "
-            f"lane, {len(E.NOTIFY_ONLY_BREACH_STAGES)} notify-only wrap-ups, and each "
+            "starting a task on that stage's own event, "
+            f"{len(E.NOTIFY_ONLY_BREACH_STAGES)} notify-only phases, and each "
             "phase's revised date confined to its own slot"
         )
         return 0

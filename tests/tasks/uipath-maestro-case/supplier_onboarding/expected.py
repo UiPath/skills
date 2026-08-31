@@ -9,7 +9,7 @@ Two kinds of constant live here:
    and fails loudly when its parse comes up short, so a fixture reshuffle cannot
    silently turn an assertion into a no-op.
 
-2. **Read off the deployed tenant** — the twenty resource identities and the Outlook
+2. **Read off the deployed tenant**: the fourteen resource identities and the Outlook
    connection. A tenant reinstall re-mints every one of them; re-sweep the fixture,
    then re-run `sweep_guids.py` and paste the result here.
 
@@ -27,7 +27,7 @@ FIXTURE_SDD = os.path.join(HERE, "fixtures", "sdd.md")
 
 # sha256 of the fixture as committed. The YAML asserts this separately; the graders
 # do not, so a deliberate fixture edit does not have to touch every checker.
-FIXTURE_SHA256 = "7a6e0312a846ed2a69cf287c94396ebafe3daeb75fa096a7f011c0d892390a24"
+FIXTURE_SHA256 = "9c78112f0679c7cf2592925ac9171c7014ce75417e6eece675a6f761c7f3a14d"
 
 CASEPLAN_GLOB = "**/caseplan.json"
 
@@ -40,7 +40,6 @@ SETUP = "Setting up the supplier"
 ONBOARDED = "Supplier onboarded"
 REJECTED = "Application rejected"
 WITHDRAWN = "Application withdrawn"
-SLA_REVIEW = "Overall SLA review"
 
 STAGES = [
     (CHECKING, "checking_application", "primary"),
@@ -50,7 +49,6 @@ STAGES = [
     (ONBOARDED, "supplier_onboarded", "primary"),
     (REJECTED, "application_rejected", "secondary"),
     (WITHDRAWN, "application_withdrawn", "secondary"),
-    (SLA_REVIEW, "overall_sla_review", "secondary"),
 ]
 PRIMARY_STAGES = {label for label, _, kind in STAGES if kind == "primary"}
 SECONDARY_STAGES = {label for label, _, kind in STAGES if kind == "secondary"}
@@ -61,10 +59,9 @@ SECONDARY_STAGES = {label for label, _, kind in STAGES if kind == "secondary"}
 # single most likely way to mis-implement this case.
 WAIT_FOR_USER_STAGES = {CHECKING, BUYER, COMPLIANCE}
 
-# Secondary lanes that take the application over. The oversight lane runs alongside
-# the application instead, so it is interrupting=False.
+# Both secondary lanes take the application over: entering one is how the application ends.
 INTERRUPTING_SECONDARY = {REJECTED, WITHDRAWN}
-NON_INTERRUPTING_SECONDARY = {SLA_REVIEW}
+NON_INTERRUPTING_SECONDARY: set[str] = set()
 
 TERMINAL_STAGES = {ONBOARDED, REJECTED, WITHDRAWN}
 
@@ -83,27 +80,17 @@ STAGE_TASKS = {
     BUYER: [
         ("Notify buyer of application", "execute-connector-activity", True, False),
         ("Record buyer review decision", "action", True, False),
-        ("Request more information from supplier", "action", False, False),
-        ("Order reference check", "action", False, False),
         ("Escalate delayed buyer review", "action", False, False),
         ("Send delay note for the buyer review", "execute-connector-activity", False, False),
     ],
     COMPLIANCE: [
         ("Run compliance and risk check", "api-workflow", True, False),
-        ("Analyze supplier financial health", "agent", False, False),
-        ("Determine sign-off tier", "api-workflow", True, False),
-        ("Obtain procurement director sign-off", "action", False, False),
         ("Record compliance review decision", "action", True, False),
-        ("Obtain legal opinion", "action", False, False),
-        ("Escalate delayed compliance review", "action", False, False),
-        ("Send delay note for the compliance review", "execute-connector-activity", False, False),
     ],
     SETUP: [
         ("Register supplier in ERP", "api-workflow", True, True),
         ("Open contract negotiation case", "case-management", False, True),
         ("Confirm supplier portal access", "action", True, True),
-        ("Escalate delayed supplier setup", "action", False, False),
-        ("Send delay note for the supplier setup", "execute-connector-activity", False, False),
     ],
     ONBOARDED: [
         ("Send supplier welcome message", "execute-connector-activity", True, True),
@@ -117,26 +104,23 @@ STAGE_TASKS = {
         ("Send withdrawal confirmation", "execute-connector-activity", True, True),
         ("Close out withdrawn application", "api-workflow", True, True),
     ],
-    SLA_REVIEW: [
-        ("Review overall SLA breach", "action", True, True),
-    ],
 }
 
-TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 32
+TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 21
 TASK_TYPE_COUNTS = {
-    "action": 14,
-    "api-workflow": 7,
-    "agent": 2,
-    "execute-connector-activity": 8,
+    "action": 7,
+    "api-workflow": 6,
+    "agent": 1,
+    "execute-connector-activity": 6,
     "case-management": 1,
 }
 
 # Optional tasks a person launches on their own judgement, each locked to one stage.
+# The one optional task a person launches on their own judgement. It is the supplier's, and it is
+# the only way a corrected document reaches an application the buyer sent back, so a send-back that
+# re-enters the intake phase has something to answer it.
 ADHOC_TASKS = {
     "Attach supporting documents": CHECKING,
-    "Request more information from supplier": BUYER,
-    "Order reference check": BUYER,
-    "Obtain legal opinion": COMPLIANCE,
 }
 
 # --- SLAs ---------------------------------------------------------------------
@@ -157,25 +141,26 @@ STAGE_SLA = {                       # label -> (count, unit)
     REJECTED: (16, "min"),
     WITHDRAWN: (16, "min"),
 }
-# The oversight lane is the one stage with no SLA of its own.
-NO_SLA_STAGES = {SLA_REVIEW}
+# Every stage carries its own SLA.
+NO_SLA_STAGES: set[str] = set()
 
 # Breach answered by starting a task INSIDE the breached stage: the task carries the
 # `sla-status-change` rule on its OWN entry. A stage-entry rule instead would re-enter
 # the stage and re-run its other tasks. `validate` accepts both shapes.
+# Two phases answer a breach this way. Two rather than one is deliberate: a single phase cannot
+# show that each writes its OWN revised-date slot, which is the defect this pair exists to catch.
 START_TASK_ON_BREACH = {
     "Escalate delayed application check": (CHECKING, "Application check SLA"),
     "Escalate delayed buyer review": (BUYER, "Buyer review SLA"),
-    "Escalate delayed compliance review": (COMPLIANCE, "Compliance review SLA"),
-    "Escalate delayed supplier setup": (SETUP, "Supplier setup SLA"),
 }
 
-# Breach answered by entering a separate lane, which the root SLA does exactly once.
-ENTER_STAGE_ON_BREACH = {SLA_REVIEW: ("root", "Supplier Onboarding SLA")}
+# No breach enters a separate lane. The case-level breach notifies and starts nothing.
+ENTER_STAGE_ON_BREACH: dict[str, tuple[str, str]] = {}
 
-# Wrap-up phases warn and notify but never start remediation work: apologising for a
-# delay and promising a new date on an application that is already finished is wrong.
-NOTIFY_ONLY_BREACH_STAGES = {ONBOARDED, REJECTED, WITHDRAWN}
+# Phases that warn and notify but never start remediation work. The two review phases without an
+# escalation task are here for the same reason as the wrap-ups: nothing is left to remediate that a
+# notification does not already cover.
+NOTIFY_ONLY_BREACH_STAGES = {COMPLIANCE, SETUP, ONBOARDED, REJECTED, WITHDRAWN}
 
 # Group the buyer's at-risk warning goes to, so a stalled review is bumped up before
 # the deadline rather than after it.
@@ -188,20 +173,14 @@ BUYER_AT_RISK_GROUP = "Category Management"
 PHASE_REVISED_DATE = {
     CHECKING: "applicationCheckRevisedDate",
     BUYER: "buyerReviewRevisedDate",
-    COMPLIANCE: "complianceReviewRevisedDate",
-    SETUP: "supplierSetupRevisedDate",
 }
 ESCALATION_OF_PHASE = {
     CHECKING: "Escalate delayed application check",
     BUYER: "Escalate delayed buyer review",
-    COMPLIANCE: "Escalate delayed compliance review",
-    SETUP: "Escalate delayed supplier setup",
 }
 DELAY_NOTE_OF_PHASE = {
     CHECKING: "Send delay note for the application check",
     BUYER: "Send delay note for the buyer review",
-    COMPLIANCE: "Send delay note for the compliance review",
-    SETUP: "Send delay note for the supplier setup",
 }
 
 # --- Literal fidelity ---------------------------------------------------------
@@ -213,10 +192,6 @@ DELAY_NOTE_OF_PHASE = {
 STAGE_NAME_LITERAL = {
     "Escalate delayed application check": CHECKING,
     "Escalate delayed buyer review": BUYER,
-    "Escalate delayed compliance review": COMPLIANCE,
-    "Escalate delayed supplier setup": SETUP,
-    # The oversight lane is not a phase, so it names the case instead of a stage.
-    "Review overall SLA breach": "Overall case",
 }
 STAGE_NAME_INPUT = "stageName"
 
@@ -228,7 +203,6 @@ BUYER_DECISION_VALUES = {"approve", "reject", "sendback"}
 COMPLIANCE_DECISION_VALUES = {"approve", "reject"}
 BANK_VERIFIED_VALUE = "verified"
 
-DIRECTOR_THRESHOLD = "500000"
 AUTO_THRESHOLD = "50000"
 
 # --- Case-level ---------------------------------------------------------------
@@ -259,7 +233,6 @@ OFFERING_CATEGORIES = {"Raw materials", "Components", "Services", "Logistics", "
 API_WORKFLOWS = {
     "SupplierMasterScreeningLookup": "919ff26e-8bb4-4755-9bfd-0d04a51d6639",
     "SupplierComplianceRiskCheck": "69027bbb-2c90-43c3-93af-a09ba7821892",
-    "SupplierSignOffTierRules": "b3e2c59b-c3bd-4794-86d1-689de7bc2d6c",
     "SupplierErpRegistration": "d5c07b08-d673-477c-b047-de330699a183",
     "SupplierApprovedRegisterUpdate": "0c3faaff-8e3e-4b68-bf69-2e3b869fb301",
     "SupplierRejectionAuditLog": "1279ba08-7d7d-4cb2-ba52-2fe9809dce00",
@@ -267,24 +240,19 @@ API_WORKFLOWS = {
 }
 AGENTS = {
     "SupplierOfferingCategoryMatch": "567afdb0-ee17-4c27-9b69-09b2bc7a34c8",
-    "SupplierFinancialHealthCheck": "c6f0ecb7-26e2-4365-bc51-a03d5b2edafc",
 }
 ACTION_APPS = {
     "Supplier Application Validation": "604acda5-8894-447f-b007-1989ec74a7e2",
     "supplier-document-upload": "e0145242-77aa-40b5-8752-e037ec022d40",
     "buyer-supplier-review-v2": "ec16bdfe-6f7b-4f4e-9988-70ee7c86b803",
-    "Supplier Information Request": "5bcb5523-93b1-459f-ad66-3bd947b32995",
-    "Supplier Reference Check": "741e6c61-65ee-4c6e-8ce5-855e743b50dd",
-    "Supplier Legal Opinion": "cb2ddeb4-75d2-4ec1-95cb-533c6d8bf2e7",
     "Supplier Compliance Review": "1229c1ed-ca6b-4a89-9776-883bd0669684",
-    "Procurement Director Sign-off": "c20d48bf-4860-420c-b629-3ec8284acdc1",
     "Supplier Portal Access Confirmation": "8bfee375-9973-446d-b409-6799688ffe49",
     "supplier-delay-escalation": "fb171d7c-33a1-4bb6-b09a-030044a7c0b6",
 }
 CHILD_CASES = {"SupplierContractNegotiation": "a028146a-e14f-489b-a6ca-e1ffa1d315f6"}
 
 ALL_RESOURCE_IDS = set(API_WORKFLOWS.values()) | set(AGENTS.values()) \
-    | set(ACTION_APPS.values()) | set(CHILD_CASES.values())          # 20
+    | set(ACTION_APPS.values()) | set(CHILD_CASES.values())          # 14
 
 # The caseplan never carries a raw resource GUID. Each non-connector task binds its
 # resource through a composite `resourceKey` of `<folderPath>.<name>`; the Outlook
@@ -295,21 +263,15 @@ RESOURCE_KEYS = {
     "Shared/uipath-maestro-case.buyer-supplier-review-v2": ("app", None),
     "Shared/uipath-maestro-case.supplier-delay-escalation": ("app", None),
     "Shared/uipath-maestro-case.supplier-document-upload": ("app", None),
-    "Shared/uipath-maestro-case/Procurement Director Sign-off.Procurement Director Sign-off": ("app", None),
     "Shared/uipath-maestro-case/Supplier Application Validation.Supplier Application Validation": ("app", None),
     "Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Information Request.Supplier Information Request": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Legal Opinion.Supplier Legal Opinion": ("app", None),
     "Shared/uipath-maestro-case/Supplier Portal Access Confirmation.Supplier Portal Access Confirmation": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Reference Check.Supplier Reference Check": ("app", None),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierApprovedRegisterUpdate": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierFinancialHealthCheck": ("process", "Agent"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierMasterScreeningLookup": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierOfferingCategoryMatch": ("process", "Agent"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierRejectionAuditLog": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierSignOffTierRules": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierWithdrawalCleanup": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation": ("process", "CaseManagement"),
     "dd657127-91f5-4568-a3a3-c024bc03fb0f": ("Connection", None),
@@ -348,7 +310,7 @@ OUTPUT_TARGETS = {
     "assignedBuyerEmail": ["Pull supplier records and screening"],
     "auditRecordId": ["Log rejection for audit"],
     "bankVerificationStatus": ["Register supplier in ERP"],
-    "buyerComments": ["Record buyer review decision", "Request more information from supplier"],
+    "buyerComments": ["Record buyer review decision"],
     "buyerDecision": ["Record buyer review decision"],
     "buyerReviewRevisedDate": ["Escalate delayed buyer review"],
     "categoryMatches": ["Confirm offering category match"],
@@ -356,43 +318,17 @@ OUTPUT_TARGETS = {
     "complianceComments": ["Record compliance review decision"],
     "complianceDecision": ["Record compliance review decision"],
     "complianceFlags": ["Run compliance and risk check"],
-    "complianceReviewRevisedDate": ["Escalate delayed compliance review"],
-    "concernLevel": ["Analyze supplier financial health"],
-    "directorSignOffDecision": ["Obtain procurement director sign-off"],
-    "directorSignOffNotes": ["Obtain procurement director sign-off"],
-    "directorSignOffRequired": ["Determine sign-off tier"],
     "duplicateSupplierIds": ["Pull supplier records and screening"],
-    "escalationNotes": [
-        "Escalate delayed application check",
-        "Escalate delayed buyer review",
-        "Escalate delayed compliance review",
-        "Escalate delayed supplier setup",
-        "Review overall SLA breach",
-    ],
-    "financialHealthSummary": ["Analyze supplier financial health"],
-    "fraudIndicators": ["Analyze supplier financial health"],
-    "lastEmailStatus": [
-        "Notify buyer of application",
-        "Send delay note for the application check",
-        "Send delay note for the buyer review",
-        "Send delay note for the compliance review",
-        "Send delay note for the supplier setup",
-        "Send rejection notice to supplier",
-        "Send supplier welcome message",
-        "Send withdrawal confirmation",
-    ],
-    "legalOpinion": ["Obtain legal opinion"],
+    "escalationNotes": ["Escalate delayed application check", "Escalate delayed buyer review"],
+    "lastEmailStatus": ["Notify buyer of application", "Send delay note for the application check", "Send delay note for the buyer review", "Send rejection notice to supplier", "Send supplier welcome message", "Send withdrawal confirmation"],
     "portalAccessConfirmation": ["Confirm supplier portal access"],
-    "referenceCheckFindings": ["Order reference check"],
     "registeredAt": ["Record supplier in approved register"],
     "reviewNotes": ["Confirm offering category match"],
     "reviewsCancelled": ["Close out withdrawn application"],
     "riskRating": ["Run compliance and risk check"],
     "sanctionsFindings": ["Pull supplier records and screening"],
-    "signOffTier": ["Determine sign-off tier"],
     "suggestedCategory": ["Confirm offering category match"],
     "supplierId": ["Register supplier in ERP"],
-    "supplierSetupRevisedDate": ["Escalate delayed supplier setup"],
     "timersStopped": ["Close out withdrawn application"],
     "validationIssues": ["Validate application details"],
     "validationOutcome": ["Validate application details"],
@@ -404,8 +340,6 @@ OUTPUT_TARGETS = {
 
 EXPRESSION_RECIPIENT_TASKS = {
     "Record buyer review decision",
-    "Request more information from supplier",
-    "Order reference check",
 }
 EXPRESSION_RECIPIENT_VALUE = "=vars.assignedBuyerEmail"
 EMAIL_RECIPIENT_TYPE = 2            # a literal mailbox address
@@ -419,7 +353,7 @@ EXPRESSION_RECIPIENT_TYPE = 3
 CONNECTOR_OUTPUT_PATH = "response.status"
 CONNECTOR_OUTPUT_ROOT = "response"
 CONNECTOR_OUTPUT_TARGET = "lastEmailStatus"
-CONNECTOR_TASK_COUNT = 8
+CONNECTOR_TASK_COUNT = 6
 
 # The four supporting documents the category-match agent reads. The fixture reads them
 # through a guarded array walk rather than a bare `vars.X.FullName`, so the names are
@@ -461,9 +395,9 @@ def sdd_facts() -> dict:
     sdd = read_fixture()
 
     xrefs = set(_XREF_RE.findall(sdd))
-    if len(xrefs) < 4:
+    if len(xrefs) < 3:
         _fail(
-            "fixture parse error: expected >=4 distinct $xref triples reading a task's "
+            "fixture parse error: expected >=3 distinct $xref triples reading a task's "
             f"own output; got {sorted(xrefs)}"
         )
 
@@ -489,9 +423,9 @@ def sdd_facts() -> dict:
         )
 
     var_reads = set(_VARS_RE.findall(sdd)) - {"$xref"}
-    if len(var_reads) < 40:
+    if len(var_reads) < 30:
         _fail(
-            f"fixture parse error: expected >=40 distinct vars.* reads; got {len(var_reads)}"
+            f"fixture parse error: expected >=30 distinct vars.* reads; got {len(var_reads)}"
         )
 
     missing_dates = [

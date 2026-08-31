@@ -11,11 +11,9 @@ calls Valid, and every failure is silent at build time and permanent at runtime.
  2. Bank verification compares against `verified`, in both polarities.
  3. The buyer's approving exit and the rejecting entry carry complementary
     literals. Overlapping guards let one decision fire into two destinations.
- 4. The 500000 threshold appears on the case side, not only inside the workflow
-    that computes the tier.
- 5. Every guard reads a subject the plan actually holds. A guard over an unknown
+ 4. Every guard reads a subject the plan actually holds. A guard over an unknown
     variable evaluates to undefined and never routes.
- 6. Every `=js:` expression in the plan parses as JavaScript. `uip maestro case
+ 5. Every `=js:` expression in the plan parses as JavaScript. `uip maestro case
     validate` checks that the variable names exist and stops there, so an expression
     with an unbalanced paren is reported Valid and throws on its first evaluation.
 
@@ -198,15 +196,7 @@ def main() -> int:
                 "unguarded completion, so the application never advances on its own"
             )
 
-    # ---- 4. the sign-off threshold is enforced on the case side -------------
-    blob = "\n".join(expr for _where, expr in guards)
-    if E.DIRECTOR_THRESHOLD not in blob:
-        problems.append(
-            f"the {E.DIRECTOR_THRESHOLD} sign-off threshold appears in no guard; it lives "
-            "only inside the workflow that computes the tier, so the case cannot enforce it"
-        )
-
-    # ---- 5. every guard subject resolves ------------------------------------
+    # ---- 4. every guard subject resolves ------------------------------------
     known = P.variable_names(caseplan) | P.variable_ids(caseplan)
     for _stage, task in P.all_tasks(caseplan):
         for entry in P.task_outputs(task):
@@ -223,7 +213,7 @@ def main() -> int:
                     "routes"
                 )
 
-    # ---- 6. every =js: expression parses -----------------------------------
+    # ---- 5. every =js: expression parses -----------------------------------
     problems.extend(_js_syntax_findings(caseplan))
 
     print(f"checked {P.find_caseplan()}")
@@ -233,8 +223,7 @@ def main() -> int:
         print(
             "OK: every routing guard compares against a value its deployed form can emit "
             f"({sorted(allowed)}), the buyer's approval and diversions carry complementary "
-            f"literals, the {E.DIRECTOR_THRESHOLD} threshold is enforced case-side, "
-            f"every guard subject resolves, and all {len(P.js_expressions(caseplan))} "
+            f"literals, every guard subject resolves, and all {len(P.js_expressions(caseplan))} "
             "`=js:` expressions parse"
         )
         return 0

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """SupplierOnboarding: did the SDD's lifecycle survive into caseplan.json?
 
-Eight assertions, each one a defect a plausible build actually commits and
+Ten assertions, each one a defect a plausible build actually commits and
 `uip maestro case validate` accepts:
 
- 1. Eight stages, five primary and three secondary. A build that promotes an
+ 1. Seven stages, five primary and two secondary. A build that promotes an
     exception lane to a primary stage makes it required for case completion, so a
     normal application can never close.
- 2. The oversight lane is secondary AND non-interrupting. The other two secondary
-    lanes take the application over; this one runs alongside it. Marking it
-    interrupting freezes every application that misses the overall target.
+ 2. Both secondary lanes take the application over, so each needs an interrupting
+    entry. A non-interrupting disposition leaves the phase it came from still open.
  3. `Application rejected` has three guarded entries from three different origins.
     Splitting them into three stages, or dropping the guards, both validate clean.
  4. `Checking the application` has a second entry from `Buyer review`. That is the
@@ -21,6 +20,9 @@ Eight assertions, each one a defect a plausible build actually commits and
  7. Three case exits, and only `required-stages-completed` marks the case complete.
     A rejected or withdrawn application must close without completing.
  8. No stage is entered from a terminal stage. A closed application cannot move.
+ 9. Every stage selector is `selectedStageId`, singular. The plural array stops the
+    rules evaluator before the first task opens.
+10. No `$xref` build-time placeholder survives into the shipped plan.
 
 Read-only. Exit 0 clean, 1 on findings.
 """
@@ -50,7 +52,9 @@ def main() -> int:
     if missing:
         problems.append(f"missing stage(s) {missing}")
     if extra:
-        problems.append(f"unexpected stage(s) {extra} — the SDD declares exactly 8")
+        problems.append(
+            f"unexpected stage(s) {extra}; the SDD declares exactly {len(E.STAGES)}"
+        )
 
     for lbl, _slug, kind in E.STAGES:
         node = by_label.get(lbl)
@@ -68,20 +72,7 @@ def main() -> int:
                 )
             )
 
-    # ---- 2. the oversight lane runs alongside, it does not take over ---------
-    lane = by_label.get(E.SLA_REVIEW)
-    if lane is not None:
-        interrupting = [
-            bool(cond.get("isInterrupting")) for cond in P.entry_conditions(lane)
-        ]
-        if any(interrupting):
-            problems.append(
-                f"{E.SLA_REVIEW!r} entry is interrupting; the SDD makes it parallel "
-                "oversight so the application still runs on to its own disposition"
-            )
-        if not P.entry_conditions(lane):
-            problems.append(f"{E.SLA_REVIEW!r} has no entry condition — it can never open")
-
+    # ---- 2. both secondary lanes take the application over -------------------
     for lbl in E.INTERRUPTING_SECONDARY:
         node = by_label.get(lbl)
         if node is None:
@@ -242,8 +233,8 @@ def main() -> int:
     print(f"stages: {sorted(by_label)}")
     if not problems:
         print(
-            "OK: lifecycle survived — 8 stages (5 primary / 3 secondary), the oversight "
-            "lane parallel and non-interrupting, rejection guarded from three origins, "
+            "OK: lifecycle survived. 7 stages (5 primary / 2 secondary), both "
+            "dispositions interrupting, rejection guarded from three origins, "
             "the corrections loop back into the checks, withdrawal from the stage picker "
             f"in exactly {sorted(E.WAIT_FOR_USER_STAGES)}, 3 case exits with one "
             "completion, and three terminal stages nothing re-enters"

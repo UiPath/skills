@@ -3,25 +3,25 @@
 
 Seven assertions.
 
- 1. Thirty-two tasks in the declared per-stage sets, each of the declared type. A
+ 1. Twenty-one tasks in the declared per-stage sets, each of the declared type. A
     task built as the wrong class runs on the wrong runtime.
- 2. All twenty tenant resource identities are bound, none repeated or missing, and
-    no task is left a skeleton.
+ 2. All fourteen tenant resource identities are bound, none repeated or missing,
+    and no task is left a skeleton.
  3. Every task output lands in a slot the plan declares. An output written nowhere
     means the next task reads empty.
- 4. The three expression-recipient tasks carry `data.recipient` as the object
+ 4. The expression-recipient task carries `data.recipient` as the object
     `{Type: 3, Value: "=vars.assignedBuyerEmail"}`. **`uip maestro case validate`
     does not check `data.recipient` at all** — a bare string, or a dropped field,
-    passes validation and then the task reaches nobody. The eleven role-assigned
-    tasks are not required to carry one: the skill's own references disagree on
-    whether a role becomes `Type 1` or no recipient at all, so a grader must not
-    pick a side. It can still reject the one shape both readings rule out — a role
-    name sitting in `Type 2`, which is the email type, so the platform reads
-    "Procurement Operations Lead" as a literal mailbox and the task reaches nobody.
+    passes validation and then the task reaches nobody. The role-assigned tasks are
+    not required to carry one: the skill's own references disagree on whether a
+    role becomes `Type 1` or no recipient at all, so a grader must not pick a side.
+    It can still reject the one shape both readings rule out: a role name sitting
+    in `Type 2`, which is the email type, so the platform reads "Procurement
+    Operations Lead" as a literal mailbox and the task reaches nobody.
  5. ERP registration and the child case run only once. A re-entered setup phase
     would otherwise mint a second supplier record.
  6. The child case does not block the parent.
- 7. Each of the four on-demand tasks lives in exactly one stage, its own.
+ 7. The on-demand task lives in exactly one stage, its own.
 
 Read-only. Exit 0 clean, 1 on findings.
 """
@@ -263,9 +263,9 @@ def main() -> int:
         print(
             f"OK: {E.TOTAL_TASKS} tasks in their declared stages and classes, all "
             f"{len(E.RESOURCE_KEYS)} resource keys bound with no skeletons, every "
-            "output landing in a declared slot, the three expression recipients carrying "
+            "output landing in a declared slot, the expression recipient carrying "
             f"the {{Type,Value}} object, {len(E.RUN_ONCE_TASKS)} run-once tasks, a "
-            "non-blocking child case, and four on-demand tasks each locked to its own stage"
+            f"non-blocking child case, and {len(E.ADHOC_TASKS)} on-demand task locked to its own stage"
         )
         return 0
 

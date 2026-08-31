@@ -279,16 +279,6 @@ TASKS = [
       recipient={'Type': 3, 'Value': '=vars.assignedBuyerEmail'},
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.offeringDescription', 'vars.validationOutcome', 'vars.validationIssues', 'vars.addedDocumentName', 'vars.duplicateSupplierIds', 'vars.sanctionsFindings', 'vars.categoryMatches', 'vars.suggestedCategory', 'vars.reviewNotes', 'vars.referenceCheckFindings', 'vars.buyerComments'],
       outputs=[('Action', 'action2', 'buyerDecision', '=Action', None), ('Comment', 'comment2', 'buyerComments', '=Comment', None)]),
-    T('tInf07gDs', 'action', 'Request more information from supplier',
-      req=False, once=False, entry=[('adhoc', None)],
-      recipient={'Type': 3, 'Value': '=vars.assignedBuyerEmail'},
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.offeringDescription', 'vars.buyerComments'],
-      outputs=[('Comment', 'comment3', 'buyerComments', '=Comment', None)]),
-    T('tRef08hEt', 'action', 'Order reference check',
-      req=False, once=False, entry=[('adhoc', None)],
-      recipient={'Type': 3, 'Value': '=vars.assignedBuyerEmail'},
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.contactName', 'vars.referenceCheckFindings'],
-      outputs=[('Comment', 'comment4', 'referenceCheckFindings', '=Comment', None)]),
     T('tEscByr01', 'action', 'Escalate delayed buyer review',
       req=False, once=False, entry=[('sla-status-change', {'slaId': 'sla_ByrStg01'})],
       literals={'stageName': 'Buyer review', 'daysOverdue': '0'},
@@ -303,36 +293,10 @@ TASKS = [
       req=True, once=False, entry=[('runs-sequentially', None)],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.countryOfRegistration', 'vars.sanctionsFindings', 'vars.duplicateSupplierIds'],
       outputs=[('riskRating', 'riskRating', 'riskRating', '=riskRating', None), ('complianceFlags', 'complianceFlags', 'complianceFlags', '=complianceFlags', None)]),
-    T('tTie10kGv', 'api-workflow', 'Determine sign-off tier',
-      req=True, once=False, entry=[('runs-sequentially', None)],
-      reads=['vars.expectedAnnualSpend', 'vars.spendCurrency'],
-      outputs=[('signOffTier', 'signOffTier', 'signOffTier', '=signOffTier', None), ('directorSignOffRequired', 'directorSignOffRequired', 'directorSignOffRequired', '=directorSignOffRequired', None)]),
-    T('tDir11mHw', 'action', 'Obtain procurement director sign-off',
-      req=False, once=False, entry=[('selected-tasks-completed', {'selectedTasksIds': ['tTie10kGv'], 'conditionExpression': '=js:vars.directorSignOffRequired === true'})],
-      skip='=js:vars.expectedAnnualSpend < 500000',
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.signOffTier', 'vars.riskRating', 'vars.complianceFlags', 'vars.financialHealthSummary', 'vars.fraudIndicators', 'vars.concernLevel', 'vars.buyerComments', 'vars.directorSignOffNotes'],
-      outputs=[('Action', 'action3', 'directorSignOffDecision', '=Action', None), ('Comment', 'comment5', 'directorSignOffNotes', '=Comment', None)]),
     T('tCmp12nJx', 'action', 'Record compliance review decision',
-      req=True, once=False, entry=[('selected-tasks-completed', {'selectedTasksIds': ['tDir11mHw']}), ('selected-tasks-completed', {'selectedTasksIds': ['tTie10kGv'], 'conditionExpression': '=js:vars.directorSignOffRequired === false'})],
+      req=True, once=False, entry=[('runs-sequentially', None)],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.riskRating', 'vars.complianceFlags', 'vars.sanctionsFindings', 'vars.duplicateSupplierIds', 'vars.financialHealthSummary', 'vars.fraudIndicators', 'vars.concernLevel', 'vars.signOffTier', 'vars.directorSignOffDecision', 'vars.directorSignOffNotes', 'vars.buyerComments', 'vars.referenceCheckFindings', 'vars.legalOpinion', 'vars.complianceComments'],
       outputs=[('Action', 'action4', 'complianceDecision', '=Action', None), ('Comment', 'comment6', 'complianceComments', '=Comment', None)]),
-    T('tFin13pKy', 'agent', 'Analyze supplier financial health',
-      req=False, once=False, entry=[('current-stage-entered', None)],
-      reads=['vars.companyName', 'vars.countryOfRegistration', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.offeringDescription'],
-      outputs=[('financialHealthSummary', 'financialHealthSummary', 'financialHealthSummary', '=financialHealthSummary', None), ('fraudIndicators', 'fraudIndicators', 'fraudIndicators', '=fraudIndicators', None), ('concernLevel', 'concernLevel', 'concernLevel', '=concernLevel', None)]),
-    T('tLgl14qLz', 'action', 'Obtain legal opinion',
-      req=False, once=False, entry=[('adhoc', None)],
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.offeringDescription', 'vars.riskRating', 'vars.complianceFlags', 'vars.legalOpinion'],
-      outputs=[('Comment', 'comment7', 'legalOpinion', '=Comment', None)]),
-    T('tEscCmp01', 'action', 'Escalate delayed compliance review',
-      req=False, once=False, entry=[('sla-status-change', {'slaId': 'sla_CmpStg01'})],
-      literals={'stageName': 'Compliance and risk review', 'daysOverdue': '0'},
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.offeringCategory', 'vars.assignedBuyerEmail', 'vars.submittedDate', 'vars.contactName', 'vars.contactEmail', 'vars.escalationNotes'],
-      outputs=[('newExpectedDate', 'newExpectedDate3', 'complianceReviewRevisedDate', '=newExpectedDate', None), ('Comment', 'comment11', 'escalationNotes', '=Comment', None)]),
-    T('tNteCmp02', 'execute-connector-activity', 'Send delay note for the compliance review',
-      req=False, once=False, entry=[('selected-tasks-completed', {'selectedTasksIds': ['tEscCmp01']})],
-      reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'vars.complianceReviewRevisedDate', 'metadata.ExternalId'],
-      outputs=[('response', 'response7', 'response7', '=response', 'Response'), ('Error', 'error7', 'error7', '=Error', 'Error'), ('Status', 'status7', 'lastEmailStatus', '=response.status', None)]),
     # --- Setting up the supplier ---
     T('tErp15rMa', 'api-workflow', 'Register supplier in ERP',
       req=True, once=True, entry=[('runs-sequentially', None)],
@@ -346,15 +310,6 @@ TASKS = [
       req=True, once=True, entry=[('runs-sequentially', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.supplierId', 'vars.portalAccessConfirmation'],
       outputs=[('Action', 'action5', 'portalAccessConfirmation', '=Action', None)]),
-    T('tEscSet01', 'action', 'Escalate delayed supplier setup',
-      req=False, once=False, entry=[('sla-status-change', {'slaId': 'sla_SetStg01'})],
-      literals={'stageName': 'Setting up the supplier', 'daysOverdue': '0'},
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.offeringCategory', 'vars.assignedBuyerEmail', 'vars.submittedDate', 'vars.contactName', 'vars.contactEmail', 'vars.escalationNotes'],
-      outputs=[('newExpectedDate', 'newExpectedDate4', 'supplierSetupRevisedDate', '=newExpectedDate', None), ('Comment', 'comment12', 'escalationNotes', '=Comment', None)]),
-    T('tNteSet02', 'execute-connector-activity', 'Send delay note for the supplier setup',
-      req=False, once=False, entry=[('selected-tasks-completed', {'selectedTasksIds': ['tEscSet01']})],
-      reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'vars.supplierSetupRevisedDate', 'metadata.ExternalId'],
-      outputs=[('response', 'response8', 'response8', '=response', 'Response'), ('Error', 'error8', 'error8', '=Error', 'Error'), ('Status', 'status8', 'lastEmailStatus', '=response.status', None)]),
     # --- Supplier onboarded ---
     T('tWlc18uQd', 'execute-connector-activity', 'Send supplier welcome message',
       req=True, once=True, entry=[('current-stage-entered', None)],
@@ -382,12 +337,6 @@ TASKS = [
       req=True, once=True, entry=[('current-stage-entered', None)],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactEmail'],
       outputs=[('reviewsCancelled', 'reviewsCancelled', 'reviewsCancelled', '=reviewsCancelled', None), ('timersStopped', 'timersStopped', 'timersStopped', '=timersStopped', None), ('cleanupSummary', 'cleanupSummary', 'cleanupSummary', '=cleanupSummary', None), ('caseOutcome', None, 'caseOutcome', 'Withdrawn', None)]),
-    # --- Overall SLA review ---
-    T('tOvr26cYn', 'action', 'Review overall SLA breach',
-      req=True, once=True, entry=[('current-stage-entered', None)],
-      literals={'stageName': 'Overall case', 'daysOverdue': '0'},
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.submittedDate', 'vars.offeringCategory', 'vars.assignedBuyerEmail', 'vars.validationOutcome', 'vars.buyerDecision', 'vars.complianceDecision', 'vars.bankVerificationStatus', 'vars.escalationNotes'],
-      outputs=[('Comment', 'comment9', 'escalationNotes', '=Comment', None)]),
 ]
 
 # --- Stages, generated from a real build ----------------------------------------
@@ -401,17 +350,17 @@ STAGES = [
       slas=[('sla_ByrStg01', *E.STAGE_SLA[E.BUYER], [('esc_by01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '74c6d5cc-0684-4ff4-9537-1c80681ad9e8', 'Category Management')]), ('esc_by02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_by01en', 'Checks passed', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Chk4kA'})])],
       exits=[('Condition_by01ex', 'Buyer declined', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tByr06fCr'], 'conditionExpression': '=js:vars.action2 === "reject"'})]), ('Condition_by02ex', 'Sent back for corrections', None, 'exit-only', False, 'Stage_Chk4kA', [('selected-tasks-completed', {'selectedTasksIds': ['tByr06fCr'], 'conditionExpression': '=js:vars.action2 === "sendback"'})]), ('Condition_by03ex', 'Buyer approved', None, 'wait-for-user', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
-      lanes=[['tNtf05eBq'], ['tByr06fCr'], ['tInf07gDs'], ['tRef08hEt'], ['tEscByr01'], ['tNteByr02']]),
+      lanes=[['tNtf05eBq'], ['tByr06fCr'], ['tEscByr01'], ['tNteByr02']]),
     S('Stage_Cmp3nD', 'Compliance and risk review', None,
       slas=[('sla_CmpStg01', *E.STAGE_SLA[E.COMPLIANCE], [('esc_cm01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', 'e158a23e-f553-4107-82d5-68b788134d33', 'Compliance')]), ('esc_cm02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_cm01en', 'Buyer approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
       exits=[('Condition_cm01ex', 'Compliance rejected', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tCmp12nJx'], 'conditionExpression': '=js:vars.action4 === "reject"'})]), ('Condition_cm02ex', 'Sent to setup', None, 'wait-for-user', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
-      lanes=[['tCrc09jFu'], ['tTie10kGv'], ['tDir11mHw'], ['tCmp12nJx'], ['tFin13pKy'], ['tLgl14qLz'], ['tEscCmp01'], ['tNteCmp02']]),
+      lanes=[['tCrc09jFu'], ['tCmp12nJx']]),
     S('Stage_Set8pE', 'Setting up the supplier', None,
       slas=[('sla_SetStg01', *E.STAGE_SLA[E.SETUP], [('esc_st01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_st02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_st01en', 'Compliance approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
       exits=[('Condition_st01ex', 'Bank verification failed', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tErp15rMa'], 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})]), ('Condition_st02ex', 'Setup complete', None, 'exit-only', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})])],
-      lanes=[['tErp15rMa'], ['tNeg16sNb', 'tPrt17tPc'], ['tEscSet01'], ['tNteSet02']]),
+      lanes=[['tErp15rMa'], ['tNeg16sNb', 'tPrt17tPc']]),
     S('Stage_Onb2qF', 'Supplier onboarded', None,
       slas=[('sla_OnbStg01', *E.STAGE_SLA[E.ONBOARDED], [('esc_on01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_on02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_on01en', 'Setup complete', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Set8pE'})])],
@@ -427,11 +376,6 @@ STAGES = [
       entry=[('Condition_wd01en', 'Supplier withdrew', True, None, None, None, [('user-selected-stage', None)])],
       exits=[('Condition_wd01ex', 'Withdrawal complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tWdc22yUh', 'tWcl23zVj']]),
-    S('Stage_Ovr4uK', 'Overall SLA review', 'secondary',
-      slas=[],
-      entry=[('Condition_ov01en', 'Overall target missed', False, None, None, None, [('sla-status-change', {'slaId': 'sla_RootCse1'})])],
-      exits=[('Condition_ov01ex', 'Overall review complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
-      lanes=[['tOvr26cYn']]),
 ]
 
 # --- Variables and bindings, generated from a real build -------------------------
@@ -526,22 +470,10 @@ BINDINGS = [   # (id, name, resource, resourceSubType, resourceKey, default, pro
     ('bSdu02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case.supplier-document-upload', 'Shared/uipath-maestro-case', 'folderPath'),
     ('bBsr01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case.buyer-supplier-review-v2', 'buyer-supplier-review-v2', 'name'),
     ('bBsr02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case.buyer-supplier-review-v2', 'Shared/uipath-maestro-case', 'folderPath'),
-    ('bSir01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Supplier Information Request.Supplier Information Request', 'Supplier Information Request', 'name'),
-    ('bSir02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Supplier Information Request.Supplier Information Request', 'Shared/uipath-maestro-case/Supplier Information Request', 'folderPath'),
-    ('bSrc01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Supplier Reference Check.Supplier Reference Check', 'Supplier Reference Check', 'name'),
-    ('bSrc02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Supplier Reference Check.Supplier Reference Check', 'Shared/uipath-maestro-case/Supplier Reference Check', 'folderPath'),
     ('bCrc01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck', 'SupplierComplianceRiskCheck', 'name'),
     ('bCrc02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
-    ('bFhc01aaa', 'name', 'process', 'Agent', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierFinancialHealthCheck', 'SupplierFinancialHealthCheck', 'name'),
-    ('bFhc02bbb', 'folderPath', 'process', 'Agent', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierFinancialHealthCheck', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
-    ('bSot01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierSignOffTierRules', 'SupplierSignOffTierRules', 'name'),
-    ('bSot02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierSignOffTierRules', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
-    ('bPds01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Procurement Director Sign-off.Procurement Director Sign-off', 'Procurement Director Sign-off', 'name'),
-    ('bPds02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Procurement Director Sign-off.Procurement Director Sign-off', 'Shared/uipath-maestro-case/Procurement Director Sign-off', 'folderPath'),
     ('bScr01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review', 'Supplier Compliance Review', 'name'),
     ('bScr02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review', 'Shared/uipath-maestro-case/Supplier Compliance Review', 'folderPath'),
-    ('bSlo01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Supplier Legal Opinion.Supplier Legal Opinion', 'Supplier Legal Opinion', 'name'),
-    ('bSlo02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Supplier Legal Opinion.Supplier Legal Opinion', 'Shared/uipath-maestro-case/Supplier Legal Opinion', 'folderPath'),
     ('bSer01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration', 'SupplierErpRegistration', 'name'),
     ('bSer02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
     ('bScn01aaa', 'name', 'process', 'CaseManagement', 'Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation', 'SupplierContractNegotiation', 'name'),
@@ -768,12 +700,6 @@ class TopologyTests(CheckerBase):
         stage(plan, E.REJECTED)["data"].pop("stageType", None)
         self.rejects(plan, "the SDD makes it secondary")
 
-    def test_rejects_interrupting_oversight_lane(self):
-        plan = baseline_plan()
-        for cond in stage(plan, E.SLA_REVIEW)["data"]["entryConditions"]:
-            cond["isInterrupting"] = True
-        self.rejects(plan, "entry is interrupting")
-
     def test_rejects_unguarded_rejection_entry(self):
         plan = baseline_plan()
         conds = stage(plan, E.REJECTED)["data"]["entryConditions"]
@@ -873,14 +799,6 @@ class GuardTests(CheckerBase):
         plan = baseline_plan()
         blob = json.dumps(plan).replace('=== \\"sendback\\"', '=== \\"SendBack\\"')
         self.rejects(json.loads(blob), "which none of the deployed forms can emit")
-
-    def test_rejects_dropped_signoff_threshold(self):
-        plan = baseline_plan()
-        for node in plan["nodes"]:
-            for item in tasks_of(node):
-                if "500000" in str(item.get("skipCondition") or ""):
-                    item.pop("skipCondition")
-        self.rejects(plan, "appears in no guard")
 
     def test_rejects_overlapping_buyer_exits(self):
         plan = baseline_plan()
@@ -1002,28 +920,28 @@ class TasksIoTests(CheckerBase):
         # task reaches nobody. Whether a role is omitted or carried as a group id is left open;
         # this is the shape neither reading allows.
         plan = baseline_plan()
-        task(plan, "Obtain legal opinion")["data"]["recipient"] = {
+        task(plan, "Attach supporting documents")["data"]["recipient"] = {
             "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "Legal Counsel"}
         self.rejects(plan, "never as a mailbox")
 
     def test_accepts_a_real_address_in_the_email_recipient_type(self):
         # The same slot with an actual address is exactly what Type 2 is for.
         plan = baseline_plan()
-        task(plan, "Obtain legal opinion")["data"]["recipient"] = {
+        task(plan, "Attach supporting documents")["data"]["recipient"] = {
             "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "legal@uipath.com"}
         self.accepts(plan)
 
     def test_rejects_dropped_output(self):
         plan = baseline_plan()
-        item = task(plan, "Determine sign-off tier")
+        item = task(plan, "Run compliance and risk check")
         item["data"]["outputs"] = [
-            o for o in item["data"]["outputs"] if o.get("var") != "signOffTier"
+            o for o in item["data"]["outputs"] if o.get("var") != "riskRating"
         ]
-        self.rejects(plan, "nothing in the plan writes 'signOffTier'")
+        self.rejects(plan, "nothing in the plan writes 'riskRating'")
 
     def test_rejects_adhoc_task_in_the_wrong_stage(self):
         plan = baseline_plan()
-        moved = copy.deepcopy(task(plan, "Obtain legal opinion"))
+        moved = copy.deepcopy(task(plan, "Attach supporting documents"))
         stage(plan, E.BUYER)["data"]["tasks"].append([moved])
         self.rejects(plan, "the source restricts it to")
 

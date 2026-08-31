@@ -1,13 +1,13 @@
 task_id: skill-case-supplier-onboarding
 description: >
   GREENFIELD BUILD FROM AN SDD, LIVE TENANT — build the SupplierOnboarding case from a
-  2083-line approved SDD whose twenty resource identities and Outlook connection are
+  1557-line approved SDD whose fourteen resource identities and Outlook connection are
   real, then assert five things the build can get wrong while `uip maestro case
   validate` still reports Valid. The withdrawal scope is the centrepiece: the source
   allows a supplier to withdraw during the three review phases and not once setup
   begins, and the ONLY thing encoding that is which stages carry a `wait-for-user`
   exit. Also covers guard literals taken from the deployed forms' own enums rather
-  than invented business labels, four phase breaches that each start a task inside the
+  than invented business labels, two phase breaches that each start a task inside the
   breached stage, per-phase revised-date slots that must not cross, and connector wire
   paths whose casing is load-bearing at runtime. Stops at validate; no debug, no
   publish.
@@ -27,7 +27,7 @@ tags:
 
 # Sized from the two existing golden-rebuild tasks: cm_golden_expense (8 stages / 15
 # tasks) measures ~60 min healthy, contract_execution (8 / 30) measures 92-150 min.
-# This case is 8 / 32 with twenty resources to describe, so it sits at the upper end.
+# This case is 7 / 21 with fourteen resources to describe, so it sits between them.
 #
 # turn_timeout MUST NOT be smaller than task_timeout. One harness "turn" is the ENTIRE
 # agent query stream, so turn_timeout caps the whole session and is the binding limit.
@@ -98,7 +98,7 @@ success_criteria:
     description: >
       sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
       that edits its own input has moved the goalposts rather than met them
-    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 269cbfa2cb0d39b20e4fd53f215ed6346e6854684fe19ec76723bcb509a83d8e"
+    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 9c78112f0679c7cf2592925ac9171c7014ce75417e6eece675a6f761c7f3a14d"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -106,8 +106,8 @@ success_criteria:
 
   - type: run_command
     description: >
-      caseplan preserves the SDD lifecycle: 8 stages (5 primary / 3 secondary), a
-      non-interrupting oversight lane, rejection guarded from three origins, the
+      caseplan preserves the SDD lifecycle: 7 stages (5 primary / 2 secondary), both
+      dispositions interrupting, rejection guarded from three origins, the
       corrections loop back into the checks, the withdrawal picker in exactly the three
       review phases and not in setup, 3 case exits with one completion, and three
       terminal stages nothing re-enters
@@ -121,11 +121,10 @@ success_criteria:
     description: >
       every routing guard compares against a value its deployed form can actually emit
       (approve / reject / sendback / verified, not an invented business label), the
-      buyer's approving and diverting exits carry complementary literals, the 500000
-      sign-off threshold is enforced case-side, every guard subject resolves, and every
-      `=js:` expression in the plan parses as JavaScript (validate checks the variable
-      names and stops there, so an unbalanced paren is reported Valid and throws on its
-      first evaluation)
+      buyer's approving and diverting exits carry complementary literals, every guard
+      subject resolves, and every `=js:` expression in the plan parses as JavaScript
+      (validate checks the variable names and stops there, so an unbalanced paren is
+      reported Valid and throws on its first evaluation)
     command: "python3 $TASK_DIR/check_guards.py"
     timeout: 120
     expected_exit_code: 0
@@ -134,11 +133,10 @@ success_criteria:
 
   - type: run_command
     description: >
-      SLA responses survived: 120min case target at 75%, seven stage SLAs at 70%, four
+      SLA responses survived: 120min case target at 75%, seven stage SLAs at 70%, two
       phase breaches each starting a task INSIDE the breached stage (a stage-entry rule
-      instead re-runs the stage : validate accepts both), one non-interrupting oversight
-      lane, three notify-only wrap-ups, and each phase's revised date confined to its
-      own slot
+      instead re-runs the stage : validate accepts both), five notify-only phases, and
+      each phase's revised date confined to its own slot
     command: "python3 $TASK_DIR/check_sla.py"
     timeout: 120
     expected_exit_code: 0
@@ -147,11 +145,11 @@ success_criteria:
 
   - type: run_command
     description: >
-      32 tasks in their declared stages and classes, all 21 resource keys bound with no
+      21 tasks in their declared stages and classes, all 15 resource keys bound with no
       skeletons, every declared output written by the task the SDD assigns it to, the
-      three expression recipients carrying the {Type,Value} object (validate does NOT
-      check data.recipient), ten run-once tasks, a non-blocking child case, and four
-      on-demand tasks each locked to its own stage
+      expression recipient carrying the {Type,Value} object (validate does NOT
+      check data.recipient), nine run-once tasks, a non-blocking child case, and one
+      on-demand task locked to its own stage
     command: "python3 $TASK_DIR/check_tasks_io.py"
     timeout: 120
     expected_exit_code: 0
@@ -160,7 +158,7 @@ success_criteria:
 
   - type: run_command
     description: >
-      wire-level field names keep the casing runtime needs: all eight connector tasks
+      wire-level field names keep the casing runtime needs: all six connector tasks
       read the lowercase `response.status` into lastEmailStatus, and every dotted
       dereference resolves to a variable the plan holds. Output display labels are
       deliberately NOT part of this contract
