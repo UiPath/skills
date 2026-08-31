@@ -14,6 +14,13 @@ Two jobs, one entry point:
 
 Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live tasks — implementation always routes to a specialist.
 
+**Paths in this skill are already known — never search for them.** Every `references/…`,
+`assets/…`, and `scripts/…` path below is relative to this skill's own directory, which you
+were given when this skill was invoked: join the two and `Read` the file directly. Do NOT
+`Glob`, `find`, or `ls` to locate a reference, template, or script — the search costs a turn
+and returns a path you already hold. `scripts/*` are RUN, never read: their output is the
+interface.
+
 The skill has three paths, decided by the **Entry Guard**:
 
 - **Phase D — Design.** Input is a PDD, or an explicit "design / architect this" request. Author the SDD; the SDD write ends the turn, and Lane A continues on the next turn. See [sdd-generation-guide.md](references/sdd-generation-guide.md). **Case Management designs run through Phase D's Case Design Lane** ([case-design-lane-guide.md](references/case-design-lane-guide.md)) — a conversational design ending in ONE Case Review confirmation.
