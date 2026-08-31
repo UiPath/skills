@@ -10,7 +10,7 @@ The one factory selects two distinct product nodes:
   path.
 
 Signature:
-`http({ method?, url, managed, connection?, folder?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
+`http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
 
 ```ts
 .step('policy', http({ method: 'GET', url: policyUrl,
@@ -66,6 +66,23 @@ node detail and the emitted flow's resource bindings:
 Connection mode emits `authentication: "connector"`, targets
 `uipath-uipath-http`, and treats `url` as a path relative to the connection's
 configured base URL. Supplying only one of `connection` or `folder` is an error.
+
+For an HTTP fallback authenticated by another connector, set its connector key
+as `targetConnector`. The node remains the managed HTTP wrapper, while the
+proxied request reuses that connector's authentication:
+
+```ts
+.step('emoji', http({
+  managed: true,
+  method: 'GET',
+  url: '/emoji.list',
+  connection: 'slack',
+  folder: 'shared',
+  targetConnector: 'uipath-salesforce-slack',
+}))
+```
+
+`targetConnector` requires both bindings and is not valid on standalone HTTP.
 
 ## Response branches
 

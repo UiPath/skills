@@ -20,6 +20,26 @@ Signatures:
   { connection: 'jira', folder: 'shared' }))
 ```
 
+## Three contracts to settle before authoring
+
+Check these before the first connector call; they are the common places where a
+plausible Flow compiles but loses the intended runtime or Studio Web contract:
+
+1. **Runtime strings use `tmpl`, not `js`.** For example,
+   ``where: tmpl`invoiceNumber = '${input('invoiceNumber')}'` `` builds a string.
+   ``js`invoiceNumber = '${input('invoiceNumber')}'` `` is JavaScript assignment
+   syntax and evaluates to only the assigned value. See
+   [Structured filters](#structured-filters-ceql).
+2. **Schema-dynamic fields require a prepared descriptor.** Resolving parent
+   values is not enough: run `registry prepare` with those values and import the
+   generated descriptor so the Flow retains its schema-replay metadata. See
+   [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop).
+3. **Paged reference lookups use exactly `nextPage`.** When
+   `Pagination.HasMore` is true, pass `Pagination.NextPageToken` as
+   `--query "nextPage=<token>"`; do not guess `page`, `pageToken`, or
+   `nextPageToken`. See
+   [Resolving connection-scoped reference values](#resolving-connection-scoped-reference-values).
+
 ## Discovering operations and fields
 
 `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`

@@ -880,6 +880,13 @@ export type HttpInputs = HttpInputsBase & ({
     connection?: string;
     /** Symbolic folder name declared in bindings.json. */
     folder?: string;
+    /**
+     * Connector key whose authentication the HTTP proxy should reuse.
+     * Defaults to `uipath-uipath-http`. Set this for a connector-specific
+     * fallback endpoint, for example `uipath-salesforce-slack`.
+     * Requires both `connection` and `folder`.
+     */
+    targetConnector?: string;
 });
 ````
 
