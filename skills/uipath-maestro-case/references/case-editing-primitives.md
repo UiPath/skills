@@ -12,7 +12,7 @@ All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `i
 
 - **Read** to load the file.
 - **Edit** for narrowly-scoped, unambiguous in-place replacements — default for all mutations after T01, and required for sections with <10 T-entries.
-- **Write** for the T01 scaffold (initial empty-file creation by the `case` plugin) and for whole-section batched writes when a section has ≥10 T-entries — see § Per-section batch write contract for the bounded conditions under which whole-section Write replaces N sibling Edits.
+- **Write** for exactly two things: the T01 scaffold (initial empty-file creation by the `case` plugin) and the Step 7 stage skeleton. Never for a populated `caseplan.json` — see § Skeleton-then-Edit.
 
 **Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
@@ -39,12 +39,10 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 Procedure per section:
 
 1. **One Read** of `caseplan.json` at section entry — authoritative state.
-2. **Section-sized writes** — pick by T-entry count:
-   - **Small sections (<10 T-entries)** — N Edits in sequence, one per T-entry. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`).
-   - **Large sections (≥10 T-entries)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
+2. **N Edits in sequence, one per T-entry** — regardless of how many T-entries the section holds. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`). There is no large-section branch: a section with 40 T-entries is 40 Edits, not one big write. See § Skeleton-then-Edit for why.
 3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
 4. **One `validate`** at section boundary (Pre-flight Item 12 above).
-5. **Repair preservation.** Before a whole-file Write used to repair a validation error, record from the section-entry Read the stage IDs, task IDs, root binding IDs, and selected-resource task IDs that are outside the repair target. Immediately re-Read after the Write and verify that every recorded item remains. A repair may not remove or replace unrelated topology, bindings, or a resolved task merely to make `validate` pass; use a targeted Edit when the reported error identifies an individual binding or task.
+5. **Repair preservation.** Repair a validation error with a targeted Edit on the node or binding the error names — never by rewriting the file. If the error location is unclear, re-Read `caseplan.json` first and locate it, then Edit. A repair may not remove or replace unrelated topology, bindings, or a resolved task merely to make `validate` pass.
 
 **Same-file sequential Edits — anchoring.** N Edits against `caseplan.json` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.json` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
 
@@ -52,7 +50,21 @@ Procedure per section:
 - **Extend until the match is unique within the whole file**, not just within the intended node.
 - An `old_string` that overlaps text a prior Edit in the same turn removed or shifted fails with "string not found" — order Edits so each targets an untouched slice, or re-Read if a later Edit depends on an earlier one's output.
 
-**Tool primitive choice.** Edit is the default — it preserves untouched fields automatically. Whole-file Write rebuilds the file from agent reasoning and risks silently dropping fields the agent forgot; use it only when (a) the section has ≥10 T-entries AND (b) the agent has the complete file state in context from the Read at step 1 AND (c) every untouched root-level field, sibling section, and node not mutated by this section will be copied verbatim. When in doubt, fall back to N Edits — the 12-item Pre-flight Checklist exists because field drops have happened, and Edit is the structural defense.
+### Skeleton-then-Edit — the only cadence for `caseplan.json`
+
+`caseplan.json` is written by **exactly two Writes, then Edits for everything else**:
+
+1. **Write 1 — T01 scaffold.** The empty case shell created by the `case` plugin.
+2. **Write 2 — stage skeleton (Step 7).** All stage nodes with their `id`, `data.label`, and empty containers: `data.tasks: []`, empty condition arrays, `layout: {}`, `schema.edges: []`. No tasks, no conditions, no SLA, no bindings. For a large case this is a few KB.
+3. **Every mutation after that is an Edit.** Tasks append into their stage's `data.tasks`, anchored on that stage's unique `"id": "Stage_…"`. Conditions, SLA, connector `caseShape`, and I/O values are all Edits against the node they belong to.
+
+**Never emit a whole-file Write of a populated `caseplan.json`.** Not to add a section, not to "get it all consistent", not to repair a validate error, and not because the file is now large. Once the skeleton exists, the file only grows by Edit.
+
+**Why.** A whole-file Write costs output tokens proportional to the *entire file*, while an Edit costs tokens proportional to the *change*. A populated case plan reaches 90–120KB — one whole-file Write is 23–30K output tokens, which on a lower-output-budget harness is most or all of what the agent can emit for the whole run. Agents that hit that wall do not fail loudly; they offload composition to a `python`/`node` heredoc and paste the result through Write, which violates Rule 13 while looking compliant in the transcript. The skeleton-then-Edit cadence removes the incentive: no single write ever has to carry the whole file, so the generator shortcut has nothing to solve.
+
+The correctness argument points the same way. Write rebuilds the file from agent reasoning and silently drops fields the agent forgot; Edit preserves untouched fields structurally. The 12-item Pre-flight Checklist exists because field drops have happened.
+
+**Repairs are Edits too.** When `validate` reports an error, Edit the specific node or binding it names. Re-Read first if the error location is unclear. Never rewrite the file to fix one field.
 
 **Status text bundling.** Any progress text the agent emits before a section's first Edit/Write MUST share the same assistant turn as the tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference latency + full prompt cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. Per-T-entry audit lives in TaskUpdate, NOT in narration.
 
@@ -70,9 +82,9 @@ Procedure per section:
 
 **Scope.** This contract applies to **`caseplan.json`**. `tasks.md` (Phase 1) and `registry-resolved.json` follow the mirror section-batched contract in [planning.md §4.0a](planning.md) — same one-Read-per-section + N-Edit-appends shape, with markdown Edit-append as the primitive (no whole-section Write needed; markdown appends are cheap regardless of count).
 
-**Whole-file Write outside T01.** Permitted only at section boundaries for sections with ≥10 T-entries, per the procedure above. Forbidden mid-section (between T-entries within the same section) — that bypasses the Read snapshot and risks field drops.
+**Whole-file Write outside T01.** Permitted only for the Step 7 stage skeleton. Forbidden everywhere else, at every size — see § Skeleton-then-Edit.
 
-**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — preserve the per-section cadence: Phase 2 writes root, nodes, variables, task shapes, SLA/escalations, and conditions (connector-backed rules use the canonical stub); Phase 3 fills connector context/input/output and other task values, then upgrades resolved connector-rule stubs. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk. For a case with ≥40 tasks or ≥8 stages, never emit the fully populated `caseplan.json` in one Write — use the Phase 2 sections followed by Phase 3 detail Edits.
+**No size threshold changes the cadence.** Because every post-skeleton mutation is an Edit, output cost scales with the change rather than the file, and there is no case size at which a bigger write becomes necessary or a helper script becomes justified. Phase 2 Edits in root, nodes, variables, task shapes, SLA/escalations, and conditions (connector-backed rules use the canonical stub); Phase 3 Edits connector context/input/output and other task values, then upgrades resolved connector-rule stubs.
 
 **Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
 

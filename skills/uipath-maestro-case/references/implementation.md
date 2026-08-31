@@ -19,21 +19,23 @@ Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mecha
 **Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (Phase 2: §4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §4.8 SLA, §4.7 conditions; Phase 3: §9.7 connector schema, §9.8 I/O binding, §10.5 connector-rule upgrades):
 
 1. **One Read** of `caseplan.json` at section entry.
-2. **Writes sized to section** — pick by T-entry count:
-   - **<10 T-entries** — N Edits in sequence, one per T-entry. Skip the re-Read between sibling Edits.
-   - **≥10 T-entries** — single whole-section Edit or Write replacing the section's container (e.g., `schema.nodes`, a stage's `data.tasks`). Compose the complete post-section state in reasoning from the section-entry Read, then emit one write. Untouched siblings (other sections, root fields, unrelated nodes) MUST be copied verbatim — drop nothing.
+2. **N Edits in sequence, one per T-entry** — however many the section holds. Skip the re-Read between sibling Edits. Anchor each Edit on the target node's unique `"id"`. There is no whole-section-write branch: after the Step 7 skeleton, `caseplan.json` grows only by Edit.
 3. **One validate** at section boundary.
 4. **One issue-log flush** at the same boundary — append the section's buffered issues to `tasks/build-issues.md` per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md), then clear the buffer. The first flush creates the file; later flushes append to its Journal table. **Flush even when the section produced zero issues** — after the first section the file must exist, and its existence is what proves the log survived the build.
 
-TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the write returns success. The audit trail stays T-by-T even when the file diff collapses to one whole-section write.
+TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the Edit returns success.
 
 **Bundle status text with tool_use.** Any progress text emitted alongside writes MUST share the same assistant turn as the next tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference + full cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. **Hard token cap:** any single text block >200 tokens (or >500 tokens for allow-listed exceptions — completion reports, AskUserQuestion preambles, validate result summaries) is a planning monologue, forbidden regardless of content. **Forbidden announcement verbs** at any length: text blocks starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call. The tool_use input IS the announcement.
 
-**Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, keep the per-section cadence: root/nodes/vars and task shapes first, then Phase 2 SLA and conditions, then Phase 3 connector/value details. For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
+**Skeleton first, then Edit — never a whole-file Write of a populated plan.** Step 7 writes the stage skeleton (stage nodes with `id`, `data.label`, and empty `data.tasks` / condition arrays — a few KB). Every later mutation is an Edit against a node anchored on its unique `"id"`. Do not rewrite the file to add a section, to reconcile state, or to repair a validate error.
+
+An Edit costs output tokens proportional to the change; a whole-file Write costs them proportional to the file. A populated plan reaches 90–120KB — a single Write of it is 23–30K output tokens, more than some harnesses emit in an entire run. That wall is what pushes agents into composing the JSON in a `python`/`node` heredoc and pasting stdout through Write: Rule 13 violated, transcript still looking clean. Skeleton-then-Edit removes the pressure that creates the shortcut. Build-assembler helper scripts (`/tmp/build-caseplan.js`, `python3 - <<'PY' … print(json.dumps(plan))`) stay forbidden regardless of placement or framing.
+
+Full cadence: [case-editing-primitives.md § Skeleton-then-Edit](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson).
 
 For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
 
-Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
+Full contract — recovery, tool primitive selection (skeleton Write, then Edit only), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
 > - Root case → `plugins/case/impl-json.md`
@@ -174,9 +176,13 @@ For each variable/argument T-entry from `tasks.md §4.2.1`, write entries direct
 
 After Step 6.2, project the declared In/Out arguments onto every `entry-points.json` entry's `input`/`output` schema per [entry-points-sync.md](entry-points-sync.md). Triggers (Step 6.1) scaffold each entry with empty `input`/`output` because variables don't exist yet; this back-fills them. Prerequisites — all entries (Step 6.1) + all In/Out args (Step 6.2) — are complete here, and In/Out formal args never change in Phase 3, so the file is correct from the Phase-2 publish branch onward. Idempotent — re-run on regenerate. Verified by Step 12 Check 6.
 
-## Step 7 — Add stages
+## Step 7 — Add stages (the skeleton Write)
 
 For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json`) — downstream tasks, conditions, and SLA all reference it.
+
+**This step is the one skeleton Write.** Emit every stage node with its `id`, `data.label`, and empty containers — `data.tasks: []`, empty condition arrays — plus `layout: {}` and `schema.edges: []`. Write nothing else: no task nodes, no conditions, no SLA objects, no bindings. Even for a large case this stays a few KB, so it is safe to emit in one call.
+
+From here `caseplan.json` is **append-only by Edit**. Step 9 Edits task nodes into each stage's `data.tasks`, Steps 10/11 Edit conditions and SLA, and Phase 3 Edits connector shapes and I/O values. Do not rewrite the whole file again at any point — see [case-editing-primitives.md § Skeleton-then-Edit](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson).
 
 `isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
