@@ -186,6 +186,14 @@ That emits BOTH halves the artifact must carry: the runtime query at
 validation rejects a filter that has only one of the two, so a string alone
 fails `validate` even though the run would have worked.
 
+If the task also asks for the filter tree as a separate review artifact,
+compile first and copy the emitted
+`configuration.essentialConfiguration.savedFilterTrees.<parameter>` value
+verbatim into that file (directly or under a named top-level property). Do not
+replace it with an ad hoc `{ field, operator, value }` object or only the CEQL
+string. The serialized tree must retain its numeric `groupOperator` and
+`filters` array.
+
 Supported: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`,
 `Like`, their `Not` forms, and `Is Null` / `Is Not Null`. Combine with `AND` or
 `OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND`
