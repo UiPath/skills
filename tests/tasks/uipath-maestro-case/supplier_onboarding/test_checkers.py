@@ -931,6 +931,13 @@ class TasksIoTests(CheckerBase):
             "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "legal@uipath.com"}
         self.accepts(plan)
 
+    def test_rejects_a_required_flag_on_a_task_input(self):
+        # Compiles into the dispatch's input schema and fails the job before it starts; validate
+        # reports Valid either way. Found by running the case, not by reading it.
+        plan = baseline_plan()
+        task(plan, "Pull supplier records and screening")["data"]["inputs"][0]["required"] = True
+        self.rejects(plan, "`required: true`")
+
     def test_rejects_dropped_output(self):
         plan = baseline_plan()
         item = task(plan, "Run compliance and risk check")

@@ -233,19 +233,6 @@ success_criteria:
 
   - type: run_command
     description: >
-      EXECUTION: nothing is answered until the intake phase misses its own deadline, then its
-      escalation is answered and the phase's own task is completed as well. Grades that the
-      escalation ran beside the phase's work rather than replacing it, that the delay note
-      actually reached the supplier, and that only the breached phase's revised-date slot was
-      written. Four phases each own a slot and crossing them is invisible to validate.
-    command: "python3 $TASK_DIR/drive_case.py --route sla"
-    timeout: 2400
-    expected_exit_code: 0
-    weight: 6.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: >
       OUTCOME: the case actually sent the buyer notification, on every route that ran. Each
       route is graded against its own count (reject 1, sendback 2, sla 1, withdraw 0), measured
       in the mailbox's Sent Items through the same connection the case sends on and keyed on

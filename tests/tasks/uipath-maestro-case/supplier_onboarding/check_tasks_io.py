@@ -215,6 +215,26 @@ def main() -> int:
             f"checks before the job starts, and an empty bound value then fails the job"
         )
 
+    # A task input is a binding map, not a restatement of what the receiving resource declares.
+    # `required` here compiles into the dispatch node's own `uipath:inputSchema`, which the runtime
+    # validates before the job starts, so a bound value that resolves empty fails the job with
+    # `Failure in the Orchestrator Job / Input validation failed` rather than reaching it. Where a
+    # caller must supply a value belongs in entry-points.json. `uip maestro case validate` accepts
+    # the key either way.
+    gated = [
+        (task.get("displayName"), entry.get("name"))
+        for _stage, task in P.all_tasks(caseplan)
+        for entry in P.task_inputs(task)
+        if entry.get("required") is True
+    ]
+    if gated:
+        listing = ", ".join(f"{t}.{i}" for t, i in gated[:4])
+        problems.append(
+            f"{len(gated)} task input(s) carry `required: true`: {listing}. That compiles into the "
+            f"dispatch's own input schema and fails the job before it starts whenever the bound "
+            f"value resolves empty"
+        )
+
     # ---- 5 + 6. the child case and the ERP write ---------------------------
     for name in sorted(E.RUN_ONCE_TASKS):
         task = names_to_task.get(name)
