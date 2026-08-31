@@ -210,6 +210,26 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
         fail(f"completing task {task_id} with action {action!r} failed: {reply.get('Message') or reply}")
 
 
+def fail_with_diagnosis(instance_id: str, msg: str):
+    """Fail, but first print what the case itself says about why.
+
+    post_run deletes the solution when the task ends, and the instance record goes with it, so
+    an incident that is readable now is unreadable by the time anyone opens the result. Whatever
+    the case recorded has to be captured here or not at all.
+    """
+    data = run(["uip", "maestro", "case", "instance", "incidents", instance_id,
+                "-f", CASE_FOLDER_KEY, "--output", "json"])
+    incidents = data if isinstance(data, list) else (data.get("value") or [])
+    for item in incidents[:4]:
+        detail = str(item.get("ErrorDetails") or item.get("ErrorMessage") or "")
+        print(f"  incident on {item.get('ElementId')!r} ({item.get('ErrorCode')}): {detail[:300]}")
+    if not incidents:
+        stages = [r.get("ElementId") for r in executions(instance_id)
+                  if r.get("ElementType") == "CaseStage"]
+        print(f"  no incident; the case reached stages {stages}")
+    fail(msg)
+
+
 def executions(instance_id: str) -> list:
     return run_list([
         "uip", "maestro", "case", "instance", "element-executions", instance_id,
@@ -371,7 +391,8 @@ def drive_sla(instance_id: str, watermark: int, who: str, done: set, answered: s
                 fail("the case finished before the intake phase breached; its SLA never fired")
             time.sleep(POLL_SLEEP)
     if task is None:
-        fail(f"{escalation!r} never opened within {BREACH_TIMEOUT}s; the phase SLA did not breach")
+        fail_with_diagnosis(instance_id,
+            f"{escalation!r} never opened within {BREACH_TIMEOUT}s; the phase SLA did not breach")
 
     print(f"  breach {task['Id']} {task.get('Title')!r} -> approve")
     revised = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).strftime("%Y-%m-%d")
@@ -475,7 +496,8 @@ def main() -> int:
                 if run_status(instance_id) in FINISHED:
                     print(f"  the case finished before {sdd_name!r} opened; its guard closed that route")
                     break
-                fail(f"the gate task for {sdd_name!r} (Action Center title {title!r}) never appeared")
+                fail_with_diagnosis(instance_id,
+                    f"the gate task for {sdd_name!r} (Action Center title {title!r}) never appeared")
             print(f"  gate {task['Id']} {task.get('Title')!r} -> {action}")
             complete_gate(task, action, who)
             done.add(str(task["Id"]))
