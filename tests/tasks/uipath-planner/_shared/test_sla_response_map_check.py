@@ -179,3 +179,34 @@ def test_matching_scope_passes_closure():
     )
     issues = [i for i in check(text) if "scoped" in i or "no SLA Response Map row" in i]
     assert not issues, issues
+
+
+def test_stage_scope_may_carry_the_stage_slug_as_a_qualifier():
+    """`stage: Assess (`assess`)` names the same stage as target 'Assess'.
+
+    Branch run 33429105211 was told every row titled 'Assess SLA' was
+    "scoped ['stage: Assess (`assess`)']" and so did not match target 'Assess'.
+    The trailing slug is annotation, not part of the stage name.
+    """
+    text = sdd(
+        "| stage: Assess (`assess`) | Assess SLA | Breached | enter-stage "
+        "| Assess Oversight | Yes | management takeover |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA breached") | - | Yes |\n',
+    )
+    assert check(text) == []
+
+
+def test_stage_scope_qualifier_does_not_mask_a_genuine_mismatch():
+    """Stripping the qualifier must not make a DIFFERENT stage match."""
+    text = sdd(
+        "| stage: Triage (`triage`) | Assess SLA | Breached | enter-stage "
+        "| Assess Oversight | Yes | wrong stage |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA breached") | - | Yes |\n',
+    )
+    issues = check(text)
+    assert any("targets 'Assess'" in issue for issue in issues), issues
+

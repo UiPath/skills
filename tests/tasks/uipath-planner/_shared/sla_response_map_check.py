@@ -182,7 +182,15 @@ def check(text: str) -> list[str]:
         if target == "root":
             return scope == "case"
         match = re.match(r"stage\s*:\s*(.+)", scope)
-        return bool(match) and match.group(1).strip() == target
+        if not match:
+            return False
+        # The Scope cell may carry the stage's slug as a trailing qualifier —
+        # `stage: Assess (`assess`)` — which is annotation, not part of the
+        # stage name. Branch run 33429105211 was told every row titled
+        # 'Assess SLA' was "scoped ['stage: Assess (`assess`)']" and therefore
+        # did not match target 'Assess', which is the same name.
+        name = re.sub(r"\s*\([^)]*\)\s*$", "", match.group(1)).strip().strip("`")
+        return name == target
 
     for args, entry_interrupting in entries.items():
         sla_title = ""
