@@ -53,7 +53,7 @@ Do not use for `.xaml` → `uipath-rpa`, `.flow` → `uipath-maestro-flow`, or s
 21. **Global events and SLA responses.** Model a global external event once as an interrupting secondary-stage `wait-for-connector` entry. Choose SLA response explicitly: `notify-only`, `start-task`, `enter-stage`, `exit-stage`, or `exit-case`. A `start-task` response belongs on the follow-up task’s own `sla-status-change` entry, not a stage entry. Interrupting depends on whether active work stops, pauses, or reroutes; parallel oversight uses `Interrupting: No` and remains secondary. `sla-status-change` names `slaId`; add `escalationId` only for at-risk responses. Without a stated response, at-risk and breach are notifications. Do not replicate rules across primary stages. See [references/sla-response-shapes.md](references/sla-response-shapes.md) and the SLA Response Map.
 22. **Formal argument IDs.** `variables.inputs[].id` and `variables.outputs[].id` must be synthetic `v` + 8 characters and distinct from `name`/`var`; never copy companion names. Run Step 12 Check 10 once at Phase 3 exit and non-interactively re-mint violations. CLI validate does not check this. See [global-vars/impl-json.md § Formal-arg slot ID format](references/plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format).
 23. **Never run `uip maestro case init`.** It may create a second solution and separate manifest. Use `uip solution init <SolutionName>` and the T01 direct-JSON scaffold in [implementation.md § Step 6](references/implementation.md#step-6--create-the-case-project-structure). See [case-commands.md § case init](references/case-commands.md#uip-maestro-case-init).
-24. **Read references to EOF before mutation.** Every `references/*.md` ends with `<!-- END: <filename> -->`. Before the first Write/Edit using a shape, procedure, constraint, or verification rule, Read that exact reference until its exact END marker appears in tool output during this session. Ranges, truncation, search hits, tables of contents, memory, and sibling references do not satisfy this. Reopen after compaction or when the prior read is unavailable. Keep reads modest to avoid output truncation. Tail contracts are normative.
+24. **Read references to EOF before mutation.** Every `references/*.md` ends with `<!-- END: <filename> -->`. Before the first Write/Edit using a shape, procedure, constraint, or verification rule, Read that exact reference until its exact END marker appears in tool output during this session. **Use the `Read` tool, or — if your harness has no `Read` tool — a single `cat <path>`.** `cat` returns the whole file in one call and is the compliant way to do this from a shell. Ranges, truncation, search hits, tables of contents, memory, and sibling references do not satisfy this: `sed -n '1,240p'`, `head`, `tail`, and `grep`/`rg` for the END marker are all failures of this rule, not shortcuts through it — a partial read is how a documented check gets skipped without anyone noticing. Reopen after compaction or when the prior read is unavailable. If a reference is large, still read it in full — these files are sized to be read whole, and the per-file END marker is the receipt. Tail contracts are normative.
 25. **Unique labels and task names.** Stage `data.label` values are unique case-wide; task `displayName` values are unique across all stages, exact and untrimmed, and contain no `:`. A missing display name binds to the resource name and participates in uniqueness. Assign names in Phase 1; later renaming touches the SDD, plan, ID map, and name-keyed references.
 
 ## Routing
@@ -112,7 +112,7 @@ Read [references/planning.md](references/planning.md) to produce:
 
 ### Phase 2 — Prototyping
 
-Read [references/implementation.md](references/implementation.md) and [references/phased-execution.md](references/phased-execution.md). Follow Steps 6–11.9:
+Read [references/implementation.md](references/implementation.md) (Phase 2), [references/implementation-phase-3.md](references/implementation-phase-3.md) (Phase 3 + the Step 12 checks), [references/implementation-phase-4-7.md](references/implementation-phase-4-7.md) (validate / publish / debug), and [references/phased-execution.md](references/phased-execution.md). Read the file for the phase you are in, each to its own END marker. Follow Steps 6–11.9:
 
 1. Step 6: `uip solution init`, project, and root case (T01 direct-JSON recipe in [plugins/case/impl-json.md](references/plugins/case/impl-json.md)); never `case init`.
 2. Step 6.1: manual, timer, and event triggers, including Rule 8 placeholders; capture trigger IDs.
@@ -166,7 +166,9 @@ Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publ
 |---|---|
 | Design without SDD | `uipath-planner` Case Design Lane; Rule 15 |
 | Plan from SDD | [references/planning.md](references/planning.md) |
-| Execute plan | [references/implementation.md](references/implementation.md) |
+| Execute plan — Phase 2 | [references/implementation.md](references/implementation.md) |
+| Execute plan — Phase 3 + Step 12 checks | [references/implementation-phase-3.md](references/implementation-phase-3.md) |
+| Validate / publish / debug — Phases 4–7 | [references/implementation-phase-4-7.md](references/implementation-phase-4-7.md) |
 | Brownfield edit | [references/brownfield.md](references/brownfield.md) |
 | Phase contracts | [references/phased-execution.md](references/phased-execution.md) |
 | Edit mechanics | [references/case-editing-operations.md](references/case-editing-operations.md) |
