@@ -13,8 +13,11 @@ Seven assertions.
     `{Type: 3, Value: "=vars.assignedBuyerEmail"}`. **`uip maestro case validate`
     does not check `data.recipient` at all** — a bare string, or a dropped field,
     passes validation and then the task reaches nobody. The eleven role-assigned
-    tasks are NOT asserted: the skill's own references disagree on whether a role
-    becomes `Type 1` or no recipient at all, so a grader must not pick a side.
+    tasks are not required to carry one: the skill's own references disagree on
+    whether a role becomes `Type 1` or no recipient at all, so a grader must not
+    pick a side. It can still reject the one shape both readings rule out — a role
+    name sitting in `Type 2`, which is the email type, so the platform reads
+    "Procurement Operations Lead" as a literal mailbox and the task reaches nobody.
  5. ERP registration and the child case run only once. A re-entered setup phase
     would otherwise mint a second supplier record.
  6. The child case does not block the parent.
@@ -176,6 +179,41 @@ def main() -> int:
                 f"task {name!r} recipient Value is {rvalue!r}; the SDD binds "
                 f"{E.EXPRESSION_RECIPIENT_VALUE!r}"
             )
+
+    # A role recipient may be omitted or carry a group id; both readings of the skill's
+    # references are defensible and neither is asserted. What neither allows is the role's
+    # display name in Type 2, the email type, which sends the task to a mailbox of that name.
+    for _stage, task in P.all_tasks(caseplan):
+        recipient = P.task_data(task).get("recipient")
+        if not isinstance(recipient, dict):
+            continue
+        value = recipient.get("Value", recipient.get("value"))
+        rtype = recipient.get("Type", recipient.get("type"))
+        if rtype != E.EMAIL_RECIPIENT_TYPE or not isinstance(value, str):
+            continue
+        if "@" not in value:
+            problems.append(
+                f"task {task.get('displayName')!r} recipient is Type {E.EMAIL_RECIPIENT_TYPE} "
+                f"(email) with value {value!r}, which is a role name, not an address; a role is "
+                f"either omitted or carried as a group id, never as a mailbox"
+            )
+
+    # `data.inputs` is a binding map, not a place to restate the receiving contract. A `required`
+    # flag here compiles into the dispatch's own `uipath:inputSchema` required array, which the
+    # runtime checks before the job starts, so a bound value that resolves empty fails the job
+    # rather than reaching it. Where a caller must supply a value belongs in entry-points.json.
+    restated = sorted({
+        f"{task.get('displayName')}.{i.get('name')}"
+        for _s, task in P.all_tasks(caseplan)
+        for i in P.task_inputs(task)
+        if i.get("required") is True
+    })
+    if restated:
+        problems.append(
+            f"{len(restated)} task input(s) restate the resource's own contract with "
+            f"`required: true`: {restated[:4]}. That compiles into a second gate the runtime "
+            f"checks before the job starts, and an empty bound value then fails the job"
+        )
 
     # ---- 5 + 6. the child case and the ERP write ---------------------------
     for name in sorted(E.RUN_ONCE_TASKS):

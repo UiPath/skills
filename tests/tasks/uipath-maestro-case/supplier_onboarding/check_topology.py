@@ -214,6 +214,30 @@ def main() -> int:
                     f"{terminal!r} exit {P.exit_type(cond)!r} is not `exit-only`"
                 )
 
+    # A stage selector is `selectedStageId`, singular, holding a bare string. Written as the
+    # plural array the case faults on its first rules evaluation, before any task opens, and
+    # `uip maestro case validate` reports Valid either way.
+    plural = sorted(rid for rid, key in P.stage_selector_spellings(caseplan)
+                    if key == "selectedStageIds")
+    if plural:
+        problems.append(
+            f"{len(plural)} stage selector(s) use `selectedStageIds`: {plural}. The key is "
+            f"`selectedStageId`, singular, holding a bare string; the plural array stops the "
+            f"rules evaluator dead and the case faults before its first task opens"
+        )
+
+    # `$xref('Stage','Task','output')` is a build-time placeholder that has to be resolved to a
+    # bare `vars.<outputReferenceId>` before the artifact ships. A survivor throws the moment the
+    # runtime reads the expression holding it, and `uip maestro case validate` reports Valid.
+    markers = P.surviving_xrefs(caseplan)
+    if markers:
+        listing = ", ".join(f"{n}x {m}" for m, n in sorted(markers.items(), key=lambda kv: -kv[1])[:4])
+        problems.append(
+            f"{sum(markers.values())} unresolved $xref marker(s) survive: {listing}. Each one is a "
+            f"build-time placeholder; the runtime reads it as a function call and the case faults "
+            f"on its first rules evaluation"
+        )
+
     print(f"checked {P.find_caseplan()}")
     print(f"stages: {sorted(by_label)}")
     if not problems:

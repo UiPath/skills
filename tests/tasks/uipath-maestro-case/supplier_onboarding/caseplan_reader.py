@@ -151,6 +151,13 @@ def condition_expression(cond: dict) -> str:
 
 
 def selected_stage_ids(cond: dict) -> set[str]:
+    """Stage ids a `selected-stage-completed` / `-exited` rule points at.
+
+    Deliberately reads both spellings. The emitted key is the singular `selectedStageId`
+    holding a bare string, but a build that writes the plural array instead would otherwise
+    blank every routing assertion at once and report a topology that looks empty rather than
+    wrong. `stage_selector_spellings` is what actually judges the spelling.
+    """
     out = set()
     for rule in rules(cond):
         one = rule.get("selectedStageId")
@@ -159,6 +166,32 @@ def selected_stage_ids(cond: dict) -> set[str]:
         for many in rule.get("selectedStageIds") or []:
             out.add(many)
     return out
+
+
+def stage_selector_spellings(plan: dict) -> list[tuple]:
+    """(rule id, key) for every stage selector, so a grader can judge the key itself.
+
+    `uip maestro case validate` accepts the plural array and the case then faults on its very
+    first rules evaluation, before any task opens: `CaseRulesEvaluatorNode`, error 400300,
+    "Error evaluating expression in activity inputs". Nothing downstream runs, so no other
+    assertion in this suite gets the chance to notice.
+    """
+    found = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("rule") in ("selected-stage-completed", "selected-stage-exited"):
+                for key in ("selectedStageId", "selectedStageIds"):
+                    if key in node:
+                        found.append((node.get("id"), key))
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(plan)
+    return found
 
 
 def selected_task_ids(cond: dict) -> set[str]:
@@ -452,3 +485,29 @@ def case_exits(plan: dict) -> list[dict]:
 
 def metadata(plan: dict) -> dict:
     return plan.get("metadata") or {}
+
+
+def surviving_xrefs(plan: dict) -> dict:
+    """Every unresolved `$xref(...)` marker in the plan, counted by marker text.
+
+    Sink-blind on purpose. The markers appear in composite input payloads, in
+    `conditionExpression`, in SLA expressions, in computed `=` outputs and in connector body
+    fields, so a scan that walks only task inputs misses most of them.
+    """
+    import re
+    from collections import Counter
+
+    found: Counter = Counter()
+
+    def walk(node):
+        if isinstance(node, str):
+            found.update(re.findall(r"\$xref\([^)]*\)", node))
+        elif isinstance(node, dict):
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(plan)
+    return dict(found)

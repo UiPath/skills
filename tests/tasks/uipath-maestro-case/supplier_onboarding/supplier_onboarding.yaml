@@ -13,7 +13,7 @@ description: >
   publish.
 tags:
   - uipath-maestro-case
-  - integration
+  - e2e
   - mode:build
   - lifecycle:generate
   - shape:multi-node
@@ -98,7 +98,7 @@ success_criteria:
     description: >
       sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
       that edits its own input has moved the goalposts rather than met them
-    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 7a6e0312a846ed2a69cf287c94396ebafe3daeb75fa096a7f011c0d892390a24"
+    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 269cbfa2cb0d39b20e4fd53f215ed6346e6854684fe19ec76723bcb509a83d8e"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -133,7 +133,7 @@ success_criteria:
     description: >
       SLA responses survived: 15d case target at 80%, seven stage SLAs at 70%, four
       phase breaches each starting a task INSIDE the breached stage (a stage-entry rule
-      instead re-runs the stage — validate accepts both), one non-interrupting oversight
+      instead re-runs the stage : validate accepts both), one non-interrupting oversight
       lane, three notify-only wrap-ups, and each phase's revised date confined to its
       own slot
     command: "python3 $TASK_DIR/check_sla.py"
@@ -168,22 +168,134 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not use mutating case-authoring CLI commands — caseplan.json is authored directly per the skill's invariant"
+    description: "Agent did not use mutating case-authoring CLI commands : caseplan.json is authored directly per the skill's invariant"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not run case debug — this case suspends on fourteen human tasks and cannot complete headlessly"
+    description: >
+      Agent did not run the case itself. The harness starts every debug run and drives every
+      gate; a case the agent ran leaves effects nothing can attribute, and an agent that drives
+      its own gates can walk a build past a route its caseplan never wired.
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug\b'
-    weight: 1.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not publish — the task stops at validate"
+    description: "Agent did not publish : the task stops at validate"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+(publish|upload)\b'
     weight: 1.0
     pass_threshold: 1.0
+
+  # ---- Execution: three routes through the case, driven by the harness ----
+  # `reject` is the cheapest route and the one a broken build fails first, so it runs before
+  # the two long ones and their tenant time is not spent on a build that cannot open a gate.
+
+  - type: run_command
+    description: >
+      EXECUTION: the buyer declines and the case routes itself to rejection. The harness
+      completes the intake gate, sends `reject` at the buyer gate, and the case must reach
+      CaseOutcome=Rejected with no further input. Proves the decline guard reads the deployed
+      form's own outcome value rather than an invented label.
+    command: "python3 $TASK_DIR/drive_case.py --route reject"
+    timeout: 1200
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      EXECUTION: a sendback returns the case to 'Checking the application' and it completes on
+      the second pass. The only route in this case that walks backwards, so it is the only one
+      that proves a stage can be re-entered and its tasks run again.
+    command: "python3 $TASK_DIR/drive_case.py --route sendback"
+    timeout: 1800
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      EXECUTION: the supplier withdraws while the application is still under review. Only a
+      review phase offers that choice, and only this route reaches the withdrawal phase at all,
+      since nothing routes into it automatically. The case must close as Withdrawn without the
+      buyer ever being asked.
+    command: "python3 $TASK_DIR/drive_case.py --route withdraw"
+    timeout: 1200
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      EXECUTION: nothing is answered until the intake phase misses its own deadline, then its
+      escalation is answered and the phase's own task is completed as well. Grades that the
+      escalation ran beside the phase's work rather than replacing it, that the delay note
+      actually reached the supplier, and that only the breached phase's revised-date slot was
+      written. Four phases each own a slot and crossing them is invisible to validate.
+    command: "python3 $TASK_DIR/drive_case.py --route sla"
+    timeout: 2400
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      OUTCOME: the case actually sent the buyer notification. Measured in the mailbox's Sent
+      Items through the same connection the case sends on, keyed on this run's ExternalId. A
+      draft never reaches Sent Items and a message with no recipient is never accepted for
+      sending, so this catches the two ways a connector task reports Completed while notifying
+      nobody. Delivery is not graded: whether the address resolves is the build's own
+      contactEmail default.
+    command: "python3 $TASK_DIR/check_outcome_email.py"
+    timeout: 400
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # ---- Anti-gaming ----
+  # Every effect the routes above measure is reachable by hand. These make the shortcuts cost
+  # the score and leave the attempt in the log.
+
+  - type: command_not_executed
+    description: >
+      Agent did not produce the case's effects by hand. No direct mutating connector calls:
+      Read-only `is resources run list` stays allowed; the skill uses it to resolve reference
+      fields such as mail folders.
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+run\s+(create|update|replace|delete)\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: >
+      Agent did not complete or assign the case's action tasks. Completing a task from the shell
+      advances the case from outside the caseplan, which would carry an unwired build through
+      gates it never encodes.
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tasks\s+(complete|assign|reassign)\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: >
+      Agent did not read this task's own directory. The whole repository is mounted read-only in
+      the sandbox and that directory holds the expectations and the graders; reading it is not a
+      build step.
+    tool_name: "Bash"
+    command_pattern: 'tests/tasks/uipath-maestro-case/supplier_onboarding'
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  # Child cases first. The cleanup identifies this run's own package by looking up the instance
+  # the driver recorded, and deleting the solution first may take that instance's record with it,
+  # leaving the package unknown and every child case behind.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/supplier_onboarding/cleanup_child_cases.py"
+    timeout: 180
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120
