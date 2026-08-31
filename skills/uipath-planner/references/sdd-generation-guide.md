@@ -489,7 +489,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    | # | Decision | Picked | One-sentence reason |
    |---|---|---|---|
-   | 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_WITH_ALTERNATIVES_OR_NONE> | <SOURCE_OF_DELIVERY_MODEL_AND_MATRIX_RULE_APPLIED> |
+   | 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; PRODUCT → ALTERNATIVE per blocked product, named from the availability matrix — or `no products blocked`> | <SOURCE_OF_DELIVERY_MODEL_AND_MATRIX_RULE_APPLIED> |
    | 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON_TIED_TO_PDD_SIGNAL> |
    | 3 | **RPA sub-type** (Level 1.5) — per RPA project | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON_TIED_TO_PDD_SIGNAL> |
    | 4 | **Authoring mode** (Level 2) — per RPA project | <XAML_OR_CODED_OR_HYBRID> | <REASON_TIED_TO_PROCESS_BODY_SHAPE> |
@@ -500,6 +500,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - Each "Picked" cell is a single concrete value, not a placeholder.
    - Each "One-sentence reason" is ≤ 20 words and cites the PDD signal or process characteristic that drove the pick.
    - Row 1 always appears, even when nothing was blocked (`cloud; no products blocked`) — the reviewer must see which platform the architecture assumes.
+   - Row 1's "Picked" cell **names every blocked product** from the [Constraint Gate](product-selection-guide.md#constraint-gate) candidate set, using the availability-matrix product name plus the alternative applied (`Coded Apps → no equivalent, dashboard touchpoint marked [SME REVIEW]; Maestro Flow → Orchestrator queues + dispatcher/performer`). A delivery model or a category (`Automation Cloud`, `cloud-only services`) is not a product name and does not record a block. When the PDD stated the constraint up front, the products its signals pointed to are still blocked products — run gate step 1 and name them; `no products blocked` in that situation is a false record.
    - For Solution scope, rows 3-5 repeat per RPA project (use a sub-table or one row per project — keep concise).
    - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
    - The block does NOT replace the per-section detail later in the SDD — the product body still carries the full justification in its architecture, stage/task, framework, or project-structure sections. The block is the **scannable index** of those decisions.

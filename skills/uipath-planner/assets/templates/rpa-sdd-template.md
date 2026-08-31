@@ -47,7 +47,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 3 for the format spec.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
-| 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_OR_NONE> | <REASON> |
+| 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; PRODUCT → ALTERNATIVE per blocked product, named from the availability matrix — or `no products blocked`> | <REASON> |
 | 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
 | 3 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
 | 4 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
