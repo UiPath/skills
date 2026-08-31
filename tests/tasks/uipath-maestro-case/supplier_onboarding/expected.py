@@ -80,8 +80,6 @@ STAGE_TASKS = {
     BUYER: [
         ("Notify buyer of application", "execute-connector-activity", True, False),
         ("Record buyer review decision", "action", True, False),
-        ("Escalate delayed buyer review", "action", False, False),
-        ("Send delay note for the buyer review", "execute-connector-activity", False, False),
     ],
     COMPLIANCE: [
         ("Run compliance and risk check", "api-workflow", True, False),
@@ -106,12 +104,12 @@ STAGE_TASKS = {
     ],
 }
 
-TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 21
+TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 19
 TASK_TYPE_COUNTS = {
-    "action": 7,
+    "action": 6,
     "api-workflow": 6,
     "agent": 1,
-    "execute-connector-activity": 6,
+    "execute-connector-activity": 5,
     "case-management": 1,
 }
 
@@ -138,20 +136,18 @@ STAGE_SLA = {                       # label -> (count, unit)
     COMPLIANCE: (32, "min"),
     SETUP: (24, "min"),
     ONBOARDED: (16, "min"),
-    REJECTED: (16, "min"),
-    WITHDRAWN: (16, "min"),
 }
-# Every stage carries its own SLA.
-NO_SLA_STAGES: set[str] = set()
+# The two terminal lanes carry no SLA of their own: the source gives one wrap-up target for all
+# three wrap-ups, and the onboarding wrap-up is the one inside the 120-minute arithmetic.
+NO_SLA_STAGES = {REJECTED, WITHDRAWN}
 
 # Breach answered by starting a task INSIDE the breached stage: the task carries the
 # `sla-status-change` rule on its OWN entry. A stage-entry rule instead would re-enter
 # the stage and re-run its other tasks. `validate` accepts both shapes.
-# Two phases answer a breach this way. Two rather than one is deliberate: a single phase cannot
-# show that each writes its OWN revised-date slot, which is the defect this pair exists to catch.
+# One phase answers a breach this way. The source states the phase-breach behaviour once, so it is
+# authored once, on the intake check.
 START_TASK_ON_BREACH = {
     "Escalate delayed application check": (CHECKING, "Application check SLA"),
-    "Escalate delayed buyer review": (BUYER, "Buyer review SLA"),
 }
 
 # No breach enters a separate lane. The case-level breach notifies and starts nothing.
@@ -160,27 +156,24 @@ ENTER_STAGE_ON_BREACH: dict[str, tuple[str, str]] = {}
 # Phases that warn and notify but never start remediation work. The two review phases without an
 # escalation task are here for the same reason as the wrap-ups: nothing is left to remediate that a
 # notification does not already cover.
-NOTIFY_ONLY_BREACH_STAGES = {COMPLIANCE, SETUP, ONBOARDED, REJECTED, WITHDRAWN}
+NOTIFY_ONLY_BREACH_STAGES = {BUYER, COMPLIANCE, SETUP, ONBOARDED}
 
 # Group the buyer's at-risk warning goes to, so a stalled review is bumped up before
 # the deadline rather than after it.
 BUYER_AT_RISK_GROUP = "Category Management"
 
 # --- Per-phase revised dates --------------------------------------------------
-# Each phase owns its own slot. One shared slot, or a note reading another phase's
-# slot, makes the delay note quote a date that phase never committed to.
+# The intake check is the one phase that answers a breach with work, so it owns the one slot.
+# A note reading anything else quotes a date the phase never committed to.
 
 PHASE_REVISED_DATE = {
     CHECKING: "applicationCheckRevisedDate",
-    BUYER: "buyerReviewRevisedDate",
 }
 ESCALATION_OF_PHASE = {
     CHECKING: "Escalate delayed application check",
-    BUYER: "Escalate delayed buyer review",
 }
 DELAY_NOTE_OF_PHASE = {
     CHECKING: "Send delay note for the application check",
-    BUYER: "Send delay note for the buyer review",
 }
 
 # --- Literal fidelity ---------------------------------------------------------
@@ -191,7 +184,6 @@ DELAY_NOTE_OF_PHASE = {
 
 STAGE_NAME_LITERAL = {
     "Escalate delayed application check": CHECKING,
-    "Escalate delayed buyer review": BUYER,
 }
 STAGE_NAME_INPUT = "stageName"
 
@@ -312,15 +304,14 @@ OUTPUT_TARGETS = {
     "bankVerificationStatus": ["Register supplier in ERP"],
     "buyerComments": ["Record buyer review decision"],
     "buyerDecision": ["Record buyer review decision"],
-    "buyerReviewRevisedDate": ["Escalate delayed buyer review"],
     "categoryMatches": ["Confirm offering category match"],
     "cleanupSummary": ["Close out withdrawn application"],
     "complianceComments": ["Record compliance review decision"],
     "complianceDecision": ["Record compliance review decision"],
     "complianceFlags": ["Run compliance and risk check"],
     "duplicateSupplierIds": ["Pull supplier records and screening"],
-    "escalationNotes": ["Escalate delayed application check", "Escalate delayed buyer review"],
-    "lastEmailStatus": ["Notify buyer of application", "Send delay note for the application check", "Send delay note for the buyer review", "Send rejection notice to supplier", "Send supplier welcome message", "Send withdrawal confirmation"],
+    "escalationNotes": ["Escalate delayed application check"],
+    "lastEmailStatus": ["Notify buyer of application", "Send delay note for the application check", "Send rejection notice to supplier", "Send supplier welcome message", "Send withdrawal confirmation"],
     "portalAccessConfirmation": ["Confirm supplier portal access"],
     "registeredAt": ["Record supplier in approved register"],
     "reviewNotes": ["Confirm offering category match"],
@@ -353,7 +344,7 @@ EXPRESSION_RECIPIENT_TYPE = 3
 CONNECTOR_OUTPUT_PATH = "response.status"
 CONNECTOR_OUTPUT_ROOT = "response"
 CONNECTOR_OUTPUT_TARGET = "lastEmailStatus"
-CONNECTOR_TASK_COUNT = 6
+CONNECTOR_TASK_COUNT = 5
 
 # The four supporting documents the category-match agent reads. The fixture reads them
 # through a guarded array walk rather than a bare `vars.X.FullName`, so the names are

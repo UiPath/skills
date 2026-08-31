@@ -12,6 +12,7 @@
 | 1.1 | 2026-08-30 | uipath-planner | SLA revision: overall and phase targets restated in minutes at the source's proportions, scaled to the smallest whole multiple clearing the platform minimum; case at-risk threshold re-derived |
 | 1.2 | 2026-08-30 | uipath-planner | Representative `In` defaults added so a case started with no caller data still describes a real supplier; the four `file` arguments stay blank per the platform contract |
 | 1.3 | 2026-08-30 | uipath-planner | Simplification: phase-delay escalation and delay notice kept on the intake check and buyer review only; three of the four manually launched optional tasks dropped, keeping the supplier's document upload because it is the only one that lets a send-back for corrections be answered; the financial-health agent dropped; the overall-SLA oversight lane dropped; the director sign-off dropped together with the sign-off tier calculation that fed it. Consequential edits to the compliance decision's entry, the case-breach response, variables, personas, app views and integrations |
+| 1.4 | 2026-08-31 | uipath-planner | Simplification: the phase-breach escalation and delay notice are authored once, on the intake check, matching the source's single generic statement of that behaviour; the buyer review keeps its own at-risk bump and its breach becomes a notification. The two terminal lanes lose their own wrap-up SLA — the source gives one wrap-up target covering all three wrap-ups, and the onboarding wrap-up carries it. Consequential edits to the SLA response map and the variable inventory |
 
 ---
 
@@ -38,7 +39,7 @@
 1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage 1: Checking the application](#stage-1-checking-the-application-checking_application) — 6 tasks
-   - [Stage 2: Buyer review](#stage-2-buyer-review-buyer_review) — 4 tasks
+   - [Stage 2: Buyer review](#stage-2-buyer-review-buyer_review) — 2 tasks
    - [Stage 3: Compliance and risk review](#stage-3-compliance-and-risk-review-compliance_risk_review) — 2 tasks
    - [Stage 4: Setting up the supplier](#stage-4-setting-up-the-supplier-supplier_setup) — 3 tasks
    - [Stage 5: Supplier onboarded](#stage-5-supplier-onboarded-supplier_onboarded) — 2 tasks
@@ -67,7 +68,7 @@
 **Recommendation:** SINGLE_PRODUCT — Case Management
 **Delivery model:** cloud
 **Blocked by platform:** none
-**Need profile:** Resolve every supplier application within 120 minutes across a five-phase lifecycle, with automatic escalation on the two front-end phase deadlines and an explicit human decision before any supplier reaches the ERP.
+**Need profile:** Resolve every supplier application within 120 minutes across a five-phase lifecycle, with automatic escalation on the intake-check deadline and an explicit human decision before any supplier reaches the ERP.
 
 ---
 
@@ -80,7 +81,7 @@
 | Property | Value |
 |----------|-------|
 | Case Name | SupplierOnboarding |
-| Case Description | Handles a prospective supplier's application from the moment it is submitted until it is fully resolved — the supplier is onboarded and ready to trade, the application is rejected, or the supplier withdraws it. Every application carries its own reference number so everyone involved can track it. Each phase is time-boxed; missing the intake-check or buyer-review deadline starts real remediation work, and the remaining phases raise a warning and a breach notification only. |
+| Case Description | Handles a prospective supplier's application from the moment it is submitted until it is fully resolved — the supplier is onboarded and ready to trade, the application is rejected, or the supplier withdraws it. Every application carries its own reference number so everyone involved can track it. Each phase is time-boxed; missing the intake-check deadline starts real remediation work, and the remaining phases raise a warning and a breach notification only. |
 | Case Identifier | Type: constant. Constant → Prefix: SUP |
 | Priority | Choiceset: Low, Medium, High, Critical — Default: Medium |
 | Case-Level SLA | 120 min |
@@ -113,17 +114,13 @@ duration and points here; nothing restates a response.
 | stage: Checking the application | Application check SLA | At-Risk | notify-only | — | — | At 70% of the phase target the people handling the application see a warning so they can act before the deadline passes. |
 | stage: Checking the application | Application check SLA | Breached | start-task | Escalate delayed application check | — | A missed phase deadline must act on its own — an escalation task for the procurement operations lead and a status note to the supplier. Both tasks live inside this stage and activate on its own SLA event, so the phase they name is a literal rather than something a shared lane has to infer, and the checks keep running while the lead unblocks them. |
 | stage: Buyer review | Buyer review SLA | At-Risk | notify-only | — | — | If the buyer sits on it too long the application is bumped up to the Category Management group so it does not stall; placed at at-risk so it fires before the deadline rather than after it. |
-| stage: Buyer review | Buyer review SLA | Breached | start-task | Escalate delayed buyer review | — | Same phase-breach remediation, owned by this stage; the buyer's review is not paused by the escalation meant to unblock it. |
+| stage: Buyer review | Buyer review SLA | Breached | notify-only | — | — | The phase-breach remediation the source describes is authored once, on the intake check, so a missed buyer review deadline raises a breach notification and starts no work. |
 | stage: Compliance and risk review | Compliance review SLA | At-Risk | notify-only | — | — | 70% warning to the Compliance group. |
-| stage: Compliance and risk review | Compliance review SLA | Breached | notify-only | — | — | Phase-delay remediation is deliberately limited to the intake check and the buyer review, so a missed compliance deadline raises a breach notification and starts no work. |
+| stage: Compliance and risk review | Compliance review SLA | Breached | notify-only | — | — | Phase-delay remediation is deliberately limited to the intake check, so a missed compliance deadline raises a breach notification and starts no work. |
 | stage: Setting up the supplier | Supplier setup SLA | At-Risk | notify-only | — | — | 70% warning to the procurement operations group. |
-| stage: Setting up the supplier | Supplier setup SLA | Breached | notify-only | — | — | Phase-delay remediation is deliberately limited to the intake check and the buyer review, so a missed setup deadline raises a breach notification and starts no work. |
+| stage: Setting up the supplier | Supplier setup SLA | Breached | notify-only | — | — | Phase-delay remediation is deliberately limited to the intake check, so a missed setup deadline raises a breach notification and starts no work. |
 | stage: Supplier onboarded | Onboarding wrap-up SLA | At-Risk | notify-only | — | — | The wrap-up phase carries the source's 2-minute wrap-up target scaled to 16 minutes and warns at 70%. |
 | stage: Supplier onboarded | Onboarding wrap-up SLA | Breached | notify-only | — | — | Deliberately not routed into the delay lane: apologising for a delay and promising a new expected date on an application that is already finished would be wrong. |
-| stage: Application rejected | Rejection wrap-up SLA | At-Risk | notify-only | — | — | Same 16-minute wrap-up target, warning at 70%. |
-| stage: Application rejected | Rejection wrap-up SLA | Breached | notify-only | — | — | A delay apology promising a new expected date is not appropriate for an application already rejected. |
-| stage: Application withdrawn | Withdrawal wrap-up SLA | At-Risk | notify-only | — | — | Same 16-minute wrap-up target, warning at 70%. |
-| stage: Application withdrawn | Withdrawal wrap-up SLA | Breached | notify-only | — | — | A delay apology promising a new expected date is not appropriate for an application the supplier has already withdrawn. |
 
 ### Case Triggers
 
@@ -182,7 +179,6 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | portalAccessConfirmation | Variable | string | | | | What the supplier reported about their supplier-portal access |
 | registeredAt | Variable | string | | | | When the supplier was written to the approved-supplier register |
 | applicationCheckRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the application check misses its deadline |
-| buyerReviewRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the buyer review misses its deadline |
 | escalationNotes | Variable | string | | | None | Notes recorded while an application is being unblocked after a missed deadline |
 | lastEmailStatus | Variable | string | | | | Delivery status returned by the most recent message sent from this application |
 | auditRecordId | Variable | string | | | | The audit record a rejection was written to |
@@ -433,7 +429,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** action
 **Activation Mode:** event-triggered
-**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared by the two phase escalations still in scope, both dispatched on the same `phase-escalation` `actionType`: they are the same piece of work on a different phase, take the identical field set, and differ only in the phase they name and the revised-date variable they write.
+**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app carries a `phase-escalation` `actionType` and this task is its only consumer: the phase it names is carried in the `stageName` input and the revised date lands in this phase's own variable.
 **Description:** Raises a task for the procurement operations lead to step in and unblock this phase, and captures the new expected date they commit to.
 
 **Entry Condition:**
@@ -479,7 +475,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** execute-connector-activity
 **Activation Mode:** conditional-gate
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is gated on this stage's own escalation task completing rather than sequenced into the stage's ordered run, because it must send only after a deadline was actually missed and only once the operations lead has committed the new date. It reads that date directly from the escalation task's own `newExpectedDate` output, so it can never quote a date another phase's escalation set.
+**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is gated on this stage's own escalation task completing rather than sequenced into the stage's ordered run, because it must send only after a deadline was actually missed and only once the operations lead has committed the new date. It reads that date directly from the escalation task's own `newExpectedDate` output, so the note can only ever quote the date this phase's escalation committed.
 **Description:** Sends the supplier a status note apologizing for the delay on this phase and giving the new expected date the operations lead committed to.
 
 **Entry Condition:**
@@ -545,7 +541,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives buyer review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. At 70% the application is bumped up to the Category Management group so it does not stall — placed at at-risk rather than at breach so the nudge arrives while there is still time to act, and so the breach status stays free for the phase-delay remediation the source requires. The breach is answered by this stage's own `Escalate delayed buyer review` task through an `sla-status-change` task-entry rule (a `start-task` response).
+**Design Rationale:** The source gives buyer review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. At 70% the application is bumped up to the Category Management group so it does not stall — placed at at-risk rather than at breach so the nudge arrives while there is still time to act. The phase-breach remediation the source describes is authored once, on the intake check, so the breach here raises a breach notification and starts no work.
 **SLA Type:** time-based
 **SLA Title:** Buyer review SLA
 
@@ -559,8 +555,6 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Notify buyer of application | execute-connector-activity | sequential | Stage enters — first task in the sequential run | Yes | No | system | — |
 | 2 | Record buyer review decision | action | sequential | After Notify buyer of application | Yes | No | Buyer | 32 min |
-| 3 | Escalate delayed buyer review | action | event-triggered | This stage's SLA breaches | No | No | Procurement Operations Lead | — |
-| 4 | Send delay note for the buyer review | execute-connector-activity | conditional-gate | After Escalate delayed buyer review | No | No | system | — |
 
 ##### Task 2.1: Notify buyer of application
 
@@ -648,97 +642,6 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | Comment | -> buyerComments |
 | — | buyerDecision = =js:vars.$xref('Buyer review','Record buyer review decision','Action') |
 
-##### Task 2.3: Escalate delayed buyer review
-
-**Type:** action
-**Activation Mode:** event-triggered
-**Design Rationale:** A named human role has to step in and unblock the application, and the tenant carries a deployed escalation Action App for it — so `action`. It lives **inside this stage** and activates on this stage's own SLA breach through an `sla-status-change` task-entry rule — the `start-task` response — so the phase it names is a literal rather than something a shared lane has to infer from case state. It is optional and re-runnable: a healthy application never triggers it, and marking it required would stop the stage completing unless it breached. The escalation app is shared by the two phase escalations still in scope, both dispatched on the same `phase-escalation` `actionType`: they are the same piece of work on a different phase, take the identical field set, and differ only in the phase they name and the revised-date variable they write.
-**Description:** Raises a task for the procurement operations lead to step in and unblock this phase, and captures the new expected date they commit to.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| sla-status-change("Buyer review","Buyer review SLA") | — | Buyer review deadline missed |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: supplier-delay-escalation
-**Action App ID:** fb171d7c-33a1-4bb6-b09a-030044a7c0b6
-**Deployment Folder:** Shared/uipath-maestro-case
-**actionType:** phase-escalation
-**Recipient:** Role:Procurement Operations Lead
-**Priority:** Critical · **Task Title:** Unblock a supplier application that has missed the Buyer review deadline · **Labels:** sla, escalation
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " for " + vars.companyName + " has missed the Buyer review deadline.\n\nCategory: " + vars.offeringCategory + "\nAssigned buyer: " + vars.assignedBuyerEmail + "\nSubmitted: " + vars.submittedDate + "\nSupplier contact: " + vars.contactName + " <" + vars.contactEmail + ">\n\nStep in to unblock it and commit a new expected date for the supplier.") | No |
-| applicationReference | String | =metadata.ExternalId | No |
-| stageName | String | Buyer review | No |
-| deadlineMissedOn | Any | =js:(new Date().toISOString()) | No |
-| daysOverdue | Number | 0 | No |
-| Comment | String | =vars.escalationNotes | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| newExpectedDate | -> buyerReviewRevisedDate |
-| Comment | -> escalationNotes |
-
-##### Task 2.4: Send delay note for the buyer review
-
-**Type:** execute-connector-activity
-**Activation Mode:** conditional-gate
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is gated on this stage's own escalation task completing rather than sequenced into the stage's ordered run, because it must send only after a deadline was actually missed and only once the operations lead has committed the new date. It reads that date directly from the escalation task's own `newExpectedDate` output, so it can never quote a date another phase's escalation set.
-**Description:** Sends the supplier a status note apologizing for the delay on this phase and giving the new expected date the operations lead committed to.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| selected-tasks-completed("Escalate delayed buyer review") | — | After escalation raised |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| No | No | — |
-
-###### Connector Task Detail (type: `execute-connector-activity`)
-
-**Connector:** Microsoft Outlook 365 · **Connector Key:** uipath-microsoft-outlook365
-**Connection:** is-sandboxes-test@uipathsandboxes.onmicrosoft.com · **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
-**Activity Type ID:** c7ce0a96-2091-3d94-b16f-706ebb1eb351
-**Auth Method:** OAuth2
-**Account / Endpoint:** —
-**Operation:** Send email
-**Trigger / Event:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| message.toRecipients | string | =vars.contactEmail |
-| message.subject | string | =js:("Update on your supplier application - " + vars.companyName) |
-| message.body.contentType | string | Text |
-| message.body.content | string | =js:("Dear " + vars.contactName + ",\n\nWe are sorry - your supplier application is taking longer than we planned. It has missed the deadline for this phase and we have escalated it internally so it can be moved forward.\n\nPhase: Buyer review\nNew expected date: " + vars.buyerReviewRevisedDate + "\nApplication reference: " + metadata.ExternalId + "\n\nThere is nothing you need to do; we will come back to you by the date above.") |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| response.status | -> lastEmailStatus |
-
-
 ---
 
 ### Stage 3: Compliance and risk review (`compliance_risk_review`)
@@ -763,7 +666,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives compliance and risk review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the Compliance group can act before the deadline passes. Phase-delay remediation is limited to the intake check and the buyer review, so the breach here raises its breach escalation as a notification and starts no work.
+**Design Rationale:** The source gives compliance and risk review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the Compliance group can act before the deadline passes. Phase-delay remediation is limited to the intake check, so the breach here raises its breach escalation as a notification and starts no work.
 **SLA Type:** time-based
 **SLA Title:** Compliance review SLA
 
@@ -887,7 +790,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives supplier setup a 3-minute target, scaled to 24 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the procurement operations group can act before the deadline passes. Phase-delay remediation is limited to the intake check and the buyer review, so the breach here raises its breach escalation as a notification and starts no work.
+**Design Rationale:** The source gives supplier setup a 3-minute target, scaled to 24 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the procurement operations group can act before the deadline passes. Phase-delay remediation is limited to the intake check, so the breach here raises its breach escalation as a notification and starts no work.
 **SLA Type:** time-based
 **SLA Title:** Supplier setup SLA
 
@@ -1178,16 +1081,6 @@ task IS the confirmation and there is no second outcome to route. -->
 |------|-----|-----------|---------------------|--------------|
 | required-tasks-completed | — | exit-only | Yes | Rejection complete |
 
-#### Stage SLA
-
-**Design Rationale:** The source gives wrapping up a 2-minute target, scaled to 16 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure. Breach is a notification only — routing an already-rejected application into the phase-delay lane would apologise for a delay and promise the supplier a new expected date that no longer exists.
-**SLA Type:** time-based
-**SLA Title:** Rejection wrap-up SLA
-
-| SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
-|-----|------|---------|----------------------------------|---------------------------------|
-| 16 | min | 70% | Rejection wrap-up SLA at risk | Rejection wrap-up SLA breached |
-
 #### Tasks
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
@@ -1306,16 +1199,6 @@ task IS the confirmation and there is no second outcome to route. -->
 |------|-----|-----------|---------------------|--------------|
 | required-tasks-completed | — | exit-only | Yes | Withdrawal complete |
 
-#### Stage SLA
-
-**Design Rationale:** The source gives wrapping up a 2-minute target, scaled to 16 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure. Breach is a notification only — routing an already-withdrawn application into the phase-delay lane would apologise for a delay and promise a new expected date to a supplier who has stopped.
-**SLA Type:** time-based
-**SLA Title:** Withdrawal wrap-up SLA
-
-| SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
-|-----|------|---------|----------------------------------|---------------------------------|
-| 16 | min | 70% | Withdrawal wrap-up SLA at risk | Withdrawal wrap-up SLA breached |
-
 #### Tasks
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
@@ -1425,7 +1308,7 @@ task IS the confirmation and there is no second outcome to route. -->
 | Buyer | Buyer review | View, Act, Comment | The buyer assigned to the application's category. Approves, declines, or sends the application back for corrections. Reaching out to the supplier for clarification is done in the case comment thread rather than as a task. |
 | Category Manager | Buyer review | View, Comment | Notified via the Category Management group when buyer review reaches 70% of its target so a stalled review is bumped up before the deadline passes. |
 | Compliance Reviewer | Compliance and risk review | View, Act, Comment | Sees the whole picture — the application, the compliance results, and the risk rating — and explicitly chooses whether the application goes to setup or is rejected. |
-| Procurement Operations Lead | Checking the application, Buyer review | View, Act, Reassign, Comment | Runs the intake check, and steps in to unblock the intake check or the buyer review when either misses its deadline, committing a new expected date for the supplier. |
+| Procurement Operations Lead | Checking the application | View, Act, Reassign, Comment | Runs the intake check, and steps in to unblock it when it misses its deadline, committing a new expected date for the supplier. |
 
 <!-- The Procurement Director and Legal Counsel are no longer personas of this case: the director sign-off,
 the sign-off tier that gated it and the overall-SLA review lane are all out of scope, and the legal opinion
@@ -1449,7 +1332,7 @@ task with them, so neither role now holds a task, a recipient cell or an escalat
 
 | Connector | Connector Key | System | Connection (ID) | Auth Method | Operations Used | Used By Tasks |
 |-----------|---------------|--------|-----------------|-------------|-----------------|---------------|
-| Microsoft Outlook 365 | uipath-microsoft-outlook365 | Microsoft 365 mail | is-sandboxes-test@uipathsandboxes.onmicrosoft.com (dd657127-91f5-4568-a3a3-c024bc03fb0f) | OAuth2 | Send email | Notify buyer of application, Send supplier welcome message, Send rejection notice to supplier, Send withdrawal confirmation, Send delay note for the application check, Send delay note for the buyer review |
+| Microsoft Outlook 365 | uipath-microsoft-outlook365 | Microsoft 365 mail | is-sandboxes-test@uipathsandboxes.onmicrosoft.com (dd657127-91f5-4568-a3a3-c024bc03fb0f) | OAuth2 | Send email | Notify buyer of application, Send supplier welcome message, Send rejection notice to supplier, Send withdrawal confirmation, Send delay note for the application check |
 
 #### Microsoft Outlook 365
 
@@ -1485,12 +1368,11 @@ task with them, so neither role now holds a task, a recipient cell or an escalat
 | supplier-document-upload | Shared/uipath-maestro-case | e0145242-77aa-40b5-8752-e037ec022d40 | — | Attach supporting documents |
 | Supplier Compliance Review | Shared/uipath-maestro-case/Supplier Compliance Review | 1229c1ed-ca6b-4a89-9776-883bd0669684 | — | Record compliance review decision |
 | Supplier Portal Access Confirmation | Shared/uipath-maestro-case/Supplier Portal Access Confirmation | 8bfee375-9973-446d-b409-6799688ffe49 | — | Confirm supplier portal access |
-| supplier-delay-escalation | Shared/uipath-maestro-case | fb171d7c-33a1-4bb6-b09a-030044a7c0b6 | phase-escalation | Escalate delayed application check, Escalate delayed buyer review |
+| supplier-delay-escalation | Shared/uipath-maestro-case | fb171d7c-33a1-4bb6-b09a-030044a7c0b6 | phase-escalation | Escalate delayed application check |
 
-<!-- supplier-delay-escalation is shared by the two remaining phase escalations under one
-phase-escalation dispatch. They are the same work on a different phase and declare the identical field
-set, so neither borrows a field the other owns; the phase is carried in the stageName input and the
-revised date lands in a per-phase variable. -->
+<!-- supplier-delay-escalation carries one phase-escalation dispatch and the intake check's escalation is
+its only consumer, so no second escalation can borrow a field it owns; the phase is carried in the
+stageName input and the revised date lands in that phase's own variable. -->
 
 ### Child Cases
 
@@ -1515,7 +1397,7 @@ revised date lands in a per-phase variable. -->
 | Performance | Five phases, at most twelve tasks on any single path, two of them optional. The one agent assessment runs in parallel with required work so it does not add to the critical path. |
 | Scalability | Every human task routes to a role rather than a single named user, so throughput is not bounded by one person; the buyer is the exception and is resolved per category by the intake lookup. |
 | Availability / Resilience | ERP registration and the contract-negotiation child case are marked `Run Only Once`, so a re-entered setup phase cannot mint a second supplier record or a second negotiation case. Stage-1 tasks are re-runnable because a send-back for corrections is a genuine new attempt. |
-| Logging & Monitoring | Case SLA plus a per-phase SLA on all seven primary and terminal stages; at-risk warnings at 70% (75% at case level). Breach creates real work on the intake check and the buyer review only; every other breach, the overall case target included, is a notification. Every rejection is written to the company's audit records with what, who, why and when. |
+| Logging & Monitoring | Case SLA plus a per-phase SLA on all five primary stages, the two terminal lanes carrying none of their own because the source gives one wrap-up target and the onboarding wrap-up carries it; at-risk warnings at 70% (75% at case level). Breach creates real work on the intake check only; every other breach, the overall case target included, is a notification. Every rejection is written to the company's audit records with what, who, why and when. |
 | Compliance | The compliance reviewer's decision is the only way out of compliance and risk review — the stage carries no unguarded completion, so the application never advances on its own. That reviewer is now the only approval gate: no value threshold routes an application to a second approver, so a high-value and a low-value application are treated alike. Every rejection is auditable. |
 
 ## Testing Strategy
@@ -1530,11 +1412,11 @@ revised date lands in a per-phase variable. -->
 | Supplier withdraws mid-review | Supplier withdraws while the application is in each of Checking the application, Buyer review, and Compliance and risk review | `Application withdrawn` enters from the stage picker in all three phases, confirmation sent, pending reviews cancelled and timers switched off, case closed not marked complete |
 | Withdrawal blocked after setup begins | Attempt to withdraw while the application is in Setting up the supplier | The withdrawal lane is not offered — setup exposes no stage picker |
 | Sent back for corrections and resubmitted | Buyer picks Send back for corrections, the supplier fixes the issues and adds a document, the application is re-checked and approved | Buyer review exits without completing, `Checking the application` re-enters on the send-back guard, its tasks re-run, and the application reaches a decision again. The supplier answers the send-back through `Attach supporting documents`, which they launch while the re-entered phase is active, so the corrected paperwork reaches the intake check that re-runs |
-| Phase deadline missed (escalating phases) | Hold `Checking the application`, then `Buyer review`, past its target | The breached stage's own `Escalate delayed <phase>` task activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the <phase>` sends the supplier a note naming that phase and carrying the lead's revised date, read from that stage's own revised-date variable; the phase's own work continues meanwhile and its required tasks are unaffected |
-| Phase deadline missed (notifying phases) | Hold `Compliance and risk review`, then `Setting up the supplier`, past its target | Breach escalation notification only; no task is started, no note reaches the supplier, and the phase's work is untouched |
+| Phase deadline missed (escalating phase) | Hold `Checking the application` past its target | `Escalate delayed application check` activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the application check` sends the supplier a note naming that phase and carrying the lead's revised date, read from that stage's own revised-date variable; the phase's own work continues meanwhile and its required tasks are unaffected |
+| Phase deadline missed (notifying phases) | Hold `Buyer review`, then `Compliance and risk review`, then `Setting up the supplier`, past its target | Breach escalation notification only; no task is started, no note reaches the supplier, and the phase's work is untouched |
 | Phase at risk | Hold Buyer review past 70% of 32 minutes | At-risk warning raised and the Category Manager notified; no lane entered and no routing change |
 | Overall target missed | Hold the application past 120 minutes | Procurement leadership is notified; no stage is entered, no task is raised, and the application continues to its disposition |
-| Wrap-up breach does not escalate | Hold `Application rejected` past 16 minutes | At-risk and breach notifications only; no delay note is sent to a supplier already rejected |
+| Wrap-up breach does not escalate | Hold `Supplier onboarded` past 16 minutes | At-risk and breach notifications only; no delay note is sent on an application that is already finished. `Application rejected` and `Application withdrawn` carry no SLA of their own, so neither raises a wrap-up warning or breach |
 | Phase-scoped actions | Attempt the optional document upload from every phase | The supplier's document upload is offered only while the application is in Checking the application; it is the case's only manually launched task |
 | Closed case is immovable | Reach each of the three terminal outcomes and attempt to move the case | No entry condition matches; the case stays closed |
 

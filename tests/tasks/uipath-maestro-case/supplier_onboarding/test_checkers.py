@@ -279,15 +279,6 @@ TASKS = [
       recipient={'Type': 3, 'Value': '=vars.assignedBuyerEmail'},
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.offeringDescription', 'vars.validationOutcome', 'vars.validationIssues', 'vars.addedDocumentName', 'vars.duplicateSupplierIds', 'vars.sanctionsFindings', 'vars.categoryMatches', 'vars.suggestedCategory', 'vars.reviewNotes', 'vars.referenceCheckFindings', 'vars.buyerComments'],
       outputs=[('Action', 'action2', 'buyerDecision', '=Action', None), ('Comment', 'comment2', 'buyerComments', '=Comment', None)]),
-    T('tEscByr01', 'action', 'Escalate delayed buyer review',
-      req=False, once=False, entry=[('sla-status-change', {'slaId': 'sla_ByrStg01'})],
-      literals={'stageName': 'Buyer review', 'daysOverdue': '0'},
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.offeringCategory', 'vars.assignedBuyerEmail', 'vars.submittedDate', 'vars.contactName', 'vars.contactEmail', 'vars.escalationNotes'],
-      outputs=[('newExpectedDate', 'newExpectedDate2', 'buyerReviewRevisedDate', '=newExpectedDate', None), ('Comment', 'comment10', 'escalationNotes', '=Comment', None)]),
-    T('tNteByr02', 'execute-connector-activity', 'Send delay note for the buyer review',
-      req=False, once=False, entry=[('selected-tasks-completed', {'selectedTasksIds': ['tEscByr01']})],
-      reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'vars.buyerReviewRevisedDate', 'metadata.ExternalId'],
-      outputs=[('response', 'response6', 'response6', '=response', 'Response'), ('Error', 'error6', 'error6', '=Error', 'Error'), ('Status', 'status6', 'lastEmailStatus', '=response.status', None)]),
     # --- Compliance and risk review ---
     T('tCrc09jFu', 'api-workflow', 'Run compliance and risk check',
       req=True, once=False, entry=[('runs-sequentially', None)],
@@ -350,7 +341,7 @@ STAGES = [
       slas=[('sla_ByrStg01', *E.STAGE_SLA[E.BUYER], [('esc_by01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '74c6d5cc-0684-4ff4-9537-1c80681ad9e8', 'Category Management')]), ('esc_by02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_by01en', 'Checks passed', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Chk4kA'})])],
       exits=[('Condition_by01ex', 'Buyer declined', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tByr06fCr'], 'conditionExpression': '=js:vars.action2 === "reject"'})]), ('Condition_by02ex', 'Sent back for corrections', None, 'exit-only', False, 'Stage_Chk4kA', [('selected-tasks-completed', {'selectedTasksIds': ['tByr06fCr'], 'conditionExpression': '=js:vars.action2 === "sendback"'})]), ('Condition_by03ex', 'Buyer approved', None, 'wait-for-user', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
-      lanes=[['tNtf05eBq'], ['tByr06fCr'], ['tEscByr01'], ['tNteByr02']]),
+      lanes=[['tNtf05eBq'], ['tByr06fCr']]),
     S('Stage_Cmp3nD', 'Compliance and risk review', None,
       slas=[('sla_CmpStg01', *E.STAGE_SLA[E.COMPLIANCE], [('esc_cm01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', 'e158a23e-f553-4107-82d5-68b788134d33', 'Compliance')]), ('esc_cm02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_cm01en', 'Buyer approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
@@ -367,12 +358,12 @@ STAGES = [
       exits=[('Condition_on01ex', 'Onboarding complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tWlc18uQd', 'tReg19vRe']]),
     S('Stage_Rej5rG', 'Application rejected', 'secondary',
-      slas=[('sla_RejStg01', *E.STAGE_SLA[E.REJECTED], [('esc_rj01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_rj02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[],
       entry=[('Condition_rj01en', 'Buyer declined', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.action2 === "reject"'})]), ('Condition_rj02en', 'Compliance rejected', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.action4 === "reject"'})]), ('Condition_rj03en', 'Bank verification failed', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Set8pE', 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})])],
       exits=[('Condition_rj01ex', 'Rejection complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tRjn20wSf', 'tAud21xTg']]),
     S('Stage_Wdr9sH', 'Application withdrawn', 'secondary',
-      slas=[('sla_WdrStg01', *E.STAGE_SLA[E.WITHDRAWN], [('esc_wd01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_wd02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[],
       entry=[('Condition_wd01en', 'Supplier withdrew', True, None, None, None, [('user-selected-stage', None)])],
       exits=[('Condition_wd01ex', 'Withdrawal complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tWdc22yUh', 'tWcl23zVj']]),
@@ -846,13 +837,6 @@ class SlaTests(CheckerBase):
         node["data"]["entryConditions"].extend(moved)
         self.rejects(plan, "re-enters the stage")
 
-    def test_rejects_shared_revised_date_slot(self):
-        plan = baseline_plan()
-        blob = json.dumps(plan).replace(
-            E.PHASE_REVISED_DATE[E.BUYER], E.PHASE_REVISED_DATE[E.CHECKING]
-        )
-        self.rejects(json.loads(blob), "belongs to another phase")
-
     def test_rejects_delay_note_reading_nothing(self):
         plan = baseline_plan()
         note = task(plan, E.DELAY_NOTE_OF_PHASE[E.CHECKING])
@@ -865,7 +849,9 @@ class SlaTests(CheckerBase):
 
     def test_rejects_wrap_up_starting_remediation(self):
         plan = baseline_plan()
-        node = stage(plan, E.REJECTED)
+        # Retargeted to the one wrap-up that still carries an SLA of its own: the two terminal
+        # lanes no longer have one, so a task added there answers no breach.
+        node = stage(plan, E.ONBOARDED)
         escalation = copy.deepcopy(task(plan, "Escalate delayed application check"))
         node["data"]["tasks"].append([escalation])
         self.rejects(plan, "starts task(s)")

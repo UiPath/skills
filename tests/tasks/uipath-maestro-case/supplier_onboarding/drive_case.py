@@ -84,13 +84,10 @@ ROUTES = {
     ],
 }
 
-# Each stage's escalation writes its OWN revised-date variable. Crossing them is the defect the
-# sla route exists to catch, so the other three must stay empty while one stage breaches.
+# The intake escalation writes its own revised-date variable, and it is the only escalation the
+# case authors. The SDD declares this one variable; nothing else carries a revised date.
 REVISED_DATE = {
     CHECKING: "ApplicationCheckRevisedDate",
-    BUYER: "BuyerReviewRevisedDate",
-    COMPLIANCE: "ComplianceReviewRevisedDate",
-    SETUP: "SupplierSetupRevisedDate",
 }
 
 # The case's own variable names, as the SDD declares them. `instance variables` returns Globals
@@ -623,17 +620,13 @@ def main() -> int:
         own = REVISED_DATE[CHECKING]
         if not g.get(own):
             fail(f"{own} is empty; the intake escalation must record the new date it was given")
-        crossed = [v for k, v in REVISED_DATE.items() if k != CHECKING and g.get(v)]
-        if crossed:
-            fail(f"only the intake phase breached, yet {crossed} also carry a date; "
-                 f"the four phases must each write their own slot")
         # The delay note is what the supplier actually receives, so it has to have run, not just
         # been wired. Its task id comes from the plan rather than a hardcoded name.
         note_id = task_id_for("Send delay note for the application check")
         ran = {r.get("ElementId") for r in executions(instance_id) if r.get("Status") == "Completed"}
         if note_id not in ran:
             fail(f"the intake phase breached but its delay note never ran; the supplier was told nothing")
-        print(f"  {own}={g.get(own)!r}; the other three phase slots are empty; delay note sent")
+        print(f"  {own}={g.get(own)!r}; delay note sent")
     elif args.route == "withdraw":
         if outcome != "Withdrawn":
             fail(f"the supplier withdrew but CaseOutcome={outcome!r}; {WITHDRAWN!r} must close the case as withdrawn")
