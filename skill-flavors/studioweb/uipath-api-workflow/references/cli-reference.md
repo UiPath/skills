@@ -69,7 +69,7 @@ Use `CreateProjects` for project creation and schema-inspected Studio Web capabi
 
 ### Publish the active Studio Web solution
 
-Studio Web intercepts `solution:publish` through Unified Build. The help form is read-only:
+Studio Web intercepts `solution:publish` through Unified Build. After publish approval, inspect the supported flags and destinations — on hosts that predate help interception this command performs a real publish, so never run it before approval:
 
 ```bash
 uip solution publish --help
