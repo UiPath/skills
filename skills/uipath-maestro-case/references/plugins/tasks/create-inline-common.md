@@ -13,7 +13,7 @@ Declare to the builder **only the fields the case wires**. Per wired field:
 - **Unwired** — the case neither stores the output into a var nor feeds/consumes the field → **omit from the contract**; the builder free-styles whatever the resource's purpose needs.
 - **`=`-computed output row** (`<caseVar> = <expr>` — set / compute / copy, per [io-binding planning § SDD Outputs projection](../variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory)) → **not a resource output**: the case computes it at task completion, the resource never emits it → **exclude from the contract**. Only `->` extract rows are resource outputs.
 
-No field-name heuristic, no silent `string` default. The case vocabulary (`string`/`integer`/`float`/`double`/`boolean`/`datetime`/`date`/`jsonSchema`/`file`) is passed through; mapping it onto the type's native I/O schema is the type skill's concern.
+No field-name heuristic, no silent `string` default. The case vocabulary (`string`/`number`/`integer`/`float`/`double`/`boolean`/`datetime`/`date`/`jsonSchema`/`file`) is passed through **verbatim — never normalised onto a near-equivalent**; mapping it onto the type's native I/O schema is the type skill's concern.
 
 **Deduped builds** ([registry-discovery.md § 1c](../../registry-discovery.md#1c--dedup-the-selected-builds-one-resource-per-name-and-type)): when § 1c merged several create-selected tasks into ONE resource, their wirings are identical by construction (§ 1c merges only on matching I/O) — compute the contract from any one of them.
 
