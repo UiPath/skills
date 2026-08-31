@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 67710ff. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 7fb8412. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -43,7 +43,7 @@ packaged-SDK local gates, which never scaffold a project; pick the loop first
 
 Integrations with non-UiPath systems are handled through connectors.
 Connectors require a root-level [`bindings.json`](references/bindings.md).
-`uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
+`npx flow-sdk registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
 
 ### Hello world Flow

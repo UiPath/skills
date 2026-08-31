@@ -48,7 +48,7 @@ environment. It is not baked into the npm package, so when those variables are
 unset, fetch one into the project:
 
 ```bash
-uip maestro registry pull
+npx flow-sdk registry pull
 ```
 
 The library and its Markdown go to a shared cache
@@ -59,17 +59,15 @@ The library and its Markdown go to a shared cache
 To read the Markdown directly, ask where it is:
 
 ```bash
-FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md)"
+FLOW_SDK_LIBRARY_MD="$(npx flow-sdk registry path --library-md)"
 ```
 
-The four library verbs are `pull`, `search`, `path` and `prepare`. Like the
-authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of
-their own — each one runs the `@uipath/flow-sdk` installed in this workspace. In
-a workspace with no `uip`, `npx flow-sdk registry <verb>` is the same command
-with the same arguments.
+The four library verbs are `pull`, `search`, `path` and `prepare`. Run them
+through the `flow-sdk` binary installed in this workspace; `npx` resolves that
+local package without downloading another version.
 
-**`uip maestro registry` is not `uip maestro flow registry`.** The names are one
-word apart and the jobs are unrelated: this one is the connector library the
+**`flow-sdk registry` is not `uip maestro flow registry`.** The names are
+similar but the jobs are unrelated: the former is the connector library the
 compilers resolve operations against, while `uip maestro flow registry
 pull|search|get` syncs the tenant's **node manifests** — the node types other
 references reach for (`uipath.core.function`, `uipath.core.agent.<name>`). A
@@ -90,10 +88,10 @@ the tenant, so it needs a live Integration Service connection and a logged-in
 `uip`; without one, fall back to the curated operation in the markdown library.
 
 ```bash
-uip maestro registry prepare <connector-key> <action> \
+npx flow-sdk registry prepare <connector-key> <action> \
   --connection-id <connection-id>
 # Generic operation: materialize the one connected object the task uses.
-uip maestro registry prepare <connector-key> <action> \
+npx flow-sdk registry prepare <connector-key> <action> \
   --connection-id <connection-id> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
@@ -283,7 +281,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-uip maestro registry prepare <connector-key> <action> --connection-id <connection-id> \
+npx flow-sdk registry prepare <connector-key> <action> --connection-id <connection-id> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
