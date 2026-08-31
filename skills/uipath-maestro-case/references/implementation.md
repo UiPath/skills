@@ -91,12 +91,16 @@ Execution order: 5.9 → 6 → 6.1 → 6.2 → 6.3 → 7 → 9 → 9.4 → 11 �
 
 Derive the complete list of references this build needs from `tasks.md`, then read every file on that list **before** Step 6. Do not defer a read to the step that consumes it. Deciding mid-build which plugin to open is how an entire task class gets skipped: the agent writes the stages it has shapes for, never works out that it also needed `tasks/<type>/impl-json.md`, and emits zero task nodes while `validate` still returns `Valid`.
 
-**Step 1 — derive.** Read `tasks.md` and collect these four sets. Collect every one; do not drop a set because it looks small or familiar.
+**Step 1 — derive.** The derivation source is `tasks.md`, which Phase 1 wrote. Read it and collect these four sets. Collect every one; do not drop a set because it looks small or familiar.
 
 1. Every distinct `- type:` value across all §4.6 task T-entries.
 2. Every distinct trigger type in §4.3.
 3. Every distinct condition scope in §4.7.
 4. Whether §4.8 declares any SLA or escalation object.
+
+**If `tasks.md` does not exist or has no T-entries, Phase 1 has not run — stop and run it.** Do not start Phase 2 from the SDD, and do not write `caseplan.json` first and back-fill `tasks.md` afterwards: a plan written after the artifact it was supposed to drive is paperwork, not a plan, and every downstream check that reads `tasks.md` (task placement, entry rules, cross-task references, the §4.8 SLA set) is then validating the build against itself. Rule 6 makes `tasks.md` lossless for exactly this reason. Go back to [planning.md](planning.md), write `tasks.md`, then re-enter here.
+
+**Fallback source — SDD, only when Phase 1 legitimately produced no `tasks.md`** (a resumed session whose plan file was lost, or a brownfield edit entering mid-pipeline): derive the same four sets from `sdd.md` instead — task `type` values from each `##### Task` block, trigger types from §1, condition scopes from the Entry/Exit Condition tables, and SLA presence from any SLA row. The manifest is identical either way; only the source differs. Say in the completion report which source was used.
 
 **Step 2 — build the manifest.** The read list is the fixed core plus one file per distinct value found in Step 1.
 

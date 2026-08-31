@@ -25,7 +25,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 Phase 3 crosses a hard stop, so its manifest is read fresh here even when Phase 2 read the same file — a Phase 2 read does not survive the boundary. Derive the list from the just-re-read `tasks.md` and `caseplan.json`, read every file on it, then start Step 9.7.
 
-**Step 1 — derive.** Collect three facts:
+**Step 1 — derive.** Source is the just-re-read `tasks.md` (Step 9.6). If it is absent, use the same SDD fallback as [Step 5.9](implementation.md#step-59--phase-2-read-manifest-mandatory-before-any-write) and say so in the completion report. Collect three facts:
 
 1. Whether any task in `tasks.md` has `- type: execute-connector-activity` or `- type: wait-for-connector`.
 2. Whether any condition rule in §4.7 uses `wait-for-connector`.
