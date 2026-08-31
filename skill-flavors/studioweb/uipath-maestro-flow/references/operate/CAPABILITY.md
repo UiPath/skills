@@ -1,5 +1,5 @@
 <!--skill-flavor:upload-operate-intro:start-->
-Capability index for the lifecycle of a flow as a deployed asset. Operate owns everything that touches the cloud — `solution resources refresh`, `flow debug`, `process run`, `job status/traces`, and `instance` lifecycle (pause, resume, cancel, retry). Studio Web owns publication; the agent does not push or deploy solutions.
+Capability index for the lifecycle of a flow as a deployed asset. Operate owns everything that touches the cloud — `solution resources refresh`, `flow debug`, `process run`, `job status/traces`, and `instance` lifecycle (pause, resume, cancel, retry). Publication runs through host-intercepted `uip solution publish`; deployment stays in Studio Web (`uip solution upload` / `deploy` are unavailable in the browser).
 <!--skill-flavor:upload-operate-intro:end-->
 
 <!--skill-flavor:upload-scope-bullets:start-->
@@ -10,7 +10,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-refresh-rule:end-->
 
 <!--skill-flavor:upload-publish-default-rule:start-->
-2. **Publication is owned by Studio Web.** When the user asks to publish or deploy, report that the host owns publication and let them drive it from Studio Web.
+2. **Publish via the host-intercepted CLI; the destination is the user's choice.** For an explicit approved publish request, run `uip solution publish` for the active solution. With one destination it publishes there; with several it publishes nothing and lists them — ask the user which destination to use (personal workspace vs shared location), then rerun with `--location "<key or name>"` (or `--personal-workspace`). Skip the question when the user already named a destination. Success means the request was accepted; verify the terminal state in Studio Web's Publish history. Deployment stays in Studio Web — `uip solution deploy` is unavailable in the browser.
 <!--skill-flavor:upload-publish-default-rule:end-->
 
 <!--skill-flavor:ship-journey-row:start-->
