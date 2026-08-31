@@ -131,6 +131,7 @@ success_criteria:
     description: "Finalized sdd.md is domain-coherent for the candidate-interview process"
     files:
       - sdd.md
+      - sdd.draft.md
     max_file_chars: 150000
     include_agent_output: false
     prompt: |
@@ -139,7 +140,21 @@ success_criteria:
       already verifies variable mappings, lineage, per-gate rule legality, task
       types, and entry/exit conditions — focus on DOMAIN COHERENCE.
 
-      Judge:
+      SCOPE — this is a FINALIZATION, not a design. The staged `sdd.draft.md` is
+      attached alongside the final and is AUTHORITATIVE: the requester said the
+      design is settled and the agent is forbidden to redesign it, and a separate
+      criterion requires the draft's ordered stage/task inventory preserved
+      verbatim. So attribute every flaw before you score it:
+      - a flaw already present in `sdd.draft.md` and carried faithfully across is
+        NOT a finalization defect — do not deduct for it, even where it is a real
+        design weakness (business sequencing, task order within a stage, lane
+        triggers, a route the draft never modeled);
+      - deduct only for what finalization introduced or failed to do: content
+        dropped, renamed, merged or invented; a broken render or summary section;
+        or a mechanically required rule pairing it should have supplied.
+      Say which of the two you are scoring in your rationale.
+
+      Judge, within that scope:
       - Stage order is sensible for hiring (Application Received → Recruiter
         Screen → Technical Screen → Onsite Loop → Debrief → Offer → Hired).
       - Task types fit the work (ATS sync, screens, coding exercise, scorecards,
