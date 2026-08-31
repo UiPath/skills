@@ -144,7 +144,7 @@ Host-intercepted publication starts Unified Build packaging in the background. A
 
 First distinguish bridge rejection from background failure:
 
-- After publish approval, `uip solution publish --help` confirms the supported bridge flags and destinations (hosts that predate help interception treat it as a real publish).
+- `uip solution publish --help` confirms the supported bridge flags and destinations.
 - For an explicit approved publication, invoke `uip solution publish [--description <text>] [--release-notes <text>] [--version <version>] [--location <value>] [--location-name <value>] [--personal-workspace]` for the active solution.
 - Immediate command failure is a request, flag, or authorization problem; report the exact host result.
 - Immediate success means request accepted. Check Studio Web's Publish history for the terminal packaging and publication status and diagnose from that entry.
