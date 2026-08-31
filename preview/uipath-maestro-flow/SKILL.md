@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 67710ff. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 4b5f66d. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -45,6 +45,21 @@ Integrations with non-UiPath systems are handled through connectors.
 Connectors require a root-level [`bindings.json`](references/bindings.md).
 `uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
+
+### Schema-dynamic connector gate
+
+If the request mentions `loadByDefault`, dependent dropdowns, preselected
+reference values, `customFieldsRequestDetails`, or other connection-specific
+fields, the static library descriptor is not sufficient. Before authoring the
+connector call, resolve the real parent values, run `uip maestro registry
+prepare <connector-key> <action> --connection-id <id>` with every required
+`-f NAME=VALUE`, and import the generated `connectors-local/<key>.ts` descriptor.
+
+Do not substitute manual `resources run list` lookups plus a static
+`connectors/<key>.ts` import: the lookups choose values but do not create the
+design-time schema-replay cache. After compiling, inspect the emitted connector
+configuration. `flow validate` can accept a missing cache, so completion requires
+non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
 
 ### Hello world Flow
 
