@@ -94,8 +94,9 @@ success_criteria:
       - The 70% at-risk warning is an SLA escalation notification. Phase/case
         breach work uses `sla-status-change` entry rules on interrupting
         secondary stages: the phase breach creates the Procurement Operations
-        Lead task and supplier status note; the 15-day case breach creates the
-        Procurement Director review task.
+        Lead task and sends the supplier the apology plus revised expected
+        date; the 15-day case breach creates the Procurement Director review
+        task.
       - The three Supplier Setup tasks are explicitly `runs-sequentially`.
         Their list order alone is not treated as execution semantics, and they
         are consecutive single-task data.tasks sets rather than one parallel
@@ -104,6 +105,12 @@ success_criteria:
         SLA, and exception-routing choices, and tasks.md preserves those
         rationales for implementation.
       - Global events are not modeled as repeated per-primary-stage exit rules.
+
+      Grade the supplier-facing breach action as the requirement words it —
+      an apology plus a revised expected date. Any task/process that sends the
+      supplier that content satisfies it; do not require a differently-named
+      artifact (a "status note", a specific activity type) that the
+      requirement never asks for.
 
       Grade routing SEMANTICS, not table presentation. The SLA Response Map is
       authoritative for breach routing: when it correctly routes a breach to
