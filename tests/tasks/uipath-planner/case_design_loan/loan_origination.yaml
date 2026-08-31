@@ -18,9 +18,13 @@ tags:
   - feature:escalation
 
 run_limits:
-  task_timeout: 3000
+  # turn_timeout is the agent's real budget: the design runs in one long turn,
+  # so a task_timeout above it cannot extend the iteration (coder-eval warns on
+  # the inversion). Run 2026-08-31_04-15-47 was cut at 39m14s -- the old 2400s
+  # turn wall -- while task_timeout claimed 3000s.
+  task_timeout: 3600
   max_turns: 150
-  turn_timeout: 2400
+  turn_timeout: 3000
 
 initial_prompt: |
   We're designing a case-management solution for commercial loan origination at

@@ -18,9 +18,12 @@ tags:
   - feature:conversational
 
 run_limits:
-  task_timeout: 3300
+  # turn_timeout is the agent's real budget (see coder-eval's inversion warning):
+  # the design runs in one long turn, so the old 3300s task_timeout was never
+  # reachable behind a 2700s turn wall.
+  task_timeout: 3900
   max_turns: 150
-  turn_timeout: 2700
+  turn_timeout: 3300
 
 initial_prompt: |
   We're designing a case-management solution for the candidate-interview process
