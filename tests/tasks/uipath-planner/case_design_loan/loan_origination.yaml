@@ -43,9 +43,9 @@ initial_prompt: |
   Help me map this out end to end — about two tasks per stage, the key data we
   track, and the business rules. Call it "LoanOrigination".
 
-  I want a draft design document I can review before we commit to anything. Let's
-  get the draft down and stop there — we'll finalize and build it later, so don't
-  polish or validate it yet, just capture the design.
+  I want a draft design document I can review before we commit to anything. Put
+  the draft in `sdd.draft.md` in this folder and stop there — we'll finalize and
+  build it later, so don't polish or validate it yet, just capture the design.
 
 success_criteria:
   # The run grades the captured DESIGN, in whichever file the design lane leaves it:
