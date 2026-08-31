@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 3d5a94e. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 67710ff. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -81,10 +81,9 @@ second path. If only emitted `.flow` JSON exists, decompile it, compile the
 pristine baseline, edit narrowly, and merge the delta back into the original.
 These are before/after judgments; no final-artifact checker can prove them.
 
-For a narrow edit — moving one node, adding an output, renaming a step — do not
-drive those four commands by hand. `decompile` writes `<Name>.pipeline.mjs`,
-which runs the whole loop in two invocations and gets the baseline ordering
-right, which is the step that costs retries when done manually:
+For a narrow edit in an external staging directory, `decompile` writes
+`<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the
+baseline ordering right:
 
 ```bash
 uip maestro flow decompile <Name>.flow -o <Name>.flow.ts
@@ -95,6 +94,11 @@ uip maestro flow validate <Name>.merged.flow --output json
 ```
 
 Validate the merged artifact, never the intermediate edited compile.
+If the source must stay inside the Flow project (for example, to preserve
+relative sidecars), keep baseline, edited, and candidate `.flow` files in an
+external `.flow-work/` directory. Validate the candidate, replace the canonical
+artifact, and leave exactly one `.flow` under the project. The reference below
+contains the copyable safe-project sequence.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)**.
@@ -286,7 +290,7 @@ payload can exercise downstream wiring, but it is not a subscription witness.
 Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
 them through its error port. Both expose JSON response bodies as parsed values.
 
-Signature: `http({ method?, url, managed, connection?, folder?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
+Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
 ```ts
 .step('getPolicy', http({ method: 'GET', url: policyUrl,

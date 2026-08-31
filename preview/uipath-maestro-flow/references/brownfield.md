@@ -4,7 +4,37 @@ Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
-## The short loop
+## The safe project loop
+
+Keep authored source beside the canonical Flow so relative sidecars still
+resolve, but put every compiled working artifact outside the Flow project. The
+project must contain exactly one `.flow` file when product validation discovers
+it recursively.
+
+```bash
+PROJECT=Solution/Deployed
+CANONICAL="$PROJECT/Deployed.flow"
+WORK=.flow-work/Deployed
+mkdir -p "$WORK"
+
+uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline.flow"
+# Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited.flow"
+uip maestro flow merge "$CANONICAL" "$WORK/edited.flow" \
+  -o "$WORK/candidate.flow" --baseline "$WORK/baseline.flow"
+
+uip maestro flow validate "$WORK/candidate.flow" --output json
+cp "$WORK/candidate.flow" "$CANONICAL"
+uip maestro flow validate "$CANONICAL" --output json
+```
+
+Replace the canonical artifact only after the candidate validates. Do not copy
+`baseline.flow`, `edited.flow`, or `candidate.flow` into the project, and do not
+leave an earlier `*.merged.flow` there: the project validator treats every
+`.flow` below the project directory as a deliverable.
+
+## The generated pipeline
 
 `decompile` writes `<Name>.pipeline.mjs` alongside the source. Prefer it for any
 narrow edit: it chains all four steps below, and it captures the baseline before
@@ -19,7 +49,10 @@ node Deployed.pipeline.mjs    # compiles the edit, merges into Deployed.merged.f
 
 Re-running it after further edits repeats only the compile and merge — the
 baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
-you deliberately want the manual sequence instead.
+you deliberately want the manual sequence instead. The pipeline writes its
+`.flow` artifacts beside the `.flow.ts`; use it only when that source directory
+is already outside the canonical Flow project. When source must remain in the
+project for relative sidecars, use the safe project loop above.
 
 ## The same loop by hand
 
@@ -57,7 +90,9 @@ whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
 
-Validate `Deployed.merged.flow`, not the intermediate edited compile.
+Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
+placing it in a solution, copy it over the canonical artifact rather than next
+to it, then validate the canonical project path again.
 
 ## Split (`$ref`) artifacts
 
