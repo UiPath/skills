@@ -9,6 +9,8 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 1.0 | 2026-08-26 | uipath-planner | Initial case design |
+| 1.1 | 2026-08-30 | uipath-planner | SLA revision: overall and phase targets restated in minutes at the source's proportions, scaled to the smallest whole multiple clearing the platform minimum; case at-risk threshold re-derived |
+| 1.2 | 2026-08-30 | uipath-planner | Representative `In` defaults added so a case started with no caller data still describes a real supplier; the four `file` arguments stay blank per the platform contract |
 
 ---
 
@@ -65,7 +67,7 @@
 **Recommendation:** SINGLE_PRODUCT — Case Management
 **Delivery model:** cloud
 **Blocked by platform:** none
-**Need profile:** Resolve every supplier application within 15 business days across a five-phase lifecycle, with automatic escalation on phase breach and an explicit human decision before any supplier reaches the ERP.
+**Need profile:** Resolve every supplier application within 120 minutes across a five-phase lifecycle, with automatic escalation on phase breach and an explicit human decision before any supplier reaches the ERP.
 
 ---
 
@@ -81,7 +83,7 @@
 | Case Description | Handles a prospective supplier's application from the moment it is submitted until it is fully resolved — the supplier is onboarded and ready to trade, the application is rejected, or the supplier withdraws it. Every application carries its own reference number so everyone involved can track it. Each phase is time-boxed, and a missed phase deadline starts real remediation work rather than only changing a status. |
 | Case Identifier | Type: constant. Constant → Prefix: SUP |
 | Priority | Choiceset: Low, Medium, High, Critical — Default: Medium |
-| Case-Level SLA | 15 d |
+| Case-Level SLA | 120 min |
 | SLA Title | Supplier Onboarding SLA |
 | SLA Type | time-based |
 | Case App | Enabled |
@@ -92,11 +94,11 @@
 
 ### Case-Level SLA Escalation Rules
 
-**Design Rationale:** The source sets one overall target — an application should be fully resolved within 15 business days of being submitted. No at-risk threshold is stated for the overall target, so the default band for targets longer than 10 days applies (80%), warning the procurement operations group while there is still a working week to recover. The source is explicit about breach: if the application misses its overall 15-day target, the procurement director also gets a task to review what went wrong before the application closes — so the breach status is answered by the interrupting-free oversight lane `Overall SLA review` (`overall_sla_review`) entered through `sla-status-change`, and the breach escalation additionally pages the director so the task is never the only signal.
+**Design Rationale:** The source sets one overall target — an application should be fully resolved within 120 minutes of being submitted. No at-risk threshold is stated for the overall target, so the default band for targets of 3 days or less applies (75%), warning the procurement operations group with 30 minutes left to recover. The overall target and every phase target are the source's own figures multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA; the five primary stages still sum exactly to the overall target (16 + 32 + 32 + 24 + 16), so a phase breaches and its escalation fires long before the case itself breaches. The source is explicit about breach: if the application misses its overall 120-minute target, the procurement director also gets a task to review what went wrong before the application closes — so the breach status is answered by the interrupting-free oversight lane `Overall SLA review` (`overall_sla_review`) entered through `sla-status-change`, and the breach escalation additionally pages the director so the task is never the only signal.
 
 | SLA Status | Threshold | Action | Display Name |
 |------------|-----------|--------|--------------|
-| At-Risk | 80% of SLA duration | Notify: Procurement Operations | Supplier Onboarding SLA at risk |
+| At-Risk | 75% of SLA duration | Notify: Procurement Operations | Supplier Onboarding SLA at risk |
 | Breached | 100% of SLA duration | Notify: Procurement Leadership | Supplier Onboarding SLA breached |
 
 ### SLA Response Map
@@ -116,11 +118,11 @@ duration and points here; nothing restates a response.
 | stage: Compliance and risk review | Compliance review SLA | Breached | start-task | Escalate delayed compliance review | — | Escalation task plus supplier status note, owned by this stage; the review continues in parallel. |
 | stage: Setting up the supplier | Supplier setup SLA | At-Risk | notify-only | — | — | 70% warning to the procurement operations group. |
 | stage: Setting up the supplier | Supplier setup SLA | Breached | start-task | Escalate delayed supplier setup | — | Escalation task plus supplier status note, owned by this stage; ERP registration and portal confirmation continue. |
-| stage: Supplier onboarded | Onboarding wrap-up SLA | At-Risk | notify-only | — | — | The wrap-up phase carries the source's 2-business-day target and warns at 70%. |
+| stage: Supplier onboarded | Onboarding wrap-up SLA | At-Risk | notify-only | — | — | The wrap-up phase carries the source's 2-minute wrap-up target scaled to 16 minutes and warns at 70%. |
 | stage: Supplier onboarded | Onboarding wrap-up SLA | Breached | notify-only | — | — | Deliberately not routed into the delay lane: apologising for a delay and promising a new expected date on an application that is already finished would be wrong. |
-| stage: Application rejected | Rejection wrap-up SLA | At-Risk | notify-only | — | — | Same 2-business-day wrap-up target, warning at 70%. |
+| stage: Application rejected | Rejection wrap-up SLA | At-Risk | notify-only | — | — | Same 16-minute wrap-up target, warning at 70%. |
 | stage: Application rejected | Rejection wrap-up SLA | Breached | notify-only | — | — | A delay apology promising a new expected date is not appropriate for an application already rejected. |
-| stage: Application withdrawn | Withdrawal wrap-up SLA | At-Risk | notify-only | — | — | Same 2-business-day wrap-up target, warning at 70%. |
+| stage: Application withdrawn | Withdrawal wrap-up SLA | At-Risk | notify-only | — | — | Same 16-minute wrap-up target, warning at 70%. |
 | stage: Application withdrawn | Withdrawal wrap-up SLA | Breached | notify-only | — | — | A delay apology promising a new expected date is not appropriate for an application the supplier has already withdrawn. |
 
 ### Case Triggers
@@ -148,15 +150,15 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| companyName | In | string | | | | The applying supplier's company name |
-| contactName | In | string | | | | Contact name given with the application |
-| contactEmail | In | string | | | | Contact email address used for every supplier message |
-| countryOfRegistration | In | string | | | | The supplier's country of registration |
-| offeringCategory | In | string | | | | Choiceset: Raw materials, Components, Services, Logistics, Other — the closed set the source defines; emitted as an `options` enum on the argument and as a JSON-Schema `enum` on the caller contract |
-| expectedAnnualSpend | In | double | | | | Expected annual spend with us, in spendCurrency |
-| spendCurrency | In | string | | | | Currency the expected annual spend is stated in |
-| offeringDescription | In | string | | | | Written description of what the supplier offers |
-| submittedDate | In | date | | | | The date the supplier submitted the application |
+| companyName | In | string | | | Northwind Components Ltd | The applying supplier's company name |
+| contactName | In | string | | | Alex Fisher | Contact name given with the application |
+| contactEmail | In | string | | | yiqi.hu@uipath.com | Contact email address used for every supplier message |
+| countryOfRegistration | In | string | | | United Kingdom | The supplier's country of registration |
+| offeringCategory | In | string | | | Components | Choiceset: Raw materials, Components, Services, Logistics, Other — the closed set the source defines; emitted as an `options` enum on the argument and as a JSON-Schema `enum` on the caller contract |
+| expectedAnnualSpend | In | double | | | 120000 | Expected annual spend with us, in spendCurrency |
+| spendCurrency | In | string | | | USD | Currency the expected annual spend is stated in |
+| offeringDescription | In | string | | | precision machined components for industrial pumps | Written description of what the supplier offers |
+| submittedDate | In | date | | | 2026-08-26 | The date the supplier submitted the application |
 | registrationCertificate | In | file | | | | Registration certificate supporting the application |
 | insuranceDocument | In | file | | | | Insurance document supporting the application |
 | taxFormsDocument | In | file | | | | Tax forms supporting the application |
@@ -211,6 +213,10 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 > `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
 > `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
 
+**The `In` defaults describe one representative application.** The platform's debug entry point supplies no arguments, so a case started for testing reads these defaults or reads nothing. Every non-`file` `In` argument therefore carries a value: Northwind Components Ltd, a United Kingdom registered supplier offering Components, expecting to spend 120000 USD. `Pull supplier records and screening` is the first automated task and reads `companyName`, `countryOfRegistration` and `offeringCategory`; with no default behind them it receives null and fails on the first one it touches. The 120000 spend sits below the 500000 director threshold, so a default-started application takes the buyer sign-off path and `Obtain procurement director sign-off` is skipped on its `=js:vars.expectedAnnualSpend < 500000` guard.
+
+**The four `file` arguments stay blank, and that decides the outcome.** A `file` default must be blank, so a default-started case carries no registration certificate, insurance document, tax forms or bank details. The example is a supplier whose paperwork has not arrived, not a complete application. `Register supplier in ERP` reads `bankDetailsDocument`, so `bankVerificationStatus` returns something other than `verified`, `Setting up the supplier` exits on its verification guard without completing, and `Application rejected` enters. A case started from defaults alone therefore runs the full lifecycle through to a rejection; reaching `Supplier onboarded` needs a caller that pre-uploads the four attachments.
+
 ---
 
 ## Section 2: Stages & Tasks
@@ -242,13 +248,13 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives this phase a 2-business-day target. The warning threshold is the source's own 70% figure, giving the people handling the application time to act before the deadline passes; the breach is answered by this stage's own `Escalate delayed application check` task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead so the task is never the only signal.
+**Design Rationale:** The source gives this phase a 2-minute target, scaled to 16 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. The warning threshold is the source's own 70% figure, giving the people handling the application time to act before the deadline passes; the breach is answered by this stage's own `Escalate delayed application check` task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead so the task is never the only signal.
 **SLA Type:** time-based
 **SLA Title:** Application check SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 2 | d | 70% | Application check SLA at risk | Application check SLA breached |
+| 16 | min | 70% | Application check SLA at risk | Application check SLA breached |
 
 #### Tasks
 
@@ -550,20 +556,20 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives buyer review a 4-business-day target. At 70% the application is bumped up to the Category Management group so it does not stall — placed at at-risk rather than at breach so the nudge arrives while there is still time to act, and so the breach status stays free for the phase-delay remediation the source requires. The breach is answered by this stage's own `Escalate delayed buyer review` task through an `sla-status-change` task-entry rule (a `start-task` response).
+**Design Rationale:** The source gives buyer review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. At 70% the application is bumped up to the Category Management group so it does not stall — placed at at-risk rather than at breach so the nudge arrives while there is still time to act, and so the breach status stays free for the phase-delay remediation the source requires. The breach is answered by this stage's own `Escalate delayed buyer review` task through an `sla-status-change` task-entry rule (a `start-task` response).
 **SLA Type:** time-based
 **SLA Title:** Buyer review SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 4 | d | 70% | Buyer review SLA at risk | Buyer review SLA breached |
+| 32 | min | 70% | Buyer review SLA at risk | Buyer review SLA breached |
 
 #### Tasks
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Notify buyer of application | execute-connector-activity | sequential | Stage enters — first task in the sequential run | Yes | No | system | — |
-| 2 | Record buyer review decision | action | sequential | After Notify buyer of application | Yes | No | Buyer | 4 d |
+| 2 | Record buyer review decision | action | sequential | After Notify buyer of application | Yes | No | Buyer | 32 min |
 | 3 | Request more information from supplier | action | adhoc | The buyer launches it while this phase is active | No | No | Buyer | — |
 | 4 | Order reference check | action | adhoc | The buyer launches it while this phase is active | No | No | Buyer | — |
 | 5 | Escalate delayed buyer review | action | event-triggered | This stage's SLA breaches | No | No | Procurement Operations Lead | — |
@@ -852,13 +858,13 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives compliance and risk review a 4-business-day target, warned at its own 70% figure so the Compliance group can act before the deadline passes. The breach is answered by this stage's own escalation task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead.
+**Design Rationale:** The source gives compliance and risk review a 4-minute target, scaled to 32 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the Compliance group can act before the deadline passes. The breach is answered by this stage's own escalation task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead.
 **SLA Type:** time-based
 **SLA Title:** Compliance review SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 4 | d | 70% | Compliance review SLA at risk | Compliance review SLA breached |
+| 32 | min | 70% | Compliance review SLA at risk | Compliance review SLA breached |
 
 #### Tasks
 
@@ -1241,13 +1247,13 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives supplier setup a 3-business-day target, warned at its own 70% figure so the procurement operations group can act before the deadline passes. The breach is answered by this stage's own escalation task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead.
+**Design Rationale:** The source gives supplier setup a 3-minute target, scaled to 24 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure so the procurement operations group can act before the deadline passes. The breach is answered by this stage's own escalation task through an `sla-status-change` task-entry rule (a `start-task` response), and the breach escalation additionally pages the procurement operations lead.
 **SLA Type:** time-based
 **SLA Title:** Supplier setup SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 3 | d | 70% | Supplier setup SLA at risk | Supplier setup SLA breached |
+| 24 | min | 70% | Supplier setup SLA at risk | Supplier setup SLA breached |
 
 #### Tasks
 
@@ -1500,13 +1506,13 @@ task IS the confirmation and there is no second outcome to route. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives wrapping up a 2-business-day target, warned at its own 70% figure. Breach is a notification only — the phase-delay lane would apologise for a delay and promise a new expected date on an application that is already finished, which would be wrong.
+**Design Rationale:** The source gives wrapping up a 2-minute target, scaled to 16 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure. Breach is a notification only — the phase-delay lane would apologise for a delay and promise a new expected date on an application that is already finished, which would be wrong.
 **SLA Type:** time-based
 **SLA Title:** Onboarding wrap-up SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 2 | d | 70% | Onboarding wrap-up SLA at risk | Onboarding wrap-up SLA breached |
+| 16 | min | 70% | Onboarding wrap-up SLA at risk | Onboarding wrap-up SLA breached |
 
 #### Tasks
 
@@ -1627,13 +1633,13 @@ task IS the confirmation and there is no second outcome to route. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives wrapping up a 2-business-day target, warned at its own 70% figure. Breach is a notification only — routing an already-rejected application into the phase-delay lane would apologise for a delay and promise the supplier a new expected date that no longer exists.
+**Design Rationale:** The source gives wrapping up a 2-minute target, scaled to 16 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure. Breach is a notification only — routing an already-rejected application into the phase-delay lane would apologise for a delay and promise the supplier a new expected date that no longer exists.
 **SLA Type:** time-based
 **SLA Title:** Rejection wrap-up SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 2 | d | 70% | Rejection wrap-up SLA at risk | Rejection wrap-up SLA breached |
+| 16 | min | 70% | Rejection wrap-up SLA at risk | Rejection wrap-up SLA breached |
 
 #### Tasks
 
@@ -1755,13 +1761,13 @@ task IS the confirmation and there is no second outcome to route. -->
 
 #### Stage SLA
 
-**Design Rationale:** The source gives wrapping up a 2-business-day target, warned at its own 70% figure. Breach is a notification only — routing an already-withdrawn application into the phase-delay lane would apologise for a delay and promise a new expected date to a supplier who has stopped.
+**Design Rationale:** The source gives wrapping up a 2-minute target, scaled to 16 minutes: every phase keeps the source's proportions multiplied by 8, the smallest whole multiple that lifts the shortest phase above the platform's 15-minute minimum for a minute-denominated SLA. It is warned at its own 70% figure. Breach is a notification only — routing an already-withdrawn application into the phase-delay lane would apologise for a delay and promise a new expected date to a supplier who has stopped.
 **SLA Type:** time-based
 **SLA Title:** Withdrawal wrap-up SLA
 
 | SLA | Unit | At-Risk | At-Risk Escalation Display Name | Breach Escalation Display Name |
 |-----|------|---------|----------------------------------|---------------------------------|
-| 2 | d | 70% | Withdrawal wrap-up SLA at risk | Withdrawal wrap-up SLA breached |
+| 16 | min | 70% | Withdrawal wrap-up SLA at risk | Withdrawal wrap-up SLA breached |
 
 #### Tasks
 
@@ -1865,8 +1871,8 @@ task IS the confirmation and there is no second outcome to route. -->
 
 **Type:** Stage
 **Stage Kind:** secondary
-**Design Rationale:** The source requires the procurement director to get a task to review what went wrong when an application misses its overall 15-day target, so the case-level breach is answered with work rather than a notification and lives in its own lane keyed on ONE `sla-status-change` entry against the root SLA. It is parallel oversight — the application must still run on to its own disposition while the review happens — so the stage and its entry row read `Interrupting: No` and the lane completes `exit-only`. Because a secondary stage is excluded from required-stage completion, this review orders itself before closure rather than hard-blocking it; making it required would block every application that never breached.
-**Description:** Raises a task for the procurement director to review what went wrong on an application that has missed its overall 15-day target.
+**Design Rationale:** The source requires the procurement director to get a task to review what went wrong when an application misses its overall 120-minute target, so the case-level breach is answered with work rather than a notification and lives in its own lane keyed on ONE `sla-status-change` entry against the root SLA. It is parallel oversight — the application must still run on to its own disposition while the review happens — so the stage and its entry row read `Interrupting: No` and the lane completes `exit-only`. Because a secondary stage is excluded from required-stage completion, this review orders itself before closure rather than hard-blocking it; making it required would block every application that never breached.
+**Description:** Raises a task for the procurement director to review what went wrong on an application that has missed its overall 120-minute target.
 **Required for Case Completion:** No
 **Interrupting:** No
 
@@ -1914,13 +1920,13 @@ task IS the confirmation and there is no second outcome to route. -->
 **Deployment Folder:** Shared/uipath-maestro-case
 **actionType:** overall-sla-review
 **Recipient:** Role:Procurement Director
-**Priority:** Critical · **Task Title:** Review a supplier application that missed its overall 15-day target · **Labels:** sla, director-review
+**Priority:** Critical · **Task Title:** Review a supplier application that missed its overall 120-minute target · **Labels:** sla, director-review
 
 **Input Schema:**
 
 | Field | Type | Binding | Required |
 |-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " for " + vars.companyName + " has missed its overall 15-day target.\n\nSubmitted: " + vars.submittedDate + "\nCategory: " + vars.offeringCategory + "\nAssigned buyer: " + vars.assignedBuyerEmail + "\nIntake check: " + vars.validationOutcome + "\nBuyer decision: " + vars.buyerDecision + "\nCompliance decision: " + vars.complianceDecision + "\nBank verification: " + vars.bankVerificationStatus + "\nEscalation history: " + vars.escalationNotes + "\n\nReview what went wrong before the application closes.") | No |
+| Content | String | =js:("Application " + metadata.ExternalId + " for " + vars.companyName + " has missed its overall 120-minute target.\n\nSubmitted: " + vars.submittedDate + "\nCategory: " + vars.offeringCategory + "\nAssigned buyer: " + vars.assignedBuyerEmail + "\nIntake check: " + vars.validationOutcome + "\nBuyer decision: " + vars.buyerDecision + "\nCompliance decision: " + vars.complianceDecision + "\nBank verification: " + vars.bankVerificationStatus + "\nEscalation history: " + vars.escalationNotes + "\n\nReview what went wrong before the application closes.") | No |
 | applicationReference | String | =metadata.ExternalId | No |
 | stageName | String | Overall case | No |
 | deadlineMissedOn | Any | =js:(new Date().toISOString()) | No |
@@ -1948,7 +1954,7 @@ task IS the confirmation and there is no second outcome to route. -->
 | Category Manager | Buyer review | View, Comment | Notified via the Category Management group when buyer review reaches 70% of its target so a stalled review is bumped up before the deadline passes. |
 | Compliance Reviewer | Compliance and risk review | View, Act, Comment | Sees the whole picture — the application, the compliance results, and the risk rating — and explicitly chooses whether the application goes to setup or is rejected. May pull in legal counsel. |
 | Legal Counsel | Compliance and risk review | View, Act | Gives a legal opinion when a reviewer asks counsel to weigh in. |
-| Procurement Director | Compliance and risk review (normalized spend >= 500000 only), Overall SLA review | View, Act, Comment | Signs off on applications whose expected annual spend is 500000 or more, and reviews what went wrong when an application misses its overall 15-day target. |
+| Procurement Director | Compliance and risk review (normalized spend >= 500000 only), Overall SLA review | View, Act, Comment | Signs off on applications whose expected annual spend is 500000 or more, and reviews what went wrong when an application misses its overall 120-minute target. |
 | Procurement Operations Lead | Checking the application, Buyer review, Compliance and risk review, Setting up the supplier | View, Act, Reassign, Comment | Runs the intake check, and steps in to unblock any phase that has missed its deadline, committing a new expected date for the supplier. |
 
 <!-- The Procurement Director's spend-gated scope is encoded executably in Task 3.4's entry condition
@@ -1959,9 +1965,9 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | App | View | Persona | Purpose | Key Components |
 |-----|------|---------|---------|----------------|
-| Supplier Onboarding | Case List | Procurement Operations Lead | Track every open application and spot the ones running out of time | Reference, company, category, current stage, expected annual spend, days remaining against the 15-day target, phase SLA status, assigned buyer |
+| Supplier Onboarding | Case List | Procurement Operations Lead | Track every open application and spot the ones running out of time | Reference, company, category, current stage, expected annual spend, time remaining against the 120-minute target, phase SLA status, assigned buyer |
 | Supplier Onboarding | Case Detail | Supplier, Buyer, Compliance Reviewer, Procurement Director, Legal Counsel, Procurement Operations Lead | Work the application and leave comments on it at any point while it is open | Application summary, supporting documents, screening and risk results, decision history, phase SLA warnings, comment thread, phase-scoped actions |
-| Supplier Onboarding | Dashboard | Procurement Director | See where applications resolve and where they run late | Outcome mix (onboarded, rejected, withdrawn), time-to-resolution against 15 days, phase breach counts, applications above the director sign-off threshold |
+| Supplier Onboarding | Dashboard | Procurement Director | See where applications resolve and where they run late | Outcome mix (onboarded, rejected, withdrawn), time-to-resolution against 120 minutes, phase breach counts, applications above the director sign-off threshold |
 
 ---
 
@@ -2044,7 +2050,7 @@ director's overall-target review without either borrowing the other's dispatch. 
 | Performance | Five phases, at most fifteen tasks on any single path, four of them optional. Both agent assessments run in parallel with required work so neither adds to the critical path. |
 | Scalability | Every human task routes to a role rather than a single named user, so throughput is not bounded by one person; the buyer is the exception and is resolved per category by the intake lookup. |
 | Availability / Resilience | ERP registration and the contract-negotiation child case are marked `Run Only Once`, so a re-entered setup phase cannot mint a second supplier record or a second negotiation case. Stage-1 tasks are re-runnable because a send-back for corrections is a genuine new attempt. |
-| Logging & Monitoring | Case SLA plus a per-phase SLA on all seven primary and terminal stages; at-risk warnings at 70% (80% at case level) and breach responses that create real work on the four in-flight phases. Every rejection is written to the company's audit records with what, who, why and when. |
+| Logging & Monitoring | Case SLA plus a per-phase SLA on all seven primary and terminal stages; at-risk warnings at 70% (75% at case level) and breach responses that create real work on the four in-flight phases. Every rejection is written to the company's audit records with what, who, why and when. |
 | Compliance | The compliance reviewer's decision is the only way out of compliance and risk review — the stage carries no unguarded completion, so the application never advances on its own. Sign-off above 500000 requires the procurement director. Every rejection is auditable. |
 
 ## Testing Strategy
@@ -2061,9 +2067,9 @@ director's overall-target review without either borrowing the other's dispatch. 
 | Withdrawal blocked after setup begins | Attempt to withdraw while the application is in Setting up the supplier | The withdrawal lane is not offered — setup exposes no stage picker |
 | Sent back for corrections and resubmitted | Buyer picks Send back for corrections, the supplier fixes the issues and adds a document, the application is re-checked and approved | Buyer review exits without completing, `Checking the application` re-enters on the send-back guard, its tasks re-run, and the application reaches a decision again |
 | Phase deadline missed | Hold each of the four in-flight phases past its target in turn | The breached stage's own `Escalate delayed <phase>` task activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the <phase>` sends the supplier a note naming that phase and carrying the lead's revised date; the phase's own work continues meanwhile and its required tasks are unaffected |
-| Phase at risk | Hold Buyer review past 70% of 4 days | At-risk warning raised and the Category Manager notified; no lane entered and no routing change |
-| Overall target missed | Hold the application past 15 days | `Overall SLA review` enters non-interruptively and the procurement director receives the review task while the application continues to its disposition |
-| Wrap-up breach does not escalate | Hold `Application rejected` past 2 days | At-risk and breach notifications only; no delay note is sent to a supplier already rejected |
+| Phase at risk | Hold Buyer review past 70% of 32 minutes | At-risk warning raised and the Category Manager notified; no lane entered and no routing change |
+| Overall target missed | Hold the application past 120 minutes | `Overall SLA review` enters non-interruptively and the procurement director receives the review task while the application continues to its disposition |
+| Wrap-up breach does not escalate | Hold `Application rejected` past 16 minutes | At-risk and breach notifications only; no delay note is sent to a supplier already rejected |
 | Phase-scoped actions | Attempt each optional action from every phase | Document upload only in Checking the application; information request and reference check only in Buyer review; legal opinion only in Compliance and risk review |
 | Closed case is immovable | Reach each of the three terminal outcomes and attempt to move the case | No entry condition matches; the case stays closed |
 

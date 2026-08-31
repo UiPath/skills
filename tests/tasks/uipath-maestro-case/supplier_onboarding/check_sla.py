@@ -3,8 +3,9 @@
 
 Seven assertions. `uip maestro case validate` accepts every failure below.
 
- 1. The case SLA is 15 days and warns at 80%. Stages warn at 70%; copying the stage
-    band onto the case fires the overall warning four days early.
+ 1. The case SLA is 120 minutes and warns at 75%. Stages warn at 70%, a figure the
+    source states rather than one derived from a band; copying the stage band onto
+    the case fires the overall warning six minutes early.
  2. Seven stages carry an SLA, each at its own duration. The oversight lane carries
     none.
  3. Four phase breaches start a task INSIDE the breached stage: the task holds the
@@ -75,8 +76,8 @@ def main() -> int:
         if pcts and pcts != {E.CASE_AT_RISK_PERCENT}:
             problems.append(
                 f"the case at-risk band is {sorted(p for p in pcts if p is not None)}%; the "
-                f"SDD sets {E.CASE_AT_RISK_PERCENT}% for a target longer than 10 days "
-                f"({E.STAGE_AT_RISK_PERCENT}% is the stage band)"
+                f"SDD sets {E.CASE_AT_RISK_PERCENT}% for the overall target and "
+                f"{E.STAGE_AT_RISK_PERCENT}% for a phase, and the two are not interchangeable"
             )
         if not pcts:
             problems.append("the case SLA has no at-risk escalation")

@@ -141,18 +141,21 @@ ADHOC_TASKS = {
 
 # --- SLAs ---------------------------------------------------------------------
 
-CASE_SLA = (15, "d")
-CASE_AT_RISK_PERCENT = 80          # longer than 10 days, so the 80% band applies
-STAGE_AT_RISK_PERCENT = 70
+# The SDD states its targets in minutes, at the source's own proportions multiplied by 8. Eight is
+# the smallest whole multiple that lifts the shortest phase above the platform's 15-minute floor for
+# a minute-denominated SLA. The five primary stages still sum to the case target: 16+32+32+24+16=120.
+CASE_SLA = (120, "min")
+CASE_AT_RISK_PERCENT = 75          # 120 min is under 3 days, so the 75% band applies
+STAGE_AT_RISK_PERCENT = 70         # stated by the source, so it is not re-derived from the band
 
 STAGE_SLA = {                       # label -> (count, unit)
-    CHECKING: (2, "d"),
-    BUYER: (4, "d"),
-    COMPLIANCE: (4, "d"),
-    SETUP: (3, "d"),
-    ONBOARDED: (2, "d"),
-    REJECTED: (2, "d"),
-    WITHDRAWN: (2, "d"),
+    CHECKING: (16, "min"),
+    BUYER: (32, "min"),
+    COMPLIANCE: (32, "min"),
+    SETUP: (24, "min"),
+    ONBOARDED: (16, "min"),
+    REJECTED: (16, "min"),
+    WITHDRAWN: (16, "min"),
 }
 # The oversight lane is the one stage with no SLA of its own.
 NO_SLA_STAGES = {SLA_REVIEW}
@@ -405,6 +408,7 @@ EXPRESSION_RECIPIENT_TASKS = {
     "Order reference check",
 }
 EXPRESSION_RECIPIENT_VALUE = "=vars.assignedBuyerEmail"
+EMAIL_RECIPIENT_TYPE = 2            # a literal mailbox address
 EXPRESSION_RECIPIENT_TYPE = 3
 
 # --- Wire-path casing ---------------------------------------------------------

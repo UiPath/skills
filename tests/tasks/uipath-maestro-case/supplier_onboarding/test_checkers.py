@@ -393,37 +393,37 @@ TASKS = [
 # --- Stages, generated from a real build ----------------------------------------
 STAGES = [
     S('Stage_Chk4kA', 'Checking the application', None,
-      slas=[('sla_ChkStg01', 2, 'd', [('esc_ck01ar', 'at-risk', 70, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_ck02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_ChkStg01', *E.STAGE_SLA[E.CHECKING], [('esc_ck01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_ck02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_ck01en', 'Application submitted', False, None, None, None, [('case-entered', None)]), ('Condition_ck02en', 'Returned for corrections', False, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.action2 === "sendback"'})])],
       exits=[('Condition_ck01ex', 'Checks complete', None, 'wait-for-user', True, None, [('required-tasks-completed', None)])],
       lanes=[['tVal01aXk'], ['tPul02bYm'], ['tCat03cZn'], ['tDoc04dAp'], ['tEscChk01'], ['tNteChk02']]),
     S('Stage_Byr7mC', 'Buyer review', None,
-      slas=[('sla_ByrStg01', 4, 'd', [('esc_by01ar', 'at-risk', 70, 'notification', [('UserGroup', '74c6d5cc-0684-4ff4-9537-1c80681ad9e8', 'Category Management')]), ('esc_by02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_ByrStg01', *E.STAGE_SLA[E.BUYER], [('esc_by01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '74c6d5cc-0684-4ff4-9537-1c80681ad9e8', 'Category Management')]), ('esc_by02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_by01en', 'Checks passed', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Chk4kA'})])],
       exits=[('Condition_by01ex', 'Buyer declined', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tByr06fCr'], 'conditionExpression': '=js:vars.action2 === "reject"'})]), ('Condition_by02ex', 'Sent back for corrections', None, 'exit-only', False, 'Stage_Chk4kA', [('selected-tasks-completed', {'selectedTasksIds': ['tByr06fCr'], 'conditionExpression': '=js:vars.action2 === "sendback"'})]), ('Condition_by03ex', 'Buyer approved', None, 'wait-for-user', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
       lanes=[['tNtf05eBq'], ['tByr06fCr'], ['tInf07gDs'], ['tRef08hEt'], ['tEscByr01'], ['tNteByr02']]),
     S('Stage_Cmp3nD', 'Compliance and risk review', None,
-      slas=[('sla_CmpStg01', 4, 'd', [('esc_cm01ar', 'at-risk', 70, 'notification', [('UserGroup', 'e158a23e-f553-4107-82d5-68b788134d33', 'Compliance')]), ('esc_cm02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_CmpStg01', *E.STAGE_SLA[E.COMPLIANCE], [('esc_cm01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', 'e158a23e-f553-4107-82d5-68b788134d33', 'Compliance')]), ('esc_cm02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_cm01en', 'Buyer approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
       exits=[('Condition_cm01ex', 'Compliance rejected', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tCmp12nJx'], 'conditionExpression': '=js:vars.action4 === "reject"'})]), ('Condition_cm02ex', 'Sent to setup', None, 'wait-for-user', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
       lanes=[['tCrc09jFu'], ['tTie10kGv'], ['tDir11mHw'], ['tCmp12nJx'], ['tFin13pKy'], ['tLgl14qLz'], ['tEscCmp01'], ['tNteCmp02']]),
     S('Stage_Set8pE', 'Setting up the supplier', None,
-      slas=[('sla_SetStg01', 3, 'd', [('esc_st01ar', 'at-risk', 70, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_st02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_SetStg01', *E.STAGE_SLA[E.SETUP], [('esc_st01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_st02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_st01en', 'Compliance approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
       exits=[('Condition_st01ex', 'Bank verification failed', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tErp15rMa'], 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})]), ('Condition_st02ex', 'Setup complete', None, 'exit-only', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})])],
       lanes=[['tErp15rMa'], ['tNeg16sNb', 'tPrt17tPc'], ['tEscSet01'], ['tNteSet02']]),
     S('Stage_Onb2qF', 'Supplier onboarded', None,
-      slas=[('sla_OnbStg01', 2, 'd', [('esc_on01ar', 'at-risk', 70, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_on02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_OnbStg01', *E.STAGE_SLA[E.ONBOARDED], [('esc_on01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_on02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_on01en', 'Setup complete', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Set8pE'})])],
       exits=[('Condition_on01ex', 'Onboarding complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tWlc18uQd', 'tReg19vRe']]),
     S('Stage_Rej5rG', 'Application rejected', 'secondary',
-      slas=[('sla_RejStg01', 2, 'd', [('esc_rj01ar', 'at-risk', 70, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_rj02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_RejStg01', *E.STAGE_SLA[E.REJECTED], [('esc_rj01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_rj02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_rj01en', 'Buyer declined', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.action2 === "reject"'})]), ('Condition_rj02en', 'Compliance rejected', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.action4 === "reject"'})]), ('Condition_rj03en', 'Bank verification failed', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Set8pE', 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})])],
       exits=[('Condition_rj01ex', 'Rejection complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tRjn20wSf', 'tAud21xTg']]),
     S('Stage_Wdr9sH', 'Application withdrawn', 'secondary',
-      slas=[('sla_WdrStg01', 2, 'd', [('esc_wd01ar', 'at-risk', 70, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_wd02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
+      slas=[('sla_WdrStg01', *E.STAGE_SLA[E.WITHDRAWN], [('esc_wd01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_wd02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_wd01en', 'Supplier withdrew', True, None, None, None, [('user-selected-stage', None)])],
       exits=[('Condition_wd01ex', 'Withdrawal complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
       lanes=[['tWdc22yUh', 'tWcl23zVj']]),
@@ -568,10 +568,9 @@ METADATA = {
         _sla(
             (
                 "sla_RootCse1",
-                15,
-                "d",
+                *E.CASE_SLA,
                 [
-                    ("esc_rt01ar", "at-risk", 80, "notification",
+                    ("esc_rt01ar", "at-risk", E.CASE_AT_RISK_PERCENT, "notification",
                      [("UserGroup", "93a89c1e-be35-410f-ae37-cc5a0e1bd4c2",
                        "Procurement Operations")]),
                     ("esc_rt02br", "sla-breached", None, "notification",
@@ -821,6 +820,35 @@ class TopologyTests(CheckerBase):
         self.rejects(plan, "marks the case complete")
 
 
+    def test_rejects_a_surviving_xref_marker(self):
+        # A build-time placeholder the resolver missed. The runtime reads it as a function call
+        # and the case faults on its first rules evaluation, while validate reports Valid.
+        plan = baseline_plan()
+        for node in plan["nodes"]:
+            if node.get("type") != "case-management:Stage":
+                continue
+            for cond in (node["data"].get("exitConditions") or []):
+                for group in cond.get("rules") or []:
+                    for rule in group:
+                        if rule.get("conditionExpression"):
+                            rule["conditionExpression"] = (
+                                "=js:vars.$xref('Buyer review','Record buyer review decision','Action')"
+                                " === \"approve\"")
+                            self.rejects(plan, "unresolved $xref marker")
+                            return
+        self.fail("no guarded exit condition to mutate")
+
+    def test_rejects_a_plural_stage_selector(self):
+        # validate accepts the plural array; the case then faults on CaseRulesEvaluatorNode
+        # before any task opens, so no other assertion here ever gets to run.
+        plan = baseline_plan()
+        for cond in plan["metadata"]["caseExitRules"]:
+            for group in cond["rules"]:
+                for rule in group:
+                    if "selectedStageId" in rule:
+                        rule["selectedStageIds"] = [rule.pop("selectedStageId")]
+        self.rejects(plan, "selectedStageIds")
+
 class GuardTests(CheckerBase):
     checker = "guards"
 
@@ -947,6 +975,29 @@ class TasksIoTests(CheckerBase):
         plan = baseline_plan()
         task(plan, "Record buyer review decision")["data"].pop("recipient", None)
         self.rejects(plan, "reaches nobody")
+
+    def test_rejects_a_restated_required_flag_on_a_task_input(self):
+        # The flag compiles into the dispatch's own required array, so a bound value that
+        # resolves empty fails the job before it starts. validate reports Valid.
+        plan = baseline_plan()
+        task(plan, "Pull supplier records and screening")["data"]["inputs"][0]["required"] = True
+        self.rejects(plan, "restate the resource's own contract")
+
+    def test_rejects_a_role_name_in_the_email_recipient_type(self):
+        # Type 2 is the email type, so a role name there is read as a literal mailbox and the
+        # task reaches nobody. Whether a role is omitted or carried as a group id is left open;
+        # this is the shape neither reading allows.
+        plan = baseline_plan()
+        task(plan, "Obtain legal opinion")["data"]["recipient"] = {
+            "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "Legal Counsel"}
+        self.rejects(plan, "never as a mailbox")
+
+    def test_accepts_a_real_address_in_the_email_recipient_type(self):
+        # The same slot with an actual address is exactly what Type 2 is for.
+        plan = baseline_plan()
+        task(plan, "Obtain legal opinion")["data"]["recipient"] = {
+            "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "legal@uipath.com"}
+        self.accepts(plan)
 
     def test_rejects_dropped_output(self):
         plan = baseline_plan()
