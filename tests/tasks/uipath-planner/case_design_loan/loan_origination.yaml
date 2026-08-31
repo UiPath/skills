@@ -107,6 +107,11 @@ success_criteria:
       IDs, placeholder resource references, or minor rule-syntax issues. Focus on
       DOMAIN COHERENCE of the captured design.
 
+      This task STOPS AT THE DRAFT: `sdd.draft.md` is the deliverable and `sdd.md` is
+      expected to be absent (a separate criterion requires the run to stop at design).
+      Grade the draft; the absence of `sdd.md` is not a defect and must not reduce the
+      score.
+
       Judge:
       - Stage order is sensible for loan origination (Intake → Loan Setup →
         Underwriting → QA/QC → Closing → Resolved).
