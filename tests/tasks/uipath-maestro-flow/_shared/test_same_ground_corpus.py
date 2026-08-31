@@ -68,6 +68,10 @@ def _tagged_tasks() -> list[tuple[str, Path, str]]:
     return tasks
 
 
+def _task_text(relative: str) -> str:
+    return (FLOW_TASKS / relative).read_text()
+
+
 def _referenced_python_files(task_path: Path, criterion: str) -> list[Path]:
     paths = []
     for token in re.findall(
@@ -191,3 +195,18 @@ def test_external_graders_use_package_qualified_shared_imports() -> None:
             if module in shared_modules:
                 offenders.add(relative.as_posix())
     assert offenders == set()
+
+
+def test_reconfigure_prompt_requires_a_tenant_wide_connection_inventory() -> None:
+    prompt = _prompt_text(
+        _task_text("bindings/reconfigure_different_connection.yaml")
+    ).lower()
+
+    assert "tenant-wide" in prompt
+    assert "every folder" in prompt
+
+
+def test_multiselect_prompt_names_slack_as_the_required_connector() -> None:
+    prompt = _prompt_text(_task_text("connector_features/multiselect.yaml")).lower()
+
+    assert "slack group direct message" in prompt
