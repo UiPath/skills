@@ -109,7 +109,7 @@ Write the un-minted `caseShape` into the shared sidecar artifact for the variabl
 
 - **Persistence.** The sidecar persists across hard stops (Phase 2 publish-for-review, etc.) so Phase 3 re-entry doesn't lose spec data. Do NOT regenerate on re-entry — read the existing file.
 - **Regeneration.** Rule 6 (`Continue with regenerate from scratch`) replaces the sidecar entirely (Write, not append), starting from an empty `{}`. Rule 7 (`Continue without regenerate`) preserves the existing sidecar.
-- **Multi-trigger append.** Trigger plugin runs once per trigger T-entry. Each invocation **merges by T-number** into the existing sidecar JSON: read the file, set or replace the top-level `<T-number>` key, write back. Append order is **T-number ascending** (T02 then T03 then ...). Re-running a single trigger T-entry overwrites only its own key; other triggers' keys are untouched. This makes the sidecar **idempotent** for multi-trigger cases.
+- **Multi-trigger append.** Trigger plugin runs once per trigger row. Each invocation **merges by T-number** into the existing sidecar JSON: read the file, set or replace the top-level `<T-number>` key, write back. Append order is **T-number ascending** (T02 then T03 then ...). Re-running a single trigger row overwrites only its own key; other triggers' keys are untouched. This makes the sidecar **idempotent** for multi-trigger cases.
 - **Abort cleanup.** On `Abort` (per [`phased-execution.md`](../../../phased-execution.md) abort semantics), the sidecar persists alongside other artifacts — `phased-execution.md` mandates no artifact deletion on abort; user owns partial state. On the next run with regenerate-from-scratch (Rule 6) the sidecar is overwritten; otherwise it is reused.
 - **Edit discipline.** Per Rule 13, edit via Read + Write/Edit only. Do NOT use jq, sed, or any other tool that bypasses the file-state tracker.
 
@@ -125,7 +125,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 ## Placeholder fallback (unresolved connector / connection)
 
-When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 2-10 and write a placeholder node instead. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
+When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 2-10 and write a placeholder node instead. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
 
 ```json
 {
@@ -156,7 +156,7 @@ Three distinct conditions can trigger placeholder fallback for an event trigger.
 | Trigger | What's happening | Placeholder action | Log |
 |---|---|---|---|
 | **Planning-time unresolved** (the resolved entry carries `<UNRESOLVED>` on `type-id` / `connection-id` / `connector-key`) | Registry lookup didn't find the connector or connection at planning time | Skip Steps 2–10 entirely; write the placeholder node directly per § Placeholder fallback | `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.` |
-| **`case spec` failure at Phase 3** (T-entry was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
+| **`case spec` failure at Phase 3** (the resource was resolved at planning, but the CLI call fails at implementation — connection deleted between phases, transient API error) | Spec call itself errored | Catch the exception; fall through to placeholder fallback shape | `[SKIPPED] case spec failed — event trigger downgraded to placeholder` |
 | **Required-event-param gate failure at Phase 3** (spec call succeeded, but `caseShape.inputs[name="eventParameters"].body` is missing required fields after AskUserQuestion either declined or didn't fully resolve) | Required event parameter never collected | If user picked decline or re-prompt failed, fall through to placeholder | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to placeholder` |
 
 **Why full placeholder (not `typeId`/`connectionId` preservation)?** Event triggers are sibling-file-coupled (`entry-points.json` entry, root variable bindings for In args). A partial in-place edit leaves siblings stale. Phase-3 `case spec` failure on event triggers therefore downgrades fully to placeholder — asymmetric with connector-task graceful-degradation, which preserves `data.typeId + data.connectionId` because the in-stage parent node can render without sibling-file coupling (see [`../../tasks/connector-activity/impl-json.md`](../../tasks/connector-activity/impl-json.md) for the connector-task fallback table — it preserves more state because the coupling profile is different).

@@ -67,7 +67,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
 | `display-name` | sdd.md escalation-table `Display Name` cell | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
-| `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
+| `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule element the escalation fires under. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
 
 ## Identity Resolution
@@ -96,7 +96,7 @@ Recipient value already matches `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 
 ### Session cache
 
-In-memory, scoped to the Phase 1 run. Key: lowercased sdd input. **Positive resolutions only** — auto-accept results and user-picked UUIDs. Do NOT cache `Keep as <UNRESOLVED>` decisions; same recipient appearing in a later T-entry re-asks.
+In-memory, scoped to the Phase 1 run. Key: lowercased sdd input. **Positive resolutions only** — auto-accept results and user-picked UUIDs. Do NOT cache `Keep as <UNRESOLVED>` decisions; same recipient appearing in a later element re-asks.
 
 ### CLI failure (auth / network / 403)
 
@@ -137,43 +137,41 @@ Rationale values: `auto-exact-email`, `auto-exact-name`, `user-picked-from-N`, `
 
 SLA is the **last** element class written, after conditions. For each target, order within the target:
 
-1. Default SLA T-entry
-2. Conditional SLA rule T-entries for that target
-3. Escalation rule T-entries (one per rule)
+1. Default SLA element
+2. Conditional SLA rule elements for that target
+3. Escalation rule elements (one per rule)
 
 ## Fields to Resolve
 
 ### Default SLA
 
-```markdown
-## T<n>: Set default SLA for "<target>" to <duration>
+```text
+# default SLA on "<target>" — <duration>
 - target: "<root>" | "<stage-name>"
 - display-name: "SLA Rule 1"              # required; use authored title or SLA Rule {N}
 - rationale: "<why this SLA target and duration fit>"
 - count: 5
 - unit: d
-- order: after T<m>
 - verify: Confirm Result: Success
 ```
 
 ### Conditional SLA rule
 
-```markdown
-## T<n>: Add conditional SLA rule for "<target>" — <condition summary>
+```text
+# conditional SLA rule on "<target>" — <condition summary>
 - target: "root" | "<stage-name>"
 - display-name: "Urgent SLA"              # required; target-unique, no ':'
 - rationale: "<why this condition changes the SLA>"
 - condition: "<natural-language condition from sdd.md>"
 - count: 30
 - unit: min
-- order: after T<m>
 - verify: Confirm Result: Success
 ```
 
 ### Escalation rule
 
-```markdown
-## T<n>: Add escalation rule for "<target>" — <trigger summary>
+```text
+# escalation rule on "<target>" — <trigger summary>
 - target: "<root>" | "<stage-name>"
 - attach-to: default | T<m>
 - rationale: "<why this threshold/recipient/action fits; name any interrupting secondary stage>"
@@ -183,7 +181,6 @@ SLA is the **last** element class written, after conditions. For each target, or
   - User: a1b2c3d4-0000-0000-0000-000000000000 / manager@corp.com
   - UserGroup: <UNRESOLVED: group-uuid for "Order Management Team"> / "Order Management Team"
 - display-name: "Notify Manager"
-- order: after T<m>
 - verify: Confirm Result: Success, capture EscalationRuleId
 ```
 
@@ -193,7 +190,7 @@ SLA is the **last** element class written, after conditions. For each target, or
 
 ## Frontend validation parity
 
-Before emitting SLA T-entries, reject or repair the same cases the Case App rejects:
+Before emitting SLA elements, reject or repair the same cases the Case App rejects:
 
 - every SLA rule has a non-empty, target-unique `display-name`;
 - every escalation has a non-empty, target-unique `display-name`;
@@ -208,6 +205,6 @@ Before emitting SLA T-entries, reject or repair the same cases the Case App reje
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.
-- **Do not cache user declines.** Session cache holds positive resolutions only. Re-ask on each T-entry occurrence of the same unresolved recipient.
+- **Do not cache user declines.** Session cache holds positive resolutions only. Re-ask on each occurrence of the same unresolved recipient.
 
 <!-- END: planning.md -->

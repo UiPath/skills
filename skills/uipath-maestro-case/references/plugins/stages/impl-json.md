@@ -8,10 +8,10 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 | Field | Required | Notes |
 |---|---|---|
-| `displayName` (from T-entry title) | yes | Stage label |
-| `description` | yes | Always emit, sourced from the T-entry's description field in `sdd.md`. |
-| `isRequired` | yes | From `sdd.md`; fall back to `false` when the T-entry does not specify. Consumed by later case-exit rule `required-stages-completed`. |
-| Stage kind | yes | `primary` or `secondary` — determined by the T-entry plugin (`Create stage …` vs `Create secondary stage …`) |
+| `displayName` (from element title) | yes | Stage label |
+| `description` | yes | Always emit, sourced from the SDD row's description field. |
+| `isRequired` | yes | From `sdd.md`; fall back to `false` when the SDD does not specify. Consumed by later case-exit rule `required-stages-completed`. |
+| Stage kind | yes | `primary` or `secondary` — determined by the stage kind (`Create stage …` vs `Create secondary stage …`) |
 
 ## ID generation
 
@@ -86,7 +86,7 @@ After writing, confirm:
 
 - `nodes` contains the new node with the generated ID
 - `nodes[].type` is always `case-management:Stage`
-- `nodes[].data.label` matches the T-entry's displayName
+- `nodes[].data.label` matches the element's displayName
 - `nodes[].data.isRequired` is present and boolean
 - NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
 - For a secondary stage: `data.stageType == "secondary"`, and `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)

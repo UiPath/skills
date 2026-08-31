@@ -84,12 +84,11 @@ When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit
 A placeholder-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
 
 ````markdown
-## T20: Add process task "Validate Submission Completeness" to "Submission Review"
+# process task "Validate Submission Completeness" in stage "Submission Review"
 - taskTypeId: <UNRESOLVED: processOrchestration-index.json empty in tenant>
 - folder-path: <UNRESOLVED>
 - runOnlyOnce: false
 - isRequired: true
-- order: after T19
 - verify: Confirm Result: Success, capture TaskId (placeholder — user to attach process + bindings)
 ```text
 wiring notes (user must attach after publishing the process):

@@ -78,7 +78,7 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 ## Post-Write Verification
 
-Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
+Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
 
 For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
 

@@ -8,9 +8,9 @@ Pick this plugin when the sdd.md **literally uses the phrase "case exit conditio
 
 For stage-level conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md). For task-level, use [task-entry-conditions](../task-entry-conditions/planning.md).
 
-## No omission — one T-task per sdd.md case-exit row
+## No omission — one caseplan element per sdd.md case-exit row
 
-Every case-exit condition declared in sdd.md gets its own T-task — **including rule-type `required-stages-completed` with `marks-case-complete: true`** (the "preferred pattern"). Never skip a condition because it's the default completion shape. If sdd.md wrote the row, the build emits the element.
+Every case-exit condition declared in sdd.md gets its own caseplan element — **including rule-type `required-stages-completed` with `marks-case-complete: true`** (the "preferred pattern"). Never skip a condition because it's the default completion shape. If sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
@@ -57,14 +57,13 @@ Case exit conditions are created **after** all stages exist (so `selectedStageId
 
 ## Fields to Resolve
 
-```markdown
-## T<n>: Add case-exit condition — <summary>
+```text
+# case-exit condition — <summary>
 - display-name: "<name>"                 # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-case-complete
 - marks-case-complete: true
 - rule-type: required-stages-completed
 - selected-stage: "<stage-name>"        # only for selected-stage-* rule-types
 - condition-expression: "=js:vars.X..."  # optional gate on case state, NOT the event payload
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 

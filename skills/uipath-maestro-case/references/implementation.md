@@ -136,7 +136,7 @@ No edge-building step (Rule 20) — stage transitions are entry/exit conditions,
 
 **Phase A — gather.** For each non-connector task in the SDD's per-stage Tasks tables, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — Phase 2 conditions and Phase 3 cross-task references need it. Skip the re-Read between sibling Edits. One validate at section end.
+**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in SDD order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — Phase 2 conditions and Phase 3 cross-task references need it. Skip the re-Read between sibling Edits. One validate at section end.
 
 Per-class shape inside each Edit:
 
@@ -148,7 +148,7 @@ Per-class shape inside each Edit:
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
+On context-compaction mid-gather: re-Read `caseplan.json`, scan for SDD tasks not yet appended, re-run Phase A for those only.
 
 **Task placement contract.** Placement is determined by the SDD's **Activation Mode** column plus the task's **Entry Condition** table; the `data.tasks` task-set index is derived from them, never the reverse.
 

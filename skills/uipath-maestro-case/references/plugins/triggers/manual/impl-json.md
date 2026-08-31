@@ -17,8 +17,8 @@ The sibling-file sync is the main reason this plugin needs a dedicated JSON reci
 
 | Field | Required | Notes |
 |---|---|---|
-| `displayName` | yes | T-entry title or `display-name:` field. Fallback: `Trigger ${existingTriggerCount + 1}`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
-| `description` | yes | Always emitted into `data.description`. Sourced from the T-entry's `description:` field when present; otherwise the LLM infers a natural-language description from surrounding sdd.md context. |
+| `displayName` | yes | the SDD row's display name. Fallback: `Trigger ${existingTriggerCount + 1}`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
+| `description` | yes | Always emitted into `data.description`. Sourced from the element's `description:` field when present; otherwise the LLM infers a natural-language description from surrounding sdd.md context. |
 
 Position is not a user input. It is computed statefully (see below).
 
@@ -41,7 +41,7 @@ Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference
 
 ## Default-name fallback
 
-If the T-entry does not supply `display-name`:
+If the SDD row does not supply a display name:
 
 ```text
 existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")

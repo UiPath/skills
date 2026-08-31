@@ -8,9 +8,9 @@ Pick this plugin when the sdd.md declares a stage entry condition or a global ev
 
 For when a stage **exits**, use [stage-exit-conditions](../stage-exit-conditions/planning.md). For when a specific **task** starts, use [task-entry-conditions](../task-entry-conditions/planning.md).
 
-## No omission — one T-task per sdd.md Entry Condition row
+## No omission — one caseplan element per sdd.md Entry Condition row
 
-Every stage with an **Entry Condition** declared in sdd.md gets its own stage-entry-condition T-task — **including rule-type `case-entered`** and stages with `is-interrupting: false`. Never skip a condition because the rule-type or field values look like defaults. If sdd.md wrote the row, the build emits the element.
+Every stage with an **Entry Condition** declared in sdd.md gets its own stage-entry condition — **including rule-type `case-entered`** and stages with `is-interrupting: false`. Never skip a condition because the rule-type or field values look like defaults. If sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
@@ -54,8 +54,8 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 
 ## Fields to Resolve
 
-```markdown
-## T<n>: Add stage-entry condition for "<stage>" — <summary>
+```text
+# stage-entry condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - rationale: "<why this entry rule belongs on this stage>"
 - display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
@@ -63,7 +63,6 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"
 - condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
@@ -71,15 +70,14 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 
 `sla-status-change` example:
 
-```markdown
-## T<n>: Add stage-entry condition for "SLA Escalation" — case SLA breached
+```text
+# stage-entry condition on "SLA Escalation" — case SLA breached
 - target-stage: "SLA Escalation"
 - rationale: "The case SLA can breach during any active stage, so one interrupting entry replaces per-stage exits."
 - is-interrupting: true
 - rule-type: sla-status-change
 - sla-target: "root"
 - sla-display-name: "Supplier Application SLA"
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 

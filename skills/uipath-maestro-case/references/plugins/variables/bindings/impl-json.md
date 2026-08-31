@@ -2,7 +2,7 @@
 
 Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section.
 
-> **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone T-entries. Intentional, not a gap.
+> **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone elements. Intentional, not a gap.
 
 ## Destination
 

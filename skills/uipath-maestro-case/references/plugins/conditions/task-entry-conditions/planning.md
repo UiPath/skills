@@ -8,9 +8,9 @@ Pick this plugin when the sdd.md **literally uses the phrase "task entry conditi
 
 For **stage-level** conditions (entire stage enters/exits), use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md).
 
-## No omission — one T-task per sdd.md Entry Condition row
+## No omission — one caseplan element per sdd.md Entry Condition row
 
-Every task in sdd.md that declares an **Entry Condition** row gets its own task-entry-condition T-task — **including rule-type `current-stage-entered`**. Do NOT skip, collapse, or omit a condition because the rule-type looks like a default. If sdd.md wrote the row, the build emits the element. "The default behavior would already cover it" is not a valid reason to omit.
+Every task in sdd.md that declares an **Entry Condition** row gets its own task-entry condition — **including rule-type `current-stage-entered`**. Do NOT skip, collapse, or omit a condition because the rule-type looks like a default. If sdd.md wrote the row, the build emits the element. "The default behavior would already cover it" is not a valid reason to omit.
 
 ## Required Fields from sdd.md
 
@@ -64,9 +64,9 @@ The task's **Activation Mode** in the SDD must already be settled before its ent
 - entry-rule: runs-sequentially
 ```
 
-This pair lives on the task's own §4.6 T-entry, not on this condition T-entry. This file's own entry format below uses `rule-type:`, not `entry-rule:` — the two fields are not interchangeable and belong to two different T-entries. Writing `rule-type:` here does NOT retroactively satisfy the §4.6 requirement; if the task's own T-entry is missing `entry-rule:`, go back and add it there.
+This pair lives on the task's own SDD row, not on this condition. This file's own entry format below uses `rule-type:`, not `entry-rule:` — the two fields are not interchangeable and belong to two different rows. Writing `rule-type:` here does NOT retroactively satisfy the per-task requirement; if the task's own SDD row is missing `entry-rule:`, go back and add it there.
 
-For every task-entry-condition T-entry, verify the task's `activation-mode` and this condition's `rule-type` agree:
+For every task-entry-condition element, verify the task's `activation-mode` and this condition's `rule-type` agree:
 
 | activation-mode | Allowed rule-type |
 |---|---|
@@ -87,8 +87,8 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 
 ## Fields to Resolve
 
-```markdown
-## T<n>: Add task-entry condition for "<task>" in "<stage>" — <summary>
+```text
+# task-entry condition on task "<task>" in stage "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
 - activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate
@@ -97,7 +97,6 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 - rule-type: selected-tasks-completed
 - selected-tasks: "<Task A>, <Task B>"
 - condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 

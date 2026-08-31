@@ -28,7 +28,7 @@ The Category column is REQUIRED in the SDD template.
 
 1. Read the Case Variables table rows.
 2. For EACH row, present a single AskUserQuestion: `<rowName>`: `In` / `Out` / `Variable` / `Skip — not a variable`. Multi-select if the harness allows batching; otherwise one prompt per row.
-3. Record the user's answer in memory and emit the T-entries as if the Category column had been authored that way.
+3. Record the user's answer in memory and emit the rows as if the Category column had been authored that way.
 4. Strongly recommend (via plain-text output before/after the prompts) that the user migrate their SDD to include the column for future regenerate-from-scratch runs.
 
 Never default missing categories to a guess. The pre-α "Listed in Trigger Initial Variable Mapping → In argument" inference rule is removed under α and MUST NOT be re-implemented as a fallback. The post-α table shape is defined by the case SDD template (authored by `uipath-planner`); canonical Category semantics live in [impl-json.md](impl-json.md).
@@ -51,24 +51,24 @@ Phase 3 (implementation) catches spec-dependent issues — see [`impl-json.md`](
 
 ## Fields to Resolve
 
-One T-entry per Case Variables row. Place after the case file (T01) and all trigger T-entries (T02+), before stages. T-number for the first variable depends on trigger count.
+One caseplan variable per Case Variables row. Place after the case file (T01) and all trigger rows (T02+), before stages. T-number for the first variable depends on trigger count.
 
-```markdown
-## T05: Declare In-argument "applicantName"
+```text
+# In-argument "applicantName"
 - category: In
 - type: string
 - sourceTriggers: T03            # single T-number; omit to bind the primary trigger (T02)
 - default: ""
 - verify: inputs[] formal slot + inputOutputs[] companion (elementId = id-map[T03].id) + that trigger node's outputs[] bridge written.
 
-## T06: Declare Variable "subject"
+# Variable "subject"
 - category: Variable
 - type: string
 - sourceTrigger: T02
 - sourceField: response.subject
 - verify: inputOutputs[] entry (id=subject, elementId="root"); trigger T02's outputs[] carries Pattern C wire (source="=response.subject", var=id="subject"); no inputs[] entry.
 
-## T07: Declare Variable "caseStarter"
+# Variable "caseStarter"
 - category: Variable
 - type: string
 - sourceTriggers: T02, T03
@@ -77,20 +77,20 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
     T03: response.initiator
 - verify: one inputOutputs[] companion (elementId="root") shared across triggers; each listed trigger's outputs[] has its own Pattern C wire targeting the companion.
 
-## T08: Declare Variable "caseStatus"
+# Variable "caseStatus"
 - category: Variable
 - type: string
 - default: "Open"
 - verify: inputOutputs[] entry (id=caseStatus, elementId="root", default="Open"); no trigger output entries.
 
-## T09: Declare Out-argument "finalDecision"
+# Out-argument "finalDecision"
 - category: Out
 - type: string
-- producedBy: T15.outputs.finalDecision   # informational reference to the producing task T-entry
+- producedBy: T15.outputs.finalDecision   # informational reference to the producing task
 - verify: outputs[] formal entry (var=finalDecision); companion in inputOutputs[] ALWAYS emitted (with default="" when Default empty); io-binding validator confirms producer task output has id=finalDecision.
 ```
 
-**Field semantics on the T-entry:**
+**Field semantics:**
 
 - `category` — required, one of `In`, `Out`, `Variable`
 - `type` — required, one of `string`, `number`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`. **Emit the SDD's declared type verbatim — never substitute a near-equivalent.** `number` and `integer` are distinct and both valid; rewriting an SDD `number` as `integer` (or `float`/`double` as `number`) produces a caseplan that validates but no longer matches the declared contract, and downstream extract rows inherit the wrong type. If the SDD names a type not listed here, keep it as written and record it as a Review Flag rather than mapping it onto the nearest listed value.
@@ -127,6 +127,6 @@ camelCase IDs (`=vars.claimId`). See [`impl-json.md`](impl-json.md) § Uniquenes
 
 ## Completeness obligation
 
-Per [planning.md §4.0](../../../planning.md), every row in the Case Variables table emits exactly one T-entry. Skipping rows because their Category cannot be determined is forbidden — invoke AskUserQuestion instead. The pre-approval cross-check counts variable-table rows against emitted variable T-entries; mismatch is a defect.
+Per the completeness principle in [implementation.md](../../../implementation.md), every row in the Case Variables table emits exactly one caseplan variable. Skipping rows because their Category cannot be determined is forbidden — invoke AskUserQuestion instead. The pre-approval cross-check counts variable-table rows against emitted variable elements; mismatch is a defect.
 
 <!-- END: planning.md -->

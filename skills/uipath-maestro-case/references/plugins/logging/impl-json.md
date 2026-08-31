@@ -35,13 +35,13 @@ issues.append({                 # pseudocode — not executed
 
 ## Flush — at every section boundary (MANDATORY)
 
-Flush alongside the section's validate, then clear the buffer. Sections are the ones named in [`implementation.md` § Per-section batched writes](../../implementation.md): Phase 2 §4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task shapes, §4.8 SLA, §4.7 conditions; Phase 3 §9.7 connector schema, §9.8 I/O binding, §10.5 connector-rule upgrades.
+Flush alongside the section's validate, then clear the buffer. Sections are the ones named in [`implementation.md` § Per-section batched writes](../../implementation.md): Phase 2 vars, triggers, stages, task shapes, SLA, conditions; Phase 3 Step 9.7 connector schema, Step 9.8 I/O binding, §10.5 connector-rule upgrades.
 
 **Flush even when the section produced zero issues** — the file's existence after the first section is what proves the log survived.
 
 ### First flush — create the file (Write)
 
-```markdown
+```text
 # Build Issues — <CaseName>
 
 **Case file:** caseplan.json | **Build started:** <ISO>

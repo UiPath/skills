@@ -182,8 +182,8 @@ Resolution emits to `input-values.bodyParameters`:
 
 Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list).
 
-```markdown
-## T<n>: Add connector-activity task "<display-name>" to "<stage>"
+```text
+# connector-activity task "<display-name>" in stage "<stage>"
 - type-id: <uiPathActivityTypeId>
 - connection-id: <connection-uuid>
 - connector-key: <connectorKey>
@@ -196,7 +196,6 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 - runOnlyOnce: false
 - activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
 - entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
 - lane: <n>
 - verify: the resolved `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
 ```

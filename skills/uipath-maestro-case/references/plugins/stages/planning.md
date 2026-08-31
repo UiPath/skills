@@ -67,29 +67,27 @@ Stage position is auto-computed by the impl-json recipe: `x = 100 + (existingSta
 
 ## Ordering
 
-Stages are created **after** the root case (T01) and **before** any tasks or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (tasks, conditions, SLA) use the stage **name** from the SDD; the implementation phase resolves the name to the captured `StageId`.
+Stages are created **after** the root case (T01) and **before** any tasks or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream elements (tasks, conditions, SLA) use the stage **name** from the SDD; the implementation phase resolves the name to the captured `StageId`.
 
 ## Fields to Resolve
 
-```markdown
-## T<n>: Create stage "<label>"
+```text
+# stage "<label>"
 - type: stage
 - rationale: "<why this is a primary stage and how it is reached/exited>"
 - description: "<description from sdd.md>"
 - isRequired: <true|false from sdd.md; false if unspecified>
-- order: after T<m>
 - verify: Confirm Result: Success, capture StageId
 ```
 
 Secondary variant:
 
-```markdown
-## T<n>: Create secondary stage "<label>"
+```text
+# secondary stage "<label>"
 - type: secondary
 - rationale: "<why this is interrupting and which global/conditional event it handles>"
 - description: "<description from sdd.md>"
 - isRequired: <true|false from sdd.md; false if unspecified>
-- order: after T<m>
 - verify: Confirm Result: Success, capture StageId
 ```
 

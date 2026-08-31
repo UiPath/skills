@@ -128,7 +128,7 @@ If `spec.filter` is undefined, a top-level `filter:` is malformed. Repair it bef
 
 1. Find the matching plain query/body field and retain its sink.
 2. Copy the exact native value from the SDD Inputs row (or same-session confirmed model); never derive it from the FilterTree.
-3. In the same T-entry, remove `filter:`, add the value to the declared `input-values` sink, preserve siblings, then restart Step 1.
+3. In the same resolved entry, remove `filter:`, add the value to the declared `input-values` sink, preserve siblings, then restart Step 1.
 
 If the field or exact value is unavailable or ambiguous, halt and ask; non-interactive runs report a blocker. Never drop the requirement or invent downstream filtering.
 

@@ -273,7 +273,7 @@ The expression is duplicated in two non-config sinks because both have load-bear
 
 ## registry-resolved.json fields (resolution)
 
-A connector-bound rule's condition T-entry records these (alongside the scope's normal fields):
+A connector-bound rule's condition element records these (alongside the scope's normal fields):
 
 ```markdown
 - rule-type: wait-for-connector

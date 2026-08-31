@@ -38,8 +38,8 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
 
 ## Fields to Resolve
 
-```markdown
-## T<n>: Add rpa task "<display-name>" to "<stage>"
+```text
+# rpa task "<display-name>" in stage "<stage>"
 - name: "<resource-name>"
 - taskTypeId: <entityKey>
 - folder-path: "<folder>"
@@ -51,7 +51,6 @@ Mark `<UNRESOLVED: rpa "<name>" in folder "<folder>" not found in registry>`. Om
 - isRequired: true
 - activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
 - entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

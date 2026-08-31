@@ -65,12 +65,11 @@ When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat coun
 
 ## Fields to Resolve
 
-```markdown
-## T02: Configure timer trigger "<display-name>"
+```text
+# timer trigger "<display-name>"
 - timeCycle: R12/2026-04-21T22:00:00.000-07:00/PT10M
 - displayName: "<optional — defaults to Trigger N>"
 - sdd-intent: "<prose restatement for reviewer — e.g. Every 10 min, starting 2026-04-21 22:00 PDT, 12 times>"
-- order: after T01
 - verify: node added to schema.nodes with data.inputs.serviceType == timer; entry-points.json has matching entry; timeCycle exact match
 ```
 

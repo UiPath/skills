@@ -29,10 +29,10 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
 `case-identifier` is carried verbatim from sdd.md — one of two forms (no other engine):
 
-- **Bare var** — `=vars.<varId>`, where `<varId>` is a single variable declared in the §4.2.1 block. It MUST be an **In** argument or a **Variable** — not an **Out** argument (produced at case end).
+- **Bare var** — `=vars.<varId>`, where `<varId>` is a single variable declared in the SDD's Case Variables table. It MUST be an **In** argument or a **Variable** — not an **Out** argument (produced at case end).
 - **`=js:` expression** — for string ops / concatenation, e.g. `` =js:`${metadata.InstanceId}-${vars.region}` ``. May read `vars.<id>` and `metadata.InstanceId` / `metadata.FolderKey` / `metadata.ProcessKey` — never `metadata.ExternalId` (the field being set).
 
-A referenced variable must have its own §4.2.1 T-entry (the completeness cross-check requires it).
+A referenced variable must have its own Case Variables row (the completeness cross-check requires it).
 
 ## Registry Resolution
 
@@ -44,8 +44,8 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 
 ## Fields to Resolve
 
-```markdown
-## T01: Create case file "<name>"
+```text
+# case file "<name>"
 - file: "<SolutionDir>/<ProjectName>/caseplan.json"
 - case-identifier: "<identifier>"
 - identifier-type: constant

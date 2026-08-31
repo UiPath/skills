@@ -69,8 +69,8 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
 
-```markdown
-## T<n>: Add action task "<display-name>" to "<stage>"
+```text
+# action task "<display-name>" in stage "<stage>"
 - taskTypeId: <action-app-id>
 - name: "<selected-deployment-title>"
 - folder-path: "<selected-deployment-folder>"
@@ -87,7 +87,6 @@ Resolved action task. For the unresolved placeholder shape, see [placeholder-tas
 - isRequired: true
 - activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
 - entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

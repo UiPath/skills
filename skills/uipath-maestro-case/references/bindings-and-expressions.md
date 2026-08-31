@@ -181,8 +181,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ### Literal and expression inputs
 
-```markdown
-## T10: Add api-workflow task "Fetch Inbox" to "Triage"
+```text
+# api-workflow task "Fetch Inbox" in stage "Triage"
 - inputs:
   - inbox_config = "=vars.inbox_config"
   - po_patterns  = "=vars.po_patterns"
@@ -192,8 +192,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ### Cross-task reference
 
-```markdown
-## T11: Add agent task "Classify Emails" to "Triage"
+```text
+# agent task "Classify Emails" in stage "Triage"
 - inputs:
   - emails <- "Triage"."Fetch Inbox".emails
   - customer_id <- "Triage"."Fetch Inbox".customer_id
@@ -204,8 +204,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ### Mixed inputs (HITL/action)
 
-```markdown
-## T12: Add action task "Review Classification" to "Triage"
+```text
+# action task "Review Classification" in stage "Triage"
 - recipient: approver@corp.com
 - priority: High
 - inputs:

@@ -26,8 +26,8 @@ Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../.
 
 Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list).
 
-```markdown
-## T<n>: Add connector-trigger task "<display-name>" to "<stage>"
+```text
+# connector-trigger task "<display-name>" in stage "<stage>"
 - type-id: <uiPathActivityTypeId>
 - connection-id: <connection-uuid>
 - connector-key: <connectorKey>
@@ -42,7 +42,6 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 - runOnlyOnce: false
 - activation-mode: event-triggered   # required; normally event-triggered for a connector event wait
 - entry-rule: wait-for-connector   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct event parameters
 ```

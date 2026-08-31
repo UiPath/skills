@@ -28,7 +28,7 @@ Direct cache-file inspection is the authoritative discovery method for this skil
 
 > **Design-time gate short-circuit.** When the same-session resolution ledger from the planner's Case Design Lane (SKILL.md Rule 15) carries a `gateDecision` for a resource, the gate below already ran — the USER answered it at the Case Review (`gateDecision` exists only for user-answered items; a defaulted `resolve at build` carries none and gets the full gate below). Execute the decision without re-asking: `pick:<name>` → bind that entry; `resolve-at-build` → placeholder path directly; `create-during-build` → the Create-on-Missing flow below as if the user picked `Create`. Re-ask ONLY when the entry is stale against the current SDD (carryover rules in [planning.md](planning.md)) or the cache no longer contains the picked entry.
 
-> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder T-entry.
+> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder element.
 
 Required prompt shape:
 

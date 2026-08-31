@@ -171,8 +171,8 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 Record the resolved values in `registry-resolved.json` under the task entry:
 
-```markdown
-## T25: Add connector-activity task "Create Jira Issue" to "Triage"
+```text
+# connector-activity task "Create Jira Issue" in stage "Triage"
 - type-id: 718fdc36-73a8-3607-8604-ddef95bb9967
 - connection-id: 7622a703-5d85-4b55-849b-6c02315b9e6e
 - connector-key: uipath-atlassian-jira

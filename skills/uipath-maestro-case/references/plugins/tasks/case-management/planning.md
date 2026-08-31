@@ -40,8 +40,8 @@ Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagemen
 
 ## Fields to Resolve
 
-```markdown
-## T<n>: Add case-management task "<display-name>" to "<stage>"
+```text
+# case-management task "<display-name>" in stage "<stage>"
 - taskTypeId: <entityKey>
 - name: "<child-case-name>"
 - folder-path: "<folder>"
@@ -53,7 +53,6 @@ Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagemen
 - isRequired: true
 - activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
 - entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```

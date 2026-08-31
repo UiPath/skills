@@ -6,11 +6,11 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 ## Purpose
 
-Compose the `slaRules[]` array for each target (root or stage) in one write. Group all SLA T-entries by target and emit the full array in a single mutation.
+Compose the `slaRules[]` array for each target (root or stage) in one write. Group all SLA rows by target and emit the full array in a single mutation.
 
 ## Input spec (from the SDD's SLA tables)
 
-| T-entry kind | Required fields | Notes |
+| element kind | Required fields | Notes |
 |---|---|---|
 | Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
 | Conditional rule | `target: "root"` \| `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name` | Translated to `=js:<expr>` at execution and prepended to the target's default; see Expression Translation below. |
@@ -21,7 +21,7 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 - SLA rule (default and conditional): `sla_` + 8 chars. **Required** on every entry.
 - Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
 
-Mint these IDs while composing the Phase 2 objects, check them against existing caseplan/id-map IDs, and record them immediately: every SLA T-entry under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Write the object and its `id-map.json` entry in the same section. There is no preallocation-only pass.
+Mint these IDs while composing the Phase 2 objects, check them against existing caseplan/id-map IDs, and record them immediately: every SLA element under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Write the object and its `id-map.json` entry in the same section. There is no preallocation-only pass.
 
 ## Target resolution
 
@@ -34,7 +34,7 @@ Mint these IDs while composing the Phase 2 objects, check them against existing 
 
 ## Recipe — one target
 
-After grouping T-entries by target, compose the `slaRules` array and write it into the target's location per the rules above.
+After grouping elements by target, compose the `slaRules` array and write it into the target's location per the rules above.
 
 ### Composed array
 
@@ -82,11 +82,11 @@ For a stage target, the same `slaRules` array is written under `node.data.slaRul
 
 Emission rules:
 
-1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins).
-2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
-3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA T-entry, Step 11 directly emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`, and records that synthetic ID.
+1. **Conditional rules first, in element order.** Priority = sdd order (top-most wins).
+2. **Default rule (`=js:true`) last.** Always emitted when any SLA element targets this node — even escalation-only cases.
+3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA row, Step 11 directly emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`, and records that synthetic ID.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
-5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
+5. **Omit `slaRules` key entirely** on targets with no SLA elements.
 6. **Emit a unique `id` on every SlaRuleEntry.** `sla_` + 8 chars — **required** (schema v26). `displayName` is optional (`"Default"` for the trailing `=js:true` entry).
 
 ## Recipe — one escalation entry
@@ -94,7 +94,7 @@ Emission rules:
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry, or generated: Escalation rule <N> - <parent SLA displayName>>",
+  "displayName": "<from element, or generated: Escalation rule <N> - <parent SLA displayName>>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -108,7 +108,7 @@ Emission rules:
 }
 ```
 
-- `displayName` is **required** (schema v27). Use the T-entry's `display-name` when supplied; otherwise generate `Escalation rule <N> - <parent SLA displayName>` (N = 1-based index within the parent rule's `escalationRule[]`).
+- `displayName` is **required** (schema v27). Use the SDD row's display name when supplied; otherwise generate `Escalation rule <N> - <parent SLA displayName>` (N = 1-based index within the parent rule's `escalationRule[]`).
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 
@@ -139,7 +139,7 @@ A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach
 ## Post-write validation
 
 - Confirm `metadata.slaRules` (root) or `node.data.slaRules` (stage) exists with the expected entries. Verify the root-target uses `metadata` — not `root.data` (which doesn't exist on disk).
-- Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
+- Confirm the trailing entry's `expression === "=js:true"` when any SLA element targeted this node.
 - Confirm every emitted `sla_` and `esc_` ID appears in `id-map.json`. Step 10 must resolve every `sla-status-change` rule against IDs already emitted on the declared target.
 - Run the section-boundary validation after all SLA targets have been written (not per-target); the Phase 2 preview profile runs later after conditions.
 
