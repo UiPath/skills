@@ -149,46 +149,43 @@ uip is resources describe <connector-key> <object> --connection-id <id> \
 
 ## Structured filters (CEQL)
 
-For an Integration Service list operation, preserve the FilterBuilder contract
-as a structured tree. A raw CEQL string such as `status='Active'` is only the
-runtime query; it does not describe the filter tree Studio Web needs.
+An Integration Service list operation takes a server-side filter through a
+FilterBuilder parameter — usually `where`, sometimes `q`. **Write the CEQL
+string; the SDK derives the tree.**
 
-```json
-{
-  "groupOperator": 0,
-  "index": 0,
-  "filters": [
-    {
-      "id": "status",
-      "operator": "Equals",
-      "value": {
-        "value": "Active",
-        "rawString": "\"Active\"",
-        "isLiteral": true
-      }
-    }
-  ],
-  "groups": []
-}
+```ts
+connector('uipath-microsoft-azureactivedirectory', 'list-groups',
+  { where: "displayName = 'active' AND createdDateTime >= '2026-01-01T00:00:00Z'" },
+  { connection: 'entra', folder: 'shared' })
 ```
 
-`groupOperator` is numeric (`0` for And, `1` for Or). Use the field id from the
-operation schema and the product operator name, such as `Equals`; do not replace
-the tree with `{ "ceql": "..." }` or an ad-hoc description object.
+That emits BOTH halves the artifact must carry: the runtime query at
+`inputs.detail.queryParameters.where`, and the design-time tree at
+`essentialConfiguration.savedFilterTrees.where` inside the node's
+`configuration`. Studio Web renders the FilterBuilder from the tree; product
+validation rejects a filter that has only one of the two, so a string alone
+fails `validate` even though the run would have worked.
 
-When the environment provides the node-configure authoring command, pass the
-tree under `filter` so the CLI can emit both the runtime CEQL query and the
-design-time saved filter tree:
+Supported: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`,
+`Like`, their `Not` forms, and `Is Null` / `Is Not Null`. Combine with `AND` or
+`OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND`
+and `OR` at one level is refused rather than guessed, because a tree carries one
+operator per level.
 
-```bash
-uip maestro flow node configure <flow-file> <node-id> \
-  --detail '{"filter": {"groupOperator": 0, "index": 0, "filters": [{"id": "status", "operator": "Equals", "value": {"value": "Active", "rawString": "\"Active\"", "isLiteral": true}}], "groups": []}}' \
-  --output json
-```
+Three spellings are compile errors here rather than a tenant-side
+`[102003] Integration Services bad request`:
 
-If the request is offline and asks only for a reviewable filter plan, save this
-same tree in the requested JSON artifact. Do not fabricate a connected node or
-resource binding when no tenant connection exists.
+| Wrong | Why | Right |
+|---|---|---|
+| `'accountNumber' = 'ACC123'` | a quoted token is a VALUE to CEQL | `accountNumber = 'ACC123'` |
+| `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
+| `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
+
+**A filter built from a runtime value keeps the runtime half only.** The tree
+holds literals, so a `js` template in `where` emits the query and no tree — which
+`validate` rejects. Where the filter must vary per run, filter server-side on
+what is constant and narrow the rest downstream, or accept the design-time gap
+deliberately.
 
 ## Schema-dynamic operations: the parent-field loop
 
