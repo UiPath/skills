@@ -139,6 +139,20 @@ base64 -i "<FILE_PATH>" | tr -d '\n'   # macOS/Linux; use `base64 -w0 "<FILE_PAT
 
 Record each returned id — it is nested: read **`data.document_id`** from the response envelope. On 400, surface the validation message and continue with the remaining documents.
 
+## Step 6b (optional): Link a Studio Web solution
+
+When the caller wants the process linked to a Studio Web solution (or supplies one), set the `OVR-OVERVIEW_STUDIO_WEB_LINK` question — at create time inside `user_inputs` (Step 4), or afterwards:
+
+```bash
+curl -s -w "\n%{http_code}" -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_inputs": { ...only this question, in its Step-4 shape... }}' \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID"
+```
+
+The answer's exact value format (JSON-string `value` with a required `url`, `hasProcessMap` semantics, empty string to unlink) is a domain fact — read it in [`api-endpoints.md`](api-endpoints.md) (**Studio Web link**). Resolve the solution from the caller — ask for the designer URL (no discovery API exists on this path either); **never invent, guess, or search for a solution id or URL**, and omit `hasProcessMap` if the caller doesn't know whether the solution has a `.bpmn`.
+
 ## Step 7: Verify, then report
 
 **Verify before claiming success** — read the process back and confirm the documents landed:

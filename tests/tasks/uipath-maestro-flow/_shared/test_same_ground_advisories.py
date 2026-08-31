@@ -199,3 +199,54 @@ def test_inline_agent_ignores_staging_trees(tmp_path: Path) -> None:
     result = run_script("check_inline_agent.py", "**/agent.json", cwd=tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Solution" in result.stdout
+
+
+def test_reachability_excludes_the_loop_back_edge() -> None:
+    """A loop body must not reach the End nodes that follow the loop.
+
+    The back edge from the last body node into the loop container closes a
+    cycle, so a naive walk would go body -> loop -> after -> end. Excluding it
+    is the whole point of the filter in `successful_end_ids`, and it keyed off
+    `loopBack` — a handle `core.logic.loop` has never declared and that
+    `flow validate` rejects. The real inner target handles are `continue` and
+    `break`, so the filter never fired on any valid flow.
+    """
+    sys.path.insert(0, str(SHARED))
+    from advisory_flow_utils import LOOP_BACK_PORTS, successful_end_ids
+
+    assert {"continue", "break"} <= LOOP_BACK_PORTS
+
+    nodes = [
+        {"id": "loop1", "type": "core.logic.loop"},
+        {"id": "body", "type": "core.action.script"},
+        {"id": "after", "type": "core.action.script"},
+        {"id": "end1", "type": "core.control.end"},
+    ]
+    edges = [
+        {"sourceNodeId": "loop1", "sourcePort": "start", "targetNodeId": "body", "targetPort": "input"},
+        {"sourceNodeId": "body", "sourcePort": "success", "targetNodeId": "loop1", "targetPort": "continue"},
+        {"sourceNodeId": "loop1", "sourcePort": "success", "targetNodeId": "after", "targetPort": "input"},
+        {"sourceNodeId": "after", "sourcePort": "success", "targetNodeId": "end1", "targetPort": "input"},
+    ]
+
+    assert successful_end_ids(nodes, edges, "body") == set()
+    assert successful_end_ids(nodes, edges, "loop1") == {"end1"}
+
+
+def test_reachability_excludes_the_loop_break_edge() -> None:
+    """`break` is the other inner target handle and closes the same cycle."""
+    sys.path.insert(0, str(SHARED))
+    from advisory_flow_utils import successful_end_ids
+
+    nodes = [
+        {"id": "loop1", "type": "core.logic.loop"},
+        {"id": "body", "type": "core.action.script"},
+        {"id": "end1", "type": "core.control.end"},
+    ]
+    edges = [
+        {"sourceNodeId": "loop1", "sourcePort": "start", "targetNodeId": "body", "targetPort": "input"},
+        {"sourceNodeId": "body", "sourcePort": "success", "targetNodeId": "loop1", "targetPort": "break"},
+        {"sourceNodeId": "loop1", "sourcePort": "success", "targetNodeId": "end1", "targetPort": "input"},
+    ]
+
+    assert successful_end_ids(nodes, edges, "body") == set()

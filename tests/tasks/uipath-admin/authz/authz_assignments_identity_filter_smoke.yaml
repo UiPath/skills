@@ -1,0 +1,68 @@
+task_id: skill-admin-authz-assignments-identity-filter-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — answer "what roles does this
+  one account hold at organization level?" pre_run seeds a marker role and grants
+  it to the caller, so the listing has a known entry to surface. Graded on the
+  saved listing containing that grant at the organization scope path.
+
+  The seeded role is owned by the platform's Centralized Access umbrella, so
+  either listing form surfaces it — the check stays robust across agents instead
+  of hinging on which scope flag was chosen. (Grants of roles owned by another
+  service, built-ins among them, are only visible through the verbatim scope
+  path; that behaviour is exercised by the revoke scenario, which reads back by
+  assignment id.)
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, role-assignment]
+
+pre_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-identityfilter-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-identityfilter-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Seeded grant for the identity-filter scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_assignment.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-identityfilter-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  For an access review, list the roles my own account — the identity this CLI is
+  logged in as — holds at the organization level of my UiPath organization. Save
+  the complete JSON result to ./my-assignments.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "my-assignments.json holds the caller's organization-scope grants, including the seeded marker role"
+    command: |
+      python3 -c "
+      import json, subprocess
+      saved = json.load(open('my-assignments.json', encoding='utf-8-sig'))
+      res = saved.get('Result') if isinstance(saved, dict) else None
+      assert res in (None, 'Success'), f'retrieval not successful: Result={res}'
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      me = json.loads(subprocess.run(['uip','login','status','--output','json'], capture_output=True, text=True).stdout)['Data']['UserId']
+      rows = [x for x in dicts(saved) if x.get('RoleName') and (x.get('SecurityPrincipalId') or x.get('RoleId'))]
+      assert rows, 'no role-assignment records in the saved listing'
+      seeded_name = json.load(open('seed.json'))['role']['name']
+      matched = [r for r in rows if r.get('RoleName') == seeded_name]
+      assert matched, 'the seeded grant is missing from the listing — it was not read back from the organization; names found: ' + str(sorted({r.get('RoleName') for r in rows}))
+      entry = matched[0]
+      assert (entry.get('Scope') or '') == '/', f\"seeded grant read back at scope {entry.get('Scope')!r}, expected the organization scope '/'\"
+      principals = {str(r.get('SecurityPrincipalId','')).lower() for r in rows}
+      assert not principals or me.lower() in principals, 'the listing is not scoped to the caller identity'
+      print(f'OK: {len(rows)} organization-scope grants retrieved for the caller, including the seeded role')
+      "
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -18,9 +18,9 @@
 /skill-flavors/studioweb/ @astridstaicu
 
 # preview skills
-/preview/uipath-maestro-flow/  @dmetzgar @tmatup
+/preview/uipath-maestro-flow/ @UiPath/maestro-cli-team
 /preview/uipath-maestro-case/ @dmetzgar @tmatup
-/preview/uipath-maestro-bpmn/ @dmetzgar @tmatup
+/preview/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
@@ -95,18 +95,18 @@
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo @chandusailella @mukundbayyaram
+/skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 # Flow test tasks (general) — more specific subfolder rules below override this
-/tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
+/tests/tasks/uipath-maestro-flow/ @UiPath/maestro-cli-team
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
-/skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
-/skills/uipath-maestro-flow/references/author/references/plugins/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
-/tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
+/skills/uipath-maestro-flow/references/author/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav @UiPath/maestro-cli-team
 
 # Maestro BPMN skill
-/skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
-/tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
+/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 /tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
@@ -116,8 +116,8 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik
 /tests/tasks/uipath-maestro-case/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Coded Apps skill
@@ -131,15 +131,20 @@
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
-/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
-/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
-/skills/uipath-maestro-flow/references/author/references/plugins/agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh @chandusailella @mukundbayyaram
+/skills/uipath-maestro-flow/references/author/plugins/connector/ @chandusailella @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/connector-trigger/ @chandusailella @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/connector_features/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
 
 # IXP
-/skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
-/tests/tasks/uipath-maestro-flow/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
+/skills/uipath-maestro-flow/references/author/plugins/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
+/tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
+
+# Voice — inline voice agent node + the trigger, dial, and end-call nodes
+/skills/uipath-maestro-flow/references/author/plugins/inline-voice-agent/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
+/tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
@@ -194,5 +199,9 @@
 /tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven
 
 # Automation Hub skills (Open API publish/read of processes via the user's cloud token)
-/skills/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
-/tests/tasks/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
+/skills/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
+/tests/tasks/uipath-automationhub/ @UiPath/automationhub @parth-patil-uipath @abhiram-vad
+
+# StudioAdmin AOps skill (SourceControl + CICD pipelines)
+/skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
+/tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks

@@ -15,8 +15,8 @@ no fault location (file / activity / DisplayName), no evidence specifics
 (e.g. `InputArguments={}`), no hypothesis labels. Keep those descriptions
 procedural ("Agent fetches the job's execution details."). The exception and
 stack trace belong ONLY in the recorded `jobs get` / `jobs logs` payloads -
-that is the evidence the agent must diagnose from. `RESOLUTION.md` lives at the
-task root and is NOT staged; `README.md` lives in `data/m/r/`, which IS staged
+that is the evidence the agent must diagnose from. `RESOLUTION.md` lives under
+`reference/` and is NOT staged; `README.md` lives in `data/m/r/`, which IS staged
 but is deleted from the sandbox by `m/seal` before the agent starts. Both may
 therefore describe the root cause freely.
 
@@ -132,7 +132,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
 {initial_prompt_indented}
@@ -148,7 +148,9 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -727,7 +729,7 @@ def render_dry_run(plan: dict) -> str:
     out.append("Files that would be written:")
     base = plan["output_dir"]
     out.append(f"  {base / 'task.yaml'}                             ({len(plan['task_yaml'])} bytes)")
-    out.append(f"  {base / 'RESOLUTION.md'}                         ({len(plan['resolution_md'])} bytes)")
+    out.append(f"  {base / 'reference' / 'RESOLUTION.md'}           ({len(plan['resolution_md'])} bytes)")
     out.append(f"  {base / 'data' / 'm' / 'r' / 'README.md'}         ({len(plan['readme_md'])} bytes)")
     out.append(f"  {base / 'data' / 'm' / 'r' / 'manifest.json'}")
     out.append(f"  {base / 'data' / 'm' / 'r' / '<hash>.json'} x {len(plan['fixtures'])}")
@@ -745,7 +747,12 @@ def apply_plan(plan: dict) -> None:
     base.mkdir(parents=True, exist_ok=True)
 
     (base / "task.yaml").write_text(plan["task_yaml"], encoding="utf-8")
-    (base / "RESOLUTION.md").write_text(plan["resolution_md"], encoding="utf-8")
+    # RESOLUTION.md lives under reference/ so coder-eval can permission-gate the
+    # whole directory as a unit (directory-only references, coder-eval >=0.11);
+    # it is the llm_judge ground truth and is never staged/shown to the agent.
+    reference_dir = base / "reference"
+    reference_dir.mkdir(parents=True, exist_ok=True)
+    (reference_dir / "RESOLUTION.md").write_text(plan["resolution_md"], encoding="utf-8")
 
     fixtures_dir = base / "data" / "m" / "r"
     fixtures_dir.mkdir(parents=True, exist_ok=True)

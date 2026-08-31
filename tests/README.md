@@ -179,6 +179,7 @@ Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Flow v2 builder-SDK preview skills | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -188,6 +189,20 @@ runner. The image build passes the package credential as
 `--secret id=npm_auth_token,env=NPM_AUTH_TOKEN`; the Dockerfile build-arg path
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
+
+`flow-v2-preview.yaml` runs the three `preview/uipath-maestro-{flow,case,bpmn}`
+builder-SDK skills as the ONLY skill catalog, shadowing the shipped v1 skills of
+the same name, so a run measures the Flow v2 authoring path rather than a mix of
+both generations. Narrowing `plugins.path` to `preview/` drops the automatic
+repo-root bind mount, so the root is remounted explicitly; the image also needs
+runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
+identical to `nightly.yaml`. Confirm that mount resolves before a full run, or
+every tenant call fails as a capability problem rather than a config one:
+
+```bash
+docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
+  --entrypoint bash skills-codex:latest -c 'uip login status'
+```
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
@@ -222,6 +237,29 @@ sandbox:
 initial_prompt: |
   ...
 ```
+
+## Checker Context
+
+`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires a coder_eval version with the simulator decoupled from this override (`Orchestrator.simulator_route`, unreleased as of `tests/.coder-eval-version` — bump the pin once released). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
+
+```yaml
+checker_context:
+  api_route:
+    route: litellm
+    model: azure/gpt-5.6-luna
+    params:
+      api_version: "2024-05-01"
+    env_params:
+      api_base: CODEX_BASE_URL
+      api_key: CODEX_API_KEY
+```
+
+`route: litellm` is `llm_judge`-only and safe as an experiment default even when `simulation.enabled: true`: the simulator resolves its own route independently of `checker_context.api_route` (coder_eval `_resolve_routes`/`simulator_route`), so it's unaffected by this override. It is **not** safe combined with an enabled `agent_judge` criterion — coder_eval still rejects that combination at setup, since `agent_judge` shares `eval_route` with `llm_judge`. This repo has no `agent_judge` criteria today; if one is added, override `checker_context.api_route` back to `bedrock`/`direct` on that specific task.
+
+Running these tasks (locally, or a docker-driven experiment) requires:
+
+- The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
+- `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
 
 ## Lifecycle E2E tests (uipath-platform pattern)
 
@@ -398,6 +436,13 @@ Verify the agent ran a specific CLI command (matched by regex). From `init_valid
   min_count: 1          # minimum times the command must appear
   weight: 1.5           # scoring weight
   pass_threshold: 1.0   # fraction of min_count required to pass
+```
+
+**Scope lookaheads and excludes to ONE command segment.** The grader runs one `pattern.search()` per Bash tool call (`re.DOTALL`) and also matches a normalized haystack with newlines collapsed to spaces — so `(?=[\s\S]*--flag)` and `exclude_pattern` see every command batched into that call (codex chains `a && b` or stacks lines; a call-wide exclude then vetoes a correct command). Use the segment idiom `S = (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*` ("rest of THIS command", stops at newline, `&&`, `||`, `;`, `|`, or the next `uip`) and inline negatives instead of `exclude_pattern`:
+
+```yaml
+# S expanded inline — YAML single quotes, no escaping needed
+command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)'
 ```
 
 ### `file_exists`

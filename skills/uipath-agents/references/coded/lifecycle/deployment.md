@@ -67,7 +67,17 @@ content/
 └── uv.lock
 ```
 
-Control file inclusion via `packOptions` in `uipath.json`:
+Control file inclusion and exclusion via `packOptions` in `uipath.json`:
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `fileExtensionsIncluded` | `string[]` | No | `[".py", ".mermaid", ".json", ".yaml", ".yml", ".md"]` | File extensions to include in the package |
+| `filesIncluded` | `string[]` | No | `["pyproject.toml"]` | Specific files to always include |
+| `filesExcluded` | `string[]` | No | `[]` | Specific files to exclude |
+| `directoriesExcluded` | `string[]` | No | `[]` | Directories to exclude from packaging |
+| `includeUvLock` | `boolean` | No | `false` | Whether to include `uv.lock` file |
+
+**Example:**
 
 ```json
 {
@@ -122,8 +132,11 @@ In all three cases, when the downstream goal is consumption rather than upgrade:
 | `pyproject.toml` | You | Project name, version, dependencies |
 | `entry-points.json` | `uip codedagent init` | Entry points and input/output schemas |
 | `bindings.json` | `uip codedagent init` | Runtime bindings |
+| `.env` | You | Local-run environment variables + `UIPATH_PROJECT_ID`. Neither packaged nor pushed — see [environment-variables.md](environment-variables.md) |
 
 `uip codedagent deploy` and `invoke` read credentials (`UIPATH_URL`, `UIPATH_ACCESS_TOKEN`, org/tenant identifiers) from your active `uip login` session — no manual `.env` wiring is required.
+
+A deployed agent's environment variables come from Orchestrator (process- or job-level), not `.env`. To supply one from an asset instead of a literal, set its value to `%ASSETS/<ASSET_NAME>%` — resolved against the **job's** folder at dispatch. See [environment-variables.md](environment-variables.md).
 
 ## Typical Flow
 

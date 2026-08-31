@@ -178,19 +178,31 @@ For `debug test-activity` and `debug start-from-here`, both `--input-arguments` 
 
 ## Output Format
 
-`run` and `debug start` return a JSON envelope with `Data.runResult` as a JSON-encoded string. Parse `runResult` separately:
+`run` and `debug start` both return `{Result, Code, Data}`. **`Data`'s inner shape varies by CLI build and run state — read it by key presence, never by assumed schema.**
+
+A completed run on the current CLI returns the fields flat, with the workflow's own log output included:
 
 ```json
 {
   "Result": "Success",
   "Code": "ToolResult",
   "Data": {
-    "runResult": "{\"output\":\"...\",\"hasErrors\":false,\"errorMessage\":null,\"debugState\":\"Completed\",\"debugDetails\":null}"
+    "output": "Session ended",
+    "errors": [],
+    "logEntries": [ { "source": "Debug", "level": "Information", "message": "5 + 5 = 10" } ]
   }
 }
 ```
 
-Inside `runResult`:
+| Field | Type | Meaning |
+|-------|------|---------|
+| `output` | `string` or `array` | Terminal status when the run ended: `"Session ended"` on clean completion, `"Execution aborted. See attached errors for more information"` on failure, `"Failed to open the file <path>"` when the entry point does not exist. A JSON array of `{category, type, name, value}` locals when a debug session is suspended on an exception. **Never the workflow's output arguments.** |
+| `errors` | `array` | `{errorName, errorMessage, lineNumber}` per entry. Populated for an unhandled exception (`errorName` is the exception type) and for a compile failure (`errorName: "ERROR"`). **Empty does not mean success** — a missing entry point and a suspended session both report `[]`. |
+| `logEntries` | `array` | `{source, level, message}` per entry, `source` one of `Compile` / `Debug`. **The workflow's `Log Message` output lands here** — this is where a logged value is read back to confirm runtime behavior. Compile failures also land here at `Error` level with the root cause (e.g. `Cannot set unknown member ...`), which `errors` reports only as `This activity is missing or could not be loaded.` |
+
+**Output arguments are not in the envelope.** A workflow that assigns its `out_*` arguments still returns `output: "Session ended"`; the values appear nowhere in `Data`. Read them from the workflow's own `Log Message` output in `logEntries`, or from artifacts the workflow wrote.
+
+Older builds nest the same information as a JSON-encoded string on `Data.runResult`. When that key is present, parse it and read these fields instead:
 
 | Field | Type | Meaning |
 |-------|------|---------|
@@ -201,9 +213,13 @@ Inside `runResult`:
 | `DebugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — current activity + locals when `Paused`; exception type/message/activity + locals when `Suspended`; `null` otherwise. |
 | `Profiling` | `object?` | Present only when `--profiling` was passed on a start command and collection succeeded. Single field `OutputDirectory` — absolute path to the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). `null` / omitted otherwise. See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
-Workflow log output (`Log Message` activity, system traces) is **streamed in real time** during execution on a separate channel. It is NOT embedded in `runResult`.
+Workflow log output (`Log Message` activity, system traces) arrives on `Data.logEntries` when that key is present; when the response nests `runResult` instead, the logs are streamed live on a separate channel and are not embedded in `runResult`. Either way the logs are diagnostic data, never the verdict.
 
-> **For completed runs, `Result` (outer) — equivalently `HasErrors` (inner) — is the only success/failure signal.** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled runtime exceptions. **Do NOT use streamed log entries' `Level` as a failure signal** — workflow `Log Message` activities emit at any level, and successful runs commonly include `Error` / `Warning` entries from the workflow's own logging. Treating log levels as a verdict flips green runs to "failed". In an active debug session, check `DebugState` first: `Suspended` means an exception is waiting for your decision even though `HasErrors` is still `false`.
+> **The outer `Result` reports the CLI invocation, NOT the workflow.** It is `ValidationError` for an unknown flag and `Failure` for an unopenable project directory, but `Success` as soon as the runtime was invoked — including when the workflow threw an unhandled exception, failed to compile, or the entry point did not exist. **Never treat `Result: "Success"` as a passing run.**
+>
+> **A completed run passed only when `Data.errors` is empty AND `Data.output` is `"Session ended"`.** Both conditions are required: `errors` is populated for exceptions and compile failures, while a missing entry point and a suspended debug session leave it empty and report the failure in `output` instead.
+>
+> **Do NOT use log entries' `level` as a failure signal** — workflow `Log Message` activities emit at any level, and a clean run that logs at `Error` still returns `errors: []` with `output: "Session ended"`. Treating log levels as a verdict flips green runs to "failed". Conversely, when a run has failed, `logEntries` at `Error` level carry the most specific diagnosis — read them for the root cause after the verdict is already established.
 
 Examples:
 
@@ -361,7 +377,8 @@ uip rpa debug start --file-path "MyWorkflow.xaml" --output json
 uip rpa debug continue --output json
 
 # 4. Check the response for:
-#    - Outer Result is "Success" (HasErrors: false) — the canonical pass/fail signal
+#    - Data.errors empty AND Data.output == "Session ended" (nested shape: HasErrors false) —
+#      the pass/fail signal; the outer Result stays "Success" even through failures
 #    - Output (workflow's serialized output args) carries the expected values
 #    - Streamed log entries during the run are diagnostic context, NOT a failure signal —
 #      Error/Warning levels there are workflow-emitted observability, not CLI failures
@@ -388,7 +405,7 @@ uip rpa debug start --file-path "ProcessOrder.xaml" \
 
 ## Profiling Workflow Performance
 
-Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `runResult.Profiling.OutputDirectory`.
+Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `Profiling.OutputDirectory` — flat on `Data`, or inside the parsed string when the response nests `runResult` (§ Output Format).
 
 ### When to enable profiling
 
@@ -421,7 +438,7 @@ Only start verbs collect profiling — `--profiling` is silently ignored on step
 uip rpa run --file-path "ProcessOrders.xaml" --profiling --output json
 ```
 
-Parse `Data.runResult` then inspect:
+Read `Data.Profiling.OutputDirectory` — flat on `Data` when the response is flat, inside the parsed string when the response nests `runResult` (§ Output Format):
 
 ```jsonc
 {
@@ -455,12 +472,12 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ## Reading Debug Output Effectively
 
-Read `runResult` fields in this order. **Verdict comes from the outer `Result` envelope (equivalently inner `HasErrors`) — never from log-entry levels.**
+Read the response in this order, resolving each field by key presence per § Output Format. **Verdict comes from `Data.errors` and `Data.output` together (nested shape: `HasErrors`) — never from the outer `Result`, and never from log-entry levels.**
 
-1. **Outer `Result` / inner `HasErrors`** — the only success/failure signal. Compile failures, validation failures, and unhandled runtime exceptions all flip these. If `Result: "Success"` (`HasErrors: false`), the run succeeded — even if log entries streamed during the run contain `Error` / `Warning` levels.
+1. **`Data.errors` and `Data.output` together** — the success/failure signal. Passed only when `errors` is empty AND `output` is `"Session ended"`. The outer `Result` qualifies the CLI call, not the run, and stays `Success` through exceptions, compile failures, and a missing entry point.
 2. **`ErrorMessage` (when `HasErrors: true`)** — formatted chain with the source activity, exception type, message, and stack trace. This is the canonical failure diagnostic.
-3. **`Output` (when `HasErrors: false`)** — workflow's serialized output arguments JSON for `run` / `debug start` completions. Empty string `""` for debug-command responses (step / continue / cancel) and on failure.
-4. **Streamed log entries** — diagnostic context emitted live during execution on a separate channel. Use them to read variable values logged by the workflow, trace ordering, or correlate context with an `ErrorMessage` that already failed the run. **Do NOT use log-entry `Level` as a failure signal.**
+3. **`Output` (when `HasErrors: false`)** — workflow's serialized output arguments JSON for `run` / `debug start` completions. Empty string `""` for debug-command responses (step / continue / cancel) and on failure. The flat shape's `output` is a status string instead, so read output arguments from the workflow's own logging or its written artifacts when `runResult` is absent.
+4. **Log entries** — diagnostic context, on `Data.logEntries` when present, otherwise streamed live on a separate channel. Use them to read variable values the workflow logged, trace ordering, or correlate context with an `ErrorMessage` that already failed the run. **Do NOT use log-entry `Level` as a failure signal.**
 
 ### Identifying the Root Cause from Debug Output
 

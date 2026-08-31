@@ -36,7 +36,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 120
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:

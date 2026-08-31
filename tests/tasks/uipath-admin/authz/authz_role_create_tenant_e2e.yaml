@@ -1,0 +1,43 @@
+task_id: skill-admin-authz-role-create-tenant-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — create one custom role at
+  Tenant scope. Graded by retrieving the role back from the live organization and
+  checking the shape the service stored: its Tenant binding, the granted permission
+  and the description. The scope is read off the stored record, never off the
+  flag the agent typed.
+
+  pre_run clears any leftover marker role so the check cannot pass on stale
+  state, and post_run deletes whatever the run created.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, authz, role, scope:tenant]
+
+pre_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-tenant-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-create-tenant-role" AUTHZ_ROLE_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_ROLE_SCOPE="Tenant" AUTHZ_ROLE_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-create-tenant-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Create a role that applies only to the tenant I am currently logged into — not
+  the whole organization and not other tenants. It should grant view-only access
+  to the Administration page and nothing else. `seed.json` holds the name to use
+  in its `role.name` field — several agents work on this organization at the same
+  time, so take the name from there. Describe the role exactly as:
+  Admin page readers on this tenant
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The role exists on the organization with the Tenant shape, the granted permission and the description"
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Tenant" AUTHZ_EXPECT_PERMISSION="CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW" AUTHZ_EXPECT_DESCRIPTION="Admin page readers on this tenant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_created.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

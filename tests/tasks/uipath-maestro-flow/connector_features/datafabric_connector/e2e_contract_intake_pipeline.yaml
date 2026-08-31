@@ -1,0 +1,72 @@
+task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
+description: >
+  E2E test for the UiPath Data Fabric connector in Maestro Flow — the
+  loop-driven bulk-CRUD lifecycle that other DF tests don't cover. Single-node
+  CRUD is exercised by smoke_update; FilterBuilder queries by integration_query;
+  query→update wiring by contractregistry_crud_filters. Here we verify a Flow
+  can bulk-create N records with a ForEach loop, query them, update one via
+  the query output, and bulk-delete via a second ForEach. Static-validate
+  only; runtime `flow debug` skipped to avoid live tenant side effects.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
+  (fields: contractTitle STRING, status STRING, priority INTEGER,
+  dueDate DATE, value DECIMAL, isUrgent BOOLEAN) that exercises the
+  bulk-CRUD lifecycle with ForEach loops:
+
+  1. A ForEach loop that reads a list of contracts from the start input
+     and calls Create Entity Record ONCE inside the loop, binding
+     contractTitle / status / priority from the loop item. Do NOT unroll
+     into multiple Create nodes.
+
+  2. A single Query Entity Records on ContractRegistry, sorted by
+     priority descending.
+
+  3. An Update Entity Record on the top result from the query — bind
+     recordId to the first element of the query output and set status
+     to "In Review". Do NOT hard-code the Id.
+
+  4. A second ForEach loop over the query output that calls Delete
+     Entity Record ONCE inside the loop, binding recordId to the loop
+     item's Id.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow uses ForEach loops for bulk create + bulk delete on ContractRegistry, with a sort-query and a targeted update wired to the query output"
+    command: "python3 $TASK_DIR/check_e2e_contract_intake_pipeline.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches manifest"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

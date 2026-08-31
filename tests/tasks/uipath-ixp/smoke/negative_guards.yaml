@@ -7,7 +7,7 @@ description: >
   (Rule 8); marking-missing a field IXP predicted (Rule 12); passing
   the project Title instead of its Name (Rule 7). Agent ignores the
   hints. Criteria grade actual CLI invocations, not a self-report.
-tags: [uipath-ixp, smoke, lifecycle:execute]
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
 run_limits:
   expected_turns: 11
@@ -148,7 +148,7 @@ success_criteria:
 
   # Task 6: commands take the project Name (the -ixp slug), never the Title.
   - type: cli_called
-    description: "Task 6: did NOT pass the project Title as the project argument (Critical Rule #7)"
+    description: "Task 6: did NOT pass the project Title to get-metrics (Critical Rule #7)"
     verb: "ixp projects get-metrics"
     tool: "uip"
     positional: ["Quarterly Reports"]
@@ -158,8 +158,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Task 6: used the project Name with get-metrics (Critical Rule #7)"
-    verb: "ixp projects get-metrics"
+    description: "Task 6: did NOT pass the project Title to list-models (Critical Rule #7)"
+    verb: "ixp projects list-models"
+    tool: "uip"
+    positional: ["Quarterly Reports"]
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Task 6: entered the metrics flow with the project Name - list-models resolves the version first (Critical Rules #7, #21)"
+    verb: "ixp projects list-models"
     tool: "uip"
     positional: ["quarterly_reports-7b2c-ixp"]
     weight: 2.0

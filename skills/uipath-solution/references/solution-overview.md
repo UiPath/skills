@@ -62,10 +62,10 @@ MySolution/
 │   └── source/dist/                      <- Build output (bundlePath: "source/dist").
 ├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
 │   └── solution_folder/
-│       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `project remove`.
+│       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `projects remove`.
 │       ├── process/{process,flow}/<name>.json   <- Auto-created on add. Auto-cleaned on remove.
 │       └── app/{Coded,CodedAction}/<name>.json  <- AppV2 apps only. `kind: "app"`, `apiVersion: apps.uipath.com/v1`.
-└── userProfile/<user-uuid>/              <- Appears after first `project remove`.
+└── userProfile/<user-uuid>/              <- Appears after first `projects remove`.
 ```
 
 > `.uipx` and `resources/solution_folder/` must always agree on the set of projects. Diffing them is the fastest way to detect a corrupted state — see [develop-solution.md - Field-tested gotchas](develop-solution.md#field-tested-gotchas).
@@ -110,12 +110,14 @@ uip solution
   ├── restore <solution>                  Resolve NuGet deps in place before pack (needs login; no package produced)
   ├── pack <solution> <output>            Pack into a deployable .zip package
   ├── publish <package>                   Upload packed solution to UiPath
-  ├── project
+  ├── projects                              (`project` still works as a hidden, deprecated alias)
   │     ├── add <project-path> [solutionFile]   Register an existing subfolder in .uipx
   │     ├── remove <project-path> [solutionFile] Unregister a project from .uipx
-  │     ├── import --source <path>              Copy external project into solution and register
-  │     └── list                                List projects registered in the local .uipx (no backend call)
-  ├── resource
+  │     ├── import <path>                       Copy external project into solution and register
+  │     ├── list                                List projects registered in the local .uipx (no backend call)
+  │     ├── publish                             Publish a cloud solution project as a package (--project-name, --package-name, --package-version)
+  │     └── resync [project-name]               Sync or reset a cloud solution project (--sync-option Sync|Reset)
+  ├── resources
   │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
   │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
   │     ├── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
@@ -127,17 +129,24 @@ uip solution
   │     ├── status <id>                   Check deployment status
   │     ├── list                          List deployments
   │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
+  │     ├── upgrade <deployment-key>      Move a deployment to a newer package version in place, keeping its existing configuration
   │     ├── uninstall <name>              Uninstall a deployment
   │     └── config
   │           ├── get <package-name>      Fetch default deploy config
   │           ├── set <file> ...          Set a resource property in config
   │           ├── link <file> <resource>  Link to an existing Orchestrator resource
   │           └── unlink <file> <resource> Remove a resource link
+  ├── feeds
+  │     └── list                          List the feeds you can publish or deploy to (tenant, your Personal Workspace, folder feeds)
   └── packages
         ├── list                          List published solution packages
         ├── download <name> [version]      Download a published solution package .zip
         └── delete <name> <version>       Delete a specific package version
 ```
+
+`publish`, `deploy run`, `deploy list`, `packages list` and `packages delete` all take
+`--feed <name-or-key>` or `--personal-workspace` to target a feed other than the
+tenant's. See [Pack and Deploy — Publishing to a non-tenant feed](pack-and-deploy.md#publishing-to-a-non-tenant-feed).
 
 ---
 

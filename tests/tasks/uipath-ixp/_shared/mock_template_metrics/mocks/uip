@@ -1,0 +1,197 @@
+#!/bin/sh
+# Metrics-serving `uip` mock for the uipath-ixp metrics smokes. Overlays the
+# base mock_template (list it SECOND in template_sources so this file wins).
+#
+# ONE overlay, THREE fixture projects - the mock dispatches on the project
+# name found in the arguments, so every metrics smoke shares this folder
+# instead of growing a near-identical overlay per scenario:
+#
+#   my_invoices-f1afa9ef-ixp   diagnosis payload  (metrics_full_signal_diagnosis)
+#   receipts_qa-7c2e11a4-ixp   two versions 40/41 (metrics_regression_noise_floor,
+#                                                  metrics_group_rollback)
+#   receipts_lite-4a9f30d2-ixp Documents variance (metrics_annotations_shortfall)
+#
+# Fixture tables, confusion matrices, and what each one discriminates are in
+# README.md. Every row derives from an explicit confusion matrix; ErrorRate is
+# an integer error count over Annotations; ProjectScore is the unweighted mean
+# of per-field F1.
+#
+# Logging matches the base mock exactly - same `uip ` prefix, same newline
+# folding - so anchored `^uip\s+ixp ...` criteria keep matching. Anything not
+# handled for a known project, and any unknown project, fails offline like the
+# base mock.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+# Dispatch on the project name present in the arguments.
+PROJ=""
+for a in "$@"; do
+    case "$a" in
+    *-ixp) PROJ="$a"; break ;;
+    esac
+done
+
+case "$PROJ" in
+"my_invoices-f1afa9ef-ixp")
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","Description":"Supplier invoices","CreatedTime":"2026-06-11T08:42:19Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":12,"ModelName":"gemini_ixp","Pinned":true,"TrainedTime":"2026-07-24T09:12:13.533725+00:00","Description":""}],"Tags":[{"Name":"live","Version":12,"UpdatedAt":"2026-07-24T09:14:08.456568+00:00"}],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":40,"ProjectScore":0.772,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.751,"Precision":0.717,"Recall":0.789,"ErrorRate":0.394,"Documents":40}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000001","F1":0.6,"Precision":0.5,"Recall":0.75,"ErrorRate":0.75,"Documents":40,"Annotations":40,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000002","F1":0.6,"Precision":0.75,"Recall":0.5,"ErrorRate":0.5,"Documents":24,"Annotations":24,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000003","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":40,"Annotations":40,"Quality":"good"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000004","F1":0.889,"Precision":1,"Recall":0.8,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}],"label_groups":[{"name":"Invoice","label_defs":[{"name":"Invoice Header","instructions":"Header fields printed at the top of the invoice.","moon_form":[{"field_id":"aaaa000000000001","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The invoice identifier.","rule_set":null},{"field_id":"aaaa000000000002","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Vendor Address","instructions":"The vendor's postal address.","rule_set":null},{"field_id":"aaaa000000000003","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Bill-To Name","instructions":"The party being billed.","rule_set":null},{"field_id":"aaaa000000000004","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Freight Charge","instructions":"The freight or shipping charge.","rule_set":null}]}]}]}}}
+EOF
+exit 0
+;;
+esac
+;;
+"receipts_qa-7c2e11a4-ixp")
+METRICS_V40='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":40,"ValidatedDocuments":5,"ProjectScore":0.925,"ProjectScoreQuality":"excellent","FieldGroups":[{"FieldGroup":"Receipt","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":5},{"FieldGroup":"Receipt > Line Items","F1":0.85,"Precision":0.85,"Recall":0.85,"ErrorRate":0.15,"Documents":5}],"Fields":[{"FieldGroup":"Receipt","FieldId":"bbbb000000000001","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":5,"Annotations":5,"Quality":"good"},{"FieldGroup":"Receipt > Line Items","FieldId":"bbbb000000000002","F1":0.8,"Precision":0.8,"Recall":0.8,"ErrorRate":0.2,"Documents":5,"Annotations":40,"Quality":"good"},{"FieldGroup":"Receipt > Line Items","FieldId":"bbbb000000000003","F1":0.9,"Precision":0.9,"Recall":0.9,"ErrorRate":0.1,"Documents":5,"Annotations":40,"Quality":"good"},{"FieldGroup":"Receipt","FieldId":"bbbb000000000004","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":5,"Annotations":5,"Quality":"good"}]}}'
+
+METRICS_V41='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":41,"ValidatedDocuments":5,"ProjectScore":0.757,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Receipt","F1":0.889,"Precision":1,"Recall":0.8,"ErrorRate":0.2,"Documents":5},{"FieldGroup":"Receipt > Line Items","F1":0.625,"Precision":0.625,"Recall":0.625,"ErrorRate":0.375,"Documents":5}],"Fields":[{"FieldGroup":"Receipt","FieldId":"bbbb000000000001","F1":0.889,"Precision":1,"Recall":0.8,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"},{"FieldGroup":"Receipt > Line Items","FieldId":"bbbb000000000002","F1":0.6,"Precision":0.6,"Recall":0.6,"ErrorRate":0.4,"Documents":5,"Annotations":40,"Quality":"average"},{"FieldGroup":"Receipt > Line Items","FieldId":"bbbb000000000003","F1":0.65,"Precision":0.65,"Recall":0.65,"ErrorRate":0.35,"Documents":5,"Annotations":40,"Quality":"average"},{"FieldGroup":"Receipt","FieldId":"bbbb000000000004","F1":0.889,"Precision":1,"Recall":0.8,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"7c2e11a4-3f5b-4a81-9c02-1d4e8b6a2f77","Name":"receipts_qa-7c2e11a4-ixp","Title":"Receipts_QA","CreatedAt":"2026-07-02T09:14:00Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"receipts_qa-7c2e11a4-ixp","Title":"Receipts_QA","Description":"Retail receipts","CreatedTime":"2026-07-02T09:14:00Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":41,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-24T11:05:02.114000+00:00","Description":""},{"Version":40,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-24T09:41:17.882000+00:00","Description":""}],"Tags":[],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"name":"Exact Text"},{"name":"Monetary Quantity"}],"label_groups":[{"name":"Receipt","repeatable":false,"field":[{"field_id":"bbbb000000000001","name":"Merchant Name"},{"field_id":"bbbb000000000004","name":"Receipt Date"}]},{"name":"Receipt > Line Items","repeatable":true,"field":[{"field_id":"bbbb000000000002","name":"Line Item Unit Price"},{"field_id":"bbbb000000000003","name":"Line Item Description"}]}]}}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    40)
+        printf '%s\n' "$METRICS_V40"
+        ;;
+    ""|latest|41)
+        # No selector, or an explicit latest — the iteration's result.
+        printf '%s\n' "$METRICS_V41"
+        ;;
+    *)
+        printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+;;
+"receipts_lite-4a9f30d2-ixp")
+METRICS='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":5,"ProjectScore":0.642,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Receipt","F1":0.65,"Precision":0.65,"Recall":0.65,"ErrorRate":0.35,"Documents":5}],"Fields":[{"FieldGroup":"Receipt","FieldId":"cccc000000000001","F1":0.4,"Precision":0.4,"Recall":0.4,"ErrorRate":0.6,"Documents":5,"Annotations":5,"Quality":"average"},{"FieldGroup":"Receipt","FieldId":"cccc000000000002","F1":0.667,"Precision":0.667,"Recall":0.667,"ErrorRate":0.333,"Documents":2,"Annotations":6,"Quality":"average"},{"FieldGroup":"Receipt","FieldId":"cccc000000000003","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":5,"Annotations":5,"Quality":"good"},{"FieldGroup":"Receipt","FieldId":"cccc000000000004","F1":0.5,"Precision":0.5,"Recall":0.5,"ErrorRate":0.5,"Documents":4,"Annotations":4,"Quality":"average"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"4a9f30d2-6b18-4c93-8e51-2f7a90c4d611","Name":"receipts_lite-4a9f30d2-ixp","Title":"Receipts_Lite","CreatedAt":"2026-08-01T07:22:00Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"receipts_lite-4a9f30d2-ixp","Title":"Receipts_Lite","Description":"Small receipt set","CreatedTime":"2026-08-01T07:22:00Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":12,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-22T14:03:41.007000+00:00","Description":""}],"Tags":[],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"name":"Exact Text"},{"name":"Date"}],"label_groups":[{"name":"Receipt","repeatable":false,"field":[{"field_id":"cccc000000000001","name":"Merchant Address"},{"field_id":"cccc000000000002","name":"Payment Method"},{"field_id":"cccc000000000003","name":"Total Amount"},{"field_id":"cccc000000000004","name":"Receipt Date"}]}]}}}
+EOF
+exit 0
+;;
+"ixp documents list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpDocumentsList","Data":{"Documents":[{"Id":"d01"},{"Id":"d02"},{"Id":"d03"},{"Id":"d04"},{"Id":"d05"}],"Total":5,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    ""|latest|12)
+        printf '%s\n' "$METRICS"
+        ;;
+    *)
+        printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+;;
+esac
+
+# Everything else fails like the base mock: offline, no network call.
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

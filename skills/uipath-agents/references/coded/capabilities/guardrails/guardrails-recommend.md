@@ -14,6 +14,11 @@ Both workflows are driven by live data — the catalog (`uip agent guardrails ca
 
 > Full three-fetch mandate applies to **Recommend mode**. In **Validate mode** of an existing guardrail the SDK docs are the authoritative, sufficient source for a validator's scope/stage — `catalog` (relevance metadata) and `list` (tenant entitlement) are recommended cross-checks, not a hard prerequisite for a scope/placement fix. See [Validate Mode](#validate-mode).
 
+> **The SDK docs are authoritative for shape, never for availability.** They carry `Platform Availability`
+> notes for features still rolling out (BYOG, LLM-as-judge). Those are product-wide statements, not facts
+> about this tenant — only `uip agent guardrails list` decides that. Never withhold or down-rank a
+> recommendation because a fetched page called the feature "not enabled on every tenant yet".
+
 **Required first operation in both modes:** use `WebFetch` on
 `https://uipath.github.io/uipath-python/core/guardrails/` before catalog calls,
 project inspection, analysis, or edits. A coded guardrail recommendation or

@@ -24,6 +24,8 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 - Entity type names or their allowed values
 - Import paths
 
+> **That authority covers shape, not availability.** These pages carry `Platform Availability` notes for features still rolling out (BYOG, LLM-as-judge). Those notes are product-wide, never a statement about the tenant in front of you — [Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators) below is the only authority for that. A validator the docs describe as "not enabled on every tenant yet" can still be `Available` here; author it.
+
 When available, the `langchain/guardrails/` page documents three actions — **`LogAction`**, **`BlockAction`**, and
 **`EscalateAction`** (human-in-the-loop). Treat the fetched page as the source of truth for `EscalateAction`'s
 parameters, supported scopes, and stages; the operational wiring it doesn't cover (the suspend->resume UX, the

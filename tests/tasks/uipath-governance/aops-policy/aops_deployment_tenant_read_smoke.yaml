@@ -1,0 +1,60 @@
+task_id: skill-gov-aops-policy-deployment-tenant-read-smoke
+description: >
+  Smoke test (outcome-graded): the agent audits governance deployment at tenant
+  scope — which tenants carry assignments, and the detail for the tenant it is
+  logged into. Graded against the tenant identity resolved live inside the check,
+  so the saved detail has to be this tenant's record and not another row from the
+  listing. Read-only: nothing is deployed or removed.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployment]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  A tenant admin is auditing AOps governance deployment state at tenant scope.
+  Retrieve and save, verbatim:
+
+  - every tenant that carries governance assignments -> ./tenants.json
+  - the deployment detail for the tenant I am logged into -> ./tenant.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "tenant.json is this tenant's own deployment record, corroborated against a live login lookup"
+    command: |
+      python3 -c "
+      import json, subprocess
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      out = subprocess.run(['uip', 'login', 'status', '--output', 'json'], capture_output=True, text=True, timeout=60)
+      me = json.loads(out.stdout).get('Data') or {}
+      tid = me.get('TenantId')
+      assert tid, 'could not resolve the login tenant id'
+      rows = [x for x in dicts(load('tenants.json')) if x.get('Identifier') and x.get('Name') and 'Status' in x]
+      assert rows, 'tenants.json holds no tenant deployment rows'
+      assert any(r['Identifier'] == tid for r in rows), 'the login tenant is not in the tenant listing'
+      detail = next((x for x in dicts(load('tenant.json')) if x.get('Identifier') == tid), None)
+      assert detail, f'tenant.json does not contain the record for tenant {tid}'
+      assert detail.get('Name'), 'the tenant record has no Name'
+      assert 'TenantPolicies' in detail, 'the tenant record carries no TenantPolicies block'
+      assert isinstance(detail.get('TenantPolicies'), list), 'TenantPolicies is not a list'
+      tenant_name = detail.get('Name')
+      print(f'OK: {len(rows)} tenants listed; detail read back for the login tenant {tenant_name}')
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

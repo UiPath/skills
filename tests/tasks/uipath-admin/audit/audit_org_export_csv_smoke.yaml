@@ -1,0 +1,40 @@
+task_id: skill-admin-audit-org-export-csv-smoke
+description: >
+  Smoke test (outcome-graded): agent exports a single day of ORG-level audit
+  events as ONE spreadsheet-ready CSV into the folder the user named. Graded on
+  the artifact — a single CLI-generated `.csv` with the LTS header, rows aligned
+  to it, and ORG-scope records — not on the command string.
+
+  Two things the old regexes could not check are graded here: that what landed on
+  disk is really the single CSV the user asked to open in Excel (not a folder of
+  per-day JSON), and that the records came from the org surface rather than the
+  tenant one — org-level events export with an empty `TenantId`. The scope
+  assertion is skipped and logged when the window exports no rows, since there is
+  then no evidence either way.
+
+  A header-only CSV passes: org-level activity is sparse and the long-term store
+  lags the live `events` endpoint by up to ~48h.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  I need all of yesterday's organization-level audit events (things like
+  memberships, license changes, and tenant lifecycle) as a single CSV I
+  can open in Excel for a compliance review. Save it in a folder called
+  audit-org-yesterday.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
+success_criteria:
+  - type: run_command
+    description: "./audit-org-yesterday holds exactly one CLI-generated .csv with the LTS header, aligned rows, and ORG-scope records"
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=csv AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

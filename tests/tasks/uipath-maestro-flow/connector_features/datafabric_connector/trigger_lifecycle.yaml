@@ -1,0 +1,58 @@
+task_id: skill-flow-datafabric-trigger-lifecycle
+description: >
+  Integration coverage for Data Fabric Record Created and Record Updated
+  triggers, including trigger-side date filters, downstream Query/Get/Delete
+  wiring, and preservation of entity resources on every activity.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:trigger, feature:records, feature:entities, feature:activities, uipath-uipath-dataservice]
+
+run_limits:
+  max_turns: 120
+  expected_turns: 80
+  turn_timeout: 2400
+  task_timeout: 3600
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/contract_registry.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Create a new solution named DataFabricTriggerRegression containing two Flow
+  projects using the configured UiPath Data Fabric connection.
+
+  Flow 1: ContractRegistryRecordCreated
+  - Use a Data Fabric Record Created trigger on the ContractRegistry entity.
+  - Add a trigger filter where dueDate is less than 2026-08-04.
+  - Add Query Entity Records immediately after the trigger, also on
+    ContractRegistry, with the same dueDate < 2026-08-04 filter and a maximum
+    of 100 records.
+
+  Flow 2: FileUploadVerifyRecordUpdatedDelete
+  - Use a Data Fabric Record Updated trigger on the
+    FileUploadVerify_20260618 entity.
+  - Get the entity record by ID using the Id from the Record Updated trigger
+    output.
+  - Delete the same record using that Id.
+
+  For both flows, keep the configured connection and correct entity on every
+  trigger and Data Fabric activity.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flows end-to-end in a
+  single pass.
+  Validate every final flow file.
+
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'set -e; flows=$(find . -maxdepth 6 -name "*.flow"); [ -n "$flows" ] || exit 1; for f in $flows; do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)"; done'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Created and updated trigger flows contain filters, downstream activities, and non-null entity bindings"
+    command: "python3 $TASK_DIR/check_trigger_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

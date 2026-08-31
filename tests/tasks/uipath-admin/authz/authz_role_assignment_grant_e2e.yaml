@@ -1,0 +1,46 @@
+task_id: skill-admin-role-assignment-grant-e2e
+description: >
+  End-to-end test (outcome-graded): agent resolves its own identity, resolves a
+  role by name, and grants it at organization scope. Graded by reading the grant
+  back from the live tenant at that scope path, not by matching the create
+  command.
+
+  The role is a marker custom role seeded in pre_run, so the check has zero blast
+  radius, cannot pass on stale tenant state, and does not collide with
+  authz_assignment_lifecycle_org_e2e (which grants a built-in role and also
+  covers revoke).
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, authz, role-assignment, grant]
+
+pre_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-grantsmoke-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Access policy reader for the grant scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  Give my own account — the identity this CLI is logged in as — the existing
+  organization-level role named in `seed.json` (the `role.name` field).
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The role is assigned to the login identity at the organization scope on the tenant"
+    command: 'AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_assignment_created.py''))"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT use the legacy --principal-id / --principal-type flags (replaced by --identity-id / --identity-type)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create[\s\S]*--principal-(?:id|type)\b'
+    weight: 2.0

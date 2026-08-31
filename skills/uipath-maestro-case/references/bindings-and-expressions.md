@@ -74,13 +74,23 @@ SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == 
 
 ### Null-safe task-output references
 
-In a `conditionExpression` or SLA `expression`, null-guard every task-output dereference — guard the object, not the property:
+A task output is `null` until its task runs — and stays null when its task is adhoc, optional, or skipped, so a task input can hit it as easily as a case-start rule. Only the `=js:` form dereferences, so only it needs a guard.
+
+**`=vars.<id>` — lookup.** A single identifier ([§ Form by sink](#form-by-sink-the-table)): nothing to dereference, no guard. (A dotted `=vars.X.Y` is a different sink — see [io-binding/planning.md § `=` operator](plugins/variables/io-binding/planning.md).)
+
+**`=js:<expr>` — JS eval (Jint, ES2020).** Optional-chain every hop. Unguarded, it throws `Cannot read property 'Y' of null` (or `... of undefined`):
 
 ```
-=js:JSON.parse((vars.response4 || {}).RequestBody || '{}').outcome === 'Signed'
+=js:vars.X.Y                       ✗  throws while X is null
+=js:vars.X?.Y                      ✓
+
+=js:vars.X.Y.Z                     ✗  throws while X or X.Y is null
+=js:vars.X?.Y?.Z                   ✓
+
+=js:vars.$xref('Stage','Task','response')?.request_body   ✓  same for a marker
 ```
 
-`(vars.X || {}).Y` — never `vars.X.Y || <default>`. Whole-value `=vars.<id>` needs no guard.
+`?.` short-circuits to `undefined`, so `vars.X?.Y || <default>` is the way to supply a fallback.
 
 ### Conservative rule for `=metadata.X`
 
@@ -155,7 +165,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 - Three args = the same name-triple as whole-value `<-`: source stage `data.label`, source task `displayName`, source output `name`.
 - Single quotes ONLY — double quotes break the enclosing JSON string. Names containing a literal `'` are unsupported (re-author the name).
 - Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<outputReferenceId>` (NOT `=vars.` — it is already inside `=js:`).
-- In a `conditionExpression`, null-guard any dotted access off the resolved reference ([§ Null-safe task-output references](#null-safe-task-output-references)).
+- Null-guard any dotted access off the resolved reference ([§ Null-safe task-output references](#null-safe-task-output-references)).
 
 **Example** — composite input payload, no middle variables:
 
@@ -216,7 +226,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 - **Nesting expressions inside literals.** `"$metadata.amount"` or `"{{ amount }}"` do not work. Use `=metadata.amount` directly as the full value.
 - **Plain `=vars.X` inside connector body JSON.** The runtime does NOT evaluate plain prefix refs in connector body sinks — they arrive at the API as literal strings. Wrap as `=js:(vars.X)`. See [§ Canonical form per sink](#canonical-form-per-sink).
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
-- **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user.email`.
+- **Trailing default instead of a guard.** `vars.X.Y || '{}'` guards nothing — the throw lands on `.Y`, before `||` is reached. Guard the object: `vars.X?.Y`.
+- **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user?.email`.
 - **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
 - **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
 
