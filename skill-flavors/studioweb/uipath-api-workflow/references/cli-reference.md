@@ -92,7 +92,7 @@ Supported bridge flags:
 | `--location-name <value>` | Target location name accepted by the Studio Web bridge. |
 | `--personal-workspace` | Publish to the personal workspace target. |
 
-The active Studio Web solution is implicit. A successful command result means Unified Build accepted the request and background packaging began. Check Studio Web's Publish history for the final success or failure state.
+The active Studio Web solution is implicit. A successful command result names the state reached: package built and uploaded, packaging on the server, or packaging still running in the tab; a nonzero exit means the publish failed. Orchestrator deployment is never confirmed here — confirm the published version with `uip or packages versions <packageName> --folder-path <path>`.
 <!--skill-flavor:local-solution-lifecycle:end-->
 
 <!--skill-flavor:command-existence-guidance:start-->

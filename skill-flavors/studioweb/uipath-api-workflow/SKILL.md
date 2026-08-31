@@ -13,7 +13,7 @@ Studio Web provides a browser sandbox, a virtual `/solution` filesystem, an embe
 - **Activity discovery:** use `ExecuteBashCommand` for `uip api-workflow registry resolve` / `stub` and read-only Integration Service discovery such as `uip is connectors list`, `activities list`, `connections list` / `ping`, and `resources list` / `describe`. Authentication comes from the active Studio Web session. Keep `--output json` whenever output is parsed.
 - **Validation:** from the target project root, run `uip api-workflow validate Workflow.json --output json` until `Data.Status` is `Valid`.
 - **Execution:** state concrete external side effects and require an explicit user yes. Then inspect `/skills/synthetic/proxy-tools-Api/SKILL.md`, inspect the live `RunProject` schema, invoke exactly its declared fields for the target project, and use the actual tool result as evidence.
-- **Publication:** for an explicit approved publish request, run host-intercepted `uip solution publish` with supported flags. The active solution is implicit. Treat command success as request acceptance and verify final completion in Studio Web's Publish history.
+- **Publication:** for an explicit approved publish request, run host-intercepted `uip solution publish` with supported flags. The active solution is implicit. Read the terminal state from the command output; a client-side pack or upload failure exits nonzero. Orchestrator deployment is never confirmed by the command — confirm the published version with `uip or packages versions <packageName> --folder-path <path>`.
 
 Authentication and tenant context are inherited from the active Studio Web session. Report authentication or capability failures as host-level blockers and retry after the relevant host state changes.
 <!--skill-flavor:host-command-contract:end-->
@@ -67,7 +67,7 @@ From the target project directory, run `uip api-workflow validate Workflow.json 
 <!--skill-flavor:validation-run-lifecycle:end-->
 
 <!--skill-flavor:deployment-lifecycle:start-->
-For an explicit publish request, obtain publish approval first; then optionally inspect `uip solution publish --help` and invoke host-intercepted `uip solution publish` for the active solution with supported flags: `--description`, `--release-notes`, `--version`, `--location`, `--location-name`, and `--personal-workspace`. Command success means Unified Build accepted the request and started background packaging. Verify the terminal status in Studio Web's Publish history. Use schema-inspected host capabilities for other lifecycle and published-workflow operations.
+For an explicit publish request, obtain publish approval first; then optionally inspect `uip solution publish --help` and invoke host-intercepted `uip solution publish` for the active solution with supported flags: `--description`, `--release-notes`, `--version`, `--location`, `--location-name`, and `--personal-workspace`. Command output names the state reached: package built and uploaded, packaging on the server, or packaging still running in the tab after the command stopped waiting; a nonzero exit means the publish failed. No state confirms Orchestrator deployment — confirm the published version with `uip or packages versions <packageName> --folder-path <path>`. Studio Web's Publish history is a human-only check. Use schema-inspected host capabilities for other lifecycle and published-workflow operations.
 <!--skill-flavor:deployment-lifecycle:end-->
 
 <!--skill-flavor:runtime-troubleshooting:start-->
@@ -81,7 +81,7 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 2. Call `CreateProjects` for an API Workflow project using the schema-declared parameters and enum values.
 3. Verify the returned `/solution/<projectName>` directory, then edit `/solution/<projectName>/Workflow.json` and add user activities after `WorkflowStart` inside the root sequence.
 4. Set the embedded command working directory to `/solution/<projectName>`. Run `uip api-workflow validate Workflow.json --output json` until valid. State side effects and ask for explicit consent; on approval, inspect `/skills/synthetic/proxy-tools-Api/SKILL.md` and invoke the live `RunProject` operation with exactly its schema-declared fields.
-5. When publication is explicitly requested, obtain approval and run host-intercepted `uip solution publish` for the active solution with supported bridge flags. Treat acceptance as background work and verify completion in Studio Web's Publish history.
+5. When publication is explicitly requested, obtain approval and run host-intercepted `uip solution publish` for the active solution with supported bridge flags. Read the terminal state from the command output and confirm the published version with `uip or packages versions <packageName> --folder-path <path>`.
 <!--skill-flavor:quick-start-create:end-->
 
 <!--skill-flavor:project-creation-antipatterns:start-->

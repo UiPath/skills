@@ -136,7 +136,7 @@ Inspect the live Studio Web diagnostic or published-workflow tool schema and use
 <!--skill-flavor:local-packaging-errors:start-->
 ## Packaging Errors in Studio Web
 
-Host-intercepted publication starts Unified Build packaging in the background. A successful `uip solution publish` response means the request was accepted. Inspect Studio Web's Publish history for the final packaging or publication error. Use the host-generated project tree and `CreateProjects` result as project evidence.
+Host-intercepted publication starts Unified Build packaging in the background. The `uip solution publish` output names the state reached; a client-side pack or upload failure exits nonzero. Confirm the published version with `uip or packages versions <packageName> --folder-path <path>`. Use the host-generated project tree and `CreateProjects` result as project evidence.
 <!--skill-flavor:local-packaging-errors:end-->
 
 <!--skill-flavor:local-publish-errors:start-->
@@ -147,7 +147,7 @@ First distinguish bridge rejection from background failure:
 - `uip solution publish --help` confirms the supported bridge flags and destinations.
 - For an explicit approved publication, invoke `uip solution publish [--description <text>] [--release-notes <text>] [--version <version>] [--location <value>] [--location-name <value>] [--personal-workspace]` for the active solution.
 - Immediate command failure is a request, flag, or authorization problem; report the exact host result.
-- Immediate success means request accepted. Check Studio Web's Publish history for the terminal packaging and publication status and diagnose from that entry.
+- Immediate success names the state reached: built and uploaded, packaging on the server, or still packaging in the tab. Confirm the published version with `uip or packages versions <packageName> --folder-path <path>`; Studio Web's Publish history is a human-only check.
 <!--skill-flavor:local-publish-errors:end-->
 
 <!--skill-flavor:outbound-ip-symptom:start-->
