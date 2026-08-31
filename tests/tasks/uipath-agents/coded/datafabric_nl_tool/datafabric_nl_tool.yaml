@@ -6,7 +6,7 @@ description: >
   `DataFabricEntityItem` references, passes the same system prompt to
   both create_agent and create_datafabric_tool, and emits the
   `datafabricentityset` binding.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:datafabric-nl]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
 
 run_limits:
   expected_turns: 60
@@ -19,15 +19,19 @@ initial_prompt: |
   `a1b2c3d4-5678-90ab-cdef-1234567890ab`, folder key
   `379fec63-62b1-41ec-b2fc-718f8f7dda3c`).
 
-  Use `create_datafabric_tool` from `uipath_langchain.agent.tools` to
-  create an NL-to-SQL tool. The tool should be named `query_products`
-  with a description that explains it queries product data.
+  Create an NL-to-SQL tool named `query_products` with a description
+  that explains it queries product data. Use exactly this import:
+  `from uipath_langchain.agent.tools import create_datafabric_tool`
+  (do NOT use `create_datafabric_query_tool` or any other internal
+  function).
 
   Important: pass the same system prompt to both `create_agent` and
   `create_datafabric_tool` via the `base_system_prompt` parameter.
 
   Use `DataFabricEntityItem` from `uipath.platform.entities` for
-  entity references. Use `UiPathChat` for the LLM.
+  entity references. Use `UiPathChat` for the LLM — but never
+  instantiate `UiPathChat()` at module level; wrap it in a lazy
+  factory function and call that from inside graph construction.
 
   Take the agent through scaffold → init — make sure bindings are
   in sync before running init. Do NOT run, publish, upload, or

@@ -5,7 +5,7 @@ description: >
   SDK call for deterministic writes. Verifies the agent uses the right
   path for each concern, forwards system prompt consistently, and
   emits correct bindings.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:datafabric-combined]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
 
 run_limits:
   expected_turns: 65
@@ -19,21 +19,22 @@ initial_prompt: |
 
   The agent needs two tools:
 
-  1. An NL-to-SQL exploration tool using `create_datafabric_tool` from
-     `uipath_langchain.agent.tools` — named `query_orders`, for
-     answering freeform questions about order data. Pass the same
-     system prompt to both create_agent and create_datafabric_tool via
-     `base_system_prompt`.
+  1. An NL-to-SQL exploration tool named `query_orders` for answering
+     freeform questions about order data. Use exactly this import:
+     `from uipath_langchain.agent.tools import create_datafabric_tool`
+     (do NOT use `create_datafabric_query_tool` or any other internal
+     function). Pass the same system prompt to both `create_agent` and
+     `create_datafabric_tool` via `base_system_prompt`.
 
-  2. A deterministic write tool using the Python SDK (`sdk.entities`)
-     — a @tool-decorated async function named `close_order` that
-     accepts an order_id and calls `sdk.entities.update_record_async`
-     to set Status to "Closed". Instantiate `UiPath()` inside the
-     function body.
+  2. A deterministic SDK write tool named `close_order` that accepts
+     an `order_id` and marks the order's Status as "Closed" using
+     `sdk.entities`. Use the UiPath Python SDK — do NOT use
+     `create_datafabric_tool` for writes.
 
-  Use `UiPathChat` for the LLM. The system prompt should instruct the
-  agent to use query_orders for data questions and close_order when
-  asked to close a specific order.
+  Use `UiPathChat` for the LLM — never instantiate `UiPathChat()` at
+  module level; wrap it in a lazy factory function. The system prompt
+  should instruct the agent to use query_orders for data questions
+  and close_order when asked to close a specific order.
 
   Take the agent through scaffold → init — make sure bindings are
   in sync before running init. Do NOT run, publish, upload, or

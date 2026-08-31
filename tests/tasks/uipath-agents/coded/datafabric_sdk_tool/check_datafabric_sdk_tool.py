@@ -3,13 +3,13 @@
 
 Asserts:
   1. `main.py` (or `graph.py`) imports `UiPath` from `uipath.platform`.
-  2. The graph module references `sdk.entities` (or `.entities.`) for
-     record retrieval — either `list_records`, `list_records_async`,
-     `retrieve_records`, or `retrieve_records_async`.
-  3. The entity name "Orders" and folder "Shared" appear in the file.
-  4. A `@tool`-decorated function wraps the SDK call.
-  5. No module-level `UiPath()` or LLM client construction.
-  6. `bindings.json` declares the `datafabricentityset` resource.
+  2. The graph module calls a specific sdk.entities retrieval method
+     (list_records, retrieve_records, query_entity_records, or get_record).
+  3. A `filter=` parameter is present in the retrieval call.
+  4. The entity name "Orders" and folder "Shared" appear in the file.
+  5. A `@tool`-decorated function wraps the SDK call.
+  6. No module-level `UiPath()` or LLM client construction.
+  7. `bindings.json` declares the `datafabricentityset` resource.
 """
 
 from __future__ import annotations
@@ -56,17 +56,30 @@ def check_sdk_import(text: str) -> None:
 
 
 def check_entities_usage(text: str) -> None:
-    # Accept any sdk.entities.<method> call — the agent may use list_records,
-    # retrieve_records, query_entity_records, get_record, or even the
-    # shorter .entities.list() alias. The key signal is that the code goes
-    # through sdk.entities for data access rather than create_datafabric_tool.
-    if not re.search(r"\.entities\.\w+", text):
+    # Require a retrieval method specifically — list_records, retrieve_records,
+    # query_entity_records, or get_record (sync or async variants). A generic
+    # .entities.delete_record or unrelated call must NOT pass.
+    retrieval_pattern = re.compile(
+        r"\.entities\.(list_records|retrieve_records|query_entity_records|get_record)"
+    )
+    if not retrieval_pattern.search(text):
         sys.exit(
-            "FAIL: no sdk.entities method call found — "
-            "expected the agent to use sdk.entities for record retrieval "
-            "(e.g. list_records, retrieve_records, query_entity_records)"
+            "FAIL: no sdk.entities retrieval method found — "
+            "expected list_records, retrieve_records, query_entity_records, "
+            "or get_record (sync or async)"
         )
-    print("OK: uses sdk.entities for record retrieval")
+    print("OK: uses sdk.entities retrieval method")
+
+
+def check_filter_usage(text: str) -> None:
+    # The task asks for an OData filter by customer name. Verify the code
+    # contains a filter parameter or OData-style filter string.
+    if not re.search(r'\bfilter\s*=', text):
+        sys.exit(
+            "FAIL: no filter= parameter found — "
+            "expected the tool to filter records by customer name"
+        )
+    print("OK: filter parameter present in retrieval call")
 
 
 def check_entity_references(text: str) -> None:
@@ -107,6 +120,7 @@ def main() -> None:
     text = _read_text(module)
     check_sdk_import(text)
     check_entities_usage(text)
+    check_filter_usage(text)
     check_entity_references(text)
     check_tool_decorator(text)
     violations = find_module_level_llm_clients(module)

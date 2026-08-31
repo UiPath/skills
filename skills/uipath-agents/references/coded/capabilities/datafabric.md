@@ -176,9 +176,11 @@ async def get_open_orders(customer_name: str) -> str:
         customer_name: The customer name to look up.
     """
     sdk = UiPath()
+    # Escape single quotes for OData string literals (e.g. O'Brien → O''Brien)
+    safe_name = customer_name.replace("'", "''")
     records = await sdk.entities.list_records_async(
         entity_key="Orders",
-        filter=f"CustomerName eq '{customer_name}' and Status eq 'Open'",
+        filter=f"CustomerName eq '{safe_name}' and Status eq 'Open'",
         select=["OrderId", "Total", "CreatedTime"],
         limit=50,
     )
@@ -210,8 +212,11 @@ Then add to your agent graph:
 from uipath_langchain.agent import create_agent
 from uipath_langchain.chat import UiPathChat
 
-llm = UiPathChat(model="gpt-4.1-mini-2025-04-14")
-graph = create_agent(llm, tools=[get_open_orders, close_order], system_prompt="...")
+def _make_llm():
+    """Lazy LLM factory — never call at module level."""
+    return UiPathChat(model="gpt-4.1-mini-2025-04-14")
+
+graph = create_agent(_make_llm(), tools=[get_open_orders, close_order], system_prompt="...")
 ```
 
 ---
@@ -240,10 +245,15 @@ from uipath_langchain.agent import create_agent
 from uipath_langchain.agent.tools import create_datafabric_tool
 from uipath_langchain.chat import UiPathChat
 
-llm = UiPathChat(model="gpt-4.1-mini-2025-04-14")
+
+def _make_llm():
+    """Lazy LLM factory — never call at module level."""
+    return UiPathChat(model="gpt-4.1-mini-2025-04-14")
+
 
 system_prompt = "Answer questions using only the configured Data Fabric entities."
 
+llm = _make_llm()
 datafabric_tool = create_datafabric_tool(
     llm=llm,
     name="query_orders",
@@ -332,12 +342,17 @@ async def close_order(order_id: str) -> str:
     return f"Order {order_id} closed."
 
 
-llm = UiPathChat(model="gpt-4.1-mini-2025-04-14")
+def _make_llm():
+    """Lazy LLM factory — never call at module level."""
+    return UiPathChat(model="gpt-4.1-mini-2025-04-14")
+
+
 system_prompt = (
     "You are an order management assistant. "
     "Use query_orders for data questions. Use close_order to close orders."
 )
 
+llm = _make_llm()
 # NL-to-SQL tool — freeform queries
 query_tool = create_datafabric_tool(
     llm=llm,
