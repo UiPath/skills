@@ -2,7 +2,7 @@
 
 # Phase 3 — Implementation (Steps 9.6 – 11.5)
 
-Execution order: 9.6 → 9.7 → 9.8 → 10.5 → 11.5 → 12. Phase 3 wires connector task schemas, input/output values, resolved connector-rule configuration, and in-expression markers. Conditions and SLA already exist from Phase 2. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
+Execution order: 9.6 → 9.65 → 9.7 → 9.8 → 10.5 → 11.5 → 12. Phase 3 wires connector task schemas, input/output values, resolved connector-rule configuration, and in-expression markers. Conditions and SLA already exist from Phase 2. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
 
 ## Step 9.6 — Phase 3 re-entry
 
@@ -11,14 +11,45 @@ Before any Phase 3 mutation:
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
-   1. Wire connector task schemas (Step 9.7)
-   2. Bind task I/O values (Step 9.8)
-   3. Upgrade resolved connector-bound condition rules (Step 10.5)
-   4. Resolve in-expression `vars.$xref` markers (Step 11.5)
+   1. Read the Phase 3 manifest (Step 9.65)
+   2. Wire connector task schemas (Step 9.7)
+   3. Bind task I/O values (Step 9.8)
+   4. Upgrade resolved connector-bound condition rules (Step 10.5)
+   5. Resolve in-expression `vars.$xref` markers (Step 11.5)
 
    Inside each section, also seed per-T-entry sub-items (one per T-entry that section will Edit). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. Per-T-entry items are the audit trail under the per-section batched contract (per [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical)).
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
+
+## Step 9.65 — Phase 3 read manifest (mandatory, before any write)
+
+Phase 3 crosses a hard stop, so its manifest is read fresh here even when Phase 2 read the same file — a Phase 2 read does not survive the boundary. Derive the list from the just-re-read `tasks.md` and `caseplan.json`, read every file on it, then start Step 9.7.
+
+**Step 1 — derive.** Collect three facts:
+
+1. Whether any task in `tasks.md` has `- type: execute-connector-activity` or `- type: wait-for-connector`.
+2. Whether any condition rule in §4.7 uses `wait-for-connector`.
+3. Whether any §4.6 task declares Inputs or Outputs rows — in practice every build does.
+
+**Step 2 — build the manifest.**
+
+Fixed core — always on the manifest:
+
+- [`case-editing-primitives.md`](case-editing-primitives.md)
+- [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md)
+- [`plugins/variables/bindings/impl-json.md`](plugins/variables/bindings/impl-json.md)
+- [`bindings-v2-sync.md`](bindings-v2-sync.md)
+
+Add, when Step 1 found any connector task or any `wait-for-connector` rule:
+
+- [`connector-trigger-impl.md`](connector-trigger-impl.md)
+- [`case-spec-input-details.md`](case-spec-input-details.md)
+- [`plugins/tasks/connector-activity/impl-json.md`](plugins/tasks/connector-activity/impl-json.md) — per connector-activity task
+- [`plugins/tasks/connector-trigger/impl-json.md`](plugins/tasks/connector-trigger/impl-json.md) — per `wait-for-connector` task or rule
+
+**Step 3 — read.** Read every manifest file in full, to its `<!-- END: … -->` marker, per Rule 24 of `SKILL.md`. Read them as one batch before Step 9.7; do not interleave manifest reads with writes.
+
+**Step 4 — gate.** Do not enter Step 9.7 until every manifest file has been read to its END marker in this session. Connector schema and I/O binding are the two places where a partial read produces a caseplan that validates and is still wrong — `validate` checks neither `caseShape.context` completeness nor cross-task output reference IDs.
 
 ## Step 9.7 — Connector task detail (gather-then-write)
 

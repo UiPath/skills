@@ -65,16 +65,17 @@ issues = []
 
 Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Replace any Phase 1 todos — do not append.
 
-1. Scaffold solution + project + root case (Step 6)
-2. Add triggers (Step 6.1)
-3. Declare variables + arguments (Step 6.2)
-4. Refresh entry-points.json input/output (Step 6.3)
-5. Add stages (Step 7)
-6. Write task shapes (Step 9)
-7. Regenerate bindings_v2.json (Step 9.4)
-8. Write SLA + escalation objects (Step 11)
-9. Add conditions with connector-rule stubs (Step 10)
-10. Preview validate + boundary (Step 11.9)
+1. Read the Phase 2 manifest (Step 5.9)
+2. Scaffold solution + project + root case (Step 6)
+3. Add triggers (Step 6.1)
+4. Declare variables + arguments (Step 6.2)
+5. Refresh entry-points.json input/output (Step 6.3)
+6. Add stages (Step 7)
+7. Write task shapes (Step 9)
+8. Regenerate bindings_v2.json (Step 9.4)
+9. Write SLA + escalation objects (Step 11)
+10. Add conditions with connector-rule stubs (Step 10)
+11. Preview validate + boundary (Step 11.9)
 
 (No edge step — Rule 20; see Step 8.)
 
@@ -82,9 +83,51 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 
 ---
 
-# Phase 2 — Prototyping (Steps 6 – 11.9)
+# Phase 2 — Prototyping (Steps 5.9 – 11.9)
 
-Execution order: 6 → 6.1 → 6.2 → 6.3 → 7 → 9 → 9.4 → 11 → 10 → 11.9. Step numbers are stable labels; SLA objects run before conditions so `sla-status-change` can reference emitted IDs. The preview contains the complete case flow and SLA model; task values, connector task schemas, and final connector-rule configuration remain deferred. Full contract in [phased-execution.md § Phase 2](phased-execution.md#phase-2--prototyping).
+Execution order: 5.9 → 6 → 6.1 → 6.2 → 6.3 → 7 → 9 → 9.4 → 11 → 10 → 11.9. Step numbers are stable labels; SLA objects run before conditions so `sla-status-change` can reference emitted IDs. The preview contains the complete case flow and SLA model; task values, connector task schemas, and final connector-rule configuration remain deferred. Full contract in [phased-execution.md § Phase 2](phased-execution.md#phase-2--prototyping).
+
+## Step 5.9 — Phase 2 read manifest (mandatory, before any write)
+
+Derive the complete list of references this build needs from `tasks.md`, then read every file on that list **before** Step 6. Do not defer a read to the step that consumes it. Deciding mid-build which plugin to open is how an entire task class gets skipped: the agent writes the stages it has shapes for, never works out that it also needed `tasks/<type>/impl-json.md`, and emits zero task nodes while `validate` still returns `Valid`.
+
+**Step 1 — derive.** Read `tasks.md` and collect these four sets. Collect every one; do not drop a set because it looks small or familiar.
+
+1. Every distinct `- type:` value across all §4.6 task T-entries.
+2. Every distinct trigger type in §4.3.
+3. Every distinct condition scope in §4.7.
+4. Whether §4.8 declares any SLA or escalation object.
+
+**Step 2 — build the manifest.** The read list is the fixed core plus one file per distinct value found in Step 1.
+
+Fixed core — always on the manifest, every build, no exceptions:
+
+- [`case-editing-primitives.md`](case-editing-primitives.md)
+- [`plugins/case/impl-json.md`](plugins/case/impl-json.md)
+- [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md)
+- [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md)
+- [`plugins/variables/bindings/impl-json.md`](plugins/variables/bindings/impl-json.md)
+- [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md)
+
+Per distinct task `type` — the plan's `type` value is the schema name, not the plugin folder name. Map it through this table; two of the nine differ:
+
+| `tasks.md` `- type:` | Add to manifest |
+|---|---|
+| `process` | [`plugins/tasks/process/impl-json.md`](plugins/tasks/process/impl-json.md) |
+| `agent` | [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md) |
+| `rpa` | [`plugins/tasks/rpa/impl-json.md`](plugins/tasks/rpa/impl-json.md) |
+| `action` | [`plugins/tasks/action/impl-json.md`](plugins/tasks/action/impl-json.md) |
+| `api-workflow` | [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md) |
+| `case-management` | [`plugins/tasks/case-management/impl-json.md`](plugins/tasks/case-management/impl-json.md) |
+| `execute-connector-activity` | [`plugins/tasks/connector-activity/impl-json.md`](plugins/tasks/connector-activity/impl-json.md) |
+| `wait-for-connector` | [`plugins/tasks/connector-trigger/impl-json.md`](plugins/tasks/connector-trigger/impl-json.md) |
+| `wait-for-timer` | [`plugins/tasks/wait-for-timer/impl-json.md`](plugins/tasks/wait-for-timer/impl-json.md) |
+
+Per distinct trigger type, add `plugins/triggers/<manual|timer|event>/impl-json.md`. Per distinct condition scope, add `plugins/conditions/<stage-entry-conditions|stage-exit-conditions|task-entry-conditions|case-exit-conditions>/impl-json.md`. If §4.8 declares any SLA or escalation, add [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+
+**Step 3 — read.** Read every manifest file in full, to its `<!-- END: … -->` marker, per Rule 24 of `SKILL.md`. Read them as one batch before Step 6; do not interleave manifest reads with writes. Read each file once — the per-plugin single-read rule above still applies, and the manifest is that single read.
+
+**Step 4 — gate.** Do not enter Step 6 until every file on the manifest has been read to its END marker in this session. A task `type` that appears in `tasks.md` whose `impl-json.md` was never read is a build defect, not a shortcut: those task nodes come out missing or malformed, and `uip maestro case validate` returns `Valid` for a caseplan whose stages contain no tasks at all. The manifest is bounded by what the plan actually contains — it is not the full reference tree, and every file on it is needed.
 
 ## Step 6 — Create the Case project structure
 
