@@ -40,6 +40,17 @@ CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <co
 
 Common `uip tm` commands organized by resource type.
 
+### Naming the project: --project-key or --project-id
+
+Every project-scoped `tm` command takes either flag; pass one.
+
+- `--project-key <KEY>` — the prefix from the Test Manager URL (e.g. `DEMO`). Costs one lookup per command.
+- `--project-id <UUID>` — used as-is, no lookup.
+
+**Prefer `--project-id` when you already have the ID** — because it was given to you, or because `project create` just returned it. Reuse it for the rest of the run. Do not call `project list` merely to look an ID up: that spends the request you would have saved. Given only a key, use `--project-key`. Passing both is fine; the ID wins.
+
+The tables below show `--project-key`; substitute `--project-id <UUID>` anywhere you have the ID. Key-only commands: `project create` / `update` / `delete`, `project owners list`, `tm pack`.
+
 ### Project Commands
 
 | Command | Purpose |
