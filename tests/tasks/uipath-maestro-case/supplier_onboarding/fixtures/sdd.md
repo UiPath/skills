@@ -13,6 +13,7 @@
 | 1.2 | 2026-08-30 | uipath-planner | Representative `In` defaults added so a case started with no caller data still describes a real supplier; the four `file` arguments stay blank per the platform contract |
 | 1.3 | 2026-08-30 | uipath-planner | Simplification: phase-delay escalation and delay notice kept on the intake check and buyer review only; three of the four manually launched optional tasks dropped, keeping the supplier's document upload because it is the only one that lets a send-back for corrections be answered; the financial-health agent dropped; the overall-SLA oversight lane dropped; the director sign-off dropped together with the sign-off tier calculation that fed it. Consequential edits to the compliance decision's entry, the case-breach response, variables, personas, app views and integrations |
 | 1.4 | 2026-08-31 | uipath-planner | Simplification: the phase-breach escalation and delay notice are authored once, on the intake check, matching the source's single generic statement of that behaviour; the buyer review keeps its own at-risk bump and its breach becomes a notification. The two terminal lanes lose their own wrap-up SLA — the source gives one wrap-up target covering all three wrap-ups, and the onboarding wrap-up carries it. Consequential edits to the SLA response map and the variable inventory |
+| 1.5 | 2026-08-31 | uipath-planner | Simplification: the three terminal lanes each keep their supplier message and drop their record-keeping API workflow, which was the same shape three times over and whose outputs nothing reads; the compliance policy check and the portal-access confirmation go for the same reason, each being the second instance of a shape another task already carries. Consequential edits to the compliance reviewer's form, the variable inventory, the integrations appendix and the personas |
 
 ---
 
@@ -40,11 +41,11 @@
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage 1: Checking the application](#stage-1-checking-the-application-checking_application) — 6 tasks
    - [Stage 2: Buyer review](#stage-2-buyer-review-buyer_review) — 2 tasks
-   - [Stage 3: Compliance and risk review](#stage-3-compliance-and-risk-review-compliance_risk_review) — 2 tasks
-   - [Stage 4: Setting up the supplier](#stage-4-setting-up-the-supplier-supplier_setup) — 3 tasks
-   - [Stage 5: Supplier onboarded](#stage-5-supplier-onboarded-supplier_onboarded) — 2 tasks
-   - [Secondary Stage: Application rejected](#secondary-stage-application-rejected-application_rejected) — 2 tasks
-   - [Secondary Stage: Application withdrawn](#secondary-stage-application-withdrawn-application_withdrawn) — 2 tasks
+   - [Stage 3: Compliance and risk review](#stage-3-compliance-and-risk-review-compliance_risk_review) — 1 task
+   - [Stage 4: Setting up the supplier](#stage-4-setting-up-the-supplier-supplier_setup) — 1 task
+   - [Stage 5: Supplier onboarded](#stage-5-supplier-onboarded-supplier_onboarded) — 1 task
+   - [Secondary Stage: Application rejected](#secondary-stage-application-rejected-application_rejected) — 1 task
+   - [Secondary Stage: Application withdrawn](#secondary-stage-application-withdrawn-application_withdrawn) — 1 task
 3. [Personas & App Views](#section-3-personas--app-views) — 5 Personas, Process App Views
 4. [Integrations](#section-4-integrations) — IS Connectors, API Workflows, Agents, Child Cases
 
@@ -58,8 +59,8 @@
 |---|---|---|---|
 | 1 | **Scope** (Level 1) | Case Management | The process is a staged application lifecycle with per-phase SLAs, human decision gates, back-routing and three terminal dispositions — the shape Case Management exists for. |
 | 2 | **Stage model** | Five primary stages ending in `Supplier onboarded`, plus two secondary lanes, both terminal dispositions | Rejection and withdrawal are reachable from several different phases, so they are exception lanes with non-completing case exits rather than extra primary stages. Phase-delay remediation is not a lane: it is answered inside the breached stage by a `start-task` response. |
-| 3 | **Task classification** | Human actions for every review and decision; API workflows for screening, policy, ERP and register writes; one agent for the optional category-match assessment; Outlook connector activities for supplier and buyer correspondence; one child case for contract negotiation | Each classification follows the deployed resource the appendix names for that step. |
-| 4 | **Resource resolution posture** | live-resolved | Every resource this SDD binds (six API workflows, one agent, six Action Apps and one child case) plus the Outlook connection, resolved against the tenant registry at design time. |
+| 3 | **Task classification** | Human actions for every review and decision; API workflows for screening and the ERP write; one agent for the optional category-match assessment; Outlook connector activities for supplier and buyer correspondence; one child case for contract negotiation | Each classification follows the deployed resource the appendix names for that step. |
+| 4 | **Resource resolution posture** | live-resolved | Every resource this SDD binds (two API workflows, one agent, five Action Apps and one child case) plus the Outlook connection, resolved against the tenant registry at design time. |
 
 ---
 
@@ -171,20 +172,12 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | reviewNotes | Variable | string | | | Not assessed | Anything that looks odd about the offering or the documents |
 | buyerDecision | Variable | string | | | | The buyer's call — approve, reject, or sendback (the deployed app's Action enum) |
 | buyerComments | Variable | string | | | None | The buyer's comments on the application |
-| riskRating | Variable | string | | | | The risk this application carries — Low, Medium, or High |
-| complianceFlags | Variable | string | | | None | Concerns the policy check raised |
 | complianceDecision | Variable | string | | | | The compliance reviewer's explicit choice — approve (send to setup) or reject (the deployed app's Action enum) |
 | complianceComments | Variable | string | | | None | The compliance reviewer's comments on the application |
 | bankVerificationStatus | Variable | string | | | pending | Whether the bank details passed verification — verified or failed |
-| portalAccessConfirmation | Variable | string | | | | What the supplier reported about their supplier-portal access |
-| registeredAt | Variable | string | | | | When the supplier was written to the approved-supplier register |
 | applicationCheckRevisedDate | Variable | string | | | | New expected date the procurement operations lead commits to when the application check misses its deadline |
 | escalationNotes | Variable | string | | | None | Notes recorded while an application is being unblocked after a missed deadline |
 | lastEmailStatus | Variable | string | | | | Delivery status returned by the most recent message sent from this application |
-| auditRecordId | Variable | string | | | | The audit record a rejection was written to |
-| cleanupSummary | Variable | string | | | | What the withdrawal clean-up did |
-| reviewsCancelled | Variable | boolean | | | false | True when the pending reviews were cancelled on withdrawal |
-| timersStopped | Variable | boolean | | | false | True when the countdown timers were switched off on withdrawal |
 | addedDocumentType | Variable | string | | | None | Type of the most recent document the supplier added during the checks |
 | addedDocumentContent | Variable | string | | | | Base64 content of the most recent document the supplier added |
 | addedDocumentSubmittedOn | Variable | string | | | | When the supplier added the most recent document |
@@ -648,8 +641,8 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary and required — the deeper look every application gets before the supplier goes anywhere near our systems. The stage deliberately carries no unguarded completion: both of its exits are guarded on the compliance reviewer's own recorded choice, so the application never advances on its own from here. Rejection is a guarded diverting exit carrying the exact complement of the send-to-setup guard. Completion is user-routed so the supplier's withdrawal lane stays reachable during the review. With the sign-off tier and the director sign-off out of scope, the stage is a straight two-step sequential run (the policy check, then the reviewer's decision) and there is no longer any branch on the value of the application.
-**Description:** Checks the application against company policy, produces a risk rating, and puts that picture in front of a compliance reviewer who explicitly chooses whether the application goes to setup or is rejected.
+**Design Rationale:** Primary and required — the deeper look every application gets before the supplier goes anywhere near our systems. The stage deliberately carries no unguarded completion: both of its exits are guarded on the compliance reviewer's own recorded choice, so the application never advances on its own from here. Rejection is a guarded diverting exit carrying the exact complement of the send-to-setup guard. Completion is user-routed so the supplier's withdrawal lane stays reachable during the review. With the sign-off tier and the director sign-off out of scope, the stage is a single-step sequential run holding the reviewer's decision and there is no longer any branch on the value of the application.
+**Description:** Puts the application and the screening findings gathered during the checks in front of a compliance reviewer who explicitly chooses whether the application goes to setup or is rejected.
 
 #### Stage Entry Conditions
 
@@ -678,58 +671,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | Run compliance and risk check | api-workflow | sequential | Stage enters — first task in the sequential run | Yes | No | system | — |
-| 2 | Record compliance review decision | action | sequential | After Run compliance and risk check | Yes | No | Compliance Reviewer | — |
-
-##### Task 3.1: Run compliance and risk check
-
-**Type:** api-workflow
-**Activation Mode:** sequential
-**Design Rationale:** Applying company policy to facts already gathered — what the sanctions screening found, whether duplicates exist, whether the application complies with procurement policy — is deterministic rule evaluation packaged by a deployed API workflow, so `api-workflow`. It runs first because the risk rating it produces is what the sign-off tier and the reviewer's decision both build on.
-**Description:** Checks the application against company policy and produces a risk rating, flagging anything of concern.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| runs-sequentially | — | Review starts |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | No | — |
-
-###### Process / Agent / RPA / API Workflow Task Detail
-
-**Resolved Resource:** SupplierComplianceRiskCheck
-**Folder Path:** Shared/uipath-maestro-case/SupplierOnboardingKit
-**Resource Identity:** 69027bbb-2c90-43c3-93af-a09ba7821892
-**Dispatch / Operation:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| caseId | string | =metadata.ExternalId |
-| companyName | string | =vars.companyName |
-| registrationCountry | string | =vars.countryOfRegistration |
-| sanctionsFindings | string | =vars.sanctionsFindings |
-| duplicateSupplierIds | string | =vars.duplicateSupplierIds |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| riskRating | -> riskRating |
-| complianceFlags | -> complianceFlags |
+| 1 | Record compliance review decision | action | sequential | Stage enters — first task in the sequential run | Yes | No | Compliance Reviewer | — |
 
 ##### Task 3.2: Record compliance review decision
 
 **Type:** action
 **Activation Mode:** sequential
-**Design Rationale:** The source is explicit that a person decides the path and the application waits for them to explicitly choose what happens next, so `action` and required. With the sign-off tier and the director sign-off out of scope there is no longer a second upstream path to converge, so the task is the second step of this stage's sequential run rather than a fan-in: it takes one `runs-sequentially` entry behind the policy check, whose risk rating is what the reviewer decides on. Every application now reaches this one reviewer on the same route, whatever it is worth.
-**Description:** Puts the whole picture in front of a compliance reviewer — the application, the compliance results, and the risk rating — who explicitly chooses whether the application goes to setup or is rejected.
+**Design Rationale:** The source is explicit that a person decides the path and the application waits for them to explicitly choose what happens next, so `action` and required. With the sign-off tier and the director sign-off out of scope there is no longer a second upstream path to converge, so the task is the whole of this stage's sequential run rather than a fan-in: it takes one `runs-sequentially` entry and the reviewer decides on the screening and duplicate findings the checks already gathered. Every application now reaches this one reviewer on the same route, whatever it is worth.
+**Description:** Puts the whole picture in front of a compliance reviewer — the application and the screening findings — who explicitly chooses whether the application goes to setup or is rejected.
 
 **Entry Condition:**
 
@@ -756,7 +705,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 | Field | Type | Binding | Required |
 |-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + "\nCompany: " + vars.companyName + "\nContact: " + vars.contactName + " <" + vars.contactEmail + ">\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\n\nRisk rating: " + vars.riskRating + "\nCompliance flags: " + vars.complianceFlags + "\nScreening: " + vars.sanctionsFindings + "\nPossible duplicates: " + vars.duplicateSupplierIds + "\nBuyer comments: " + vars.buyerComments + "\n\nChoose explicitly whether this application goes to setup or is rejected, and record why.") | No |
+| Content | String | =js:("Application " + metadata.ExternalId + "\nCompany: " + vars.companyName + "\nContact: " + vars.contactName + " <" + vars.contactEmail + ">\nCountry of registration: " + vars.countryOfRegistration + "\nCategory: " + vars.offeringCategory + "\nExpected annual spend: " + vars.expectedAnnualSpend + " " + vars.spendCurrency + "\n\nScreening: " + vars.sanctionsFindings + "\nPossible duplicates: " + vars.duplicateSupplierIds + "\nBuyer comments: " + vars.buyerComments + "\n\nChoose explicitly whether this application goes to setup or is rejected, and record why.") | No |
 | Comment | String | =vars.complianceComments | No |
 
 **Output Schema:**
@@ -773,7 +722,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 **Type:** Stage
 **Stage Kind:** primary
 **Design Rationale:** Primary and required — the phase that turns an approved application into a real supplier record. Unlike the three review phases it deliberately does **not** expose the withdrawal picker, because the source allows withdrawal only before setup begins; its completion is therefore a plain `exit-only`. Failed bank verification is a guarded diverting exit carrying the exact complement of the completion guard, so a failed verification can never also complete the stage.
-**Description:** Creates the supplier's record and payment details in the ERP system, optionally opens a linked contract-negotiation case, and waits for the supplier to confirm their portal access works before setup is marked complete.
+**Description:** Creates the supplier's record and payment details in the ERP system and optionally opens a linked contract-negotiation case; setup is marked complete once the bank details supplied with the application verify.
 
 #### Stage Entry Conditions
 
@@ -803,14 +752,13 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Register supplier in ERP | api-workflow | sequential | Stage enters — first task in the sequential run | Yes | Yes | system | — |
-| 2 | Open contract negotiation case | case-management | parallel-after-predecessor | After Register supplier in ERP, alongside the portal confirmation | No | Yes | system | — |
-| 3 | Confirm supplier portal access | action | parallel-after-predecessor | After Register supplier in ERP, alongside the contract negotiation case | Yes | Yes | Supplier | — |
+| 2 | Open contract negotiation case | case-management | parallel-after-predecessor | After Register supplier in ERP | No | Yes | system | — |
 
 ##### Task 4.1: Register supplier in ERP
 
 **Type:** api-workflow
 **Activation Mode:** sequential
-**Design Rationale:** Writing a supplier record and payment details into the company's ERP is a system call with no judgement in it, packaged by a deployed API workflow — so `api-workflow`. It runs first because both the portal confirmation and the contract-negotiation case depend on the supplier ID it mints, and because the bank-details verification it performs is what decides whether the phase can continue at all. `Run Only Once` is Yes so a re-entered stage can never mint a second supplier record.
+**Design Rationale:** Writing a supplier record and payment details into the company's ERP is a system call with no judgement in it, packaged by a deployed API workflow — so `api-workflow`. It runs first because the contract-negotiation case depends on the supplier ID it mints, and because the bank-details verification it performs is what decides whether the phase can continue at all. `Run Only Once` is Yes so a re-entered stage can never mint a second supplier record.
 **Description:** Creates the supplier's record and payment details in the company's ERP system and verifies the bank details supplied with the application.
 
 **Entry Condition:**
@@ -855,7 +803,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** case-management
 **Activation Mode:** parallel-after-predecessor
-**Design Rationale:** The step opens a separate record that is followed on its own, which is a child case rather than a task inside this one — so `case-management`. The source is explicit that the negotiation must not hold up or clutter the main application, so the parent does not wait for completion, and the task is optional. It shares the post-registration task set with the portal confirmation because neither depends on the other.
+**Design Rationale:** The step opens a separate record that is followed on its own, which is a child case rather than a task inside this one — so `case-management`. The source is explicit that the negotiation must not hold up or clutter the main application, so the parent does not wait for completion, and the task is optional. It sits in the post-registration task set rather than in the stage's ordered run, so the negotiation never holds up the phase.
 **Description:** Opens a separate record just for negotiating the contract, linked back to the application, so the negotiation can be followed on its own.
 
 **Entry Condition:**
@@ -887,60 +835,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Wait for Completion:** No
 
-##### Task 4.3: Confirm supplier portal access
-
-**Type:** action
-**Activation Mode:** parallel-after-predecessor
-**Design Rationale:** A person — the supplier — has to confirm something works, so `action`, and it is required because the source makes setup completion depend on it. It shares the post-registration task set with the contract-negotiation case and is guarded on the ERP task's own verification output, so a failed bank verification cannot start a portal confirmation the application will never use.
-**Description:** Waits for the supplier to confirm their access to the supplier portal works, which is what marks setup complete.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| runs-sequentially | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') === "verified" | After ERP registration |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | Yes | — |
-
-###### Action Task Detail (type: `action`)
-
-**HITL Implementation:** Action App: Supplier Portal Access Confirmation
-**Action App ID:** 8bfee375-9973-446d-b409-6799688ffe49
-**Deployment Folder:** Shared/uipath-maestro-case/Supplier Portal Access Confirmation
-**actionType:** —
-**Recipient:** Role:Supplier
-**Priority:** High · **Task Title:** Confirm your supplier portal access works · **Labels:** setup, portal
-
-**Input Schema:**
-
-| Field | Type | Binding | Required |
-|-------|------|---------|----------|
-| Content | String | =js:("Application " + metadata.ExternalId + " - " + vars.companyName + "\nYour new supplier ID is " + vars.supplierId + ".\n\nSign in to the supplier portal with that ID and confirm here that your access works. Setup is marked complete once you confirm.") | No |
-| Comment | String | =vars.portalAccessConfirmation | No |
-
-**Output Schema:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| Action | -> portalAccessConfirmation |
-
-<!-- No decision buttons: the source makes the supplier's confirmation itself the completion signal
-("waits for the supplier to confirm their access works, then setup is marked complete"), so completing the
-task IS the confirmation and there is no second outcome to route. -->
-
-
 ---
 
 ### Stage 5: Supplier onboarded (`supplier_onboarded`)
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary, required, and the case's only completing terminal — its completion is what satisfies the root `required-stages-completed` case exit. The two closing steps have no dependency on each other, so they run in parallel from stage entry. The stage name drops the source's `Wrap-up:` prefix because a colon in a stage label breaks case-execution routing.
-**Description:** The happy ending — the supplier gets a welcome message with their new supplier ID and is recorded in the company's approved-supplier register, and then the application is closed.
+**Design Rationale:** Primary, required, and the case's only completing terminal — its completion is what satisfies the root `required-stages-completed` case exit. Its one closing step runs in parallel from stage entry. The stage name drops the source's `Wrap-up:` prefix because a colon in a stage label breaks case-execution routing.
+**Description:** The happy ending — the supplier gets a welcome message with their new supplier ID, and then the application is closed.
 
 #### Stage Entry Conditions
 
@@ -969,13 +871,12 @@ task IS the confirmation and there is no second outcome to route. -->
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Send supplier welcome message | execute-connector-activity | parallel | Stage enters | Yes | Yes | system | — |
-| 2 | Record supplier in approved register | api-workflow | parallel | Stage enters | Yes | Yes | system | — |
 
 ##### Task 5.1: Send supplier welcome message
 
 **Type:** execute-connector-activity
 **Activation Mode:** parallel
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It runs in parallel with the register update because neither closing step depends on the other.
+**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is the stage's one closing step and runs in parallel from stage entry.
 **Description:** Sends the supplier a welcome message with their new supplier ID.
 
 **Entry Condition:**
@@ -1016,46 +917,6 @@ task IS the confirmation and there is no second outcome to route. -->
 | response.status | -> lastEmailStatus |
 | — | caseOutcome = Onboarded |
 
-##### Task 5.2: Record supplier in approved register
-
-**Type:** api-workflow
-**Activation Mode:** parallel
-**Design Rationale:** Writing an entry to the company's approved-supplier register is a system call with no judgement in it, packaged by a deployed API workflow — so `api-workflow`. It runs in parallel with the welcome message because neither closing step depends on the other.
-**Description:** Records the supplier in the company's approved-supplier register.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| current-stage-entered | — | Stage enters |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | Yes | — |
-
-###### Process / Agent / RPA / API Workflow Task Detail
-
-**Resolved Resource:** SupplierApprovedRegisterUpdate
-**Folder Path:** Shared/uipath-maestro-case/SupplierOnboardingKit
-**Resource Identity:** 0c3faaff-8e3e-4b68-bf69-2e3b869fb301
-**Dispatch / Operation:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| caseId | string | =metadata.ExternalId |
-| supplierId | string | =vars.supplierId |
-| companyName | string | =vars.companyName |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| registeredAt | -> registeredAt |
-
 ---
 
 ### Secondary Stage: Application rejected (`application_rejected`)
@@ -1063,7 +924,7 @@ task IS the confirmation and there is no second outcome to route. -->
 **Type:** Stage
 **Stage Kind:** secondary
 **Design Rationale:** An application can be rejected by the buyer, by the compliance reviewer, or because the bank details failed verification — three different phases producing one disposition, so this is an interrupting exception lane with three guarded entries rather than three near-identical primary stages. Each entry repeats the guard of the diverting exit that produced it, and each reads that origin's own decision output rather than the case variable it writes, so the guard is never evaluated stale. It is terminal — `exit-only`, and the root case-exit row it feeds does not mark the case complete, so a rejected application closes and can never move anywhere else.
-**Description:** Tells the supplier why the application was rejected, who made the decision, and how to reapply in future, and logs the decision for the company's audit records.
+**Description:** Tells the supplier why the application was rejected, who made the decision, and how to reapply in future.
 **Required for Case Completion:** No
 **Interrupting:** Yes
 
@@ -1086,13 +947,12 @@ task IS the confirmation and there is no second outcome to route. -->
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Send rejection notice to supplier | execute-connector-activity | parallel | Stage enters | Yes | Yes | system | — |
-| 2 | Log rejection for audit | api-workflow | parallel | Stage enters | Yes | Yes | system | — |
 
 ##### Task S1.1: Send rejection notice to supplier
 
 **Type:** execute-connector-activity
 **Activation Mode:** parallel
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It runs in parallel with the audit log because neither closing step depends on the other.
+**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is the lane's one closing step and runs in parallel from stage entry.
 **Description:** Sends the supplier a notice explaining why the application was rejected, who made the decision, and how to reapply in future.
 
 **Entry Condition:**
@@ -1133,49 +993,6 @@ task IS the confirmation and there is no second outcome to route. -->
 | response.status | -> lastEmailStatus |
 | — | caseOutcome = Rejected |
 
-##### Task S1.2: Log rejection for audit
-
-**Type:** api-workflow
-**Activation Mode:** parallel
-**Design Rationale:** Writing an entry to the company's audit records is a system call with no judgement in it, packaged by a deployed API workflow — so `api-workflow`. It runs in parallel with the rejection notice because neither closing step depends on the other.
-**Description:** Logs the decision for the company's audit records — what was rejected, by whom, why, and when.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| current-stage-entered | — | Stage enters |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | Yes | — |
-
-###### Process / Agent / RPA / API Workflow Task Detail
-
-**Resolved Resource:** SupplierRejectionAuditLog
-**Folder Path:** Shared/uipath-maestro-case/SupplierOnboardingKit
-**Resource Identity:** 1279ba08-7d7d-4cb2-ba52-2fe9809dce00
-**Dispatch / Operation:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| caseId | string | =metadata.ExternalId |
-| companyName | string | =vars.companyName |
-| rejectedBy | string | =js:(vars.buyerDecision === "reject" ? "Buyer" : (vars.complianceDecision === "reject" ? "Compliance Reviewer" : "Bank verification")) |
-| rejectionReason | string | =js:(vars.buyerDecision === "reject" ? vars.buyerComments : (vars.complianceDecision === "reject" ? vars.complianceComments : "The bank details supplied with the application failed verification.")) |
-| rejectedAt | string | =js:(new Date().toISOString()) |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| auditRecordId | -> auditRecordId |
-| — | caseOutcome = Rejected |
-
 ---
 
 ### Secondary Stage: Application withdrawn (`application_withdrawn`)
@@ -1183,7 +1000,7 @@ task IS the confirmation and there is no second outcome to route. -->
 **Type:** Stage
 **Stage Kind:** secondary
 **Design Rationale:** The supplier can pull out during any of the three review phases, so this is an interrupting exception lane a person launches from the stage picker rather than a fixed point in the flow — no connector, app or event in the source signals a withdrawal. The three review phases expose it by completing `wait-for-user`; `Setting up the supplier` (`supplier_setup`) deliberately does not, because the source allows withdrawal only before setup begins. It is terminal — `exit-only`, and the root case-exit row it feeds does not mark the case complete, so a withdrawn application closes and can never move anywhere else.
-**Description:** Confirms the withdrawal to the supplier and tidies up anything still in motion — pending reviews are cancelled, countdown timers are switched off, and the application is marked withdrawn.
+**Description:** Confirms the withdrawal to the supplier and marks the application withdrawn.
 **Required for Case Completion:** No
 **Interrupting:** Yes
 
@@ -1204,13 +1021,12 @@ task IS the confirmation and there is no second outcome to route. -->
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
 | 1 | Send withdrawal confirmation | execute-connector-activity | parallel | Stage enters | Yes | Yes | system | — |
-| 2 | Close out withdrawn application | api-workflow | parallel | Stage enters | Yes | Yes | system | — |
 
 ##### Task S2.1: Send withdrawal confirmation
 
 **Type:** execute-connector-activity
 **Activation Mode:** parallel
-**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It runs in parallel with the clean-up because neither closing step depends on the other.
+**Design Rationale:** One push operation against a SaaS mail system for which the tenant already carries an enabled Integration Service connection, so `execute-connector-activity`. It is the lane's one closing step and runs in parallel from stage entry.
 **Description:** Sends the supplier a confirmation that their application has been withdrawn.
 
 **Entry Condition:**
@@ -1251,49 +1067,6 @@ task IS the confirmation and there is no second outcome to route. -->
 | response.status | -> lastEmailStatus |
 | — | caseOutcome = Withdrawn |
 
-##### Task S2.2: Close out withdrawn application
-
-**Type:** api-workflow
-**Activation Mode:** parallel
-**Design Rationale:** Cancelling pending reviews, switching off countdown timers and marking the application withdrawn is deterministic clean-up packaged by a deployed API workflow — so `api-workflow`. It runs in parallel with the confirmation because neither closing step depends on the other.
-**Description:** Tidies up anything still in motion — cancels pending reviews, switches off countdown timers, and marks the application withdrawn.
-
-**Entry Condition:**
-
-| WHEN | IF | Display Name |
-|------|-----|--------------|
-| current-stage-entered | — | Stage enters |
-
-**Task envelope**
-
-| Required | Run Only Once | Skip Condition |
-|----------|---------------|----------------|
-| Yes | Yes | — |
-
-###### Process / Agent / RPA / API Workflow Task Detail
-
-**Resolved Resource:** SupplierWithdrawalCleanup
-**Folder Path:** Shared/uipath-maestro-case/SupplierOnboardingKit
-**Resource Identity:** 80321901-b4a8-45b4-a5b0-1924ee84f3f7
-**Dispatch / Operation:** —
-
-**Inputs:**
-
-| Field | Type | Binding |
-|-------|------|---------|
-| caseId | string | =metadata.ExternalId |
-| companyName | string | =vars.companyName |
-| supplierContactEmail | string | =vars.contactEmail |
-
-**Outputs:**
-
-| Field | Binding / Value |
-|-------|------------------|
-| reviewsCancelled | -> reviewsCancelled |
-| timersStopped | -> timersStopped |
-| cleanupSummary | -> cleanupSummary |
-| — | caseOutcome = Withdrawn |
-
 ---
 
 ## Section 3: Personas & App Views
@@ -1304,10 +1077,10 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | Persona | Stage Scope | Permissions | Description |
 |---------|-------------|-------------|-------------|
-| Supplier | Checking the application, Setting up the supplier | View, Act, Comment | The prospective supplier. Attaches further documents while the application is being checked, confirms their supplier-portal access during setup, and can withdraw the application during any of the three review phases. |
+| Supplier | Checking the application | View, Act, Comment | The prospective supplier. Attaches further documents while the application is being checked, and can withdraw the application during any of the three review phases. |
 | Buyer | Buyer review | View, Act, Comment | The buyer assigned to the application's category. Approves, declines, or sends the application back for corrections. Reaching out to the supplier for clarification is done in the case comment thread rather than as a task. |
 | Category Manager | Buyer review | View, Comment | Notified via the Category Management group when buyer review reaches 70% of its target so a stalled review is bumped up before the deadline passes. |
-| Compliance Reviewer | Compliance and risk review | View, Act, Comment | Sees the whole picture — the application, the compliance results, and the risk rating — and explicitly chooses whether the application goes to setup or is rejected. |
+| Compliance Reviewer | Compliance and risk review | View, Act, Comment | Sees the whole picture — the application and the screening findings — and explicitly chooses whether the application goes to setup or is rejected. |
 | Procurement Operations Lead | Checking the application | View, Act, Reassign, Comment | Runs the intake check, and steps in to unblock it when it misses its deadline, committing a new expected date for the supplier. |
 
 <!-- The Procurement Director and Legal Counsel are no longer personas of this case: the director sign-off,
@@ -1319,7 +1092,7 @@ task with them, so neither role now holds a task, a recipient cell or an escalat
 | App | View | Persona | Purpose | Key Components |
 |-----|------|---------|---------|----------------|
 | Supplier Onboarding | Case List | Procurement Operations Lead | Track every open application and spot the ones running out of time | Reference, company, category, current stage, expected annual spend, time remaining against the 120-minute target, phase SLA status, assigned buyer |
-| Supplier Onboarding | Case Detail | Supplier, Buyer, Compliance Reviewer, Procurement Operations Lead | Work the application and leave comments on it at any point while it is open | Application summary, supporting documents, screening and risk results, decision history, phase SLA warnings, comment thread, phase-scoped actions |
+| Supplier Onboarding | Case Detail | Supplier, Buyer, Compliance Reviewer, Procurement Operations Lead | Work the application and leave comments on it at any point while it is open | Application summary, supporting documents, screening results, decision history, phase SLA warnings, comment thread, phase-scoped actions |
 | Supplier Onboarding | Dashboard | Procurement Operations Lead | See where applications resolve and where they run late | Outcome mix (onboarded, rejected, withdrawn), time-to-resolution against 120 minutes, phase breach counts |
 
 ---
@@ -1347,11 +1120,7 @@ task with them, so neither role now holds a task, a recipient cell or an escalat
 | Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
 |----------|--------|------------------------|------------------|---------------|
 | SupplierMasterScreeningLookup | Shared/uipath-maestro-case/SupplierOnboardingKit | 919ff26e-8bb4-4755-9bfd-0d04a51d6639 | caseId, companyName, registrationCountry, offeringCategory → duplicateSupplierIds, sanctionsFindings, assignedBuyerEmail, Error | Pull supplier records and screening |
-| SupplierComplianceRiskCheck | Shared/uipath-maestro-case/SupplierOnboardingKit | 69027bbb-2c90-43c3-93af-a09ba7821892 | caseId, companyName, registrationCountry, sanctionsFindings, duplicateSupplierIds → riskRating, complianceFlags, Error | Run compliance and risk check |
 | SupplierErpRegistration | Shared/uipath-maestro-case/SupplierOnboardingKit | d5c07b08-d673-477c-b047-de330699a183 | caseId, companyName, contactName, contactEmail, registrationCountry, spendCurrency, bankDetailsDocument → supplierId, bankVerificationStatus, Error | Register supplier in ERP |
-| SupplierApprovedRegisterUpdate | Shared/uipath-maestro-case/SupplierOnboardingKit | 0c3faaff-8e3e-4b68-bf69-2e3b869fb301 | caseId, supplierId, companyName → registeredAt, Error | Record supplier in approved register |
-| SupplierRejectionAuditLog | Shared/uipath-maestro-case/SupplierOnboardingKit | 1279ba08-7d7d-4cb2-ba52-2fe9809dce00 | caseId, companyName, rejectedBy, rejectionReason, rejectedAt → auditRecordId, Error | Log rejection for audit |
-| SupplierWithdrawalCleanup | Shared/uipath-maestro-case/SupplierOnboardingKit | 80321901-b4a8-45b4-a5b0-1924ee84f3f7 | caseId, companyName, supplierContactEmail → reviewsCancelled, timersStopped, cleanupSummary, Error | Close out withdrawn application |
 
 ### Agents
 
@@ -1367,7 +1136,6 @@ task with them, so neither role now holds a task, a recipient cell or an escalat
 | buyer-supplier-review-v2 | Shared/uipath-maestro-case | ec16bdfe-6f7b-4f4e-9988-70ee7c86b803 | — | Record buyer review decision |
 | supplier-document-upload | Shared/uipath-maestro-case | e0145242-77aa-40b5-8752-e037ec022d40 | — | Attach supporting documents |
 | Supplier Compliance Review | Shared/uipath-maestro-case/Supplier Compliance Review | 1229c1ed-ca6b-4a89-9776-883bd0669684 | — | Record compliance review decision |
-| Supplier Portal Access Confirmation | Shared/uipath-maestro-case/Supplier Portal Access Confirmation | 8bfee375-9973-446d-b409-6799688ffe49 | — | Confirm supplier portal access |
 | supplier-delay-escalation | Shared/uipath-maestro-case | fb171d7c-33a1-4bb6-b09a-030044a7c0b6 | phase-escalation | Escalate delayed application check |
 
 <!-- supplier-delay-escalation carries one phase-escalation dispatch and the intake check's escalation is
@@ -1394,22 +1162,22 @@ stageName input and the revised date lands in that phase's own variable. -->
 | Dimension | Requirement / Design decision |
 |---|---|
 | Security | Supplier-supplied documents (registration certificate, insurance, tax forms, bank details) are job attachments carried on the case, not copied into task payloads; the bank details document is bound only to ERP registration, the one task that needs it. Recipients are typed roles rather than named individuals, except the buyer, who is resolved at runtime from the category lookup. |
-| Performance | Five phases, at most twelve tasks on any single path, two of them optional. The one agent assessment runs in parallel with required work so it does not add to the critical path. |
+| Performance | Five phases, at most nine tasks on any single path, two of them optional. The one agent assessment runs in parallel with required work so it does not add to the critical path. |
 | Scalability | Every human task routes to a role rather than a single named user, so throughput is not bounded by one person; the buyer is the exception and is resolved per category by the intake lookup. |
 | Availability / Resilience | ERP registration and the contract-negotiation child case are marked `Run Only Once`, so a re-entered setup phase cannot mint a second supplier record or a second negotiation case. Stage-1 tasks are re-runnable because a send-back for corrections is a genuine new attempt. |
-| Logging & Monitoring | Case SLA plus a per-phase SLA on all five primary stages, the two terminal lanes carrying none of their own because the source gives one wrap-up target and the onboarding wrap-up carries it; at-risk warnings at 70% (75% at case level). Breach creates real work on the intake check only; every other breach, the overall case target included, is a notification. Every rejection is written to the company's audit records with what, who, why and when. |
-| Compliance | The compliance reviewer's decision is the only way out of compliance and risk review — the stage carries no unguarded completion, so the application never advances on its own. That reviewer is now the only approval gate: no value threshold routes an application to a second approver, so a high-value and a low-value application are treated alike. Every rejection is auditable. |
+| Logging & Monitoring | Case SLA plus a per-phase SLA on all five primary stages, the two terminal lanes carrying none of their own because the source gives one wrap-up target and the onboarding wrap-up carries it; at-risk warnings at 70% (75% at case level). Breach creates real work on the intake check only; every other breach, the overall case target included, is a notification. |
+| Compliance | The compliance reviewer's decision is the only way out of compliance and risk review — the stage carries no unguarded completion, so the application never advances on its own. That reviewer is now the only approval gate: no value threshold routes an application to a second approver, so a high-value and a low-value application are treated alike. |
 
 ## Testing Strategy
 
 | Scenario | Setup | Expected Outcome |
 |---|---|---|
-| Happy path — supplier onboarded | Well-formed application, no duplicates, clean screening, spend 120000 USD, buyer approves, compliance sends to setup, ERP verifies bank details, supplier confirms portal access | Case reaches `Supplier onboarded`, welcome message sent with the supplier ID, register updated, case marked complete and closed |
-| Spend does not route | Run the happy path twice, at 30000 USD and at 750000 USD | Both applications take the identical route: `Record compliance review decision` starts off the policy check in both, no second approver is involved, and the two runs differ only in the spend figure displayed on the review forms |
-| Buyer declines | Buyer picks Decline | Buyer review exits without completing, `Application rejected` enters on the decline guard, rejection notice sent and audit logged, case closed **not** marked complete |
+| Happy path — supplier onboarded | Well-formed application, no duplicates, clean screening, spend 120000 USD, buyer approves, compliance sends to setup, ERP verifies bank details | Case reaches `Supplier onboarded`, welcome message sent with the supplier ID, case marked complete and closed |
+| Spend does not route | Run the happy path twice, at 30000 USD and at 750000 USD | Both applications take the identical route: `Record compliance review decision` is the only approval gate in both, no second approver is involved, and the two runs differ only in the spend figure displayed on the review forms |
+| Buyer declines | Buyer picks Decline | Buyer review exits without completing, `Application rejected` enters on the decline guard, rejection notice sent, case closed **not** marked complete |
 | Compliance rejects | Compliance reviewer picks Reject | Compliance and risk review exits without completing, `Application rejected` enters on the reject guard, case closed not marked complete |
-| Bank details fail verification | ERP registration returns bankVerificationStatus failed | Setup exits without completing, portal confirmation never starts, `Application rejected` enters on the verification guard, case closed not marked complete |
-| Supplier withdraws mid-review | Supplier withdraws while the application is in each of Checking the application, Buyer review, and Compliance and risk review | `Application withdrawn` enters from the stage picker in all three phases, confirmation sent, pending reviews cancelled and timers switched off, case closed not marked complete |
+| Bank details fail verification | ERP registration returns bankVerificationStatus failed | Setup exits without completing, the contract-negotiation case never opens, `Application rejected` enters on the verification guard, case closed not marked complete |
+| Supplier withdraws mid-review | Supplier withdraws while the application is in each of Checking the application, Buyer review, and Compliance and risk review | `Application withdrawn` enters from the stage picker in all three phases, confirmation sent, case closed not marked complete |
 | Withdrawal blocked after setup begins | Attempt to withdraw while the application is in Setting up the supplier | The withdrawal lane is not offered — setup exposes no stage picker |
 | Sent back for corrections and resubmitted | Buyer picks Send back for corrections, the supplier fixes the issues and adds a document, the application is re-checked and approved | Buyer review exits without completing, `Checking the application` re-enters on the send-back guard, its tasks re-run, and the application reaches a decision again. The supplier answers the send-back through `Attach supporting documents`, which they launch while the re-entered phase is active, so the corrected paperwork reaches the intake check that re-runs |
 | Phase deadline missed (escalating phase) | Hold `Checking the application` past its target | `Escalate delayed application check` activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the application check` sends the supplier a note naming that phase and carrying the lead's revised date, read from that stage's own revised-date variable; the phase's own work continues meanwhile and its required tasks are unaffected |

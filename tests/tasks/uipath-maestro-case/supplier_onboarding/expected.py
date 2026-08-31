@@ -82,32 +82,27 @@ STAGE_TASKS = {
         ("Record buyer review decision", "action", True, False),
     ],
     COMPLIANCE: [
-        ("Run compliance and risk check", "api-workflow", True, False),
         ("Record compliance review decision", "action", True, False),
     ],
     SETUP: [
         ("Register supplier in ERP", "api-workflow", True, True),
         ("Open contract negotiation case", "case-management", False, True),
-        ("Confirm supplier portal access", "action", True, True),
     ],
     ONBOARDED: [
         ("Send supplier welcome message", "execute-connector-activity", True, True),
-        ("Record supplier in approved register", "api-workflow", True, True),
     ],
     REJECTED: [
         ("Send rejection notice to supplier", "execute-connector-activity", True, True),
-        ("Log rejection for audit", "api-workflow", True, True),
     ],
     WITHDRAWN: [
         ("Send withdrawal confirmation", "execute-connector-activity", True, True),
-        ("Close out withdrawn application", "api-workflow", True, True),
     ],
 }
 
-TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 19
+TOTAL_TASKS = sum(len(rows) for rows in STAGE_TASKS.values())          # 14
 TASK_TYPE_COUNTS = {
-    "action": 6,
-    "api-workflow": 6,
+    "action": 5,
+    "api-workflow": 2,
     "agent": 1,
     "execute-connector-activity": 5,
     "case-management": 1,
@@ -300,27 +295,19 @@ OUTPUT_TARGETS = {
     "addedDocumentType": ["Attach supporting documents"],
     "applicationCheckRevisedDate": ["Escalate delayed application check"],
     "assignedBuyerEmail": ["Pull supplier records and screening"],
-    "auditRecordId": ["Log rejection for audit"],
     "bankVerificationStatus": ["Register supplier in ERP"],
     "buyerComments": ["Record buyer review decision"],
     "buyerDecision": ["Record buyer review decision"],
     "categoryMatches": ["Confirm offering category match"],
-    "cleanupSummary": ["Close out withdrawn application"],
     "complianceComments": ["Record compliance review decision"],
     "complianceDecision": ["Record compliance review decision"],
-    "complianceFlags": ["Run compliance and risk check"],
     "duplicateSupplierIds": ["Pull supplier records and screening"],
     "escalationNotes": ["Escalate delayed application check"],
     "lastEmailStatus": ["Notify buyer of application", "Send delay note for the application check", "Send rejection notice to supplier", "Send supplier welcome message", "Send withdrawal confirmation"],
-    "portalAccessConfirmation": ["Confirm supplier portal access"],
-    "registeredAt": ["Record supplier in approved register"],
     "reviewNotes": ["Confirm offering category match"],
-    "reviewsCancelled": ["Close out withdrawn application"],
-    "riskRating": ["Run compliance and risk check"],
     "sanctionsFindings": ["Pull supplier records and screening"],
     "suggestedCategory": ["Confirm offering category match"],
     "supplierId": ["Register supplier in ERP"],
-    "timersStopped": ["Close out withdrawn application"],
     "validationIssues": ["Validate application details"],
     "validationOutcome": ["Validate application details"],
 }
@@ -414,9 +401,11 @@ def sdd_facts() -> dict:
         )
 
     var_reads = set(_VARS_RE.findall(sdd)) - {"$xref"}
-    if len(var_reads) < 30:
+    # A floor, not a count: it catches a regex that matched nothing, and stays well under
+    # the real figure so trimming the case does not move it.
+    if len(var_reads) < 20:
         _fail(
-            f"fixture parse error: expected >=30 distinct vars.* reads; got {len(var_reads)}"
+            f"fixture parse error: expected >=20 distinct vars.* reads; got {len(var_reads)}"
         )
 
     missing_dates = [

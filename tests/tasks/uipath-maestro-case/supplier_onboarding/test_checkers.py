@@ -280,10 +280,6 @@ TASKS = [
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.offeringDescription', 'vars.validationOutcome', 'vars.validationIssues', 'vars.addedDocumentName', 'vars.duplicateSupplierIds', 'vars.sanctionsFindings', 'vars.categoryMatches', 'vars.suggestedCategory', 'vars.reviewNotes', 'vars.referenceCheckFindings', 'vars.buyerComments'],
       outputs=[('Action', 'action2', 'buyerDecision', '=Action', None), ('Comment', 'comment2', 'buyerComments', '=Comment', None)]),
     # --- Compliance and risk review ---
-    T('tCrc09jFu', 'api-workflow', 'Run compliance and risk check',
-      req=True, once=False, entry=[('runs-sequentially', None)],
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.countryOfRegistration', 'vars.sanctionsFindings', 'vars.duplicateSupplierIds'],
-      outputs=[('riskRating', 'riskRating', 'riskRating', '=riskRating', None), ('complianceFlags', 'complianceFlags', 'complianceFlags', '=complianceFlags', None)]),
     T('tCmp12nJx', 'action', 'Record compliance review decision',
       req=True, once=False, entry=[('runs-sequentially', None)],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactName', 'vars.contactEmail', 'vars.countryOfRegistration', 'vars.offeringCategory', 'vars.expectedAnnualSpend', 'vars.spendCurrency', 'vars.riskRating', 'vars.complianceFlags', 'vars.sanctionsFindings', 'vars.duplicateSupplierIds', 'vars.financialHealthSummary', 'vars.fraudIndicators', 'vars.concernLevel', 'vars.signOffTier', 'vars.directorSignOffDecision', 'vars.directorSignOffNotes', 'vars.buyerComments', 'vars.referenceCheckFindings', 'vars.legalOpinion', 'vars.complianceComments'],
@@ -297,37 +293,21 @@ TASKS = [
       req=False, once=True, entry=[('runs-sequentially', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})],
       reads=['metadata.ExternalId', 'vars.companyName', 'vars.expectedAnnualSpend', 'vars.spendCurrency'],
       outputs=[]),
-    T('tPrt17tPc', 'action', 'Confirm supplier portal access',
-      req=True, once=True, entry=[('runs-sequentially', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})],
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.supplierId', 'vars.portalAccessConfirmation'],
-      outputs=[('Action', 'action5', 'portalAccessConfirmation', '=Action', None)]),
     # --- Supplier onboarded ---
     T('tWlc18uQd', 'execute-connector-activity', 'Send supplier welcome message',
       req=True, once=True, entry=[('current-stage-entered', None)],
       reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'vars.supplierId', 'metadata.ExternalId'],
       outputs=[('response', 'response2', 'response2', '=response', 'Response'), ('Error', 'error2', 'error2', '=Error', 'Error'), ('Status', 'status2', 'lastEmailStatus', '=response.status', None), ('caseOutcome', None, 'caseOutcome', 'Onboarded', None)]),
-    T('tReg19vRe', 'api-workflow', 'Record supplier in approved register',
-      req=True, once=True, entry=[('current-stage-entered', None)],
-      reads=['metadata.ExternalId', 'vars.supplierId', 'vars.companyName'],
-      outputs=[('registeredAt', 'registeredAt', 'registeredAt', '=registeredAt', None), ('caseOutcome', None, 'caseOutcome', 'Onboarded', None)]),
     # --- Application rejected ---
     T('tRjn20wSf', 'execute-connector-activity', 'Send rejection notice to supplier',
       req=True, once=True, entry=[('current-stage-entered', None)],
       reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'vars.buyerDecision', 'vars.buyerComments', 'vars.complianceDecision', 'vars.complianceComments', 'metadata.ExternalId'],
       outputs=[('response', 'response3', 'response3', '=response', 'Response'), ('Error', 'error3', 'error3', '=Error', 'Error'), ('Status', 'status3', 'lastEmailStatus', '=response.status', None), ('caseOutcome', None, 'caseOutcome', 'Rejected', None)]),
-    T('tAud21xTg', 'api-workflow', 'Log rejection for audit',
-      req=True, once=True, entry=[('current-stage-entered', None)],
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.buyerDecision', 'vars.complianceDecision', 'vars.buyerComments', 'vars.complianceComments'],
-      outputs=[('auditRecordId', 'auditRecordId', 'auditRecordId', '=auditRecordId', None), ('caseOutcome', None, 'caseOutcome', 'Rejected', None)]),
     # --- Application withdrawn ---
     T('tWdc22yUh', 'execute-connector-activity', 'Send withdrawal confirmation',
       req=True, once=True, entry=[('current-stage-entered', None)],
       reads=['vars.contactEmail', 'vars.companyName', 'vars.contactName', 'metadata.ExternalId'],
       outputs=[('response', 'response4', 'response4', '=response', 'Response'), ('Error', 'error4', 'error4', '=Error', 'Error'), ('Status', 'status4', 'lastEmailStatus', '=response.status', None), ('caseOutcome', None, 'caseOutcome', 'Withdrawn', None)]),
-    T('tWcl23zVj', 'api-workflow', 'Close out withdrawn application',
-      req=True, once=True, entry=[('current-stage-entered', None)],
-      reads=['metadata.ExternalId', 'vars.companyName', 'vars.contactEmail'],
-      outputs=[('reviewsCancelled', 'reviewsCancelled', 'reviewsCancelled', '=reviewsCancelled', None), ('timersStopped', 'timersStopped', 'timersStopped', '=timersStopped', None), ('cleanupSummary', 'cleanupSummary', 'cleanupSummary', '=cleanupSummary', None), ('caseOutcome', None, 'caseOutcome', 'Withdrawn', None)]),
 ]
 
 # --- Stages, generated from a real build ----------------------------------------
@@ -346,27 +326,27 @@ STAGES = [
       slas=[('sla_CmpStg01', *E.STAGE_SLA[E.COMPLIANCE], [('esc_cm01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', 'e158a23e-f553-4107-82d5-68b788134d33', 'Compliance')]), ('esc_cm02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_cm01en', 'Buyer approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.buyerDecision === "approve"'})])],
       exits=[('Condition_cm01ex', 'Compliance rejected', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tCmp12nJx'], 'conditionExpression': '=js:vars.action4 === "reject"'})]), ('Condition_cm02ex', 'Sent to setup', None, 'wait-for-user', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
-      lanes=[['tCrc09jFu'], ['tCmp12nJx']]),
+      lanes=[['tCmp12nJx']]),
     S('Stage_Set8pE', 'Setting up the supplier', None,
       slas=[('sla_SetStg01', *E.STAGE_SLA[E.SETUP], [('esc_st01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_st02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_st01en', 'Compliance approved', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.complianceDecision === "approve"'})])],
       exits=[('Condition_st01ex', 'Bank verification failed', None, 'exit-only', False, 'Stage_Rej5rG', [('selected-tasks-completed', {'selectedTasksIds': ['tErp15rMa'], 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})]), ('Condition_st02ex', 'Setup complete', None, 'exit-only', True, None, [('required-tasks-completed', {'conditionExpression': '=js:vars.bankVerificationStatus === "verified"'})])],
-      lanes=[['tErp15rMa'], ['tNeg16sNb', 'tPrt17tPc']]),
+      lanes=[['tErp15rMa'], ['tNeg16sNb']]),
     S('Stage_Onb2qF', 'Supplier onboarded', None,
       slas=[('sla_OnbStg01', *E.STAGE_SLA[E.ONBOARDED], [('esc_on01ar', 'at-risk', E.STAGE_AT_RISK_PERCENT, 'notification', [('UserGroup', '93a89c1e-be35-410f-ae37-cc5a0e1bd4c2', 'Procurement Operations')]), ('esc_on02br', 'sla-breached', None, 'notification', [('UserGroup', 'afa0eb1e-0874-47bc-9ce6-8e4c5869de39', 'Procurement Operations Lead')])])],
       entry=[('Condition_on01en', 'Setup complete', False, None, None, None, [('selected-stage-completed', {'selectedStageId': 'Stage_Set8pE'})])],
       exits=[('Condition_on01ex', 'Onboarding complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
-      lanes=[['tWlc18uQd', 'tReg19vRe']]),
+      lanes=[['tWlc18uQd']]),
     S('Stage_Rej5rG', 'Application rejected', 'secondary',
       slas=[],
       entry=[('Condition_rj01en', 'Buyer declined', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Byr7mC', 'conditionExpression': '=js:vars.action2 === "reject"'})]), ('Condition_rj02en', 'Compliance rejected', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Cmp3nD', 'conditionExpression': '=js:vars.action4 === "reject"'})]), ('Condition_rj03en', 'Bank verification failed', True, None, None, None, [('selected-stage-exited', {'selectedStageId': 'Stage_Set8pE', 'conditionExpression': '=js:vars.bankVerificationStatus !== "verified"'})])],
       exits=[('Condition_rj01ex', 'Rejection complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
-      lanes=[['tRjn20wSf', 'tAud21xTg']]),
+      lanes=[['tRjn20wSf']]),
     S('Stage_Wdr9sH', 'Application withdrawn', 'secondary',
       slas=[],
       entry=[('Condition_wd01en', 'Supplier withdrew', True, None, None, None, [('user-selected-stage', None)])],
       exits=[('Condition_wd01ex', 'Withdrawal complete', None, 'exit-only', True, None, [('required-tasks-completed', None)])],
-      lanes=[['tWdc22yUh', 'tWcl23zVj']]),
+      lanes=[['tWdc22yUh']]),
 ]
 
 # --- Variables and bindings, generated from a real build -------------------------
@@ -926,11 +906,13 @@ class TasksIoTests(CheckerBase):
 
     def test_rejects_dropped_output(self):
         plan = baseline_plan()
-        item = task(plan, "Run compliance and risk check")
+        # Retargeted after the policy check was cut: the ERP task is the surviving
+        # api-workflow whose output a guard depends on.
+        item = task(plan, "Register supplier in ERP")
         item["data"]["outputs"] = [
-            o for o in item["data"]["outputs"] if o.get("var") != "riskRating"
+            o for o in item["data"]["outputs"] if o.get("var") != "supplierId"
         ]
-        self.rejects(plan, "nothing in the plan writes 'riskRating'")
+        self.rejects(plan, "nothing in the plan writes 'supplierId'")
 
     def test_rejects_adhoc_task_in_the_wrong_stage(self):
         plan = baseline_plan()
