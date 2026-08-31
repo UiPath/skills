@@ -4,6 +4,25 @@ Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
+## The short loop
+
+`decompile` writes `<Name>.pipeline.mjs` alongside the source. Prefer it for any
+narrow edit: it chains all four steps below, and it captures the baseline before
+your edit rather than after, which is the ordering mistake that forces a rebuild.
+
+```bash
+uip maestro flow decompile Deployed.flow -o Deployed.flow.ts
+node Deployed.pipeline.mjs    # compiles the pristine baseline; stops there
+# Edit Deployed.flow.ts narrowly; preserve existing step ids.
+node Deployed.pipeline.mjs    # compiles the edit, merges into Deployed.merged.flow
+```
+
+Re-running it after further edits repeats only the compile and merge — the
+baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
+you deliberately want the manual sequence instead.
+
+## The same loop by hand
+
 ```bash
 uip maestro flow decompile Deployed.flow -o Deployed.flow.ts
 uip maestro flow compile Deployed -o Deployed.baseline.flow
@@ -38,9 +57,7 @@ whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
 
-Validate `Deployed.merged.flow`, not the intermediate edited compile. The
-decompiler also emits `Deployed.pipeline.mjs`, which chains the same four
-steps when a single command is more convenient.
+Validate `Deployed.merged.flow`, not the intermediate edited compile.
 
 ## Split (`$ref`) artifacts
 

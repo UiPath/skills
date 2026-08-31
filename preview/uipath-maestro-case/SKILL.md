@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ 86e3d32. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ 3d5a94e. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -21,7 +21,7 @@ Use this as a router: read only the capability reference you need, then let Type
 
 ## Workflow
 
-1. Scaffold with `uip solution init <SolutionName>`, then run `uip maestro case init <CaseName>` inside it.
+1. Scaffold with `uip solution init <SolutionName>`, then run `uip maestro case init <CaseName>` inside it. Scaffold once: exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates. If a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/flow-sdk/case`; default-export a chain ending in `.build()`.
@@ -95,7 +95,7 @@ API workflow, or sub-case; never fabricate a name or folder. A destination's
 
 ## Evidence boundary
 
-Static success proves the source and artifact contracts. It does not prove live
-resource resolution, human outcomes, timers, skipped-task completion behavior,
-or business-calendar semantics. Read [Case runtime decisions](references/case-runtime.md)
-when one of those affects the requested outcome.
+Static success proves the source and artifact contracts. It proves neither live
+behavior (resource resolution, human outcomes, timers, skipped-task completion,
+business calendars) nor the design decisions no schema checks: lane routing,
+non-completing exits, declared optionality, SDD fidelity. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
