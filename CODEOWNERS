@@ -84,8 +84,6 @@
 /skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
 /skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
 /skills/uipath-planner/scripts/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-# Case planner evals. `_shared/` stays at the suite root: its __init__.py bridges the
-# uipath-maestro-case and uipath-planner checker packages by that path.
 /tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 
