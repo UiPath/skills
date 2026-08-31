@@ -4,9 +4,9 @@ Unified issue log for the implementation phase. Initialized by `implementation.m
 
 > **No `planning.md`** — logging is an implementation-only utility (not a planned node type), so it has no planning doc. Intentional, not a gap.
 
-> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent accumulates issues in its own reasoning *within a section* and emits `tasks/build-issues.md` with the Write/Edit tools at each flush. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations.md § Tool usage`](../../case-editing-operations.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
+> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent accumulates issues in its own reasoning *within a section* and emits `tasks/build-issues.md` with the Write/Edit tools at each flush. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations.md § Tool usage`](../../case-editing-primitives.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
 
-**Flush grain: the section boundary.** Not per issue (one Edit per finding, fights the [per-section batch write contract](../../case-editing-operations.md#per-section-batch-write-contract--canonical)); not per build (a whole-build buffer is lost to context pressure before it is written, and no Step 12 check reads the log). A section boundary already carries a validate, so the flush rides an existing seam and bounds loss to one section.
+**Flush grain: the section boundary.** Not per issue (one Edit per finding, fights the [per-section batch write contract](../../case-editing-primitives.md#per-section-batch-write-contract--canonical)); not per build (a whole-build buffer is lost to context pressure before it is written, and no Step 12 check reads the log). A section boundary already carries a validate, so the flush rides an existing seam and bounds loss to one section.
 
 ## Setup — Step 6 entry
 
