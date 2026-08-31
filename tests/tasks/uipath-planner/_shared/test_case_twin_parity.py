@@ -17,7 +17,7 @@ import os
 import re
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..")
-CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "case-design-layers-guide.md")
+CANONICAL = os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-layers-guide.md")
 TWIN = os.path.join(ROOT, "skills", "uipath-maestro-case", "references", "sla-response-shapes.md")
 CANONICAL_FIELDS = CANONICAL
 TWIN_FIELDS = os.path.join(ROOT, "skills", "uipath-maestro-case", "references", "registry-discovery.md")
@@ -114,7 +114,7 @@ def test_the_planner_declares_the_twin_relationship():
 def test_neither_side_links_into_the_other_skills_files():
     """Self-containment: sibling references are by skill NAME, never by file path."""
     for path in (CANONICAL, TWIN, TWIN_FIELDS,
-                 os.path.join(ROOT, "skills", "uipath-planner", "references", "case-design-lane-guide.md"),
+                 os.path.join(ROOT, "skills", "uipath-planner", "references", "case", "case-design-lane-guide.md"),
                  os.path.join(ROOT, "skills", "uipath-maestro-case", "SKILL.md")):
         text = read(path)
         offenders = re.findall(r"\]\((?:\.\./)+uipath-[a-z-]+/[^)]+\)", text)

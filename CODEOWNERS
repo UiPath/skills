@@ -79,8 +79,17 @@
 /tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/skills/uipath-planner/ @RaduAna-Maria
+/tests/tasks/uipath-planner/ @RaduAna-Maria
+# Case Management surface inside the planner (planner is the sole Case SDD author) — case owners
+# co-own only these. Case-only files live in `case/` subfolders so ownership stays folder-level:
+# add a new case-only file to the matching `case/` folder and it is covered with no CODEOWNERS edit.
+/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/skills/uipath-planner/scripts/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+# Case-specific planner evals
+/tests/tasks/uipath-planner/bpmn_vs_case_management/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/tests/tasks/uipath-planner/deferral_single_case.yaml @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
 # Case-design evals migrated from uipath-maestro-case (planner-sole-SDD-author) — case owners stay reviewers
 /tests/tasks/uipath-planner/_shared/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/case_design_interview/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin

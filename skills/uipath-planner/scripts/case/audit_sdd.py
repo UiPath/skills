@@ -222,7 +222,7 @@ def lineage_findings(text: str) -> list[str]:
     return findings
 
 
-LAYERS_MD = Path(__file__).resolve().parent.parent / "references" / "case-design-layers-guide.md"
+LAYERS_MD = Path(__file__).resolve().parent.parent.parent / "references" / "case" / "case-design-layers-guide.md"
 
 
 def load_model_facts() -> tuple[dict, str | None]:
