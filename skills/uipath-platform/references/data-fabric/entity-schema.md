@@ -32,7 +32,7 @@ Pass the exact `EntityFieldDataType` UPPERCASE string — CLI is case-sensitive.
 |---|---|---|
 | `STRING` | NVARCHAR | Short text (≤4000 chars via `lengthLimit`) |
 | `MULTILINE_TEXT` | NVARCHAR(MAX) | Long text (≤10000 chars via `lengthLimit`) |
-| `MULTILINE_MAX` | NVARCHAR(MAX) | Very large text (`lengthLimit` = UTF-16 byte budget, 1–131072; default 128 KB ≈ 65,536 chars max). No filter/sort; list/query reads return a size marker — see [MULTILINE_MAX fields](#multiline_max-fields) |
+| `MULTILINE_MAX` | NVARCHAR(MAX) | Very large text (`lengthLimit` = UTF-16 byte budget, 1–131072; default 128 KB ≈ 65,536 chars max). No filter/sort; list/query reads return a truncated preview or legacy size marker, never the reliable full value — see [MULTILINE_MAX fields](#multiline_max-fields) |
 | `DECIMAL` | DECIMAL | All numbers — `decimalPrecision: 0` for whole; `2` for money |
 | `BOOLEAN` | BIT | true/false |
 | `DATE` | DATE | Date only |
@@ -80,7 +80,7 @@ If the CLI rejects a `--body` with *"Cannot read properties of undefined (readin
 Very large text. Contract differs from `MULTILINE_TEXT`:
 
 1. **Not filterable, not sortable.** Any `queryFilters` or `sortOptions` entry naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Never offer the field in filter/sort predicates. See [filter contract](filter-platform-contract.md#operator-support-by-field-type).
-2. **List/query reads return a size marker, not content.** `records list` / `records query` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`); only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--marker-vs-full-content).
+2. **List/query reads return a preview, not the reliable full value.** With the `EnableMultilineMaxTruncatedContent` rollout flag ON, `records list` / `records query` return the value truncated to the first 10,000 characters with a `...[Truncated]` suffix when longer (values ≤ 10,000 chars come back whole); with the flag OFF they return the legacy size marker `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`). Encrypted fields always return `"HasValue=true Encrypted=true"`. Only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--preview-vs-full-content).
 3. **On a 400 from `entities create` / `addFields` naming the type**, surface the error verbatim — do NOT retry or silently substitute `MULTILINE_TEXT` (Rule 18).
 
 ```bash
