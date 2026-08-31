@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SupplierOnboarding: do the routing guards compare against values that can occur?
 
-Five assertions. Every one of them can fail on a plan `uip maestro case validate`
+Six assertions. Every one of them can fail on a plan `uip maestro case validate`
 calls Valid, and every failure is silent at build time and permanent at runtime.
 
  1. Guard literals come from the deployed forms' own output enums. The buyer form
@@ -15,14 +15,19 @@ calls Valid, and every failure is silent at build time and permanent at runtime.
     that computes the tier.
  5. Every guard reads a subject the plan actually holds. A guard over an unknown
     variable evaluates to undefined and never routes.
+ 6. Every `=js:` expression in the plan parses as JavaScript. `uip maestro case
+    validate` checks that the variable names exist and stops there, so an expression
+    with an unbalanced paren is reported Valid and throws on its first evaluation.
 
 Read-only. Exit 0 clean, 1 on findings.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -64,6 +69,38 @@ def _guard_expressions(caseplan) -> list[tuple[str, str]]:
         if expr:
             out.append((f"case exit {cond.get('displayName')!r}", expr))
     return out
+
+
+def _js_syntax_findings(caseplan) -> list[str]:
+    """Reject any `=js:` expression that does not parse.
+
+    `node` is what runs the CLI, so it is always present; parsing through it is the same engine
+    the runtime uses rather than an approximation of it. A missing check here is worse than a
+    wrong one, so an unusable node is reported as a finding rather than passed over.
+    """
+    expressions = P.js_expressions(caseplan)
+    if not expressions:
+        return []
+    probe = (
+        "const src = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+        "const bad = [];"
+        "for (const [path, text] of src) {"
+        "  try { new Function('return (' + text + ')'); }"
+        "  catch (e) { bad.push([path, text.slice(0, 120), e.message]); }"
+        "}"
+        "process.stdout.write(JSON.stringify(bad));"
+    )
+    try:
+        proc = subprocess.run(["node", "-e", probe], input=json.dumps(expressions),
+                              capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return [f"could not parse the plan's {len(expressions)} `=js:` expression(s): {exc}"]
+    if proc.returncode != 0:
+        return [f"could not parse the plan's `=js:` expressions: {(proc.stderr or '')[:200]}"]
+    return [
+        f"the `=js:` expression at {path} does not parse ({message}): {text}"
+        for path, text, message in json.loads(proc.stdout or "[]")
+    ]
 
 
 def main() -> int:
@@ -186,6 +223,9 @@ def main() -> int:
                     "routes"
                 )
 
+    # ---- 6. every =js: expression parses -----------------------------------
+    problems.extend(_js_syntax_findings(caseplan))
+
     print(f"checked {P.find_caseplan()}")
     print(f"guards: {len(guards)}   distinct literals: {sorted(used)}")
     print(f"fixture literals: {sorted(facts['guard_literals'])}")
@@ -193,8 +233,9 @@ def main() -> int:
         print(
             "OK: every routing guard compares against a value its deployed form can emit "
             f"({sorted(allowed)}), the buyer's approval and diversions carry complementary "
-            f"literals, the {E.DIRECTOR_THRESHOLD} threshold is enforced case-side, and "
-            "every guard subject resolves"
+            f"literals, the {E.DIRECTOR_THRESHOLD} threshold is enforced case-side, "
+            f"every guard subject resolves, and all {len(P.js_expressions(caseplan))} "
+            "`=js:` expressions parse"
         )
         return 0
 

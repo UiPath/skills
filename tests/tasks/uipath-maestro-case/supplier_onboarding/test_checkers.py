@@ -855,6 +855,20 @@ class GuardTests(CheckerBase):
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
 
+    def test_rejects_an_unparseable_js_expression(self):
+        # One missing close paren, 300 characters from its partner. `uip maestro case validate`
+        # reports Valid; the case throws on the expression's first evaluation.
+        plan = baseline_plan()
+        plan["nodes"].append({
+            "id": "tzbanXpNg",
+            "name": "Confirm offering category match",
+            "inputs": {
+                "documents": '=js:([["Bank details", vars.bankDetailsDocument]]'
+                             '.map(function (p) { return p[0]; }).join("; ")',
+            },
+        })
+        self.rejects(plan, "does not parse")
+
     def test_rejects_business_label_instead_of_form_enum(self):
         plan = baseline_plan()
         blob = json.dumps(plan).replace('=== \\"sendback\\"', '=== \\"SendBack\\"')

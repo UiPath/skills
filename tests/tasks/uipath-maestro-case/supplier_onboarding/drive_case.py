@@ -105,6 +105,11 @@ FINISHED = {"Completed", "Successful", "Faulted", "Cancelled"}
 # to notice it, so it is set well above the deadline rather than at it.
 BREACH_TIMEOUT = 1500
 
+# A solution's first upload registers the solution and its process before any instance exists, so
+# the first route of a fresh build waits longer here than later ones. Measured: a re-uploaded
+# solution surfaces its instance inside a minute, a brand new one took over five.
+INSTANCE_TIMEOUT = 600
+
 POLL_SLEEP = 10
 GATE_TIMEOUT = 420
 # Long enough to outlast the slowest route. The sla route spends its first sixteen minutes
@@ -128,24 +133,46 @@ def envelope(args: list[str], *, timeout: int = 120) -> dict:
     if start < 0:
         return {"Result": "Failure", "Message": (proc.stderr or out)[:400]}
     try:
-        return json.loads(out[start:])
+        reply = json.loads(out[start:])
     except json.JSONDecodeError:
         return {"Result": "Failure", "Message": out[:400]}
+    # A failing verb answers with a one-line Message and puts the HTTP status, endpoint, response
+    # body and trace id in Instructions. Carrying both, plus stderr, is the difference between
+    # "Error completing task" and a reason.
+    if reply.get("Result") != "Success" and (proc.stderr or "").strip():
+        reply.setdefault("Stderr", proc.stderr.strip()[:600])
+    return reply
 
 
 def run(args: list[str], *, timeout: int = 120) -> dict:
     return envelope(args, timeout=timeout).get("Data") or {}
 
 
-def run_list(args: list[str], *, timeout: int = 120) -> list:
-    """The rows a uip list command returned. Some verbs answer with a bare list; `instance element-executions` wraps its rows in a named field beside the instance's own metadata, so a known key wins and any list-valued field is the fallback."""
-    data = run(args, timeout=timeout)
+def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
+    """`run_list`, but a failed CLI call raises instead of reading as an empty result.
+
+    A polling loop cannot tell "no task yet" from "the call failed" when both answer with an
+    empty list, so a broken lookup burns the whole gate budget and then reports the wrong cause.
+    """
+    reply = envelope(args, timeout=timeout)
+    if reply.get("Result") != "Success":
+        raise RuntimeError(
+            f"`{' '.join(args[:3])}` failed: {reply.get('Message') or reply.get('Code') or reply}")
+    return _rows_of(reply.get("Data") or {})
+
+
+def _rows_of(data) -> list:
     if isinstance(data, list):
         return data
     for key in ("ElementExecutions", "value", "Items"):
         if isinstance(data.get(key), list):
             return data[key]
     return next((v for v in data.values() if isinstance(v, list)), [])
+
+
+def run_list(args: list[str], *, timeout: int = 120) -> list:
+    """The rows a uip list command returned. Some verbs answer with a bare list; `instance element-executions` wraps its rows in a named field beside the instance's own metadata, so a known key wins and any list-valued field is the fallback."""
+    return _rows_of(run(args, timeout=timeout))
 
 
 def current_identity() -> str:
@@ -179,7 +206,7 @@ def pending_task(watermark: int, title: str, done: set = frozenset(), instance_i
     driven are skipped, because a route that revisits a stage sees the same title twice and a
     just-completed task can still read as open for a moment.
     """
-    for row in run_list(["uip", "tasks", "list", "--output", "json"]):
+    for row in run_list_checked(["uip", "tasks", "list", "--output", "json"]):
         if not row.get("Id") or int(row["Id"]) <= watermark:
             continue
         if str(row["Id"]) in done or row.get("Status") == "Completed":
@@ -190,6 +217,32 @@ def pending_task(watermark: int, title: str, done: set = frozenset(), instance_i
             continue
         return row
     return None
+
+
+def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str) -> None:
+    """Say why every task carrying this title was passed over.
+
+    "never appeared" is the one failure this script cannot diagnose after the fact: post_run
+    deletes the solution, and with it the instance the task hung off. Naming the filter that
+    rejected each candidate is what separates a task the case never raised from a task the
+    lookup threw away.
+    """
+    rows = [r for r in run_list(["uip", "tasks", "list", "--output", "json"])
+            if (r.get("Title") or "") == title]
+    print(f"  watermark {watermark}, instance {instance_id}, {len(rows)} task(s) carry this title")
+    for row in sorted(rows, key=lambda r: int(r.get("Id") or 0))[-6:]:
+        tid = int(row.get("Id") or 0)
+        if tid <= watermark:
+            why = f"id <= watermark {watermark}, so it predates this run"
+        elif str(tid) in done:
+            why = "already driven by this run"
+        elif row.get("Status") == "Completed":
+            why = "already Completed"
+        elif row.get("CreatorJobKey") != instance_id:
+            why = f"raised by instance {row.get('CreatorJobKey')}, not this one"
+        else:
+            why = "PASSES every filter, so the lookup should have taken it"
+        print(f"    {tid} {row.get('Status')} created {row.get('CreatedTime')}: {why}")
 
 
 def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -> None:
@@ -207,7 +260,23 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
         "--output", "json",
     ])
     if reply.get("Result") != "Success":
-        fail(f"completing task {task_id} with action {action!r} failed: {reply.get('Message') or reply}")
+        detail = [f"completing task {task_id} with action {action!r} failed: "
+                  f"{reply.get('Message') or reply.get('Code') or reply}"]
+        for key in ("Instructions", "Stderr"):
+            if reply.get(key):
+                detail.append(f"  {key}: {str(reply[key])[:600]}")
+        fail("\n".join(detail))
+
+
+def incidents(instance_id: str) -> list:
+    data = run(["uip", "maestro", "case", "instance", "incidents", instance_id,
+                "-f", CASE_FOLDER_KEY, "--output", "json"])
+    return data if isinstance(data, list) else (data.get("value") or [])
+
+
+def describe_incident(item: dict) -> str:
+    detail = str(item.get("ErrorDetails") or item.get("ErrorMessage") or item.get("Message") or "")
+    return f"{item.get('ElementId')!r} ({item.get('ErrorCode')}): {detail[:400]}"
 
 
 def fail_with_diagnosis(instance_id: str, msg: str):
@@ -217,13 +286,10 @@ def fail_with_diagnosis(instance_id: str, msg: str):
     an incident that is readable now is unreadable by the time anyone opens the result. Whatever
     the case recorded has to be captured here or not at all.
     """
-    data = run(["uip", "maestro", "case", "instance", "incidents", instance_id,
-                "-f", CASE_FOLDER_KEY, "--output", "json"])
-    incidents = data if isinstance(data, list) else (data.get("value") or [])
-    for item in incidents[:4]:
-        detail = str(item.get("ErrorDetails") or item.get("ErrorMessage") or "")
-        print(f"  incident on {item.get('ElementId')!r} ({item.get('ErrorCode')}): {detail[:300]}")
-    if not incidents:
+    raised = incidents(instance_id)
+    for item in raised[:4]:
+        print(f"  incident on {describe_incident(item)}")
+    if not raised:
         stages = [r.get("ElementId") for r in executions(instance_id)
                   if r.get("ElementType") == "CaseStage"]
         print(f"  no incident; the case reached stages {stages}")
@@ -463,18 +529,30 @@ def main() -> int:
     )
 
     instance_id = None
-    while instance_id is None and time.time() - started < 300:
+    while instance_id is None and time.time() - started < INSTANCE_TIMEOUT:
         time.sleep(POLL_SLEEP)
         instance_id = newest_instance(started_iso)
     if instance_id is None:
         debug.kill()
-        fail("no case instance appeared within 300s of starting debug")
+        fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug")
     print(f"instance {instance_id}")
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
     # fresh process, so the id is handed over on disk. It goes in the sandbox working directory,
     # not beside this script: the harness mounts the task directory read-only.
-    Path(".supplier-onboarding-run.json").write_text(
-        json.dumps({"instance_id": instance_id, "route": args.route}), encoding="utf-8")
+    state_path = Path(".supplier-onboarding-run.json")
+    runs = []
+    if state_path.exists():
+        try:
+            runs = json.loads(state_path.read_text(encoding="utf-8")).get("runs") or []
+        except (json.JSONDecodeError, OSError):
+            runs = []
+    runs = [r for r in runs if r.get("route") != args.route]
+    runs.append({"route": args.route, "instance_id": instance_id})
+    # `runs` accumulates across routes so the outcome probe grades every one of them; the flat
+    # pair stays for the child-case cleanup, which only needs the last instance to find its package.
+    state_path.write_text(
+        json.dumps({"instance_id": instance_id, "route": args.route, "runs": runs}),
+        encoding="utf-8")
 
     answered: set = set()
     done: set = set()
@@ -491,11 +569,21 @@ def main() -> int:
                 if task is None:
                     if run_status(instance_id) in FINISHED:
                         break
+                    # A case that raised an incident is stalled, not slow. Waiting out the gate
+                    # budget on it costs seven minutes per route and then reports "the task never
+                    # appeared", which names the symptom and hides the cause.
+                    raised = incidents(instance_id)
+                    if raised:
+                        for item in raised[:4]:
+                            print(f"  incident on {describe_incident(item)}")
+                        fail(f"the case raised {len(raised)} incident(s) while waiting for "
+                             f"{sdd_name!r}; it is stalled, so the gate will never open")
                     time.sleep(POLL_SLEEP)
             if task is None:
                 if run_status(instance_id) in FINISHED:
                     print(f"  the case finished before {sdd_name!r} opened; its guard closed that route")
                     break
+                explain_missing_gate(watermark, title, done, instance_id)
                 fail_with_diagnosis(instance_id,
                     f"the gate task for {sdd_name!r} (Action Center title {title!r}) never appeared")
             print(f"  gate {task['Id']} {task.get('Title')!r} -> {action}")
@@ -506,6 +594,10 @@ def main() -> int:
             next_title = task_title_for(remaining[0][0]) if remaining else None
             while advance(instance_id, watermark, next_title, answered, done, override) == "selected":
                 pass
+    except RuntimeError as exc:
+        # A lookup that could not run at all, surfaced by run_list_checked. Reported as a failure
+        # in its own right rather than as an empty result the caller mistakes for "not yet".
+        fail(str(exc))
     finally:
         try:
             debug.wait(timeout=max(30, DEBUG_TIMEOUT - int(time.time() - started)))

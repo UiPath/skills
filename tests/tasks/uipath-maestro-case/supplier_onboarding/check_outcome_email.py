@@ -20,7 +20,9 @@ name, which is identical across runs and cannot identify one. That one message i
 it is the first sequential task in 'Buyer review', so every route that leaves the intake
 stage sends it exactly once.
 
-Reads the instance drive_case.py just ran, whose id it left in RUN_STATE.
+Reads every route drive_case.py ran, from the list it accumulates in RUN_STATE, and grades
+each one against its own expected count. Grading only the last route lets `withdraw`, which
+should send nothing, stand in for the routes that must send.
 """
 
 from __future__ import annotations
@@ -75,10 +77,9 @@ def uip(args: list[str], timeout: int = 120) -> dict:
 def external_id(instance_id: str) -> str:
     data = uip(["maestro", "case", "instance", "get", instance_id,
                 "-f", CASE_FOLDER_KEY]).get("Data") or {}
-    value = str(data.get("ExternalId") or "")
-    if not value:
-        fail(f"instance {instance_id} reports no ExternalId; nothing identifies its messages")
-    return value
+    # Empty rather than fatal: a route that should send nothing has nothing to identify, so the
+    # caller decides whether a missing id is a finding.
+    return str(data.get("ExternalId") or "")
 
 
 def sent_messages() -> list:
@@ -111,37 +112,79 @@ def main() -> int:
     if not RUN_STATE.exists():
         fail(f"{RUN_STATE.name} is missing; drive_case.py must run before this check")
     state = json.loads(RUN_STATE.read_text(encoding="utf-8"))
-    instance_id = state.get("instance_id")
-    route = state.get("route")
-    if not instance_id:
-        fail(f"{RUN_STATE.name} carries no instance_id")
-    if route not in EXPECTED_SENDS:
-        fail(f"{RUN_STATE.name} names route {route!r}, which has no expected send count")
-    expected = EXPECTED_SENDS[route]
+    # Every route that reached an instance is graded. Grading only the last one lets a route that
+    # sends nothing by design stand in for the ones that must send, which is a free pass.
+    runs = state.get("runs")
+    if not runs and state.get("instance_id"):
+        runs = [{"route": state.get("route"), "instance_id": state.get("instance_id")}]
+    if not runs:
+        fail(f"{RUN_STATE.name} records no route that reached a case instance")
 
-    token = external_id(instance_id)
-    print(f"route {route!r}: expecting {expected} buyer notification(s) carrying ExternalId {token}")
+    unknown = sorted({r.get("route") for r in runs if r.get("route") not in EXPECTED_SENDS})
+    if unknown:
+        fail(f"{RUN_STATE.name} names route(s) {unknown}, which have no expected send count")
+    if not any(EXPECTED_SENDS[r["route"]] for r in runs):
+        fail("no route that sends a buyer notification reached a case instance, so the mailbox "
+             f"proves nothing; recorded routes: {sorted(r['route'] for r in runs)}")
 
-    hits = []
+    problems: list[str] = []
+    tokens: dict[str, str] = {}
+    for entry in sorted(runs, key=lambda r: r.get("route") or ""):
+        route = entry["route"]
+        instance_id = entry.get("instance_id") or ""
+        token = external_id(instance_id)
+        if token:
+            tokens[route] = token
+            print(f"route {route!r}: expecting {EXPECTED_SENDS[route]} buyer notification(s) "
+                  f"carrying ExternalId {token}")
+            continue
+        message = (f"instance {instance_id} (route {route!r}) reports no ExternalId; nothing "
+                   "identifies its messages")
+        if EXPECTED_SENDS[route]:
+            problems.append(message)
+        else:
+            print(f"  skipped: {message}, and this route should send nothing anyway")
+
+    # One mailbox read per round, graded for every route at once. Polling each route separately
+    # multiplies the wait by the number of routes and outlives the criterion's own timeout.
+    counts: dict[str, int] = {route: 0 for route in tokens}
+    found: dict[str, list] = {route: [] for route in tokens}
     for attempt in range(POLL_ATTEMPTS):
-        hits = [m for m in sent_messages() if token in (m.get("subject") or "")]
-        if len(hits) >= expected:
+        messages = sent_messages()
+        for route, token in tokens.items():
+            found[route] = [m for m in messages if token in (m.get("subject") or "")]
+            counts[route] = len(found[route])
+        if all(counts[r] >= EXPECTED_SENDS[r] for r in tokens):
             break
         if attempt + 1 < POLL_ATTEMPTS:
             time.sleep(POLL_SLEEP)
 
-    for m in hits:
-        print(f"  found: {m.get('subject')!r} sent {m.get('sentDateTime') or m.get('receivedDateTime')}")
+    for route in sorted(tokens):
+        expected = EXPECTED_SENDS[route]
+        for m in found[route]:
+            print(f"  {route}: found {m.get('subject')!r} sent "
+                  f"{m.get('sentDateTime') or m.get('receivedDateTime')}")
+        if counts[route] == expected:
+            print(f"  {route}: OK, {expected} buyer notification(s)")
+        elif counts[route] < expected:
+            problems.append(
+                f"route {route!r}: {counts[route]} of {expected} buyer notification(s) carry "
+                f"ExternalId {tokens[route]} after {POLL_ATTEMPTS * POLL_SLEEP}s. A connector task "
+                "can report Completed and still send nothing: check that saveAsDraft is false and "
+                "that message.toRecipients is bound.")
+        else:
+            problems.append(
+                f"route {route!r}: {counts[route]} messages carry ExternalId {tokens[route]} but "
+                f"the route enters 'Buyer review' {expected} time(s); an extra notification means "
+                "the phase was entered again")
 
-    if len(hits) == expected:
-        print(f"OK: the case sent {expected} buyer notification(s)")
+    if not problems:
+        print(f"OK: {len(runs)} route(s) sent exactly the buyer notifications they should")
         return 0
-    if len(hits) < expected:
-        fail(f"{len(hits)} of {expected} buyer notification(s) carry ExternalId {token} after "
-             f"{POLL_ATTEMPTS * POLL_SLEEP}s. A connector task can report Completed and still send "
-             f"nothing: check that saveAsDraft is false and that message.toRecipients is bound.")
-    fail(f"{len(hits)} messages carry ExternalId {token} but route {route!r} enters 'Buyer review' "
-         f"{expected} time(s); an extra notification means the phase was entered again")
+    print(f"\nFAIL: {len(problems)} outcome finding(s):", file=sys.stderr)
+    for item in problems:
+        print(f"  - {item}", file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":

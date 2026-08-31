@@ -122,7 +122,10 @@ success_criteria:
       every routing guard compares against a value its deployed form can actually emit
       (approve / reject / sendback / verified, not an invented business label), the
       buyer's approving and diverting exits carry complementary literals, the 500000
-      sign-off threshold is enforced case-side, and every guard subject resolves
+      sign-off threshold is enforced case-side, every guard subject resolves, and every
+      `=js:` expression in the plan parses as JavaScript (validate checks the variable
+      names and stops there, so an unbalanced paren is reported Valid and throws on its
+      first evaluation)
     command: "python3 $TASK_DIR/check_guards.py"
     timeout: 120
     expected_exit_code: 0
@@ -245,12 +248,13 @@ success_criteria:
 
   - type: run_command
     description: >
-      OUTCOME: the case actually sent the buyer notification. Measured in the mailbox's Sent
-      Items through the same connection the case sends on, keyed on this run's ExternalId. A
-      draft never reaches Sent Items and a message with no recipient is never accepted for
-      sending, so this catches the two ways a connector task reports Completed while notifying
-      nobody. Delivery is not graded: whether the address resolves is the build's own
-      contactEmail default.
+      OUTCOME: the case actually sent the buyer notification, on every route that ran. Each
+      route is graded against its own count (reject 1, sendback 2, sla 1, withdraw 0), measured
+      in the mailbox's Sent Items through the same connection the case sends on and keyed on
+      that route's own ExternalId. A draft never reaches Sent Items and a message with no
+      recipient is never accepted for sending, so this catches the two ways a connector task
+      reports Completed while notifying nobody. Delivery is not graded: whether the address
+      resolves is the build's own contactEmail default.
     command: "python3 $TASK_DIR/check_outcome_email.py"
     timeout: 400
     expected_exit_code: 0

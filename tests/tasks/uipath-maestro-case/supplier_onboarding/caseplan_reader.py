@@ -487,6 +487,29 @@ def metadata(plan: dict) -> dict:
     return plan.get("metadata") or {}
 
 
+def js_expressions(plan: dict) -> list[tuple[str, str]]:
+    """Every `=js:` expression in the plan, as (json path, source), deepest first.
+
+    Sink-blind like `surviving_xrefs`: a `=js:` lives in a guard, an SLA expression, a computed
+    output and an activity input payload, so a scan of one sink misses the rest.
+    """
+    found: list[tuple[str, str]] = []
+
+    def walk(node, path):
+        if isinstance(node, str):
+            if node.startswith("=js:"):
+                found.append((path, node[len("=js:"):]))
+        elif isinstance(node, dict):
+            for key, value in node.items():
+                walk(value, f"{path}.{key}")
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+
+    walk(plan, "")
+    return found
+
+
 def surviving_xrefs(plan: dict) -> dict:
     """Every unresolved `$xref(...)` marker in the plan, counted by marker text.
 
