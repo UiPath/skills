@@ -87,6 +87,8 @@ A secondary stage is an **interrupting exception lane**: `Stage Kind: secondary`
 | Lane intent | Completion row |
 |---|---|
 | Returning / rework | `return-to-origin` + `Marks Stage Complete: Yes` + `required-tasks-completed` |
+
+**Hard rule — a returning lane's exit selector.** `return-to-origin` pairs ONLY with `required-tasks-completed` or `wait-for-connector`, always with `Marks Stage Complete: Yes`. `selected-tasks-completed(...)` on a `return-to-origin` exit is illegal and is rejected by the mechanical gate: a selector-scoped exit cannot express "this lane finished, resume the origin". If you want the lane to end after one specific task, that task is the lane's required task — declare it `required-tasks-completed`, not `selected-`.
 | Terminal (Rejected / Withdrawn / Cancelled) | `exit-only` + `Yes`, plus a root case-exit row with `Marks Case Complete: No` |
 
 ### Other-path sweep — mandatory before confirmation
@@ -374,6 +376,8 @@ Pick from the source's words — WHERE the work lives, never whether it interrup
 | `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes` when the response pauses, takes over, or reroutes active work; `No` for parallel oversight |
 | `exit-stage` | The breached stage should end or route away | A stage-exit row | Per exit semantics |
 | `exit-case` | The case should close, cancel, or reach an alternate terminal | A case-exit row | Per exit semantics |
+
+**Hard rule — resumption decides between `enter-stage` and `exit-case`.** Ask one question: after the response runs, does the case CONTINUE? "A lane takes the case over until a manager clears it, then work resumes where it left off" continues — that is `enter-stage` with `Interrupting: Yes` and a `return-to-origin` exit, never `exit-case`. `exit-case` is TERMINAL: use it only when the case genuinely ends there (cancelled, withdrawn, closed early) and nothing resumes. A row that names a target stage to enter and then returns is an `enter-stage` row no matter how severe the breach that triggered it.
 
 Never author `start-task` as a stage-entry row on the breached stage: it validates, but stage re-entry re-runs every task whose `Run Only Once` is `No` — a breach meant to add one manager check silently re-runs the whole stage.
 
