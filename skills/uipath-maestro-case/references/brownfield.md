@@ -38,7 +38,7 @@ Record the outcome (pulled from SW at `<SolutionId>`, or local-only) for the fre
 
 ## Large or sweeping edits
 
-Edit size never changes the journey — many edits still stay brownfield (in-place, IDs preserved). No complexity threshold escalates to greenfield. Batch multi-edit passes per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical): one `validate` at the end, not per edit.
+Edit size never changes the journey — many edits still stay brownfield (in-place, IDs preserved). No complexity threshold escalates to greenfield. Batch multi-edit passes per [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical): one `validate` at the end, not per edit.
 
 When an edit touches many nodes or reads like "rebuild this case", confirm scope first via AskUserQuestion — `Edit in place` (default) vs `Rebuild from an updated spec` (greenfield via [planning.md](planning.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates to greenfield.
 
@@ -53,30 +53,30 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 | Edit | Operation + recipe |
 |---|---|
-| Add / insert a stage | [case-editing-operations.md § Add a node](case-editing-operations.md#add-a-node-trigger--stage) + [plugins/stages/impl-json.md](plugins/stages/impl-json.md). Every regular stage needs ≥1 entry condition (Step 10). |
-| Insert a stage between two existing stages | [case-editing-operations.md § Insert a stage between two existing stages](case-editing-operations.md#insert-a-stage-between-two-existing-stages) |
-| Add a task to a stage | [case-editing-operations.md § Add a task to a stage](case-editing-operations.md#add-a-task-to-a-stage) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
-| Bind / change a task input | [case-editing-operations.md § Bind an input](case-editing-operations.md#bind-an-input) + [bindings-and-expressions.md](bindings-and-expressions.md) |
-| Move a task to a different stage or lane | [case-editing-operations.md § Move a task to a different stage or lane](case-editing-operations.md#move-a-task-to-a-different-stage-or-lane) |
-| Remove / delete a task | [case-editing-operations.md § Delete a task](case-editing-operations.md#delete-a-task) |
+| Add / insert a stage | [case-editing-operations.md § Add a node](case-editing-primitives.md#add-a-node-trigger--stage) + [plugins/stages/impl-json.md](plugins/stages/impl-json.md). Every regular stage needs ≥1 entry condition (Step 10). |
+| Insert a stage between two existing stages | [case-editing-operations.md § Insert a stage between two existing stages](case-editing-composites.md#insert-a-stage-between-two-existing-stages) |
+| Add a task to a stage | [case-editing-operations.md § Add a task to a stage](case-editing-primitives.md#add-a-task-to-a-stage) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
+| Bind / change a task input | [case-editing-operations.md § Bind an input](case-editing-primitives.md#bind-an-input) + [bindings-and-expressions.md](bindings-and-expressions.md) |
+| Move a task to a different stage or lane | [case-editing-operations.md § Move a task to a different stage or lane](case-editing-composites.md#move-a-task-to-a-different-stage-or-lane) |
+| Remove / delete a task | [case-editing-operations.md § Delete a task](case-editing-primitives.md#delete-a-task) |
 | Add / change a condition (4 scopes) | the matching [plugins/conditions/<scope>/impl-json.md](plugins/conditions/) |
-| Modify a condition rule in place (operator / expression / type) | [case-editing-operations.md § Modify a condition rule in place](case-editing-operations.md#modify-a-condition-rule-in-place) |
-| Delete a condition rule (plain or connector, any scope) | [case-editing-operations.md § Delete a condition rule](case-editing-operations.md#delete-a-condition-rule) |
-| Remove a case-exit completion / exit rule | [case-editing-operations.md § Delete a case-exit completion rule](case-editing-operations.md#delete-a-case-exit-completion-rule) |
-| Replace a placeholder task with a real one | [case-editing-operations.md § Replace a placeholder task with an enriched task](case-editing-operations.md#replace-a-placeholder-task-with-an-enriched-task) + [placeholder-tasks.md](placeholder-tasks.md) |
-| Re-sync a task whose source schema changed | [case-editing-operations.md § Re-sync a task after its source schema changed](case-editing-operations.md#re-sync-a-task-after-its-source-schema-changed) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
-| Repoint a non-connector task at a different resource (swap which process/agent it runs) | [case-editing-operations.md § Repoint a non-connector task at a different resource](case-editing-operations.md#repoint-a-non-connector-task-at-a-different-resource) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
-| Replace a trigger with a different type | [case-editing-operations.md § Replace a trigger with a different type](case-editing-operations.md#replace-a-trigger-with-a-different-type) |
-| Re-target an event trigger (same type, different event) | [case-editing-operations.md § Re-target an event trigger](case-editing-operations.md#re-target-an-event-trigger-same-type-different-event) |
-| Convert a Stage to/from an Exception Stage | [case-editing-operations.md § Convert a Stage to/from an Exception Stage](case-editing-operations.md#convert-a-stage-tofrom-an-exception-stage) |
-| Delete a node (incl. a stage with successors — repoint their entry conditions) | [case-editing-operations.md § Delete a node](case-editing-operations.md#delete-a-node) |
-| Delete a trigger (prune `entry-points.json` + In-arg variable cascade) | [case-editing-operations.md § Delete a node](case-editing-operations.md#delete-a-node) (Trigger branch, steps 5–6) |
-| Delete a connector condition rule | [case-editing-operations.md § Delete a condition rule](case-editing-operations.md#delete-a-condition-rule) (connector cascade, steps 4–6) |
+| Modify a condition rule in place (operator / expression / type) | [case-editing-operations.md § Modify a condition rule in place](case-editing-primitives.md#modify-a-condition-rule-in-place) |
+| Delete a condition rule (plain or connector, any scope) | [case-editing-operations.md § Delete a condition rule](case-editing-primitives.md#delete-a-condition-rule) |
+| Remove a case-exit completion / exit rule | [case-editing-operations.md § Delete a case-exit completion rule](case-editing-primitives.md#delete-a-case-exit-completion-rule) |
+| Replace a placeholder task with a real one | [case-editing-operations.md § Replace a placeholder task with an enriched task](case-editing-composites.md#replace-a-placeholder-task-with-an-enriched-task) + [placeholder-tasks.md](placeholder-tasks.md) |
+| Re-sync a task whose source schema changed | [case-editing-operations.md § Re-sync a task after its source schema changed](case-editing-composites.md#re-sync-a-task-after-its-source-schema-changed) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
+| Repoint a non-connector task at a different resource (swap which process/agent it runs) | [case-editing-operations.md § Repoint a non-connector task at a different resource](case-editing-composites.md#repoint-a-non-connector-task-at-a-different-resource) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
+| Replace a trigger with a different type | [case-editing-operations.md § Replace a trigger with a different type](case-editing-composites.md#replace-a-trigger-with-a-different-type) |
+| Re-target an event trigger (same type, different event) | [case-editing-operations.md § Re-target an event trigger](case-editing-composites.md#re-target-an-event-trigger-same-type-different-event) |
+| Convert a Stage to/from an Exception Stage | [case-editing-operations.md § Convert a Stage to/from an Exception Stage](case-editing-composites.md#convert-a-stage-tofrom-an-exception-stage) |
+| Delete a node (incl. a stage with successors — repoint their entry conditions) | [case-editing-operations.md § Delete a node](case-editing-primitives.md#delete-a-node) |
+| Delete a trigger (prune `entry-points.json` + In-arg variable cascade) | [case-editing-operations.md § Delete a node](case-editing-primitives.md#delete-a-node) (Trigger branch, steps 5–6) |
+| Delete a connector condition rule | [case-editing-operations.md § Delete a condition rule](case-editing-primitives.md#delete-a-condition-rule) (connector cascade, steps 4–6) |
 | Add SLA / escalation | [plugins/sla/impl-json.md](plugins/sla/impl-json.md) |
-| Modify / remove an SLA or escalation | [case-editing-operations.md § Modify or remove an SLA or escalation](case-editing-operations.md#modify-or-remove-an-sla-or-escalation) |
+| Modify / remove an SLA or escalation | [case-editing-operations.md § Modify or remove an SLA or escalation](case-editing-composites.md#modify-or-remove-an-sla-or-escalation) |
 | Add a global variable / argument | [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
-| Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-operations.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
-| Change a variable's type or default | [case-editing-operations.md § Change a variable's type or default](case-editing-operations.md#change-a-variables-type-or-default) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
+| Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-composites.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
+| Change a variable's type or default | [case-editing-operations.md § Change a variable's type or default](case-editing-composites.md#change-a-variables-type-or-default) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Add or repair a response to an SLA at-risk / breach event | [§ SLA responses in a brownfield edit](#sla-responses-in-a-brownfield-edit) below, then [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) |
 
 ## SLA responses in a brownfield edit
