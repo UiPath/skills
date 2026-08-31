@@ -1,5 +1,12 @@
 # stage-entry-conditions — Implementation (Direct JSON Write)
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`io-binding/impl-json.md`](../../variables/io-binding/impl-json.md) — output shapes, allocated ids, and `originalVar`
+> - [`sla-response-shapes.md`](../../../sla-response-shapes.md) — which SLA response shape is legal where
+
 > **Phase split.** Phase 2 writes the condition. A `wait-for-connector` rule gets the canonical stub; Phase 3 Step 10.5 upgrades only its `uipath` when resolved. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Write the Phase 2 stage-entry condition directly to the target stage's `data.entryConditions[]`; this initial write needs no CLI call. Step 10.5 handles the separate connector-rule upgrade.

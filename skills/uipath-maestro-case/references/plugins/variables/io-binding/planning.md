@@ -1,5 +1,10 @@
 # I/O Binding — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`impl-json.md`](impl-json.md) — output shapes, allocated ids, and `originalVar`
+
 Trust the SDD. Emit inputs/outputs exactly as declared. Every SDD Outputs row carries `->` or `=`; preserve that operator and both operands through `tasks.md`. Bare `tasks.md` outputs come only from resolved-schema discovery, never from an SDD row. There is no `caseplan.json` yet — all validation happens during [implementation](impl-json.md).
 
 ## SDD Outputs table to `tasks.md` projection (mandatory)

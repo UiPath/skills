@@ -1,5 +1,11 @@
 # I/O Binding — Implementation
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`logging/impl-json.md`](../../logging/impl-json.md) — the issue-log entry shape
+
 > **Phase split.** Phase 3 only. Input/output binding at Step 9.8; in-expression `vars.$xref` marker resolution at Step 11.5 (after conditions + SLA). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.

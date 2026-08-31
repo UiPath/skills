@@ -1,5 +1,15 @@
 # connector-trigger task — Implementation (Direct JSON Write)
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`connector-trigger-planning.md`](../../../connector-trigger-planning.md) — connector resolution before you write the rule
+> - [`implementation-phase-3.md`](../../../implementation-phase-3.md) — Step 11.5 marker resolution and the Step 12 checks
+> - [`logging/impl-json.md`](../../logging/impl-json.md) — the issue-log entry shape
+> - [`io-binding/impl-json.md`](../../variables/io-binding/impl-json.md) — output shapes, allocated ids, and `originalVar`
+> - [`bindings-v2-sync.md`](../../../bindings-v2-sync.md) — the `resources[]` sidecar contract — Step 12 Check 7 grades this
+
 > **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling the legacy `uip maestro case tasks describe` command. The current path uses `uip maestro case spec --type trigger`. See SKILL.md Rule 16 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).

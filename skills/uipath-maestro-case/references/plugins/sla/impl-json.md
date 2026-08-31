@@ -1,5 +1,10 @@
 # sla — JSON Implementation
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`sla-response-shapes.md`](../../sla-response-shapes.md) — which SLA response shape is legal where
+
 > **Phase split.** Phase 2 Step 11 writes SLA and escalation objects before conditions. Phase 3 does not revisit them except for whole-file `$xref` resolution. See [`../../phased-execution.md`](../../phased-execution.md).
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).

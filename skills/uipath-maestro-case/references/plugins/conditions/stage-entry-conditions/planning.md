@@ -1,5 +1,10 @@
 # stage-entry-conditions — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`connector-trigger-planning.md`](../../../connector-trigger-planning.md) — connector resolution before you write the rule
+> - [`sla-response-shapes.md`](../../../sla-response-shapes.md) — which SLA response shape is legal where
+
 Conditions that control **when a stage is entered**. Attach to a stage; fire when the inbound rule is satisfied.
 
 ## When to Use
