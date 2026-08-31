@@ -20,10 +20,21 @@ tags:
   - feature:conversational
   - feature:registry
 
+# Budget is set from the staged fixture, not from the sibling default. The
+# passing reference is case_finalize_draft_picker: a 7 KB draft finalized in
+# 6m06s (366s) under a 1500s wall. This task stages a 53 KB draft — 7.5x that
+# fixture — and the criteria require the complete ordered inventory, so the
+# render cannot be shortened. Linear scaling of the reference is ~2741s, i.e.
+# above the old 2400s turn wall, and run 2026-08-31_04-15-47 duly ERRORed at it
+# with zero criteria graded (the loan variant had already written a passing
+# sdd.md when the wall fired). turn_timeout is the binding wall for a
+# single-user-turn task, so it must clear the work and task_timeout must clear
+# turn_timeout. If a run still hits this wall, the cause is the doc/validator
+# hunting seen in that run, not the budget — raise it no further.
 run_limits:
-  task_timeout: 3000
+  task_timeout: 4200
   max_turns: 150
-  turn_timeout: 2400
+  turn_timeout: 3600
 
 # Stage the ready-made interview draft into the sandbox root as sdd.draft.md.
 # The planner's draft-finalization path (sdd.draft.md present, no sdd.md) picks it up.
