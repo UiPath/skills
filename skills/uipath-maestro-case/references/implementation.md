@@ -127,7 +127,18 @@ Per distinct trigger type, add `plugins/triggers/<manual|timer|event>/impl-json.
 
 **Step 3 — read.** Read every manifest file in full, to its `<!-- END: … -->` marker, per Rule 24 of `SKILL.md`. Read them as one batch before Step 6; do not interleave manifest reads with writes. Read each file once — the per-plugin single-read rule above still applies, and the manifest is that single read.
 
-**Step 4 — gate.** Do not enter Step 6 until every file on the manifest has been read to its END marker in this session. A task `type` that appears in `tasks.md` whose `impl-json.md` was never read is a build defect, not a shortcut: those task nodes come out missing or malformed, and `uip maestro case validate` returns `Valid` for a caseplan whose stages contain no tasks at all. The manifest is bounded by what the plan actually contains — it is not the full reference tree, and every file on it is needed.
+**The manifest is a floor, never a ceiling.** It is the minimum set this build cannot be correct without. It is not the complete list of what you may need, and finishing it does not mean you are done reading. Whenever a step, a plugin, or a `tasks.md` row references a shape or procedure you have not read, read that file too — the manifest never overrides Rule 24. A build that reads only the manifest and nothing else has under-read.
+
+**Exact paths, not directories.** Each manifest entry names one file. `planning.md` and `impl-json.md` are different documents with different content, and reading the sibling does NOT satisfy the entry: `plugins/variables/global-vars/planning.md` does not satisfy `plugins/variables/global-vars/impl-json.md`. Planning references describe what to decide; `impl-json.md` carries the JSON shape you are about to write. Check each entry off by its full path.
+
+**Step 4 — gate.** Do not enter Step 6 until every file on the manifest has been read to its END marker in this session. Walk the manifest entry by entry and confirm each exact path was read; a near-miss (the directory's `planning.md`, a `grep` for one section, a read that stopped before the END marker) leaves that entry unread.
+
+Two distinct build defects follow from a skipped entry, and `uip maestro case validate` catches neither:
+
+1. A task `type` present in `tasks.md` whose `impl-json.md` was never read — those task nodes come out missing or malformed, and `validate` returns `Valid` for a caseplan whose stages contain no tasks at all.
+2. A fixed-core entry skipped because the plan "obviously" does not need it — `global-vars/impl-json.md` carries the formal-argument output shape, and skipping it silently produces formal outputs with a null `var`, which `validate` also passes.
+
+The manifest is bounded by what the plan actually contains — it is not the full reference tree, and every file on it is needed.
 
 ## Step 6 — Create the Case project structure
 

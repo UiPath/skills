@@ -36,8 +36,10 @@ Phase 3 crosses a hard stop, so its manifest is read fresh here even when Phase 
 Fixed core — always on the manifest:
 
 - [`case-editing-primitives.md`](case-editing-primitives.md)
-- [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md)
+- [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — carries both the `=vars.<id>` write form for Step 9.8 and the `vars.$xref` resolution algorithm for Step 11.5
 - [`plugins/variables/bindings/impl-json.md`](plugins/variables/bindings/impl-json.md)
+- [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md)
+- [`bindings-and-expressions.md`](bindings-and-expressions.md)
 - [`bindings-v2-sync.md`](bindings-v2-sync.md)
 
 Add, when Step 1 found any connector task or any `wait-for-connector` rule:
@@ -49,7 +51,20 @@ Add, when Step 1 found any connector task or any `wait-for-connector` rule:
 
 **Step 3 — read.** Read every manifest file in full, to its `<!-- END: … -->` marker, per Rule 24 of `SKILL.md`. Read them as one batch before Step 9.7; do not interleave manifest reads with writes.
 
-**Step 4 — gate.** Do not enter Step 9.7 until every manifest file has been read to its END marker in this session. Connector schema and I/O binding are the two places where a partial read produces a caseplan that validates and is still wrong — `validate` checks neither `caseShape.context` completeness nor cross-task output reference IDs.
+**The manifest is a floor, never a ceiling.** It is the minimum set this build cannot be correct without. It is not the complete list of what you may need, and finishing it does not mean you are done reading. Whenever a step, a plugin, or a `tasks.md` row references a shape or procedure you have not read, read that file too — the manifest never overrides Rule 24. A build that reads only the manifest and nothing else has under-read.
+
+**Exact paths, not directories.** Each manifest entry names one file. `planning.md` and `impl-json.md` are different documents with different content, and reading the sibling does NOT satisfy the entry: `plugins/variables/global-vars/planning.md` does not satisfy `plugins/variables/global-vars/impl-json.md`. Planning references describe what to decide; `impl-json.md` carries the JSON shape you are about to write. Check each entry off by its full path.
+
+**Phase 3 is not complete until all four of these hold** — none is checked by `uip maestro case validate`, and each corresponds to a manifest file above:
+
+| Must hold at Phase 3 exit | Written by | Manifest file |
+|---|---|---|
+| Every task input reference is `=vars.<outputReferenceId>` — the `vars.` prefix is required; a bare `=<id>` is wrong | Step 9.8 | `io-binding/impl-json.md` |
+| Zero `vars.$xref(` markers remain anywhere in `caseplan.json` | Step 11.5 | `io-binding/impl-json.md`, `bindings-and-expressions.md` |
+| `bindings_v2.json` carries a `resources[]` key for every resolved resource task | Step 9.7 Phase C | `bindings-v2-sync.md` |
+| Every formal argument has a non-null `var` and a synthetic `id` | Step 12 Check 10 | `global-vars/impl-json.md` |
+
+**Step 4 — gate.** Do not enter Step 9.7 until every manifest file has been read to its END marker in this session. Walk the manifest entry by entry and confirm each exact path was read. Connector schema and I/O binding are the two places where a partial read produces a caseplan that validates and is still wrong — `validate` checks neither `caseShape.context` completeness nor cross-task output reference IDs, and it does not check that Step 11.5 resolved every `vars.$xref` marker or that `bindings_v2.json` carries a key for every resource task.
 
 ## Step 9.7 — Connector task detail (gather-then-write)
 
