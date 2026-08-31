@@ -175,6 +175,34 @@ Placeholder tasks integrate with the rest of the graph:
 
 After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass converts all root bindings accumulated during Step 9 — no per-task regeneration needed.
 
+The target format differs from the source: `caseplan.json.bindings[]` stores two flat entries per resource (one per property); `bindings_v2.json` stores ONE entry per resource with properties nested under `value`. Group `bindings[]` by `resourceKey`, then emit one entry per group with these exact shapes — never project the flat caseplan rows (`resourceKey`/`id`/`name` fields) into `resources[]`; `uip solution resources refresh` reads `key` and `value.*.defaultValue` and silently resolves nothing from the flat shape:
+
+```json
+{
+  "resource": "<resource>",
+  "key": "<resourceKey>",
+  "value": {
+    "name": { "defaultValue": "<name binding default>" },
+    "folderPath": { "defaultValue": "<folderPath binding default>" }
+  },
+  "metadata": { "subType": "<resourceSubType — omit metadata key if none>" }
+}
+```
+
+```json
+{
+  "resource": "Connection",
+  "key": "<connectionId>",
+  "value": {
+    "connectionId": { "defaultValue": "<connectionId>" },
+    "folderKey": { "defaultValue": "<folderKey>" }
+  },
+  "metadata": { "connector": "<connectorKey>" }
+}
+```
+
+Shapes inlined here because this step is where the file gets written; the full contract — top-level envelope, inline-built-sibling `solution_folder` decoupling, cleanup and prune rules — stays in [bindings-v2-sync.md](bindings-v2-sync.md) and remains normative.
+
 ## Step 11 — Write SLA and escalation objects (per-target Edit batch)
 
 One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, compose and write the complete `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).

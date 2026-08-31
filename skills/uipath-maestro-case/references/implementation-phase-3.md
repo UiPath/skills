@@ -67,6 +67,8 @@ Runs after bindings (9.8) and connector-rule upgrades (10.5), when every task / 
 
 After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15. Phase 2 conditions and SLA remain in place throughout.
 
+**Execution is mandatory in every run mode — non-interactive and single-pass runs included (SKILL.md Rule 26).** Reading this section is not running the checks: each check is a scan you perform against the on-disk artifacts, and each produces a one-line result — `PASS`, `repaired`, or `Open Item`. Track them like the Phase 2/3 todos: seed one TodoWrite item per check, mark it completed only after its scan ran. Do not proceed to Phase 4 or write a completion report until all 15 have run; the completion report must include the literal line `Step 12 checks: <run>/15 run — <repaired> repaired, <open> open items.`
+
 - **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, entry/exit condition expressions (stage and task), case-exit and trigger rule expressions, SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
 - **Check 2 — Out-arg producer presence** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):
   - **Has Default but no companion** → AskUserQuestion.
