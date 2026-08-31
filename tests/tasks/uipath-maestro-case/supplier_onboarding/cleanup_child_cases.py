@@ -96,6 +96,7 @@ def main() -> int:
         print("cleanup_child_cases: could not list instances")
         return 0
 
+    cancelled = 0
     for row in rows:
         created = row.get("CreatedTimeUtc") or ""
         instance_id = row.get("InstanceId")
@@ -112,8 +113,11 @@ def main() -> int:
             args += ["-f", folder]
         reply = uip(args)
         ok = reply.get("Result") == "Success"
+        cancelled += 1
         print(f"cleanup_child_cases: {'cancelled' if ok else 'could not cancel'} {instance_id} ({name})")
 
+    print(f"cleanup_child_cases: package {ours} is this run's own; "
+          f"{cancelled} foreign instance(s) cancelled out of {len(rows)} listed")
     return 0
 
 

@@ -131,7 +131,7 @@ success_criteria:
 
   - type: run_command
     description: >
-      SLA responses survived: 15d case target at 80%, seven stage SLAs at 70%, four
+      SLA responses survived: 120min case target at 75%, seven stage SLAs at 70%, four
       phase breaches each starting a task INSIDE the breached stage (a stage-entry rule
       instead re-runs the stage : validate accepts both), one non-interrupting oversight
       lane, three notify-only wrap-ups, and each phase's revised date confined to its

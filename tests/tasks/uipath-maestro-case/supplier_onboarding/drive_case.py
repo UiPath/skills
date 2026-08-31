@@ -277,6 +277,18 @@ def plan_nodes() -> list:
     return _PLAN.get("nodes") or []
 
 
+def task_title(sdd_name: str) -> str:
+    """The Action Center title for this task, or "" when the plan cannot supply one."""
+    for node in plan_nodes():
+        if node.get("type") != "case-management:Stage":
+            continue
+        for lane in (node.get("data") or {}).get("tasks") or []:
+            for task in lane:
+                if task.get("displayName") == sdd_name:
+                    return ((task.get("data") or {}).get("taskTitle")) or ""
+    return ""
+
+
 def task_title_for(sdd_name: str) -> str:
     """What Action Center shows for the task the SDD calls sdd_name. The caseplan's own taskTitle is the authority: the build chooses that wording, so it cannot be hardcoded here."""
     for node in plan_nodes():
@@ -397,6 +409,18 @@ def main() -> int:
 
     who = current_identity()
     print(f"route {args.route!r}, driving the case as {who}")
+
+    # Everything this route needs is readable from the plan, so check it before uploading
+    # anything. A build missing a task title or an escalation task cannot be driven, and
+    # discovering that after starting the case costs a solution upload and a live instance per
+    # route for a fact that was in the file all along.
+    needed = [name for name, _action in steps]
+    if args.route == "sla":
+        needed += ["Escalate delayed application check", "Send delay note for the application check"]
+    missing = [name for name in needed if not task_title(name)]
+    if missing:
+        fail(f"the plan cannot be driven: {missing}. Each is a task this route has to complete, "
+             f"and either the task is absent or it carries no taskTitle for Action Center to show")
 
     project_dir = find_project_dir()
     solution_dir = find_solution_dir()
