@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a flow file to create a group direct message between
+  Create a flow file to create a Slack group direct message between
   Coder Evals, IS-sandboxes@uipath.com and E2E-testing.
   Use the connection present in Shared/uipath-maestro-flow.
 

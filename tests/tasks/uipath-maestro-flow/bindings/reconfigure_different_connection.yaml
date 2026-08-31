@@ -19,9 +19,10 @@ run_limits:
 
 initial_prompt: |
   PRECONDITION CHECK — do this FIRST, before any flow work:
-  Inspect the available Integration Service connections once. Group the enabled
-  connections by connector key and find a connector with two or more enabled
-  connections. That connector supplies A and B.
+  Inspect the tenant-wide Integration Service connection inventory once,
+  including connections in every folder. Group the enabled connections by
+  connector key and find a connector with two or more enabled connections.
+  That connector supplies A and B.
 
   If no connector has two or more enabled connections, the precondition
   is not met for this tenant. Stop IMMEDIATELY: write
