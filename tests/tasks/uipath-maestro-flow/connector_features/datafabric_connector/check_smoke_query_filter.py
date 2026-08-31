@@ -23,17 +23,6 @@ EXPECTED = {
 
 
 def structured_filter_leaves(detail):
-    config = detail.get("configuration")
-    if not isinstance(config, str):
-        return []
-    raw = config.removeprefix("=jsonString:")
-    try:
-        parsed = json.loads(raw)
-    except (TypeError, ValueError):
-        return []
-    trees = (parsed.get("essentialConfiguration", {})
-             .get("savedFilterTrees", {}))
-    tree = trees.get("queryExpression", {}) if isinstance(trees, dict) else {}
     leaves = []
 
     def walk(group):
@@ -43,7 +32,28 @@ def structured_filter_leaves(detail):
         for child in group.get("groups") or []:
             walk(child)
 
-    walk(tree)
+    # The live authoring loop stores the design-time tree in the encoded
+    # configuration. The SDK emit-only loop preserves the same semantic tree
+    # directly at detail.filter until product tooling normalizes the artifact.
+    trees = [detail.get("filter")]
+    direct_saved = detail.get("savedFilterTrees") or {}
+    if isinstance(direct_saved, dict):
+        trees.append(direct_saved.get("queryExpression"))
+
+    config = detail.get("configuration")
+    if isinstance(config, str):
+        raw = config.removeprefix("=jsonString:")
+        try:
+            parsed = json.loads(raw)
+        except (TypeError, ValueError):
+            parsed = {}
+        saved = (parsed.get("essentialConfiguration", {})
+                 .get("savedFilterTrees", {}))
+        if isinstance(saved, dict):
+            trees.append(saved.get("queryExpression"))
+
+    for tree in trees:
+        walk(tree)
     return leaves
 
 
