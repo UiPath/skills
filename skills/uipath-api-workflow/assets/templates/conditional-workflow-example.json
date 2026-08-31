@@ -147,7 +147,7 @@
                         }
                       }
                     ],
-                    "output": { "as": "${$context.outputs.For_Each_1}" },
+                    "output": { "as": "${$context.outputs?.For_Each_1}" },
                     "metadata": { "activityType": "ForEach", "displayName": "Process Transactions", "fullName": "ForEach" }
                   }
                 },

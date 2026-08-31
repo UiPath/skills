@@ -31,17 +31,27 @@ initial_prompt: |
   Do NOT ask for approval or confirmation.
 
 success_criteria:
+  # One criterion per input, each anchored on its score inside the SAME command
+  # segment (the lookahead stops at newline / && / || / ; / | / the next uip), so
+  # two runs chained in one Bash call still count once each, and a hand-written
+  # run_40.json cannot stand in for the score-40 run (CONTRIBUTING.md: do not
+  # score self-reports). A single pattern with min_count: 2 was a false negative
+  # for && chaining (2026-09-01); min_count: 1 was a false positive for
+  # one-real-run-plus-fabrication.
   - type: command_executed
-    # min_count 1, not 2: the matcher runs one search per Bash tool call, so
-    # both runs chained with && in a single call count once (the 2026-09-01 run
-    # scored a false 1/2 that way). One visible invocation still anchors that
-    # the agent drove the runner; per-input evidence lives in the envelope
-    # checks on run_85.json / run_40.json below.
-    description: "Agent executed the workflow with the local runner (both runs may share one chained Bash call)"
+    description: "Agent ran the workflow with the local runner for score 85"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?<![A-Za-z0-9])85(?![0-9]))'
     min_count: 1
-    weight: 2.0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the workflow with the local runner for score 40"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?<![A-Za-z0-9])40(?![0-9]))'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists

@@ -213,7 +213,7 @@
                               }
                             }
                           ],
-                          "output": { "as": "${$context.outputs.Do_While_1}" },
+                          "output": { "as": "${$context.outputs?.Do_While_1}" },
                           "metadata": { "activityType": "DoWhile", "displayName": "Retry Loop", "fullName": "DoWhile" }
                         }
                       },
@@ -269,7 +269,7 @@
                   }
                 }
               ],
-              "output": { "as": "${$context.outputs.For_Each_1}" },
+              "output": { "as": "${$context.outputs?.For_Each_1}" },
               "metadata": { "activityType": "ForEach", "displayName": "Process Each Task", "fullName": "ForEach" }
             }
           },

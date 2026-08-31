@@ -217,7 +217,9 @@ Iterates over a collection. Requires `#Body` inside `do`.
 { ...$context, outputs: { ...$context?.outputs, "For_Each_N": { ...$context?.outputs?.For_Each_N, results: [ ...($currentItemIndex == 0 ? [] : ($context?.outputs?.For_Each_N?.results ?? [])), ...([$output] ?? []) ] } } }
 ```
 
-**Output pattern:** `${$context.outputs.For_Each_N}`
+**Output pattern:** `${$context.outputs?.For_Each_N}`
+
+> The `?.` after `outputs` is required. The bucket is created by the body's export — zero iterations (empty collection) means no export, and `$context.outputs.For_Each_N` without `?.` crashes the run with `Cannot read properties of undefined`.
 
 **Minimal JSON:**
 ```json
@@ -238,7 +240,7 @@ Iterates over a collection. Requires `#Body` inside `do`.
         }
       }
     ],
-    "output": { "as": "${$context.outputs.For_Each_1}" },
+    "output": { "as": "${$context.outputs?.For_Each_1}" },
     "metadata": { "activityType": "ForEach", "displayName": "For Each", "fullName": "ForEach" }
   }
 }
@@ -286,7 +288,7 @@ Repeat-until loop. Body always executes at least once.
         }
       }
     ],
-    "output": { "as": "${$context.outputs.Do_While_1}" },
+    "output": { "as": "${$context.outputs?.Do_While_1}" },
     "metadata": { "activityType": "DoWhile", "displayName": "Do While", "fullName": "DoWhile" }
   }
 }
