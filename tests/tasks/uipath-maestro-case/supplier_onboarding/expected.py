@@ -219,11 +219,7 @@ OFFERING_CATEGORIES = {"Raw materials", "Components", "Services", "Logistics", "
 
 API_WORKFLOWS = {
     "SupplierMasterScreeningLookup": "919ff26e-8bb4-4755-9bfd-0d04a51d6639",
-    "SupplierComplianceRiskCheck": "69027bbb-2c90-43c3-93af-a09ba7821892",
     "SupplierErpRegistration": "d5c07b08-d673-477c-b047-de330699a183",
-    "SupplierApprovedRegisterUpdate": "0c3faaff-8e3e-4b68-bf69-2e3b869fb301",
-    "SupplierRejectionAuditLog": "1279ba08-7d7d-4cb2-ba52-2fe9809dce00",
-    "SupplierWithdrawalCleanup": "80321901-b4a8-45b4-a5b0-1924ee84f3f7",
 }
 AGENTS = {
     "SupplierOfferingCategoryMatch": "567afdb0-ee17-4c27-9b69-09b2bc7a34c8",
@@ -233,7 +229,6 @@ ACTION_APPS = {
     "supplier-document-upload": "e0145242-77aa-40b5-8752-e037ec022d40",
     "buyer-supplier-review-v2": "ec16bdfe-6f7b-4f4e-9988-70ee7c86b803",
     "Supplier Compliance Review": "1229c1ed-ca6b-4a89-9776-883bd0669684",
-    "Supplier Portal Access Confirmation": "8bfee375-9973-446d-b409-6799688ffe49",
     "supplier-delay-escalation": "fb171d7c-33a1-4bb6-b09a-030044a7c0b6",
 }
 CHILD_CASES = {"SupplierContractNegotiation": "a028146a-e14f-489b-a6ca-e1ffa1d315f6"}
@@ -252,14 +247,9 @@ RESOURCE_KEYS = {
     "Shared/uipath-maestro-case.supplier-document-upload": ("app", None),
     "Shared/uipath-maestro-case/Supplier Application Validation.Supplier Application Validation": ("app", None),
     "Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review": ("app", None),
-    "Shared/uipath-maestro-case/Supplier Portal Access Confirmation.Supplier Portal Access Confirmation": ("app", None),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierApprovedRegisterUpdate": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierMasterScreeningLookup": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierOfferingCategoryMatch": ("process", "Agent"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierRejectionAuditLog": ("process", "Api"),
-    "Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierWithdrawalCleanup": ("process", "Api"),
     "Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation": ("process", "CaseManagement"),
     "dd657127-91f5-4568-a3a3-c024bc03fb0f": ("Connection", None),
 }

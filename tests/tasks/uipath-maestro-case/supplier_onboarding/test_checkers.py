@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -433,22 +434,12 @@ BINDINGS = [   # (id, name, resource, resourceSubType, resourceKey, default, pro
     ('bSdu02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case.supplier-document-upload', 'Shared/uipath-maestro-case', 'folderPath'),
     ('bBsr01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case.buyer-supplier-review-v2', 'buyer-supplier-review-v2', 'name'),
     ('bBsr02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case.buyer-supplier-review-v2', 'Shared/uipath-maestro-case', 'folderPath'),
-    ('bCrc01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck', 'SupplierComplianceRiskCheck', 'name'),
-    ('bCrc02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierComplianceRiskCheck', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
     ('bScr01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review', 'Supplier Compliance Review', 'name'),
     ('bScr02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Supplier Compliance Review.Supplier Compliance Review', 'Shared/uipath-maestro-case/Supplier Compliance Review', 'folderPath'),
     ('bSer01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration', 'SupplierErpRegistration', 'name'),
     ('bSer02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierErpRegistration', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
     ('bScn01aaa', 'name', 'process', 'CaseManagement', 'Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation', 'SupplierContractNegotiation', 'name'),
     ('bScn02bbb', 'folderPath', 'process', 'CaseManagement', 'Shared/uipath-maestro-case/SupplierNegotiationKit.SupplierContractNegotiation', 'Shared/uipath-maestro-case/SupplierNegotiationKit', 'folderPath'),
-    ('bSpa01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case/Supplier Portal Access Confirmation.Supplier Portal Access Confirmation', 'Supplier Portal Access Confirmation', 'name'),
-    ('bSpa02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case/Supplier Portal Access Confirmation.Supplier Portal Access Confirmation', 'Shared/uipath-maestro-case/Supplier Portal Access Confirmation', 'folderPath'),
-    ('bSar01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierApprovedRegisterUpdate', 'SupplierApprovedRegisterUpdate', 'name'),
-    ('bSar02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierApprovedRegisterUpdate', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
-    ('bSra01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierRejectionAuditLog', 'SupplierRejectionAuditLog', 'name'),
-    ('bSra02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierRejectionAuditLog', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
-    ('bSwc01aaa', 'name', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierWithdrawalCleanup', 'SupplierWithdrawalCleanup', 'name'),
-    ('bSwc02bbb', 'folderPath', 'process', 'Api', 'Shared/uipath-maestro-case/SupplierOnboardingKit.SupplierWithdrawalCleanup', 'Shared/uipath-maestro-case/SupplierOnboardingKit', 'folderPath'),
     ('bSde01aaa', 'name', 'app', None, 'Shared/uipath-maestro-case.supplier-delay-escalation', 'supplier-delay-escalation', 'name'),
     ('bSde02bbb', 'folderPath', 'app', None, 'Shared/uipath-maestro-case.supplier-delay-escalation', 'Shared/uipath-maestro-case', 'folderPath'),
     ('bConn01aa', 'uipath-microsoft-outlook365 connection', 'Connection', None, 'dd657127-91f5-4568-a3a3-c024bc03fb0f', 'dd657127-91f5-4568-a3a3-c024bc03fb0f', 'ConnectionId'),
@@ -988,3 +979,62 @@ class FieldNameTests(CheckerBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExpectedMatchesFixtureTests(unittest.TestCase):
+    """expected.py is hand-maintained; the fixture SDD is the input under test.
+
+    Nothing else compares the two, so a trim that updates one and not the other
+    passes every test here and then fails in CI against a real build. These
+    derive the same facts straight from the fixture.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.sdd = (HERE / "fixtures" / "sdd.md").read_text(encoding="utf-8")
+
+    def test_task_names_and_types_match(self):
+        blocks = re.split(r"\n##### Task [^\n:]*: ", self.sdd)[1:]
+        found = {}
+        for b in blocks:
+            name = b.split("\n")[0].strip()
+            m = re.search(r"^\*\*Type:\*\* (.+)$", b, re.M)
+            found[name] = m.group(1).strip()
+        declared = {
+            name: typ
+            for rows in E.STAGE_TASKS.values()
+            for name, typ, _req, _once in rows
+        }
+        self.assertEqual(
+            found, declared,
+            "fixture task names/types and E.STAGE_TASKS have drifted",
+        )
+
+    def test_resource_names_match(self):
+        """Section 4 lists one row per bound resource: name, then folder path.
+
+        Compare the names, not the composite keys: the key's shape is the
+        skill's business, the fixture's business is which resources it names.
+        """
+        rows = re.findall(r"^\| ([A-Za-z][\w .-]+) \| (Shared/[\w /.-]+) \|", self.sdd, re.M)
+        named = {n.strip() for n, _folder in rows}
+        declared = {
+            k.rsplit(".", 1)[-1]
+            for k in E.RESOURCE_KEYS
+            if k.startswith("Shared/")
+        }
+        self.assertFalse(
+            declared - named,
+            "expected.RESOURCE_KEYS names resources the fixture no longer lists: "
+            f"{sorted(declared - named)}",
+        )
+
+    def test_every_route_step_exists(self):
+        names = set(re.findall(r"^##### Task [^\n:]*: (.+)$", self.sdd, re.M))
+        import drive_case
+        for route, steps in drive_case.ROUTES.items():
+            for task_name, _action in steps:
+                self.assertIn(
+                    task_name, names,
+                    f"route {route!r} drives {task_name!r}, which the fixture does not declare",
+                )
