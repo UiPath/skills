@@ -85,6 +85,7 @@ uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --outpu
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
+<!--skill-flavor:publish-feed-discovery:start-->
 ### Publishing to a non-tenant feed
 
 By default everything targets the **tenant** feed. A package can instead go to your
@@ -111,13 +112,16 @@ uip solution publish ./output/MySolution_2.0.0.zip --feed "Finance" --output jso
 # Publish into your own Personal Workspace
 uip solution publish ./output/MySolution_2.0.0.zip --personal-workspace --output json
 ```
+<!--skill-flavor:publish-feed-discovery:end-->
 
 The same two flags scope the rest of the lifecycle, and they are **mutually
 exclusive** everywhere:
 
 | Command | What the flag scopes |
 |---|---|
+<!--skill-flavor:publish-feed-scope-row:start-->
 | `uip solution publish --feed / --personal-workspace` | Which feed the package is uploaded to |
+<!--skill-flavor:publish-feed-scope-row:end-->
 | `uip solution deploy run --feed / --personal-workspace` | Which feed the package is deployed **from** |
 | `uip solution deploy list --feed / --personal-workspace` | Which feed's deployments are listed |
 | `uip solution packages list --feed / --personal-workspace` | Which feed's packages are listed |
