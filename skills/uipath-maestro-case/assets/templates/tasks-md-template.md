@@ -1,7 +1,7 @@
 <!-- tasks/tasks.md — COMPACT NO-BUILD PLAN.
      Copy this file's shape. Do not invent one from the SDD's heading style: the SDD
      nests tasks under `##### Task: <name>`, and carrying that habit here produces
-     `#### T21:` headings that audit_plan.py cannot see as T-entries at all — it
+     `#### T21:` headings that audit-plan.mjs cannot see as T-entries at all — it
      reports no error, it just silently counts zero tasks.
 
      Every T heading is EXACTLY two hashes. Not `###`, not `####`, at any depth of
@@ -10,12 +10,12 @@
      This is the PLAN-ONLY shape, used whenever the request stops at sdd.md +
      tasks/tasks.md with no caseplan.json. It carries NO registry-derived data:
      no task-type id, activity-type id or connection id, and none of the resolved
-     registry / resolved recipients sidecar keys. audit_plan.py rejects those by
+     registry / resolved recipients sidecar keys. audit-plan.mjs rejects those by
      name anywhere in the file — including inside a comment, so do not quote them
      even to explain them. The build-path plan is a different shape
      (`## T{N}: Add <type> task "<name>" to "<stage>"`); never mix the two.
 
-     Gate: `python3 <this skill>/scripts/audit_plan.py tasks/tasks.md` must print
+     Gate: `python3 <this skill>/scripts/audit-plan.mjs tasks/tasks.md` must print
      AUDIT OK before the plan is considered finished. -->
 
 ## Inventory

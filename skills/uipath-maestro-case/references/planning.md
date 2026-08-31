@@ -109,7 +109,7 @@ If the plan-only / no-build exception is active — per Step 1, including its ne
 
 Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run.
 
-**MANDATORY final gate:** the plan is not deliverable until the skill's deterministic audit prints `AUDIT OK` (read-only): `python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence. If `python3` is unavailable, re-check headings and per-task fields against this contract manually.
+**MANDATORY final gate:** the plan is not deliverable until the skill's deterministic audit prints `AUDIT OK` (read-only): `node "<this skill's folder>/scripts/audit-plan.mjs" tasks/tasks.md --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence.
 
 End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
@@ -223,7 +223,7 @@ Procedure:
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
-**T-entry heading contract.** Every declaration is its own level-two heading in the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings for T-entries, and do not nest a task beneath a stage's T-entry. A task heading must quote its display name, for example `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the plan independently addressable by Phase 2 and by plan validators. **Copy the shape from [`assets/templates/tasks-md-template.md`](../assets/templates/tasks-md-template.md)** rather than deriving it from the SDD: the SDD nests tasks under `##### Task: <name>`, and carrying that nesting here yields `#### T<n>:` headings that `audit_plan.py` does not read as T-entries at all — it reports no error, it silently counts zero tasks.
+**T-entry heading contract.** Every declaration is its own level-two heading in the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings for T-entries, and do not nest a task beneath a stage's T-entry. A task heading must quote its display name, for example `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the plan independently addressable by Phase 2 and by plan validators. **Copy the shape from [`assets/templates/tasks-md-template.md`](../assets/templates/tasks-md-template.md)** rather than deriving it from the SDD: the SDD nests tasks under `##### Task: <name>`, and carrying that nesting here yields `#### T<n>:` headings that `audit-plan.mjs` does not read as T-entries at all — it reports no error, it silently counts zero tasks.
 
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 

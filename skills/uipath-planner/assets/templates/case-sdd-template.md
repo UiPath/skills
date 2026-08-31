@@ -141,7 +141,7 @@ SLA at all. One row per (Scope, SLA, Status), at-risk and breached separately. S
 -> both statuses notify-only with Target and Interrupting `—`; never invent a stage, task, or routing
 change to carry a notification. Legal Response values and the Interrupting value each implies:
 case-design-layers-guide.md § Choosing the response. Two-way closure against the SDD's
-`sla-status-change` rows is enforced by audit_sdd.py — it is not re-checked by hand. -->
+`sla-status-change` rows is enforced by audit-case-sdd.mjs — it is not re-checked by hand. -->
 
 ### Variable SLA Rules
 
@@ -605,9 +605,8 @@ there. Pass --draft so the gate also checks inventory parity, verbatim `=js:` pr
 executable threshold encoding. What the DRAFT specifically needs repaired on the way through is the
 lane guide's § Resumption; the shape is here.
 
-Gate: run  <py> "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
-on-disk file BEFORE the Status: ready flip — in every mode. `<py>` = the first of `python3`, `python`,
-`py` that runs (Windows usually has no `python3` alias); only if all three are absent verify manually. RUN it, never open the script source —
+Gate: run  node "<skill folder>/scripts/audit-case-sdd.mjs" <sdd path> [--draft <draft path>]  on the
+on-disk file BEFORE the Status: ready flip — in every mode. RUN it, never open the script source —
 its findings are the interface. Minting charset is ADVISORY — it never gates, and a name the user, the
 source, or a draft supplied is kept verbatim (pass --draft so the validator knows). ':' gates always. Repair findings with Edit, re-run to AUDIT OK
 (max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like
