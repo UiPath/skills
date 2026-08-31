@@ -200,6 +200,8 @@ For every `wait-for-connector` rule, write the canonical stub `uipath` from [`co
 
 End of Phase 2. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) lives in [phased-execution.md § Phase 2 hard stop](phased-execution.md#phase-2-hard-stop).
 
+**Before the preview validate, run the Phase 2 exit self-check** ([phased-execution.md § Phase 2 exit criteria](phased-execution.md#phase-2-exit-criteria-mandatory-self-check)): diff `tasks.md` §4.6 against every stage's `data.tasks`; any missing task returns to Step 9 before continuing. Skipping Step 9 and arriving here with empty stages produces a caseplan that validates `Valid` yet fails as a build (SKILL.md Rule 26).
+
 1. Try the preview profile:
 
    ```bash
@@ -207,7 +209,7 @@ End of Phase 2. Full contract (summary content, prompt options, publish branch, 
    ```
 
 2. Fall back once to `--skeleton` only when the parser response names `--skeleton-v2` as unknown or unsupported (typically `ErrorCode: "invalid_argument"` and exit code 3). Exit 3 without that flag-specific message is not sufficient. A v2 validation result containing genuine case errors means the profile ran; capture those findings and do **not** fall back.
-3. Print the selected profile plus error/warning counts, then execute the Rule 11 boundary branch. This validation is advisory: never halt solely on its findings. Legacy `--skeleton` checks structure only, so its summary must say rules/SLA remain covered by authoritative Phase 4 validation.
+3. Print the selected profile plus error/warning counts, then execute the Rule 11 boundary branch. This validation is advisory: never halt solely on its findings — with one exception: any `has no tasks` warning fails the Phase 2 exit criteria; return to Step 9 instead of carrying it into the boundary branch. Legacy `--skeleton` checks structure only, so its summary must say rules/SLA remain covered by authoritative Phase 4 validation.
 
 On continue (either `Skip publish and continue` or `Continue to implementation` after publish), proceed to Step 9.6.
 

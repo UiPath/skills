@@ -82,6 +82,15 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 **Informational — do NOT halt on errors or warnings.** Capture the selected profile plus error/warning counts (and optionally the first few messages) for the boundary summary.
 
+### Phase 2 exit criteria (mandatory self-check)
+
+Phase 2 is complete only when both criteria hold. Run this check before the boundary summary, in every run mode — straight-through, pause-at-preview, and non-interactive runs alike:
+
+1. **Ledger diff is empty** — every task in `tasks.md` §4.6 exists in its owning stage's `data.tasks` in `caseplan.json` (exact `displayName` match; placeholder tasks count as present). Any missing task → return to Step 9 for exactly those tasks, then re-run this check.
+2. **No empty-stage warnings** — the Step 11.9 preview validate output contains no `has no tasks` warning. Such a warning always means criterion 1 was violated or Step 9 was skipped; it is never acceptable at this boundary.
+
+This check exists because `uip maestro case validate` returns `Valid` for a caseplan whose stages contain zero tasks — validation success is not evidence of completeness (SKILL.md Rule 26). Do not proceed to the hard stop, Phase 3, or any completion narration while either criterion fails.
+
 ### Phase 2 hard stop
 
 **Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the design-handoff Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
