@@ -15,10 +15,13 @@ tags:
   - uipath-maestro-case
   - e2e
   - mode:build
-  - lifecycle:generate
+  - lifecycle:setup
   - shape:multi-node
+  - node:hitl
   - connector
   - resource
+  - outcome-graded
+  - path-to-ga
   - feature:escalation
   - feature:approval-gate
   - feature:registry
@@ -77,8 +80,8 @@ initial_prompt: |
     skip-publish path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Do NOT edit `sdd.md`. It is the input, not a working file.
-  - Do NOT publish the solution and do NOT run `uip maestro case debug` (this case
-    suspends on fourteen human tasks and seven SLA clocks).
+  - Do NOT publish the solution, and do NOT run `uip maestro case debug` yourself —
+    the harness runs it.
   - Persist each connector's `case spec` response before writing it into
     `caseplan.json` — never reconstruct it from memory.
   - Finish with
