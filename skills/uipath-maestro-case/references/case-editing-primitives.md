@@ -169,7 +169,15 @@ Remove a task from a stage. Tasks live in `stageNode.data.tasks[laneIndex][]` �
    - Any task's `entryConditions[].rules[][]` `selected-tasks-completed` rule whose `selectedTasksIds` names the deleted task — remove the id from the array; if it empties, remove the rule (and the parent condition object when it empties), per § Delete a condition rule's DNF removal mechanic.
    - Any `conditionExpression` (`=js:...`) referencing the deleted task's outputs — repoint or remove.
 5. **Repoint cross-task bindings that consumed this task's outputs.** Any other task input with `sourceTask == <deletedTaskId>` (and `sourceStage == <ownerStageId>`) now dangles — repoint to a surviving producer or clear the binding. A consumer left bound to a deleted producer reads undefined at runtime; `validate` does not catch it.
-6. **Binding cascade — every task type, not just connectors.** Prune the deleted task's top-level `bindings[]` pair once no other task/trigger/rule references it: Connection/Folder for a connector-activity / wait-for-connector task, `name`/`folderPath` for a process / agent / rpa / action / api-workflow / case-management task. Connector tasks additionally prune any `root.inputOutputs[]` companions tied to their rule outputs — same cascade as § Delete a node steps 5–7. Then regenerate `bindings_v2.json` and prune the solution resource the removal orphaned ([bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal)).
+6. **Binding cascade — every task type, not just connectors.** Prune the deleted task's top-level `bindings[]` pair once no other task/trigger/rule references it: Connection/Folder for a connector-activity / wait-for-connector task, `name`/`folderPath` for a process / agent / rpa / action / api-workflow / case-management task. Connector tasks additionally prune any `root.inputOutputs[]` companions tied to their rule outputs — same cascade as § Delete a node steps 5–7. Then regenerate `bindings_v2.json` and **prune the solution resource the removal orphaned — this is a CLI step, not a JSON edit, and it is the one most often skipped**:
+
+   ```bash
+   uip solution resources refresh --solution-folder <SolutionDir> --output json
+   uip solution resources list --solution-folder <SolutionDir> --source local --output json
+   uip solution resources remove <Key> --solution-folder <SolutionDir> --output json
+   ```
+
+   `refresh` is additive-only and never prunes. Leaving the orphan is invisible locally — `uip maestro case validate` stays `Valid` because it never reads the registry — and then Studio Web's `prepareForCustomDebug` fails with `Sequence contains no matching element` (`errorCode 2106`). Match entries by **`Name`** against `bindings_v2.json` `resources[].value.name.defaultValue` for `process`/`app`, by `Key` for `connection`. Full matching rules: [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources).
 7. Update the task's `id-map.json` entry (remove it) if the sidecar is present.
 8. Edit — narrow slices for the source `data.tasks` (removal + lane re-pack), each swept condition, each repointed consumer binding, and (connector only) the bindings array / `inputOutputs[]`. Never whole-file Write. Validate at the section boundary.
 
