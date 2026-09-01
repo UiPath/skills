@@ -99,7 +99,7 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | Case Management with §4 integrations that reference unbuilt resources | Build external components first, then `uipath-maestro-case`; inline `action`, connector, timer, and child-case task details stay with the Case specialist |
 | Case Management whose §4 integrations are pre-existing or unresolved portable intent | `uipath-maestro-case` build task first; unresolved IDs/folders travel as review items for the Case specialist's registry discovery |
 | Any SDD with a filled "IXP / Document Understanding Models" table | Add an IXP model build + validation task via `uipath-ixp` per model, ordered before its consumer's build tasks |
-| Any SDD with a filled "Coded Functions" table | Add a Function build + validation task via `uipath-functions` per function, ordered before its consumer's build tasks |
+| Any SDD with a filled "Coded Functions" table | Add a Function build + validation task per function via `uipath-functions`, ordered before its consumer's build tasks |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 | Coded App | Coded App build + `uipath-solution` deploy + testing (when wrapped in `.uipx`); otherwise `uipath-coded-apps` self-deploys |
 | API Workflow | API Workflow build + `uipath-solution` publish + testing |

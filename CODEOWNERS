@@ -73,10 +73,14 @@
 # Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
 /tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
-# Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
-/skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
-/tests/tasks/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
-/tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
+# Functions skill (JS/TS → @lucarachiteanu, Python → @vldcmp-uipath; shared surfaces → both)
+/skills/uipath-functions/ @lucarachiteanu @vldcmp-uipath
+/skills/uipath-functions/references/js/ @lucarachiteanu
+/skills/uipath-functions/references/python/ @vldcmp-uipath
+/tests/tasks/uipath-functions/ @lucarachiteanu @vldcmp-uipath
+/tests/tasks/uipath-functions/js_smoke/ @lucarachiteanu
+/tests/tasks/uipath-functions/js_http_author/ @lucarachiteanu
+/tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @vldcmp-uipath
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
