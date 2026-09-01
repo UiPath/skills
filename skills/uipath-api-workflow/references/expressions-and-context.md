@@ -63,7 +63,7 @@ ${$context.outputs?.Javascript_1?.items ?? []}
 
 Connector activities (`call: "UiPath.Http"` / `call: "UiPath.IntSvc"`) wrap the response — the actual payload lives under **`.content`** (the wrapper also carries `statusCode`, `statusText`, `headers`, `ok`, `request`, `vendorProcessingTimeMs`; usually you only need `.content`). Reading at the root returns `undefined`. Use `Data.ExportBucketKey` from the stub — for connector activities the slot key (in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ; the stub returns both.
 
-**The fields available under `.content` come from the stub's `Data.ResponseFields` array — never guess.** If a property isn't listed there, it's not in the response shape. See [connector-activity-discovery.md — Vendor curated activity response shape](connector-activity-discovery.md#vendor-curated-activity-response-shape--contentx-not-x).
+**The fields available under `.content` come from the stub's `Data.ResponseFields` array — never guess.** If a property isn't listed there, it's not in the response shape. See [connector-activity-discovery.md — Vendor curated activity response shape](connector-activity-discovery.md#response-shape-and-field-rules).
 
 ```javascript
 // ❌ Wrong — always undefined (root has no payload fields)

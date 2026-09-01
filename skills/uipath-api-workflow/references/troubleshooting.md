@@ -29,7 +29,7 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 ### Missing `WorkflowStart`
 - **Symptom:** Variables not initialized; `$context.variables` is undefined
 - **Cause:** `WorkflowStart` activity removed or not included as first activity in `Sequence_1`
-- **Fix:** Always include `WorkflowStart` as the first activity with `isTransparent: true`. See [workflow-file-format.md](workflow-file-format.md#workflowstart--system-activity).
+- **Fix:** Always include `WorkflowStart` as the first activity with `isTransparent: true`. See [workflow-file-format.md](workflow-file-format.md#workflowstart-system-activity).
 
 ### Missing `evaluate` block
 - **Symptom:** Expressions not evaluated; workflow behaves unexpectedly
@@ -314,7 +314,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:connection-remediation:start-->
 - **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
 <!--skill-flavor:connection-remediation:end-->
-- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
+- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2-verify-a-vendor-connection-intsvc-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`
 
@@ -373,7 +373,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     "saveToSentItems": true
   }
   ```
-- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys).
+- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a-flat-dotted-keys).
 
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
@@ -395,7 +395,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     "message.subject": "this is a claude skill test"
   }
   ```
-  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped).
+  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b-bare-connector-literals).
 
 ### Connector slot key and export-bucket key can differ — use the stub's values
 
@@ -420,7 +420,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
   "response": "${{ subject: $context.outputs.getNewestEmail_1.content.subject }}"
   ```
-- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c--use-dataslotkey-and-dataexportbucketkey-from-the-stub-verbatim).
+- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c-preserve-both-computed-keys).
 
 ### `400 "Unable to parse multipart body"` from a curated send-email-style endpoint
 
@@ -445,7 +445,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     ]
   }
   ```
-- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration](connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration).
+- **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration](connector-activity-discovery.md#multipart-endpoints).
 
 <!--skill-flavor:solution-resource-diagnostics:start-->
 ### Properties panel: "to debug this resource, select a connection for it from the resource definition page"
@@ -499,7 +499,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```
   Place it at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. Reuse the `solution_folder` name from any existing `Solution/resources/<folder>/package/<workflow>.json` (`folders[0].fullyQualifiedName`); default is `"solution_folder"`. One file per unique connection UUID — if the workflow has two activities reusing one connection, write one file; two distinct connections → two files.
 - **Note on the user-profile debug overwrite.** StudioWeb additionally writes `Solution/userProfile/<guid>/debug_overwrites.json` mapping `solutionResourceKey` to a concrete folder + connection at debug time. That file is per-user state, written by the designer the first time you assign a debug connection. The agent does not author it; if it's missing, debug runs from the StudioWeb UI will prompt for a connection but won't 401.
-- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5--solutions-mode-intsvc-kind-declare-the-connection-as-a-solution-resource) for the full flow, including where each field value comes from.
+- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5-solutions-mode-intsvc-connection-synchronization) for the full flow, including where each field value comes from.
 <!--skill-flavor:solution-resource-diagnostics:end-->
 
 ### Required request field dropped by `registry stub`
@@ -531,7 +531,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:resource-lookup-runtime:end-->
 - **Heuristic:** when the stub returns empty `queryParameters` / `pathParameters` / `bodyParameters` for a non-trivial vendor operation, treat it as the bug. Real endpoints (CRUD on real objects, list-with-filters operations) almost never have zero required inputs.
 - **Upstream:** the stub IS surfacing the metadata it has — `metadata.configuration` contains the full `inputFields` list — so this is a CLI-side fix where the stub should populate defaults/placeholders from `required: true` fields, not a missing-data issue. Until that ships, the cross-check is mandatory per skill rule 16 step 4.
-- **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields).
+- **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check).
 
 ### `401 — Failed to execute IS call to /<endpoint>: Invalid Organization or User secret, or invalid Element token provided`
 
@@ -541,7 +541,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** The IS proxy's auth flow for `/elements_/v3/element/instances/{connectionId}/{operationName}` rejected the call. There are two distinct sub-cases — diagnose by looking at the URL the proxy hit:
 
   **Sub-case A — Wrong endpoint on the connection's element.** The endpoint in the proxy URL doesn't exist on the target connection's connector. Most common when an agent uses Http kind (`call: "UiPath.Http"` with `endpoint: "/http-request"`) but `connectionId` points at a vendor connection (Outlook, Gmail, etc.) instead of a `uipath-uipath-http` connection. The Outlook connector has no `/http-request` operation, only its curated ones (`/getNewestEmail`, `/sendEmail`, …) — so the proxy returns 401 as a generic "I can't service this request" rather than "operation not found."
-  - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind--call-uipathintsvc-vendor-curated-activity) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
+  - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
 
   **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
 <!--skill-flavor:connection-auth-diagnostics:start-->

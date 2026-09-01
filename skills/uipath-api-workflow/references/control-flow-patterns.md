@@ -1,265 +1,201 @@
 # Control Flow Patterns
 
-Hierarchical structures combining If, ForEach, DoWhile, Break, and TryCatch. Use this reference when authoring workflows whose logic goes more than one level deep.
+Hierarchical combinations of If, ForEach, DoWhile, Break, and TryCatch. Use this reference for workflows whose logic goes beyond one level of nesting.
 
-For per-activity field-level details (required fields, export patterns, minimal JSON), see [task-types.md](task-types.md). This document focuses on **how to combine them**.
+For per-activity fields, required values, export patterns, and minimal JSON, see [task-types.md](task-types.md). This document covers composition.
 
 ## Core Structural Rules
 
-1. **Every key in the workflow must be globally unique.** This includes wrapper / branch / body suffixes. Two `If_1#Then` blocks anywhere in the workflow — even at totally different nesting levels — is invalid. Increment the number suffix when you reuse a pattern.
-2. **Wrapper / Body suffixes are part of the key.** `If_1#Wrapper`, `If_1#Then`, `If_1#Else`, `For_Each_1#Body`, `Do_While_1#Body` are FOUR separate keys (or five for If). All five count toward uniqueness.
-3. **`then: "exit"` exits the immediately enclosing container** (the If's branch, the Sequence, etc.) — it's a "stop processing this list" signal, not a workflow terminator.
-4. **`then: "end"` terminates the entire workflow run.** Only Response activities use it.
-5. **Break exits only the innermost enclosing loop.** To exit multiple loops, use a flag variable + a check + another Break.
-6. **`#Wrapper` and `#Body` are not interchangeable.** If's wrapper is `#Wrapper`. ForEach/DoWhile body is `#Body`. There is no `#Body` for If, and no `#Wrapper` for loops.
-7. **Loop iteration variables (`for.each` / `for.at`) are scoped to that loop's body** AND get a literal `$` prefix when referenced. `for.each: "currentItem"` → reference as `$currentItem` (with the `$` character in the identifier name). Same for `for.at: "currentItemIndex"` → `$currentItemIndex`, and `catch.as: "error"` → `$error`. Nested loops MUST use distinct names — `outerItem` / `outerIndex` for the outer, `innerItem` / `innerIndex` for the inner (referenced as `$outerItem` / `$innerItem` in expressions).
+1. Every workflow key must be globally unique, including wrapper, branch, and body suffixes. Reusing `If_1#Then` anywhere is invalid; increment the number suffix.
+2. Wrapper and body suffixes are separate keys: an If has `#Wrapper`, `#Then`, and `#Else`; ForEach and DoWhile have `#Body`. If has no `#Body`; loops have no `#Wrapper`.
+3. `then: "exit"` exits the immediately enclosing container or branch and stops processing that list; it does not terminate the workflow.
+4. `then: "end"` terminates the entire workflow run and is used only by Response activities.
+5. Break exits only the innermost enclosing loop. To exit multiple loops, use a workflow flag, check it after the inner loop, and issue another Break.
+6. Loop bindings are scoped to their loop body and require a literal `$` when referenced: `for.each: "currentItem"` becomes `$currentItem`; `for.at: "currentItemIndex"` becomes `$currentItemIndex`; `catch.as: "error"` becomes `$error`. Nested loops must use distinct names.
 
 ## Key Numbering Convention
 
-When you nest, increment numbers monotonically across the whole workflow — don't restart per scope.
+Number activity patterns monotonically across the entire workflow in author order, not per scope. Every suffix counts toward uniqueness.
 
-```
+```text
 Sequence_1
 ├─ Assign_1
 ├─ For_Each_1
-│   └─ For_Each_1#Body
-│       ├─ If_1#Wrapper        ← inside the loop body, but uses _1 because no other If yet
-│       │   ├─ If_1
-│       │   ├─ If_1#Then
-│       │   └─ If_1#Else
-│       └─ Try_Catch_1         ← _1 because no other TryCatch yet
-└─ If_2#Wrapper                ← _2 because If_1 was already used inside the loop
-    ├─ If_2
-    ├─ If_2#Then
-    └─ If_2#Else
+│  └─ For_Each_1#Body
+│     ├─ If_1#Wrapper
+│     │  ├─ If_1
+│     │  ├─ If_1#Then
+│     │  └─ If_1#Else
+│     │  └─ Try_Catch_1
+└─ If_2#Wrapper
+   ├─ If_2
+   ├─ If_2#Then
+   └─ If_2#Else
 ```
-
-The numbering reflects **author order across the whole workflow**, not nesting depth.
 
 ## Pattern Catalog
 
-### 1. Nested If (multi-level decision tree)
+### 1. Nested If
 
-When you have decisions inside decisions. Each If gets its own wrapper/then/else suffix set.
+Give each If its own globally unique wrapper, condition, then, and else keys. Nest the inner wrapper in the outer branch's `do[]`, and end each branch with `then: "exit"` to prevent fall-through.
 
-```
-Sequence_1
-└─ If_1#Wrapper                         (outer: amount > 1000?)
-    ├─ If_1
-    ├─ If_1#Then
-    │   └─ If_2#Wrapper                 (inner: priority === 'high'?)
-    │       ├─ If_2
-    │       ├─ If_2#Then  → [Assign tier=PLATINUM]
-    │       └─ If_2#Else  → [Assign tier=GOLD]
-    └─ If_1#Else
-        └─ Assign tier=STANDARD
+```text
+If_1#Wrapper
+├─ If_1
+├─ If_1#Then
+│  └─ If_2#Wrapper
+│     ├─ If_2
+│     ├─ If_2#Then
+│     └─ If_2#Else
+└─ If_1#Else
 ```
 
-The inner If is a child of `If_1#Then.do[]`. Its `If_2#Then` and `If_2#Else` are siblings of `If_2`. **All five suffixes are unique keys.**
-
-```json
-{
-  "If_1#Then": {
-    "do": [
-      {
-        "If_2#Wrapper": {
-          "do": [
-            { "If_2": { "switch": [
-                { "case": { "when": "${$context.variables.priority === 'high'}", "then": "If_2#Then" } },
-                { "default": { "then": "If_2#Else" } }
-              ], "metadata": { "displayName": "If" } } },
-            { "If_2#Then": { "do": [ /* tier=PLATINUM */ ], "then": "exit" } },
-            { "If_2#Else": { "do": [ /* tier=GOLD */ ], "then": "exit" } }
-          ],
-          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_2\": $output } }" },
-          "metadata": { "activityType": "If", "displayName": "If", "fullName": "If" }
-        }
-      }
-    ],
-    "then": "exit"
-  }
-}
-```
+The inner If is a child of `If_1#Then.do[]`; its branches are siblings of `If_2` and all suffixes are unique.
 
 ### 2. Multi-way branching (3+ outcomes)
 
-The cleanest authorings is **a chain of two-way Ifs**. Each If's `#Else` contains the next If.
+Use a chain of two-way Ifs: put the next If in the preceding If's `#Else`.
 
-```
-If_1#Wrapper        (x > 100?)
-├─ If_1#Then  → [tier=PLATINUM]
+```text
+If_1#Wrapper
+├─ If_1#Then → outcome 1
 └─ If_1#Else
-    └─ If_2#Wrapper (x > 50?)
-        ├─ If_2#Then  → [tier=GOLD]
-        └─ If_2#Else
-            └─ If_3#Wrapper (x > 0?)
-                ├─ If_3#Then  → [tier=STANDARD]
-                └─ If_3#Else  → [tier=NONE]
+   └─ If_2#Wrapper
+      ├─ If_2#Then → outcome 2
+      └─ If_2#Else
+         └─ If_3#Wrapper → remaining outcomes
 ```
 
-Why chain rather than packing many cases into one switch: StudioWeb's designer renders two-way If cards cleanly; multi-case switches render less predictably.
+This renders more predictably than packing many cases into one switch.
 
-### 3. ForEach with per-iteration If (filter / classify)
+### 3. ForEach with per-iteration If
 
-Common pattern: iterate, decide per item, do something different per branch.
-
-```
-For_Each_1
-└─ For_Each_1#Body
-    ├─ If_1#Wrapper          ($currentItem.priority === 'high'?)
-    │   ├─ If_1#Then  → [Assign highCount = highCount + 1]
-    │   └─ If_1#Else  → [Assign lowCount = lowCount + 1]
-    └─ Javascript_1          (transform $currentItem and accumulate)
-```
-
-Inside `If_1`'s `when`, use `$currentItem` (with the `$` literal prefix — NOT `currentItem`, NOT `$context.variables.currentItem`):
+Put the If in `For_Each_1#Body` to filter or classify each item. Reference the iterator as `$currentItem`, not `currentItem` or `$context.variables.currentItem`.
 
 ```json
 "when": "${$currentItem.priority === 'high'}"
 ```
 
-### 4. ForEach inside ForEach (nested iteration)
+### 4. ForEach inside ForEach
 
-Outer and inner loops MUST use distinct iterator/index names — either semantic (`outerItem` / `innerItem`, `customer` / `order`) or incremental (`item1` / `item2`, `currentItem` / `currentItem2`). The constraint is "not the same string", not "different concepts".
+Use distinct iterator and index names, such as `outerItem`/`outerIdx` and `innerItem`/`innerIdx`.
 
-```
+```text
 For_Each_1 (each: outerItem, in: $workflow.input.matrix, at: outerIdx)
 └─ For_Each_1#Body
-    └─ For_Each_2 (each: innerItem, in: ${$outerItem.children}, at: innerIdx)
-        └─ For_Each_2#Body
-            └─ Javascript_1   (sees $outerItem, $innerItem, $outerIdx, $innerIdx as globals)
+   └─ For_Each_2 (each: innerItem, in: ${$outerItem.children}, at: innerIdx)
+      └─ For_Each_2#Body
+         └─ Javascript_1
 ```
 
-The inner loop's `for.in` reads from the outer iterator: `"${$outerItem.children}"`. Both `$outerItem` and `$innerItem` are globals available inside the inner body.
+Inside the inner body, `$outerItem`, `$innerItem`, `$outerIdx`, and `$innerIdx` are available. The inner `for.in` may read from the outer iterator, for example `${$outerItem.children}`.
 
 ### 5. Conditional Break inside a loop
 
-Break must be wrapped in an If — there's no "break when" condition on Break itself.
+Break has no condition of its own; wrap it in an If inside the loop body.
 
-```
+```text
 For_Each_1#Body
-├─ Javascript_1   (process $currentItem)
-└─ If_1#Wrapper   (some stop condition?)
-    ├─ If_1#Then  → [Break_1]
-    └─ If_1#Else  → []
+├─ Javascript_1
+└─ If_1#Wrapper
+   ├─ If_1#Then → Break_1
+   └─ If_1#Else → []
 ```
 
-The Break exits the *innermost* loop. To break out of TWO nested loops:
-
-```
-For_Each_1 (outer)
-└─ For_Each_1#Body
-    ├─ For_Each_2 (inner)
-    │   └─ For_Each_2#Body
-    │       └─ If_1#Wrapper
-    │           ├─ If_1#Then → [Assign abortFlag = true, Break_1]   ← exits inner only
-    │           └─ If_1#Else → []
-    └─ If_2#Wrapper                                                 ← after inner loop
-        ├─ If_2 (when: ${$context.variables.abortFlag})
-        ├─ If_2#Then  → [Break_2]                                   ← exits outer
-        └─ If_2#Else  → []
-```
-
-`abortFlag` must be a workflow variable so it persists across iteration boundaries.
+Break exits the innermost loop. To exit two nested loops, assign `abortFlag = true` and Break in the inner loop, then check the workflow variable after that loop and Break in the outer loop.
 
 ### 6. TryCatch around a loop (whole-batch error handling)
 
-If any iteration throws, the whole loop aborts and execution jumps to `catch.do`. Use when one bad item should kill the batch.
+Place the loop in `try.do` when any iteration failure should abort the whole loop and transfer control to `catch.do`.
 
-```
+```text
 Try_Catch_1
-├─ try:
-│   └─ For_Each_1
-│       └─ For_Each_1#Body
-│           └─ Javascript_1   (might throw)
-└─ catch (as: error):
-    └─ Assign  errorMsg = ${$error.title}, status = "batch-failed"
+├─ try.do
+│  └─ For_Each_1
+│     └─ For_Each_1#Body
+│        └─ Javascript_1
+└─ catch.do (as: error)
+   └─ Assign using $error
 ```
 
-### 7. TryCatch inside a loop body (skip-and-continue error handling)
+### 7. TryCatch inside a loop body (skip-and-continue)
 
-Each iteration has its own try/catch. A failure in one iteration is caught locally; the loop continues to the next iteration. **More common in practice than pattern 6.**
+Place a TryCatch in `For_Each_1#Body` when each iteration should handle its own failure and allow the loop to continue.
 
-```
+```text
 For_Each_1
 └─ For_Each_1#Body
-    └─ Try_Catch_1
-        ├─ try:
-        │   └─ Javascript_1   (might throw)
-        └─ catch (as: error):
-            └─ Assign  failedItems = failedItems + 1
+   └─ Try_Catch_1
+      ├─ try.do → risky activity
+      └─ catch.do → record failure
 ```
 
-The TryCatch's number suffix (`Try_Catch_1`) is fine inside the body even though the body runs N times — keys are checked structurally, not per-iteration. Each iteration sees the same key.
+`Try_Catch_1` is valid inside the body even though the body executes repeatedly; keys are checked structurally, not once per runtime iteration. This is more common than whole-batch handling.
 
 ### 8. DoWhile with mid-body Break
 
-Use a DoWhile when the iteration count depends on per-iteration logic, not a precomputed array. Add a Break for early exit.
+Use DoWhile when iteration depends on per-iteration logic rather than a precomputed array. Its body runs at least once; `doWhile` is evaluated after each iteration. Break exits immediately and skips reevaluation.
 
-```
-Do_While_1                       (doWhile: ${$context.variables.attempts < maxAttempts && !$context.variables.found})
+```text
+Do_While_1 (doWhile: ${$context.variables.attempts < maxAttempts && !$context.variables.found})
 └─ Do_While_1#Body
-    ├─ Javascript_1              (does some probe; sets $output)
-    ├─ Assign  attempts = attempts + 1
-    └─ If_1#Wrapper              (success?)
-        ├─ If_1#Then  → [Assign found = true, Break_1]
-        └─ If_1#Else  → []
+   ├─ Javascript_1
+   ├─ Assign attempts = attempts + 1
+   └─ If_1#Wrapper
+      ├─ If_1#Then → set found = true, Break_1
+      └─ If_1#Else → []
 ```
 
-The `doWhile` condition is evaluated AFTER each iteration. The body always runs at least once. The Break takes effect immediately — the `doWhile` re-evaluation is skipped.
+For a DoWhile, use `for.in: "${ [1] }"` when a single-element input is required.
 
 ### 9. TryCatch inside If branch
 
-Handle a risky operation that's only attempted on certain conditions.
+Put a risky operation in a TryCatch inside `#Then` when it should run only for the selected condition; handle fallback in `catch.do` and the skipped case in `#Else`.
 
-```
-If_1#Wrapper                     (should we attempt the risky op?)
+```text
+If_1#Wrapper
 ├─ If_1#Then
-│   └─ Try_Catch_1
-│       ├─ try:  → [Javascript_1 risky]
-│       └─ catch (as: e):
-│           └─ Assign  status = "failed-with-fallback"
-└─ If_1#Else
-    └─ Assign  status = "skipped"
+│  └─ Try_Catch_1
+│     ├─ try.do → risky activity
+│     └─ catch.do → fallback
+└─ If_1#Else → skipped status
 ```
 
 ### 10. Per-iteration result aggregation across nested control flow
 
-If you want a clean array of per-iteration results that includes results from inside nested Ifs, the For_Each body's standard accumulation pattern (the index-aware `results: [...]` export) handles it — the body's `$output` is whatever the last activity in the body produced.
+The standard index-aware ForEach `results: [...]` export appends the body's `$output`. The body's output is the last activity in that body, including an activity after a nested If.
 
-```
+```text
 For_Each_1#Body
 ├─ If_1#Wrapper
-│   ├─ If_1#Then → [Javascript_1 → returns { kind: "high", ... }]
-│   └─ If_1#Else → [Javascript_2 → returns { kind: "low", ... }]
-└─ Javascript_3 → returns { ...$context.outputs.If_1, processed_at: Date.now() }
+│  ├─ If_1#Then → Javascript_1
+│  └─ If_1#Else → Javascript_2
+└─ Javascript_3 → returns the per-item result
 ```
 
-The body's `$output` will be `Javascript_3`'s return value (last activity wins). The accumulation pattern appends that to `For_Each_1.results`.
-
-If you want to capture the If's own output too, use `$context.outputs.If_1` (the wrapper exports under the If's number, not the branch name).
+To include the If's output, reference `$context.outputs.If_1`; the wrapper exports under the If number, not the branch name.
 
 ## Anti-patterns
 
-- **Reusing `If_1#Then` in two different Ifs** — even at different nesting levels. Always increment.
-- **Forgetting `then: "exit"` on inner If branches** — fall-through still happens at every nesting level.
-- **Putting Break in a TryCatch's catch.do that's not inside a loop** — Break has no enclosing loop to exit.
-- **Reusing iteration variable names across nested loops** — inner loop's `currentItem` shadows the outer one. Use `outerItem` / `innerItem` or descriptive names.
-- **Using a workflow variable as a loop iterator** — the variable's value will be the LAST iteration's item after the loop ends, plus you've polluted `$context.variables`. Use `for.each` (a loop-local binding), not Assign-then-iterate.
-- **Mixing `then: "exit"` and `then: "end"`** — `exit` stops the current container; `end` terminates the workflow. Only Response uses `end`.
-- **Trying to short-circuit evaluation in the switch via `case` ordering** — first matching case wins, but ALL cases' `when` expressions are evaluated. Don't rely on side effects in earlier `when`s.
+- Reusing `If_1#Then` or any other key, even at another nesting level; increment suffixes.
+- Omitting `then: "exit"` on inner If branches; fall-through occurs at every nesting level.
+- Putting Break in a TryCatch `catch.do` with no enclosing loop.
+- Reusing iterator names in nested loops; the inner binding shadows the outer one.
+- Using a workflow variable as a loop iterator. It remains set to the last item and pollutes `$context.variables`; use `for.each` instead.
+- Mixing `then: "exit"` and `then: "end"`; `exit` stops the current container, while `end` terminates the workflow and is only for Response.
+- Relying on switch `case` ordering to short-circuit evaluation. The first matching case wins, but all `when` expressions are evaluated; do not rely on earlier side effects.
 
 ## Decision Cheat Sheet
 
 | You want… | Use |
-|-----------|-----|
+|---|---|
 | Branch on a condition | If with `#Wrapper` / `#Then` / `#Else` |
-| Three+ branches | Chain of two-way Ifs (each `#Else` holds the next If) |
+| Three or more branches | Chain two-way Ifs, nesting the next in `#Else` |
 | Iterate over an array | ForEach with `for.each` / `for.in` / `for.at` |
 | Loop until a condition | DoWhile with `for.in: "${ [1] }"` and `doWhile: "${...}"` |
 | Exit a loop early | Break inside an If inside the loop's `#Body` |
-| Exit nested loops | Flag variable + Break in inner + If + Break in outer |
-| Catch errors anywhere | TryCatch — choose `around-loop` vs `inside-body` based on whether one error should kill the batch |
-| Run two activities in order | Place both inside a Sequence's `do` array — order is preserved |
-| Branch on an error type | If inside `catch.do`, switching on `${$error.title}` or `${$error.originatingTaskName}` |
-| Conditionally return early | Response inside an If's `#Then` (with `then: "end"`) |
+| Exit nested loops | Workflow flag + inner Break + outer check and Break |
+| Catch errors | TryCatch around the loop or inside the body, depending on batch semantics |
+| Run activities in order | Put them in a Sequence's `do` array |
+| Branch on an error type | If inside `catch.do`, using `${$error.title}` or `${$error.originatingTaskName}` |
+| Conditionally return early | Response inside an If's `#Then`, with `then: "end"` |

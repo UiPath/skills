@@ -249,7 +249,7 @@ Success output:
 }
 ```
 
-`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind). `Data.SolutionResourceFields` (when present) lists fields StudioWeb renders as Solution-resource pickers — see [Solution resources as activity fields](connector-activity-discovery.md#solution-resources-as-activity-fields-run-job-add-queue-item-) for the authoring recipe.
+`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind). `Data.SolutionResourceFields` (when present) lists fields StudioWeb renders as Solution-resource pickers — see [Solution resources as activity fields](connector-activity-discovery.md#solution-resources-as-activity-fields) for the authoring recipe.
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
@@ -412,7 +412,7 @@ Sample output (Outlook `getNewestEmail`, `--operation List`):
 }
 ```
 
-For every entry with `required: true`, confirm the stub's emitted activity has a value at `with.<location>Parameters.<name>`. Re-stub with `--inputs '{"<name>":"<value>"}'` or hand-edit. See [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields) and [troubleshooting.md](troubleshooting.md#required-request-field-dropped-by-registry-stub).
+For every entry with `required: true`, confirm the stub's emitted activity has a value at `with.<location>Parameters.<name>`. Re-stub with `--inputs '{"<name>":"<value>"}'` or hand-edit. See [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check) and [troubleshooting.md](troubleshooting.md#required-request-field-dropped-by-registry-stub).
 
 <!--skill-flavor:local-solution-lifecycle:start-->
 ## `uip solution init`
