@@ -86,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "RPA Workflow", Folder "Shared/uipath-maestro-case/HelpDeskLookup RPA" |
+  | Process Reference | Name "HelpDeskLookup", Folder "Shared/uipath-maestro-case/HelpDeskLookup RPA" |
   | Component Type | RPA |
 
   **Inputs**
