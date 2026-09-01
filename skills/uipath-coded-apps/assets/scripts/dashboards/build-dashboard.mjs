@@ -364,7 +364,7 @@ export function assertScaffoldExtracted(projectPath) {
     `Starter kit not extracted into: ${projectPath}`,
     `Extract it first with tar (built into Windows 10+, macOS, Linux).`,
     `Feed the archive on stdin (-f -) so GNU tar doesn't misread the C:\\ drive colon as a remote host:`,
-    `  mkdir -p "${projectPath}" && tar -xz -C "${projectPath}" -f - < "${FIXTURE_ARCHIVE_PATH}"`,
+    `  mkdir -p "${projectPath}" && tar --no-same-owner --no-same-permissions -xz -C "${projectPath}" -f - < "${FIXTURE_ARCHIVE_PATH}"`,
     `Then re-run the build.`,
   ].join('\n'))
 }
