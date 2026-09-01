@@ -5,11 +5,11 @@
     {"name": "title",        "type": "STRING",         "lengthLimit": 200},
     {"name": "description",  "type": "MULTILINE_TEXT", "lengthLimit": 2000},
     {"name": "score",        "type": "DECIMAL"},
-    {"name": "viewCount",    "type": "INTEGER"},
+    {"name": "viewCount",    "type": "DECIMAL",        "decimalPrecision": 0},
     {"name": "active",       "type": "BOOLEAN"},
     {"name": "releaseDate",  "type": "DATE"},
-    {"name": "lastUpdated",  "type": "DATETIME"},
-    {"name": "externalId",   "type": "UUID"},
+    {"name": "lastUpdated",  "type": "DATETIME_WITH_TZ"},
+    {"name": "externalId",   "type": "STRING",         "lengthLimit": 36},
     {"name": "file1",        "type": "FILE"}
   ]
 }

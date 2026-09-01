@@ -21,7 +21,7 @@ pre_run:
 
 initial_prompt: |
   Build a UiPath Flow against the `ContractRegistry` Data Fabric entity
-  (fields: contractTitle STRING, status STRING, priority INTEGER,
+  (fields: contractTitle STRING, status STRING, priority DECIMAL (whole),
   dueDate DATE, value DECIMAL, isUrgent BOOLEAN) that exercises the
   bulk-CRUD lifecycle with ForEach loops:
 

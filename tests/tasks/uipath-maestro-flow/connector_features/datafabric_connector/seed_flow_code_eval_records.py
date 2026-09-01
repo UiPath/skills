@@ -20,7 +20,7 @@ ROWS = [
         "viewCount": 5000,
         "active": True,
         "releaseDate": "1999-03-31",
-        "lastUpdated": "2024-01-01T10:00:00",
+        "lastUpdated": "2024-01-01T10:00:00Z",
         "externalId": "11111111-1111-1111-1111-111111111111",
     },
     {
@@ -30,7 +30,7 @@ ROWS = [
         "viewCount": 3000,
         "active": True,
         "releaseDate": "2016-11-11",
-        "lastUpdated": "2024-06-15T12:00:00",
+        "lastUpdated": "2024-06-15T12:00:00Z",
         "externalId": "22222222-2222-2222-2222-222222222222",
     },
     {
@@ -40,7 +40,7 @@ ROWS = [
         "viewCount": 2000,
         "active": False,
         "releaseDate": "1972-05-13",
-        "lastUpdated": "2023-05-13T09:30:00",
+        "lastUpdated": "2023-05-13T09:30:00Z",
         "externalId": "33333333-3333-3333-3333-333333333333",
     },
     {
@@ -50,7 +50,7 @@ ROWS = [
         "viewCount": 100,
         "active": False,
         "releaseDate": "2020-01-01",
-        "lastUpdated": "2022-01-01T00:00:00",
+        "lastUpdated": "2022-01-01T00:00:00Z",
         "externalId": "44444444-4444-4444-4444-444444444444",
     },
 ]
