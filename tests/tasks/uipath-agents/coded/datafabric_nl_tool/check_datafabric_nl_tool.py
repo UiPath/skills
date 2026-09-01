@@ -9,7 +9,8 @@ Asserts:
   4. The tool name "query_products" appears in the file.
   5. `base_system_prompt` is passed to `create_datafabric_tool`.
   6. No module-level UiPath/LLM construction.
-  7. `bindings.json` declares the `datafabricentityset` resource.
+  7. `bindings.json` exists with valid envelope (entity bindings not yet
+     supported in schema — see bindings.schema.json and EntityResourceOverwrite).
 """
 
 from __future__ import annotations
@@ -98,20 +99,13 @@ def check_prompt_forwarding(text: str) -> None:
 
 
 def check_bindings() -> None:
-    # uip codedagent init does not yet auto-detect create_datafabric_tool
-    # usage, so bindings.json may have 0 resources. We verify the envelope
-    # is valid and treat a datafabricentityset entry as a bonus.
-    doc = load_bindings(ROOT / "bindings.json")
-    resources = doc.get("resources") or []
-    df_resources = [
-        r
-        for r in resources
-        if isinstance(r, dict) and r.get("resource") == "datafabricentityset"
-    ]
-    if df_resources:
-        print(f"OK: bindings.json declares {len(df_resources)} datafabricentityset resource(s) (bonus)")
-    else:
-        print("OK: bindings.json exists with valid envelope (no auto-detected datafabricentityset — expected until CLI adds detection)")
+    # Entity bindings are not yet supported:
+    #   - bindings.schema.json enum: asset, process, bucket, index, app, connection (no "entity")
+    #   - uip codedagent init: generate_bindings_content() always returns resources=[]
+    #   - EntityResourceOverwrite exists at runtime but isn't wired into schema validation
+    # When entity binding support lands, upgrade to:
+    #   find_resource(doc, resource="entity", key="Products.<folder_key>")
+    load_bindings(ROOT / "bindings.json")
 
 
 def main() -> None:

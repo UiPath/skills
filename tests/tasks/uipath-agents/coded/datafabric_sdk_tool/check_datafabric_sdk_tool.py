@@ -9,7 +9,8 @@ Asserts:
   4. The entity name "Orders" and folder "Shared" appear in the file.
   5. A `@tool`-decorated function wraps the SDK call.
   6. No module-level `UiPath()` or LLM client construction.
-  7. `bindings.json` declares the `datafabricentityset` resource.
+  7. `bindings.json` exists with valid envelope (entity bindings not yet
+     supported in schema — see bindings.schema.json and EntityResourceOverwrite).
 """
 
 from __future__ import annotations
@@ -95,22 +96,13 @@ def check_tool_decorator(text: str) -> None:
 
 
 def check_bindings() -> None:
-    # For the SDK direct path, `uip codedagent init` does not auto-detect
-    # sdk.entities usage — there is no binding detection pattern for it.
-    # We only verify that bindings.json exists and has a valid envelope.
-    # If the agent hand-authored a datafabricentityset binding, that's a
-    # bonus, but we don't require it.
-    doc = load_bindings(ROOT / "bindings.json")
-    resources = doc.get("resources") or []
-    df_resources = [
-        r
-        for r in resources
-        if isinstance(r, dict) and r.get("resource") == "datafabricentityset"
-    ]
-    if df_resources:
-        print(f"OK: bindings.json declares {len(df_resources)} datafabricentityset resource(s) (bonus)")
-    else:
-        print("OK: bindings.json exists with valid envelope (no auto-detected datafabricentityset — expected for SDK direct path)")
+    # Entity bindings are not yet supported:
+    #   - bindings.schema.json enum: asset, process, bucket, index, app, connection (no "entity")
+    #   - uip codedagent init: generate_bindings_content() always returns resources=[]
+    #   - EntityResourceOverwrite exists at runtime but isn't wired into schema validation
+    # So we only verify the envelope is valid. When entity binding support lands,
+    # upgrade this to use find_resource(doc, resource="entity", key="Orders.Shared").
+    load_bindings(ROOT / "bindings.json")
 
 
 def main() -> None:

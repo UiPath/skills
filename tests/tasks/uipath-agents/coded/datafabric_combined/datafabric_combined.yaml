@@ -4,7 +4,7 @@ description: >
   create_datafabric_tool for NL-to-SQL exploration and a @tool-wrapped
   SDK call for deterministic writes. Verifies the agent uses the right
   path for each concern, forwards system prompt consistently, and
-  emits correct bindings.
+  produces a valid bindings.json envelope.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
 
 run_limits:

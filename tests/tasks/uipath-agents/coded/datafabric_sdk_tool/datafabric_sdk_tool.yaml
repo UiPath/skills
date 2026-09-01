@@ -4,7 +4,7 @@ description: >
   wraps `sdk.entities.list_records_async` (or `retrieve_records_async`) in
   a @tool-decorated function with `UiPath()` instantiated inside the
   function body (not module-level), uses the correct import path, and
-  emits the `datafabricentityset` binding for the targeted entity.
+  produces a valid bindings.json envelope.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
 
 run_limits:

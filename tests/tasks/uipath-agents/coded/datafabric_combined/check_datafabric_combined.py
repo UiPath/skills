@@ -10,7 +10,8 @@ Asserts:
      Uses `sdk.entities.update_record_async` (or `update_record`).
      Wrapped in @tool decorator. Function named `close_order`.
   3. No module-level UiPath/LLM construction.
-  4. `bindings.json` declares datafabricentityset resource.
+  4. `bindings.json` exists with valid envelope (entity bindings not yet
+     supported in schema — see bindings.schema.json and EntityResourceOverwrite).
 """
 
 from __future__ import annotations
@@ -121,17 +122,13 @@ def check_close_order_tool(text: str) -> None:
 
 
 def check_bindings() -> None:
-    doc = load_bindings(ROOT / "bindings.json")
-    resources = doc.get("resources") or []
-    df_resources = [
-        r
-        for r in resources
-        if isinstance(r, dict) and r.get("resource") == "datafabricentityset"
-    ]
-    if df_resources:
-        print(f"OK: bindings.json declares {len(df_resources)} datafabricentityset resource(s) (bonus)")
-    else:
-        print("OK: bindings.json exists with valid envelope (no auto-detected datafabricentityset — expected until CLI adds detection)")
+    # Entity bindings are not yet supported:
+    #   - bindings.schema.json enum: asset, process, bucket, index, app, connection (no "entity")
+    #   - uip codedagent init: generate_bindings_content() always returns resources=[]
+    #   - EntityResourceOverwrite exists at runtime but isn't wired into schema validation
+    # When entity binding support lands, upgrade to:
+    #   find_resource(doc, resource="entity", key="Orders.<folder_key>")
+    load_bindings(ROOT / "bindings.json")
 
 
 def main() -> None:
