@@ -6,6 +6,23 @@ the criterion `timeout:` would fire first and the grader would SIGKILL the check
 mid-attempt, discarding the payload, the instanceId, and the CLI's own envelope.
 That is how skill-flow-api-workflow scored 0 on a gating criterion in 2026-09.
 
+This is NOT a new class of failure. It was root-caused for skill-flow-subflow on
+2026-05-29 (run 2026-05-29_04-04-25) and guarded there, for that one task, by
+`single_node/subflow/test_check_subflow_flow.py`. The RCA's own words, worth
+keeping because the doc it lived in is no longer in the tree:
+
+    The criterion budget (120s) was *below* `flow_check.run_debug`'s own
+    `subprocess.run` timeout (240s default). That inversion means the checker
+    can NEVER surface the underlying CLI error: the sandbox kills the whole
+    process first, yielding exit `-1` with empty output ("Command ... timed out
+    after N seconds") instead of the informative exit `1` + traceback that the
+    inner `subprocess.TimeoutExpired` would produce.
+
+Four months later api_workflow hit the same wall, because the guard covered one
+task out of forty-four. That per-task test is deleted here and this module owns
+the rule for the whole suite: one source of truth, checked for every criterion
+rather than the one that already burned someone.
+
 So the relation is enforced here instead of eyeballed per task:
 
     criterion timeout >= debug_budget(...) + CRITERION_MARGIN_SECONDS
@@ -33,7 +50,8 @@ Scope and limits:
   line as ``# budget-guard: manual xN``, and the guard then checks THAT
   arithmetic — a bare ``manual`` is refused, a stale one is refused, and where
   the task ships a ``seed.py`` that states its cases literally, ``N`` is
-  cross-checked against it. An annotation nobody verifies is just a comment.
+  cross-checked against it — and a count with nothing to corroborate it is
+  refused outright. An annotation nobody verifies is just a comment.
 - Pricing and "did we have to guess?" come out of ONE traversal (:class:`_Price`).
   When they walked separately they disagreed about scope, and a loop inside a
   helper was priced at one pass while going unreported.
@@ -273,11 +291,11 @@ def _cost(
         )
     return _merge(
         *[_cost(c, lengths, defs, seen, manual) for c in ast.iter_child_nodes(node)]
-    ) if list(ast.iter_child_nodes(node)) else _FREE
+    )
 
 
 def _body(stmts: list, lengths, defs, seen=frozenset(), manual=None) -> _Price:
-    return _merge(*[_cost(s, lengths, defs, seen, manual) for s in stmts]) if stmts else _FREE
+    return _merge(*[_cost(s, lengths, defs, seen, manual) for s in stmts])
 
 
 def _defs(tree: ast.Module) -> dict[str, ast.FunctionDef]:
@@ -307,9 +325,10 @@ def _price_script(
 ) -> _Price | None:
     """Price one execution of ``path``, or None when it runs no debug at all.
 
-    ``manual`` is the per-loop pass count the criterion declares for loops this
-    guard cannot count. It applies to every such loop in the script; with more
-    than one that over-charges, which is the safe direction."""
+    ``manual`` is the pass count the criterion declares for a loop this guard
+    cannot count. One count cannot describe two differently-sized loops, so the
+    caller refuses that case rather than picking a number: applying N to both
+    under-charges whenever the other loop runs more often."""
     tree = ast.parse(open(path).read())
     if not _calls_in(tree):
         return None
@@ -396,6 +415,61 @@ def _criteria():
                 )
 
 
+def _annotation_error(
+    price: _Price, declared: str | None, seeded: int | None, where: str
+) -> str | None:
+    """Why this criterion's `budget-guard` annotation is unacceptable, or None.
+
+    Pure, so every refusal path is unit-testable. The multi-loop and
+    uncorroborated-count branches have no live task to exercise them, and an
+    untested branch is where each previous round of this guard went wrong."""
+    if declared is not None and not price.unsized:
+        return (
+            f"{where} has no loop this guard needs help counting, so the "
+            "`budget-guard: manual` annotation is stale. Remove it."
+        )
+    if not price.unsized:
+        return None
+    # One declared count cannot describe two loops of different sizes, and
+    # picking one under-charges whenever the other runs more often.
+    if len(price.unsized) > 1:
+        return (
+            f"{where} runs a debug inside {len(price.unsized)} loops this guard "
+            f"cannot count (lines {', '.join(map(str, price.unsized))}). A "
+            "single `budget-guard: manual xN` cannot describe them. Give the "
+            "check one such loop, make the counts static, or extend this guard."
+        )
+    if declared is None:
+        return (
+            f"{where} runs a debug inside a loop whose iteration count is not "
+            f"static (line {price.unsized[0]}), so this guard can only price "
+            f"one pass ({price.seconds}s). Annotate the timeout with "
+            "`# budget-guard: manual xN` for the real pass count and the guard "
+            "will check the arithmetic."
+        )
+    if not declared:
+        return (
+            f"{where} is marked `budget-guard: manual` with no count. Write "
+            "`manual xN` so the number can be checked rather than trusted."
+        )
+    # Every declared count must be checkable against something. Accepting one
+    # on trust is the reflex that produced every bug this guard exists to catch.
+    if seeded is None:
+        return (
+            f"{where} declares `manual x{declared}` but nothing corroborates it "
+            "— the task has no seed.py stating its cases literally. Add one, "
+            "make the loop countable, or extend _seed_case_count to read this "
+            "task's generator. An unchecked count is a comment."
+        )
+    if int(declared) != seeded:
+        return (
+            f"{where} declares `manual x{declared}` but the task's seed.py "
+            f"writes {seeded} cases. Fix whichever is wrong; a declared count "
+            "that nobody checks is how this guard drifts."
+        )
+    return None
+
+
 _CASES = sorted(_criteria(), key=lambda c: (c[0], c[2] or ""))
 
 
@@ -422,34 +496,11 @@ def test_criterion_clears_the_debug_budget(
     where = f"{os.path.basename(script)}{f' {subcommand}' if subcommand else ''}"
     assert criterion is not None, f"{yaml_path}: run_command has no timeout:"
 
-    if declared is not None and not price.unsized:
-        pytest.fail(
-            f"{yaml_path}: {where} has no loop this guard needs help counting, "
-            "so the `budget-guard: manual` annotation is stale. Remove it."
-        )
-    if price.unsized and declared is None:
-        pytest.fail(
-            f"{yaml_path}: {where} runs a debug inside a loop whose iteration "
-            f"count is not static (line{'s' if len(price.unsized) > 1 else ''} "
-            f"{', '.join(map(str, price.unsized))}), so this guard can only "
-            f"price one pass ({price.seconds}s). Annotate the timeout with "
-            "`# budget-guard: manual xN` for the real pass count and the guard "
-            "will check the arithmetic."
-        )
+    seeded = _seed_case_count(script) if price.unsized else None
+    problem = _annotation_error(price, declared, seeded, where)
+    if problem:
+        pytest.fail(f"{yaml_path}: {problem}")
     if price.unsized:
-        if not declared:
-            pytest.fail(
-                f"{yaml_path}: {where} is marked `budget-guard: manual` with no "
-                "count. Write `manual xN` so the number can be checked rather "
-                "than trusted."
-            )
-        seeded = _seed_case_count(script)
-        if seeded is not None and int(declared) != seeded:
-            pytest.fail(
-                f"{yaml_path}: {where} declares `manual x{declared}` but the "
-                f"task's seed.py writes {seeded} cases. Fix whichever is wrong; "
-                "a declared count that nobody checks is how this guard drifts."
-            )
         price = _price_script(script, subcommand, manual=int(declared))
 
     required = price.seconds + flow_check.CRITERION_MARGIN_SECONDS
@@ -624,3 +675,50 @@ def test_seed_case_count_declines_when_ambiguous(tmp_path):
         'a = {"cases": [1, 2]}\nb = {"cases": [1, 2, 3]}\n'
     )
     assert _seed_case_count(os.path.join(str(tmp_path), "check_x.py")) is None
+
+
+def test_two_uncountable_loops_are_refused_not_guessed(tmp_path):
+    """One declared count cannot describe two loops of different sizes.
+    Applying N to both under-charges whenever the other runs more often, so the
+    criterion test refuses the shape instead of picking a number."""
+    src = (
+        f"def main():\n    for a in two():\n        {_ONE}\n"
+        f"    for b in seven():\n        {_ONE}\n"
+    )
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [2, 4]
+    # The under-charge this refusal exists to prevent: x2 prices 970, but if the
+    # second loop runs 7 times the real cost is 4365.
+    assert _price_script(path, None, manual=2).seconds == 485 * 4
+
+
+# ── annotation policy ───────────────────────────────────────────────────────
+#
+# Every refusal path, including the two no live task reaches. An untested branch
+# is where each earlier round of this guard went wrong.
+
+_ONE_LOOP = _Price(485, (7,))
+_TWO_LOOPS = _Price(970, (7, 9))
+_NO_LOOP = _Price(485, ())
+
+
+@pytest.mark.parametrize(
+    "price,declared,seeded,expected",
+    [
+        (_NO_LOOP, None, None, None),                       # ordinary criterion
+        (_ONE_LOOP, "2", 2, None),                          # declared and corroborated
+        (_NO_LOOP, "3", None, "stale"),                     # marker with nothing to size
+        (_TWO_LOOPS, "2", 2, "cannot describe them"),       # one count, two loops
+        (_ONE_LOOP, None, None, "not static"),              # unannotated runtime loop
+        (_ONE_LOOP, "", None, "with no count"),             # bare `manual`
+        (_ONE_LOOP, "2", None, "nothing corroborates it"),  # unverifiable count
+        (_ONE_LOOP, "1", 2, "writes 2 cases"),              # understated count
+    ],
+)
+def test_annotation_policy(price, declared, seeded, expected):
+    problem = _annotation_error(price, declared, seeded, "check_x.py")
+    if expected is None:
+        assert problem is None
+    else:
+        assert problem and expected in problem
