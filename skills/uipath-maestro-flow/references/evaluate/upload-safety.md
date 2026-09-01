@@ -16,7 +16,7 @@ This applies regardless of whether:
 
 ## Why
 
-`uip solution upload` is a write operation against Studio Web. It either creates a new solution or **overwrites** the existing one matched by `SolutionId` from the local working tree. Three concrete failure modes if the skill auto-uploads:
+`uip solution upload` is a write operation against Studio Web. It either creates a new solution or **overwrites** the existing one matched by the `SolutionId` in the local `.uipx` (bundling generates `SolutionStorage.json` from it; that file is read back only for a direct `.uis` upload) — the overwrite needs no flag and raises no prompt. The replaced contents are recorded as a restorable version (skipped entirely with `--no-snapshot`), but recovery is browser-only, after the fact, by the user — and it does not undo failure mode 1 below. None of this is a reason to skip asking. Three concrete failure modes if the skill auto-uploads:
 
 1. **The user is iterating locally** in VS Code or the filesystem and intended to test something **before** publishing. Auto-upload pushes work-in-progress to Studio Web where teammates and triggers may pick it up.
 2. **The user pulled the solution from Studio Web** to edit a small piece. Auto-upload sends the partial local state back, potentially **overwriting** changes another user made on Studio Web in the meantime.
@@ -39,12 +39,14 @@ When `eval run start` cannot resolve the solution:
 
 There is no single CLI flag that says "this project is local-only." The signals to weigh, in priority order:
 
-1. **`SolutionStorage.json` is missing or has no `SolutionId`.** The local working tree has not been linked to a Studio Web solution. `uip solution upload` would CREATE a new solution; the user might not want a new tenant entry.
+1. **The `.uipx` carries an id Studio Web has never seen** (a fresh `solution init`, never uploaded). The upload would CREATE a new solution; the user might not want a new tenant entry.
 2. **`.vscode/` directory exists in the solution root.** Strong signal that the dev is authoring in VS Code; assume they are iterating locally.
 3. **The directory is under a workspace path the user has indicated they edit locally** (`~/Code/...`, `~/dev/...`, etc., or any path that is not the default Studio Web download location). Treat as local-first.
 4. **`uip solution upload` has never been recorded** in the recent shell history or in the conversation. If the skill cannot point to a prior explicit upload, do not assume the project is in Studio Web.
 
 If ANY of these signals is true, skip auto-upload entirely and ask.
+
+None of these signals separates a first import from an overwrite of a live solution: an id from a downloaded or copied project names a solution the upload would replace, and the local tree alone cannot tell the two apart. Treat both as writes to ask about.
 
 ## How to Detect "Solution Already in Studio Web"
 

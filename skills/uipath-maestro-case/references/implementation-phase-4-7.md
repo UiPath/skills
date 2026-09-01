@@ -28,7 +28,7 @@ Print report fields and run AskUserQuestion per [phased-execution.md § Phase 5]
 
 ## Step 14 — Publish to Studio Web
 
-Run `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes) — the filter is mandatory or `DesignerUrl` is lost to response truncation. Print `DesignerUrl`, then proceed to Phase 6.
+Run `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes) — the filter is mandatory or `DesignerUrl` is lost to response truncation. Print `DesignerUrl` and say whether `Action` was `Imported` or `Overwritten`, then proceed to Phase 6.
 
 ---
 
@@ -46,7 +46,7 @@ When a debug or process run fails, read **[troubleshooting-guide.md](troubleshoo
 
 **Diagnose → fix → re-run loop.** After each diagnostic pass, classify root cause and act:
 
-1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 15 debug. If the case was already published in Phase 5, re-run Step 14 afterwards so Studio Web holds the fixed build.
+1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 15 debug. If the case was already published in Phase 5, ask via **AskUserQuestion** with options — `Re-publish the fixed build`, `Skip re-publish`. On `Re-publish`, re-run Step 14 so Studio Web holds the fixed build (the re-upload overwrites any Studio Web edits made since publish); on `Skip re-publish`, leave Studio Web on the build it already has.
 2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
 3. **Inconclusive** (no actionable cause): proceed to next round per retry policy.
 
