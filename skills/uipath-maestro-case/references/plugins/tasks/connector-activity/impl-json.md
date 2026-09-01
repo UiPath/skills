@@ -109,7 +109,7 @@ Save the response. The interesting parts:
 | `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding |
 | `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — response (JSON Schema body) / curated / Error |
-| `spec.caseShape.context[]` | `.Data.CaseShape.Context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
+| `spec.caseShape.context[]` | `.Data.CaseShape.Context` — FE-canonical array, 8–9 entries (HTTP-style connectors add `method`/`path`); copy ALL of them, the `metadata` entry carries the Activity Type ID, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
 
 > **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.

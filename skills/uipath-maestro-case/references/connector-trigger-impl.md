@@ -153,7 +153,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
   "rule": "wait-for-connector",
   "uipath": {
     "serviceType": "Intsvc.WaitForEvent",
-    "context": "<caseShape.context — placeholders substituted>",
+    "context": "<caseShape.context — the ENTIRE array as returned, placeholders substituted — see below>",
     "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
     "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
     "bindings": []
@@ -161,6 +161,8 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
   "conditionExpression": "<optional =js: gate on case state, e.g. vars.X — NOT the event payload>"
 }
 ```
+
+**Copy the whole `caseShape.context[]` array — every entry, every nested subtree.** The spec returns 8–9 entries (`connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, and for HTTP-style connectors `method` and `path`, plus **`metadata`**). The `metadata` entry is the largest and the one most often dropped, and it is load-bearing: `body.activityPropertyConfiguration.UiPathActivityTypeId` is the connector's **Activity Type ID**. A rule whose context lacks it is unresolved to the runtime no matter how complete the other entries look. Observed drift, three consecutive builds: the spec was fetched and persisted with all 9 entries, and the rule received 6 — `method`, `path`, and `metadata` trimmed. Do not summarize, shorten, or select from this array; substitute the two binding placeholders and paste it.
 
 5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when the rule has no `uipath.outputs[]` (stub placeholder — the stub always emits `uipath`, but with empty `outputs[]`).
 
