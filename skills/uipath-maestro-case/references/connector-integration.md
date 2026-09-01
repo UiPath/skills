@@ -47,7 +47,7 @@ Output: `{ Entry, Config, Connections }` where:
 - `Entry` — the raw TypeCache entry, including `displayName`, `configuration`.
 - `Config.connectorKey` — the Integration Service connector identifier (e.g., `gmail`, `uipath-atlassian-jira`).
 - `Config.objectName` — the specific operation (e.g., `message`, `issue`).
-- `Connections[]` — array of `{ id, name }` objects.
+- `Connections[]` — array of `{ Id, Name }` (not a verbatim subtree, so PascalCase) objects.
 
 **Selection rules (in priority order):**
 

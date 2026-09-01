@@ -91,11 +91,11 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 | Field | Source | Plugin step |
 |---|---|---|
 | `id` | `connection-id` from `tasks.md` | Planning |
-| `name` | `.Data.Connections[selected].name` from `get-connection` | Step 1 |
+| `name` | `.Data.Connections[selected].Name` from `get-connection` | Step 1 |
 | `connectorKey` | `connector-key` from `tasks.md` | Planning |
-| `connectorName` | `.Data.Connections[selected].connector.name` from `get-connection` | Step 1 |
-| `folderKey` | `.Data.Connections[selected].folder.key` from `get-connection` | Step 1 |
-| `folderName` | `.Data.Connections[selected].folder.name` from `get-connection` | Step 1 |
+| `connectorName` | `.Data.Connections[selected].Connector.Name` from `get-connection` | Step 1 |
+| `folderKey` | `.Data.Connections[selected].Folder.Key` from `get-connection` | Step 1 |
+| `folderName` | `.Data.Connections[selected].Folder.Name` from `get-connection` | Step 1 |
 
 ### Procedure
 
