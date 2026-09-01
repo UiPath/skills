@@ -59,7 +59,16 @@
        INVALID   - APIOutput1 (string) -> renamedResult
        INVALID   - APIInput1 | string | <- "Stage"."Task".APIOutput1
        INVALID   - APIInput1: '<- "Stage"."Task".APIOutput1'
+       INVALID   - "APIOutput1 -> renamedResult"
+       INVALID   - 'literalResult = "literal-assigned"'
+       INVALID   - copiedResult: "=vars.renamedResult"
        VALID     - APIOutput1 -> renamedResult
+
+     These rows are NOT YAML. The surrounding `- key: value` lines are, but an
+     I/O row is a plain-text list item and must never be wrapped in a YAML
+     scalar quote or written as `name: value`. Do not quote a row to make it
+     parse — nothing parses this file as YAML. Only quotes the SDD cell itself
+     contained survive, and they sit INSIDE the row, never around it.
 
      A bare item with no operator (`- APIOutput1`) is reserved for a
      schema-discovered auto-mint output and never comes from an SDD row.
