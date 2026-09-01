@@ -70,6 +70,7 @@ success_criteria:
   - type: run_command
     description: "Project actually compiles — independent build re-run exits 0 (primary validation; a garbage workflow that merely contains the expected strings fails here)"
     command: "uip rpa build TextReport --output json"
+    timeout: 120
     weight: 3.0
     pass_threshold: 1.0
 
