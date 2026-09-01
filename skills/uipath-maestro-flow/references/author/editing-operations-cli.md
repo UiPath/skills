@@ -39,7 +39,9 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 
 ### Generated node IDs
 
-**There is no `--id` flag — you cannot pin the id.** `node add` camelCases `--label`, splitting on every character outside `[A-Za-z0-9]` (accents are dropped, not transliterated), then appends a counter — **always, starting at `1`**. No label → last dot-segment of the node type.
+> Scope: this applies to the carve-out nodes this file covers. Node types below are naming examples only — `node add` is not licensed for OOTB nodes ([SKILL.md rule #9](../../SKILL.md)), which you author with `Edit` and whose ids you therefore choose yourself.
+
+**There is no `--id` flag** (passing one is an `unknown option` error) — you cannot pin the id. `node add` splits `--label` on every character outside `[A-Za-z0-9]` (accents are dropped, not transliterated), lowercases each token and capitalizes all but the first, then appends a counter — **always, starting at `1`**.
 
 | `--label` | Generated `id` |
 |---|---|
@@ -47,7 +49,8 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 | `Call Open-Meteo public API` | `callOpenMeteoPublicApi1` (`API` → `Api`) |
 | `Fetch data (v2)` | `fetchDataV21` (`v2` + counter, not `fetchDataV2`) |
 | `café münchen` | `cafMNchen1` |
-| *(none)*, `core.logic.merge` | `merge1` |
+
+**Always pass `--label`.** Without one the CLI picks its own base name from the node type, and it is *not* the type's last segment — `core.action.http.v2` → `httpRequest1`, `core.trigger.scheduled` → `scheduledTrigger1` (whereas `core.logic.merge` → `merge1`). Unlabelled nodes are also unreadable on the canvas.
 
 The counter increments against **ids already in the file**, hand-authored ones included (`handMade1` present → `--label "Hand made"` yields `handMade2`), so the id is **not a pure function of the label**.
 
