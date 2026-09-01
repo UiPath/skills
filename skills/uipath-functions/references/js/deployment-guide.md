@@ -25,7 +25,7 @@ The production worker does at cold start what pack deliberately did not do: it e
 1. **Every runtime dependency must be public npm and listed in `dependencies`.** `--omit=dev` skips `devDependencies` entirely. The SDK (`@uipath/coded-functions-js-sdk`) stays in `devDependencies` — the platform provides the runtime.
 2. **A runtime dep the lockfile resolves to a private registry breaks the install** — the function crashes or hangs with no logs. Routing `@uipath` to GitHub Packages in the project `.npmrc` is safe for pack-time tooling (that line is stripped from the shipped copy), but every `dependencies` entry in `package-lock.json` must show a `resolved` URL on `registry.npmjs.org`. Gate before packing — after adding a dependency, or whenever `.npmrc` carries custom registry routes: `grep '"resolved"' package-lock.json | grep -v registry.npmjs.org` must print nothing.
 3. **Regenerate the lockfile after any `package.json` change** — run `npm install`, then pack. A stale lockfile fails the production install: `errorCode 4801` on every route.
-4. **Extensionless intra-project imports hang cold start silently** — local dev resolves them, production does not ([SKILL.md](../SKILL.md) Rule 4).
+4. **Extensionless intra-project imports hang cold start silently** — local dev resolves them, production does not ([SKILL.md](../../SKILL.md) JS Rule 4).
 5. **Genuinely private code cannot be installed — vendor it as source.** Copy it into the project (`functions/_helpers.ts`, or any non-excluded directory such as `lib/`) and import it with explicit `.ts` extensions.
 
 Failure mode when any of these is violated (known sharp edge — install failures have no error surface yet): all functions in the package hang for up to 15 minutes with no logs — exception: a stale lockfile (item 3) surfaces as `errorCode 4801` instead. A healthy deploy may also 500 once on the first call while cold start runs — retry before diagnosing.
@@ -72,7 +72,7 @@ curl -s -X POST "https://api.<HOST>/<ORG_ID>/<TENANT_ID>/orchestrator_/t/<FOLDER
   -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" -d '{}'
 ```
 
-Always send `Content-Type: application/json` and a JSON body — `'{}'` when the function takes no input ([SKILL.md](../SKILL.md) Rule 7). GET functions take input as query-string parameters instead.
+Always send `Content-Type: application/json` and a JSON body — `'{}'` when the function takes no input ([SKILL.md](../../SKILL.md) JS Rule 7). GET functions take input as query-string parameters instead.
 
 ### Discovering `<FOLDER_KEY>` and slugs
 

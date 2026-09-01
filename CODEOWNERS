@@ -78,11 +78,6 @@
 /tests/tasks/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
 /tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
 
-# JS/TS Functions skill (coded-functions-js — HTTP triggers + run-as-job)
-/skills/uipath-functions-js/ @AlexBizon @UiPath/team-coded-agents
-/tests/tasks/uipath-functions-js/ @AlexBizon @UiPath/team-coded-agents
-/tests/tasks/activation/uipath-functions-js.jsonl @AlexBizon @UiPath/team-coded-agents
-
 # Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria
 /tests/tasks/uipath-planner/ @RaduAna-Maria

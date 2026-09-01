@@ -71,7 +71,7 @@ async function callFn<T>(path: string, input?: unknown, token?: string): Promise
 
 ## Timeout Budget
 
-The gateway's 25 s timeout / `303 See Other` mechanism → [http-semantics-guide.md](http-semantics-guide.md): a browser caller loses the result permanently; server-side callers aren't CORS-blocked, but recovery via the redirect is undocumented. Budget every browser-invoked function to finish under 20 s ([SKILL.md](../SKILL.md) Rule 6). Enforce it in the handler:
+The gateway's 25 s timeout / `303 See Other` mechanism → [http-semantics-guide.md](http-semantics-guide.md): a browser caller loses the result permanently; server-side callers aren't CORS-blocked, but recovery via the redirect is undocumented. Budget every browser-invoked function to finish under 20 s ([SKILL.md](../../SKILL.md) JS Rule 6). Enforce it in the handler:
 
 ```ts
 handler: async (input, ctx) => Promise.race([

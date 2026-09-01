@@ -4,7 +4,7 @@ Calling UiPath platform APIs from inside a function handler: which token to send
 
 ## Token Decision
 
-[SKILL.md](../SKILL.md) Rule 8 names the two identities; the decision rule:
+[SKILL.md](../../SKILL.md) JS Rule 8 names the two identities; the decision rule:
 
 | Token | Identity | Use for |
 |---|---|---|

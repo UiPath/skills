@@ -5,7 +5,7 @@ Field-level reference for writing JS/TS coded functions: `defineFunction` option
 ## File Layout and Manifest Sync
 
 - One default-exported `defineFunction` per file, directly in `functions/` — discovery is top-level only, not recursive.
-- Helper modules: `_`-prefix them (`functions/_helpers.ts`) and import with the `.ts` extension ([SKILL.md](../SKILL.md) Rules 3-4). Discovery skips `_`-prefixed files and `.d.ts`. Sharp edge (current behavior): a helper file WITHOUT the `_` prefix breaks function discovery silently — always prefix.
+- Helper modules: `_`-prefix them (`functions/_helpers.ts`) and import with the `.ts` extension ([SKILL.md](../../SKILL.md) JS Rules 3-4). Discovery skips `_`-prefixed files and `.d.ts`. Sharp edge (current behavior): a helper file WITHOUT the `_` prefix breaks function discovery silently — always prefix.
 - `uipath.json` `functions` map auto-syncs on every `serve`/`pack`/`push`: keyed by filename, values `functions/<FILE>:default`, entries pointing outside `functions/` pruned. Never hand-edit it.
 
 ## defineFunction Options
@@ -95,7 +95,7 @@ Second handler argument. Import the `FunctionContext` type from the SDK to type 
 | Field | Shape | Null / empty when |
 |---|---|---|
 | `user` | `{sub, name?, email?, accessToken?}` — caller identity; `accessToken` = the caller's Bearer token (delegated calls) | Unauthenticated HTTP; carries no caller identity on job runs (may hold a legacy compat object — test `ctx.user?.accessToken`, not `!ctx.user`; → [job-mode-guide.md](job-mode-guide.md)) |
-| `robot` | `{key, accessToken}` — the function's own serverless-robot identity | Local serve — fall back per [SKILL.md](../SKILL.md) Rule 8 |
+| `robot` | `{key, accessToken}` — the function's own serverless-robot identity | Local serve — fall back per [SKILL.md](../../SKILL.md) JS Rule 8 |
 | `platform` | `{baseUrl, orgId, tenantId, folderKey}` | All-or-nothing: null unless baseUrl + orgId + tenantId all present; `folderKey` independently nullable. Local fallback: `UIPATH_BASE_URL`/`UIPATH_ORG_ID`/`UIPATH_TENANT_ID` |
 | `params` | Strings bound from `:param` path segments | Empty on job runs |
 | `headers` | Request headers, keys lowercased — job key at `ctx.headers["x-uipath-jobkey"]` | Empty on job runs |

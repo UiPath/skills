@@ -55,7 +55,7 @@ Rules:
 | any other throw | `500`, body `{"error": <MESSAGE>, "details": <STACK>}` |
 
 - A `FunctionError`'s `errorCode` never appears in an HTTP response body — it maps only onto the job fault surface ([job-mode-guide.md](job-mode-guide.md)). `errorCode` values that DO show up in HTTP bodies (1623, 4804, 4801) come from the gateway, not from your function.
-- The plain-throw `500` carries the real message and stack trace unsanitized — the code is customer-owned, so this holds locally and deployed. Still throw `FunctionError` for anything a caller should read (see [SKILL.md](../SKILL.md) Rule 1; details in [authoring-guide.md](authoring-guide.md#errors)).
+- The plain-throw `500` carries the real message and stack trace unsanitized — the code is customer-owned, so this holds locally and deployed. Still throw `FunctionError` for anything a caller should read (see [SKILL.md](../../SKILL.md) JS Rule 1; details in [authoring-guide.md](authoring-guide.md#errors)).
 
 ## CORS
 

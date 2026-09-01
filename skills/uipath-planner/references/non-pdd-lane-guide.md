@@ -27,7 +27,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
    | `agent.json` | `uipath-agents` (low-code) |
    | `pyproject.toml` + agent-framework dependency (langgraph / llamaindex / openai-agents) | `uipath-agents` (coded) |
    | `pyproject.toml` + `uipath.json` with a `functions` map | `uipath-functions` |
-   | `package.json` + `uipath.json` with a `functions` map | `uipath-functions-js` |
+   | `package.json` + `uipath.json` with a `functions` map | `uipath-functions` |
    | JSON containing `document.dsl` | `uipath-api-workflow` |
    | `.uipath/` or `app.config.json` | `uipath-coded-apps` |
    | `element.json` (+ `element-metadata.json`) | `uipath-connector-builder` |

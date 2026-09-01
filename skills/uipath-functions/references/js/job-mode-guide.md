@@ -16,7 +16,7 @@ Do not design a function for both modes. The runtime does not yet enforce the sp
 | | HTTP | Run-as-job |
 |---|---|---|
 | Caller | any HTTP client with a platform token (Coded App, service, curl) | any job-starter (API, schedule/trigger, Maestro, RPA, another function) |
-| Timing | synchronous; 25 s gateway budget ([SKILL.md](../SKILL.md) Rule 6) | job lifecycle; the 25 s gateway budget does not apply |
+| Timing | synchronous; 25 s gateway budget ([SKILL.md](../../SKILL.md) JS Rule 6) | job lifecycle; the 25 s gateway budget does not apply |
 | Caller identity | `ctx.user` = caller's delegated token | no caller identity — `ctx.robot` only |
 | Errors surface as | HTTP status + `{error, details?}` body | Faulted job + the StandardError contract below |
 | Result | HTTP response body | job output arguments |
@@ -97,7 +97,7 @@ Job error info shows `code: "ALREADY_RENEWED"`, `title: "Contract already renewe
 
 ## Job Logging
 
-Only SDK `logger.*` reaches Orchestrator job logs ([SKILL.md](../SKILL.md) Rule 10). Job mode adds two specifics: forwarding is installed before the target module is imported, so `logger.*` calls at module top level are captured for the job too; and all forwarded logs are flushed before the result is reported, so nothing is lost to a fast exit. Logs are scoped to the job. `console.*` prints to process output only.
+Only SDK `logger.*` reaches Orchestrator job logs ([SKILL.md](../../SKILL.md) JS Rule 10). Job mode adds two specifics: forwarding is installed before the target module is imported, so `logger.*` calls at module top level are captured for the job too; and all forwarded logs are flushed before the result is reported, so nothing is lost to a fast exit. Logs are scoped to the job. `console.*` prints to process output only.
 
 ## Local Parity: uip function run
 
@@ -111,4 +111,4 @@ uip function run --function <FUNCTION_NAME> --input-file input.json --context-fi
 
 ## Starting Deployed Functions as Jobs
 
-There is no function-specific job API. Publish the package and update the Function Release to the new version ([SKILL.md](../SKILL.md) Rule 12), then start jobs the standard Orchestrator way against that release — any job-starter works: the job-start API, a schedule or trigger, a Maestro process, an RPA process, or another coded function. The job's input arguments are validated against the function's input schema before the handler runs. Release update, versioning, and invoke mechanics → [deployment-guide.md](deployment-guide.md).
+There is no function-specific job API. Publish the package and update the Function Release to the new version ([SKILL.md](../../SKILL.md) JS Rule 12), then start jobs the standard Orchestrator way against that release — any job-starter works: the job-start API, a schedule or trigger, a Maestro process, an RPA process, or another coded function. The job's input arguments are validated against the function's input schema before the handler runs. Release update, versioning, and invoke mechanics → [deployment-guide.md](deployment-guide.md).

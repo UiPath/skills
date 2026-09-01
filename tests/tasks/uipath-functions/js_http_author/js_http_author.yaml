@@ -1,18 +1,19 @@
 task_id: skill-functions-js-http-author
 description: >
-  Authoring e2e for a JS/TS coded function inside an existing project. Seeds a
-  scaffolded TypeScript Functions project (uipath.json functions map + one
-  health endpoint) and asks for a new HTTP function with a schema-first
-  contract and correct error semantics. Grades the artifact shape the skill
-  teaches: default-exported defineFunction, method+path pair, defineSchema<T>()
-  contracts, FunctionError with a real HTTP status, hand-synced uipath.json
-  map, SDK kept in devDependencies. The sandbox is offline for the private
-  @uipath/coded-functions-js-sdk package, so install/serve/publish are out of
-  scope by design — the prompt says so and a criterion enforces it.
-tags: [uipath-functions-js, e2e, mode:build, lifecycle:generate]
+  Authoring e2e for the JS/TS half of uipath-functions, inside an existing
+  project. Seeds a scaffolded TypeScript Functions project (uipath.json
+  functions map + one health endpoint) and asks for a new HTTP function with a
+  schema-first contract and correct error semantics. Grades the artifact shape
+  the skill teaches: default-exported defineFunction, method+path pair,
+  defineSchema<T>() contracts, FunctionError with a real HTTP status,
+  hand-synced uipath.json map, SDK kept in devDependencies. The sandbox is
+  offline for the private @uipath/coded-functions-js-sdk package, so
+  install/serve/publish are out of scope by design — the prompt says so and a
+  criterion enforces it.
+tags: [uipath-functions, e2e, mode:build, lifecycle:generate, feature:js]
 
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-functions-js/http_function_author/_fixtures/quote-fns ."
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-functions/js_http_author/_fixtures/quote-fns ."
     timeout: 10
 
 run_limits:
@@ -55,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "defineFunction shape, schema-first contracts, FunctionError 422, uipath.json map, dependency placement"
-    command: "python3 $TASK_DIR/check_http_function_author.py"
+    command: "python3 $TASK_DIR/check_js_http_author.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

@@ -8,9 +8,10 @@ description: >
   agent. Nothing covers that redirect today, so a skill that silently built a
   LangGraph agent for pure arithmetic — observed on codex, run
   2026-08-11 codex-ft-4 — passes every other task in the suite. The prompt
-  pins Python explicitly: since `uipath-functions-js` exists, a language-neutral
-  prompt would make a JS/TS scaffold an equally valid reading and the graders
-  (`uip function init`, `.py` entrypoint, `@traced`) Python-only.
+  pins Python explicitly: uipath-functions covers JS/TS too, so a
+  language-neutral prompt would make a JS/TS scaffold an equally valid reading
+  while the graders (`uip function init`, `.py` entrypoint, `@traced`) are
+  Python-only.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, coded]
 
 run_limits:
