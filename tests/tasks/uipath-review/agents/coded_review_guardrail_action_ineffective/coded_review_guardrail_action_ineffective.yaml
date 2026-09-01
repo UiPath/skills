@@ -55,10 +55,24 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Fetched the live guardrail catalog (coded-guardrails-review.md Step 0)"
+    description: "Advisory: agent fetched the live guardrail catalog visibly in Bash (not gated — the matcher only sees the first 2000 chars of a command, so a batched call is invisible)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
     min_count: 1
+    weight: 0
+    pass_threshold: 0
+  # Carries the gating weight the advisory check above gave up. That matcher is
+  # wrapper-blind, and its `require_success: true` (now dropped) reads only the
+  # batch wrapper's exit code -- a `set +e ... exit 0` script scored it 1.00 in two
+  # live Codex runs while `guardrails catalog` actually returned `unknown command
+  # 'catalog'`. This establishes whether the catalog was really reachable and holds
+  # the report to guardrails-review.md Step 0's contract when it was not. It cannot
+  # prove the agent fetched it -- no artifact survives that would.
+  - type: run_command
+    description: "Guardrail catalog reachable, and the report's claim about it is consistent"
+    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_guardrail_catalog_evidence.py'
+    timeout: 240
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
