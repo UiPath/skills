@@ -1,8 +1,8 @@
 task_id: skill-case-artifact-safety-guard
 description: >
   Rule 13 negative guard: while building a two-stage case (HITL action →
-  downstream process), the agent MUST assemble caseplan.json /
-  registry-resolved.json with Read + Write/Edit only. It must NOT shell out to a script or
+  downstream process), the agent MUST assemble caseplan.json / tasks.md
+  with Read + Write/Edit only. It must NOT shell out to a script or
   interpreter to write, parse, or redirect into a skill artifact
   (`node -e ...fs`, `python ...open(...)`, `jq ... > caseplan.json`,
   `sed -i`, a `/tmp/build-caseplan.js` helper, etc.). The sanctioned
@@ -146,8 +146,8 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat every build gate as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step (Phase 0, Phase 1, or Phase 2a→2b).
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step (Phase 0, post-tasks.md, or Phase 2a→2b).
   - If a resource cannot be resolved from the registry, write a skeleton task
     per the skill's skeleton-tasks reference — do NOT fabricate a taskTypeId.
   - Do NOT run `uip maestro case debug`.
@@ -188,18 +188,18 @@ success_criteria:
   - type: command_not_executed
     description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, python open(), node -e ...fs.*)"
     tool_name: "Bash"
-    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|registry-resolved\.json|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*fs\.)'
+    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*fs\.)'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Rule 13: no shell redirection into a skill artifact and no helper-script build-assembler (`> caseplan.json`, `| tee registry-resolved.json`, `node build-caseplan.js`, `python gen.py`)"
+    description: "Rule 13: no shell redirection into a skill artifact and no helper-script build-assembler (`> caseplan.json`, `| tee tasks.md`, `node build-caseplan.js`, `python gen.py`)"
     tool_name: "Bash"
     # The script path must be the token immediately after the interpreter: agents wrap every
     # command in `/bin/bash -lc '...'`, so `bash\s+[^\n]*\.sh` would match any command that merely
-    # mentions a script path (e.g. `rg ... audit_caseplan.py`). The lookahead exempts the skill's
-    # own read-only auditor, which implementation.md mandates as the Step 12 build gate.
-    command_pattern: '([<>]{1,2}\s*\S*(caseplan\.json|registry-resolved\.json|bindings_v2\.json|entry-points\.json)|tee\b[^\n]*(caseplan\.json|registry-resolved\.json)|\b(node|nodejs|python[0-9]?|bash|sh)\s+(?!\S*uipath-maestro-case/scripts/)\S+\.(js|mjs|cjs|py|sh)\b)'
+    # mentions a script path (e.g. `rg ... audit_plan.py`). The lookahead exempts the skill's own
+    # read-only auditor, which planning.md mandates as the final plan gate.
+    command_pattern: '([<>]{1,2}\s*\S*(caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json)|tee\b[^\n]*(caseplan\.json|tasks\.md)|\b(node|nodejs|python[0-9]?|bash|sh)\s+(?!\S*uipath-maestro-case/scripts/)\S+\.(js|mjs|cjs|py|sh)\b)'
     weight: 2.0
     pass_threshold: 1.0
 
