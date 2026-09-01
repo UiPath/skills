@@ -804,6 +804,11 @@ def _stub_debug(monkeypatch, results, attempt_seconds=0):
     ``subprocess.run`` would deliver. With the default of 0 the budget never
     depletes, so the pre-deadline tests see the same numbers they always did.
 
+    Both clock stubs land on the stdlib ``time`` module (``flow_check.time`` is
+    that module), so they are process-wide for the test's duration; monkeypatch
+    restores them. Same reach as the pre-existing ``sleep`` stub, but
+    ``monotonic`` has more callers, so do not add real sleeps under it.
+
     A queued ``BaseException`` is raised rather than returned, which is how the
     ``subprocess.TimeoutExpired`` path is exercised. Every invocation's
     ``cmd`` / ``env`` / ``timeout`` is recorded; the ``caps`` list keeps the
@@ -965,12 +970,36 @@ def test_budget_for_retries_1_is_a_single_attempt(monkeypatch):
 
 
 def test_run_debug_never_exceeds_its_budget(monkeypatch):
-    """`retries` allows three, the deadline funds two. The deadline wins."""
+    """`retries` allows three, an explicit budget funds two. The deadline wins.
+
+    The default budget is sized on `retries`, so it would fund all three — only
+    a caller-supplied budget can cut a retry short."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
+    with pytest.raises(SystemExit):
+        run_debug(timeout=200, budget=405, retries=3, backoff_seconds=5)
+    assert calls["n"] == 2  # 405 - 200 - 5 - 200 = 0 left for a third
+    assert calls["clock"] <= 405
+
+
+def test_default_budget_funds_every_retry_the_caller_asked_for(monkeypatch):
+    """Regression lock: sizing on `_POLL_TIMEOUT_ATTEMPTS` instead of `retries`
+    silently downgraded `retries=3` to two attempts for slow 5xx transients."""
+    assert debug_budget(timeout=200, retries=3, backoff_seconds=5) == 610
     calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
     with pytest.raises(SystemExit):
         run_debug(timeout=200, retries=3, backoff_seconds=5)
-    assert calls["n"] == 2  # budget is 405; a third attempt has 0s left
-    assert calls["clock"] <= 405
+    assert calls["n"] == 3
+
+
+def test_budget_below_the_cli_floor_is_rejected(monkeypatch):
+    """A budget under the CLI timeout floor plus headroom would hand the
+    subprocess a smaller cap than the CLI's own `--timeout`, SIGKILLing it
+    before it could self-terminate with a parseable envelope (the #2776 bug,
+    rebuilt from the other side)."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="below the 90s floor"):
+        run_debug(timeout=240, budget=25)
+    assert calls["n"] == 0  # rejected before spawning anything
 
 
 def test_run_debug_refuses_a_retry_it_cannot_fund(monkeypatch):

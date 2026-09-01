@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import glob
 import json
+import math
 import os
 import re
 import subprocess
@@ -85,8 +86,9 @@ _MIN_RETRY_BUDGET_SECONDS = _MIN_CLI_TIMEOUT_SECONDS + _CLI_TIMEOUT_HEADROOM_SEC
 # What a check spends outside `run_debug`: interpreter start, the static
 # `.flow` asserts, and solution teardown. The criterion `timeout:` in the task
 # YAML must clear :func:`debug_budget` by at least this much — see
-# test_criterion_budgets.py, which enforces it across every task.
-_CRITERION_MARGIN_SECONDS = 60
+# test_criterion_budgets.py, which enforces it across every task. Public
+# alongside `debug_budget`: the two halves of one contract.
+CRITERION_MARGIN_SECONDS = 60
 
 # `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` — the CLI never reads the latter. At
 # `info` it narrates jobKey / instanceId / Studio Web URL to stderr, the only
@@ -97,10 +99,19 @@ _DEBUG_LOG_LEVEL = "info"
 # which is wrong for a poll timeout.
 _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 
-# A poll timeout burns almost the whole budget, so the deadline usually stops
-# the retry on its own. This is the belt-and-braces cap for the case where the
-# CLI gives up early enough to leave budget behind.
+# A poll timeout burns a whole attempt for no new information, so it gets a
+# tighter cap than `retries`, which still governs the cheap transients (a 5xx
+# usually fails in seconds). Independent of the `retries` default: raising that
+# does not buy more poll-timeout attempts.
 _POLL_TIMEOUT_ATTEMPTS = 2
+
+# `run_debug` defaults, named so `debug_budget` and the criterion guard cannot
+# drift from the function they price. Two attempts, not three: a third
+# full-length attempt has never paid for itself, and funding one would add
+# `timeout` seconds to every criterion ceiling in the suite.
+_DEFAULT_RETRIES_TIMEOUT = 240
+_DEFAULT_RETRIES = 2
+_DEFAULT_BACKOFF_SECONDS = 5.0
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -161,28 +172,33 @@ def _as_text(raw: bytes | str | None) -> str:
 
 
 def debug_budget(
-    timeout: int = 240, retries: int = 3, backoff_seconds: float = 5.0
+    timeout: int = _DEFAULT_RETRIES_TIMEOUT,
+    retries: int = _DEFAULT_RETRIES,
+    backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
 ) -> int:
     """Worst-case wall clock for one :func:`run_debug` call.
 
-    A poll timeout is the expensive failure: it burns a whole attempt and is
-    the only transient we retry at full length, capped at
-    :data:`_POLL_TIMEOUT_ATTEMPTS`. ``retries=1`` opts out of retrying, so its
-    budget is a single attempt. Exposed so test_criterion_budgets.py can hold
-    every task YAML to the same arithmetic instead of eyeballing it."""
-    attempts = 1 if retries <= 1 else _POLL_TIMEOUT_ATTEMPTS
-    return timeout * attempts + int(backoff_seconds) * (attempts - 1)
+    Sized on ``retries``, not on :data:`_POLL_TIMEOUT_ATTEMPTS`: the poll cap
+    only binds the poll-timeout path, while a slow 5xx can still consume every
+    attempt ``retries`` allows. Funding fewer than that would let the deadline
+    cancel a retry the caller asked for. ``retries=1`` opts out and pays for one
+    attempt. Rounds the backoff up, since this is an upper bound.
+
+    Public so test_criterion_budgets.py can hold every task YAML to the same
+    arithmetic instead of eyeballing it."""
+    attempts = max(1, retries)
+    return timeout * attempts + math.ceil(backoff_seconds) * (attempts - 1)
 
 
 def run_debug(
     *,
     inputs: dict | None = None,
     attachments: dict[str, str] | None = None,
-    timeout: int = 240,
+    timeout: int = _DEFAULT_RETRIES_TIMEOUT,
     budget: int | None = None,
     project_glob: str = "**/project.uiproj",
-    retries: int = 3,
-    backoff_seconds: float = 5.0,
+    retries: int = _DEFAULT_RETRIES,
+    backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
@@ -236,11 +252,18 @@ def run_debug(
     # One deadline for the whole call, so the retry can never push us past what
     # the criterion granted. An attempt gets `timeout`, or the remainder when
     # that is smaller.
-    deadline = time.monotonic() + (
-        budget
-        if budget is not None
-        else debug_budget(timeout, retries, backoff_seconds)
-    )
+    if budget is None:
+        budget = debug_budget(timeout, retries, backoff_seconds)
+    if budget < _MIN_RETRY_BUDGET_SECONDS:
+        # Below this the subprocess cap lands under the CLI's own `--timeout`
+        # floor, so we would SIGKILL it before it could self-terminate with a
+        # parseable envelope — the #2776 bug, rebuilt from the other side.
+        _fail(
+            f"run_debug budget of {budget}s is below the {_MIN_RETRY_BUDGET_SECONDS}s "
+            "floor (the CLI timeout minimum plus its headroom); raise `budget` or "
+            "`timeout`"
+        )
+    deadline = time.monotonic() + budget
     out_of_budget = False
 
     for attempt in range(retries):

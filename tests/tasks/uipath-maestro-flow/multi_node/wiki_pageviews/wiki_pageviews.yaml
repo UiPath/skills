@@ -47,7 +47,7 @@ success_criteria:
   - type: run_command
     description: "UiPath 2024-01-01..15: debug returns numeric sum of pageviews on days above 500 (range-tolerant of Wikimedia recomputes)"
     command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success"
-    timeout: 600
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
@@ -55,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "Invalid article: HTTP error output port returns the string 'Article not found'"
     command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error"
-    timeout: 600
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

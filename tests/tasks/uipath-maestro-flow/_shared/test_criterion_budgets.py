@@ -8,16 +8,22 @@ That is how skill-flow-api-workflow scored 0 on a gating criterion in 2026-09.
 
 So the relation is enforced here instead of eyeballed per task:
 
-    criterion timeout >= debug_budget(...) + _CRITERION_MARGIN_SECONDS
+    criterion timeout >= debug_budget(...) + CRITERION_MARGIN_SECONDS
 
 Scope and limits:
 
 - The budget is read STATICALLY off each ``run_debug(...)`` call, so only
   literal keyword arguments are understood. A call whose ``timeout`` is a
   variable is reported, not silently skipped.
+- Straight-line calls in one execution ADD UP; mutually exclusive branches take
+  the more expensive arm. So ``check_decision_flow.py`` is charged for both of
+  its sequential debugs, while ``check_wiki_pageviews_flow.py`` is charged for
+  the one ``if/elif`` case the criterion selects, not all of them.
 - A check that dispatches on ``sys.argv`` gets its subcommand resolved through
   the AST, so a static-only criterion (no ``run_debug`` on that path) is not
-  charged for a debug it never runs.
+  charged for a debug it never runs. A subcommand that names no function falls
+  back to ``main`` rather than being skipped: dispatch is often an ``if/elif``
+  chain, not one function per case.
 - A check that LOOPS over seeds pays the budget once per iteration. The loop
   count is not modelled, so this asserts a floor, not the true cost. Seeded
   checks still need their criterion sized by hand — they just cannot fall below
@@ -64,53 +70,78 @@ def _budget_of_call(call: ast.Call) -> int | None:
     return flow_check.debug_budget(**passed)
 
 
+def _is_run_debug(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "run_debug"
+    )
+
+
 def _calls_in(node: ast.AST) -> list[ast.Call]:
-    return [
-        n
-        for n in ast.walk(node)
-        if isinstance(n, ast.Call)
-        and isinstance(n.func, ast.Name)
-        and n.func.id == "run_debug"
-    ]
+    return [n for n in ast.walk(node) if _is_run_debug(n)]
+
+
+def _cost(node: ast.AST) -> int:
+    """What one execution of ``node`` can spend in ``run_debug``.
+
+    Straight-line calls ADD UP: ``check_decision_flow.py`` runs two in one
+    ``main()`` and the criterion has to fund both. Mutually exclusive branches
+    take the more expensive arm instead, so an ``if/elif`` dispatch over cases
+    (``check_wiki_pageviews_flow.py``) is charged for the one branch that runs,
+    not all of them. A loop body counts once, since its iteration count is not
+    knowable here — the documented floor."""
+    if _is_run_debug(node):
+        return _budget_of_call(node) or 0
+    if isinstance(node, ast.If):
+        return _cost(node.test) + max(_body(node.body), _body(node.orelse))
+    if isinstance(node, ast.IfExp):
+        return _cost(node.test) + max(_cost(node.body), _cost(node.orelse))
+    if isinstance(node, ast.Try):
+        return (
+            _body(node.body)
+            + _body(node.orelse)
+            + max([0] + [_body(h.body) for h in node.handlers])
+            + _body(node.finalbody)
+        )
+    return sum(_cost(child) for child in ast.iter_child_nodes(node))
+
+
+def _body(stmts: list) -> int:
+    return sum(_cost(s) for s in stmts)
+
+
+def _entry(tree: ast.Module, subcommand: str | None) -> ast.AST | None:
+    """The function a criterion actually executes.
+
+    A subcommand that names a function scopes to it. One that does not is NOT
+    silently skipped — dispatch may be an ``if/elif`` on ``sys.argv`` inside
+    ``main()`` — so it falls back to ``main`` and lets :func:`_cost` pick the
+    branch. Modules with neither are charged whole."""
+    defs = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    if subcommand and subcommand in defs:
+        return defs[subcommand]
+    return defs.get("main")
 
 
 def _budget_of_script(path: str, subcommand: str | None) -> int | None:
-    """Worst-case budget for one execution of ``path``.
-
-    With a ``subcommand``, only that function's body counts (plus anything it
-    calls in the same module); without one, the whole module counts. Returns
-    None when the path runs no debug at all."""
+    """Worst-case budget for one execution of ``path``, or None when the module
+    runs no debug at all."""
     tree = ast.parse(open(path).read())
-    scope: ast.AST = tree
-    if subcommand:
-        named = [
-            n
-            for n in ast.walk(tree)
-            if isinstance(n, ast.FunctionDef) and n.name == subcommand
-        ]
-        if not named:
-            return None
-        scope = named[0]
-        # A subcommand that only delegates still pays for what it delegates to.
-        helpers = {
-            n.func.id
-            for n in ast.walk(scope)
-            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
-        }
-        bodies = [scope] + [
-            n
-            for n in ast.walk(tree)
-            if isinstance(n, ast.FunctionDef) and n.name in helpers
-        ]
-        calls = [c for b in bodies for c in _calls_in(b)]
-    else:
-        calls = _calls_in(scope)
-    if not calls:
-        return None
-    budgets = [_budget_of_call(c) for c in calls]
-    if any(b is None for b in budgets):
+    if any(_budget_of_call(c) is None for c in _calls_in(tree)):
         pytest.fail(f"{path}: run_debug called with a non-literal timeout/budget")
-    return max(budgets)
+    entry = _entry(tree, subcommand) or tree
+    cost = _cost(entry)
+    # A delegating entry point still pays for the helpers it calls.
+    defs = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    for name in {
+        n.func.id
+        for n in ast.walk(entry)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+    }:
+        if name in defs and defs[name] is not entry:
+            cost += _cost(defs[name])
+    return cost or None
 
 
 def _criteria():
@@ -147,8 +178,12 @@ _CASES = sorted(_criteria(), key=lambda c: (c[0], c[2] or ""))
 
 
 def test_the_suite_was_actually_discovered():
-    """A broken walk would make every assertion below vacuously pass."""
+    """A broken walk, or an AST change that stops resolving `run_debug`, would
+    make every assertion below vacuously pass. Assert on both: criteria found,
+    AND criteria that actually priced a debug."""
     assert len(_CASES) > 40
+    priced = [c for c in _CASES if _budget_of_script(c[1], c[2]) is not None]
+    assert len(priced) > 40, f"only {len(priced)} criteria resolved a budget"
 
 
 @pytest.mark.parametrize(
@@ -160,7 +195,7 @@ def test_criterion_clears_the_debug_budget(yaml_path, script, subcommand, criter
     budget = _budget_of_script(script, subcommand)
     if budget is None:
         return  # static-only criterion, nothing to fund
-    required = budget + flow_check._CRITERION_MARGIN_SECONDS
+    required = budget + flow_check.CRITERION_MARGIN_SECONDS
     assert criterion is not None, f"{yaml_path}: run_command has no timeout:"
     assert criterion >= required, (
         f"{yaml_path} grants {criterion}s to {os.path.basename(script)}"

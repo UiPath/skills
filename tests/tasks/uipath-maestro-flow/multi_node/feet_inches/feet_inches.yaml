@@ -35,7 +35,7 @@ success_criteria:
   - type: run_command
     description: "Debug with (23, \"f2i\") returns 276 via a Switch node"
     command: "python3 $TASK_DIR/check_feet_inches_flow.py f2i"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: run_command
     description: "Debug with (276, \"i2f\") returns 23 via a Switch node"
     command: "python3 $TASK_DIR/check_feet_inches_flow.py i2f"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
