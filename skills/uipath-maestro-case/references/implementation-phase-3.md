@@ -81,6 +81,10 @@ Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderK
 
 **Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
 
+**Phase B is the step that gets skipped, and Phase A's success hides it.** Three consecutive builds fetched and persisted every connector spec (`tasks/spec-cache-*.json`, 8–9 `caseShape.context` entries each) and then wrote the connector tasks as: `context=0 / inputs=0 / no typeId` (nothing projected); `context=8 / 7` against specs of 9 / 8 (one entry trimmed); `context=6 / 7` (three trimmed). The entry dropped every time is **`metadata`** — the largest, and the one carrying `body.activityPropertyConfiguration.UiPathActivityTypeId`. A persisted spec is not a resolved task. Rule 14: a resolved resource must never end up as `data: {}`.
+
+Before leaving Phase B, for every connector task: `len(data.context) == len(spec.caseShape.context)` and a `metadata` entry is present in `data.context`. Copy the array whole — do not select, summarize, or drop entries because they are large.
+
 **Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
 
 On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector tasks without `data.context` populated, re-run Phase A for those only.
