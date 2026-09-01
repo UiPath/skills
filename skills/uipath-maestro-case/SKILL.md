@@ -52,6 +52,20 @@ Do not use for `.xaml` → `uipath-rpa`, `.flow` → `uipath-maestro-flow`, or s
    next to its value, so a prose restatement reads as the field being absent even when the fact is
    plainly there. Same rule for `lane:`, `stage:`, `type:`, and `required:`.
 
+
+6c. **Run the plan gate before calling `tasks.md` done — it is not deliverable until it passes.**
+
+   ```bash
+   python3 "<skill folder>/scripts/audit_plan.py" tasks/tasks.md --sdd sdd.md
+   ```
+
+   `<skill folder>` is this skill's directory, given to you at invocation — substitute it; never
+   `ls`/`find`/`which` for it, and never read the script (it is RUN; its findings are the interface).
+   Repair each `AUDIT FAIL` finding with Edit and re-run, max 3 rounds, then surface what remains, and
+   quote the final `AUDIT OK` line as evidence. This gate is mechanical and catches the shape mistakes
+   prose cannot: wrong heading form, and missing `stage:` / `type:` / `activation-mode:` / `entry-rule:`
+   lines. Skipping it is how a plan ships that every downstream checker reads as having zero tasks.
+
 7. **Plan gate.** Phase 1 auto-proceeds to Phase 2 and treats the plan as approved. Stop after `tasks.md` only when the request explicitly says plan-only, Phase 1 only, review first, or not to build. Re-read `tasks.md` before execution.
 8. **Unresolved resources.** Never fabricate IDs. Keep `<UNRESOLVED: ...>` in `tasks.md`. A placeholder task has `type`, `displayName`, structural fields, and `data: {}`; conditions still reference its TaskId. A placeholder event trigger has render fields and only `data.inputs: { serviceType: "Intsvc.EventTrigger" }`; append its `entry-points.json` entry and create no trigger edge. See [references/placeholder-tasks.md](references/placeholder-tasks.md) and [references/plugins/triggers/event/impl-json.md](references/plugins/triggers/event/impl-json.md).
 9. **Resolution audit.** Persist one object per task in `tasks/registry-resolved.json` with exact keys `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, and `rationale`, plus resolved I/O/review metadata. Add `gateDecision` only when the user answered the design-time resource gate; default deferrals have none. `matches` is the complete exact-name set from the refreshed cache; `selected` is a match or `null` after a genuine empty lookup. Same-session planner ledgers are persisted verbatim, then verified/extended under Rule 3. The resolution ledger and `registry-resolved.json` are machine-only — never shown to the user, including in the Case Review.

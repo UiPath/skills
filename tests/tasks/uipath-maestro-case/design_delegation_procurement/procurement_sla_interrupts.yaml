@@ -37,7 +37,9 @@ initial_prompt: |
   connections, schemas, or users. Use concrete intended resource and system
   names, mark identities `resolve at build`, and defer authoritative tenant
   resolution to the later build run. After approval, use the compact no-build
-  planning shape for `tasks/tasks.md`; do not inspect plugin planning docs.
+  planning shape for `tasks/tasks.md`; do not inspect the per-plugin planning docs under
+  `references/plugins/`. The skill's own planning reference and its mandatory plan gate
+  still apply as normal.
 
   The primary stages are Intake, Supplier Setup, Compliance Review, Decision,
   and Close. In Supplier Setup, Verify Supplier Identity, then Set Supplier
