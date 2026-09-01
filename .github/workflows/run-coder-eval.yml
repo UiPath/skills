@@ -620,9 +620,12 @@ jobs:
       # travels with the run into the artifact and the blob.
       - name: Run coder-eval
         id: eval
-        # TEMPORARY — REVERT TO @v0 BEFORE MERGING. `v0` still serves the old
-        # ten-input action, which would silently ignore every input below.
-        uses: UiPath/coder_eval@a747ce353111beadd51a6370b9e8e2dba88f4133  # bai/action-inputs-and-gha-source
+        # A moving major tag, not a SHA like the third-party actions above.
+        # First-party and in this org: `v0` is the contract coder_eval's release
+        # promotes, and pinning a SHA here would freeze the input surface while
+        # `version:` below keeps moving, which is the mismatch that makes GitHub
+        # silently ignore inputs. Breaking input changes land as `v1`.
+        uses: UiPath/coder_eval@v0
         with:
           version: ${{ needs.partition.outputs.coder_eval_version }}
           working-directory: tests
