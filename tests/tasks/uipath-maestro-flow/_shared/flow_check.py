@@ -53,6 +53,7 @@ from typing import Any, Iterable, Sequence
 # the exact payload (finalStatus, elementExecutions, globals, incidents) that the
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
+_LAST_DEBUG_STDERR: str | None = None
 
 # Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
 # / ``--attachment``). Stashed because the runtime returns every global — `in` and
@@ -90,6 +91,20 @@ _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 # Each attempt costs the full subprocess budget, so cap below `retries`:
 # 3 x 300s would exceed the 600s criterion budget in the task YAMLs.
 _POLL_TIMEOUT_ATTEMPTS = 2
+
+# A run that reports ``finalStatus: Completed`` but whose ``Data`` carries no
+# ``variables`` key at all did NOT produce "no outputs": the CLI's
+# post-completion GET of ``/debug-instances/{id}/variables`` failed and (before
+# UiPath/cli fixed it) the failure was reduced to a stderr warning. A flow that
+# genuinely declares no outputs still returns ``variables`` (with an empty
+# ``globals`` map), so "key absent" is exact, not heuristic. Newer CLIs keep the
+# key absent and add ``variablesError`` explaining why. Both shapes mean
+# "outputs UNREADABLE" — an infrastructure failure to retry, never a flow
+# result to grade. Observed live on coder-eval ``skill-flow-move-node`` (v2,
+# 2026-08-31 and 2026-09-01): every element Completed, ``Outputs: []``, task
+# graded as a flow defect.
+_VARIABLES_UNREADABLE_ATTEMPTS = 2
+_STDERR_CAPTURE_TAIL_CHARS = 4000
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -134,6 +149,36 @@ def _is_poll_timeout(result: subprocess.CompletedProcess) -> bool:
     return result.returncode != 0 and (
         _DEBUG_POLL_TIMEOUT_MARKER in _output_blob(result)
     )
+
+
+def _variables_unreadable(data: dict | None) -> str | None:
+    """Return a reason when a *completed* debug payload's outputs could not be
+    read (see :data:`_VARIABLES_UNREADABLE_ATTEMPTS`), else ``None``.
+
+    Exact by construction: only the ``variables`` key being absent from ``Data``
+    (or an explicit ``variablesError``) counts. A present-but-empty
+    ``variables`` is a real result and is returned to the caller as-is."""
+    payload = _get_ci(data or {}, "Data") or {}
+    if not isinstance(payload, dict):
+        return None
+    status = _get_ci(payload, "finalStatus", "FinalStatus")
+    if status != "Completed":
+        return None
+    err = _get_ci(payload, "variablesError", "VariablesError")
+    if isinstance(err, dict):
+        attempts = _get_ci(err, "attempts", "Attempts")
+        message = _get_ci(err, "message", "Message") or "unknown error"
+        return (
+            f"the CLI could not read the output variables (variablesError after "
+            f"{attempts} attempt(s): {message})"
+        )
+    has_key = any(str(k).lower() == "variables" for k in payload)
+    if not has_key:
+        return (
+            "the CLI returned no `variables` key at all — the post-completion "
+            "fetch of /debug-instances/{id}/variables failed and was dropped"
+        )
+    return None
 
 
 def _as_text(raw: bytes | str | None) -> str:
@@ -197,13 +242,16 @@ def run_debug(
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
     env = dict(os.environ)
     env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
-    global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS, _LAST_DEBUG_PROJECT_DIR
+    global _LAST_DEBUG_RAW, _LAST_DEBUG_STDERR, _LAST_DEBUG_INPUT_IDS
+    global _LAST_DEBUG_PROJECT_DIR
     # Record what we bound as input, and where the project lives, so output
     # assertions can discount echoes of our own inputs.
     _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
         str(k) for k in (attachments or {})
     }
     _LAST_DEBUG_PROJECT_DIR = project_dir
+    unreadable: str | None = None
+    unreadable_attempts = 0
     for attempt in range(retries):
         try:
             r = subprocess.run(
@@ -213,6 +261,7 @@ def run_debug(
             # The CLI's own --timeout never fired, so the stall is upstream of
             # polling. Keep the partial output rather than dying on a traceback.
             _LAST_DEBUG_RAW = _as_text(exc.stdout)
+            _LAST_DEBUG_STDERR = _as_text(exc.stderr)
             _fail_with_capture(
                 f"flow debug exceeded the {timeout}s subprocess cap without returning "
                 f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
@@ -221,9 +270,20 @@ def run_debug(
                 f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
             )
         _LAST_DEBUG_RAW = r.stdout
-        if r.returncode == 0 or not _is_transient_debug_error(r):
+        # Keep the CLI's stderr too: it is where `flow debug` reports what it
+        # could not do (e.g. the output-variables fetch). Dropping it on a zero
+        # exit is how the 2026-08-31/09-01 move-node failures lost their cause.
+        _LAST_DEBUG_STDERR = r.stderr
+        if r.returncode == 0:
+            unreadable = _variables_unreadable(_parse_json(r.stdout))
+            if unreadable is None:
+                break
+            unreadable_attempts += 1
+            if unreadable_attempts >= _VARIABLES_UNREADABLE_ATTEMPTS:
+                break
+        elif not _is_transient_debug_error(r):
             break
-        if _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
+        elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
         if attempt + 1 < retries:
             time.sleep(backoff_seconds)
@@ -236,6 +296,16 @@ def run_debug(
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
+    if unreadable is not None:
+        # Every attempt completed, and every attempt's outputs were unreadable.
+        # This is an infrastructure failure (INFRA), not a verdict on the flow:
+        # the run reached its End node, we just never saw what it returned.
+        _fail_with_capture(
+            f"flow debug completed but its outputs could not be read on "
+            f"{unreadable_attempts} attempt(s): {unreadable}. "
+            "Classify as INFRA (outputs unknown), not as a flow defect; the "
+            "elements all ran. See the captured STDERR for the CLI's own account."
+        )
     return payload
 
 
@@ -687,6 +757,11 @@ def assert_outputs_contain(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
             f"missing={missing}\nOutputs: {haystack[:1000]}{detail}"
         )
+
+
+def get_last_debug_stderr() -> str | None:
+    """Return the stderr of the most recent ``run_debug`` call, or ``None``."""
+    return _LAST_DEBUG_STDERR
 
 
 def get_last_debug_raw() -> str | None:
@@ -1800,6 +1875,11 @@ def _dump_debug_capture(context: str = "") -> None:
     except Exception as exc:  # noqa: BLE001 — diagnostics must never mask the real failure
         lines.append(f"SUMMARY: <unparsable: {exc!r}>")
     lines.append("RAW: " + raw.strip())
+    stderr = (_LAST_DEBUG_STDERR or "").strip()
+    if stderr:
+        # The CLI's own account of the run (progress, warnings such as a failed
+        # output-variables fetch). Tail only: the head is login/upload noise.
+        lines.append("STDERR (tail): " + stderr[-_STDERR_CAPTURE_TAIL_CHARS:])
     lines.append("=== FLOW_DEBUG_RAW_CAPTURE END ===")
     print("\n".join(lines), file=sys.stderr)
 

@@ -870,6 +870,131 @@ def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
 
 
+# ── run_debug: completed but outputs unreadable (variables fetch failed) ─────
+
+# Verbatim shape of the 2026-09-01 move-node/v2 payload: every element
+# Completed, no `variables` key anywhere in Data.
+_COMPLETED_NO_VARIABLES = (
+    '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+    '  "Data": {"jobKey": "j", "instanceId": "609c57fa", "finalStatus": "Completed",\n'
+    '           "elementExecutions": [{"elementId": "end", "status": "Completed"}]},\n'
+    '  "Instructions": "Debug completed with status: Completed"\n}'
+)
+# Shape emitted by the fixed CLI: still no `variables`, plus the structured reason.
+_COMPLETED_VARIABLES_ERROR = (
+    '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+    '  "Data": {"instanceId": "609c57fa", "finalStatus": "Completed", "elementExecutions": [],\n'
+    '           "variablesError": {"message": "pims API request failed: 403 Forbidden", '
+    '"httpStatus": 403, "attempts": 4, "traceIds": ["t1"], '
+    '"endpoint": "/api/v1/debug-instances/609c57fa/variables"}}\n}'
+)
+# A run whose flow declares no outputs: `variables` is PRESENT and empty. Real result.
+_COMPLETED_EMPTY_VARIABLES = (
+    '{\n  "Result": "Success",\n'
+    '  "Data": {"finalStatus": "Completed", "variables": {"globals": {}, "elements": []}}\n}'
+)
+_CLI_STDERR = (
+    "Polling for completion...\nStatus: Completed (9/9 elements completed)\n"
+    "Fetching output variables...\n"
+    "[WARN] Could not fetch variables: pims API request failed: 403 Forbidden on GET "
+    "/api/v1/debug-instances/609c57fa/variables\n"
+)
+
+
+def test_run_debug_retries_completed_without_variables_then_returns_outputs(monkeypatch):
+    """A Completed payload with no `variables` key is a failed fetch, not a
+    result — retry the debug once; the second run's outputs are graded."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(0, _COMPLETED_NO_VARIABLES, _CLI_STDERR), _cp(0, _COMPLETED)],
+    )
+    payload = run_debug()
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+
+
+def test_run_debug_retries_variables_error_payload(monkeypatch):
+    calls = _stub_debug(
+        monkeypatch, [_cp(0, _COMPLETED_VARIABLES_ERROR), _cp(0, _COMPLETED)]
+    )
+    payload = run_debug()
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+
+
+def test_run_debug_persistent_unreadable_outputs_fails_as_infra(monkeypatch, capsys):
+    """Both attempts complete with unreadable outputs: fail with an INFRA
+    message and the capture (RAW + the CLI's STDERR), never as
+    'Outputs missing' — that verdict would blame the flow."""
+    calls = _stub_debug(
+        monkeypatch,
+        [
+            _cp(0, _COMPLETED_NO_VARIABLES, _CLI_STDERR),
+            _cp(0, _COMPLETED_NO_VARIABLES, _CLI_STDERR),
+        ],
+    )
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert calls["n"] == flow_check._VARIABLES_UNREADABLE_ATTEMPTS == 2
+    msg = str(exc.value)
+    assert "could not be read" in msg
+    assert "INFRA" in msg
+    assert "Outputs missing" not in msg
+    err = capsys.readouterr().err
+    assert "FLOW_DEBUG_RAW_CAPTURE BEGIN" in err
+    assert "STDERR (tail):" in err
+    assert "Could not fetch variables" in err
+
+
+def test_run_debug_does_not_retry_present_but_empty_variables(monkeypatch):
+    """`variables` present and empty is a genuine 'no outputs' result — return
+    it on the first attempt so the caller's assertion grades it."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED_EMPTY_VARIABLES)])
+    payload = run_debug()
+    assert calls["n"] == 1
+    assert flow_check.collect_outputs(payload) == []
+
+
+def test_run_debug_unreadable_retry_does_not_burn_the_transient_budget(monkeypatch):
+    """The unreadable-outputs retry is its own budget (2), independent of the
+    3 attempts reserved for 5xx/RetryLater."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED_NO_VARIABLES), _cp(0, _COMPLETED)],
+    )
+    payload = run_debug()
+    assert calls["n"] == 3
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+
+
+@pytest.mark.parametrize(
+    "stdout,expected",
+    [
+        (_COMPLETED, None),
+        (_COMPLETED_EMPTY_VARIABLES, None),
+        ('{"Result": "Success", "Data": {"finalStatus": "Faulted"}}', None),  # not Completed: other path
+        (_COMPLETED_NO_VARIABLES, "no `variables` key"),
+        (_COMPLETED_VARIABLES_ERROR, "variablesError after 4 attempt(s)"),
+    ],
+)
+def test_variables_unreadable_classifier(stdout, expected):
+    reason = flow_check._variables_unreadable(flow_check._parse_json(stdout))
+    if expected is None:
+        assert reason is None
+    else:
+        assert expected in reason
+
+
+def test_capture_includes_cli_stderr_tail(capsys, _reset_debug_raw, monkeypatch):
+    monkeypatch.setattr(flow_check, "_LAST_DEBUG_STDERR", _CLI_STDERR)
+    flow_check._LAST_DEBUG_RAW = _COMPLETED_NO_VARIABLES
+    with pytest.raises(SystemExit):
+        flow_check._fail_with_capture("boom")
+    err = capsys.readouterr().err
+    assert "STDERR (tail): Polling for completion..." in err
+    assert "Could not fetch variables" in err
+
+
 # ── run_debug timeout budget + diagnostics ───────────────────────────────────
 #
 # Regression cover for skill-flow-wiki-pageviews: the subprocess cap fired below
