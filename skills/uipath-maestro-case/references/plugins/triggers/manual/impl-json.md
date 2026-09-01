@@ -70,6 +70,22 @@ Append (not prepend) the trigger node:
 
 **`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None"}` when writing.
 
+**In-argument bridges live on `data.inputs.outputs[]` — never on `data.outputs`.** When the SDD declares an In argument bound to this trigger, three entries are emitted together ([`global-vars/impl-json.md` § In argument](../../variables/global-vars/impl-json.md)): the formal slot in `root.inputs[]`, the companion in `root.inputOutputs[]`, and the **bridge** on this node at `data.inputs.outputs[]`. The bridge is what copies the value at fire time; a `data.outputs[]` array beside `data.inputs` is not read by anything and the In argument silently never arrives. `uip maestro case validate` does not catch it.
+
+```json
+"data": {
+  "inputs": {
+    "serviceType": "None",
+    "outputs": [
+      { "name": "<argName>", "var": "<argName>", "type": "<type>", "source": "=vars.<formal slot id>", "value": "<argName>" }
+    ]
+  }
+}
+```
+
+With no In arguments bound to this trigger, omit `outputs` entirely — do not emit an empty array.
+
+
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
 Read the file, parse, append:
