@@ -182,15 +182,22 @@ def _cost(
                 "timeout/budget, so its criterion cannot be priced"
             )
         return _Price(budget, ())
-    if (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id in defs
-        and node.func.id not in seen
-    ):
-        inner = _cost(defs[node.func.id], lengths, defs, seen | {node.func.id}, manual)
-        args = node.args + [kw.value for kw in node.keywords]
-        return _merge(inner, *[_cost(a, lengths, defs, seen, manual) for a in args])
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in defs:
+        name = node.func.id
+        args = [_cost(a, lengths, defs, seen, manual) for a in node.args]
+        args += [_cost(kw.value, lengths, defs, seen, manual) for kw in node.keywords]
+        if name in seen:
+            # Depth is no more knowable than a loop count, so refuse rather than
+            # price one pass — the same contract loops get.
+            if _calls_in(defs[name]):
+                pytest.fail(
+                    f"line {node.lineno}: `{name}` recurses and runs a debug, so "
+                    "its cost cannot be counted. Flatten the recursion or bound "
+                    "it in a loop this guard can size."
+                )
+            return _merge(*args)
+        inner = _cost(defs[name], lengths, defs, seen | {name}, manual)
+        return _merge(inner, *args)
     if isinstance(node, ast.If):
         return _merge(
             _cost(node.test, lengths, defs, seen, manual),
@@ -561,8 +568,23 @@ def test_runtime_loop_is_reported_not_guessed(tmp_path):
     assert _budget_of_script(path, None) == 485  # the floor, not the truth
 
 
-def test_recursion_does_not_hang(tmp_path):
+def test_debug_bearing_recursion_is_refused(tmp_path):
+    """Depth is no more knowable than a loop count. Pricing it at one pass let a
+    recursive checker through on an insufficient criterion timeout."""
     src = f"def main():\n    {_ONE}\n    main()\n"
+    with pytest.raises(BaseException, match="recurses and runs a debug"):
+        _price(src, tmp=str(tmp_path))
+
+
+def test_mutual_recursion_is_refused(tmp_path):
+    src = f"def a():\n    {_ONE}\n    b()\n\n\ndef b():\n    a()\n\n\ndef main():\n    a()\n"
+    with pytest.raises(BaseException, match="recurses and runs a debug"):
+        _price(src, tmp=str(tmp_path))
+
+
+def test_recursion_without_a_debug_is_free(tmp_path):
+    """A recursive helper that runs no debug costs nothing and is not refused."""
+    src = f"def walk(n):\n    walk(n)\n\n\ndef main():\n    walk(1)\n    {_ONE}\n"
     assert _price(src, tmp=str(tmp_path)) == 485
 
 

@@ -1055,3 +1055,14 @@ def test_retries_zero_runs_one_attempt_not_none(monkeypatch):
     payload = run_debug(retries=0)
     assert calls["n"] == 1
     assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_timeout_at_or_below_the_cli_minimum_is_rejected(monkeypatch):
+    """The aggregate floor guards a fundable retry; this one guards the invariant
+    that the subprocess outlives the CLI's own `--timeout`. `timeout=20,
+    retries=10` clears the first and still SIGKILLs the CLI mid-poll."""
+    assert debug_budget(20, retries=10) >= flow_check._MIN_RETRY_BUDGET_SECONDS
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
+        run_debug(timeout=20, retries=10)
+    assert calls["n"] == 0

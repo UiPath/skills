@@ -243,9 +243,17 @@ def run_debug(
     # remainder when that is smaller.
     if budget is None:
         budget = debug_budget(timeout, retries, backoff_seconds)
+    # Both floors, because they guard different quantities: the aggregate keeps
+    # a retry fundable, the per-attempt one keeps the subprocess cap above the
+    # CLI's own `--timeout` minimum. `timeout=20, retries=10` clears the first
+    # and still SIGKILLs the CLI before it can return an envelope.
+    if timeout <= _MIN_CLI_TIMEOUT_SECONDS:
+        _fail(
+            f"run_debug timeout of {timeout}s is at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the subprocess "
+            "cap could not outlive it; raise `timeout`"
+        )
     if budget < _MIN_RETRY_BUDGET_SECONDS:
-        # Below this the subprocess cap lands under the CLI's `--timeout`
-        # floor: the #2776 SIGKILL, rebuilt from the other side.
         _fail(
             f"run_debug budget of {budget}s is below the {_MIN_RETRY_BUDGET_SECONDS}s "
             "floor (the CLI timeout minimum plus its headroom); raise `budget` or "
