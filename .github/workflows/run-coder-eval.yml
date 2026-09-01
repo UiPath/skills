@@ -861,14 +861,23 @@ jobs:
           else
             when="about 14 days from now"
           fi
+          # Prepended, not appended: run.md is ~40 lines of tables, so an appended
+          # link lands below the fold. Moving this step earlier is not an option,
+          # because it MOVES /tmp/runs, which the artifact upload and the verdict
+          # both read. $GITHUB_STEP_SUMMARY is an ordinary file; truncate-and-rewrite
+          # rather than `mv` so the runner keeps tracking the same inode.
+          summary_tmp="$(mktemp)"
           {
-            echo ""
             echo "### Evalboard"
             echo ""
             echo "[$url]($url)"
             echo ""
             echo "Covers the **Linux** tasks of this dispatch only. Deleted $when by the 14-day lifecycle rule on the \`$AZURE_BLOB_CONTAINER\` container."
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo ""
+            cat "$GITHUB_STEP_SUMMARY" 2> /dev/null || true
+          } > "$summary_tmp"
+          cat "$summary_tmp" > "$GITHUB_STEP_SUMMARY"
+          rm -f "$summary_tmp"
           echo "Evalboard: $url"
 
   run-windows:
