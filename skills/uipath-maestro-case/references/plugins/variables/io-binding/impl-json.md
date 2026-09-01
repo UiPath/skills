@@ -54,15 +54,27 @@ For each top-level Step 0 entry, check whether tasks.md references it either as 
 - **Bare `<name>`** (no operator) → auto-mint shape: `{name, type: <Step 0 entry's type>, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
 - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. **On this shape only, `target` and `body` are present-but-blank: emit `"target": ""` and `"body": ""` literally rather than dropping the keys.** An omitted key is not the same as a blank one — the FE reads a missing `target` as unset rather than deliberately-empty. Blank values belong to Scenario E and nowhere else:
 
-| shape | `target` | `value` | `body` |
+**Full three-shape contrast — every field that differs.** Six of these went wrong at once in a single build, all on the `=` custom shape; check the whole column, not just `target`.
+
+| field | Scenario E (`=` custom) | reassign (`->`) | bare auto-mint |
 |---|---|---|---|
-| Scenario E (`=` custom) | `""` | the expression | `""` |
-| reassign (`->`) | `"=<allocated id>"` | the SDD name | absent |
-| bare auto-mint | `"=<id>"` | the bare `<id>`, no `=` | absent |
+| `target` | `""` — literal empty string, key **present** | `"=<allocated id>"` | `"=<id>"` |
+| `body` | `""` — literal empty string, key **present** | absent | absent |
+| `elementId` | `"root"` | `"<stage-task>"` | `"<stage-task>"` |
+| `id` | **absent** — omit the key entirely | `<allocated id>` | `<id>` |
+| `var` | the SDD name | the SDD name | the `<id>` |
+| `value` | the expression, verbatim | the SDD name | the bare `<id>`, no `=` |
+| `custom` | `true` | absent | absent |
+
+Three ways this shape is routinely emitted wrong, all observed in one run:
+
+1. **Dropping `target` / `body` instead of blanking them.** `"target": null` or an omitted key is not `"target": ""`. The FE reads a missing key as unset and a blank one as deliberately-empty; they are different states.
+2. **Copying the task's `elementId`.** A `=` custom output belongs to the case root, not to the task that computes it — `elementId` is the literal string `"root"`.
+3. **Emitting an `id`.** This shape has none. Its `var` points at an existing case-Variable companion, and that companion's `.id` is what downstream references resolve through.
 
 **`vars.` never appears in an output `target`.** `=vars.<id>` is the *input*-side binding form written by Step 9.8; on an output `target` the correct form is `=<id>`. Writing `target: "=vars.APIOutput1"` or `value: "=APIOutput1"` on a bare auto-mint output are both defects — that row is `value: "APIOutput1"`, `target: "=APIOutput1"`.
 
-Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the rule above — those carry real values, and emptying them is a different defect. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it. Canonicalize `=metadata.X` to `=js:metadata.X` in both `value` and `source`; retain the SDD-natural form in `tasks.md`. For a quoted string literal, treat the quotes as SDD delimiters: `status = "InReview"` emits JSON `"value": "InReview", "source": "InReview"` — never embed the delimiters as payload (`"value": "\"InReview\""`).
+Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the rule above — those carry real values, and emptying them is a different defect. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it. Canonicalize `=metadata.X` to `=js:metadata.X` in both `value` and `source`; retain the SDD-natural form in `tasks.md`. For a quoted string literal, treat the quotes as SDD delimiters: `status = "InReview"` emits JSON `"value": "InReview", "source": "InReview"` — never embed the delimiters as payload (`"value": "\"InReview\""`), and **never prepend `=`**. A quoted literal is a value, not an expression: `literalResult = "literal-assigned"` emits `"value": "literal-assigned"`, never `"=literal-assigned"`. The leading `=` marks an expression (`=vars.x`, `=js:…`, `=metadata.…`); a bare quoted string has none.
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).
 
 **Equal-name extract dispatch.** Dispatch by the explicit operator before comparing names; equal operands select the reassign shape, never the bare auto-mint branch. Apply the global [controlled-alias rule](../global-vars/impl-json.md#uniqueness-rule). With no unrelated collision, `greeting -> greeting` emits `id`, `var`, `originalVar`, and `value` as `"greeting"`, with `source: "=greeting"` and `target: "=greeting"`. `originalVar` distinguishes reassignment from a bare output and keeps the predeclared root companion intact during frontend synchronization; the linked allocator owns any required suffixing.
