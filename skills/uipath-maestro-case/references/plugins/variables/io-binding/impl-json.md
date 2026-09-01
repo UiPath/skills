@@ -54,23 +54,28 @@ For each top-level Step 0 entry, check whether tasks.md references it either as 
 - **Bare `<name>`** (no operator) → auto-mint shape: `{name, type: <Step 0 entry's type>, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
 - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. **On this shape only, `target` and `body` are present-but-blank: emit `"target": ""` and `"body": ""` literally rather than dropping the keys.** An omitted key is not the same as a blank one — the FE reads a missing `target` as unset rather than deliberately-empty. Blank values belong to Scenario E and nowhere else:
 
-**Full three-shape contrast — every field that differs.** Six of these went wrong at once in a single build, all on the `=` custom shape; check the whole column, not just `target`.
+**Full three-shape contrast — EVERY field, not just the ones that differ.** Emit exactly the fields listed in the shape's column; a field present in the canonical bullet and absent from what you write is a defect, and omitting `source` is the one most recently observed.
 
 | field | Scenario E (`=` custom) | reassign (`->`) | bare auto-mint |
 |---|---|---|---|
-| `target` | `""` — literal empty string, key **present** | `"=<allocated id>"` | `"=<id>"` |
-| `body` | `""` — literal empty string, key **present** | absent | absent |
-| `elementId` | `"root"` | `"<stage-task>"` | `"<stage-task>"` |
-| `id` | **absent** — omit the key entirely | `<allocated id>` | `<id>` |
+| `name` | the SDD name | resolved leaf/top-level name | schema name |
+| `custom` | `true` | absent | absent |
+| `type` | the case variable's type | resolved descriptor's type | Step 0 entry's type |
 | `var` | the SDD name | the SDD name | the `<id>` |
 | `value` | the expression, verbatim | the SDD name | the bare `<id>`, no `=` |
-| `custom` | `true` | absent | absent |
+| `source` | **same string as `value`** — required, never omitted | `"=<sdd-field-path>"` | Step 0 `source` verbatim |
+| `target` | `""` — literal empty string, key present | `"=<allocated id>"` | `"=<id>"` |
+| `body` | `""` — literal empty string, key present | absent | absent |
+| `elementId` | `"root"` | `"<stage-task>"` | `"<stage-task>"` |
+| `id` | **absent** — omit the key entirely | `<allocated id>` | `<id>` |
+| `originalVar` | absent | `<allocated id>` | absent |
 
 Three ways this shape is routinely emitted wrong, all observed in one run:
 
 1. **Dropping `target` / `body` instead of blanking them.** `"target": null` or an omitted key is not `"target": ""`. The FE reads a missing key as unset and a blank one as deliberately-empty; they are different states.
 2. **Copying the task's `elementId`.** A `=` custom output belongs to the case root, not to the task that computes it — `elementId` is the literal string `"root"`.
-3. **Emitting an `id`.** This shape has none. Its `var` points at an existing case-Variable companion, and that companion's `.id` is what downstream references resolve through.
+3. **Emitting an `id`.** This shape has none. Its `var` points at an existing case-Variable companion, and that companion's `.id` is what downstream references resolve through. **Do not run the [uniqueness-rule](../global-vars/impl-json.md#uniqueness-rule) allocator on a `custom: true` output** — it has no `id` to allocate, so there is no collision to resolve. An emitted `id` carrying a dedup suffix (`literalResult2`, `collisionCopy2`) is the signature of this mistake: the allocator ran, collided with the output's own case-Variable companion, and suffixed. Skip allocation entirely for this shape.
+4. **Omitting `source`.** `source` is required on all three shapes. On this one it is the same string as `value`, character for character.
 
 **`vars.` never appears in an output `target`.** `=vars.<id>` is the *input*-side binding form written by Step 9.8; on an output `target` the correct form is `=<id>`. Writing `target: "=vars.APIOutput1"` or `value: "=APIOutput1"` on a bare auto-mint output are both defects — that row is `value: "APIOutput1"`, `target: "=APIOutput1"`.
 

@@ -69,6 +69,8 @@ Under the B refactor, this plugin is **the sole owner** of:
 
 ## Uniqueness Rule
 
+> **Not applicable to `custom: true` outputs.** A Scenario E (`=`) custom output has **no `id`**, so it is never allocated one and never dedup-suffixed. Running this allocator on it produces a spurious `id` with a `2` suffix — it collides with the output's own case-Variable companion — and that suffixed id is the tell. See [`io-binding/impl-json.md` § Output Binding Shapes](../io-binding/impl-json.md#output-binding-shapes).
+
 Every independently minted `var` / `id` must be globally unique across the case, except for the single root-companion alias defined below for an equal-name `->` extraction. When a name collides, append a counter starting at 2:
 
 ```
