@@ -93,7 +93,7 @@ success_criteria:
   - type: run_command
     description: "Seeded Sev1 and Sev3 runs produce the elicited severity, engineering, draft-response, and correlation outcomes"
     command: "python3 $TASK_DIR/check_customer_escalation_triage.py"
-    timeout: 660
+    timeout: 1320  # budget-guard: manual x2. 2 x debug_budget(300) = 1210 + margin
     expected_exit_code: 0
     weight: 8.0
     pass_threshold: 1.0

@@ -56,7 +56,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow debug finishes with finalStatus Completed against the live Slack connection"
     command: "python3 $TASK_DIR/check_slack_http_fallback.py check_debug"
-    timeout: 360
+    timeout: 720
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

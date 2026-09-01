@@ -24,6 +24,7 @@ from flow_check import (  # noqa: E402
     assert_output_value,
     assert_outputs_contain,
     collect_outputs,
+    debug_budget,
     run_debug,
 )
 
@@ -793,28 +794,40 @@ def _cp(returncode, stdout="", stderr=""):
     )
 
 
-def _stub_debug(monkeypatch, results):
-    """Feed run_debug a queue of CompletedProcess results, stub sleep to be
-    instant, and stub project discovery so no real tree is needed.
+def _stub_debug(monkeypatch, results, attempt_seconds=0):
+    """Feed run_debug a queue of CompletedProcess results off a fake monotonic
+    clock, and stub project discovery so no real tree is needed.
 
-    A queued ``BaseException`` is raised rather than returned, which is how the
-    ``subprocess.TimeoutExpired`` path is exercised. The last invocation's
-    ``cmd`` / ``env`` / ``timeout`` are recorded for assertions."""
-    calls = {"n": 0, "cmd": None, "env": None, "timeout": None}
+    The clock moves only on ``subprocess.run`` (``attempt_seconds``, clamped to
+    the cap given, mirroring the real SIGKILL) and on stubbed ``sleep``. The
+    default 0 never depletes the budget, so pre-deadline tests are unchanged.
+    Both stubs land on the stdlib ``time`` module and are process-wide for the
+    test; monkeypatch restores them, but do not add real sleeps under them.
+
+    A queued ``BaseException`` is raised, exercising ``TimeoutExpired``. Each
+    invocation's ``cmd`` / ``env`` / ``timeout`` is recorded; ``caps`` keeps the
+    per-attempt subprocess caps in order."""
+    calls = {"n": 0, "cmd": None, "env": None, "timeout": None, "caps": [], "clock": 0.0}
     queue = list(results)
     monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
-    monkeypatch.setattr(flow_check.time, "sleep", lambda *_: None)
+
+    def fake_sleep(seconds):
+        calls["clock"] += seconds
 
     def fake_run(cmd, **kwargs):
         calls["n"] += 1
         calls["cmd"] = cmd
         calls["env"] = kwargs.get("env")
         calls["timeout"] = kwargs.get("timeout")
+        calls["caps"].append(kwargs.get("timeout"))
+        calls["clock"] += min(attempt_seconds, kwargs.get("timeout"))
         result = queue.pop(0)
         if isinstance(result, BaseException):
             raise result
         return result
 
+    monkeypatch.setattr(flow_check.time, "sleep", fake_sleep)
+    monkeypatch.setattr(flow_check.time, "monotonic", lambda: calls["clock"])
     monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
     return calls
 
@@ -922,6 +935,94 @@ def test_run_debug_caps_poll_timeout_attempts(monkeypatch):
     assert calls["n"] == flow_check._POLL_TIMEOUT_ATTEMPTS == 2
 
 
+# ── run_debug total-budget deadline ──────────────────────────────────────────
+#
+# Regression cover for skill-flow-api-workflow: `timeout` was a per-attempt cap
+# while the task YAML's `timeout:` caps the whole check, so a retry ran past the
+# criterion budget and the grader SIGKILLed the check mid-attempt. Nothing was
+# left to diagnose from, and a gating criterion scored 0 on a live-tenant hiccup.
+
+
+def test_default_budget_funds_the_poll_timeout_retry(monkeypatch):
+    """Exactly two attempts plus one backoff, and not a second more."""
+    assert debug_budget(timeout=240, backoff_seconds=5) == 485
+    calls = _stub_debug(
+        monkeypatch, [_cp(1, _POLL_TIMEOUT), _cp(0, _COMPLETED)], attempt_seconds=240
+    )
+    payload = run_debug(timeout=240, backoff_seconds=5)
+    assert calls["caps"] == [240, 240]  # both attempts run at full length
+    assert calls["clock"] == 485
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_budget_for_retries_1_is_a_single_attempt(monkeypatch):
+    """`retries=1` must not reserve time for a retry it will not make."""
+    assert debug_budget(timeout=300, retries=1) == 300
+
+
+def test_run_debug_never_exceeds_its_budget(monkeypatch):
+    """The deadline beats `retries`. Only an explicit budget can cut a retry
+    short, since the default is sized on `retries`."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
+    with pytest.raises(SystemExit):
+        run_debug(timeout=200, budget=405, retries=3, backoff_seconds=5)
+    assert calls["n"] == 2  # 405 - 200 - 5 - 200 = 0 left for a third
+    assert calls["clock"] <= 405
+
+
+def test_default_budget_funds_every_retry_the_caller_asked_for(monkeypatch):
+    """Sizing on `_POLL_TIMEOUT_ATTEMPTS` silently downgraded `retries=3` to
+    two attempts for slow 5xx transients."""
+    assert debug_budget(timeout=200, retries=3, backoff_seconds=5) == 610
+    calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
+    with pytest.raises(SystemExit):
+        run_debug(timeout=200, retries=3, backoff_seconds=5)
+    assert calls["n"] == 3
+
+
+def test_budget_below_the_cli_floor_is_rejected(monkeypatch):
+    """A budget under the floor hands the subprocess a smaller cap than the
+    CLI's own `--timeout`: the #2776 SIGKILL, rebuilt from the other side."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
+        run_debug(timeout=240, budget=25)
+    assert calls["n"] == 0  # rejected before spawning anything
+
+
+def test_retries_1_below_the_retry_threshold_is_allowed(monkeypatch):
+    """`_MIN_RETRY_BUDGET_SECONDS` funds ANOTHER attempt, so flooring the total
+    against it rejected `retries=1` budgets that only ever need one."""
+    assert debug_budget(45, retries=1) < flow_check._MIN_RETRY_BUDGET_SECONDS
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(timeout=45, retries=1)
+    assert calls["caps"] == [45]
+
+
+def test_run_debug_refuses_a_retry_it_cannot_fund(monkeypatch):
+    """A budget too small for a second attempt must not start one."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _POLL_TIMEOUT)] * 2, attempt_seconds=180)
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=180, budget=240, backoff_seconds=5)
+    assert calls["n"] == 1  # 240 - 180 - 5 = 55, under the 90s retry floor
+    assert "could not fund another" in str(excinfo.value)
+
+
+def test_run_debug_caps_the_last_attempt_at_the_remainder(monkeypatch):
+    """A remainder smaller than `timeout` shrinks the attempt to fit."""
+    calls = _stub_debug(
+        monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)], attempt_seconds=100
+    )
+    run_debug(timeout=240, budget=300, backoff_seconds=5)
+    assert calls["caps"] == [240, 195]  # 300 - 100 spent - 5 backoff
+
+
+def test_run_debug_retry_floor_matches_the_cli_minimum():
+    """The floor is the smallest attempt the CLI could actually run."""
+    assert flow_check._MIN_RETRY_BUDGET_SECONDS == (
+        flow_check._MIN_CLI_TIMEOUT_SECONDS + flow_check._CLI_TIMEOUT_HEADROOM_SECONDS
+    )
+
+
 def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
     """A stall upstream of polling exits as a graded FAIL carrying the partial
     output, not as an uncaught TimeoutExpired traceback."""
@@ -952,3 +1053,80 @@ def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
 )
 def test_as_text_decodes_defensively(raw, expected):
     assert flow_check._as_text(raw) == expected
+
+
+def test_retries_zero_runs_one_attempt_not_none(monkeypatch):
+    """`debug_budget` prices `max(1, retries)`, so the loop must make that many.
+    `range(0)` left `r` unbound and crashed with UnboundLocalError instead of
+    grading the criterion (found by Copilot review)."""
+    assert debug_budget(240, retries=0) == 240
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    payload = run_debug(retries=0)
+    assert calls["n"] == 1
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_timeout_at_or_below_the_cli_minimum_is_rejected(monkeypatch):
+    """The aggregate floor guards a fundable retry; this one guards the invariant
+    that the subprocess outlives the CLI's own `--timeout`. `timeout=20,
+    retries=10` clears the first and still SIGKILLs the CLI mid-poll."""
+    assert debug_budget(20, retries=10) >= flow_check._MIN_RETRY_BUDGET_SECONDS
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
+        run_debug(timeout=20, retries=10)
+    assert calls["n"] == 0
+
+
+def test_first_attempt_cap_must_strictly_outlive_the_cli(monkeypatch):
+    """An integer budget floors one second short, so `budget=31` yields a 30s
+    cap against a 30s CLI timeout: no room for the CLI to report first."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="cap its first attempt at 30s"):
+        run_debug(timeout=240, budget=31)
+    assert calls["n"] == 0
+    run_debug(timeout=240, budget=32)  # one more second is enough
+
+
+@pytest.mark.parametrize("seed", range(25))
+def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
+    """Random (timeout, budget, retries, backoff) against random attempt
+    durations and outcomes. Three invariants, none of which held by inspection
+    alone: the call never outlives its budget, every attempt gets a positive cap
+    that strictly outlives the CLI's own timeout, and nothing escapes as a crash
+    rather than a graded failure."""
+    import random
+
+    rng = random.Random(seed)
+    timeout = rng.choice([31, 45, 120, 180, 240, 480, 840])
+    retries = rng.choice([1, 2, 3, 5])
+    backoff = rng.choice([0, 1, 2.5, 5.0])
+    budget = rng.choice(
+        [None, None, debug_budget(timeout, retries, backoff), timeout + 60, 5000]
+    )
+    outs = [rng.choice([_COMPLETED, _POLL_TIMEOUT, _TRANSIENT_504]) for _ in range(10)]
+    spend = [rng.choice([1, timeout // 2, timeout, timeout * 3]) for _ in range(10)]
+
+    clock, caps, n = [0.0], [], [0]
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
+    monkeypatch.setattr(flow_check.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(flow_check.time, "sleep", lambda s: clock.__setitem__(0, clock[0] + s))
+
+    def fake_run(cmd, **kwargs):
+        cap = kwargs["timeout"]
+        caps.append((cap, int(cmd[cmd.index("--timeout") + 1])))
+        i = n[0]
+        n[0] += 1
+        clock[0] += min(spend[i % 10], cap)
+        return _cp(0 if outs[i % 10] is _COMPLETED else 1, outs[i % 10])
+
+    monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
+    try:
+        run_debug(timeout=timeout, budget=budget, retries=retries, backoff_seconds=backoff)
+    except SystemExit:
+        pass  # a graded failure is a valid outcome; a crash is not
+
+    granted = budget if budget is not None else debug_budget(timeout, retries, backoff)
+    assert clock[0] <= granted, f"spent {clock[0]}s of a {granted}s budget"
+    for cap, cli in caps:
+        assert cap > 0, f"non-positive subprocess cap {cap}"
+        assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"

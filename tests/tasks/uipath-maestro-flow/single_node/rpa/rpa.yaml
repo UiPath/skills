@@ -8,6 +8,7 @@ tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource
 run_limits:
   expected_turns: 26
   turn_timeout: 1200
+  task_timeout: 2700  # 1380s grading + a turn; inherited 1200 could not fit grading
 
 initial_prompt: |
   Create a UiPath Flow project named "ProjectEulerTitle" that uses the
@@ -31,7 +32,7 @@ success_criteria:
   - type: run_command
     description: "Flow has an RPA node and debug returns the problem title"
     command: "python3 $TASK_DIR/check_rpa_flow.py"
-    timeout: 600
+    timeout: 1200
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
