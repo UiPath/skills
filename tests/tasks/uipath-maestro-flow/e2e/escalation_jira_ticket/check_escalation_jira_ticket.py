@@ -43,7 +43,7 @@ import jira_is  # noqa: E402
 # recorded for teardown, or a malformed flow's extra tickets leak in the shared
 # CE project. Each probe is a 120s CLI call, which is what the criterion's
 # `budget-guard: overhead` annotation funds on the success path.
-MAX_ISSUE_PROBES = 2
+MAX_ISSUE_PROBES = 4
 
 JIRA_KEY = "uipath-atlassian-jira"
 JIRA_CREATE_OP = "create-issue"  # matched by op so a connector-proxy Create (op in endpoint) also counts
@@ -116,9 +116,9 @@ def main() -> None:
             "flow did not execute the Create Issue activity"
         )
 
-    cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
-    cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(cands))
+    declared = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
+    scraped = re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
+    cands = list(dict.fromkeys(declared + scraped))
     if not cands:
         _fail(f"no Jira issue key (e.g. {project}-123) in flow debug outputs — the flow did not create a ticket")
     print(f"OK: candidate keys from debug: {cands}")
