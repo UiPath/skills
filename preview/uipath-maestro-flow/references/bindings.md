@@ -17,7 +17,7 @@ connectors-local/
       ...generated descriptor data...
 ```
 
-`uip maestro registry prepare` prints the import for
+`npx flow-sdk registry prepare` prints the import for
 `connectors-local/<connector-key>.ts`.
 The generated descriptor data lives below `connectors-local/descriptors/`; do
 not import it directly. `bindings.json` stays at the root and is independent of

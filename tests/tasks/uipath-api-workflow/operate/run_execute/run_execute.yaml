@@ -5,11 +5,11 @@ description: >
   mode:operate: the artifact is correct; the graded behavior is running it via
   `uip api-workflow run` and getting the right output, NOT authoring or repairing.
   Complements the build-mode authoring tasks and the diagnose-mode repair tasks
-  with the third scorecard mode (running live). Graded on side effects: the agent
-  invoked the runner once per input and saved each run's raw output to its own
-  file (run_85.json grades PASS, run_40.json grades FAIL). Behavioral credit thus
-  depends on real CLI output the agent captured — the valid seed cannot earn it,
-  and the answer cannot be satisfied by transcribing a grade from the prompt.
+  with the third scorecard mode (running live). Graded on side effects: each
+  run's raw output was saved to its own file (run_85.json grades PASS,
+  run_40.json grades FAIL). Behavioral credit thus depends on real CLI output
+  the agent captured — the valid seed cannot earn it, and the answer cannot be
+  satisfied by transcribing a grade from the prompt.
 tags: [uipath-api-workflow, integration, mode:operate, lifecycle:discover]
 
 sandbox:
@@ -32,10 +32,15 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent executed the workflow with the local runner, once per input (the operate action)"
+    # min_count 1, not 2: the matcher runs one search per Bash tool call, so
+    # both runs chained with && in a single call count once (the 2026-09-01 run
+    # scored a false 1/2 that way). One visible invocation still anchors that
+    # the agent drove the runner; per-input evidence lives in the envelope
+    # checks on run_85.json / run_40.json below.
+    description: "Agent executed the workflow with the local runner (both runs may share one chained Bash call)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
-    min_count: 2
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
@@ -51,17 +56,24 @@ success_criteria:
     weight: 0.5
     pass_threshold: 1.0
 
+  # Envelope checks, not bare greps: a fabricated file containing the string
+  # "PASS" must not pass — the file has to be a real runner envelope
+  # ({"Result": "Success", "Data": {...grade...}}).
   - type: run_command
-    description: "Behavioral: the captured score-85 run output grades PASS"
-    command: 'grep -q ''"PASS"'' run_85.json'
+    description: "Behavioral: the captured score-85 output is a real run envelope grading PASS"
+    command: >-
+      python3 -c "import json,sys; d=json.load(open('run_85.json'));
+      sys.exit(0 if d.get('Result')=='Success' and 'PASS' in json.dumps(d.get('Data')) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Behavioral: the captured score-40 run output grades FAIL"
-    command: 'grep -q ''"FAIL"'' run_40.json'
+    description: "Behavioral: the captured score-40 output is a real run envelope grading FAIL"
+    command: >-
+      python3 -c "import json,sys; d=json.load(open('run_40.json'));
+      sys.exit(0 if d.get('Result')=='Success' and 'FAIL' in json.dumps(d.get('Data')) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

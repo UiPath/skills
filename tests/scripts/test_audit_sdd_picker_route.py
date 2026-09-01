@@ -1,6 +1,6 @@
 """Guard: a picker entry must not carry a deterministic decision route.
 
-`skills/uipath-planner/scripts/audit_sdd.py` is the design lane's gate. The rule
+`skills/uipath-planner/scripts/case/audit_sdd.py` is the design lane's gate. The rule
 lives here rather than in the SDD template because that lane's reading budget is
 saturated: a six-line template bullet landed the repair (skill-case-reject-route
 0.385 -> 1.000, run 33501174330) but timed out its sibling
@@ -17,7 +17,7 @@ import importlib.util
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-AUDIT = REPO / "skills" / "uipath-planner" / "scripts" / "audit_sdd.py"
+AUDIT = REPO / "skills" / "uipath-planner" / "scripts" / "case" / "audit_sdd.py"
 
 spec = importlib.util.spec_from_file_location("audit_sdd", AUDIT)
 audit_sdd = importlib.util.module_from_spec(spec)

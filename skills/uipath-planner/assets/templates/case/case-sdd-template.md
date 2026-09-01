@@ -214,7 +214,7 @@ Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ri
 **Purpose:** The case plan. Every stage has entry/exit conditions, optional SLA, and complete task detail blocks. Case has no BPMN-style edges; transitions are expressed by stage entry/exit conditions.
 
 **Authoring rules** — this template IS the render contract: cell rules live inline at each cell. Design
-semantics (type enum, gates, sequencing, SLA surface): [case-design-layers-guide.md](../../references/case-design-layers-guide.md).
+semantics (type enum, gates, sequencing, SLA surface): [case-design-layers-guide.md](../../../references/case/case-design-layers-guide.md).
 During draft finalization, do NOT open that link — the draft is the settled design and this template is
 the complete normalization contract; finalization preserves existing display names verbatim.
 Template-local rules:
@@ -607,7 +607,7 @@ there. Pass --draft so the gate also checks inventory parity, verbatim `=js:` pr
 executable threshold encoding. What the DRAFT specifically needs repaired on the way through is the
 lane guide's § Resumption; the shape is here.
 
-Gate: run  python3 "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
+Gate: run  python3 "<skill folder>/scripts/case/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
 on-disk file BEFORE the Status: ready flip — in every mode. `<skill folder>` is the folder you read this
 template from, minus `/assets/templates`: substitute the path you already hold, never `ls`/`find`/`which`
 to discover it (a probe costs a turn and finds nothing you don't have). If the `python3` call itself fails,
