@@ -27,7 +27,7 @@ A Python Coded Function can be invoked from any UiPath surface:
 
 ### Python vs JS/TS Functions
 
-This skill covers **Python** functions only. JS/TS functions (`defineFunction` handlers, `package.json` projects, HTTP triggers for Coded App backends) → `uipath-functions-js`. Both languages run as Orchestrator jobs; JS/TS functions can additionally expose HTTP endpoints. Language split at the CLI: Python scaffolds with `uip function new <name> -l py` and requires `uip function init`; TypeScript is the default language and has no `init` step.
+This skill covers **Python** functions only. JS/TS functions (`defineFunction` handlers, `package.json` projects, HTTP triggers for Coded App backends) → `uipath-functions-js`. A JS/TS function declares one calling mode — HTTP endpoint or plain run-as-job. Language split at the CLI: Python scaffolds with `uip function new <name> -l py` and requires `uip function init`; TypeScript is the default language and has no `init` step.
 
 ---
 
@@ -274,6 +274,6 @@ uip function push
 - The `functions` map in `uipath.json` marks the project as a Coded Function (`determine_project_type()` reads the entrypoint type from `uipath.json`)
 - `uip function init` must run before `pack` or `push` — it generates `entry-points.json`
 - Python Functions have full job semantics: Orchestrator job ID, audit trail, retry, scheduling
-- JS/TS Functions also run as Orchestrator jobs and can expose HTTP endpoints — authoring, testing, and deploying them is `uipath-functions-js` territory
+- JS/TS Functions have one declared calling mode — run-as-job or HTTP endpoint; authoring, testing, and deploying them is `uipath-functions-js` territory
 - `uip function run` works for both Python and JS/TS local execution; `uip function serve` is JS/TS only (see `uipath-functions-js`)
 - If cloud-backed work requires authentication, run `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.

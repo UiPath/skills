@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath JS/TS Coded Functions
 
-Deterministic TypeScript/JavaScript units — `defineFunction` handlers in `functions/` — that run on UiPath serverless. Every function can be started as an Orchestrator job; declaring `method` + `path` additionally exposes it as an HTTP endpoint (the backend for Coded Apps). Authored with `@uipath/coded-functions-js-sdk` (devDependency), managed with `uip function`.
+Deterministic TypeScript/JavaScript units — `defineFunction` handlers in `functions/` — that run on UiPath serverless. Each function declares exactly one calling mode: `method` + `path` make it an HTTP endpoint (the backend for Coded Apps); omitting both makes it a plain run-as-job function. Authored with `@uipath/coded-functions-js-sdk` (devDependency), managed with `uip function`.
 
 ## When to Use This Skill
 
@@ -28,7 +28,7 @@ Do NOT use this skill for:
 
 1. **Throw `FunctionError`, never plain `Error`.** A plain throw is always a generic 500 (`JsCodedFunction.HandlerError`) that leaks the raw stack; `FunctionError(message, status)` carries an author-controlled status (pass `errorCode` in options to set the job error code). Argument order is `(message, status)`. See [error handling](references/authoring-guide.md#errors).
 2. **Contracts are schema-first.** `defineSchema<T>()` over interfaces (TS, lowered at build time) or a bare JSON Schema literal (JS). Do not use zod/arktype/valibot for new functions — they break static contract extraction and add a runtime dependency. No `$ref`, `any`, `bigint`, or tuples; the schema literal must be static.
-3. **One default-exported `defineFunction` per file, directly under `functions/`.** Helper modules are `_`-prefixed (`functions/_helpers.ts`). Declare `method` + `path` together or omit both (job-only). Every function runs as a job; HTTP exposure is additive.
+3. **One default-exported `defineFunction` per file, directly under `functions/`.** Helper modules are `_`-prefixed (`functions/_helpers.ts`). `method` + `path` together or neither — the pair selects the function's single calling mode: HTTP endpoint or plain run-as-job, never both. Logic needed on both surfaces gets two thin functions sharing a `_`-helper.
 4. **Intra-project imports carry the `.ts` extension** (`./_helpers.ts`). Extensionless imports resolve in local dev but hang the whole runtime at production cold start, with no logs.
 5. **Runtime deps go in `dependencies`, public npm only; the SDK stays in `devDependencies`.** Production runs `npm install --omit=dev` at cold start — a runtime import from `devDependencies` or a private registry crashes/hangs the function. Regenerate the lockfile after any dependency change; a stale `package-lock.json` fails every route with errorCode 4801.
 6. **Finish in <20 s — the gateway times out at 25 s** and returns a `303` to a polling URL without CORS: a browser caller loses the result permanently, and recovering it server-side via the redirect is undocumented. Use `AbortSignal.timeout(...)` on every external call; move longer work to job mode.

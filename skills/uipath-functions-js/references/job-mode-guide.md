@@ -4,16 +4,16 @@ How a JS/TS coded function executes as an Orchestrator job: the runtime context,
 
 ## The Model
 
-Every function in `functions/` is job-startable. There are exactly two invocation paths:
+A function has exactly one calling mode, selected by its declaration:
 
-- **Job path** — anything that can start an Orchestrator job on the function's release is a caller: the job-start API, a schedule or trigger, a Maestro process, an RPA process, an agent, or another coded function.
-- **HTTP path** — only when the function declares `method` + `path`: a synchronous call through the Orchestrator HTTP trigger ([http-semantics-guide.md](http-semantics-guide.md)).
+- **Run-as-job** — `method` + `path` omitted. Started by anything that can start an Orchestrator job on the function's release: the job-start API, a schedule or trigger, a Maestro process, an RPA process, an agent, or another coded function. This guide's subject.
+- **HTTP** — `method` + `path` declared: called synchronously through the Orchestrator HTTP trigger ([http-semantics-guide.md](http-semantics-guide.md)). Under the hood the trigger executes each call as a job (which is why the fault semantics below also apply), but the function's one caller surface is its trigger.
 
-Omitting `method` + `path` makes the function job-only. Run-mode enforcement is not yet implemented: an HTTP-declared function can currently be started as a plain job. That is current behavior, not a guarantee — do not design around it.
+Do not design a function for both modes. The runtime does not yet enforce the split (an HTTP-declared function can currently be started as a plain job) — that is an enforcement gap, never a supported pattern. Logic needed on both surfaces: two thin `defineFunction` entries sharing a `_`-prefixed helper module in one project — the `bindings_v2.json` HttpTrigger row exists only for the HTTP one ([bindings-guide.md](bindings-guide.md)).
 
-### Picking the path (one function can serve both)
+### Picking the mode (a design-time choice)
 
-| | HTTP path | Job path |
+| | HTTP | Run-as-job |
 |---|---|---|
 | Caller | any HTTP client with a platform token (Coded App, service, curl) | any job-starter (API, schedule/trigger, Maestro, RPA, another function) |
 | Timing | synchronous; 25 s gateway budget ([SKILL.md](../SKILL.md) Rule 6) | job lifecycle; the 25 s gateway budget does not apply |
@@ -21,7 +21,7 @@ Omitting `method` + `path` makes the function job-only. Run-mode enforcement is 
 | Errors surface as | HTTP status + `{error, details?}` body | Faulted job + the StandardError contract below |
 | Result | HTTP response body | job output arguments |
 
-Take the HTTP path when a synchronous answer goes back to an interactive caller; take the job path for long-running, scheduled, or orchestrated work, or when the caller is itself a job. One deployed function serves both paths from one `bindings_v2.json` — its HttpTrigger row exists only when `method` + `path` are declared ([bindings-guide.md](bindings-guide.md)).
+Pick HTTP when a synchronous answer goes back to an interactive caller; pick run-as-job for long-running, scheduled, or orchestrated work, or when the caller is itself a job.
 
 ## How a Job Run Executes
 

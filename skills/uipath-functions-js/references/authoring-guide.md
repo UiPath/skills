@@ -22,7 +22,7 @@ Field-level reference for writing JS/TS coded functions: `defineFunction` option
 
 *`method` + `path` together or both omitted. `defineFunction` throws at module load on: one of the pair alone, a method outside the five verbs, a path not starting `/`.
 
-**Every function is a job.** It runs as an Orchestrator job (Trigger, Maestro, Flow, Orchestrator API) regardless of HTTP declaration; `method` + `path` *additionally* expose an HTTP endpoint — the Coded Apps backend case. Job-only = omit both. On a job run there is no HTTP request: `ctx.user` carries no caller identity (may hold a legacy compat object — test `ctx.user?.accessToken`, not `!ctx.user`), `ctx.params`/`ctx.headers` empty. Current behavior: an HTTP function can also be started as a plain job — no enforcement separates the modes. Details → [job-mode-guide.md](job-mode-guide.md).
+**One calling mode per function.** `method` + `path` make it an HTTP-semantics function, invoked through its Orchestrator HTTP trigger — the Coded Apps backend case (the trigger executes each call as a job under the hood). Omitting both makes it a plain run-as-job function. On a job run there is no HTTP request: `ctx.user` carries no caller identity (may hold a legacy compat object — test `ctx.user?.accessToken`, not `!ctx.user`), `ctx.params`/`ctx.headers` empty. The runtime does not yet enforce the split — an HTTP function can currently be started as a plain job; treat that as an enforcement gap, never a design pattern. Details → [job-mode-guide.md](job-mode-guide.md).
 
 ## Handler Return Forms
 
