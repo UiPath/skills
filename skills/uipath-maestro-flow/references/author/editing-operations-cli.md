@@ -21,7 +21,7 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 ```
 
 **What the CLI handles automatically:**
-- Inserts node into `nodes` array with a generated `id`
+- Inserts node into `nodes` array with a generated `id` — you do not choose it, there is no `--id` flag. See [Generated node IDs](#generated-node-ids) before you reference the node anywhere.
 - Copies the definition from the local registry cache into `definitions` (one per unique type)
 - Adds node output variables to `variables.nodes`
 
@@ -33,9 +33,34 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 | `--label` | No | Display label shown on the canvas |
 | `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
 | `--parent` | No | ID of an existing container node (e.g. a `core.logic.loop`). Sets `parentId` on the new node, placing it inside that container. Required for every node in a loop body — see [loop/impl.md](plugins/loop/impl.md). |
-| `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
+| `--output json` | Yes (for parsing) | Structured JSON response carrying the assigned id at `Data.Node.Id` (PascalCase) |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
+
+### Generated node IDs
+
+**There is no `--id` flag — you cannot pin the id.** `node add` camelCases `--label`, splitting on every character outside `[A-Za-z0-9]` (accents are dropped, not transliterated), then appends a counter — **always, starting at `1`**. No label → last dot-segment of the node type.
+
+| `--label` | Generated `id` |
+|---|---|
+| `Normalize Bellevue conditions` | `normalizeBellevueConditions1` |
+| `Call Open-Meteo public API` | `callOpenMeteoPublicApi1` (`API` → `Api`) |
+| `Fetch data (v2)` | `fetchDataV21` (`v2` + counter, not `fetchDataV2`) |
+| `café münchen` | `cafMNchen1` |
+| *(none)*, `core.logic.merge` | `merge1` |
+
+The counter increments against **ids already in the file**, hand-authored ones included (`handMade1` present → `--label "Hand made"` yields `handMade2`), so the id is **not a pure function of the label**.
+
+> **NEVER write a `$vars.<nodeId>` reference in the same `&&` chain as the `node add` that creates that node.** The id does not exist until the command runs, so it can only be a guess — and a wrong guess still **passes `flow validate`** (no expression checking), then faults at runtime with `Cannot read property 'output' of undefined`. Capture the ids first, reference them in a later step.
+
+```bash
+uip maestro flow node add <file> <node-type> --label "<LABEL>" \
+  --output json --output-filter "Node.Id"   # Data.Value = the id; PascalCase — "Node.id" returns []
+```
+
+For a batch, use `uip maestro flow node list <file> --output json`.
+
+**Caveat:** a digit-leading label generates an id that breaks [SKILL.md rule #12](../../SKILL.md) and `flow validate` accepts it (`99 bottles` → `99Bottles1`). Start such labels with a word.
 
 ### Remove a node
 
