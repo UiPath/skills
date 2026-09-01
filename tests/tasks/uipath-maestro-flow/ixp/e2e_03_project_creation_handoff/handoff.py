@@ -839,12 +839,19 @@ def cleanup() -> None:
     # them (and their registry nodes) — see the module docstring. The run folder
     # seed created is the ONLY folder this script deletes; anything the agent
     # parked elsewhere is reported below.
-    run_folder_deleted = False
-    if folder_get(run_folder_key) is None:
-        print(f"NOTE: run folder {run_folder_key} is already gone — nothing to delete.")
-        run_folder_deleted = True
-    elif delete_folder(run_folder_key):
-        run_folder_deleted = True
+    # Judge deletion by the delete's OWN result, never by a lookup. GH runs
+    # 33162961197 and 33173123153 both printed "already gone" for a folder
+    # whose registry node is still served days later: a failing `folders get`
+    # is not proof the folder is gone, and treating it as proof is what burned
+    # the falconry fixture domain. A spurious LEAKED line is cheap; a silent
+    # skip costs the domain.
+    run_folder_deleted = delete_folder(run_folder_key)
+    if not run_folder_deleted and folder_get(run_folder_key) is None:
+        print(
+            f"NOTE: run folder {run_folder_key} does not resolve after the failed "
+            "delete — it may already be gone, or merely unreadable. Reported as "
+            "leaked either way; the next seed heals it by name if it survived."
+        )
 
     stranded = [
         (deployment_name, folder_key)

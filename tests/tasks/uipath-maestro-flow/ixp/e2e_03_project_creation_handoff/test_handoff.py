@@ -159,6 +159,13 @@ elif argv[:3] == ["or", "folders", "delete"]:
     if argv[3] in payload.get("undeletable_folders", []):
         print("folder delete refused", file=sys.stderr)
         sys.exit(1)
+    # Deleting something that does not resolve fails, as the real verb does —
+    # teardown must never read a failed delete as a successful one.
+    known = [entry.get("Key") for entry in payload.get("folders", [])]
+    known += list(payload.get("folder_ids", {}))
+    if argv[3] not in known or argv[3] in deleted_folders():
+        print("folder not found", file=sys.stderr)
+        sys.exit(1)
     with open(deleted_folders_log, "a") as handle:
         handle.write(argv[3] + os.linesep)
     print(json.dumps({"Data": {"Status": "ok"}}))
@@ -691,9 +698,13 @@ def test_teardown_leaves_a_new_folder_owned_by_a_concurrent_run(
     assert f"deleted run-scoped folder {CONCURRENT_FOLDER_KEY}" not in completed.stdout
 
 
-def test_teardown_notes_an_already_gone_run_folder(sandbox: pathlib.Path) -> None:
-    """The agent (or a retried teardown) may have removed the folder already —
-    that is a NOTE, not a failure, and its deployment is not a leak."""
+def test_teardown_never_reads_an_unresolvable_folder_as_deleted(
+    sandbox: pathlib.Path,
+) -> None:
+    """A folder that will not delete AND will not resolve is reported, never
+    assumed gone. GH runs 33162961197 / 33173123153 printed 'already gone' for
+    a folder whose registry node still served days later — that silent
+    inference burned the falconry fixture domain."""
     wired_flow(sandbox)
     env = tenant(
         sandbox,
@@ -702,8 +713,8 @@ def test_teardown_notes_an_already_gone_run_folder(sandbox: pathlib.Path) -> Non
     )
     completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0
-    assert "already gone" in completed.stdout
-    assert "LEAKED" not in completed.stdout
+    assert "does not resolve after the failed delete" in completed.stdout
+    assert "LEAKED" in completed.stdout
 
 
 def test_teardown_reports_leak_when_the_folder_delete_fails(
