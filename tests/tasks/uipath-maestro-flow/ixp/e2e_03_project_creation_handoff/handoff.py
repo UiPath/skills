@@ -338,8 +338,8 @@ DOMAIN_RECHECK_ATTEMPTS = 2
 DOMAIN_RECHECK_SECONDS = float(os.environ.get("HANDOFF_RETRY_SECONDS", "15"))
 
 
-def heal_leftover_run_folder() -> bool:
-    """Delete a leftover run folder from a failed teardown; True if one went.
+def heal_leftover_run_folder() -> str | None:
+    """Delete a leftover run folder from a failed teardown; its Key if one went.
 
     Looked up by its exact name, so nothing this script did not itself name is
     ever a delete candidate (Orchestrator folder names are unique per parent,
@@ -354,7 +354,7 @@ def heal_leftover_run_folder() -> bool:
     """
     leftover = folder_get(RUN_FOLDER_NAME)
     if leftover is None:
-        return False
+        return None
 
     folder_key = str(leftover["Key"])
     age = age_seconds(leftover)
@@ -377,7 +377,7 @@ def heal_leftover_run_folder() -> bool:
             "permission or delete the folder by hand."
         )
     print(f"self-heal: deleted leftover run folder {folder_key} ('{RUN_FOLDER_NAME}')")
-    return True
+    return folder_key
 
 
 def create_run_folder() -> str:
@@ -455,7 +455,7 @@ def resolvable_covering_nodes() -> tuple[list[str], int, int]:
     return covered, len(nodes), len(matched)
 
 
-def require_domain_uncovered(healed: bool) -> None:
+def require_domain_uncovered(healed_key: str | None) -> None:
     """Fail if a resolvable published extractor already covers the fixture domain.
 
     If one does, reusing it is the correct agent action and the handoff never
@@ -470,7 +470,7 @@ def require_domain_uncovered(healed: bool) -> None:
     or rotate the fixture domain per documents/README.md.
     """
     covered, total, matched = resolvable_covering_nodes()
-    if covered and healed:
+    if covered and healed_key:
         for _ in range(DOMAIN_RECHECK_ATTEMPTS):
             time.sleep(DOMAIN_RECHECK_SECONDS)
             covered, total, matched = resolvable_covering_nodes()
@@ -479,13 +479,22 @@ def require_domain_uncovered(healed: bool) -> None:
                 break
 
     if covered:
+        # "Re-run" is the right remedy ONLY when a surviving node is backed by
+        # the folder just deleted (its trailing 36 chars are the folder key):
+        # that is registry indexing lag and clears on its own. Any other
+        # survivor is a foreign extractor, healed leftover or not — a re-run
+        # would fail identically. The key is read here to choose a message,
+        # never to delete anything.
+        lag_from_heal = bool(healed_key) and any(
+            node_type.lower().endswith(healed_key.lower()) for node_type in covered
+        )
         remedy = (
-            "A leftover run folder was deleted just now, so the registry may "
-            "still be serving its stale node — re-run the task."
-            if healed
-            else "No leftover run folder was found to heal, so this is a foreign "
-            "extractor: delete its folder by hand if it is disposable, or "
-            "rotate the fixture domain (documents/README.md)."
+            "A leftover run folder was deleted just now and the registry still "
+            "serves its node — indexing lag; re-run the task."
+            if lag_from_heal
+            else "The covering node is not backed by this task's run folder, so it "
+            "is a foreign extractor: delete its folder by hand if it is "
+            "disposable, or rotate the fixture domain (documents/README.md)."
         )
         raise RuntimeError(
             "the fixture domain is already covered by resolvable published "
@@ -500,8 +509,8 @@ def require_domain_uncovered(healed: bool) -> None:
 
 def seed_main() -> int:
     require_deployments_create()
-    healed = heal_leftover_run_folder()
-    require_domain_uncovered(healed)
+    healed_key = heal_leftover_run_folder()
+    require_domain_uncovered(healed_key)
     # Snapshot the projects BEFORE creating the folder, so the only step
     # between the folder existing and the snapshot recording it is a local
     # file write. A network failure in between would leave a folder teardown
@@ -762,7 +771,9 @@ def check_main() -> int:
         "extractor (possibly residue from an earlier run) instead of building one.",
         file=sys.stderr,
     )
-    for name in names:
+    # Project names only: `deployments list` is project-scoped, so probing a
+    # DeploymentName is a guaranteed 404 that only burns the criterion budget.
+    for name in [candidate for candidate in names if candidate not in deployment_names]:
         # Tolerant read: this only LABELS an already-failed run, so the
         # grader fail-fast rule does not apply.
         try:

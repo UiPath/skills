@@ -23,7 +23,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
 
-Requires `uip login`. Only published IxP models from your tenant appear. Example returned `nodeType`: `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c735405a-ixp` (for an `idp-benchmark---invoices-c735405a-ixp` model in the `Shared` folder).
+Requires `uip login`. Only models with a folder deployment on your tenant appear — publishing alone does not surface a model here. Example returned `nodeType`: `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c735405a-ixp` (for an `idp-benchmark---invoices-c735405a-ixp` model in the `Shared` folder).
 
 ### Response shape
 
@@ -383,7 +383,7 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Model not published, or registry cache stale | Run `uip login` then `uip maestro flow registry pull --force` |
+| Node type not found in registry | Model not folder-deployed, or registry cache stale | Run `uip login` then `uip maestro flow registry pull --force` |
 | `model.context` rejected by runtime | `folderKey` or `modelName` missing from `inputs` (the context array is built from these) | Confirm `inputs.modelName` and `inputs.folderKey` are populated. |
 | Empty `$vars.{nodeId}.output` | Model's taxonomy doesn't match the document, or extraction silently returned no fields | Inspect the raw API response via `$vars.{nodeId}.error` first; if no error, run the extraction against the same document on the IxP product UI to compare |
 | `fileRef` not resolving | Expression references an upstream variable that isn't wired, or the upstream node didn't produce a file output | Verify the upstream node exports a file reference and that the `=js:$vars.{upstreamId}.output.<field>` expression matches |

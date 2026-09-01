@@ -1154,6 +1154,10 @@ def test_seed_blocks_when_a_covering_node_is_not_the_run_folders(
         in completed.stdout
     )
     assert "already covered" in completed.stderr
+    # The survivor is NOT the healed leftover's node, so "re-run" would be the
+    # wrong remedy — triage must be pointed at the foreign folder.
+    assert "foreign extractor" in completed.stderr
+    assert "re-run the task" not in completed.stderr
     assert not (sandbox / SNAPSHOT).exists()
 
 

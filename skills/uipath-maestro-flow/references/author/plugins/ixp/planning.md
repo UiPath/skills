@@ -58,7 +58,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
 
-Requires `uip login`. Only published IxP models from your tenant appear. The returned node type uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike `uipath.core.*` siblings which use a single-segment tail. Both tail segments are sanitized: lowercase, then runs of any character outside `[a-z0-9]` → single `-`. So an FQN of `Shared/invoice-model` lands as `shared-invoice-model`. See [impl.md](impl.md) for the full rule and worked examples.
+Requires `uip login`. Only models with a folder deployment on your tenant appear — publishing alone does not surface a model here. The returned node type uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike `uipath.core.*` siblings which use a single-segment tail. Both tail segments are sanitized: lowercase, then runs of any character outside `[a-z0-9]` → single `-`. So an FQN of `Shared/invoice-model` lands as `shared-invoice-model`. See [impl.md](impl.md) for the full rule and worked examples.
 
 ### No published model: branch on documents
 
