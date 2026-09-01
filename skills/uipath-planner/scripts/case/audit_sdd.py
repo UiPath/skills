@@ -439,6 +439,38 @@ def declared_sla_titles(text: str) -> dict[str, set[str]]:
     return titles
 
 
+
+AMBIGUOUS_PERSONA = re.compile(r"^[A-Z][A-Za-z/ ]{2,40}\s+or\s+[A-Za-z][A-Za-z/ ]{2,40}$")
+PERSONA_HEADER = re.compile(r"^(assignee|owner|performer|responsible|persona|role)s?$", re.I)
+
+
+def ambiguous_personas(text: str) -> list[str]:
+    """Persona cells naming two roles — an unresolved conditional, not an owner.
+
+    A task runs as exactly one persona. "Underwriter or Credit Analyst" is a
+    routing rule the author stated but never modelled: the reader cannot tell
+    who owns the task, and no guard picks between them at run time.
+    """
+    found: list[str] = []
+    cols: list[int] | None = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            cols = None
+            continue
+        if re.match(r"^[\s\-:|]+$", stripped.strip("|")):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        header = [i for i, c in enumerate(cells) if PERSONA_HEADER.match(c)]
+        if header:
+            cols = header
+            continue
+        if cols:
+            for i in cols:
+                if i < len(cells) and AMBIGUOUS_PERSONA.match(cells[i]):
+                    found.append(cells[i])
+    return sorted(dict.fromkeys(found))
+
 def contract_findings(text: str, facts: dict) -> list[str]:
     """Deterministic contract checks beyond template shape: gate-slot WHEN legality,
     exit-type pairing, SLA title closure, uniqueness, recipients, buttons, Out producers,
@@ -460,6 +492,14 @@ def contract_findings(text: str, facts: dict) -> list[str]:
         findings.append("wait-for-user exit with no user-selected-stage entry anywhere — validate fails with 'no possible stage options'")
     if has_uss_entry and not has_wfu_exit:
         findings.append("user-selected-stage entry with no wait-for-user exit anywhere — validate fails with 'will never be met'")
+
+    for persona in ambiguous_personas(text):
+        findings.append(
+            f"task persona {persona!r} names two roles — a task runs as exactly one "
+            "persona, so an either/or cell is a routing rule stated but not modelled: "
+            "assign the role the case actually uses and put the condition in a guard, "
+            "or split it into two guarded task variants"
+        )
 
     routed = " || ".join(decision_routed_behaviors(text)).casefold()
     if routed:
