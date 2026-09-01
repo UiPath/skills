@@ -14,6 +14,12 @@ Two jobs, one entry point:
 
 Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live tasks — implementation always routes to a specialist.
 
+**Every design file you write is gated before you stop — drafts included.** After writing an SDD or
+a draft, run `python3 "<this skill's folder>/scripts/audit_sdd.py" <the file you wrote>`, repair each
+finding with Edit, re-run (max 3 rounds), then stop. Writing the file is not the end of the turn; the
+gate passing is. A design that stops un-gated ships undeclared `=vars` and illegal selectors into
+every later phase.
+
 **Paths in this skill are already known — never search for them.** Every `references/…`,
 `assets/…`, and `scripts/…` path below is relative to this skill's own directory, which you
 were given when this skill was invoked: join the two and `Read` the file directly. Do NOT
