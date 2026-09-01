@@ -1,0 +1,137 @@
+task_id: skill-flow-voice-inbound-call
+description: >
+  Inbound voice topology: core.trigger.voice -> uipath.agent.voice (backed by an
+  inline conversational agent whose agent.json carries settings.voice) ->
+  end-call, no dial-out node, with `uip maestro flow validate` passing — plus an
+  explanation of how an inbound flow is actually tested. That last part is the
+  point: `uip maestro flow debug` rejects an incoming-call trigger, so the only
+  test loop is publish -> bind a number -> dial it. Reaching for flow debug, or
+  swapping in a manual trigger to force a local run, misses the topology rule.
+  Fully offline: the voice node types ship in the CLI's bundled registry, and
+  init / author / validate need no login.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational, feature:trigger]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 80
+  turn_timeout: 900
+
+# The prompt deliberately does not SAY "don't run flow debug" — the whole
+# question is whether the agent knows on its own that debug is not the inbound
+# test loop. Reaching for it is still graded below (a wasted turn against a CLI
+# that rejects the run); the outbound task grades the same pattern for the
+# harder reason that a debug run there places a real call.
+initial_prompt: |
+  Build a UiPath Flow project named "SupportLine" that answers incoming phone
+  calls to our support line, has an AI agent hold the conversation with the
+  caller, and hangs up when the conversation is over.
+
+  This sandbox has no UiPath tenant and is not logged in, so do NOT run anything
+  that needs a live connection, and do not pack, publish, or deploy.
+
+  Two things before you finish:
+  - `uip maestro flow validate` must pass on the generated flow.
+  - Tell me what I have to do to actually run this flow and take a test call.
+
+# Every criterion discovers the project dynamically: `flow init` wraps it in a
+# `<Name>Solution/` the prompt does not pin, so a hardcoded `path:` would score
+# 0.0 on a valid build (#2213).
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the inbound trigger, the voice agent, and end-call"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      '"core.trigger.voice"'
+      '"uipath.agent.voice"'
+      '"uipath.conversational.voice.end-call"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "callContext comes from the incoming-call trigger, bound into BOTH the voice agent and end-call, with no dial-out node, no leftover scaffolded manual trigger, and an entryPointId on the trigger"
+    command: "python3 $TASK_DIR/check_voice_flow.py inbound-call-context"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Also grades the system prompt: `impl.md` says an empty messages[0].content is
+  # valid, so nothing else here stops a voice agent shipping with no persona or
+  # goal — and holding the conversation is the deliverable.
+  - type: run_command
+    description: "Inline agent.json carries settings.voice, keeps settings.engine and metadata.isConversational, and holds a real system prompt"
+    command: "python3 $TASK_DIR/check_voice_flow.py agent-voice"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `flow debug` rejects any flow with a core.trigger.voice node ("Inbound voice
+  # flows cannot be debugged from the CLI."), so reaching for it is a wasted turn.
+  - type: command_not_executed
+    description: "Agent did not try to debug an inbound voice flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The flow is only half the deliverable; the other half is knowing how it gets
+  # exercised — which leaves no file side effect to grade.
+  - type: llm_judge
+    description: "Agent explains the inbound test loop — publish, bind a number, dial it — and does not claim flow debug can run it"
+    include_agent_output: true
+    prompt: |
+      The user asked for an inbound voice flow (an AI agent that answers calls
+      to a support line) and asked what they have to do to run it and take a
+      test call.
+
+      Ground truth: an inbound voice flow cannot be run with
+      `uip maestro flow debug` — the CLI rejects a flow that starts from an
+      incoming-call trigger, because only a real inbound call raises it. The
+      flow has to be packed, published, and deployed to Orchestrator, and then a
+      phone number (SIP trunk) bound to the deployed release with
+      `uip conversational trunks assign`; the user then dials that number. No
+      phone number appears in the `.flow` itself — the binding is made against
+      the release after deploy. Adding or enabling a number is portal-only.
+
+      Score 1.0 if the answer conveys that testing means publish/deploy + bind a
+      phone number + call it, and does not offer `flow debug` as a way to run
+      this flow.
+      Score 0.5 if the deploy-and-bind path is right in outline but vague about
+      the number binding (e.g. says "deploy it and call the number" without
+      naming the trunk/release binding step).
+      Score 0.0 if the answer offers `uip maestro flow debug` as a way to run
+      this flow, claims it can be exercised locally, or omits how to run it at
+      all.
+    weight: 2.0
+    # 0.5 so the middle band is reachable — a 1.0 threshold makes a vague-but-
+    # correct answer score identically to one that sends the user to flow debug.
+    # Offering flow debug is scored 0.0 above, so it still fails outright.
+    pass_threshold: 0.5
+
+  # Advisory (pass_threshold: 0) — records convention adherence without docking
+  # an agent that reaches the same graded outcome another way.
+  - type: command_executed
+    description: "Advisory: agent scaffolded the voice agent with uip agent init --inline-in-flow --conversational"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--conversational'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

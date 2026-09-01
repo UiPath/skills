@@ -17,7 +17,8 @@ connectors-local/
       ...generated descriptor data...
 ```
 
-`prepare-connector` prints the import for `connectors-local/<connector-key>.ts`.
+`npx flow-sdk registry prepare` prints the import for
+`connectors-local/<connector-key>.ts`.
 The generated descriptor data lives below `connectors-local/descriptors/`; do
 not import it directly. `bindings.json` stays at the root and is independent of
 that descriptor overlay.
@@ -41,8 +42,46 @@ the resource kind and emitted binding purpose explicit.
 | `default` | one of `resourceKey` / `default` | Fallback when `resourceKey` is absent. Shipped examples repeat the resource key here. |
 | `propertyAttribute` | no | `"ConnectionId"` for a connection or `"FolderKey"` for a folder. |
 
+## Where both values come from
+
+**Usually you do not fill these in at all.**
+`npx flow-sdk registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
+Reach for the manual route below only when you are authoring bindings without
+running `prepare`.
+
+If you are doing it by hand: `uip is connections list` returns the connection id
+**and its folder key** on the same record, so one call answers both:
+
+```bash
+uip is connections list --output json
+```
+
+```text
+{
+  "Name": "dustin.metzgar",
+  "Id": "c03a1967-f702-47d2-9ede-917aed159805",
+  "Folder": "dustin.metzgar@uipath.com's workspace",
+  "FolderKey": "b53217ce-25b2-46cd-a6b0-b73c6ba5894c",
+  "ConnectorKey": "uipath-salesforce-slack",
+  "State": "Enabled"
+}
+```
+
+`Id` is the connection binding's `resourceKey`; **`FolderKey` is the folder
+binding's**. Add `--all-folders` if the connection you want is not in the
+default listing.
+
+**Do not go looking in Orchestrator for the folder.** `uip or folders list` is a
+different resource with different keys, and a folder binding wants the one the
+CONNECTION lives in — which you already have. Measured on the eval corpus: an
+agent that had already listed the connection went on to spend three to four
+further calls on `uip or --help`, `uip or folders --help` and `folders list`,
+searching for a folder matching the symbolic name in its prompt. The symbolic
+name (`slack`, `shared`) is just the label you pass to `connector()`; it is never
+something to search the tenant for.
+
 Copy this two-connector, one-folder example and replace all three placeholders
-with values from the live connection listing:
+with values from the connection listing above:
 
 ```json
 {
@@ -106,13 +145,9 @@ next compile.
 
 ## Emitted-artifact bindings
 
-`uip maestro flow binding add` edits bindings inside an already emitted `.flow`.
-It does not create or update the symbolic root file. This distinction matters
-for managed HTTP: it has no authored connector symbol, but product debug still
-needs its connection and folder bindings added to the artifact as described in
-[the CLI loop](CLI-LOOP.md#product-validation-and-conditional-bindings).
-
-If a workflow requires `binding add`, run it after the final compile because
-re-emission replaces the artifact. For Integration Service connector source,
-keep using symbolic names plus `bindings.json`; do not substitute artifact edits
-for the authored mapping.
+`uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
+it does not create or update the symbolic root file. SDK-authored Integration
+Service actions and managed HTTP nodes should instead keep symbolic names in
+source plus `bindings.json`, so recompilation deterministically restores the
+same node detail and product bindings. Use direct artifact edits only for a
+brownfield `.flow` with no source representation.

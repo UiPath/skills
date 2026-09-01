@@ -1,0 +1,31 @@
+task_id: skill-admin-authz-permissions-project-scope-smoke
+description: >
+  Smoke test (outcome-graded): single CLI scenario — retrieve the permission
+  catalog limited to PROJECT scope. Graded on the slice the service returned: every
+  row carries the PROJECT ScopeType (or the scope-agnostic ANY rows the service
+  includes in every filter), so the scope filter is verified by its effect on the
+  data rather than by the flag the agent typed.
+
+  Read-only, no tenant state is touched, and the check is agent-agnostic — it
+  reads the saved file and the service, never the transcript.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, authz, permissions]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  We want a Document Understanding role that applies to individual projects.
+  Retrieve the permissions that can be granted at project scope for Document
+  Understanding, and save the complete JSON result to
+  ./du-project-permissions.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "du-project-permissions.json holds a real permission catalog limited to PROJECT scope"
+    command: 'AUTHZ_PERM_FILE="du-project-permissions.json" AUTHZ_EXPECT_SCOPE="PROJECT" AUTHZ_EXPECT_NAMESPACE="DOCUMENTUNDERSTANDING" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_permission_listing.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

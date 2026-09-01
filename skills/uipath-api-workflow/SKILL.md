@@ -1,6 +1,6 @@
 ---
 name: uipath-api-workflow
-description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack) authored via `uip api-workflow registry resolve`/`stub`. Operate: run locally, manage IS connections (`uip is connections`), pack/publish/deploy via `uip solution`, invoke published workflows via HTTP/schedule/event triggers. Diagnose: validate → run --no-auth loop, root-cause run/expression/connection faults, inspect job logs & traces. Triggers on UiPath API workflows, project type \"Api\", JSON files with `document.dsl`/`do[]`, those activity types, or fetching from a public/vendor API. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
+description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Load for ANY create or edit of a `Workflow.json` / API workflow project (even one line); with `evals/` present, tests come first (TDD). Covers Sequence, Assign, JavaScript, If (#Wrapper/#Then/#Else), ForEach, DoWhile, Break, TryCatch, Wait, Response, nested; AND HTTP / IS connector activities via `uip api-workflow registry`. Operate: run locally, IS connections, pack/publish/deploy via `uip solution`, triggers. Test/eval: `evals/<scope>/eval-sets/` datasets (exact-match, Evaluations panel); loop until green. Diagnose: validate → run --no-auth loop, root-cause. Triggers on API workflows, project type \"Api\", JSON with `document.dsl`/`do[]`, those activity types, or public API fetch. Agent evals (`evals/eval-sets/`, no scope) and coded agents→uipath-agents. Flow (.flow) incl. its evals→uipath-maestro-flow. .xaml/coded RPA→uipath-rpa. Coded Apps→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -11,6 +11,8 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 <!--skill-flavor:surface-summary:end-->
 <!--skill-flavor:host-command-contract:start-->
 <!--skill-flavor:host-command-contract:end-->
+
+> **TDD gate — read this first (rule 22).** On ANY request to create or edit a workflow, Phase 0 first checks whether the project has an `evals/` folder — it lives **inside the project directory, next to `Workflow.json`** (`<project>/evals/`), not at the workspace or solution root, so list the project directory itself. **No `evals/` folder → the Evaluations feature is not enabled for this project: skip everything about tests and loop mode and author normally.** `evals/` present → **end your turn** with two questions — **(1) tests:** the eval set has rows → "should anything change, or use as-is?" / it is empty → "want me to add some?"; **(2) loop mode:** "run the tests and re-try until every case passes, or author once?" — and NOTHING is authored until the user answers. Tests come **first**: once answered, write or update the eval set, then author the workflow to make it pass. If you are about to write `Workflow.json` in a project with `evals/` and the user has not answered these two questions in this conversation, stop. Later change requests that alter behavior can break the tests — ask before editing whether to update them (rule 22, [references/testing-and-evals.md](references/testing-and-evals.md) §3). Only a prompt that explicitly says not to ask skips the gate when `evals/` exists — and that skips the questions, not the run consent (rule 21): run rows only when the request itself asks for a run.
 
 ## When to Use This Skill
 
@@ -29,11 +31,14 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 - User wants to **operate** a published workflow — invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its Orchestrator jobs, or **manage the Integration Service connections** it uses (`uip is connections list`/`ping`/`edit`). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 <!--skill-flavor:surface-operations-scope:end-->
+- User wants to **test / evaluate** a workflow — author `(inputs, expectedOutput)` cases in the project's `evals/` folder (the dataset Studio Web's **Evaluations** panel reads), run them, score them by the project's evaluator, or **"loop until the tests pass"**. Follow [references/testing-and-evals.md](references/testing-and-evals.md). An `evals/` folder alone is not the signal — it is an API-workflow one only when it sits next to `Workflow.json` and uses the `evals/<scope>/eval-sets/` layout; low-code agents use `evals/eval-sets/` (no scope) → `uipath-agents`, Flow evals → `uipath-maestro-flow`
+- **Any authoring request** (create or edit) — Phase 0 discovery checks for an `evals/` folder; when it exists, the two test questions (change / add tests? loop mode?) are asked up front — the turn ends there — whether or not the user mentioned testing (rule 22). No `evals/` folder → the feature is off, author normally. See Phase 0 and [references/testing-and-evals.md](references/testing-and-evals.md)
 
 Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / coded RPA (→ `uipath-rpa`), coded agents (→ `uipath-agents`), Coded Web Apps (→ `uipath-coded-apps`).
 
 ## Core Principles
 
+0. **Tests first — when the project has `evals/`, and only after asking.** Discover `<project>/evals/` (next to `Workflow.json`). Absent → the Evaluations feature is off for this project: author normally, no test or loop-mode questions. Present → ask the two rule-22 questions, end the turn; once answered: declare `output.schema`, eval set first, workflow second, then run the rows **only in loop mode** (that "yes" is the rule-21 consent; "author once" means hand over without running). Behavior changes later on re-open the question — the tests may need updating.
 1. **Know before you write.** Read the existing workflow file before editing. Read an example template before creating from scratch.
 <!--skill-flavor:runtime-validation-contract:start-->
 2. **Start minimal, iterate to correct.** Add one activity at a time. Run with `--no-auth --output json` after each addition. Fix what breaks. Repeat.
@@ -123,11 +128,21 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 21. **Never run `uip api-workflow run` without an explicit user "yes."** Validation (rule 20) is autonomous; *running* is not. Once validate passes, ask the user: (a) run now or skip, (b) if running, with `--no-auth` (fast, structure-only — IntSvc kind vendor calls fail) or with auth (real Integration Service calls — vendor side effects WILL happen: emails sent, tickets created, files uploaded). Suggest a default based on workflow content (`--no-auth` for control-flow-only + Http kind `ImplicitConnection`; with-auth for any IntSvc kind vendor activity), but wait for the user's answer. Never invoke `uip api-workflow run` with auth on speculation — once a vendor call goes out, it can't be unsent.
 <!--skill-flavor:runtime-execution-consent:end-->
 
+22. **TDD gate — only for projects with an `evals/` folder; STOP and ask before authoring; tests are written before the workflow.** Every authoring request (create OR edit — including a one-line change) runs Phase-0 discovery of the project's `evals/` folder — `<project>/evals/`, the directory next to `Workflow.json` (list that directory; the workspace or solution root is the wrong place to look):
+    - **No `evals/` folder** → the Evaluations feature is not enabled for this project. Skip the gate entirely: do not offer to create tests, do not mention loop mode, do not create the folder — author normally (Phases 1–3).
+    - **`evals/` present** → **end the turn** with two questions. Do not write or edit `Workflow.json`, and do not create or change eval files, until the user has answered both:
+      1. **Tests** — the eval set has rows → *"I found N test case(s): [one line each]. Should anything change, or use them as-is?"*; the set is empty (the panel seeds one with 0 rows) → *"There are no test cases yet — want me to add some? I'd suggest: [2–3 proposed cases]."*
+      2. **Loop mode** — *"Run in loop mode (run the tests and re-try — fix, re-run — until every case passes), or author once and you verify?"* A "yes" to loop mode is also the consent to run the rows with `--no-auth` (rule 21) — do not ask "run now?" separately; connector/authed runs still need their own explicit "yes".
+
+    **Order after the answers (TDD):** first declare `input.schema` / `output.schema` in `Workflow.json` (`init` scaffolds `output: null`, so the row keys have no other source — property names and casing come from here, and the Response must emit exactly those keys), then write or update the eval set, then author the workflow, then run the rows (loop mode) or hand over (author once — do not run). **Later change requests that alter behavior** (threshold, rounding, branch order, a new default — even with the schema unchanged) can make existing expectations wrong: before editing, list the affected rows and ask whether to update them; after editing, re-run the rows. Ask as two specific questions — never one vague "how do you want to verify it?". With `evals/` present, the gate is skipped only when the user already answered, or explicitly asked not to be prompted ("don't ask for confirmation"); then keep existing tests as-is and add tests only if requested. "Don't ask" waives the two questions, **not** rule 21's run consent: run the rows only if the request itself asks for a run or a loop ("run the evaluations", "until they pass" — that wording is the consent); otherwise author once and hand over the exact command to run them. Protocol and wording: [references/testing-and-evals.md](references/testing-and-evals.md) §3.
+
 ## Workflow Phases
 
 ### Phase 0: Discovery
 
-Before touching anything, understand what exists.
+Before touching anything, understand what exists — the workflow structure **and** whether the project has tests. Discovery ALWAYS includes checking for an `evals/` folder inside the project directory (`ls <project>/` — the folder is a sibling of `Workflow.json`, never at the workspace/solution root): Studio Web creates it when the Evaluations feature is enabled and the panel is opened, so its absence means the feature is off for this project. If present, read `evals/<scope>/eval-sets/*.json` (`<scope>` is `default` unless the project says otherwise) and the evaluator(s) in `evals/<scope>/evaluators/` — the same files the **Evaluations** panel reads and writes. Contract and semantics: [references/testing-and-evals.md](references/testing-and-evals.md) §1.
+
+Then apply **rule 22 (TDD gate)**: no `evals/` folder → the feature is off, continue to Phase 1 without any test or loop-mode question; `evals/` present → end the turn with the two questions — tests (change / add?) and loop mode — and start Phase 1 only after the user has answered, writing the eval set before the workflow.
 
 For **edit** requests:
 1. Read the existing workflow file with `Read`
@@ -173,11 +188,15 @@ Before generating, determine:
 
 ### Phase 2: Generate or Edit
 
+**Precondition (projects with `evals/`):** the two rule-22 questions have been answered in this conversation and the eval set (if wanted) is already written. If not, go back to Phase 0 and ask — do not write `Workflow.json` yet. Projects without `evals/` have no such gate.
+
 For each activity, read its reference section in [references/task-types.md](references/task-types.md), copy the minimal JSON, fill in values.
 
 **For CREATE:** copy from a template, then add user activities AFTER `WorkflowStart` inside the root sequence (literally `Sequence_1.do` in the template skeleton).
 
 **For EDIT:** read the file first, identify the exact insertion / replacement point, use `Edit` with sufficient context for unique matching.
+
+If the edit **changes behavior** and the project has an eval set, rule 22 applies first: ask whether to update the expectations the change would invalidate, then edit, then re-run the rows (see [references/testing-and-evals.md](references/testing-and-evals.md) §3 step 5).
 
 Workflow skeleton:
 ```json
@@ -254,6 +273,10 @@ uip solution init MySolution --output json
 cd ./MySolution
 uip api-workflow init MyApiProject --output json
 
+# 1b. TDD gate (rule 22): if ./MyApiProject/evals/ exists (next to Workflow.json), STOP and ask the two questions
+#     (tests: change / add?  loop mode?) and wait for the answers before step 2.
+#     No evals/ folder → the feature is off for this project; go straight to step 2.
+
 # 2. Edit MyApiProject/Workflow.json to add user activities after WorkflowStart inside the root sequence
 
 # 3. Validate (offline, autonomous — fix + re-validate until Status: Valid)
@@ -285,9 +308,10 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 <!--skill-flavor:cli-reference-navigation:end-->
 <!--skill-flavor:published-reference-navigation:start-->
-| [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
+| [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), diagnose a faulted cloud run (`uip or jobs get` — `jobs logs` and `traces spans get` are dead ends here). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 <!--skill-flavor:published-reference-navigation:end-->
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
+| [references/testing-and-evals.md](references/testing-and-evals.md) | **Testing / evals** — the `evals/<scope>/eval-sets` + `evaluators` file contract shared with Studio Web's Evaluations panel, `uipath-exact-match` scoring (strict deep-equal on the RAW output — the CLI PascalCases printed keys), running a row locally with `--no-auth` (or through the host in Studio Web), and the **interactive test-until-green loop** (offer → check `evals/` → create/update cases → run/fix/repeat with progress → stale-expectation guard) |
 <!--skill-flavor:reference-navigation-extra:start-->
 
 <!--skill-flavor:reference-navigation-extra:end-->
@@ -325,6 +349,8 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** wire a project into the solution with `uip solution projects add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
 - **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Scaffolding with `init` is what guarantees it (rule 19a).
 <!--skill-flavor:project-creation-antipatterns:end-->
+- **Do NOT** copy expected outputs from the CLI's printed `Data` — `uip` PascalCases every key (`grade` → `Grade`) and `uipath-exact-match` is case-sensitive on keys, so the row passes for you and fails in the Evaluations panel. Derive keys from `output.schema` / the Response expression and read the raw output from the debug log. See [references/testing-and-evals.md](references/testing-and-evals.md) §2.
+- **Do NOT** author first and ask later in a project that has `evals/`: rule 22 ends the turn with the two test questions (change / add tests? loop mode?) BEFORE any `Workflow.json` or eval file is written, unless the user already answered or asked not to be prompted. **Do NOT** offer tests or loop mode — or create an `evals/` folder — in a project that has none: the feature is not enabled there. And **do NOT** "fix" the workflow to satisfy an expectation a requested behavior change made stale — re-derive the expected outputs instead, after asking. See rule 22 + [references/testing-and-evals.md](references/testing-and-evals.md) §3–4.
 
 ## Infinite Loop Prevention
 

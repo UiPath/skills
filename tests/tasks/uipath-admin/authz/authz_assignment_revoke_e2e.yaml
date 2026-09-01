@@ -1,0 +1,51 @@
+task_id: skill-admin-authz-assignment-revoke-e2e
+description: >
+  End-to-end test (outcome-graded): single CLI scenario — take a role away from an
+  account. pre_run seeds both the custom role and a grant of it to the caller, and
+  records the grant's service-assigned id, so the check reads that exact
+  assignment id back: a do-nothing agent cannot make a seeded grant disappear.
+
+  Read-back uses the verbatim scope path — the composed scope form also pins the
+  service name and hides grants of roles owned by another service.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, authz, role-assignment]
+
+pre_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-revoke-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Grant to be revoked by the revoke scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+    timeout: 90
+  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_assignment.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  My own account — the identity this CLI is logged in as — currently holds the
+  organization-level role named in `seed.json` (the `role.name` field). That
+  grant is obsolete: take that role away from my account. Leave the role
+  definition itself in place, and leave every other role my account holds
+  untouched.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "The seeded grant is gone from the organization scope for the caller"
+    command: 'AUTHZ_SEED_KEY="grant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_assignment_deleted.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The role definition itself still exists — only the grant was removed"
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_created.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

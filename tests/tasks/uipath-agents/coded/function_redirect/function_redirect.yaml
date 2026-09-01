@@ -7,7 +7,11 @@ description: >
   (`uip function new/init/pack/publish/run`) instead of scaffolding a coded
   agent. Nothing covers that redirect today, so a skill that silently built a
   LangGraph agent for pure arithmetic — observed on codex, run
-  2026-08-11 codex-ft-4 — passes every other task in the suite.
+  2026-08-11 codex-ft-4 — passes every other task in the suite. The prompt
+  pins Python explicitly: uipath-functions covers JS/TS too, so a
+  language-neutral prompt would make a JS/TS scaffold an equally valid reading
+  while the graders (`uip function init`, `.py` entrypoint, `@traced`) are
+  Python-only.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, coded]
 
 run_limits:
@@ -15,7 +19,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  I need a UiPath coded agent called `calc-agent` in this directory. It's a
+  I need a UiPath coded agent called `calc-agent`, written in Python, in this
+  directory. It's a
   calculator: it takes `a` (number), `b` (number) and `operator` (string, one of
   `add`, `subtract`, `multiply`, `divide`) and returns `result` (number). Every
   operator has one exact answer — no model involved, no external calls, nothing

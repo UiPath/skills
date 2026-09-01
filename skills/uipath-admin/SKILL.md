@@ -102,7 +102,7 @@ Each rule is the agent contract. Per-area detail is in the linked reference file
 
 11. **Built-in roles are read-only.** Only `Custom` roles can be created / updated / deleted. CLI also rejects authoring against service-managed and platform-level services. Service lists: [role-management.md → Services That Manage Their Own Roles](references/authorization/role-management.md#services-that-manage-their-own-roles).
 12. **`roles create` / `roles update` are PUT-style upserts.** Body is assembled from inline flags + `--file ./actions.json`. Always `roles get` first before updating — omitted flags overwrite that field.
-13. **`--service` infers scope** (e.g., `--service studio` → `Tenant`; `--service apps` → `Organization`). Combine with `--scope` only to override.
+13. **`--service` infers scope** (e.g., `--service studio` → `Tenant`; `--service apps` → `Organization`). Combine with `--scope` only to override. **Never guess a `serviceName`** — the valid values and the command that re-derives them: [permission-catalog.md → `--service` serviceNames](references/authorization/permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
 14. **Listing works for every service; authoring is what's blocked.** `roles list --service <svc>` and `roles assignments list --service <svc>` accept every service. For effective access on a principal use `check-access` (PDP).
 15. **Scope vocab differs across verbs.** `roles create --scope`: `Organization|TenantGlobal|Tenant|Project`. `roles assignments create --scope`: those + `Folder|App`. `roles assignments list --scope`: excludes `TenantGlobal`. `check-access --scope`: only `Tenant|Folder`.
 16. **`roles assignments create/delete` MUST resolve the principal first** per Rule 5 — `--identity-id` is a raw UUID the CLI does not name-check.
@@ -239,5 +239,5 @@ For per-area full checklists, follow the table's inline links: Identity → [ide
 | Paginate audit events beyond 200 | [references/audit-commands.md](references/audit-commands.md) + Rule 25 |
 | Troubleshoot access denied, login failures, role misconfig, IP lockout, PAT/app auth | [references/identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
 | Diagnose capability index (structured) | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
-| Failure mode lookup (12 named patterns) | [references/diagnose/references/failure-modes.md](references/diagnose/references/failure-modes.md) |
-| Diagnostic priority ladder (sequential triage) | [references/diagnose/references/troubleshooting-guide.md](references/diagnose/references/troubleshooting-guide.md) |
+| Failure mode lookup (12 named patterns) | [references/diagnose/failure-modes.md](references/diagnose/failure-modes.md) |
+| Diagnostic priority ladder (sequential triage) | [references/diagnose/troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md) |

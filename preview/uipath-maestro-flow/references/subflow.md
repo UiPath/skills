@@ -29,3 +29,5 @@ step's data path; it does not turn that boundary into a separate deployed job.
 
 Read a child output by its declared name — `out('reverse', 'reversed')`, never a bare
 `out('reverse')`. The compiler serializes each call's body under top-level `subflows`.
+The same child can be reused at any nesting depth; copied node ids and references
+are re-keyed together so every call site remains isolated.

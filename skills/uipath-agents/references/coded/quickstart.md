@@ -36,9 +36,10 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **NEVER add a `[build-system]` section to `pyproject.toml`**. No `hatchling`, no `setuptools`, no build backend. UiPath agents do not use a build system. Only include `[project]`, `[dependency-groups]`, and `[tool.*]` sections.
 - **Always create a smoke evaluation set.** Every agent must include `evaluations/eval-sets/smoke-test.json` with 2-3 test cases covering the primary happy path (not exhaustive error-case coverage — the smoke set exists to catch regressions, not to fully validate behavior). Create it in the Evaluate step, not during Build.
 - **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: Coded Function, LangGraph, LlamaIndex, or OpenAI Agents.
+- **Never switch an existing project's framework.** When `framework != none` (a `<framework>.json` is already present), the framework is fixed: do not migrate to another framework, swap the `<framework>.json`, or change framework dependencies in `pyproject.toml`. Work within the existing framework's capabilities; if a request cannot be met within them, tell the user the limitation and let them decide.
 - **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that path does not exist and will cause `ImportError`). Always instantiate `UiPath()` inside functions/nodes, never at module level.
 - **Refresh the CLI's Python executable path after venv changes.** If `uip codedagent` reports that the UiPath CLI/Python executable is not recognized, or any error indicates a stale `uipathExePath`, activate the project venv and run `uip codedagent setup --force`. This rewrites the CLI configuration to point at the current `.venv` executable.
-- **Auth check is one-shot.** Run `uip login status --output json` once, at step 5. If the user supplied environment + organization + tenant or explicitly asked to connect to a specific tenant, run the matching one-shot `uip login --organization "<ORG>" --tenant "<TENANT>" --output json` after the status check, even if another session is already logged in. Otherwise, the wrapper auto-refreshes tokens on subsequent cloud calls (no `uip login refresh` exists); re-auth only on a real `401`.
+- **Auth check is one-shot.** Run `uip login status --output json` once, at step 5. If the user supplied environment + organization + tenant or explicitly asked to connect to a specific tenant, have the user run the matching one-shot `uip login --organization "<ORG>" --tenant "<TENANT>" --output json` in their own terminal after the status check, even if another session is already logged in — it is a browser sign-in (see the interactive-sign-ins rule in [../authentication.md](../authentication.md)); if you run it yourself, first tell the user a browser window is about to open. Otherwise, the wrapper auto-refreshes tokens on subsequent cloud calls (no `uip login refresh` exists); re-auth only on a real `401`.
 - **Use `uip codedagent run` from non-interactive shells.** `uip codedagent dev` auto-appends `--interactive`.
 - **Runtime captures only the last node's delta as output.** `Annotated[list, operator.add]` reducers accumulate inside the graph but vanish from `--output-file` JSON and eval trajectories. Carry aggregate fields forward in each node's return (`{"items": [*state.get("items", []), x]}`) — see [frameworks/langgraph-integration.md](frameworks/langgraph-integration.md) § Runtime Output Quirk.
 - **Verify the JSON, not the streamed display.** After `uip codedagent run --output-file out.json`, inspect `out.json` — the streamed view shows per-node deltas; the JSON is the runtime's actual final result. Mismatches expose the runtime quirk above.
@@ -59,6 +60,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add <framework-package>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
 | **Build** | [lifecycle/build.md](lifecycle/build.md) | Code agent logic with framework patterns |
 | **Bindings** | [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md) | Sync resource overrides in `bindings.json` |
+| **Env vars** | [lifecycle/environment-variables.md](lifecycle/environment-variables.md) | Which store the cloud runtime reads (not `.env`); `%ASSETS/<ASSET_NAME>%` to pull a value from an Orchestrator asset |
 | **Run** | [lifecycle/running-agents.md](lifecycle/running-agents.md) | `uip codedagent run` |
 | **Evaluate** | [lifecycle/evaluate.md](lifecycle/evaluate.md) | `uip codedagent eval` |
 | **Deploy** | [lifecycle/deployment.md](lifecycle/deployment.md) | `uip codedagent deploy`, `uip codedagent invoke` |
@@ -76,7 +78,7 @@ Two top-level build paths. Pick one before starting — the lifecycle and publis
 
 When the user asks to create and deploy an agent end-to-end, follow these steps in order. Skip stages that are already done.
 
-**IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?" or list next steps. Execute the entire flow automatically.** Pause only when (a) you hit an **architectural fork** — a step with multiple valid implementations (framework choice, HITL pattern, evaluator type, deploy target, conversational vs not, etc.) — or (b) you need data only the user has (credentials, project ID). At a fork, apply **infer-or-ask**: if the prompt or context names the choice, infer it and continue; otherwise output ONLY the choice question as your entire response, then STOP and wait. For missing data, output ONLY the data request. After getting the answer, resume immediately. Forks for each step are documented in that step's referenced file — read the reference when you reach the step; do not guess.
+**IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?" or list next steps. Execute the entire flow automatically.** Pause only when (a) you hit an **architectural fork** — a step with multiple valid implementations (framework choice, HITL pattern, evaluator type, deploy target, conversational vs not, etc.) — or (b) you need data only the user has (credentials, project ID). At a fork, apply **infer-or-ask**: if the prompt or context names the choice, infer it and continue; otherwise output ONLY the choice question as your entire response, then STOP and wait. **Exception — infeasible named choice:** if the user named a framework that cannot meet a stated requirement, that fork is always an ask, never an inference — state the limitation, then STOP and let the user choose. Never silently substitute a different framework. For missing data, output ONLY the data request. After getting the answer, resume immediately. Forks for each step are documented in that step's referenced file — read the reference when you reach the step; do not guess.
 
 Steps 8 and 9 are mandatory stops **for greenfield**: always ask the user, even if the user only said "build". They are **automatically resolved** for `local-workspace` (auto-sync) and for `existing-coded` with `has_project_id == true` (push) — see steps 8 and 9 for the branch logic.
 
@@ -105,11 +107,11 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask the user, even 
 
    See [lifecycle/build.md](lifecycle/build.md) § Additional Instructions for the detailed Build-stage rules. After implementing, re-run `uip codedagent init` to update schemas from the actual code.
 4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
-5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, immediately run the matching one-shot login command from [../authentication.md](../authentication.md), using both `--organization` and `--tenant` in the same `uip login` command. Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
+5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, have them run the matching one-shot login command from [../authentication.md](../authentication.md) in their own terminal, using both `--organization` and `--tenant` in the same `uip login` command (a browser sign-in — if you run it yourself, first tell the user a browser window is about to open). Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
-Then STOP and wait. On reply, run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`). Never run `uip login` without `--tenant`.
+Then STOP and wait. On reply, hand the user the matching one-shot login from [../authentication.md](../authentication.md) to run in their own terminal (maps environment → `--authority`), then confirm with `uip login status --output json`. Never run `uip login` without `--tenant`.
 6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:
    - `Input`/`Output`/`State` Pydantic models or TypedDicts — any field added, removed, renamed, or retyped counts (the class name being the same does not).
    - The entry function's signature (parameters or return type annotation).
@@ -198,7 +200,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution projects import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution projects import "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
@@ -326,17 +328,19 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
 ## Framework Selection
 
-> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Python Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill instead of this one. Coded Functions use typed I/O (`@dataclass`, Pydantic `BaseModel`, or a thin Python class with typed annotations) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
+> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill (Python or TypeScript/JavaScript) instead of this one. Coded Functions use typed I/O (Pydantic `BaseModel` in Python, `defineSchema<T>()` in TS) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
 
 If the task needs LLM reasoning, infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
 
 1. **LangGraph** (recommended — best integrated with the UiPath ecosystem) — StateGraph with conditional routing, tool use, interrupts. Best for complex LLM agents.
 2. **LlamaIndex** — Workflow with events and RAG support. Most complete LangGraph alternative.
-3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence.
+3. **OpenAI Agents** — Lightweight agent with tools and handoffs. Best for simple LLM agents; lacks HITL, process invocation, and state persistence. Input always carries a required `messages` conversation field (OpenAI Agents runner constraint — context fields are added alongside it, never instead), so it cannot meet a strict named-field / no-`messages` input contract — see [frameworks/openai-agents-integration.md](frameworks/openai-agents-integration.md) § Input.
 
-**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. Simple handoffs or lightweight LLM → OpenAI Agents. No LLM needed → not an agent — use [`uipath-functions`](/uipath:uipath-functions). Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
+**Inference hints:** mentions of tools/tool calling, multi-step, or orchestration → LangGraph. Simple handoffs or lightweight LLM → OpenAI Agents. Strict typed input contract (named field(s) only, no `messages`, invoked programmatically) → not OpenAI Agents (its SDK runner accepts only conversation input); LangGraph if the user has not named a framework. No LLM needed → not an agent — use [`uipath-functions`](/uipath:uipath-functions). Summarize / research / synthesize over PDF or TXT (incl. bucket files, attachments) → not a framework choice — see [capabilities/deeprag/planning.md](capabilities/deeprag/planning.md). Per-row CSV extraction → see [capabilities/batch-transform/planning.md](capabilities/batch-transform/planning.md). When in doubt, ask.
 
 **Always tell the user which framework you selected and why** before proceeding to build. Example: "I'll use **LangGraph** for this agent since it involves tool calling and multi-step orchestration."
+
+**Never silently substitute a framework the user named.** If the requested framework cannot meet a stated requirement, do not pick another one and continue — explain the limitation, attribute it to the framework itself, and let the user decide. Build only after they answer.
 
 ## Troubleshooting
 

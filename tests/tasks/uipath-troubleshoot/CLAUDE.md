@@ -146,7 +146,8 @@ A single scenario (leaf) under its group folder:
 ```
 tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
-├── RESOLUTION.md                # ground truth for the LLM judge
+├── reference/                   # directory-only reference (coder-eval >=0.11); never shown to the agent
+│   └── RESOLUTION.md            # ground truth for the LLM judge
 ├── data/                        # short dir names keep Windows paths under MAX_PATH (260)
 │   └── m/
 │       └── r/
@@ -285,7 +286,7 @@ Every scenario MUST include exactly TWO criteria, and ONLY these two:
 
 Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded FAILURE solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
 
-Anything task-specific the test needs to verify goes in `RESOLUTION.md`. The judge reads it via `include_reference` and compares.
+Anything task-specific the test needs to verify goes in `RESOLUTION.md`. The judge reads it via the `files: [$REFERENCE_DIR/RESOLUTION.md]` entry and compares.
 
 #### Judge configuration — single canonical shape for every task
 
@@ -298,7 +299,9 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
   description: "Agent's diagnosis matches RESOLUTION.md"
   weight: 3.0
   pass_threshold: 0.7
-  include_reference: true
+  include_reference: false
+  files:
+    - $REFERENCE_DIR/RESOLUTION.md
   include_dialog: true
   include_agent_output: true
   prompt: |
@@ -316,9 +319,9 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
     Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 ```
 
-**What the judge sees** (all three flags MUST be `true`):
+**What the judge sees:**
 
-- `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
+- `include_reference: false` + `files: [$REFERENCE_DIR/RESOLUTION.md]` — passes **only** `reference/RESOLUTION.md`, not the whole `reference:` directory. (`include_reference: true` would inline the entire directory as a separate block, so anything else added to `reference/` later would silently reach the judge — and it would duplicate the file if combined with this `files:` entry.)
 - `include_dialog: true` — passes the full user<->agent dialog, every turn
 - `include_agent_output: true` — passes the agent's final user-facing response
 
@@ -334,7 +337,7 @@ That is **all** the context the judge gets. The contract: agent's diagnosis (whe
 
 **Why:** the skill's internal state (`notes.md`, `raw/`) is bookkeeping for the investigation, not a deliverable. Multiple playbooks may legitimately match a signal; the fast path legitimately stops at the first branch its evidence confirms (see SKILL.md § Verification checklist). Grading on internal-state shape punishes correct skill behavior. What the agent **presents** is the contract.
 
-**Where task-specific guidance lives:** `RESOLUTION.md`. If the judge needs to know that a specific fix must name "AlterIfDisabled = True" or that "Test Heals pool" is wrong — that goes in `RESOLUTION.md` as the authoritative root cause + fix. The judge reads it via `include_reference` and grades against it.
+**Where task-specific guidance lives:** `RESOLUTION.md`. If the judge needs to know that a specific fix must name "AlterIfDisabled = True" or that "Test Heals pool" is wrong — that goes in `RESOLUTION.md` as the authoritative root cause + fix. The judge reads it via the `files: [$REFERENCE_DIR/RESOLUTION.md]` entry and grades against it.
 
 **Lean default for every new scenario:**
 
@@ -350,7 +353,9 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_dialog: true
     include_agent_output: true
     prompt: |

@@ -97,9 +97,12 @@ initial_prompt: |
           short literal string noting that no resolution email was drafted.
 
   ## Done criteria
-  Validate the final flow file — the task is not complete until `uip maestro
-  flow validate` passes. Grading then runs the flow under debug against live
-  tenant data, so build it to actually run, not merely validate.
+  Validate the final flow file, then run it once yourself. The task is not
+  complete until `uip maestro flow validate` passes AND one `uip maestro flow
+  debug` run with representative inputs of your own construction reports
+  `finalStatus: Completed`. When debug faults, read the incident, fix the flow,
+  and re-run — stop after 3 debug attempts and report the last incident instead
+  of looping. Grading then runs debug against live tenant data.
 
   Build the complete flow
   without stopping to ask me.
@@ -107,7 +110,7 @@ success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
     command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
-    timeout: 60
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

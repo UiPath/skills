@@ -22,7 +22,7 @@ description: >
   (≥2 recipients on one notification), regular-Stage data.slaRules,
   stage-level conditional-rule placement, and the d + w + m + min duration units. Recipient UUIDs are
   unresolved and stay as UNRESOLVED skeletons per the skill rules.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conditional-sla, feature:stage-sla]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conditional-sla, feature:stage-sla]
 max_iterations: 1
 
 run_limits:

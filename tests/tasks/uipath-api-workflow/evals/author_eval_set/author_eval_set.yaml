@@ -1,0 +1,87 @@
+task_id: skill-api-workflow-evals-author-eval-set
+description: >
+  Build: fill the evaluation dataset of an existing, correct API workflow project
+  whose Evaluations panel has been opened once (panel-seeded evaluator + empty
+  eval set under `evals/`), then run the rows.
+  Tests whether the skill teaches the Unified Eval file contract from
+  references/testing-and-evals.md §1 — `evals/<scope>/eval-sets/*.json` +
+  `evals/<scope>/evaluators/*.json`, refs that are evaluator FILE base names,
+  expectedOutput nested under `evaluationCriterias["<ref>"]`, a
+  `uipath-exact-match` evaluator — and §2's key trap: `uip api-workflow run`
+  PascalCases every key in its printed `Data` (`grade` -> `Grade`), so an
+  expectation copied from it passes for the agent and fails in the panel.
+  check_author_rows.py grades the authored rows with the panel's own strict
+  deep-equal against the RAW output, and check_rows_pass.py re-runs every row.
+
+  The workflow is seeded valid and must stay untouched: the graded artifact is
+  the dataset, not the workflow. The `evals/` folder is seeded on purpose: rule 22
+  treats its absence as "feature off", so the task must start with it present.
+  Local-only, no tenant.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/author_eval_set/seed.py"
+    timeout: 120
+
+initial_prompt: |
+  The API workflow project in ./GradeCheck grades a numeric `score`: it returns
+  grade PASS when score >= 60, otherwise FAIL. Its evaluation dataset (the one
+  Studio Web's Evaluations panel opens) is still empty.
+
+  Add test cases covering score 85, score 40 and the boundary score 60, then
+  run them and confirm every one passes. Leave the workflow itself unchanged.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "evals/ files follow the Unified Eval contract the Evaluations panel reads (layout, file-name refs, exact-match evaluator, criteria placement)"
+    # $SKILLS_REPO_PATH, not $TASK_DIR/..: the sandbox only mounts the task's own
+    # leaf directory, so ../_shared does not exist there and the check exits 2.
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_eval_contract.py GradeCheck --min-rows 3
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Rows for 85/40/60 carry expectations that strict-deep-equal the workflow's RAW output (lowercase `grade`, not the CLI's `Grade`)"
+    command: python3 $TASK_DIR/check_author_rows.py rows
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: every authored row passes when run and scored as the panel scores it"
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_rows_pass.py GradeCheck --min-rows 3
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The seeded workflow was not modified"
+    command: python3 $TASK_DIR/check_author_rows.py workflow
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # Advisory: the matcher only sees Bash command text. An agent that drives
+    # `uip api-workflow run` from inside its own Python scorer (subprocess) is
+    # invisible to it and equally valid; check_rows_pass.py carries the real signal.
+    description: "Advisory: agent ran the rows with the local runner visibly in Bash (not gated — a wrapper script that shells out to the runner is equally valid)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

@@ -69,6 +69,8 @@ run_limits:
   # Heavy multi-connector e2e: the completed baseline used 882s / 71 turns.
   # 1500s and 120 turns retain measured headroom on the slower Bedrock route
   # without changing the campaign's pre-run envelope (RE-12529).
+  # turn_timeout matches task_timeout: at 1200 it was the binding ceiling —
+  # three consecutive sonnet-5 runs died at ~1202s with 300s of task budget left.
   max_turns: 120
-  turn_timeout: 1200
+  turn_timeout: 1500
   task_timeout: 1500
