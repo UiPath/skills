@@ -57,6 +57,22 @@ def positive_reject(cell: str) -> bool:
     return DECISION_VAR in flat and DECISION_VALUE in flat and "!=" not in cell
 
 
+def renaming_row_for(target_var: str) -> tuple[str, int] | None:
+    """The Outputs row that renames some field into `target_var`, if one exists.
+
+    An equal-name row keeps one slot under one name and is not a rename.
+    """
+    for line_no, line in enumerate(read_sdd().splitlines(), 1):
+        match = re.match(r"^\|\s*`?([\w.]+)`?\s*\|\s*->\s*`?(\w+)`?\s*\|", line)
+        if not match:
+            continue
+        field, target = match.group(1), match.group(2)
+        flat = re.sub(r"[^a-z0-9]", "", target.lower())
+        if flat == target_var and field.split(".")[-1] != target:
+            return field, line_no
+    return None
+
+
 def marks_complete(row: dict[str, str]) -> str:
     return column(row, "marks stage complete", "marks complete").strip().lower()
 
@@ -104,6 +120,19 @@ def main() -> None:
         for row in keyed:
             if not column(row, "interrupting").lower().startswith("y"):
                 fail(f"{LANE!r} decision-keyed entry row is not Interrupting: Yes")
+
+        # The guard above is only reachable if the decision still sits in the field the
+        # producing task writes. An Outputs row that renames it moves the value elsewhere
+        # and leaves that field empty, so the guard reads nothing and the lane never opens
+        # (references/case-design-layers-guide.md § Gate on the producer).
+        renamed = renaming_row_for(DECISION_VAR)
+        if renamed:
+            field, line_no = renamed
+            fail(
+                f"line {line_no} renames {field!r} into the variable the decision guard reads; "
+                f"a renamed field is empty when the gate evaluates. Read the field itself with "
+                f"vars.$xref(...) and copy it with a separate `=` row if it is needed elsewhere"
+            )
 
         if scope == "lane":
             print(f"OK: {LANE} is entered from the decision fact, not the stage picker")

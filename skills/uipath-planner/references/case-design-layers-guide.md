@@ -127,7 +127,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`). A `Yes` + `selected-*` pair is a schema error.
 3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required`.
 4. **Case completion is a root rule.** At least one case-exit row carries `Marks Case Complete: Yes` (normally `required-stages-completed`). A stage completing never closes the case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with `Marks Case Complete: No`. **Default:** the last primary stage completing closes the case unless the source describes another close-out.
-5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output instead ([Layer 3 § Gate on the producer](#gate-on-the-producer-never-on-the-variable-it-writes)).
+5. **A gate reads the producing field's own slot.** An Outputs row that renames a field moves the value off that slot, so an `IF` on a renamed field reads an empty one — read the field itself ([Layer 3 § Gate on the producer](#gate-on-the-producer-never-on-a-renamed-field)).
 6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences: a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards; an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF. Both validator-enforced.
 
 ### Exit types
@@ -247,21 +247,27 @@ Declare a row ONLY when one of these holds:
 
 1. `In` / `Out` argument (the case boundary).
 2. Trigger-payload extraction (below — the only way a trigger field becomes referenceable).
-3. Case-level state read by a condition (`IF`) or by ≥ 2 consumers.
+3. Case-level state read by a condition (`IF`) or by ≥ 2 consumers. A task's own field is not case-level state — a gate reads it directly with `vars.$xref(...)` ([§ Gate on the producer](#gate-on-the-producer-never-on-a-renamed-field)).
 4. The value needs a rename or a custom `Default` / `Type` / `Description`.
 
 A row that relays one task's output to one consumer is the relay anti-pattern — flagged as `rev_relay_var` (§ Layer closure, advisory lens). Declaring a row does not make the value readable earlier — see next.
 
-### Gate on the producer, never on the variable it writes
+### Gate on the producer, never on a renamed field
 
-A rule is evaluated **before** the extract of the task that triggered it. So a gate keyed on a task's completion that reads the case variable that task's Outputs row feeds sees the value from the previous pass — `null` on the first one. The branch silently never fires, the stage stalls, and nothing errors.
+A task field lands in exactly one slot. `Action -> decision` puts the value in `decision` and leaves the `Action` slot empty; an equal-name row keeps one slot under one name — equal on the source path's last segment, so `Action -> Action` and `response.status -> status` both qualify, until a second row extracts `Action` elsewhere in the case and the allocator suffixes the later slot. A rule reads the field's own slot, so a gate on a renamed field reads the empty one, whenever that gate fires. The branch silently never fires, the stage stalls, and nothing errors.
 
-| Gate | `IF` reads | At gate time |
+| Outputs row on `Decide` | `IF` reads | At gate time |
 |---|---|---|
-| `selected-tasks-completed("Decide")` + `=js:vars.decision === "reject"`, where `Decide` declares `Action -> decision` | the case variable `Decide` writes | ✗ stale / `null` |
-| `selected-tasks-completed("Decide")` + `=js:vars.action === "reject"`, where `action` is `Decide`'s own output | the producing output | ✓ populated |
+| `Action -> decision` | `vars.decision` — the renamed slot | ✗ `null` |
+| `Action -> decision` | `vars.$xref(...,'Action')` — the emptied slot | ✗ `null` |
+| no Outputs row for `Action` | `vars.$xref(...,'Action')` — one slot, one name | ✓ populated |
 
-**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep the `->` extract whenever the value must persist (Case App, audit, a later stage reads it) — the extract is not what the gate reads. Applies wherever the WHEN names the producer: stage-exit `selected-tasks-completed`, task-entry `selected-tasks-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit — that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay exact inverses of each other.
+**Rule** — all four hold for a gate whose `IF` reads a task's output:
+
+1. The `IF` reads the producing task's own field as `vars.$xref('<Stage>','<Task>','<field>')`.
+2. That field carries no renaming Outputs row — no row at all, or an equal-name row whose target is unique case-wide.
+3. A value consumed elsewhere (Case App, audit, a later stage) gets a separate `=` row that copies it into a Case variable; a copy leaves the field's own slot intact.
+4. The WHENs this covers are `required-tasks-completed`, stage-exit and task-entry `selected-tasks-completed`, `selected-stage-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit — that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay exact inverses of each other.
 
 ### Trigger payloads
 
@@ -435,7 +441,7 @@ ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm
 2. **Reachability walk** — every stage reachable from a trigger or SLA source (walk entries forward); every primary stage's completion consumed downstream, referenced by another entry, or feeding a lane; ≥ 1 primary stage `Required: Yes`; `adhoc` never a stage entry. Decision-reachable lanes and duplicate-entry ambiguity per § Secondary-lane entry shapes.
 3. **Entry producer** — every non-start entry names its concrete producer (source stage/task, connector event, paired `wait-for-user` exit, declared SLA reference); at-risk rows name the escalation, breach rows the SLA alone.
 4. **Decision-routing closure** — every decision outcome routes somewhere: no dead-end status values; an outcome targeting a lane keys that lane's entry; every routing button's variable+value is consumed downstream or a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
-5. **Gate reads the producer** — no condition whose WHEN names a task reads a case variable that task writes (§ Gate on the producer).
+5. **Gate reads the producer** — no condition firing on a task completing reads a field that an Outputs row renamed (§ Gate on the producer).
 6. **Data closure** — every configure/decide output lands in a variable or direct reference; every send/connector/agent required input maps to variables/literals/upstream outputs as far as knowable without schemas (rest resolves at build); thresholded policy in executable cells (§ Expressions).
 7. **Task-surface classification** — human-performed required work `action`, optional user-launched `adhoc`; no compliance trigger phrase paired with a non-`action` type without explicit user reconciliation (§ Task-type override priority).
 8. **Required-task presence** — a `required-tasks-completed` completion over a stage with zero `Required: Yes` tasks fails validate: `Stage exit rule '<name>' has no task(s) marked as required`; offer marking the terminal task required.

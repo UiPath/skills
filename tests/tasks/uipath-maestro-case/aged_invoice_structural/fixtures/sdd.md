@@ -266,7 +266,7 @@
 
 | Field | Binding / Value |
 |-------|------------------|
-| Action | -> apDecision |
+| — | — |
 
 **Actions:**
 
