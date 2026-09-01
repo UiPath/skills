@@ -62,6 +62,10 @@ RECONSTRUCTED = GOOD.replace(
 )
 
 
+CLEAN_AUDIT = '[{"task": "Hold", "selected": {"name": "X"}}]'
+UNRESOLVED_AUDIT = '[{"task": "Hold", "selected": "<UNRESOLVED: process>"}]'
+
+
 def caseplan(placeholder=True):
     task = {"id": "tA", "type": "wait-for-timer", "displayName": "Hold",
             "data": {} if placeholder else {"serviceType": "X"}}
@@ -70,11 +74,11 @@ def caseplan(placeholder=True):
                        "data": {"label": "S", "tasks": [[task]]}}], "edges": []}
 
 
-def run(tmp_path, *, case=None, log=None, tasks_md=None):
+def run(tmp_path, *, case=None, log=None, audit=None):
     if case is not None:
         d = tmp_path / "Sol" / "Proj"; d.mkdir(parents=True, exist_ok=True)
         (d / "caseplan.json").write_text(json.dumps(case))
-    for name, content in (("build-issues.md", log), ("tasks.md", tasks_md)):
+    for name, content in (("build-issues.md", log), ("registry-resolved.json", audit)):
         if content is not None:
             d = tmp_path / "tasks"; d.mkdir(parents=True, exist_ok=True)
             (d / name).write_text(content)
@@ -131,7 +135,7 @@ def test_reconstructed_log_passes_but_is_reported(tmp_path):
 
 def test_clean_build_still_requires_the_journal(tmp_path):
     """The flush is unconditional — a zero-issue section still creates the file."""
-    res = run(tmp_path, case=caseplan(placeholder=False), tasks_md="## T01\n- id: real\n")
+    res = run(tmp_path, case=caseplan(placeholder=False), audit=CLEAN_AUDIT)
     assert res.returncode == 1, res.stdout
     assert "no unresolved work, but the flush is unconditional" in res.stdout
 
@@ -139,20 +143,20 @@ def test_clean_build_still_requires_the_journal(tmp_path):
 def test_clean_build_with_empty_journal_passes(tmp_path):
     """Zero issues and zero rows is fine — the file's existence is the signal."""
     res = run(tmp_path, case=caseplan(placeholder=False),
-              tasks_md="## T01\n- id: real\n", log=EMPTY_JOURNAL)
+              audit=CLEAN_AUDIT, log=EMPTY_JOURNAL)
     assert res.returncode == 0, res.stdout
 
 
 def test_build_that_never_reached_phase2_is_exempt(tmp_path):
     """Halted in Phase 1 — no caseplan, so no journal expected."""
-    res = run(tmp_path, tasks_md="## T01\n- id: <UNRESOLVED: process>\n")
+    res = run(tmp_path, audit=UNRESOLVED_AUDIT)
     assert res.returncode == 0, res.stdout
     assert "never reached Phase 2" in res.stdout
 
 
 def test_unresolved_markers_alone_require_a_journal(tmp_path):
     res = run(tmp_path, case=caseplan(placeholder=False),
-              tasks_md="## T01\n- id: <UNRESOLVED: process>\n")
+              audit=UNRESOLVED_AUDIT)
     assert res.returncode == 1, res.stdout
     assert "<UNRESOLVED> marker" in res.stdout
 
@@ -164,7 +168,7 @@ def test_venv_copies_ignored(tmp_path):
     v = tmp_path / ".venv" / "s"; v.mkdir(parents=True)
     (v / "caseplan.json").write_text(json.dumps(caseplan()))
     res = run(tmp_path, case=caseplan(placeholder=False),
-              tasks_md="## T01\n- id: real\n", log=EMPTY_JOURNAL)
+              audit=CLEAN_AUDIT, log=EMPTY_JOURNAL)
     assert res.returncode == 0, res.stdout
     assert "none" in res.stdout.splitlines()[0]
 
