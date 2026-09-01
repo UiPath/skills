@@ -204,10 +204,13 @@ number, or boolean there.
 ```jsonc
 "default": "{\"amount\":125.5}"   // jsonSchema — string-encoded JSON
 "default": "5"                     // integer
+"default": "1.5"                   // float / number / double — STILL a string; `1.5` bare is the common miss
 "default": "true"                  // boolean
 "default": "2029-10-12"            // date
 "default": ""                      // file (must be empty) / no default
 ```
+
+**A bare number is the most frequent violation** — `"default": 1.5` on a `float` reads as natural JSON and is wrong; the entry-points projection copies `default` verbatim, so the number then leaks into `entry-points.json` where the schema requires the string `"1.5"`. Observed on a shipped build.
 
 **A non-primitive `default` is deleted, silently.** The caseplan → BPMN converter keeps only primitive
 attributes ([`bpmn-moddle.ts` `onlyPrimitiveVariableFields`](https://github.com/UiPath/PO.Frontend/blob/develop/src/services/serialization/bpmn-moddle.ts#L323-L331)):
