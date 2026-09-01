@@ -4,7 +4,24 @@ How a JS/TS coded function executes as an Orchestrator job: the runtime context,
 
 ## The Model
 
-Every function in `functions/` is job-startable — from a Trigger, a Maestro process, a Flow, or the Orchestrator job API against the function's release. Declaring `method` + `path` adds an HTTP route on top; omitting both makes the function job-only. Run-mode enforcement is not yet implemented: an HTTP-declared function can currently be started as a plain job. That is current behavior, not a guarantee — do not design around it.
+Every function in `functions/` is job-startable. There are exactly two invocation paths:
+
+- **Job path** — anything that can start an Orchestrator job on the function's release is a caller: the job-start API, a schedule or trigger, a Maestro process, an RPA process, an agent, or another coded function.
+- **HTTP path** — only when the function declares `method` + `path`: a synchronous call through the Orchestrator HTTP trigger ([http-semantics-guide.md](http-semantics-guide.md)).
+
+Omitting `method` + `path` makes the function job-only. Run-mode enforcement is not yet implemented: an HTTP-declared function can currently be started as a plain job. That is current behavior, not a guarantee — do not design around it.
+
+### Picking the path (one function can serve both)
+
+| | HTTP path | Job path |
+|---|---|---|
+| Caller | any HTTP client with a platform token (Coded App, service, curl) | any job-starter (API, schedule/trigger, Maestro, RPA, another function) |
+| Timing | synchronous; 25 s gateway budget ([SKILL.md](../SKILL.md) Rule 6) | job lifecycle; the 25 s gateway budget does not apply |
+| Caller identity | `ctx.user` = caller's delegated token | no caller identity — `ctx.robot` only |
+| Errors surface as | HTTP status + `{error, details?}` body | Faulted job + the StandardError contract below |
+| Result | HTTP response body | job output arguments |
+
+Take the HTTP path when a synchronous answer goes back to an interactive caller; take the job path for long-running, scheduled, or orchestrated work, or when the caller is itself a job. One deployed function serves both paths from one `bindings_v2.json` — its HttpTrigger row exists only when `method` + `path` are declared ([bindings-guide.md](bindings-guide.md)).
 
 ## How a Job Run Executes
 
@@ -94,4 +111,4 @@ uip function run --function <FUNCTION_NAME> --input-file input.json --context-fi
 
 ## Starting Deployed Functions as Jobs
 
-There is no function-specific job API. Publish the package and update the Function Release to the new version ([SKILL.md](../SKILL.md) Rule 12), then start jobs the standard Orchestrator way against that release — manually, from a Trigger, from Maestro or a Flow, or via the Orchestrator job-start API. The job's input arguments are validated against the function's input schema before the handler runs. Release update, versioning, and invoke mechanics → [deployment-guide.md](deployment-guide.md).
+There is no function-specific job API. Publish the package and update the Function Release to the new version ([SKILL.md](../SKILL.md) Rule 12), then start jobs the standard Orchestrator way against that release — any job-starter works: the job-start API, a schedule or trigger, a Maestro process, an RPA process, or another coded function. The job's input arguments are validated against the function's input schema before the handler runs. Release update, versioning, and invoke mechanics → [deployment-guide.md](deployment-guide.md).
