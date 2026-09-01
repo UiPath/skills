@@ -90,10 +90,10 @@ the tenant, so it needs a live Integration Service connection and a logged-in
 `uip`; without one, fall back to the curated operation in the markdown library.
 
 ```bash
-uip maestro registry prepare <connector-key> <action> \
+npx flow-sdk registry prepare <connector-key> <action> \
   --connection-id <connection-id>
 # Generic operation: materialize the one connected object the task uses.
-uip maestro registry prepare <connector-key> <action> \
+npx flow-sdk registry prepare <connector-key> <action> \
   --connection-id <connection-id> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
@@ -291,7 +291,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-uip maestro registry prepare <connector-key> <action> --connection-id <connection-id> \
+npx flow-sdk registry prepare <connector-key> <action> --connection-id <connection-id> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -347,8 +347,40 @@ debug are the evidence.
 ## Resolving connection-scoped reference values
 
 Fields such as Slack channels and mailbox folders store ids, not display names.
-Resolve them against the same connection the flow binds instead of copying an id
-from another connection or session:
+
+**If a field is marked LOOKUP, do not guess it and do not resolve it by hand.**
+Use the field's helper and record the value once with `prepare`. This one rule
+covers 1,071 fields across 104 connectors, so it is worth knowing before any
+particular connector is:
+
+```ts
+channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
+```
+
+```bash
+npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
+  --connection-id <id> --resolve channel:profile.email=dustin@example.com
+```
+
+`check` names the exact command when a lookup is unresolved, and warns when a
+lookup field is given a literal id. Run it before compiling: it finds everything
+else that is wrong first, so the one expensive call is spent last.
+
+Each operation's markdown page lists its lookup fields, the helper for each, and
+what it can be searched by. The generated descriptor carries the same facts as a
+comment above the `export const`, so `grep -B6 'export const SendMessageToUser'`
+answers it too.
+
+Two cases have **no** helper on purpose, and for them a plain string is correct:
+a field whose `reference` merely enumerates legal values (what you send back is
+what you searched for), and a collection that is the same in every tenant
+(country lists, timezones). Their pages say so and print the command that shows
+the accepted values.
+
+The rest of this section is the manual route — needed only when a field carries
+no lookup, or when you are inspecting a collection rather than resolving a value.
+Resolve against the same connection the flow binds, never by copying an id from
+another connection or session:
 
 **Choose the collection from the prepared action definition before the first
 `resources run list` call.** Run `registry prepare` first and find the target

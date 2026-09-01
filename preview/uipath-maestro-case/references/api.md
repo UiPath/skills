@@ -29,7 +29,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ExternalTaskOptions](#externaltaskoptions-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [UnresolvedReferenceTaskKind](#unresolvedreferencetaskkind-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-type) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [UnresolvedReferenceTaskKind](#unresolvedreferencetaskkind-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-type) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
 
 ## rule (function)
 
@@ -1061,6 +1061,7 @@ export interface ConnectorMeta {
     requiresConnection?: boolean;
     requiresFolderKey?: boolean;
     objectName?: string;
+    lookups?: Readonly<Record<string, LookupSpec>>;
 }
 ````
 
@@ -1140,4 +1141,32 @@ export interface BuiltTaskEntryCondition {
     displayName?: string;
     rules: CaseRule[][];
 }
+````
+
+## LookupSpec (interface)
+
+````ts
+export interface LookupSpec {
+    objectName?: string;
+    path: string;
+    by: readonly string[];
+    value: string;
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupStrategy (type)
+
+````ts
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
 ````
