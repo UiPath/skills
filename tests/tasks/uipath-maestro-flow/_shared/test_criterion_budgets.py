@@ -23,6 +23,7 @@ import ast
 import builtins
 import os
 import re
+import symtable
 import sys
 from typing import NamedTuple
 
@@ -136,12 +137,17 @@ def _iterations_of(target: ast.AST, lengths: dict[str, int]) -> int | None:
     if isinstance(target, (ast.List, ast.Tuple)):
         return len(target.elts)
     if isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Slice):
-        # A slice by a literal or a module constant is a known bound.
-        upper = target.slice.upper
+        # Only a bare `x[:N]` is a count. `x[1:3]` is 2 items, not 3, and a
+        # negative or stepped bound is not a length at all — those need sizing.
+        cut = target.slice
+        if cut.lower is not None or cut.step is not None:
+            return None
+        upper = cut.upper
         if isinstance(upper, ast.Constant) and isinstance(upper.value, int):
-            return upper.value
+            return upper.value if upper.value >= 0 else None
         if isinstance(upper, ast.Name):
-            return lengths.get(upper.id)
+            bound = lengths.get(upper.id)
+            return bound if bound is not None and bound >= 0 else None
         return None
     if isinstance(target, ast.Name):
         return lengths.get(target.id)
@@ -269,8 +275,16 @@ def _cost(
             ),
         )
     if isinstance(node, ast.Match):
+        # Guards are evaluated to pick an arm, so they all run; only the bodies
+        # are exclusive.
+        guards = [
+            _cost(c.guard, lengths, defs, seen, manual, price)
+            for c in node.cases
+            if c.guard is not None
+        ]
         return _merge(
             _cost(node.subject, lengths, defs, seen, manual, price),
+            *guards,
             _worst([_body(c.body, lengths, defs, seen, manual, price) for c in node.cases]),
         )
     if isinstance(node, ast.Try):
@@ -290,7 +304,9 @@ def _cost(
                            if not isinstance(c, ast.comprehension)])
         runs, guessed, total = 1, (), _FREE
         for gen in node.generators:
-            total = _merge(total, _cost(gen.iter, lengths, defs, seen, manual, price))
+            # Evaluated once per combination of the generators to its left.
+            iterable = _cost(gen.iter, lengths, defs, seen, manual, price)
+            total = _merge(total, _Price(iterable.seconds * runs, iterable.unsized))
             count = _iterations_of(gen.iter, lengths)
             if count is None:
                 count = manual if manual is not None else 1
@@ -310,8 +326,23 @@ def _cost(
             guessed = ()
         return _merge(total, _Price(element.seconds * runs,
                                     element.unsized + tuple(sorted(set(guessed)))))
-    if isinstance(node, (ast.For, ast.While)):
-        head = node.iter if isinstance(node, ast.For) else node.test
+    if isinstance(node, ast.While):
+        # The test runs every iteration too, and a `while` is never countable,
+        # so a priced call in EITHER part needs sizing.
+        test = _cost(node.test, lengths, defs, seen, manual, price)
+        body = _body(node.body, lengths, defs, seen, manual, price)
+        runs = manual if manual is not None else 1
+        guessed = (
+            ((node.lineno, node.col_offset),) if test.seconds or body.seconds else ()
+        )
+        return _merge(
+            _Price(
+                (test.seconds + body.seconds) * runs,
+                test.unsized + body.unsized + guessed,
+            ),
+            _body(node.orelse, lengths, defs, seen, manual, price),
+        )
+    if isinstance(node, ast.For):
         body = _body(node.body, lengths, defs, seen, manual, price)
         runs = _iterations(node, lengths)
         guessed = ()
@@ -320,7 +351,7 @@ def _cost(
             guessed = ((node.lineno, node.col_offset),) if body.seconds else ()
             runs = manual if manual is not None else 1
         return _merge(
-            _cost(head, lengths, defs, seen, manual, price),
+            _cost(node.iter, lengths, defs, seen, manual, price),
             _Price(body.seconds * runs, body.unsized + guessed),
             _body(node.orelse, lengths, defs, seen, manual, price),
         )
@@ -1107,27 +1138,40 @@ def test_single_quoted_command_is_not_skipped(tmp_path):
     assert _TASK_DIR_SCRIPT.search(found.group(1)).group(1) == "check_x.py"
 
 
-def _free_names(tree: ast.AST) -> set[str]:
-    """Names a module loads without binding: an import it forgot."""
-    bound = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            bound |= {a.asname or a.name.split(".")[0] for a in node.names}
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            bound.add(node.name)
-            args = node.args
-            bound |= {a.arg for a in args.args + args.kwonlyargs + args.posonlyargs}
-            bound |= {a.arg for a in (args.vararg, args.kwarg) if a}
-        elif isinstance(node, ast.ClassDef):
-            bound.add(node.name)
-        elif isinstance(node, (ast.comprehension, ast.For, ast.AsyncFor)):
-            bound |= {n.id for n in ast.walk(node.target) if isinstance(n, ast.Name)}
-        elif isinstance(node, ast.ExceptHandler) and node.name:
-            bound.add(node.name)
-        elif isinstance(node, ast.withitem) and node.optional_vars is not None:
-            bound |= {n.id for n in ast.walk(node.optional_vars) if isinstance(n, ast.Name)}
-    loaded = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
-    return loaded - bound - set(dir(builtins)) - {"__file__", "__name__", "__doc__"}
+def _module_bindings(table) -> set[str]:
+    """Names the module level defines: assignments, imports, defs, classes."""
+    return {
+        sym.get_name()
+        for sym in table.get_symbols()
+        if sym.is_assigned() or sym.is_imported() or sym.is_namespace()
+    }
+
+
+def _undefined_names(path: str) -> set[str]:
+    """Names a scope reads that resolve to a module global nothing defines.
+
+    Per lexical scope, via `symtable`: subtracting one module-wide set of bound
+    names hid a real `NameError` whenever any OTHER function happened to have a
+    local or parameter of the same name."""
+    source = open(path).read()
+    top = symtable.symtable(source, path, "exec")
+    defined = _module_bindings(top) | set(dir(builtins))
+    missing, scopes = set(), [top]
+    while scopes:
+        scope = scopes.pop()
+        scopes.extend(scope.get_children())
+        for sym in scope.get_symbols():
+            if not sym.is_referenced() or sym.is_parameter():
+                continue
+            # Only module-level lookups can be undefined here: a local is
+            # bound, and a free variable resolves from an enclosing scope.
+            if scope is not top and not sym.is_global():
+                continue
+            if sym.is_assigned() or sym.is_imported() or sym.is_namespace():
+                continue
+            if sym.get_name() not in defined:
+                missing.add(sym.get_name())
+    return missing - {"__file__", "__name__", "__doc__"}
 
 
 @pytest.mark.parametrize("script", sorted({c[1] for c in _CASES}),
@@ -1135,7 +1179,7 @@ def _free_names(tree: ast.AST) -> set[str]:
 def test_checker_has_no_undefined_names(script):
     """Checkers only execute against a live tenant, so a missing import ships
     silently and fails the eval as an opaque NameError hours later."""
-    missing = _free_names(ast.parse(open(script).read()))
+    missing = _undefined_names(script)
     assert not missing, f"{os.path.basename(script)} loads unbound: {sorted(missing)}"
 
 
@@ -1145,3 +1189,65 @@ def test_two_uncountable_generators_are_reported_separately(tmp_path):
     path = os.path.join(str(tmp_path), "check_x.py")
     open(path, "w").write(f"def main():\n    [{_ONE} for a in load_a() for b in load_b()]\n")
     assert len(_unsized_loops(path, None)) == 2
+
+
+# ── shapes that priced as zero, or as the wrong count ───────────────────────
+
+
+def test_slice_with_a_lower_bound_is_not_a_count(tmp_path):
+    """`A[1:3]` is two items, not three. Only a bare `[:N]` is a length."""
+    src = f"A = [1, 2, 3]\n\n\ndef main():\n    for x in A[1:3]:\n        {_ONE}\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [5]
+
+
+def test_bare_slice_still_counts(tmp_path):
+    src = f"A = [1, 2, 3]\n\n\ndef main():\n    for x in A[:2]:\n        {_ONE}\n"
+    assert _price(src, tmp=str(tmp_path)) == 485 * 2
+
+
+def test_negative_slice_bound_needs_sizing(tmp_path):
+    src = f"A = [1, 2, 3]\n\n\ndef main():\n    for x in A[:-1]:\n        {_ONE}\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [5]
+
+
+def test_match_guards_are_priced(tmp_path):
+    """Guards run to choose an arm, so a debug in one is not free."""
+    src = f"def main():\n    match k:\n        case _ if {_ONE}:\n            pass\n"
+    assert _price(src, tmp=str(tmp_path)) == 485
+
+
+def test_inner_generator_iterable_runs_per_outer_combination(tmp_path):
+    """`helper(a)` is evaluated once per `a`, so its cost multiplies."""
+    src = (f"A = [1, 2]\n\n\ndef helper(a):\n    {_ONE}\n    return []\n\n\n"
+           "def main():\n    [x for a in A for x in helper(a)]\n")
+    assert _price(src, tmp=str(tmp_path)) == 485 * 2
+
+
+def test_while_test_with_a_debug_needs_sizing(tmp_path):
+    """The test runs every iteration, and a `while` is never countable."""
+    src = f"def main():\n    while {_ONE}:\n        pass\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [2]
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("def a():\n    return missing\n\n\ndef b(missing):\n    return missing\n", {"missing"}),
+        ("def a():\n    return missing\n\n\ndef b():\n    missing = 1\n    return missing\n", {"missing"}),
+        ("def outer():\n    v = 1\n\n    def inner():\n        return v\n    return inner\n", set()),
+        ("import os\n\n\ndef a():\n    return os.sep\n", set()),
+        ("G = 1\n\n\ndef a():\n    global G\n    G = 2\n", set()),
+    ],
+)
+def test_undefined_names_are_scope_aware(source, expected, tmp_path):
+    """A module-wide set of bound names hid a real NameError whenever another
+    function had a local or parameter of the same name."""
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(source)
+    assert _undefined_names(path) == expected
