@@ -125,22 +125,21 @@ elif argv[:3] == ["or", "folders", "create"]:
         "Key": payload.get("created_folder_key", "created-" + argv[3]),
         "Name": argv[3],
     }}))
-elif argv[:3] == ["or", "folders", "list"]:
-    entries = [
-        entry for entry in payload.get("folders", [])
-        if entry.get("Key") not in deleted_folders()
-    ]
-    print(json.dumps({"Data": entries}))
 elif argv[:3] == ["or", "folders", "get"]:
-    folder_ids = payload.get("folder_ids", {})
-    if argv[3] not in folder_ids or argv[3] in deleted_folders():
+    # The real verb resolves either a folder key or a folder name.
+    match = None
+    for entry in payload.get("folders", []):
+        if argv[3] in (entry.get("Key"), entry.get("DisplayName")):
+            match = dict(entry)
+            break
+    if match is None:
+        folder_ids = payload.get("folder_ids", {})
+        if argv[3] in folder_ids:
+            match = {"Key": argv[3], "Id": folder_ids[argv[3]]}
+    if match is None or match["Key"] in deleted_folders():
         print("folder not found", file=sys.stderr)
         sys.exit(1)
-    entry = {"Key": argv[3], "Id": folder_ids[argv[3]]}
-    created_at = payload.get("folder_created_at", {}).get(argv[3])
-    if created_at:
-        entry["CreationTime"] = created_at
-    print(json.dumps({"Data": entry}))
+    print(json.dumps({"Data": match}))
 elif argv[:3] == ["or", "folders", "delete"]:
     # Mirrors the real CLI: refuses without --yes, since the operation is
     # irreversible and the CLI never prompts.
@@ -180,9 +179,10 @@ def install_fake_uip(sandbox: pathlib.Path, **payload: Any) -> dict[str, str]:
     """Install the fake `uip` on a copy of PATH and return the env to run with."""
     payload.setdefault("projects", PRE_EXISTING)
     payload.setdefault("deployments", {})
-    # `folders list` inventory (leftover lookup) and `folders get` existence
-    # (teardown's already-gone check). Seed's `folders create` returns
-    # RUN_FOLDER_KEY so the snapshot's "scope" is deterministic.
+    # `folders` are resolvable by name or key (seed's leftover lookup);
+    # `folder_ids` are resolvable by key only (teardown's already-gone check).
+    # Seed's `folders create` returns RUN_FOLDER_KEY so the snapshot's "scope"
+    # is deterministic.
     payload.setdefault("folders", [])
     payload.setdefault("created_folder_key", RUN_FOLDER_KEY)
     payload.setdefault(
@@ -220,9 +220,16 @@ def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
     return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{folder_key}"
 
 
-def leftover_run_folder() -> dict[str, str]:
-    """A `folders list` entry for a previous run's leaked run folder."""
-    return {"Key": LEFTOVER_FOLDER_KEY, "DisplayName": RUN_FOLDER_NAME}
+def leftover_run_folder(created_at: str | None = None) -> dict[str, str]:
+    """A previous run's leaked run folder, resolvable by RUN_FOLDER_NAME.
+
+    Without created_at the folder reports no CreationTime — the age-unknown
+    case, which the guard treats as an old leftover (deletable).
+    """
+    entry = {"Key": LEFTOVER_FOLDER_KEY, "DisplayName": RUN_FOLDER_NAME}
+    if created_at:
+        entry["CreationTime"] = created_at
+    return entry
 
 
 def write_flow(sandbox: pathlib.Path, nodes: list[dict[str, Any]]) -> None:
@@ -1034,12 +1041,7 @@ def test_seed_refuses_to_delete_a_live_concurrent_runs_folder(
     younger than one task budget is presumed a LIVE concurrent instance's, not
     a failed teardown's, and seed must fail without deleting it."""
     fresh = (datetime.now(timezone.utc) - timedelta(seconds=120)).isoformat()
-    env = install_fake_uip(
-        sandbox,
-        folders=[leftover_run_folder()],
-        folder_ids={LEFTOVER_FOLDER_KEY: 77},
-        folder_created_at={LEFTOVER_FOLDER_KEY: fresh},
-    )
+    env = install_fake_uip(sandbox, folders=[leftover_run_folder(created_at=fresh)])
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
@@ -1056,12 +1058,7 @@ def test_seed_heals_an_old_leftover_with_a_parseable_creation_time(
     failed teardown's leftover and is healed. (The self-heal test above covers
     the missing-CreationTime degradation — age unknown reads as old.)"""
     stale = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-    env = install_fake_uip(
-        sandbox,
-        folders=[leftover_run_folder()],
-        folder_ids={LEFTOVER_FOLDER_KEY: 77},
-        folder_created_at={LEFTOVER_FOLDER_KEY: stale},
-    )
+    env = install_fake_uip(sandbox, folders=[leftover_run_folder(created_at=stale)])
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr

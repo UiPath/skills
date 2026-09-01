@@ -15,13 +15,13 @@ redirect becomes unmeasurable — rotate the fixture domain per
 documents/README.md). It then creates the run-scoped Orchestrator folder the
 prompt names (RUN_FOLDER_NAME — the per-task fixed-name convention of
 tests/tasks/uipath-platform/cleanup.py's uuid8 tagging), first deleting any
-same-named leftover: a leftover OLDER than one task budget is the previous
-run's failed teardown, and deleting it removes the leaked deployment and its
-registry node, so seed self-heals the fixture domain without ever touching a
-folder it did not name. A same-named folder YOUNGER than that is presumed a
-live concurrent instance (the fixed name makes the task single-flight per
-tenant) and seed fails instead of deleting it. Finally it snapshots the
-tenant's project names as digests.
+same-named leftover found by an exact-name `folders get`: a leftover OLDER
+than one task budget is the previous run's failed teardown, and deleting it
+removes the leaked deployment and its registry node, so seed self-heals the
+fixture domain without ever touching a folder it did not name. A same-named
+folder YOUNGER than that is presumed a live concurrent instance (the fixed
+name makes the task single-flight per tenant) and seed fails instead of
+deleting it. Finally it snapshots the tenant's project names as digests.
 
 **Why a snapshot-and-diff instead of asking the agent to record what it made:**
 the prompt deliberately never mentions IXP, projects, or deployments —
@@ -128,10 +128,6 @@ RUN_FOLDER_NAME = "flow-e2e-e9fbf2d0"
 # the guard never blocks on an optional field.
 LIVE_FOLDER_AGE_SECONDS = 3600.0
 
-# Well above any plausible folder count on the CI tenant; the lookup raises on
-# a full page rather than silently missing a leftover beyond it.
-FOLDER_LIST_LIMIT = "500"
-
 # Folder deletes can fail transiently (provisioning race on a just-created
 # folder, GH run 32967816894; an "Error resolving folder" on a half-hour-old
 # folder, GH run 32968685992 — the CLI's RetryWillNotFix hint was wrong both
@@ -201,32 +197,40 @@ def project_digest(project_name: str) -> str:
     return hashlib.sha256(project_name.encode("utf-8")).hexdigest()
 
 
-def folder_exists(folder_key: str) -> bool:
-    """Whether the folder still resolves — teardown's already-gone check."""
-    completed = run_uip(["or", "folders", "get", folder_key, "--output", "json"])
-    return completed.returncode == 0
+def folder_get(identifier: str) -> dict[str, Any] | None:
+    """One folder by name or key, or None when it does not resolve.
 
-
-def folder_age_seconds(folder_key: str) -> float | None:
-    """Seconds since the folder's CreationTime, or None when undeterminable.
-
-    Best-effort by design: `or folders get` failing, or the timestamp field
-    missing or unparseable, returns None and the caller treats the folder as
-    old — the age guard must never block a run on an optional field.
+    `or folders get` accepts either form, so this is both teardown's
+    already-gone check (by key) and seed's leftover lookup (by name) — a
+    single O(1) call. Listing the tenant instead does not work: the CI
+    tenant holds more folders than one page (GH run 33533126890).
     """
-    completed = run_uip(["or", "folders", "get", folder_key, "--output", "json"])
+    completed = run_uip(["or", "folders", "get", identifier, "--output", "json"])
     if completed.returncode != 0:
         return None
-    try:
-        raw = json.loads(completed.stdout)["Data"].get("CreationTime")
-        if not raw:
-            return None
-        created = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
-        if created.tzinfo is None:
-            created = created.replace(tzinfo=timezone.utc)
-        return (datetime.now(timezone.utc) - created).total_seconds()
-    except Exception:
+    data = json.loads(completed.stdout)["Data"]
+    # A "not found" that exits 0 with a null/empty envelope reads as absent
+    # rather than crashing the caller on a missing Key.
+    return data if isinstance(data, dict) and data.get("Key") else None
+
+
+def age_seconds(folder: dict[str, Any]) -> float | None:
+    """Seconds since the folder's CreationTime, or None when undeterminable.
+
+    Best-effort by design: a missing or unparseable timestamp returns None and
+    the caller treats the folder as old — the age guard must never block a run
+    on an optional field.
+    """
+    raw = folder.get("CreationTime")
+    if not raw:
         return None
+    try:
+        created = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - created).total_seconds()
 
 
 def write_snapshot(project_names: set[str], run_folder_key: str) -> None:
@@ -306,84 +310,46 @@ DOMAIN_RECHECK_ATTEMPTS = 2
 DOMAIN_RECHECK_SECONDS = float(os.environ.get("HANDOFF_RETRY_SECONDS", "15"))
 
 
-def run_folder_leftovers() -> list[str]:
-    """Keys of folders named RUN_FOLDER_NAME — leftovers of a failed teardown.
+def heal_leftover_run_folder() -> bool:
+    """Delete a leftover run folder from a failed teardown; True if one went.
 
-    Exact name match only: this feeds the one delete path seed has, so nothing
-    the script did not itself name is ever a candidate. The envelope is
-    unwrapped tolerantly (bare array or a dict of one known list key) but an
-    unrecognised shape raises — a silent [] would skip the self-heal and block
-    the run on its own residue.
+    Looked up by its exact name, so nothing this script did not itself name is
+    ever a delete candidate (Orchestrator folder names are unique per parent,
+    so there is at most one). A leftover carries the previous run's
+    deployment, whose registry node covers the fixture domain — deleting the
+    folder is the self-heal that unblocks the domain gate. Two refusals guard
+    it: a folder young enough to belong to a LIVE concurrent instance of this
+    task raises rather than yank a running sibling's folder (the fixed name
+    makes this task single-flight — see RUN_FOLDER_NAME), and a delete that
+    keeps failing raises because the same name is about to be recreated and a
+    runner that cannot delete folders cannot tear down either.
     """
-    payload = run_uip_json(
-        ["or", "folders", "list", "--limit", FOLDER_LIST_LIMIT, "--output", "json"]
-    )
-    data = payload["Data"]
-    if isinstance(data, list):
-        entries = data
-    elif isinstance(data, dict):
-        for envelope_key in ("Folders", "Items", "Value", "Results"):
-            if envelope_key in data:
-                entries = data[envelope_key]
-                break
-        else:
-            raise RuntimeError(
-                f"unrecognised `or folders list` envelope: keys={sorted(data)}"
-            )
-    else:
-        raise RuntimeError(f"unrecognised `or folders list` payload: {type(data).__name__}")
-    if len(entries) >= int(FOLDER_LIST_LIMIT):
+    leftover = folder_get(RUN_FOLDER_NAME)
+    if leftover is None:
+        return False
+
+    folder_key = str(leftover["Key"])
+    age = age_seconds(leftover)
+    if age is not None and age < LIVE_FOLDER_AGE_SECONDS:
         raise RuntimeError(
-            f"folder list returned a full page ({len(entries)}) — a leftover "
-            f"'{RUN_FOLDER_NAME}' could be beyond it; raise FOLDER_LIST_LIMIT"
+            f"folder '{RUN_FOLDER_NAME}' ({folder_key}) is only {age:.0f}s old — "
+            "younger than one task budget, so it likely belongs to a LIVE "
+            "concurrent instance of this task rather than a failed teardown. "
+            "Refusing to delete it: wait for that run to finish and retry, or "
+            "delete the folder by hand if you know it is a fresh leak."
         )
-    return [
-        str(entry["Key"])
-        for entry in entries
-        if RUN_FOLDER_NAME
-        in (
-            entry.get("DisplayName"),
-            entry.get("Name"),
-            str(entry.get("FullyQualifiedName") or "").split("/")[-1],
+
+    completed = delete_folder_with_retry(folder_key)
+    if completed.returncode != 0:
+        detail = " ".join((completed.stderr or completed.stdout).split())
+        raise RuntimeError(
+            f"could not delete leftover run folder '{RUN_FOLDER_NAME}' "
+            f"({folder_key}, exit {completed.returncode}): {detail}. Teardown "
+            "depends on folder delete — fix the runner's folder-delete "
+            "permission or delete the folder by hand."
         )
-    ]
-
-
-def heal_leftover_run_folders() -> bool:
-    """Delete any leftover run folder from a failed teardown; True if any went.
-
-    A leftover carries the previous run's deployment, whose registry node
-    covers the fixture domain — deleting the folder is the self-heal that
-    unblocks the domain gate. Two refusals guard the delete: a folder young
-    enough to belong to a LIVE concurrent instance of this task raises rather
-    than yank a running sibling's folder (the fixed name makes this task
-    single-flight — see RUN_FOLDER_NAME), and a delete that keeps failing
-    raises because the same name is about to be recreated and a runner that
-    cannot delete folders cannot tear down either.
-    """
-    healed = False
-    for folder_key in run_folder_leftovers():
-        age = folder_age_seconds(folder_key)
-        if age is not None and age < LIVE_FOLDER_AGE_SECONDS:
-            raise RuntimeError(
-                f"folder '{RUN_FOLDER_NAME}' ({folder_key}) is only {age:.0f}s old — "
-                "younger than one task budget, so it likely belongs to a LIVE "
-                "concurrent instance of this task rather than a failed teardown. "
-                "Refusing to delete it: wait for that run to finish and retry, or "
-                "delete the folder by hand if you know it is a fresh leak."
-            )
-        completed = delete_folder_with_retry(folder_key)
-        if completed.returncode != 0:
-            detail = " ".join((completed.stderr or completed.stdout).split())
-            raise RuntimeError(
-                f"could not delete leftover run folder '{RUN_FOLDER_NAME}' "
-                f"({folder_key}, exit {completed.returncode}): {detail}. Teardown "
-                "depends on folder delete — fix the runner's folder-delete "
-                "permission or delete the folder by hand."
-            )
-        print(f"self-heal: deleted leftover run folder {folder_key} ('{RUN_FOLDER_NAME}')")
-        healed = True
-    return healed
+    print(f"self-heal: deleted leftover run folder {folder_key} ('{RUN_FOLDER_NAME}')")
+    return True
 
 
 def create_run_folder() -> str:
@@ -391,7 +357,7 @@ def create_run_folder() -> str:
 
     Also the create-permission pre-flight: a runner that cannot create folders
     fails here, loudly, before the agent spends its budget. (Delete permission
-    is proven by heal_leftover_run_folders the first time it matters — a
+    is proven by heal_leftover_run_folder the first time it matters — a
     delete-permission regression costs one leaked run, then fails loudly at
     the next seed.)
     """
@@ -459,7 +425,7 @@ def require_domain_uncovered(healed: bool) -> None:
 
     If one does, reusing it is the correct agent action and the handoff never
     fires — the run would go red for a reason unrelated to the behaviour under
-    test. When heal_leftover_run_folders just deleted a leftover, its node is
+    test. When heal_leftover_run_folder just deleted a leftover, its node is
     the likely cover and registry deletion propagation can lag, so the probe
     re-checks a few times. A node still resolvable after that fails THIS run
     (the agent could reuse it), but if the cover was the healed leftover the
@@ -499,7 +465,7 @@ def require_domain_uncovered(healed: bool) -> None:
 
 def seed_main() -> int:
     require_deployments_create()
-    healed = heal_leftover_run_folders()
+    healed = heal_leftover_run_folder()
     require_domain_uncovered(healed)
     run_folder_key = create_run_folder()
     project_names = list_project_names()
@@ -874,7 +840,7 @@ def cleanup() -> None:
     # seed created is the ONLY folder this script deletes; anything the agent
     # parked elsewhere is reported below.
     run_folder_deleted = False
-    if not folder_exists(run_folder_key):
+    if folder_get(run_folder_key) is None:
         print(f"NOTE: run folder {run_folder_key} is already gone — nothing to delete.")
         run_folder_deleted = True
     elif delete_folder(run_folder_key):
