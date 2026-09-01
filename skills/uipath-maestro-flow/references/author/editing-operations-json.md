@@ -69,7 +69,7 @@ Preserve canonical 2-space indent. `flow format` normalizes layout but does not 
 Run the CLI’s JMESPath filter for read-only extraction; expressions start at the `Data` envelope and omit `Data.`. See [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
 
 ```bash
-uip solution upload --output json --output-filter "Url"
+uip solution upload --output json --output-filter "DesignerUrl"
 uip maestro flow registry get <node-type> --output json --output-filter "Node"
 ```
 

@@ -252,7 +252,7 @@ If taxonomy lookup fails because of no matching project, login expiry, unpublish
 
 ## Landing the node when you cannot fully configure it
 
-Always land an extraction node for greenfield exploration, unwired upstreams, planning-only work, or an unconfirmed model; author it before trigger and connector nodes. Do not omit the step.
+**The extraction step must ALWAYS land a node — never drop it because configuration is incomplete.** A greenfield/exploration turn, an unwired upstream, an unresolved or unnamed **downstream** target, a "you don't need a working flow" instruction, or an unconfirmed model are NOT reasons to skip it. Ambiguity anywhere else in the flow is never a reason to stop before scaffolding: create the project, land the extraction node, and carry the open decision in **Open Questions** rather than asking and halting. The common failure is landing the steps around extraction while the extraction node itself goes missing. Author it before the trigger and connector nodes — connector configuration branches open-endedly, and this is the node the request is about.
 
 - If `registry search "uipath.ixp"` returns entries, land the real `uipath.ixp.*` node. Build it from `registry get`, including `inputs.model` and fixed `outputs`; use a placeholder `fileRef` if necessary, and put unresolved model choice, file source, and taxonomy in **Open Questions**. Do not downgrade to `core.logic.mock`.
 - If `Data: []`, land `core.logic.mock` as described below.
