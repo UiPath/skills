@@ -633,14 +633,18 @@ def sanitize_registry_segment(name: str) -> str:
 
 
 def name_matches(name: str, haystack: str) -> bool:
-    """One containment rule everywhere a run identifier is looked for: raw
-    (casefolded) or registry-sanitized, both sides. Keeps the .flow wired-match
-    and the registry probe in agreement — a DeploymentName carrying `_` or
-    uppercase still matches its own lowercased-and-hyphenated NodeType.
+    """One containment rule everywhere a run identifier is looked for: the raw
+    name (casefolded) or its registry-sanitized form, against the haystack as
+    served. Only the NAME is sanitized — the registry already sanitizes the
+    segment it embeds in a NodeType, so that form is exactly what matches it,
+    and leaving the haystack alone keeps the dots between segments as
+    boundaries. Keeps the .flow wired-match and the registry probe in
+    agreement: a DeploymentName carrying `_` or uppercase still matches its own
+    lowercased-and-hyphenated NodeType.
     """
     return (
         name.lower() in haystack.lower()
-        or sanitize_registry_segment(name) in sanitize_registry_segment(haystack)
+        or sanitize_registry_segment(name) in haystack.lower()
     )
 
 
