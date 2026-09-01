@@ -11,6 +11,8 @@ Before any Phase 3 mutation:
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
+
+   **If your harness has no TodoWrite tool, the step list is still binding.** It is the phase's execution order, not bookkeeping: without it the tail of the phase — Step 11.5 and the Step 12 checks — is what gets dropped, and both are things `uip maestro case validate` cannot see. Keep the list explicitly and run every item through Step 12's verification commands before declaring Phase 3 done.
    1. Read the Phase 3 manifest (Step 9.65)
    2. Wire connector task schemas (Step 9.7)
    3. Bind task I/O values (Step 9.8)
@@ -107,6 +109,14 @@ If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchange
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
 Runs after bindings (9.8) and connector-rule upgrades (10.5), when every task / trigger / rule output is minted and deduped. Conditions and SLA were already written in Phase 2. Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — resolve the source through the common output-reference-ID algorithm and substitute bare `vars.<outputReferenceId>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple or reference ID is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
+
+**Verify with a command, not from memory.** `validate` does not check this, so run:
+
+```bash
+grep -c '\$xref(' <Solution>/<Project>/caseplan.json
+```
+
+It must print `0`. A non-zero count means this step did not finish — resolve the survivors and re-run it. Do not enter Phase 4 on a non-zero count. This is the same assertion as Step 12 Check 4; running it here catches the omission at the step that causes it.
 
 ## Step 12 — End-of-Phase-3 validator pass
 
