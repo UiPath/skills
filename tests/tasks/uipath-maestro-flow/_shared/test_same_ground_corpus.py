@@ -210,3 +210,23 @@ def test_multiselect_prompt_names_slack_as_the_required_connector() -> None:
     prompt = _prompt_text(_task_text("connector_features/multiselect.yaml")).lower()
 
     assert "slack group direct message" in prompt
+
+
+def test_paginated_lookup_accepts_both_supported_resolution_routes() -> None:
+    text = _task_text("connector_features/paginated_reference_lookup.yaml")
+    patterns = re.findall(r"(?m)^\s+command_pattern:\s*'([^']+)'", text)
+    resolve_pattern, pagination_pattern = map(re.compile, patterns[:2])
+
+    manual_commands = (
+        "uip is resources run list uipath-salesforce-slack conversations "
+        "--connection-id id --query nextPage=token"
+    )
+    sdk_command = (
+        "uip maestro flow registry prepare uipath-salesforce-slack "
+        "send-message-to-channel --resolve channel:name=simple"
+    )
+
+    assert resolve_pattern.search(manual_commands)
+    assert pagination_pattern.search(manual_commands)
+    assert resolve_pattern.search(sdk_command)
+    assert pagination_pattern.search(sdk_command)
