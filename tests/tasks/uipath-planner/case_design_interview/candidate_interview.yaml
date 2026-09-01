@@ -160,9 +160,20 @@ success_criteria:
         handoff before Hired), or data a task needs that no upstream task
         produces.
 
-      Score 1.0 if the captured design is coherent and would finalize into a
-      working case with no major flaws; 0.5 if mostly coherent with minor gaps;
-      0.0 if there are major logical/domain errors.
+      Score against these anchors, interpolating only between adjacent ones:
+
+      - 1.0 — coherent throughout; a reviewer could finalize it without asking a
+        design question.
+      - 0.8 — coherent; the only gaps are cosmetic, or are ones the draft itself
+        flags for the reviewer (an unpolished draft is what was asked for).
+      - 0.6 — one substantive gap that needs a design answer before finalization.
+      - 0.4 — several substantive gaps, or one that breaks a primary path.
+      - 0.2 — the primary journey or a stated business rule is not modeled
+        correctly.
+      - 0.0 — major logical or domain errors throughout.
+
+      Pick the nearest anchor and say which one you picked. Do not average away a
+      real defect, and do not deduct twice for the same gap.
     weight: 3.0
     pass_threshold: 0.7
 
