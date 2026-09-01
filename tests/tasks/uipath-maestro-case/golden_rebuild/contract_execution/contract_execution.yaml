@@ -1,0 +1,143 @@
+task_id: skill-case-golden-rebuild-contract-execution
+description: >
+  GOLDEN REBUILD (live tenant) - rebuild the ContractExecution contract
+  review-and-execution case from an approved sdd.md whose resource references
+  are REAL: the staged fixture pins the deployed solution folders, resource
+  IDs, connection IDs, and connector activity type IDs on the coder-eval
+  tenant. Complements golden_rebuild/cm_golden_expense (feature-coverage
+  reference case) with a business-shaped lifecycle whose weight sits on the
+  SLA and interruption surface: a 10-business-day case SLA, seven stage SLAs
+  with at-risk/breach escalations, seven `sla-status-change` task triggers,
+  an interrupting `return-to-origin` intervention lane, three secondary
+  stages, two terminal non-completing case exits, a corrections loop that
+  re-enters Stage 1, and two distinct HTTP Webhook connections (one as a
+  task, one as a stage-entry `wait-for-connector` rule).
+
+  It also pins the field-name regression this case surfaced at runtime: the
+  connector / api-workflow / agent schema sub-property names are lowerCamel
+  (`request_body`, `unusualClauses`, `authorityLevel`, `deviationFlags`,
+  `counterpartyProfile`, `riskFlags`) and every dotted access off a
+  task-output object must be null-guarded. A build that PascalCases those
+  names, or drops the guard, validates fine and then fails at runtime -
+  check_contract_exec_fieldnames.py makes that failure a graded one.
+
+  Stops at validate - NOT debug.
+
+  TENANT PRECONDITION: ContractOperationsApi, ContractAnalysisAgent,
+  ContractObligationTracking, and ContractCaseActionApp must be deployed at
+  the folders pinned in fixtures/sdd.md, and both HTTP Webhook connections
+  must exist. A reinstall re-mints every ID - re-sweep fixtures/sdd.md (the
+  ONE source both the agent and the bindings grader read; the grader parses
+  its expectations from that file at grade time).
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation, feature:api-workflow]
+
+# Sized from the cm_golden_expense measurements: this case is larger (8 stages
+# / 30 tasks vs 8 / 15), so a healthy full build runs longer, and a mid-stream
+# API-limit death (32k output-token cap, context overflow) makes the harness
+# retry with a FRESH session (no resume) - task_timeout must absorb one full
+# cold restart. Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a
+# caseplan-sized extended-thinking response is not fatal.
+#
+# turn_timeout MUST NOT be smaller than task_timeout here: one harness "turn"
+# is the ENTIRE agent query stream, so turn_timeout caps the whole session and
+# is the binding limit. A smaller value silently makes task_timeout dead config
+# and kills a healthy long build with status=ERROR / score 0.0 regardless of
+# work completed (observed 2026-08-21: killed at 9000s after 492 turns and 297
+# commands, mid-caseplan, nothing graded). Measured healthy builds: 92-150 min.
+run_limits:
+  task_timeout: 18000
+  max_turns: 700
+  turn_timeout: 18000
+
+# The case skill delegates heavy legs (reference reading, sibling-resource
+# builds) to sub-agents; without Agent the whole build runs inline in one
+# context and dies to "Prompt is too long". Extends the experiment's
+# allowed_tools - keep the base list in sync with experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have an approved SDD for our contract review-and-execution case-management
+  solution - it's staged as `sdd.md` in this folder. Build a UiPath Case
+  Management solution named "ContractExecution" containing a project also named
+  "ContractExecution" from this SDD.
+
+  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0,
+  do not re-interview me, and do not redesign the process. The tenant is LIVE
+  and already hosts every referenced resource: the folder paths, resource IDs,
+  connection IDs, and connector activity type IDs in the SDD are real. Resolve
+  every task and connector rule against them - skeleton or placeholder
+  bindings are NOT acceptable.
+
+  Important:
+  - The `uip` CLI is available and already authenticated against the target
+    tenant. Resolve against a FRESH registry cache - a stale local cache is
+    not acceptable.
+  - Treat all hard stops after the SDD as pre-approved, including Phase 1
+    planning approval, Phase 2 publish-for-review, and Phase 5 publish. Choose
+    the continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion - it is not available in this harness.
+  - Do NOT publish the solution and do NOT run `uip maestro case debug`
+    (the case suspends on HITL actions, SLA clocks, and two webhook events).
+  - Finish with `uip maestro case validate ContractExecution/ContractExecution/caseplan.json --output json`
+    passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated ContractExecution caseplan.json"
+    command: "uip maestro case validate ContractExecution/ContractExecution/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan preserves the SDD topology: 8 stages (3 secondary), condition-derived transitions incl. the corrections loop, 3 case exits, 30 tasks across 5 types, run-once set, return-to-origin intervention lane, case + 7 stage SLAs with escalations, runtime flags"
+    command: "python3 $TASK_DIR/check_contract_exec_case.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "every resource task is resolved against the live tenant: expected name/folder binding keys in caseplan + bindings_v2, both webhook connection IDs, the activity type ID, connector service types, and the withdrawal stage-entry connector rule; no skeleton tasks"
+    command: "python3 $TASK_DIR/check_contract_exec_bindings.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan semantically implements the SDD dataflow and gate logic (producer ownership, globally unique output IDs, decision/signature gate polarity, sla-status-change wiring, literal fidelity, Scenario E outcome outputs)"
+    command: "python3 $TASK_DIR/check_contract_exec_semantics.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "task-output sub-property names keep the SDD's exact casing (request_body / unusualClauses / authorityLevel / deviationFlags / counterpartyProfile / riskFlags) and every dotted access off a task-output object is null-guarded"
+    command: "python3 $TASK_DIR/check_contract_exec_fieldnames.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug or publish (case suspends; publish is out of scope)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
+    weight: 1.0
+    pass_threshold: 1.0

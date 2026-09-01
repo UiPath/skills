@@ -129,6 +129,6 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
 7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
-8. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 across every connector node — a task left in the Graceful-degradation shape while `case spec` succeeded is a Check 12 failure, not an acceptable outcome
+8. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 across every connector node — a task left in the Graceful-degradation shape while `case spec` succeeded is a Check 12 failure, not an acceptable outcome
 
 <!-- END: impl-json.md -->

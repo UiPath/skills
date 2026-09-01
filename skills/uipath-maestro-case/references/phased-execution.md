@@ -82,6 +82,15 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 **Informational — do NOT halt on errors or warnings.** Capture the selected profile plus error/warning counts (and optionally the first few messages) for the boundary summary.
 
+### Phase 2 exit criteria (mandatory self-check)
+
+Phase 2 is complete only when both criteria hold. Run this check before the boundary summary, in every run mode — straight-through, pause-at-preview, and non-interactive runs alike:
+
+1. **Ledger diff is empty** — every task in `tasks.md` §4.6 exists in its owning stage's `data.tasks` in `caseplan.json` (exact `displayName` match; placeholder tasks count as present). Any missing task → return to Step 9 for exactly those tasks, then re-run this check.
+2. **No empty-stage warnings** — the Step 11.9 preview validate output contains no `has no tasks` warning. Such a warning always means criterion 1 was violated or Step 9 was skipped; it is never acceptable at this boundary.
+
+This check exists because `uip maestro case validate` returns `Valid` for a caseplan whose stages contain zero tasks — validation success is not evidence of completeness (SKILL.md Rule 26). Do not proceed to the hard stop, Phase 3, or any completion narration while either criterion fails.
+
 ### Phase 2 hard stop
 
 **Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the design-handoff Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
@@ -249,7 +258,7 @@ Before this prompt, include `Suggested next steps: run a debug session if you ar
 ### Debug notes
 
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
-- Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
+- Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation-phase-4-7.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
 - **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip maestro case pack` → `uip solution pack` → `uip solution publish` → `uip solution deploy run` — `case pack` first, always, per [§ Phase 7](#why-case-pack-is-mandatory)) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
 
 ## Phase 7 — Publish to Orchestrator

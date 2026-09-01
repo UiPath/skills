@@ -174,7 +174,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. `schema.edges` stays `[]` (Rule 20) — no edge from this trigger.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
-10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
+10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
 

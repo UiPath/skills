@@ -306,7 +306,7 @@ See `metadata.caseExitRules` in §1.
 
 **The skill never authors edges (Rule 20).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
 
-A canvas-round-tripped file may contain FE-materialized edge objects. Treat them as read-only — never copy, adapt, or author one; model flow with conditions (§3) instead. Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-operations.md#delete-an-edge--defensive-only). Shapes for READING such files: [Appendix — Edge shapes](#appendix--edge-shapes-read-only--never-author).
+A canvas-round-tripped file may contain FE-materialized edge objects. Treat them as read-only — never copy, adapt, or author one; model flow with conditions (§3) instead. Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-primitives.md#delete-an-edge--defensive-only). Shapes for READING such files: [Appendix — Edge shapes](#appendix--edge-shapes-read-only--never-author).
 
 ---
 
