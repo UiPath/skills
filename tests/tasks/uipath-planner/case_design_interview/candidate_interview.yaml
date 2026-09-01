@@ -107,6 +107,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "(advisory, non-gating) the draft's data contract closes — every consumed `=vars.<name>` has a producer (Default, trigger source, or a `-> name` row)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/draft_lineage_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
   - type: llm_judge
     description: "Captured design is domain-coherent for the candidate-interview process"
     files:
