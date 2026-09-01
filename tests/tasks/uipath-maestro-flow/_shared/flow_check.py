@@ -254,7 +254,12 @@ def run_debug(
     deadline = time.monotonic() + budget
     out_of_budget = False
 
-    for attempt in range(retries):
+    # Clamped so `debug_budget`, which prices `max(1, retries)`, cannot promise
+    # an attempt this loop never makes: `range(0)` left `r` unbound and crashed
+    # with UnboundLocalError instead of failing the criterion.
+    attempts = max(1, retries)
+
+    for attempt in range(attempts):
         attempt_cap = min(timeout, int(deadline - time.monotonic()))
         cli_timeout = max(
             _MIN_CLI_TIMEOUT_SECONDS, attempt_cap - _CLI_TIMEOUT_HEADROOM_SECONDS
@@ -283,7 +288,7 @@ def run_debug(
             break
         if _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
-        if attempt + 1 < retries:
+        if attempt + 1 < attempts:
             left = deadline - time.monotonic() - backoff_seconds
             if left < _MIN_RETRY_BUDGET_SECONDS:
                 out_of_budget = True

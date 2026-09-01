@@ -1044,3 +1044,14 @@ def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
 )
 def test_as_text_decodes_defensively(raw, expected):
     assert flow_check._as_text(raw) == expected
+
+
+def test_retries_zero_runs_one_attempt_not_none(monkeypatch):
+    """`debug_budget` prices `max(1, retries)`, so the loop must make that many.
+    `range(0)` left `r` unbound and crashed with UnboundLocalError instead of
+    grading the criterion (found by Copilot review)."""
+    assert debug_budget(240, retries=0) == 240
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    payload = run_debug(retries=0)
+    assert calls["n"] == 1
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
