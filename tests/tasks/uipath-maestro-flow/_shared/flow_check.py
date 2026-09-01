@@ -254,9 +254,7 @@ def run_debug(
     deadline = time.monotonic() + budget
     out_of_budget = False
 
-    # Clamped so `debug_budget`, which prices `max(1, retries)`, cannot promise
-    # an attempt this loop never makes: `range(0)` left `r` unbound and crashed
-    # with UnboundLocalError instead of failing the criterion.
+    # Mirrors debug_budget: pricing an attempt the loop never makes left `r` unbound.
     attempts = max(1, retries)
 
     for attempt in range(attempts):
