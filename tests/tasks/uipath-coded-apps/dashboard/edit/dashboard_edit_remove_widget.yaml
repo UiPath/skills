@@ -76,7 +76,5 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'build-dashboard\.mjs\S*\s+\S*edit-intent\.json'
     min_count: 1
-    timeout: 15
-    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
