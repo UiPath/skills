@@ -9,7 +9,7 @@ tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:dec
 run_limits:
   expected_turns: 20
   turn_timeout: 1200
-  task_timeout: 2700  # 1260s of grading + a turn; inherited 1200 could not fit grading alone
+  task_timeout: 2700  # 1260s grading + a turn; inherited 1200 could not fit grading
 
 initial_prompt: |
   Create a UiPath Flow project named "TemperatureChecker" that takes a
@@ -33,7 +33,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains a Decision node and debug returns correct classification"
     command: "python3 $TASK_DIR/check_decision_flow.py"
-    timeout: 1080  # two sequential run_debug calls; enforced by test_criterion_budgets.py
+    timeout: 1080  # two sequential run_debug calls
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

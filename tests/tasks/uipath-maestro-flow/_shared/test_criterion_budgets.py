@@ -1,66 +1,20 @@
-"""Every debug criterion must grant more time than its check can spend.
+"""A debug criterion must grant more time than its check can spend.
 
-`run_debug` bounds itself with a deadline, so it can no longer overrun. What it
-cannot do is notice that the task YAML granted less than the deadline it needs:
-the criterion `timeout:` would fire first and the grader would SIGKILL the check
-mid-attempt, discarding the payload, the instanceId, and the CLI's own envelope.
-That is how skill-flow-api-workflow scored 0 on a gating criterion in 2026-09.
-
-This is NOT a new class of failure. It was root-caused for skill-flow-subflow on
-2026-05-29 (run 2026-05-29_04-04-25) and guarded there, for that one task, by
-`single_node/subflow/test_check_subflow_flow.py`. The RCA's own words, worth
-keeping because the doc it lived in is no longer in the tree:
-
-    The criterion budget (120s) was *below* `flow_check.run_debug`'s own
-    `subprocess.run` timeout (240s default). That inversion means the checker
-    can NEVER surface the underlying CLI error: the sandbox kills the whole
-    process first, yielding exit `-1` with empty output ("Command ... timed out
-    after N seconds") instead of the informative exit `1` + traceback that the
-    inner `subprocess.TimeoutExpired` would produce.
-
-Four months later api_workflow hit the same wall, because the guard covered one
-task out of forty-four. That per-task test is deleted here and this module owns
-the rule for the whole suite: one source of truth, checked for every criterion
-rather than the one that already burned someone.
-
-So the relation is enforced here instead of eyeballed per task:
+`run_debug` bounds itself with a deadline but cannot see the task YAML. If the
+criterion `timeout:` is smaller, the grader SIGKILLs the check mid-attempt and
+the payload, instanceId and CLI envelope are all lost (skill-flow-api-workflow,
+2026-09; skill-flow-subflow before it, RCA 2026-05-29, which guarded one task
+out of forty-four via a per-task test now absorbed here).
 
     criterion timeout >= debug_budget(...) + CRITERION_MARGIN_SECONDS
 
-Scope and limits:
-
-- The budget is read STATICALLY off each ``run_debug(...)`` call, so only
-  literal keyword arguments are understood. A call whose ``timeout`` is a
-  variable is reported, not silently skipped.
-- Straight-line calls in one execution ADD UP; mutually exclusive branches take
-  the more expensive arm. So ``check_decision_flow.py`` is charged for both of
-  its sequential debugs, while ``check_wiki_pageviews_flow.py`` is charged for
-  the one ``if/elif`` case the criterion selects, not all of them.
-- A check that dispatches on ``sys.argv`` gets its subcommand resolved through
-  the AST, so a static-only criterion (no ``run_debug`` on that path) is not
-  charged for a debug it never runs. A subcommand that names no function falls
-  back to ``main`` rather than being skipped: dispatch is often an ``if/elif``
-  chain, not one function per case.
-- A loop whose iteration count is STATIC (``for raw, label in CASES``, with
-  ``CASES`` a module-level literal) is multiplied out. Helper calls are costed
-  inline at the call site, so a ``verify_case(case)`` inside that loop is
-  multiplied with it rather than counted once.
-- A loop whose count only exists at runtime (``seed.json``) is NOT quietly
-  priced at one pass. The criterion must declare the count on its ``timeout:``
-  line as ``# budget-guard: manual xN``, and the guard then checks THAT
-  arithmetic — a bare ``manual`` is refused, a stale one is refused, and where
-  the task ships a ``seed.py`` that states its cases literally, ``N`` is
-  cross-checked against it — and a count with nothing to corroborate it is
-  refused outright. An annotation nobody verifies is just a comment.
-- Pricing and "did we have to guess?" come out of ONE traversal (:class:`_Price`).
-  When they walked separately they disagreed about scope, and a loop inside a
-  helper was priced at one pass while going unreported.
-
-"Cannot compute" must never read as "fine". Every round of review on this guard
-found a live under-budgeted criterion hiding behind exactly that reflex:
-wiki_pageviews behind an unresolvable subcommand, decision behind ``max()``,
-billing_invoice_lookup behind an uncounted loop, customer_escalation_triage
-behind an unverified annotation.
+Budgets are read statically off each `run_debug(...)` call. Straight-line calls
+sum, exclusive branches take the worst arm, helper calls cost inline at the call
+site, and a loop over a module-level literal multiplies. What cannot be counted
+is refused, never assumed: a runtime-seeded loop must declare
+`# budget-guard: manual xN` on its timeout line, cross-checked against the
+task's seed.py. Every round of review on this guard found a live under-budgeted
+criterion behind a "cannot compute, assume fine" default.
 """
 
 from __future__ import annotations
@@ -85,15 +39,11 @@ _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
 # Anchored so it cannot match `turn_timeout:` / `task_timeout:`.
 _ANY_COMMAND_TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
-# Everything from `success_criteria:` up to the next top-level key. Only these
-# timeouts run inside the watchdog.
+# Only these timeouts run inside the watchdog.
 _SUCCESS_CRITERIA = re.compile(
     r"^success_criteria:\n(.*?)(?=^\S|\Z)", re.M | re.S
 )
-# A criterion whose check loops over runtime seeds cannot be priced statically.
-# The author supplies the pass count and the guard checks THAT arithmetic — a
-# bare `manual` with no count is refused, because an unverified annotation is
-# just a comment.
+# `xN` is required: an unverified annotation is just a comment.
 _MANUAL_MARKER = re.compile(r"#\s*budget-guard:\s*manual(?:\s*x\s*(\d+))?")
 
 
@@ -130,11 +80,10 @@ def _calls_in(node: ast.AST) -> list[ast.Call]:
 
 
 def _module_lengths(tree: ast.Module) -> dict[str, int]:
-    """Module-level names bound to a literal list or tuple, and their lengths.
-    This is what makes ``for raw, label in CASES`` a countable loop.
-
-    A name any function rebinds is dropped: the module value would be shadowed
-    at the point the loop reads it, and a wrong multiplier is worse than none."""
+    """Module-level list/tuple names and their lengths, so `for x in CASES` is
+    countable. A name any function rebinds is dropped — the module value is
+    shadowed where the loop reads it, and a wrong multiplier beats no multiplier
+    only in the wrong direction."""
     lengths = {}
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.value, (ast.List, ast.Tuple)):
@@ -154,10 +103,8 @@ _TRANSPARENT_ITERATORS = ("enumerate", "list", "reversed", "sorted", "tuple")
 
 
 def _iterations(loop: ast.AST, lengths: dict[str, int]) -> int | None:
-    """How many times ``loop`` runs, or None when that is not static.
-
-    A ``while``, or a ``for`` over cases read from ``seed.json``, is unknowable
-    here. It is reported rather than assumed to run once."""
+    """Iterations of ``loop``, or None when not static (a ``while``, or a ``for``
+    over runtime seeds). None is reported, never assumed to be 1."""
     if not isinstance(loop, ast.For):
         return None
     target = loop.iter
@@ -176,11 +123,9 @@ def _iterations(loop: ast.AST, lengths: dict[str, int]) -> int | None:
 
 
 class _Price(NamedTuple):
-    """Seconds one execution can spend, and the loops we had to guess at.
-
-    Both come out of ONE traversal on purpose. When the cost model and the
-    "did we guess?" detector walked separately they disagreed about scope, and
-    a loop inside a helper was priced at one pass while going unreported."""
+    """Seconds one execution can spend, and the loops we had to guess at. One
+    traversal produces both: when they walked separately they disagreed about
+    scope and a loop inside a helper went unreported."""
 
     seconds: int
     unsized: tuple[int, ...]
@@ -190,7 +135,7 @@ _FREE = _Price(0, ())
 
 
 def _merge(*prices: _Price) -> _Price:
-    """Sequential composition: seconds add, guesses accumulate."""
+    """Sequential: seconds add, guesses accumulate."""
     return _Price(
         sum(p.seconds for p in prices),
         tuple(sorted({line for p in prices for line in p.unsized})),
@@ -198,8 +143,8 @@ def _merge(*prices: _Price) -> _Price:
 
 
 def _worst(prices: list[_Price]) -> _Price:
-    """Exclusive composition: the priciest arm wins, but every arm's guesses
-    are reported — any of them may be the one that runs."""
+    """Exclusive: priciest arm wins, but every arm's guesses are reported since
+    any of them may be the one that runs."""
     if not prices:
         return _FREE
     return _Price(
@@ -217,21 +162,11 @@ def _cost(
 ) -> _Price:
     """What one execution of ``node`` can spend in ``run_debug``.
 
-    Straight-line calls ADD UP: ``check_decision_flow.py`` runs two in one
-    ``main()`` and the criterion has to fund both. Mutually exclusive branches
-    (``if`` / ``match`` / ``try``) take the most expensive arm instead, so an
-    ``if/elif`` dispatch over cases (``check_wiki_pageviews_flow.py``) is
-    charged for the one branch that runs, not all of them.
-
-    A call to a module-level function is costed INLINE, at the call site, so a
-    helper invoked once per seed (``verify_case`` in the escalation checks) is
-    multiplied with the loop around it rather than counted once. ``seen``
-    breaks recursion.
-
-    A countable loop multiplies its body. An uncountable one is charged
-    ``manual`` passes when the criterion supplies that count, and one pass
-    otherwise — in which case its line is reported so the caller can refuse to
-    accept the number."""
+    Straight-line calls sum; exclusive branches (if/match/try) take the worst
+    arm; a countable loop multiplies its body, an uncountable one is charged
+    ``manual`` passes or 1, reporting its line either way. Calls to module-level
+    functions cost INLINE at the call site, so a helper invoked once per seed is
+    multiplied with the loop around it. ``seen`` breaks recursion."""
     if _is_run_debug(node):
         budget = _budget_of_call(node)
         if budget is None:
@@ -311,13 +246,10 @@ def _defs(tree: ast.Module) -> dict[str, ast.FunctionDef]:
 
 
 def _entry(tree: ast.Module, subcommand: str | None, path: str) -> ast.FunctionDef:
-    """The function a criterion executes.
-
-    A subcommand that names a function scopes to it. One that does not is NOT
-    silently skipped — dispatch is often an ``if/elif`` on ``sys.argv`` inside
-    ``main()`` — so it falls back to ``main`` and lets :func:`_cost` pick the
-    branch. A module with neither fails loudly rather than being charged whole,
-    which would double-count every helper."""
+    """The function a criterion executes. A subcommand naming no function falls
+    back to ``main`` rather than being skipped, since dispatch is often an
+    ``if/elif`` on ``sys.argv``. Neither present fails loudly: charging the
+    module whole would double-count every helper."""
     defs = _defs(tree)
     entry = (defs.get(subcommand) if subcommand else None) or defs.get("main")
     if entry is None:
@@ -331,12 +263,11 @@ def _entry(tree: ast.Module, subcommand: str | None, path: str) -> ast.FunctionD
 def _price_script(
     path: str, subcommand: str | None, manual: int | None = None
 ) -> _Price | None:
-    """Price one execution of ``path``, or None when it runs no debug at all.
+    """Price one execution of ``path``, or None if it runs no debug.
 
-    ``manual`` is the pass count the criterion declares for a loop this guard
-    cannot count. One count cannot describe two differently-sized loops, so the
-    caller refuses that case rather than picking a number: applying N to both
-    under-charges whenever the other loop runs more often."""
+    ``manual`` is the declared pass count for an uncountable loop. It applies to
+    every such loop, which is why the caller refuses more than one: applying N
+    to both under-charges whenever the other runs more often."""
     tree = ast.parse(open(path).read())
     if not _calls_in(tree):
         return None
@@ -361,11 +292,8 @@ _SEED_CASE_NAMES = ("cases", "seed_cases")
 
 
 def _seed_case_count(script: str) -> int | None:
-    """Cases the task's own ``seed.py`` writes, when it states them literally.
-
-    This is what turns the declared ``manual xN`` from an assertion into a
-    checked one. Returns None when the generator does not exist, does not name
-    its cases, or names them more than once with different lengths — better no
+    """Cases the task's ``seed.py`` writes, when stated literally — what makes
+    ``manual xN`` checkable. None when absent, unnamed, or ambiguous: better no
     cross-check than a wrong one."""
     seed = os.path.join(os.path.dirname(script), "seed.py")
     if not os.path.exists(seed):
@@ -391,13 +319,10 @@ _EXPERIMENT_DEFAULTS = os.path.join(
 
 
 def _inherited_task_timeout() -> int:
-    """`defaults.run_limits.task_timeout` from the default experiment.
-
-    A task that declares no `task_timeout` does not run uncapped, it runs at
-    this value — which is why skipping those tasks silently exempted 58 of
-    them. Parsed with a regex, not PyYAML: CI installs only pytest, and a
-    module-level `import yaml` would error at collection and take the whole
-    maestro-flow suite with it."""
+    """`defaults.run_limits.task_timeout` from the default experiment. A task
+    declaring none runs at this value, not uncapped — skipping those silently
+    exempted 58. Regex, not PyYAML: CI installs only pytest, and a module-level
+    `import yaml` would error at collection and take the suite with it."""
     text = open(os.path.normpath(_EXPERIMENT_DEFAULTS)).read()
     found = _TASK_TIMEOUT.search(text)
     assert found, f"no task_timeout in {_EXPERIMENT_DEFAULTS}"
@@ -405,12 +330,10 @@ def _inherited_task_timeout() -> int:
 
 
 def _task_budgets():
-    """(yaml, effective task_timeout, worst-case grading seconds) per task.
+    """(yaml, effective task_timeout, worst-case grading) per task.
 
-    Grading is the success-criteria budget ONLY. `pre_run` and `post_run` are
-    outside the watchdog — coder_eval/orchestrator.py calls them at 468 and 579,
-    while the `ThreadedWatchdog` wraps only `_evaluation_loop` at 484-499 — so
-    charging them here would demand ceilings nothing needs."""
+    Grading is success_criteria only: orchestrator.py runs pre_run at 468 and
+    post_run at 579, outside the watchdog wrapping `_evaluation_loop` (484-499)."""
     inherited = _inherited_task_timeout()
     for root, _dirs, files in os.walk(_SUITE_ROOT):
         for name in files:
@@ -430,11 +353,9 @@ def _task_budgets():
 
 
 def _criteria():
-    """(yaml, script, subcommand, criterion timeout, declared pass count) for
-    every run_command criterion in the suite that points at a $TASK_DIR check.
-
-    The timeout and its ``budget-guard`` annotation are read off the SAME line,
-    so an annotation cannot drift away from the number it explains."""
+    """(yaml, script, subcommand, timeout, declared pass count) per $TASK_DIR
+    criterion. Timeout and annotation are read off the SAME line so the
+    annotation cannot drift from the number it explains."""
     for root, _dirs, files in os.walk(_SUITE_ROOT):
         for name in files:
             if not name.endswith((".yaml", ".yml")):
@@ -471,10 +392,8 @@ def _annotation_error(
     price: _Price, declared: str | None, seeded: int | None, where: str
 ) -> str | None:
     """Why this criterion's `budget-guard` annotation is unacceptable, or None.
-
-    Pure, so every refusal path is unit-testable. The multi-loop and
-    uncorroborated-count branches have no live task to exercise them, and an
-    untested branch is where each previous round of this guard went wrong."""
+    Pure so every refusal path is testable: two have no live task to reach
+    them, and untested branches are where this guard kept going wrong."""
     if declared is not None and not price.unsized:
         return (
             f"{where} has no loop this guard needs help counting, so the "
@@ -526,9 +445,8 @@ _CASES = sorted(_criteria(), key=lambda c: (c[0], c[2] or ""))
 
 
 def test_the_suite_was_actually_discovered():
-    """A broken walk, or an AST change that stops resolving `run_debug`, would
-    make every assertion below vacuously pass. Assert on both: criteria found,
-    AND criteria that actually priced a debug."""
+    """A broken walk would make every assertion below vacuously pass, so assert
+    both that criteria were found and that they priced a debug."""
     assert len(_CASES) > 40
     priced = [c for c in _CASES if _budget_of_script(c[1], c[2]) is not None]
     assert len(priced) > 40, f"only {len(priced)} criteria resolved a budget"
@@ -565,9 +483,8 @@ def test_criterion_clears_the_debug_budget(
 
 # ── cost model ──────────────────────────────────────────────────────────────
 #
-# The guard's own regressions. Each of these shapes shipped a wrong number at
-# some point in this PR's review, so they are locked with a synthetic module
-# rather than by pointing at a task that could be edited out from under them.
+# Each shape below shipped a wrong number during review. Locked against a
+# synthetic module so a task edit cannot quietly retire the coverage.
 
 
 def _price(source: str, subcommand: str | None = None, tmp=None) -> int | None:
@@ -600,8 +517,8 @@ def test_static_loop_sees_through_enumerate(tmp_path):
 
 
 def test_helper_in_a_loop_is_multiplied_not_counted_once(tmp_path):
-    """The escalation shape: the loop calls a helper, the helper runs the debug.
-    Costing helpers separately priced this at one pass."""
+    """Loop calls a helper, helper runs the debug. Costing helpers separately
+    priced this at one pass."""
     src = (
         f"CASES = [1, 2, 3]\n\n\ndef verify(c):\n    {_ONE}\n\n\n"
         "def main():\n    for c in CASES:\n        verify(c)\n"
@@ -610,8 +527,7 @@ def test_helper_in_a_loop_is_multiplied_not_counted_once(tmp_path):
 
 
 def test_runtime_loop_is_reported_not_guessed(tmp_path):
-    """A seed-driven loop must surface for manual sizing, including when the
-    debug is one helper call away."""
+    """Must surface for manual sizing even when the debug is a helper away."""
     src = (
         f"def verify(c):\n    {_ONE}\n\n\n"
         "def main():\n    for c in load():\n        verify(c)\n"
@@ -637,9 +553,8 @@ def test_module_without_an_entry_point_fails_loudly(tmp_path):
 
 
 def test_loop_inside_a_helper_is_reported(tmp_path):
-    """The mirror of the escalation shape: the LOOP is in the helper, not the
-    entry. The detector once walked only the entry while the cost model walked
-    helpers too, so this was priced at one pass and never reported."""
+    """Mirror of the escalation shape: LOOP in the helper, not the entry. The
+    detector once walked only the entry, so this went unreported."""
     src = (
         "def sweep():\n    for c in load():\n        run_debug(timeout=240)\n\n\n"
         "def main():\n    sweep()\n"
@@ -659,8 +574,7 @@ def test_declared_pass_count_multiplies_the_runtime_loop(tmp_path):
 
 
 def test_price_and_report_come_from_one_traversal(tmp_path):
-    """`_Price` carries both so the cost model and the detector cannot disagree
-    about scope, which is how the helper-loop gap opened."""
+    """One `_Price` so cost and detection cannot disagree about scope."""
     src = (
         f"CASES = [1, 2]\n\n\ndef main():\n    for c in CASES:\n        {_ONE}\n"
         "    for d in load():\n        run_debug(timeout=240)\n"
@@ -673,8 +587,7 @@ def test_price_and_report_come_from_one_traversal(tmp_path):
 
 
 def test_exclusive_branches_report_every_arms_guesses(tmp_path):
-    """Only one arm runs, but either might be the one that does, so both arms'
-    unsized loops must surface."""
+    """Either arm might run, so both arms' unsized loops must surface."""
     src = (
         "def main():\n    if x:\n        for c in load():\n"
         f"            {_ONE}\n    else:\n        for d in other():\n"
@@ -686,8 +599,7 @@ def test_exclusive_branches_report_every_arms_guesses(tmp_path):
 
 
 def test_locally_rebound_list_is_not_treated_as_static(tmp_path):
-    """A module constant a function overwrites is shadowed where the loop reads
-    it, so its length must not be used as a multiplier."""
+    """A rebound constant is shadowed where the loop reads it."""
     src = (
         f"CASES = [1, 2, 3]\n\n\ndef main():\n    CASES = load()\n"
         f"    for c in CASES:\n        {_ONE}\n"
@@ -722,7 +634,7 @@ def test_seed_case_count_reads_a_literal_generator(tmp_path):
 
 
 def test_seed_case_count_declines_when_ambiguous(tmp_path):
-    """Two different literal case lists: no cross-check beats a wrong one."""
+    """Two different case lists: no cross-check beats a wrong one."""
     open(os.path.join(str(tmp_path), "seed.py"), "w").write(
         'a = {"cases": [1, 2]}\nb = {"cases": [1, 2, 3]}\n'
     )
@@ -730,9 +642,8 @@ def test_seed_case_count_declines_when_ambiguous(tmp_path):
 
 
 def test_two_uncountable_loops_are_refused_not_guessed(tmp_path):
-    """One declared count cannot describe two loops of different sizes.
-    Applying N to both under-charges whenever the other runs more often, so the
-    criterion test refuses the shape instead of picking a number."""
+    """One count cannot describe two loops of different sizes; applying N to
+    both under-charges, so the shape is refused rather than guessed."""
     src = (
         f"def main():\n    for a in two():\n        {_ONE}\n"
         f"    for b in seven():\n        {_ONE}\n"
@@ -747,8 +658,7 @@ def test_two_uncountable_loops_are_refused_not_guessed(tmp_path):
 
 # ── annotation policy ───────────────────────────────────────────────────────
 #
-# Every refusal path, including the two no live task reaches. An untested branch
-# is where each earlier round of this guard went wrong.
+# Every refusal path, including the two no live task reaches.
 
 _ONE_LOOP = _Price(485, (7,))
 _TWO_LOOPS = _Price(970, (7, 9))
@@ -778,33 +688,23 @@ def test_annotation_policy(price, declared, seeded, expected):
 
 # ── task budget ─────────────────────────────────────────────────────────────
 #
-# The criterion checks above bound each check in isolation. Nothing bounded
-# their SUM against the cap enclosing them, and raising 41 of them at once is
-# how you find that out. `task_timeout` wraps the agent turns AND the grading in
-# one watchdog (coder_eval/orchestrator.py: ThreadedWatchdog around
-# `_evaluation_loop`, 484-499); when it fires the agent subprocess is SIGKILLed
-# and the whole task is reported TIMEOUT. That loses every criterion, including
-# the ones that already passed — strictly less diagnosable than the single
-# failed criterion this suite's timeouts exist to produce.
-#
-# The relation is an IMPOSSIBILITY check, not a sufficiency one:
+# The checks above bound each criterion; nothing bounded their SUM against the
+# cap around them. `task_timeout` wraps agent turns AND grading in one watchdog
+# (orchestrator.py 484-499); firing it reports the whole task TIMEOUT, losing
+# even the criteria that passed.
 #
 #     task_timeout > worst-case grading
 #
-# If grading alone can consume the cap, no agent run can fit, whatever it does.
-# That is provable from the numbers in the file. Anything stronger needs the
-# agent's real wall clock, which is not knowable here — an earlier draft
-# demanded `grading + turn_timeout` and was wrong on contact with a second
-# experiment: smoke.yaml sets task_timeout == turn_timeout == 900, so every
-# smoke task would have been flagged impossible while being perfectly fine.
+# An impossibility check, not a sufficiency one — anything stronger needs the
+# agent's real wall clock. An earlier draft demanded `grading + turn_timeout`
+# and broke on smoke.yaml, where the two are equal.
 
 
 _TASK_BUDGETS = sorted(_task_budgets())
 
 
 def test_every_task_with_criteria_was_discovered():
-    """Covers tasks that INHERIT their cap, not just ones that declare it.
-    Skipping the inheritors silently exempted 58 of them."""
+    """Inheritors count too; skipping them silently exempted 58."""
     assert len(_TASK_BUDGETS) > 90
     inherited = [b for b in _TASK_BUDGETS if b[1] == _inherited_task_timeout()]
     assert len(inherited) > 20, "experiment-default inheritance is not being resolved"
@@ -827,7 +727,7 @@ def test_grading_alone_fits_the_task_timeout(yaml_path, task_timeout, grading):
 
 
 def test_impossible_task_is_rejected(tmp_path):
-    """Grading alone at or above the cap: no agent run fits, whatever it does."""
+    """Grading alone at or above the cap: no agent run fits."""
     yaml = tmp_path / "x.yaml"
     yaml.write_text(
         "run_limits:\n  turn_timeout: 900\n  task_timeout: 600\n\n"
@@ -843,9 +743,8 @@ def test_impossible_task_is_rejected(tmp_path):
 
 
 def test_smoke_shaped_task_is_not_flagged(tmp_path):
-    """An earlier draft demanded `grading + turn_timeout`, which smoke.yaml
-    (task_timeout == turn_timeout == 900) makes impossible for any task with any
-    grading at all. The floor must accept this shape."""
+    """smoke.yaml has task_timeout == turn_timeout, which the earlier
+    `grading + turn_timeout` draft made impossible. The floor must accept it."""
     yaml = tmp_path / "x.yaml"
     yaml.write_text(
         "run_limits:\n  turn_timeout: 900\n  task_timeout: 900\n\n"
@@ -860,8 +759,7 @@ def test_smoke_shaped_task_is_not_flagged(tmp_path):
 
 
 def test_grading_excludes_pre_and_post_run(tmp_path):
-    """Both run OUTSIDE the watchdog (orchestrator.py 468 and 579, vs the block
-    at 484-499), so charging them would demand ceilings nothing needs."""
+    """Both run outside the watchdog (orchestrator.py 468 / 579 vs 484-499)."""
     yaml = tmp_path / "x.yaml"
     yaml.write_text(
         "pre_run:\n  - command: seed\n    timeout: 500\n\n"
@@ -873,7 +771,7 @@ def test_grading_excludes_pre_and_post_run(tmp_path):
 
 
 def test_grading_scan_ignores_the_limit_keys_themselves(tmp_path):
-    """`turn_timeout:` / `task_timeout:` must not be counted as command time."""
+    """`turn_timeout:` / `task_timeout:` are not command time."""
     yaml = tmp_path / "x.yaml"
     yaml.write_text(
         "run_limits:\n  turn_timeout: 900\n  task_timeout: 1200\n\n"

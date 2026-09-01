@@ -795,23 +795,17 @@ def _cp(returncode, stdout="", stderr=""):
 
 
 def _stub_debug(monkeypatch, results, attempt_seconds=0):
-    """Feed run_debug a queue of CompletedProcess results, drive it off a fake
-    monotonic clock, and stub project discovery so no real tree is needed.
+    """Feed run_debug a queue of CompletedProcess results off a fake monotonic
+    clock, and stub project discovery so no real tree is needed.
 
-    The clock only moves when the test says so: ``attempt_seconds`` per
-    ``subprocess.run`` plus the real backoff on each stubbed ``sleep``. An
-    attempt never runs past the cap it was given, mirroring the SIGKILL the real
-    ``subprocess.run`` would deliver. With the default of 0 the budget never
-    depletes, so the pre-deadline tests see the same numbers they always did.
+    The clock moves only on ``subprocess.run`` (``attempt_seconds``, clamped to
+    the cap given, mirroring the real SIGKILL) and on stubbed ``sleep``. The
+    default 0 never depletes the budget, so pre-deadline tests are unchanged.
+    Both stubs land on the stdlib ``time`` module and are process-wide for the
+    test; monkeypatch restores them, but do not add real sleeps under them.
 
-    Both clock stubs land on the stdlib ``time`` module (``flow_check.time`` is
-    that module), so they are process-wide for the test's duration; monkeypatch
-    restores them. Same reach as the pre-existing ``sleep`` stub, but
-    ``monotonic`` has more callers, so do not add real sleeps under it.
-
-    A queued ``BaseException`` is raised rather than returned, which is how the
-    ``subprocess.TimeoutExpired`` path is exercised. Every invocation's
-    ``cmd`` / ``env`` / ``timeout`` is recorded; the ``caps`` list keeps the
+    A queued ``BaseException`` is raised, exercising ``TimeoutExpired``. Each
+    invocation's ``cmd`` / ``env`` / ``timeout`` is recorded; ``caps`` keeps the
     per-attempt subprocess caps in order."""
     calls = {"n": 0, "cmd": None, "env": None, "timeout": None, "caps": [], "clock": 0.0}
     queue = list(results)
@@ -950,8 +944,7 @@ def test_run_debug_caps_poll_timeout_attempts(monkeypatch):
 
 
 def test_default_budget_funds_the_poll_timeout_retry(monkeypatch):
-    """The default deadline is exactly what a full-length retry costs: two
-    attempts plus one backoff, and not a second more."""
+    """Exactly two attempts plus one backoff, and not a second more."""
     assert debug_budget(timeout=240, backoff_seconds=5) == 485
     calls = _stub_debug(
         monkeypatch, [_cp(1, _POLL_TIMEOUT), _cp(0, _COMPLETED)], attempt_seconds=240
@@ -963,17 +956,13 @@ def test_default_budget_funds_the_poll_timeout_retry(monkeypatch):
 
 
 def test_budget_for_retries_1_is_a_single_attempt(monkeypatch):
-    """`retries=1` opts out of retrying, so it must not reserve time for one.
-    The seeded escalation checks loop over cases and size their criterion on
-    this."""
+    """`retries=1` must not reserve time for a retry it will not make."""
     assert debug_budget(timeout=300, retries=1) == 300
 
 
 def test_run_debug_never_exceeds_its_budget(monkeypatch):
-    """`retries` allows three, an explicit budget funds two. The deadline wins.
-
-    The default budget is sized on `retries`, so it would fund all three — only
-    a caller-supplied budget can cut a retry short."""
+    """The deadline beats `retries`. Only an explicit budget can cut a retry
+    short, since the default is sized on `retries`."""
     calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
     with pytest.raises(SystemExit):
         run_debug(timeout=200, budget=405, retries=3, backoff_seconds=5)
@@ -982,8 +971,8 @@ def test_run_debug_never_exceeds_its_budget(monkeypatch):
 
 
 def test_default_budget_funds_every_retry_the_caller_asked_for(monkeypatch):
-    """Regression lock: sizing on `_POLL_TIMEOUT_ATTEMPTS` instead of `retries`
-    silently downgraded `retries=3` to two attempts for slow 5xx transients."""
+    """Sizing on `_POLL_TIMEOUT_ATTEMPTS` silently downgraded `retries=3` to
+    two attempts for slow 5xx transients."""
     assert debug_budget(timeout=200, retries=3, backoff_seconds=5) == 610
     calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3, attempt_seconds=200)
     with pytest.raises(SystemExit):
@@ -992,10 +981,8 @@ def test_default_budget_funds_every_retry_the_caller_asked_for(monkeypatch):
 
 
 def test_budget_below_the_cli_floor_is_rejected(monkeypatch):
-    """A budget under the CLI timeout floor plus headroom would hand the
-    subprocess a smaller cap than the CLI's own `--timeout`, SIGKILLing it
-    before it could self-terminate with a parseable envelope (the #2776 bug,
-    rebuilt from the other side)."""
+    """A budget under the floor hands the subprocess a smaller cap than the
+    CLI's own `--timeout`: the #2776 SIGKILL, rebuilt from the other side."""
     calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
     with pytest.raises(SystemExit, match="below the 90s floor"):
         run_debug(timeout=240, budget=25)
@@ -1003,8 +990,7 @@ def test_budget_below_the_cli_floor_is_rejected(monkeypatch):
 
 
 def test_run_debug_refuses_a_retry_it_cannot_fund(monkeypatch):
-    """An explicit budget too small for a second attempt must not start one the
-    deadline would kill mid-run."""
+    """A budget too small for a second attempt must not start one."""
     calls = _stub_debug(monkeypatch, [_cp(1, _POLL_TIMEOUT)] * 2, attempt_seconds=180)
     with pytest.raises(SystemExit) as excinfo:
         run_debug(timeout=180, budget=240, backoff_seconds=5)
@@ -1013,8 +999,7 @@ def test_run_debug_refuses_a_retry_it_cannot_fund(monkeypatch):
 
 
 def test_run_debug_caps_the_last_attempt_at_the_remainder(monkeypatch):
-    """When the remainder is smaller than `timeout`, the attempt shrinks to fit
-    rather than overrunning the deadline."""
+    """A remainder smaller than `timeout` shrinks the attempt to fit."""
     calls = _stub_debug(
         monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)], attempt_seconds=100
     )
@@ -1023,8 +1008,7 @@ def test_run_debug_caps_the_last_attempt_at_the_remainder(monkeypatch):
 
 
 def test_run_debug_retry_floor_matches_the_cli_minimum():
-    """The floor is the smallest attempt the CLI could actually run: its own
-    timeout minimum plus the headroom for the phases --timeout does not bound."""
+    """The floor is the smallest attempt the CLI could actually run."""
     assert flow_check._MIN_RETRY_BUDGET_SECONDS == (
         flow_check._MIN_CLI_TIMEOUT_SECONDS + flow_check._CLI_TIMEOUT_HEADROOM_SECONDS
     )

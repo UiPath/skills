@@ -69,30 +69,21 @@ _LAST_DEBUG_INPUT_IDS: set[str] = set()
 _LAST_DEBUG_PROJECT_DIR: str | None = None
 
 
-# The CLI polls for `--timeout` seconds (default 600) before giving up, while
-# `timeout` here caps one attempt at 180-840s. Without an explicit `--timeout`
-# we SIGKILL the CLI mid-poll and keep nothing — no payload, no instanceId, no
-# incidents. The headroom covers the phases `--timeout` does not bound (upload,
-# provisioning, begin-session, create-instance), so the CLI always
+# Without an explicit `--timeout` (CLI default 600s) we SIGKILL the CLI
+# mid-poll and keep nothing. The headroom covers the phases `--timeout` does
+# not bound (upload, provisioning, begin-session, create-instance), so the CLI
 # self-terminates first, with a parseable envelope.
 _CLI_TIMEOUT_HEADROOM_SECONDS = 60
 _MIN_CLI_TIMEOUT_SECONDS = 30
 
-# The smallest remaining budget worth spending on another attempt. Below this a
-# retry cannot even fund the CLI floor plus its headroom, so it would be killed
-# mid-run and yield nothing to diagnose from.
+# Below this a retry cannot fund the CLI floor plus headroom, so it would be
+# killed mid-run and yield nothing.
 _MIN_RETRY_BUDGET_SECONDS = _MIN_CLI_TIMEOUT_SECONDS + _CLI_TIMEOUT_HEADROOM_SECONDS
 
-# What a check spends outside `run_debug`: interpreter start, the static
-# `.flow` asserts, and solution teardown. The criterion `timeout:` in the task
-# YAML must clear :func:`debug_budget` by at least this much — see
-# test_criterion_budgets.py, which enforces it across every task. Public
-# alongside `debug_budget`: the two halves of one contract.
-#
-# This is a CHOSEN floor, not a measured one. It matches the gap the suite
-# already used most often (240s debug under a 300s criterion) and no check has
-# been timed against it. Raise it if a check ever dies in its static asserts
-# rather than in `run_debug`.
+# What a check spends outside `run_debug`: interpreter start, static asserts,
+# teardown. A CHOSEN floor, not a measured one — it matches the gap the suite
+# already used most often (240s debug under a 300s criterion). Public alongside
+# `debug_budget`; test_criterion_budgets.py enforces the pair.
 CRITERION_MARGIN_SECONDS = 60
 
 # `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` — the CLI never reads the latter. At
@@ -104,22 +95,16 @@ _DEBUG_LOG_LEVEL = "info"
 # which is wrong for a poll timeout.
 _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 
-# A poll timeout burns a whole attempt for no new information, so it gets a
-# tighter cap than `retries`, which still governs the cheap transients (a 5xx
-# usually fails in seconds). Independent of the `retries` default: raising that
-# does not buy more poll-timeout attempts.
+# A poll timeout burns a whole attempt for no new information, so it caps
+# tighter than `retries`, which still governs cheap transients. Independent of
+# the `retries` default.
 _POLL_TIMEOUT_ATTEMPTS = 2
 
-# `run_debug` defaults, named so `debug_budget` and the criterion guard cannot
-# drift from the function they price.
-#
-# `_DEFAULT_RETRIES` was 3 until the budget started funding every attempt it
-# promises. Two is a deliberate narrowing: a fast 5xx now gets one retry rather
-# than two, matching the CLI's own Instructions ("retry once before
-# reporting"), and a third full-length attempt would add `timeout` seconds to
-# every criterion ceiling in the suite for a case never observed to need it. A
-# task that wants the old behaviour passes `retries=3`, and `debug_budget`
-# funds it.
+# Named so `debug_budget` and the criterion guard cannot drift from the
+# function they price. `_DEFAULT_RETRIES` was 3 until the budget started funding
+# every attempt it promises; 2 is a deliberate narrowing (one retry for a fast
+# 5xx, matching the CLI's own "retry once before reporting") that keeps a third
+# full-length attempt out of every criterion ceiling. `retries=3` still works.
 _DEFAULT_RETRIES_TIMEOUT = 240
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF_SECONDS = 5.0
@@ -189,14 +174,11 @@ def debug_budget(
 ) -> int:
     """Worst-case wall clock for one :func:`run_debug` call.
 
-    Sized on ``retries``, not on :data:`_POLL_TIMEOUT_ATTEMPTS`: the poll cap
-    only binds the poll-timeout path, while a slow 5xx can still consume every
-    attempt ``retries`` allows. Funding fewer than that would let the deadline
-    cancel a retry the caller asked for. ``retries=1`` opts out and pays for one
-    attempt. Rounds the backoff up, since this is an upper bound.
-
-    Public so test_criterion_budgets.py can hold every task YAML to the same
-    arithmetic instead of eyeballing it."""
+    Sized on ``retries``, not :data:`_POLL_TIMEOUT_ATTEMPTS`: the poll cap binds
+    only the poll-timeout path, while a slow 5xx can consume every attempt
+    ``retries`` allows, and funding fewer would let the deadline cancel a retry
+    the caller asked for. Public so test_criterion_budgets.py holds every task
+    YAML to the same arithmetic."""
     attempts = max(1, retries)
     return timeout * attempts + math.ceil(backoff_seconds) * (attempts - 1)
 
@@ -216,21 +198,18 @@ def run_debug(
 
     ``timeout`` caps ONE attempt; the CLI gets a strictly smaller ``--timeout``
     so an overrun ends with its own diagnosable envelope instead of a SIGKILL.
-    ``budget`` is the wall-clock deadline for the whole call and defaults to
-    :func:`debug_budget` — enough for the retry below, and never more. The two
-    are separate because a task's flow needs the attempt it needs (an
-    Orchestrator job is not a Script node), while the criterion has to bound
-    the check as a whole. The deadline is what keeps a retry from running past
-    the ``timeout:`` the task YAML granted and being SIGKILLed with no payload,
-    no instanceId, and no CLI envelope to diagnose from.
+    ``budget`` is the deadline for the whole call, defaulting to
+    :func:`debug_budget`. They are separate because a flow needs the attempt it
+    needs (an Orchestrator job is not a Script node) while the criterion bounds
+    the check as a whole; the deadline is what stops a retry outliving the
+    ``timeout:`` the task YAML granted and dying with nothing to diagnose.
 
     Transient server-side errors (5xx / ``RetryLater``, or the CLI's own
     poll-budget expiry — see :func:`_is_transient_debug_error`) are retried up
     to ``retries`` times with ``backoff_seconds`` between attempts; poll
     timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS`, and any retry is skipped once
-    the remaining budget drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real
-    flow fault (non-transient failure, or a run that completes with the wrong
-    ``finalStatus``) fails immediately without burning retries.
+    the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
+    fault fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -260,15 +239,13 @@ def run_debug(
     }
     _LAST_DEBUG_PROJECT_DIR = project_dir
 
-    # One deadline for the whole call, so the retry can never push us past what
-    # the criterion granted. An attempt gets `timeout`, or the remainder when
-    # that is smaller.
+    # One deadline for the whole call: an attempt gets `timeout`, or the
+    # remainder when that is smaller.
     if budget is None:
         budget = debug_budget(timeout, retries, backoff_seconds)
     if budget < _MIN_RETRY_BUDGET_SECONDS:
-        # Below this the subprocess cap lands under the CLI's own `--timeout`
-        # floor, so we would SIGKILL it before it could self-terminate with a
-        # parseable envelope — the #2776 bug, rebuilt from the other side.
+        # Below this the subprocess cap lands under the CLI's `--timeout`
+        # floor: the #2776 SIGKILL, rebuilt from the other side.
         _fail(
             f"run_debug budget of {budget}s is below the {_MIN_RETRY_BUDGET_SECONDS}s "
             "floor (the CLI timeout minimum plus its headroom); raise `budget` or "

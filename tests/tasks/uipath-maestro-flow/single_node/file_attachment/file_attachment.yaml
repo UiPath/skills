@@ -59,7 +59,7 @@ success_criteria:
   - type: run_command
     description: "Debug with --attachment completes and the uploaded file name appears in the output"
     command: "python3 $TASK_DIR/check_file_attachment_flow.py"
-    timeout: 600  # >= debug_budget(240) + margin; enforced by test_criterion_budgets.py
+    timeout: 600  # >= debug_budget(240) + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

@@ -10,7 +10,7 @@ tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:tran
 run_limits:
   expected_turns: 44
   turn_timeout: 1200
-  task_timeout: 3000  # 1620s of grading + a turn; inherited 1200 could not fit grading alone
+  task_timeout: 3000  # 1620s grading + a turn; inherited 1200 could not fit grading
 
 initial_prompt: |
   Create a UiPath Flow project named "WikiPageviews" that takes `article`
