@@ -577,7 +577,7 @@ Load `uipath-planner` with this SDD path to derive the task list:
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
-The planner detects the `## Planner Handoff` header, parses Section 2: Stages & Tasks and Section 4: Integrations, derives the per-skill task list, writes `<CASE_NAME_KEBAB>-tasks.md` alongside this SDD, and emits live `TaskCreate` calls. If `Execution autonomy: interactive`, it enters plan mode for task review before execution.
+The planner detects the `## Planner Handoff` header, parses Section 2: Stages & Tasks and Section 4: Integrations, derives the per-skill task list, and emits live `TaskCreate` calls. If `Execution autonomy: interactive`, it enters plan mode for task review before execution.
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output.
 
