@@ -51,6 +51,23 @@ uip agent memory add SupportRecall \
 
 `SupportRecall` is the feature name inside the agent. Choose a short PascalCase or kebab-free name that describes how the agent will use the memory.
 
+**`--field` names an `inputSchema` key, not a flow variable.** Each `--field` must match a property in the agent's `inputSchema.properties` exactly — retrieval reads the value from the agent's `input` under that key. For inline agents (`--inline-in-flow`), inputs use the flattened key `<triggerNodeId>__output__<var>` (see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § Wiring Flow Inputs Into an Inline Agent), so pass the flattened name:
+
+```bash
+# inline agent: flow global userQuestion on trigger node "start"
+uip agent memory add SupportRecall \
+  --memory-space "<MEMORY_SPACE_NAME>" \
+  --folder-path "<FOLDER_PATH>" \
+  --threshold 0.25 \
+  --result-count 5 \
+  --search-mode hybrid \
+  --field start__output__userQuestion=1 \
+  --path "<FLOW_PROJECT_DIR>/<PROJECT_ID>" \
+  --output json
+```
+
+Passing the un-flattened global name (`--field userQuestion=1`) on an inline agent names a field the agent never receives; `validate` does not catch this.
+
 Options:
 
 | Option | Meaning |
@@ -62,7 +79,7 @@ Options:
 | `--threshold` | Retrieval score threshold; default `0` |
 | `--result-count` | Number of memory results; default `3` |
 | `--search-mode` | `hybrid` or `semantic`; default `hybrid` |
-| `--field name=weight` | Input field weighting; repeat for multiple fields |
+| `--field name=weight` | Input field weighting; `name` = agent `inputSchema` key (inline: `<trigger>__output__<var>`); repeat for multiple fields |
 | `--disable-dynamic-few-shot` | Attach the memory space without runtime retrieval |
 | `--path` | Agent project directory; default `.` |
 
@@ -133,7 +150,7 @@ The CLI writes a feature file at:
 <AGENT_PROJECT_DIR>/features/SupportRecall/feature.json
 ```
 
-Expected shape, for review only:
+Expected shape, for review only (standalone agent; an inline agent's `fieldSettings[].name` is the flattened key, e.g. `start__output__userQuestion`):
 
 ```json
 {

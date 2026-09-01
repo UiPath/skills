@@ -228,7 +228,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 > 1. Upload the project once with any placeholder value in `_schemaFileId` (`uip solution upload`).
 > 2. Look up the real ID Studio Web assigned to the `.hitl.json` file via `GET /api/Project/{projectId}/FileOperations/Structure` (find the entry whose `name` matches the `.hitl.json` filename — an internal Studio Web REST endpoint, not a `uip` CLI verb).
 > 3. Patch `_schemaFileId` in `caseplan.json` to that real ID.
-> 4. Push the corrected `caseplan.json` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-imports everything and mints a **new** random file ID for every file, including `.hitl.json`, immediately invalidating whatever you just patched.
+> 4. Push the corrected `caseplan.json` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-pushes every file and mints a **new** random file ID for each one, including `.hitl.json`, immediately invalidating whatever you just patched.
 >
 > This is a real gap, not just a documentation gap: today there is no supported CLI path to make a freshly-authored QuickForm task's schema editable in Studio Web without dropping to this undocumented internal API. Flag this to the user rather than silently attempting it, unless they've explicitly asked for the schema to be Studio-Web-editable.
 

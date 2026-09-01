@@ -16,7 +16,7 @@ Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live 
 
 The skill has three paths, decided by the **Entry Guard**:
 
-- **Phase D — Design.** Input is a PDD, or an explicit "design / architect this" request. Author the SDD; the SDD write ends the turn, and Lane A continues on the next turn. See [sdd-generation-guide.md](references/sdd-generation-guide.md). **Case Management designs run through Phase D's Case Design Lane** ([case-design-lane-guide.md](references/case-design-lane-guide.md)) — a conversational design ending in ONE Case Review confirmation.
+- **Phase D — Design.** Input is a PDD, or an explicit "design / architect this" request. Author the SDD; the SDD write ends the turn, and Lane A continues on the next turn. See [sdd-generation-guide.md](references/sdd-generation-guide.md). **Case Management designs run through Phase D's Case Design Lane** ([case-design-lane-guide.md](references/case/case-design-lane-guide.md)) — a conversational design ending in ONE Case Review confirmation.
 - **Lane A — PDD-driven.** Input is an SDD with the `## Planner Handoff` marker (written by Phase D, or hand-written). Read it, derive tasks, emit live tasks. Zero to two user prompts. See [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
 - **Lane B — Non-PDD.** No SDD; a non-PDD multi-project request. Elicit preferences, detect project type, write a plan, emit live tasks. 0–3 prompts (5-call cap). See [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
@@ -47,7 +47,7 @@ The skill has three paths, decided by the **Entry Guard**:
     - **When you map or copy content out of another document** (a source SDD into a client template, a PDD into an SDD, one SDD section into another), **carry its markers through byte-for-byte.** Re-wording a marker you did not author destroys a gap someone else recorded. Add new markers for the gaps *you* find; never edit the ones already there.
 11. **The terminal artefact of a Solution build is a packed `.uipx`.** The SDD's `## Next Steps` section points the user at the `uipath-solution` skill (`uip solution init` → `project add` per project → `resources refresh` → `pack`). A bare project folder is not the deliverable. Exception: when the Constraint Gate blocks Solutions for the delivery model — standalone, Automation Suite older than 2.2510, or a user exclusion — rewrite Next Steps to per-package Orchestrator publish routed via `uipath-platform`.
 12. **Never copy SDD architecture into the plan, and never invent selectors or UI targets.** The plan references SDD section paths in skill prompts; it does not duplicate architecture content. Selectors require application inspection at development time — leave them for the specialist.
-13. **Sole author of Case Management SDDs.** Every case design path — conversational, build handoff from `uipath-maestro-case`, draft finalization, PDD-driven — runs the Case Design Lane ([case-design-lane-guide.md](references/case-design-lane-guide.md)), which owns the conversation, the one confirmation, and the write; the case model and its defaults live in [case-design-layers-guide.md](references/case-design-layers-guide.md) and the render contract in the case SDD template. Design time resolves identities only — never schema discovery, project scaffolding, or create-on-missing; those are build concerns, recorded as gate decisions.
+13. **Sole author of Case Management SDDs.** Every case design path — conversational, build handoff from `uipath-maestro-case`, draft finalization, PDD-driven — runs the Case Design Lane ([case-design-lane-guide.md](references/case/case-design-lane-guide.md)), which owns the conversation, the one confirmation, and the write; the case model and its defaults live in [case-design-layers-guide.md](references/case/case-design-layers-guide.md) and the render contract in the case SDD template. Design time resolves identities only — never schema discovery, project scaffolding, or create-on-missing; those are build concerns, recorded as gate decisions.
 
 ## Entry Guard
 
@@ -56,7 +56,7 @@ Run this guard before anything else.
 ```text
 0. Product design-lane signals — checked first. Some products register a
    dedicated Phase D design lane (today: Case Management —
-   references/case-design-lane-guide.md). Route to Phase D — Design through
+   references/case/case-design-lane-guide.md). Route to Phase D — Design through
    the product's lane when any of these fire (the path taxonomy stays the three
    paths above; a lane is Phase D's product-specific entrance):
    - a build request handed off by that product's build skill because its
@@ -164,8 +164,8 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | File | Purpose |
 |------|---------|
 | [SDD Generation Guide](references/sdd-generation-guide.md) | Phase orchestrator — Phase 1, 2, 3 step-by-step instructions |
-| [Case Design Lane Guide](references/case-design-lane-guide.md) | The case design conversation — entry, tenant grounding, authoring policy, the one Case Review, and the write |
-| [Case Design Layers Guide](references/case-design-layers-guide.md) | The case model and every design **Default** — skeleton (triggers, stages, the nine task types), gates (lifecycle rules, exits, sequencing, secondary lanes), data (variables, outputs, expressions), time (SLAs, escalations, responses), naming rules, and the closure checklist |
+| [Case Design Lane Guide](references/case/case-design-lane-guide.md) | The case design conversation — entry, tenant grounding, authoring policy, the one Case Review, and the write |
+| [Case Design Layers Guide](references/case/case-design-layers-guide.md) | The case model and every design **Default** — skeleton (triggers, stages, the nine task types), gates (lifecycle rules, exits, sequencing, secondary lanes), data (variables, outputs, expressions), time (SLAs, escalations, responses), naming rules, and the closure checklist |
 | [PDD Analysis Guide](references/pdd-analysis-guide.md) | How to extract structured data from PDDs in any format |
 | [Product Selection Guide](references/product-selection-guide.md) | **Constraint Gate** (delivery model + exclusions filter), **Level 1** (primary scope), **Level 1.75** (Solution composition), **Level 2.5 Part B** (cross-product project list merge), **Level 3** (capability add-ons), template mapping |
 | [Platform Availability Guide](references/platform-availability-guide.md) | Product × delivery-model availability matrix (Cloud / Automation Suite / standalone), alternatives for blocked products, verification rule for uncertain cells. Load whenever the Constraint Gate runs — every delivery model: "Cloud is not uniform", variants (GovCloud / Dedicated / Test Cloud) and per-tenant entitlements can block products inside the Cloud column. |
@@ -182,7 +182,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | [RPA Template](assets/templates/rpa-sdd-template.md) | SDD template for RPA Process / Library / Test Automation |
 | [Flow Template](assets/templates/flow-sdd-template.md) | SDD template for Maestro Flow |
 | [BPMN Template](assets/templates/bpmn-sdd-template.md) | SDD template for Maestro BPMN |
-| [Case Management Template](assets/templates/case-sdd-template.md) | SDD template for Case Management (downstream Case Definition Blueprint shape) |
+| [Case Management Template](assets/templates/case/case-sdd-template.md) | SDD template for Case Management (downstream Case Definition Blueprint shape) |
 | [Agent Template](assets/templates/agent-sdd-template.md) | SDD template for UiPath Agents |
 | [Coded App Template](assets/templates/coded-app-sdd-template.md) | SDD template for Coded Apps (web) |
 | [API Workflow Template](assets/templates/api-workflow-sdd-template.md) | SDD template for API Workflows |
