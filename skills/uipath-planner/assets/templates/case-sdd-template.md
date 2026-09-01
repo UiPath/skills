@@ -223,12 +223,9 @@ Template-local rules:
   Completion: No`, and every secondary-stage ENTRY ROW carries `Interrupting: Yes` — including
   decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`). The only `Interrupting: No` entry row
   on a secondary stage is a parallel-oversight `sla-status-change` row.
-- A picker entry never carries a deterministic route. If the Rules and Outcomes table routes an
-  outcome to a lane off a decision fact (`reviewDecision = "Reject"` -> that lane), the lane's entry row
-  is decision-keyed — `selected-stage-completed("<origin>")` + an `IF` on that fact, `Interrupting: Yes`
-  — and the origin carries the matching gated diverting exit (`Marks Stage Complete: No` + the inverse
-  `IF`) so the decision path cannot dual-fire. `user-selected-stage` is only for a lane a person launches
-  from the picker; re-key it when the draft used it for an automatic route.
+- `user-selected-stage` is only for a lane a PERSON launches. A lane an outcome routes to automatically
+  is decision-keyed (`selected-stage-completed("<origin>")` + `IF` on the fact) and the origin carries the
+  matching `Marks Stage Complete: No` diverting exit; re-key a draft that used the picker for a route.
 - Stage-picker repair is a replacement, never a duplicate: when `user-selected-stage` requires picker
   exposure from an origin, replace that origin's `required-tasks-completed | exit-only | Yes` completion
   row with `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed`
