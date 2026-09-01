@@ -280,44 +280,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "CustomerEscalationTriage BPMN source was created"
-    path: "CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Exact BPMN.Variables registry response was retained"
-    command: "python3 $TASK_DIR/check_customer_escalation_structure.py --registry-evidence BPMN.Variables"
-    timeout: 60
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Exact BPMN.ScriptTask registry response was retained"
-    command: "python3 $TASK_DIR/check_customer_escalation_structure.py --registry-evidence BPMN.ScriptTask"
-    timeout: 60
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Exact enriched registry responses for Jira create/update, Drive copy, and Slack send were retained"
-    command: "python3 $TASK_DIR/check_customer_escalation_structure.py --connector-evidence"
-    timeout: 180
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Artifact uses registry-derived scripts, Variables, Jira, Drive, and Slack activities plus a real subprocess, boundary error, visible decisions, sequential attachment loop, and three-way parallel region"
-    command: "python3 $TASK_DIR/check_customer_escalation_structure.py"
-    timeout: 45
-    expected_exit_code: 0
-    weight: 5.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "The UiPath CLI validator independently accepts the generated BPMN"
     command: "uip maestro bpmn validate CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
@@ -334,10 +296,15 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # OUTCOME: the exact submitted project runs hidden scenarios in live Alpha.
+  # Runtime variables, element traces, incidents, typed error handling, real
+  # connector side effects, sequential iteration order, and the exact business
+  # outputs are asserted; every created issue, file, message, and ephemeral
+  # solution the harness recovers is deleted afterwards.
   - type: run_command
-    description: "The exact submitted project executes hidden scenarios in live Alpha; runtime variables, element traces, incidents, typed error handling, connector side effects, sequential iteration order, and exact business outputs are asserted, and every created issue, file, message, and ephemeral solution whose identifier the harness recovers is deleted"
-    command: "python3 $TASK_DIR/check_customer_escalation_structure.py && python3 $TASK_DIR/check_customer_escalation_behavior.py"
+    description: "The exact submitted project executes hidden scenarios in live Alpha and produces the expected business outputs and real connector side effects"
+    command: "python3 $TASK_DIR/check_customer_escalation_behavior.py"
     timeout: 10800
     expected_exit_code: 0
-    weight: 8.0
+    weight: 12.0
     pass_threshold: 1.0

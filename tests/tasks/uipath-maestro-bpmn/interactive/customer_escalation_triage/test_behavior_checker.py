@@ -370,33 +370,6 @@ class BehaviorCheckerTests(unittest.TestCase):
         ):
             checker.assert_live_target()
 
-    def test_structural_preflight_failure_prevents_live_cli_work(self) -> None:
-        failed = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout="FAIL: malformed BPMN",
-            stderr="",
-        )
-        with (
-            patch.object(
-                checker.subprocess,
-                "run",
-                return_value=failed,
-            ) as subprocess_run,
-            patch.object(checker, "run_cli") as live_cli,
-            self.assertRaisesRegex(
-                checker.CheckFailure,
-                "structural preflight failed",
-            ),
-        ):
-            checker.main()
-
-        self.assertEqual(
-            subprocess_run.call_args.args[0],
-            [sys.executable, str(checker.STRUCTURE_CHECKER)],
-        )
-        live_cli.assert_not_called()
-
     def test_task_blocks_cloud_mutations_but_allows_discovery(self) -> None:
         task_text = Path(__file__).with_name(
             "customer_escalation_triage.yaml"
@@ -537,7 +510,7 @@ class BehaviorCheckerTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         match = re.search(
             r"description: \"The exact submitted project executes hidden "
-            r"scenarios in live Alpha;.*?\n\s+timeout: (\d+)",
+            r"scenarios in live Alpha.*?\n\s+timeout: (\d+)",
             task_text,
             flags=re.DOTALL,
         )

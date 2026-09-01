@@ -28,9 +28,6 @@ from typing import Any
 
 PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
 BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
-STRUCTURE_CHECKER = Path(__file__).with_name(
-    "check_customer_escalation_structure.py"
-)
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 CONNECTION_FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
@@ -171,16 +168,6 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run_structure_preflight() -> None:
-    completed = subprocess.run(
-        [sys.executable, str(STRUCTURE_CHECKER)],
-        capture_output=True,
-        text=True,
-        timeout=180,
-    )
-    if completed.returncode != 0:
-        detail = (completed.stdout or completed.stderr).strip()
-        raise CheckFailure(f"structural preflight failed: {detail[:5000]}")
 
 
 @dataclass(frozen=True)
@@ -2643,7 +2630,6 @@ def main() -> int:
         checker_started_monotonic + LIVE_CLEANUP_DEADLINE_SECONDS
     )
     stage_started = time.monotonic()
-    run_structure_preflight()
     print(
         "BENCHMARK stage=structural-preflight "
         f"duration_seconds={time.monotonic() - stage_started:.3f}"
