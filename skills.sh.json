@@ -49,10 +49,7 @@
     {
       "title": "Diagnostics & Feedback",
       "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
-      "skills": [
-        "uipath-troubleshoot",
-        "uipath-feedback"
-      ]
+      "skills": ["uipath-troubleshoot", "uipath-feedback"]
     }
   ]
 }
