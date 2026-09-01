@@ -68,12 +68,11 @@ success_criteria:
   # knowable — the shared checker globs it (excluding generated .agent-builder/)
   # and asserts the three production-quality properties the skill now teaches:
   # model overridden off gpt-4o, real (non-placeholder) system prompt, and a
-  # typed outputSchema beyond bare `content`. $SKILLS_REPO_PATH, not
-  # $TASK_DIR/..: the sandbox only mounts the task's own leaf directory, so
-  # ../_shared does not exist there and the check exits 2.
+  # typed outputSchema beyond bare `content`. $TASK_DIR is this YAML's dir;
+  # _shared is its sibling.
   - type: run_command
     description: "Inline agent.json: model overridden, real system prompt, typed outputSchema"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" "EmailTriage/EmailTriage/*/agent.json"'
+    command: 'python3 "$TASK_DIR/../_shared/check_inline_agent.py" "EmailTriage/EmailTriage/*/agent.json"'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
