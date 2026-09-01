@@ -6,7 +6,9 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from check_procurement_sla_interrupts import (
+    _pair_is_legal,
     check_canonical_stage_sla,
+    check_plan_preserves_task_activation,
     declared_sla_titles,
     sections_by_target,
     sla_references,
@@ -101,3 +103,56 @@ def test_declared_sla_titles_accept_case_sla_title_metadata_label():
     titles = declared_sla_titles(sdd)
     assert "supplierapplication case sla" in titles
     assert "intake sla" in titles
+
+
+SDD_ILLEGAL_PAIR = """
+### Stage 1: Compliance Review
+
+##### Task 1.1: Screen Supplier
+
+**Activation Mode:** sequential
+
+**Entry Condition:**
+
+| When | Rule |
+|---|---|
+| current-stage-entered | stage entry |
+"""
+
+
+def _plan(activation: str, entry_rule: str) -> str:
+    return f"""
+## T01: Add task "Screen Supplier" to "Compliance Review"
+
+- stage: Compliance Review
+- activation-mode: {activation}
+- entry-rule: {entry_rule}
+- lane: 0
+"""
+
+
+def test_illegal_sdd_pair_may_be_normalised_either_way():
+    """`sequential` + `current-stage-entered` is illegal, so it must not propagate.
+
+    audit_plan.py rejects the pair and planning.md calls an invalid rule a
+    stop-and-repair, never an authoritative carryover. Both landings are
+    documented, so both are accepted. Run 33459371042 failed the correct
+    behaviour before this.
+    """
+    assert not _pair_is_legal("sequential", "current-stage-entered")
+    for activation, entry_rule in (
+        ("sequential", "runs-sequentially"),
+        ("parallel", "current-stage-entered"),
+    ):
+        check_plan_preserves_task_activation(
+            SDD_ILLEGAL_PAIR, _plan(activation, entry_rule)
+        )
+
+
+def test_illegal_sdd_pair_still_rejects_an_illegal_plan_pair():
+    """Normalisation must land somewhere legal — not on another illegal pair."""
+    with pytest.raises(SystemExit):
+        check_plan_preserves_task_activation(
+            SDD_ILLEGAL_PAIR, _plan("adhoc", "current-stage-entered")
+        )
+

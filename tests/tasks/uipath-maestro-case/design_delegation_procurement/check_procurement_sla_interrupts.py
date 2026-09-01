@@ -125,8 +125,38 @@ def sdd_task_activation(sdd: str) -> dict[tuple[str, str], tuple[str, str]]:
     return contracts
 
 
+# entry-rule -> the activation modes it may legally carry, per the tasks.md
+# template's pairing table (assets/templates/tasks-md-template.md) and
+# audit_plan.py, which rejects an illegal pair outright.
+LEGAL_ACTIVATION_FOR_RULE = {
+    "runs-sequentially": {"sequential", "parallel-after-predecessor"},
+    "current-stage-entered": {"parallel"},
+    "adhoc": {"adhoc"},
+    "selected-tasks-completed": {"fan-in", "conditional-gate"},
+    "wait-for-connector": {"event-triggered"},
+}
+
+
+def _pair_is_legal(activation: str, entry_rule: str) -> bool:
+    """An entry-rule the table does not constrain pairs with whatever permits it."""
+    allowed = LEGAL_ACTIVATION_FOR_RULE.get(entry_rule)
+    return allowed is None or activation in allowed
+
+
 def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
-    """The no-build handoff must not reinterpret confirmed task semantics."""
+    """The no-build handoff must not reinterpret confirmed task semantics.
+
+    Exception: an SDD pair that is itself ILLEGAL must not be propagated. The
+    skill's doctrine is explicit — "an invalid selector is a stop-and-repair,
+    never an authoritative carryover" (references/planning.md) — and
+    audit_plan.py rejects an illegal pair, so a plan that mirrored one could
+    never pass the skill's own gate. Seen in run 33459371042: the SDD declared
+    'Screen Application Data' as sequential/current-stage-entered (illegal —
+    that rule pairs only with `parallel`), the plan legally normalised it to
+    sequential/runs-sequentially, and this check failed the correct behaviour.
+    When the SDD pair is illegal, the plan need only keep the activation mode
+    and land on a legal pair.
+    """
     for (stage_name, task_name), (sdd_activation, sdd_entry_rule) in sdd_task_activation(sdd).items():
         section = task_section(plan, task_name, stage_name)
         activation = re.search(r"(?im)^[-*]?\s*activation-mode:\s*([^\n]+)", section)
@@ -138,6 +168,21 @@ def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
 
         plan_activation = rule_type(activation.group(1), task_name, "plan activation")
         plan_entry_rule = rule_type(entry_rule.group(1), task_name, "plan entry")
+        if not _pair_is_legal(sdd_activation, sdd_entry_rule):
+            # The SDD itself is invalid here. Either half may be the one that
+            # gives way — planning.md documents both landings ("a singleton task
+            # that starts with its stage remains parallel + current-stage-entered",
+            # and "sequential tasks say runs-sequentially") — so require only that
+            # the plan lands on a LEGAL pair. Sequencing the requirement actually
+            # states is asserted separately for the Supplier Setup trio.
+            if not _pair_is_legal(plan_activation, plan_entry_rule):
+                fail(
+                    f"tasks.md must normalise {task_name!r} to a legal pair "
+                    f"(SDD pair {sdd_activation}/{sdd_entry_rule} is illegal); "
+                    f"got {plan_activation}/{plan_entry_rule}"
+                )
+            continue
+
         if plan_activation != sdd_activation or plan_entry_rule != sdd_entry_rule:
             fail(
                 f"tasks.md changes {task_name!r} activation from "
