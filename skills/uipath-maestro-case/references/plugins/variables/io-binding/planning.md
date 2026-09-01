@@ -19,6 +19,8 @@ The SDD Outputs table has separate `Field`, `Type`, and `Binding / Value` column
 
 Treat `—` and blank `Field` cells on `=` rows as presentation-only placeholders, never as operands or operators. The `Binding / Value` cell already contains the complete assignment; copy that cell unchanged and do not prepend the Field or another `=`. For a `->` row, concatenate the non-empty Field and `Binding / Value` cells once. A non-empty Field with a blank or `—` Binding is not a third SDD form; reject it as ambiguous and use AskUserQuestion.
 
+**Emit the row bare — no backticks, no type.** The SDD's `Field` and `Binding / Value` cells are Markdown code spans and its `Type` is a separate column; all three are presentation. Strip the backticks, drop the `Type` entirely, and never re-wrap either operand in backticks, quotes, or parentheses. An operand that already carries its own quotes (`` `"literal-assigned"` ``) keeps exactly those and gains no others. A `tasks.md` output item is `<field-path> -> <case-variable>` or `<case-variable> = <expression>` and nothing else — the row carries no type, because the type is already in the SDD and in the resolved schema.
+
 ```markdown
 <!-- INVALID: leaked the SDD Field placeholder and invented an extra operator -->
 - — = literalResult = "literal-assigned"
@@ -26,11 +28,21 @@ Treat `—` and blank `Field` cells on `=` rows as presentation-only placeholder
 <!-- INVALID: bare auto-mint is schema-discovered, not SDD-authored -->
 | APIOutput1 | string | — |
 
+<!-- INVALID: kept the SDD cells' backticks -->
+- `APIOutput1` -> `renamedResult`
+
+<!-- INVALID: leaked the SDD Type column as a parenthesised annotation -->
+- APIOutput1 (string) -> renamedResult
+
+<!-- INVALID: both at once — the most common drift -->
+- `APIOutput1` (string) -> `renamedResult`
+
 <!-- VALID -->
+- APIOutput1 -> renamedResult
 - literalResult = "literal-assigned"
 ```
 
-Before the Phase 1 approval gate, reject any SDD Outputs row without `->` or `=`, and reject any `tasks.md` output item whose first token is `—`, `->`, or `=`. Every SDD-projected item must match `<field-path> -> <case-variable>` or `<case-variable> = <expression>`; `<top-level-field>` is reserved for schema-discovered items.
+Before the Phase 1 approval gate, reject any SDD Outputs row without `->` or `=`; reject any `tasks.md` output item whose first token is `—`, `->`, or `=`; and reject any output item that wraps an operand in backticks or carries a parenthesised type. Every SDD-projected item must match `<field-path> -> <case-variable>` or `<case-variable> = <expression>`; `<top-level-field>` is reserved for schema-discovered items.
 
 ## SDD Inputs table to `tasks.md` projection (mandatory)
 
@@ -48,6 +60,9 @@ The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactl
 <!-- INVALID: leaked the SDD Type column as a literal pipe segment -->
 - APIInput1 | string | <- "Binding Matrix"."Echo literal".APIOutput1
 
+<!-- INVALID: same leak, parenthesised -->
+- APIInput1 (string) <- "Binding Matrix"."Echo literal".APIOutput1
+
 <!-- INVALID: re-quoted the code-span cell and replaced the operator with `:` -->
 - APIInput1: '<- "Binding Matrix"."Echo literal".APIOutput1'
 
@@ -58,7 +73,7 @@ The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactl
 - APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1
 ```
 
-Before the Phase 1 approval gate, reject any `tasks.md` input item that wraps its value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, and any item whose name and value are separated by `:` rather than `<-` or `=`.
+Before the Phase 1 approval gate, reject any `tasks.md` input item that wraps its name or value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, any item carrying a parenthesised or piped type, and any item whose name and value are separated by `:` rather than `<-` or `=`.
 
 ## Discovering Input/Output Names
 

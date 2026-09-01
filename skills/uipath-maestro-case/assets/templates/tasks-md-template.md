@@ -39,6 +39,32 @@
 - resource-intent: "<what this task is for, from the SDD>"
 - identity: <UNRESOLVED: resolve at build>
 - rationale: "<the SDD's Design Rationale for this task, preserved verbatim>"
+- inputs:
+  - APIInput1 = "literal-seed"
+  - APIInput2 <- "Stage Name"."Producer Task".APIOutput1
+- outputs:
+  - APIOutput1 -> renamedResult
+  - literalResult = "literal-assigned"
+
+<!-- I/O rows are BARE. One list item per SDD Inputs/Outputs row, in SDD order.
+     The separator IS the operator: `=` assigns, `<-` consumes another task's
+     output, `->` extracts a field into a case variable.
+
+     Strip the SDD's presentation: its `Field` and `Binding / Value` cells are
+     Markdown code spans and its `Type` is its own column. Emit NO backticks on
+     either operand, NO type annotation in any form, and NO `:` separator. An
+     operand that already carries quotes (`"literal-seed"`) keeps exactly those.
+
+       INVALID   - `APIOutput1` (string) -> `renamedResult`
+       INVALID   - APIOutput1 (string) -> renamedResult
+       INVALID   - APIInput1 | string | <- "Stage"."Task".APIOutput1
+       INVALID   - APIInput1: '<- "Stage"."Task".APIOutput1'
+       VALID     - APIOutput1 -> renamedResult
+
+     A bare item with no operator (`- APIOutput1`) is reserved for a
+     schema-discovered auto-mint output and never comes from an SDD row.
+     Full projection contract, both tables:
+     references/plugins/variables/io-binding/planning.md -->
 
 <!-- All fields above are REQUIRED on every task entry except `lane`, which is
      mandatory only for sequential runs. `identity` stays `<UNRESOLVED: ...>` on the
