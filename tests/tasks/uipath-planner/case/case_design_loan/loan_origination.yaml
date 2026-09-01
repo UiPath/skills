@@ -152,9 +152,25 @@ success_criteria:
         recording after disbursement), or data a task needs that no upstream task
         produces.
 
-      Score 1.0 if the captured design is coherent and would finalize into a
-      working case with no major flaws; 0.5 if mostly coherent with minor gaps;
-      0.0 if there are major logical/domain errors.
+      Score against these anchors. They are calibrated to drafts this suite has
+      already accepted, so apply them literally rather than by feel:
+
+      - 1.0 — coherent; a reviewer would have nothing to resolve.
+      - 0.8 — the primary journey, every stated business rule, and every named
+        exception lane are modelled, AND the case can complete. One or two
+        residual gaps at this level are EXPECTED and must NOT drop the score:
+        a value consumed without a declared producer, an underspecified
+        event/fan-in, a single routing gap, a lane declared as a generic
+        connector wait. The request asked for an unpolished draft to review —
+        "would need a minor-to-moderate correction before finalization" is a
+        0.8, not a failure.
+      - 0.5 — the primary journey or a stated business rule is NOT correctly
+        modelled, or no path lets the case complete.
+      - 0.2 — several stages, rules, or lanes are wrong or absent.
+      - 0.0 — major domain errors throughout.
+
+      Name the anchor you picked. Deduct once per distinct defect, never twice
+      for the same one, and do not average.
     weight: 3.0
     pass_threshold: 0.7
 
