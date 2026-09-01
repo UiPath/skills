@@ -353,7 +353,7 @@ Trigger: `uip maestro flow registry search "uipath.ixp"` returns `Data: []`, OR 
 
 **First: did the user supply documents?**
 
-- **Yes** — the extractor can be built, so do not mock. **Invoke the `uipath-ixp` Skill and hand it the documents and the extraction goal — do not drive `uip ixp` commands from this skill's context.** Building the extractor is its domain: project creation, model configuration, the labelling decision, folder choice, and deployment each carry guardrails that live in that skill's guides, and improvising the commands from here skips all of them. The outcome to expect back is a **folder deployment**, which is what makes the model appear in this registry. Then come back and finish the flow:
+- **Yes** — the extractor can be built, so do not mock. **Invoke the `uipath-ixp` Skill and hand it the documents, the extraction goal, and the target Orchestrator folder — do not drive `uip ixp` commands from this skill's context.** Resolve the folder before invoking: the user's request when it names one, otherwise SKILL.md rule #5 (whose non-interactive fallback applies) — the sibling skill stops rather than guess one. Building the extractor is its domain: project creation, model configuration, the labelling decision, and deployment each carry guardrails that live in that skill's guides, and improvising the commands from here skips all of them. The outcome to expect back is a **folder deployment**, which is what makes the model appear in this registry. Then come back and finish the flow:
 
   ```bash
   uip maestro flow registry pull --force

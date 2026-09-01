@@ -91,7 +91,7 @@ Skip this step if the user already provided a meaningful name in Step 1.
 
 Labelling is optional — it produces the **project score** (`get-metrics` reports nothing until documents are confirmed) and is not required for a callable model (a trained version appears on its own within seconds of `projects create`). Skip it only when:
 
-- **The request is a model for an automation to call** — a flow, activity pack, or other runtime consumer, with no score, metrics, or accuracy target named. Deploy instead per the [Deployment Guide](deployment-guide.md).
+- **The model unblocks a larger build in this session** — the deliverable is something else (a flow, an automation) waiting on a callable model, and no score, metrics, or accuracy target was named. Deploy per the [Deployment Guide](deployment-guide.md) and resume the build. Canonical case: the inbound `uipath-maestro-flow` handoff (see *When NOT to Use This Skill* in [SKILL.md](../SKILL.md)).
 - **The user opts out** — says to skip labelling, or that somebody else will handle labelling. Stop after Step 3 and hand over the project name; labelling can happen later, in-product or via the [Label Documents Guide](label-documents-guide.md).
 
 Skipping is never silent: state that the model is unscored and that labelling is the fix if fields come back wrong.

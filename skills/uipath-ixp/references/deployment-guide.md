@@ -11,7 +11,7 @@ Runtime callers split by how they address the model: folder-resolving callers (M
 
 ## Deploy to a folder
 
-Ask which folder when none was identified — the folder decides which folder-resolving callers see the model.
+Ask which folder when none was identified — the folder decides which folder-resolving callers see the model. Running non-interactively (CI/headless — no user available to answer) with no folder identified by the request or an inbound handoff: stop and report the missing folder key. Never guess one, and never create a folder to fill the gap.
 
 ```bash
 uip ixp projects list-models <project-name> --output json

@@ -27,7 +27,7 @@ This skill covers standalone IXP-project work. STOP and invoke the `uipath-maest
 
 Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follow the commands it documents. This overrides Critical Rule 1.
 
-**Exception — an inbound handoff from `uipath-maestro-flow`:** when that skill delegates because the user supplied documents and no published extractor covers them, the IXP work belongs here even though the surrounding context is a flow build. Create the project from the documents, deploy a trained version to the identified Orchestrator folder ([Deployment Guide](references/deployment-guide.md)), report the deployment, and hand control back — do not wire or edit the flow from this skill.
+**Exception — an inbound handoff from `uipath-maestro-flow`:** when that skill delegates because the user supplied documents and no published extractor covers them, the IXP work belongs here even though the surrounding context is a flow build. The handoff supplies the target Orchestrator folder — that is the caller's contract, not a question to re-ask. Create the project from the documents, deploy a trained version to that folder ([Deployment Guide](references/deployment-guide.md) — including the exit when no folder arrived), report the deployment, and hand control back — do not wire or edit the flow from this skill.
 
 ## Critical Rules
 
