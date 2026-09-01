@@ -114,6 +114,13 @@ success_criteria:
       artifact (a "status note", a specific activity type) that the
       requirement never asks for.
 
+      This is a NO-BUILD plan: there is no `caseplan.json`, so the `data.tasks`
+      structure is expressed in `tasks.md` as consecutive single-task `lane:`
+      indices. A deterministic criterion already verifies exactly that and owns it.
+      Treat `activation-mode: sequential` + `entry-rule: runs-sequentially` + consecutive
+      `lane:` numbers as satisfying the Supplier Setup bullet in full; do not re-derive it
+      and do not require caseplan.json-level structure this task forbids building.
+
       Grade routing SEMANTICS, not table presentation. The SLA Response Map is
       authoritative for breach routing: when it correctly routes a breach to
       the interrupting stage entry, do not deduct for how per-stage SLA table
