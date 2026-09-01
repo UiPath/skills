@@ -80,6 +80,16 @@ Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the 
 
 `type: "jsonSchema"` on this row is wrong: that is the parent `Error` descriptor, not the resolved `Message` leaf.
 
+**`name` is the LEAF, never the dotted path.** The SDD path is the *lookup key*; the emitted `name` is what the resolved descriptor is called. Only `source` keeps the full dotted path:
+
+| SDD row | `name` | `id` | `source` |
+|---|---|---|---|
+| `APIOutput1 -> renamedResult` (top-level) | `APIOutput1` | `aPIOutput1` | `=APIOutput1` |
+| `Error.Message -> errorMessage` (nested) | `Message` ✅ | `message` | `=Error.Message` |
+| `Error.Message -> errorMessage` | `Error.Message` ❌ | | |
+
+Emitting the dotted path as `name` is a defect: the FE resolves the output slot by `name` against the task's schema, and no schema declares a property literally called `Error.Message`. Derive `id` from the **leaf segment** too (`camelCase("Message")` = `message`), never from the dotted path.
+
 Cross-cutting rules:
 
 - **Preserve type-refining schema attributes.** The shapes above list the *minimum* fields. Carry over any extra attributes the resolved descriptor defines — most importantly `options` (the enum / picklist value set on choice and decision outputs, e.g. `Action`'s `[{value:"approve",label:"approve"},{value:"reject",label:"reject"}]`) — **verbatim** onto the emitted output entry, alongside the named fields. For a nested extract, copy attributes from the resolved leaf only; do not inherit the parent object's `body`, `jsonSchema`, `options`, or `type`. Applies to reassign (`->`), auto-mint (bare / no-SDD-reference), and connector-rule outputs alike. Dropping `options` strips the decision / choice enum the FE picker and decision widget depend on. (The `=` Scenario E shape is a literal / computed assignment and carries no schema `options`.)
