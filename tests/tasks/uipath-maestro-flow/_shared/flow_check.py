@@ -88,6 +88,11 @@ _MIN_RETRY_BUDGET_SECONDS = _MIN_CLI_TIMEOUT_SECONDS + _CLI_TIMEOUT_HEADROOM_SEC
 # YAML must clear :func:`debug_budget` by at least this much — see
 # test_criterion_budgets.py, which enforces it across every task. Public
 # alongside `debug_budget`: the two halves of one contract.
+#
+# This is a CHOSEN floor, not a measured one. It matches the gap the suite
+# already used most often (240s debug under a 300s criterion) and no check has
+# been timed against it. Raise it if a check ever dies in its static asserts
+# rather than in `run_debug`.
 CRITERION_MARGIN_SECONDS = 60
 
 # `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` — the CLI never reads the latter. At
@@ -106,9 +111,15 @@ _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 _POLL_TIMEOUT_ATTEMPTS = 2
 
 # `run_debug` defaults, named so `debug_budget` and the criterion guard cannot
-# drift from the function they price. Two attempts, not three: a third
-# full-length attempt has never paid for itself, and funding one would add
-# `timeout` seconds to every criterion ceiling in the suite.
+# drift from the function they price.
+#
+# `_DEFAULT_RETRIES` was 3 until the budget started funding every attempt it
+# promises. Two is a deliberate narrowing: a fast 5xx now gets one retry rather
+# than two, matching the CLI's own Instructions ("retry once before
+# reporting"), and a third full-length attempt would add `timeout` seconds to
+# every criterion ceiling in the suite for a case never observed to need it. A
+# task that wants the old behaviour passes `retries=3`, and `debug_budget`
+# funds it.
 _DEFAULT_RETRIES_TIMEOUT = 240
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF_SECONDS = 5.0

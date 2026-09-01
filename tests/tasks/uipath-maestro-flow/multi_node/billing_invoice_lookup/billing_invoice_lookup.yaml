@@ -48,7 +48,7 @@ success_criteria:
   - type: run_command
     description: Check script debugs three malformed inputs (fail-fast); every exercised input must resolve to MCS-2026-04872 with 8 line items
     command: python3 $TASK_DIR/check_billing_invoice_lookup.py
-    timeout: 600
+    timeout: 1200  # 3 x debug_budget(180) + margin; CASES is static
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

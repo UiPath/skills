@@ -105,7 +105,7 @@ success_criteria:
   - type: run_command
     description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
     command: "python3 $TASK_DIR/check_escalation_orchestrator_paths.py"
-    timeout: 3000
+    timeout: 3000  # budget-guard: manual. seed.py emits 7 cases x debug_budget(300, retries=1) = 2100 + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
