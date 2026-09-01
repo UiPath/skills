@@ -130,6 +130,15 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
+**It belongs INSIDE the rule**, beside `rule` and the rule's own `id` — not next to the condition's `displayName` / `isInterrupting`. Every other field on a condition object is condition-scoped, so this is the easy one to hoist, and hoisting it is invisible: the object still parses, `validate` still passes, and the rule fires **ungated** because nothing reads a condition-level `conditionExpression`.
+
+```json
+{ "id": "Condition_xxxxxx", "displayName": "High value only", "isInterrupting": false,
+  "rules": [[ { "id": "Rule_xxxxxx", "rule": "selected-stage-completed",
+    "selectedStageId": "Stage_aB3kL9",
+    "conditionExpression": "=js:vars.<producer output id> === \"reject\"" } ]] }
+```
+
 ## Post-Write Verification
 
 Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `sla-status-change`, verify `slaId` resolves to an object on the declared SLA target and `isInterrupting` matches the declared response. Check `escalationId` **against the T-entry's status, not for its presence**: an at-risk T-entry must carry one that resolves on that same SLA; a breach T-entry must carry **none**. A missing `escalationId` on a breach rule is correct and complete — do **not** "repair" it by adding one, which silently converts the rule to at-risk ([sla-response-shapes.md § defects `validate` cannot see](../../../sla-response-shapes.md)). For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.

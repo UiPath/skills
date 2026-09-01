@@ -64,6 +64,34 @@ Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isR
 
 Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for exit-without-completion semantics.
 
+**A gate goes INSIDE the rule, not on the condition.** `conditionExpression` sits beside `rule` / `selectedStageId`, at the same level as the rule's own `id` — not next to the condition's `displayName` / `marksCaseComplete`. Every other field on a condition object is condition-scoped, which makes this the easy one to misplace, and a misplaced gate is invisible: the condition still parses, `uip maestro case validate` still passes, and the rule then fires **ungated** because nothing reads a condition-level `conditionExpression`.
+
+```json
+{
+  "id": "Condition_xxxxxx",
+  "displayName": "Reject after rework",
+  "marksCaseComplete": false,
+  "rules": [[
+    {
+      "id": "Rule_xxxxxx",
+      "rule": "selected-stage-completed",
+      "selectedStageId": "Stage_aB3kL9",
+      "conditionExpression": "=js:vars.<producer output id> === \"reject\""
+    }
+  ]]
+}
+```
+
+```json
+// WRONG — gate hoisted to the condition; the rule fires unconditionally
+{
+  "id": "Condition_xxxxxx",
+  "marksCaseComplete": false,
+  "conditionExpression": "=js:vars.<id> === \"reject\"",
+  "rules": [[ { "id": "Rule_xxxxxx", "rule": "selected-stage-completed", "selectedStageId": "Stage_aB3kL9" } ]]
+}
+```
+
 ### wait-for-connector — bind a connector event
 
 In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; keep this root-scoped rule's `elementId = root-<ruleId>` on BOTH final `uipath.inputs[]` and `uipath.outputs[]`. Valid for both `marksCaseComplete: true` and `false`; `conditionExpression` is preserved.
