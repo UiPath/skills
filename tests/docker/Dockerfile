@@ -153,15 +153,42 @@ ENV DOTNET_ROOT=/usr/share/dotnet \
 
 # Install the released connector catalog through the product CLI. The stable
 # links keep the authoring paths independent of the catalog's content hash.
+#
+# Where the pull lands is the CLI's business, and it moved: up to
+# maestro-tool 1.202.0-dev.8425 `uip maestro registry pull` unpacked a snapshot
+# under $UIP_MAESTRO_REGISTRY_HOME and wrote `current.json` there; from
+# dev.8461 (cli#3823) it delegates to the Flow SDK, which caches the library
+# under ~/.uipath/cache/flow-sdk/library/<sha256>/ and writes no current.json.
+# This step reads BOTH: the old pointer when the CLI still writes it, otherwise
+# `uip maestro registry path` (the CLI's own answer to "where is it") — and then
+# records the image's provenance pointer itself, so the per-task
+# stage-preview-sdk-workspace.sh and the run scripts keep one contract
+# ($UIP_MAESTRO_REGISTRY_HOME/current.json: libraryHash + snapshotPath) no matter
+# which layout the installed CLI produced. Hard-coding either layout is what
+# broke the 2026-09-01 image build the moment the @dev tool moved.
 RUN cd "$PREVIEW_FLOW_SDK_ROOT" && \
     uip maestro registry pull --force --output json && \
-    registry_snapshot="$(jq -er '.snapshotPath' "$UIP_MAESTRO_REGISTRY_HOME/current.json")" && \
+    if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
+      registry_snapshot="$(jq -er '.snapshotPath' "$UIP_MAESTRO_REGISTRY_HOME/current.json")"; \
+      registry_connectors="$registry_snapshot/connectors"; \
+    else \
+      library_json="$(readlink -f "$(uip maestro registry path --library-json)")" && \
+      registry_snapshot="$(dirname "$library_json")" && \
+      library_hash="$(uip maestro registry path --sha)" && \
+      test -n "$library_hash" && \
+      mkdir -p "$UIP_MAESTRO_REGISTRY_HOME" && \
+      jq -n --arg libraryHash "$library_hash" --arg snapshotPath "$registry_snapshot" \
+        '{libraryHash: $libraryHash, snapshotPath: $snapshotPath}' \
+        > "$UIP_MAESTRO_REGISTRY_HOME/current.json" && \
+      registry_connectors="$PREVIEW_FLOW_SDK_ROOT/connectors" && \
+      mkdir -p "$registry_connectors"; \
+    fi && \
     test -f "$registry_snapshot/library-json/index.json" && \
     test -f "$registry_snapshot/library-md/index.json" && \
     mkdir -p "$PREVIEW_FLOW_SDK_ASSETS_ROOT" && \
     ln -s "$registry_snapshot/library-json" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-json" && \
     ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md" && \
-    ln -s "$registry_snapshot/connectors" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/connectors"
+    ln -s "$registry_connectors" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/connectors"
 
 ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
     FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md \
