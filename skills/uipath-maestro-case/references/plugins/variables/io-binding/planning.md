@@ -56,6 +56,25 @@ The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactl
 
 **SDD `Binding` cells are Markdown code spans — unwrap them.** The SDD template wraps every Inputs `Binding` cell in backticks (`` `=vars.caseInput` ``, `` `<- "Stage"."Task".out` ``). Those backticks are presentation, not value. Strip them and copy the cell contents verbatim. Never re-wrap the projected value in backticks, single quotes, or double quotes, and never separate the input name from its value with `:` — the separator IS the operator (`<-` or `=`). A cell that already carries its own quotes (`` `"literal-seed"` ``) keeps exactly those and gains no others.
 
+**A `` `` ``-delimited cell contains backticks that are CONTENT.** When the SDD value itself uses backticks — a JS template literal — the template wraps the cell in *double* backticks. Strip only the outermost pair; every backtick inside is part of the expression.
+
+```markdown
+SDD cell:  `` =js:`Hi ${JSON.stringify(vars.$xref('S','T','out'))}` ``
+VALID:     =js:`Hi ${JSON.stringify(vars.<resolved id>)}`
+INVALID:   =js:JSON.stringify(vars.<resolved id>)     <-- ate the template literal and the "Hi " prefix
+```
+
+Resolving a `$xref` marker inside the expression is the ONLY edit permitted. The surrounding template literal, its prefix text, and every other character survive.
+
+**Never abbreviate, truncate, re-order, or re-serialize a literal.** Long values are copied character for character, however long. A JSON object literal keeps its exact key order and every key.
+
+```markdown
+SDD cell:  `{"CaseId":"ATH-4484403e0059","CaseTitle":"Athena E2E 20260519-015425","EmployeeName":"Athena Tester","EmployeeEmail":"…","Department":"QA","ExpenseType":1,"Amount":100,"Currency":"USD","Description":"…","SubmittedDate":"…","Id":"…","eventType":"CREATED"}`
+INVALID:   {"CaseId":"ATH-4484403e0059","CaseTitle":"Athena E2E 20260519-015425"}   <-- 12 keys truncated to 2
+```
+
+A shortened seed still validates and still runs, then produces wrong results at runtime with nothing pointing back here. If a literal looks too long to reproduce, that is not a signal to summarize it — re-read the SDD cell and copy it whole.
+
 ```markdown
 <!-- INVALID: leaked the SDD Type column as a literal pipe segment -->
 - APIInput1 | string | <- "Binding Matrix"."Echo literal".APIOutput1

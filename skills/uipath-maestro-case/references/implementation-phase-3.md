@@ -104,6 +104,25 @@ Read `caseplan.json` and scan all four condition scopes for `wait-for-connector`
 
 For each matched rule whose connector resolved in planning, run the connector-trigger `case spec --type trigger --input-details` procedure, mint its output IDs/element IDs, and gather its root Connection/Folder bindings. Then Edit **only that rule's `uipath` block**. Preserve the enclosing condition array plus the rule's `id`, `rule`, `conditionExpression`, scope, and placement. Apply declared rule-output bindings after the real outputs exist.
 
+**Verify the upgrade ran, with a command.** `case spec` is the only source of a real `caseShape.context`, and a hand-composed context looks plausible and passes `validate` — the doc's own caveat is that validate does not check `uipath` internals. The tell is the connector's **Activity Type ID**: it appears in a spec-derived context and in nothing an agent writes from the SDD alone.
+
+```bash
+cat <Solution>/<Project>/caseplan.json | python3 -c '
+import json,sys,re
+p=json.load(sys.stdin)
+for n in (p.get("nodes") or p.get("schema",{}).get("nodes") or []):
+    d=n.get("data") or {}
+    for c in (d.get("entryConditions") or [])+(d.get("exitConditions") or []):
+        for grp in c.get("rules") or []:
+            for r in grp:
+                if r.get("rule")=="wait-for-connector":
+                    u=json.dumps(r.get("uipath") or {})
+                    ids=re.findall(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",u)
+                    print(d.get("label"), r.get("id"), "placeholder" if "\"placeholder\"" in u else "resolved", "uuids:", len(set(ids)))'
+```
+
+A resolved rule carries **at least two distinct UUIDs** — its connection id and its activity type id. One UUID means the connection was bound but the activity type never arrived, which is exactly what a skipped `case spec` produces. Cross-check each against the SDD's `Activity Type ID` for that operation.
+
 If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
