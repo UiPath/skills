@@ -1,0 +1,1119 @@
+{
+  "$comment": [
+    "SEMANTICS — the knowledge no schema carries. Hand-maintained, but every claim is",
+    "either probe-verified (with the verbatim uip verdict) or explicitly marked unknown.",
+    "",
+    "The schema gives SHAPE. It does not give: which rule is legal in which slot, that a",
+    "task needs an entry rule, that identical exits collide, or that `d` means calendar",
+    "days. Those come only from `uip maestro case validate`, and they are what this file is.",
+    "",
+    "THREE CONSUMERS, ONE SOURCE:",
+    "  1. emit-sdk.mjs      -> JSDoc on generated declarations",
+    "  2. gen-case-skill    -> the rule-placement table in SKILL-case.md",
+    "  3. check.ts          -> the ILLEGAL table and invariant messages",
+    "Previously each restated the others in prose, and they drifted apart three times.",
+    "",
+    "STATUS VALUES: 'confirmed' = probed against uip, verdict recorded.",
+    "               'enumerated' = present in the schema, not yet probed. Warn, never hard-error.",
+    "               'unknown' = cannot be settled offline. Say so; do not guess.",
+    "VERDICT CLASS: 'unrecognised' (Invalid input/option) | 'illegal-in-slot' (semantic, still",
+    "  rejected even with a complete payload — probe WITH the payload before recording this) |",
+    "  'payload-incomplete' (semantic, rule IS legal here; the probe just omitted a field).",
+    "  legal:false requires one of the first two. Inferring from verdict text alone is wrong:",
+    "  'task selection missing' is semantic yet the rule is genuinely illegal at stage entry."
+  ],
+  "$provenance": {
+    "cli": "uip 1.202.0 (launcher — NOT what validates; verified 2026-09-01)",
+    "package": "@uipath/case-schema@0.859.0 (audited copy; 0.1016.2 nested under packager-tool-case and 0.1052.3 at CLI root are also installed — nearest-node_modules decides silently)",
+    "schemaEmitted": "20.0.0",
+    "schemaSupportedByPackage": "V23",
+    "mainline": "PO.Frontend 0b11f5660 (V31, 16 rules incl. api-event PREVIEW; verified 2026-09-01. Was 2004c0e2d/V27 when the probe evidence below was taken)",
+    "probedOn": "2026-08-14",
+    "pinnedSchemaVersion": "V12",
+    "validator": "@uipath/maestro-tool 1.198.0 — dist/tool.js bundles the case validator AND its own case-schema; this is what `uip maestro case validate` actually runs. Re-verified 2026-09-01: UNMOVED while the launcher advanced to 1.202.0.",
+    "validatorSchemaContent": "14 task types, 15 rules (content-equivalent to @uipath/case-schema 0.949.1)",
+    "downstreamPackage": "@uipath/case-schema@0.859.0 in typescript/node_modules — LAGS the validator by 3 task types and 1 rule; do not audit against it",
+    "taskKindsProbedOn": "2026-08-14, action + wait-for-timer re-probed 2026-08-18 (probe-task-kinds.mjs, 14/14 confirmed)",
+    "pinsVerifiedOn": "2026-09-01 — version pins re-measured only. No probes re-run; every `probedOn` below is the original evidence date and is deliberately not bumped."
+  },
+  "rulePlacement": {
+    "$comment": "One row per (rule, slot) actually probed. Absence = unprobed, NOT legal-by-default. Only `legal:false` + status confirmed may become a hard check.",
+    "slots": [
+      "stage-entry",
+      "stage-exit",
+      "task-entry",
+      "case-exit"
+    ],
+    "cells": [
+      {
+        "rule": "adhoc",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "adhoc",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "guidance": "LEGAL but DISCOURAGED. uipath-maestro-case SKILL.md:250 says 'never add adhoc to a stage-entry condition' — that is authoring guidance about modelling manually-triggered TASKS ('adhoc is an activation mode, not a task type'), not a validator rule. Re-probed 2026-08-07: Status Valid. Do not turn the guidance into a hard check; warn at most.",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "adhoc",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "adhoc",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "Status: Valid",
+        "guidance": "{ expression } is OPTIONAL. Bare rule('adhoc') is Valid. The doc claimed it was required, and a weaker model therefore avoided the rule entirely and mis-modelled every on-demand action.",
+        "verdictClass": "accepted"
+      },
+      {
+        "rule": "case-entered",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "case-entered",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "case-entered",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "case-entered",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "condition",
+        "slot": "case-exit",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [metadata.caseExitRules.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "condition",
+        "slot": "stage-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [nodes.2.data.entryConditions.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "condition",
+        "slot": "stage-exit",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [nodes.1.data.exitConditions.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "condition",
+        "slot": "task-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "Invalid input",
+        "guidance": "In the CLI's VALID_RULE_TYPES (case-validate-service.ts) — a RECOGNISED rule, so 'Invalid input' here is the task-entry zod union rejecting it, not the rule being unknown. Classed illegal-in-slot on that evidence; its legal slot is still unprobed. Payload completeness is not the issue — the rule carries none.",
+        "verdictClass": "illegal-in-slot",
+        "evidence": "CLI source: packages/case-tool/src/services/case-validate-service.ts VALID_RULE_TYPES"
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-stages-completed",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-stages-completed",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-stages-completed",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-stages-completed",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-tasks-completed",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-tasks-completed",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-tasks-completed",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "required-tasks-completed",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "runs-sequentially",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "runs-sequentially",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "runs-sequentially",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "runs-sequentially",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "probedOn": "2026-08-06",
+        "verdictClass": "accepted"
+      },
+      {
+        "rule": "selected-stage-completed",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07",
+        "guidance": "Skill documents it at case-exit, not only stage-entry; our 'documented' list had stage-entry only. Needs { stage }."
+      },
+      {
+        "rule": "selected-stage-completed",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-stage-completed",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-stage-completed",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-stage-exited",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-stage-exited",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-stage-exited",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-stage-exited",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-tasks-completed",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "selected-tasks-completed",
+        "slot": "stage-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "Case rule ... task selection missing",
+        "guidance": "use a stage-entry rule (selected-stage-completed / selected-stage-exited / user-selected-stage) Re-probed 2026-08-06 WITH tasks:['A'] supplied — still rejected, so this is illegal-in-slot, not a short payload.",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-06"
+      },
+      {
+        "rule": "selected-tasks-completed",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07",
+        "guidance": "Legal at stage exit though illegal at stage entry — the same rule, opposite verdicts by slot. Needs { tasks }."
+      },
+      {
+        "rule": "selected-tasks-completed",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "sla-status-change",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "sla-status-change",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07",
+        "guidance": "Documented at stage entry by the uipath-maestro-case skill (references/plugins/conditions/stage-entry-conditions) and confirmed by probe. Needs { sla: '<SLA displayName>' }; without it the SDK resolver rejects before uip is reached ('references unknown SLA \"undefined\"')."
+      },
+      {
+        "rule": "sla-status-change",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "sla-status-change",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "SLA status change rule 'Entry rule' has no SLA selected",
+        "guidance": "A SEMANTIC error = the rule IS recognised, payload incomplete. This is how a deadline breach starts real work. It is NOT an escalation action; EscalationRuleAction.type is notification-only. Needs stable SLA/escalation ids.",
+        "verdictClass": "payload-incomplete"
+      },
+      {
+        "rule": "stage-complete",
+        "slot": "case-exit",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [metadata.caseExitRules.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "stage-complete",
+        "slot": "stage-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [nodes.2.data.entryConditions.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "stage-complete",
+        "slot": "stage-exit",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [nodes.1.data.exitConditions.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "stage-complete",
+        "slot": "task-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "Invalid input",
+        "guidance": "In the CLI's VALID_RULE_TYPES (case-validate-service.ts) — a RECOGNISED rule, so 'Invalid input' here is the task-entry zod union rejecting it, not the rule being unknown. Classed illegal-in-slot on that evidence; its legal slot is still unprobed. Payload completeness is not the issue — the rule carries none.",
+        "verdictClass": "illegal-in-slot",
+        "evidence": "CLI source: packages/case-tool/src/services/case-validate-service.ts VALID_RULE_TYPES"
+      },
+      {
+        "rule": "timer",
+        "slot": "case-exit",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [metadata.caseExitRules.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "timer",
+        "slot": "stage-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [nodes.2.data.entryConditions.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "timer",
+        "slot": "stage-exit",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "[error] [nodes.1.data.exitConditions.0.rules.0.0.rule] Invalid input",
+        "verdictClass": "illegal-in-slot",
+        "probedOn": "2026-08-07",
+        "guidance": "Cross-check the CLI VALID_RULE_TYPES: if the rule is in it, this is a slot rejection, not an unknown rule. (run-probes, payload: null)"
+      },
+      {
+        "rule": "timer",
+        "slot": "task-entry",
+        "legal": false,
+        "status": "confirmed",
+        "verdict": "Invalid input",
+        "guidance": "In the CLI's VALID_RULE_TYPES (case-validate-service.ts) — a RECOGNISED rule, so 'Invalid input' here is the task-entry zod union rejecting it, not the rule being unknown. Classed illegal-in-slot on that evidence; its legal slot is still unprobed. Payload completeness is not the issue — the rule carries none.",
+        "verdictClass": "illegal-in-slot",
+        "evidence": "CLI source: packages/case-tool/src/services/case-validate-service.ts VALID_RULE_TYPES"
+      },
+      {
+        "rule": "user-selected-stage",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "wait-for-connector",
+        "slot": "case-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "wait-for-connector",
+        "slot": "stage-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "wait-for-connector",
+        "slot": "stage-exit",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "\"Status\": \"Valid\"",
+        "verdictClass": "accepted",
+        "probedOn": "2026-08-07"
+      },
+      {
+        "rule": "wait-for-connector",
+        "slot": "task-entry",
+        "legal": true,
+        "status": "confirmed",
+        "verdict": "Case rule \"Entry rule\" connector activity missing",
+        "guidance": "Recognised; needs the connector subscription payload.",
+        "verdictClass": "payload-incomplete"
+      }
+    ],
+    "documented": [
+      {
+        "rule": "case-entered",
+        "position": "stage entry (case start)"
+      },
+      {
+        "rule": "current-stage-entered",
+        "position": "task entry"
+      },
+      {
+        "rule": "required-tasks-completed",
+        "position": "stage exit"
+      },
+      {
+        "rule": "required-stages-completed",
+        "position": "case completion"
+      },
+      {
+        "rule": "selected-stage-completed / selected-stage-exited",
+        "position": "stage entry (needs `{ stage }`)"
+      },
+      {
+        "rule": "user-selected-stage",
+        "position": "stage entry (with a `wait-for-user` exit elsewhere)"
+      },
+      {
+        "rule": "runs-sequentially",
+        "position": "task entry"
+      }
+    ],
+    "$enforcementNote": "MEASURED 2026-08-07 by run-probes over the full grid: the validator accepts 35 of 48 (rule, slot) combinations, including semantically meaningless ones such as case-entered@task-entry. Placement is therefore almost entirely UNENFORCED. Only two families are rejected: timer/condition/stage-complete (all slots — they are TransitionRuleType, a different concept) and selected-tasks-completed@stage-entry. CONSEQUENCE: the placement table in SKILL-case.md and in uipath-maestro-case is AUTHORING GUIDANCE, not validator behaviour. check.ts may hard-error ONLY on cells recorded legal:false here; everything else is at most a warning. A rule being accepted does not mean it does anything sensible at runtime — validation is not execution.",
+    "$reachabilityNote": "A THIRD category beside legal/illegal, measured 2026-08-07: the validator can accept a rule in a slot and still reject the DOCUMENT as unsatisfiable — 'Stage entry rule will never be met'. That is a graph property, not a placement fact, and it usually means the PROBE is under-specified rather than the placement being wrong. user-selected-stage@stage-entry was 'unreachable' until the anchor stage carried a wait-for-user exit; with the companion it is Valid. run-probes now classifies these as `unreachable` and never records them as cells."
+  },
+  "invariants": [
+    {
+      "code": "TASK_NO_ENTRY",
+      "level": "error",
+      "claim": "Every task needs an entry rule.",
+      "fix": "add .entryWhen(rule('current-stage-entered'))",
+      "status": "confirmed",
+      "verdict": "[error] [nodes[Stage_X]] Task has no entry rules",
+      "enforcedBy": "uip maestro case validate (CLI) — verified 2026-08-07 by hand-editing a caseplan to bypass our own gate",
+      "guidance": "Refutes uipath-maestro-case references/sla-response-shapes.md:74, which claims validate accepts entryConditions:[] or a missing key and that 'the defect is invisible to the CLI'. BOTH shapes were probed directly against uip 1.200.0 / maestro-tool 1.198.0 and BOTH fail. The corpus claim is stale or was never true; do not weaken this check on its authority."
+    },
+    {
+      "code": "NO_REQUIRED_TASK",
+      "level": "warning",
+      "claim": "required-tasks-completed needs at least one .required() task in that stage.",
+      "status": "confirmed"
+    },
+    {
+      "code": "NO_CASE_COMPLETION",
+      "level": "error",
+      "claim": "A case needs a completion rule.",
+      "fix": ".completeWhen(rule('required-stages-completed'))",
+      "status": "confirmed"
+    },
+    {
+      "code": "STAGE_NO_COMPLETION",
+      "level": "warning",
+      "claim": "Each stage needs an exit marking it complete.",
+      "fix": ".exitWhen(..., { marksStageComplete: true })",
+      "status": "confirmed"
+    },
+    {
+      "code": "DUP_TASK",
+      "level": "error",
+      "claim": "Task displayNames must be unique case-wide.",
+      "verdict": "Task name 'X' is duplicate",
+      "status": "confirmed"
+    },
+    {
+      "code": "DUP_EXIT_RULE",
+      "level": "error",
+      "claim": "Two exits from one stage whose rule sets are IDENTICAL collide.",
+      "verdict": "duplicate exit rules",
+      "status": "confirmed",
+      "guidance": "Narrower than it looks. Same rule with DIFFERENT expressions is Valid (2-way and 3-way both verified) — value-tiered routing depends on that. The signature must include the expression, or the check rejects legal plans."
+    },
+    {
+      "code": "ADHOC_REQUIRED",
+      "level": "warning",
+      "claim": "An adhoc task must not be .required().",
+      "status": "enumerated",
+      "guidance": "required-tasks-completed would then wait forever on an action nobody takes. Reasoned, not probed — hence a warning."
+    },
+    {
+      "id": "timer-discriminator-key",
+      "claim": "wait-for-timer requires `data.timerType`; the field the validating schema declares (`timer`) is NOT what the converter reads.",
+      "status": "confirmed",
+      "verdict": "\"Status\": \"Valid\" for BOTH spellings — the schema object is not .strict()",
+      "evidence": "Validating schema declares timer|timeDuration|timeDate|repeat|every|at|timeCycle and is not strict. The converter arm reads `timerDetails.timerType` and calls generatePlaceholderNode() when it is absent, so a plan using `timer` validates and silently produces a placeholder instead of a timer.",
+      "consequence": "A schema-faithful author gets a task that does nothing. Only the converter tells you this.",
+      "probedOn": "2026-08-18"
+    }
+  ],
+  "taskKinds": {
+    "process": {
+      "status": "confirmed",
+      "builderMethod": "process",
+      "doc": "Reference a published Maestro process.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "argStyle": "name"
+    },
+    "agent": {
+      "status": "confirmed",
+      "builderMethod": "agent",
+      "doc": "Reference a published agent.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "argStyle": "name"
+    },
+    "rpa": {
+      "status": "confirmed",
+      "builderMethod": "rpa",
+      "doc": "Reference a published RPA process.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "argStyle": "name"
+    },
+    "api-workflow": {
+      "status": "confirmed",
+      "builderMethod": "apiWorkflow",
+      "doc": "Reference a published API workflow.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "converterServiceType": {
+        "value": "Orchestrator.ExecuteApiWorkflowAsync",
+        "overridable": false,
+        "source": "maestro-tool bundle, converter case arm for this task type",
+        "note": "converter assigns this unconditionally — emitting our own would be dead weight it overwrites"
+      },
+      "argStyle": "name"
+    },
+    "case-management": {
+      "status": "confirmed",
+      "builderMethod": "caseManagement",
+      "doc": "Reference another published case (a sub-case). Pass data in with .inputs() and read results with .outputs().",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "argStyle": "name"
+    },
+    "flow-process": {
+      "status": "confirmed",
+      "builderMethod": "flowProcess",
+      "doc": "Reference a published flow process (a Maestro flow, not a BPMN process).",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "converterServiceType": {
+        "value": "Orchestrator.StartFlowProcess",
+        "overridable": false,
+        "source": "maestro-tool bundle, converter case arm for this task type",
+        "note": "converter assigns this unconditionally — emitting our own would be dead weight it overwrites"
+      },
+      "argStyle": "name"
+    },
+    "function": {
+      "status": "confirmed",
+      "builderMethod": "function",
+      "doc": "Reference a published function. Runs asynchronously; that is the platform choice, not the author one.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "converterServiceType": {
+        "value": "Orchestrator.ExecuteFunctionAsync",
+        "overridable": false,
+        "source": "maestro-tool bundle, converter case arm for this task type",
+        "note": "converter assigns this unconditionally — emitting our own would be dead weight it overwrites"
+      },
+      "argStyle": "name"
+    },
+    "document-extraction": {
+      "status": "confirmed",
+      "builderMethod": "documentExtraction",
+      "doc": "Reference an IXP document-extraction task. Use .outputs() to bind extracted fields to case variables.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional + serviceType?",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "converterServiceType": {
+        "value": "IXP.Extraction",
+        "overridable": false,
+        "source": "maestro-tool bundle, converter case arm for this task type",
+        "note": "converter assigns this unconditionally — emitting our own would be dead weight it overwrites"
+      },
+      "argStyle": "name"
+    },
+    "external-agent": {
+      "status": "confirmed",
+      "builderMethod": "externalAgent",
+      "doc": "Reference an external agent — one published outside this case solution.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional + serviceType? + bindings?",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "converterServiceType": {
+        "value": "Intsvc.SyncAgentExecution",
+        "overridable": true,
+        "source": "maestro-tool bundle, converter case arm for this task type",
+        "note": "converter reads data.serviceType and only falls back to this — the author owns it, so EMIT it explicitly"
+      },
+      "argStyle": "name"
+    },
+    "external-workflow": {
+      "status": "confirmed",
+      "builderMethod": "externalWorkflow",
+      "doc": "Reference an external workflow — one published outside this solution.",
+      "dataShape": "BaseRunProcessTaskData { name?, folderPath?, inputs?, outputs?, context? } — all optional + serviceType? + bindings?",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "converterServiceType": {
+        "value": "Intsvc.SyncWorkflowExecution",
+        "overridable": true,
+        "source": "maestro-tool bundle, converter case arm for this task type",
+        "note": "converter reads data.serviceType and only falls back to this — the author owns it, so EMIT it explicitly"
+      },
+      "argStyle": "name"
+    },
+    "action": {
+      "status": "confirmed",
+      "builderMethod": "action",
+      "doc": "An Action Center human task (HITL). Its payload is action fields, not BaseRunProcess.",
+      "dataShape": "ActionTaskData { taskTitle, priority, assignmentCriteria, recipient{Type,Value}, labels (STRING not array), actionCatalogName, inputs[], outputs[] }",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-18",
+      "argStyle": "spec",
+      "verdict": "\"Status\": \"Valid\"",
+      "guidance": "Probed THROUGH THE BUILDER (.action()), not by JSON mutation — the builder constructs the real payload. `labels` is a single STRING; passing an array validates as \"expected string, received array\". compile-cli STRIPS types without checking them, so a wrong type there reaches validate instead of failing at compile."
+    },
+    "wait-for-connector": {
+      "status": "confirmed",
+      "builderMethod": "waitForConnector",
+      "doc": "Suspend until a connector event arrives.",
+      "dataShape": "WaitConnectorData + uipath subscription bag",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "argStyle": "spec"
+    },
+    "wait-for-timer": {
+      "status": "confirmed",
+      "builderMethod": "waitForTimer",
+      "doc": "Suspend for a duration or until a date.",
+      "dataShape": "WaitForTimerData { timerType: timeDuration|timeDate|timeCycle, timeDuration?, timeDate?, timeCycle? }",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-18",
+      "argStyle": "spec",
+      "verdict": "\"Status\": \"Valid\"",
+      "guidance": "Probed through the builder (.waitForTimer()) for ALL THREE variants — duration, date, cycle. CRITICAL: the validating schema declares the discriminator as `timer`, the CONVERTER reads `timerType`, and the schema is NOT strict — so both spellings validate but only `timerType` builds a real timer. Without it the converter emits generatePlaceholderNode(), i.e. the task silently does nothing. The SDK emits `timerType`, which is correct; anyone following the schema instead of the converter gets a silent no-op."
+    },
+    "execute-connector-activity": {
+      "status": "confirmed",
+      "builderMethod": "connector",
+      "doc": "Invoke a connector activity. NOTE the SDK method is .connector() — the schema type name differs.",
+      "dataShape": "ConnectorActivityData + uipath bag",
+      "minSchemaVersion": "V13",
+      "probedOn": "2026-08-14",
+      "verdict": "\"Status\": \"Valid\"",
+      "argStyle": "name"
+    }
+  },
+  "capabilityGaps": [
+    {
+      "id": "no-business-day-sla-unit",
+      "claim": "SlaUnit is calendar time only: min|h|d|w|m. No business-day unit exists.",
+      "verifiedAgainst": "mainline V27 — so this is NOT version lag",
+      "status": "confirmed",
+      "guidance": "A 'N business days' requirement cannot be expressed exactly. Pick the calendar value deliberately and annotate it. DO NOT compute a conversion: it depends on start weekday, holiday calendar and region, and nothing in the toolchain catches it being wrong."
+    },
+    {
+      "id": "static-escalation-recipients",
+      "claim": "Escalation recipients are literal strings; no =js:vars.* binding.",
+      "status": "confirmed",
+      "guidance": "Makes 'notify the requester' (a per-case address) unreachable. One mechanism, several failed requirements."
+    },
+    {
+      "id": "no-escalation-message-body",
+      "claim": "escalation() has no message/template field — targets only.",
+      "status": "confirmed"
+    },
+    {
+      "id": "escalation-action-notification-only",
+      "claim": "EscalationRuleAction.type is 'notification' only, V1 through mainline V27.",
+      "status": "confirmed",
+      "guidance": "DO NOT conclude 'a breach cannot start work' — that inference was made here and was WRONG. The mechanism is the sla-status-change RULE. Also: the wider email|slack|teams|process enum is legacy V0, narrowed at V1; the version suffix is what distinguishes them."
+    }
+  ],
+  "knownUnknowns": [
+    {
+      "id": "skipwhen-vs-exit-gates",
+      "question": "Does a skipWhen-skipped task count as completed for selected-tasks-completed / required-tasks-completed?",
+      "why": "uip maestro case validate is a schema/structure check, not a runtime engine.",
+      "settledBy": "a live `uip maestro case debug` run (blocked: personal-robot tenant gap)",
+      "workaround": "give the stage a separate exit carrying the =js: value test instead of gating on the skipped task",
+      "tierCheck": "Checked tiers 2 and 3 first: NO fixture mentions authoring skip, and the `skip` matches in Scheduler.cs are the scheduler's OWN internals (ExecutionStatus.Skipped for un-entered stages, ShouldSkipCondition) — not the task-level skipCondition. Genuinely unanswered below tier 5."
+    },
+    {
+      "id": "terminal-stage-completion",
+      "question": "Given fixture 10 shows exited stages do not block resolution, do three .required() TERMINAL stages resolve on whichever one ran, or does required-stages-completed demand all three?",
+      "why": "the structure validates, but validation is not execution",
+      "settledBy": "a live run across all four end-to-end paths",
+      "fixtureEvidence": "PARTIALLY ANSWERED by tier 2 before asking anyone. dmnscheduler/test-cases/10-joint-convergence: Stage1 completes, Stage2 and Stage3 EXIT, Stage4 completes -> \"resolve CASE\". So an exited stage does NOT block case resolution, and resolution fires off the completing path. What remains open is narrower than the original question: whether three .required() TERMINAL stages behave the same as this mixed complete/exit shape, which no fixture covers."
+    }
+  ],
+  "discouraged": [
+    {
+      "id": "adhoc-at-stage-entry",
+      "claim": "adhoc is legal at stage entry but should not be used there",
+      "source": "uipath-maestro-case SKILL.md:250",
+      "status": "asserted",
+      "note": "Legality and advisability are different axes. check.ts must not hard-error on this; the skill doc may warn."
+    }
+  ],
+  "schedulerReachability": {
+    "$comment": "GENERATED by extract-scheduler-grid.mjs --write. Do not hand-edit; re-run it. Reachability is a SEPARATE AXIS from validator legality: a cell can validate clean and still be unevaluatable downstream. Never merge these into rulePlacement.cells — the evidence classes differ (source-read schema vs verbatim probe verdict) and so do the remedies.",
+    "$evidenceClass": "scheduler-schema",
+    "$provenance": {
+      "schema": "typescript/node_modules/@uipath/scheduler-types/CaseDeterministicRules.schema.json",
+      "schemaLabel": "installed @uipath/scheduler-types (AUTHORITY — pinned by package-lock)",
+      "schemaId": "https://uipath.com/schemas/scheduler/case-deterministic-rules.json",
+      "packageVersion": "1.20.0",
+      "ruleMapSource": [
+        "PO.Frontend .../new-structured/utils/CaseManagementGenerateCaseJsonConditionForRules.ts",
+        "PO.Frontend .../generate-case-plan-json/ConvertToSchedulerCasePlanJSONUtils.ts"
+      ],
+      "ruleMapEvidence": "source-read — the mapping was read out of the converter, not exercised"
+    },
+    "slotAdmits": {
+      "stage-entry": [
+        "CaseEntered",
+        "ConnectorTrigger",
+        "Expression",
+        "SlaStatusChange",
+        "StagesCompleted",
+        "StagesExited",
+        "UserAdhocTrigger"
+      ],
+      "stage-exit": [
+        "ConnectorTrigger",
+        "Expression",
+        "SlaStatusChange",
+        "TasksCompleted",
+        "UserAdhocTrigger"
+      ],
+      "task-entry": [
+        "ConnectorTrigger",
+        "Expression",
+        "SlaStatusChange",
+        "StageEntered",
+        "TasksCompleted",
+        "UserAdhocTrigger"
+      ],
+      "case-exit": [
+        "ConnectorTrigger",
+        "Expression",
+        "SlaStatusChange",
+        "StagesCompleted",
+        "StagesExited",
+        "TasksCompleted",
+        "UserAdhocTrigger"
+      ]
+    },
+    "ruleMap": {
+      "case-entered": "CaseEntered",
+      "current-stage-entered": "StageEntered",
+      "selected-stage-completed": "StagesCompleted",
+      "required-stages-completed": "StagesCompleted",
+      "selected-stage-exited": "StagesExited",
+      "selected-tasks-completed": "TasksCompleted",
+      "required-tasks-completed": "TasksCompleted",
+      "wait-for-connector": "ConnectorTrigger",
+      "adhoc": "UserAdhocTrigger",
+      "user-selected-stage": "Expression",
+      "sla-status-change": "SlaStatusChange"
+    },
+    "excludedRules": {
+      "runs-sequentially": "DESUGARS, not a condition. CaseManagementGenerateTaskSequentialEntryConditionsJSON.ts expands it to StageEntered / TasksCompleted / Operator / Expression depending on the task's position in the sequence, so it has no single target type to check.",
+      "timer": "Deprecated. Rejected by CaseManagementJsonRulesSchemaV29 refine; no converter branch.",
+      "condition": "Deprecated. Rejected by CaseManagementJsonRulesSchemaV29 refine; no converter branch.",
+      "stage-complete": "Deprecated. Rejected by CaseManagementJsonRulesSchemaV29 refine; no converter branch."
+    },
+    "unmappedSlots": [
+      "CaseAgentCondition"
+    ],
+    "unreachable": [
+      {
+        "rule": "case-entered",
+        "slot": "stage-exit",
+        "schedulerType": "CaseEntered",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "case-entered",
+        "slot": "task-entry",
+        "schedulerType": "CaseEntered",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "case-entered",
+        "slot": "case-exit",
+        "schedulerType": "CaseEntered",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "stage-entry",
+        "schedulerType": "StageEntered",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "stage-exit",
+        "schedulerType": "StageEntered",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "current-stage-entered",
+        "slot": "case-exit",
+        "schedulerType": "StageEntered",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "selected-stage-completed",
+        "slot": "stage-exit",
+        "schedulerType": "StagesCompleted",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "selected-stage-completed",
+        "slot": "task-entry",
+        "schedulerType": "StagesCompleted",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "required-stages-completed",
+        "slot": "stage-exit",
+        "schedulerType": "StagesCompleted",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "required-stages-completed",
+        "slot": "task-entry",
+        "schedulerType": "StagesCompleted",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "selected-stage-exited",
+        "slot": "stage-exit",
+        "schedulerType": "StagesExited",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "selected-stage-exited",
+        "slot": "task-entry",
+        "schedulerType": "StagesExited",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      },
+      {
+        "rule": "selected-tasks-completed",
+        "slot": "stage-entry",
+        "schedulerType": "TasksCompleted",
+        "agreement": "agrees-rejected",
+        "probeVerdict": "Case rule ... task selection missing"
+      },
+      {
+        "rule": "required-tasks-completed",
+        "slot": "stage-entry",
+        "schedulerType": "TasksCompleted",
+        "agreement": "silent-gap",
+        "probeVerdict": "\"Status\": \"Valid\""
+      }
+    ],
+    "contradictions": [],
+    "$coherence": "1 of 14 unreachable cells are ALSO validator-rejected (independent agreement); 0 contradictions (validator stricter than scheduler). Zero contradictions is the expected shape — the scheduler should be strictly stricter. A nonzero count means the rule map is wrong, not that the platform is inconsistent."
+  },
+  "$taskKindsNote": "PROBED 2026-08-14 by probe-task-kinds.mjs, which MUTATES a compiled plan node type and validates with `uip maestro case validate` — the only way to ask about a type the builder cannot yet emit. `process` is included as a CONTROL: if it stops passing, the harness is broken, not the platform. action / wait-for-timer are recorded `enumerated`, NOT rejected — they were probed with a BaseRunProcess payload they do not take, so their failure measures our probe. A verdict licenses EMITTING a type; it does not prove the platform can EXECUTE it.",
+  "interviewAnswers": [
+    {
+      "id": "version-pin-intent",
+      "answer": "V20 came with the CLI. The SDK's shapes were copied from caseplans the uip CLI generated, and the CLI's schema version came along with them. Case authoring then moved off the CLI commands onto skills that write caseplan.json directly, and the CLI stopped producing anything newer to copy. Skills went on tracking the frontend schema and got to V23. Ref: docs/DESIGN.md from line 131",
+      "who": "yiqi",
+      "askedOn": "2026-08-19",
+      "status": "asserted",
+      "$note": "HUMAN ASSERTION — not evidence of platform behaviour. If this claims something an artifact could decide, probe it and supersede this entry."
+    }
+  ],
+  "externalDesignRefs": [
+    {
+      "id": "case-deterministic-rules-is-a-compiled-copy",
+      "source": "Kitty Li, \"[Case] Case deterministic rules as input\" — Confluence page 90940408055 (live doc, PO.Frontend PR #5898)",
+      "status": "asserted",
+      "who": "kitty (frontend, owner of the compiler)",
+      "recordedOn": "2026-08-19",
+      "claim": "The canvas compiles a case's rules into CaseDeterministicRules ONE-WAY. That file is a lowered, engine-facing artifact, NOT an equivalent representation. The case disk JSON keeps the full rule grids INLINE as the lossless source of truth; the rules document is a compiled copy. On load the canvas restores from the inline grids, and the compiled file overrides a condition only when a ruleName-keyed diff shows a human edited it.",
+      "correctsOurFraming": "We had been treating CaseDeterministicRules as the STRICTER GATE our authored plans must satisfy. It is better described as the COMPILATION TARGET. The per-slot unions still bound what can be represented downstream, so the 13-silent-gap conclusion survives — but the mechanism is \"cannot survive compilation\", not \"the scheduler rejects it\".",
+      "confirmsIndependently": [
+        "required-stages-completed and selected-stage-completed BOTH compile to StagesCompleted — we found this collapse by reading the converter; she documents it and adds the consequence we missed: the \"required\" form is REACTIVE (recompiles as stages are added) while the selected form is FROZEN at compile time.",
+        "adhoc compiles to UserAdhocTrigger with either taskNames or stageNames depending on placement — matches the three-name chain we traced (adhoc -> ManualTrigger -> UserAdhocTrigger).",
+        "runs-sequentially is SYNTHESIZED into an operator tree, not mapped — which is why we excluded it from the grid as having no single target. Independently confirmed.",
+        "user-selected-stage compiles to an OR over per-source-stage runtime variables with gating expressions — we recorded it flatly as Expression."
+      ],
+      "newToUs": [
+        "sla-status-change with the \"any escalation\" sentinel fans out into one condition per at-risk escalation, and the sentinel itself vanishes.",
+        "return-to-origin injects a SYNTHETIC entry condition into every OTHER primary stage — N file conditions from 1 canvas condition.",
+        "Rule-less conditions and entry-condition-less tasks are NOT EMITTED AT ALL, so absence in the compiled file is ambiguous between deleted and never-compiled.",
+        "Over-length expressions are SILENTLY DROPPED (expressionIsValidLength gate) — the condition compiles to nothing.",
+        "Exit routing `type` (exit-only / return-to-origin / wait-for-user) has NO field; it survives only as behavioural machinery.",
+        "marksStageComplete / marksCaseComplete survive only as WHICH ARRAY the condition landed in.",
+        "The join between the case file and the sidecar is BY NAME with no id — a one-sided rename silently desyncs them. A revision marker / content hash is the proposed fix before GA."
+      ],
+      "whyItMattersToUs": "Our SDK writes the case disk JSON with rules inline — i.e. the artifact she names as the source of truth, which is the right target. But it also means we can express combinations the CANVAS would never author, and those are precisely the ones with no slot in the compiled shape. The 13 cells are therefore an SDK-specific exposure, not a platform-wide one."
+    }
+  ]
+}
