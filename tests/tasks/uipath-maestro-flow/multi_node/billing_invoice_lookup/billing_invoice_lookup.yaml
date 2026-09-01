@@ -15,7 +15,7 @@ tags:
 run_limits:
   max_turns: 120
   turn_timeout: 2400
-  task_timeout: 4200
+  task_timeout: 3600
 post_run:
   - command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
     timeout: 90

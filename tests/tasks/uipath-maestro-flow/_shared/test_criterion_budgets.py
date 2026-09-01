@@ -85,7 +85,11 @@ _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
 # Anchored so it cannot match `turn_timeout:` / `task_timeout:`.
 _ANY_COMMAND_TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
-_TURN_TIMEOUT = re.compile(r"^\s*turn_timeout:\s*(\d+)", re.M)
+# Everything from `success_criteria:` up to the next top-level key. Only these
+# timeouts run inside the watchdog.
+_SUCCESS_CRITERIA = re.compile(
+    r"^success_criteria:\n(.*?)(?=^\S|\Z)", re.M | re.S
+)
 # A criterion whose check loops over runtime seeds cannot be priced statically.
 # The author supplies the pass count and the guard checks THAT arithmetic — a
 # bare `manual` with no count is refused, because an unverified annotation is
@@ -381,26 +385,47 @@ def _seed_case_count(script: str) -> int | None:
     return counts.pop() if len(counts) == 1 else None
 
 
-def _task_budgets():
-    """(yaml, task_timeout, turn_timeout, worst-case grading seconds) per task.
+_EXPERIMENT_DEFAULTS = os.path.join(
+    os.path.dirname(_SUITE_ROOT), "..", "experiments", "default.yaml"
+)
 
-    Grading is the sum of every command timeout in the file — success criteria,
-    pre_run and post_run alike. They all run inside the watchdog."""
+
+def _inherited_task_timeout() -> int:
+    """`defaults.run_limits.task_timeout` from the default experiment.
+
+    A task that declares no `task_timeout` does not run uncapped, it runs at
+    this value — which is why skipping those tasks silently exempted 58 of
+    them. Parsed with a regex, not PyYAML: CI installs only pytest, and a
+    module-level `import yaml` would error at collection and take the whole
+    maestro-flow suite with it."""
+    text = open(os.path.normpath(_EXPERIMENT_DEFAULTS)).read()
+    found = _TASK_TIMEOUT.search(text)
+    assert found, f"no task_timeout in {_EXPERIMENT_DEFAULTS}"
+    return int(found.group(1))
+
+
+def _task_budgets():
+    """(yaml, effective task_timeout, worst-case grading seconds) per task.
+
+    Grading is the success-criteria budget ONLY. `pre_run` and `post_run` are
+    outside the watchdog — coder_eval/orchestrator.py calls them at 468 and 579,
+    while the `ThreadedWatchdog` wraps only `_evaluation_loop` at 484-499 — so
+    charging them here would demand ceilings nothing needs."""
+    inherited = _inherited_task_timeout()
     for root, _dirs, files in os.walk(_SUITE_ROOT):
         for name in files:
             if not name.endswith((".yaml", ".yml")):
                 continue
             path = os.path.join(root, name)
             text = open(path).read()
-            task_timeout = _TASK_TIMEOUT.search(text)
-            if not task_timeout:
-                continue  # no cap declared, nothing to overrun
-            turn = _TURN_TIMEOUT.search(text)
+            criteria = _SUCCESS_CRITERIA.search(text)
+            if not criteria:
+                continue
+            declared = _TASK_TIMEOUT.search(text)
             yield (
                 os.path.relpath(path, _SUITE_ROOT),
-                int(task_timeout.group(1)),
-                int(turn.group(1)) if turn else 0,
-                sum(int(m) for m in _ANY_COMMAND_TIMEOUT.findall(text)),
+                int(declared.group(1)) if declared else inherited,
+                sum(int(m) for m in _ANY_COMMAND_TIMEOUT.findall(criteria.group(1))),
             )
 
 
@@ -755,72 +780,104 @@ def test_annotation_policy(price, declared, seeded, expected):
 #
 # The criterion checks above bound each check in isolation. Nothing bounded
 # their SUM against the cap enclosing them, and raising 41 of them at once is
-# exactly how you discover that. `task_timeout` wraps the agent turns AND the
-# grading in one watchdog (coder_eval/orchestrator.py: ThreadedWatchdog around
-# `_evaluation_loop`); when it fires the agent subprocess is SIGKILLed and the
-# whole task is reported TIMEOUT. That loses every criterion, including the ones
-# that already passed — strictly less diagnosable than the single failed
-# criterion this suite's timeouts exist to produce.
+# how you find that out. `task_timeout` wraps the agent turns AND the grading in
+# one watchdog (coder_eval/orchestrator.py: ThreadedWatchdog around
+# `_evaluation_loop`, 484-499); when it fires the agent subprocess is SIGKILLed
+# and the whole task is reported TIMEOUT. That loses every criterion, including
+# the ones that already passed — strictly less diagnosable than the single
+# failed criterion this suite's timeouts exist to produce.
 #
-# The principle is already written down in this repo, for the one experiment
-# that applies it — experiments/activation.yaml, on its own task_timeout:
+# The relation is an IMPOSSIBILITY check, not a sufficiency one:
 #
-#     Scaled with max_turns: a row that legitimately uses all 3 turns ... must
-#     have wall-clock room for them — a task_timeout below max_turns x
-#     turn_timeout silently drops the row from every criterion denominator
-#     instead of grading it.
+#     task_timeout > worst-case grading
 #
-# Work-loop tasks run max_turns: 200, so that exact product is not a usable
-# bound here. The floor below is the weak version: worst-case grading, plus one
-# full turn for the agent. It cannot prove a task fits. It only catches the
-# tasks that provably cannot.
+# If grading alone can consume the cap, no agent run can fit, whatever it does.
+# That is provable from the numbers in the file. Anything stronger needs the
+# agent's real wall clock, which is not knowable here — an earlier draft
+# demanded `grading + turn_timeout` and was wrong on contact with a second
+# experiment: smoke.yaml sets task_timeout == turn_timeout == 900, so every
+# smoke task would have been flagged impossible while being perfectly fine.
+
 
 _TASK_BUDGETS = sorted(_task_budgets())
 
 
-def test_every_task_with_a_cap_was_discovered():
-    assert len(_TASK_BUDGETS) > 40
+def test_every_task_with_criteria_was_discovered():
+    """Covers tasks that INHERIT their cap, not just ones that declare it.
+    Skipping the inheritors silently exempted 58 of them."""
+    assert len(_TASK_BUDGETS) > 90
+    inherited = [b for b in _TASK_BUDGETS if b[1] == _inherited_task_timeout()]
+    assert len(inherited) > 20, "experiment-default inheritance is not being resolved"
 
 
 @pytest.mark.parametrize(
-    "yaml_path,task_timeout,turn_timeout,grading",
+    "yaml_path,task_timeout,grading",
     _TASK_BUDGETS,
-    ids=[y for y, _t, _u, _g in _TASK_BUDGETS],
+    ids=[y for y, _t, _g in _TASK_BUDGETS],
 )
-def test_task_timeout_fits_grading_plus_one_turn(
-    yaml_path, task_timeout, turn_timeout, grading
-):
-    required = grading + turn_timeout
-    assert task_timeout >= required, (
-        f"{yaml_path}: task_timeout is {task_timeout}s but grading alone can "
-        f"take {grading}s, leaving {task_timeout - grading}s for an agent whose "
-        f"turn_timeout is {turn_timeout}s. The watchdog SIGKILLs the run and "
-        f"reports TIMEOUT, losing every criterion. Raise task_timeout to "
-        f">= {required}s, or lower the criterion timeouts."
+def test_grading_alone_fits_the_task_timeout(yaml_path, task_timeout, grading):
+    assert task_timeout > grading, (
+        f"{yaml_path}: worst-case grading is {grading}s against a task_timeout "
+        f"of {task_timeout}s, so the watchdog can fire before grading finishes "
+        "no matter how fast the agent is. It SIGKILLs the run and reports "
+        "TIMEOUT, losing every criterion. Raise task_timeout well above "
+        f"{grading}s (the agent needs the remainder), or lower the criterion "
+        "timeouts."
     )
 
 
-def test_task_budget_floor_rejects_a_task_that_cannot_fit(tmp_path):
-    """The relation, exercised directly: grading plus one turn over the cap."""
+def test_impossible_task_is_rejected(tmp_path):
+    """Grading alone at or above the cap: no agent run fits, whatever it does."""
     yaml = tmp_path / "x.yaml"
     yaml.write_text(
-        "run_limits:\n  turn_timeout: 900\n  task_timeout: 1000\n\n"
-        "success_criteria:\n  - type: run_command\n"
-        "    command: \"python3 $TASK_DIR/check_x.py\"\n    timeout: 600\n"
+        "run_limits:\n  turn_timeout: 900\n  task_timeout: 600\n\n"
+        "success_criteria:\n  - type: run_command\n    timeout: 600\n"
     )
     text = yaml.read_text()
-    grading = sum(int(m) for m in _ANY_COMMAND_TIMEOUT.findall(text))
-    turn = int(_TURN_TIMEOUT.search(text).group(1))
-    task = int(_TASK_TIMEOUT.search(text).group(1))
-    assert grading == 600 and turn == 900
-    assert task < grading + turn  # 1000 < 1500 — the shape the guard rejects
+    grading = sum(
+        int(m)
+        for m in _ANY_COMMAND_TIMEOUT.findall(_SUCCESS_CRITERIA.search(text).group(1))
+    )
+    assert grading == 600
+    assert int(_TASK_TIMEOUT.search(text).group(1)) <= grading  # the rejected shape
 
 
-def test_task_budget_scan_ignores_the_limit_keys_themselves(tmp_path):
+def test_smoke_shaped_task_is_not_flagged(tmp_path):
+    """An earlier draft demanded `grading + turn_timeout`, which smoke.yaml
+    (task_timeout == turn_timeout == 900) makes impossible for any task with any
+    grading at all. The floor must accept this shape."""
+    yaml = tmp_path / "x.yaml"
+    yaml.write_text(
+        "run_limits:\n  turn_timeout: 900\n  task_timeout: 900\n\n"
+        "success_criteria:\n  - type: run_command\n    timeout: 210\n"
+    )
+    text = yaml.read_text()
+    grading = sum(
+        int(m)
+        for m in _ANY_COMMAND_TIMEOUT.findall(_SUCCESS_CRITERIA.search(text).group(1))
+    )
+    assert int(_TASK_TIMEOUT.search(text).group(1)) > grading
+
+
+def test_grading_excludes_pre_and_post_run(tmp_path):
+    """Both run OUTSIDE the watchdog (orchestrator.py 468 and 579, vs the block
+    at 484-499), so charging them would demand ceilings nothing needs."""
+    yaml = tmp_path / "x.yaml"
+    yaml.write_text(
+        "pre_run:\n  - command: seed\n    timeout: 500\n\n"
+        "success_criteria:\n  - type: run_command\n    timeout: 60\n\n"
+        "post_run:\n  - command: cleanup\n    timeout: 400\n"
+    )
+    body = _SUCCESS_CRITERIA.search(yaml.read_text()).group(1)
+    assert _ANY_COMMAND_TIMEOUT.findall(body) == ["60"]
+
+
+def test_grading_scan_ignores_the_limit_keys_themselves(tmp_path):
     """`turn_timeout:` / `task_timeout:` must not be counted as command time."""
     yaml = tmp_path / "x.yaml"
     yaml.write_text(
         "run_limits:\n  turn_timeout: 900\n  task_timeout: 1200\n\n"
         "success_criteria:\n  - type: run_command\n    timeout: 60\n"
     )
-    assert _ANY_COMMAND_TIMEOUT.findall(yaml.read_text()) == ["60"]
+    body = _SUCCESS_CRITERIA.search(yaml.read_text()).group(1)
+    assert _ANY_COMMAND_TIMEOUT.findall(body) == ["60"]

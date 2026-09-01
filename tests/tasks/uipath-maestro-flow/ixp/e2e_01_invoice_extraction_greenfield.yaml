@@ -73,4 +73,4 @@ run_limits:
   # three consecutive sonnet-5 runs died at ~1202s with 300s of task budget left.
   max_turns: 120
   turn_timeout: 1500
-  task_timeout: 1800
+  task_timeout: 1500

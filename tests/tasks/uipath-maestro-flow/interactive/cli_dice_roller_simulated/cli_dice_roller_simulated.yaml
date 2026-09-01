@@ -9,7 +9,7 @@ run_limits:
   # long build is never truncated mid-flow. The dialog length itself is bounded
   # by simulation.max_turns below.
   max_turns: 60
-  task_timeout: 2700
+  task_timeout: 2400
   turn_timeout: 1200
 
 agent:
