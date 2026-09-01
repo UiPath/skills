@@ -56,26 +56,32 @@ Version pins in force at landing (measured 2026-09-01, not copied):
   document version        20.0.0    <- the `version` field in caseplan.json
   mainline PO.Frontend    0b11f5660 (V31, 16 rules; `api-event` is PREVIEW, not emitted)
 
-VERIFIED GAP AT LANDING (2026-09-01) — the documented check/compile loop did NOT run.
-`uip maestro case check <f>.case.ts --source` returns `unknown command 'check'` on the
-`uip` installed here (1.202.0 global, from ~/.bun/install/global/node_modules/@uipath/cli).
-`uip maestro case --help` lists no check, compile, or decompile.
+THE CHECK/COMPILE VERBS ARE ENVIRONMENT-DEPENDENT — CONFIRM, DO NOT ASSUME.
+Whether the `uip maestro case` check / compile / decompile verbs exist depends on the
+installed `@uipath/maestro-tool`, NOT on the `uip` launcher version. Both observed
+2026-09-01:
 
-The verbs are real, just not reachable from this install:
-  * assets/uip-catalog-snapshot.json (uip 1.202.0-dev.8414) DOES list `maestro case
-    check`, `compile`, `decompile` — which is why this repo's verb gate passes.
-  * ~/src/cli/packages/case-tool asserts the tool exposes ["compile","check","decompile"].
-  * Installed @uipath/maestro-tool is 1.198.0; npm's published @uipath/cli is 1.200.0.
+  PRESENT  in CI: maestro-tool 1.202.0-dev.8425 — codex ran `uip maestro case
+           decompile --help` / `compile --help` successfully (run 33530856474).
+  ABSENT   on a stale local install: maestro-tool 1.198.0 behind launcher 1.202.0 —
+           `uip maestro case check` returns `unknown command 'check'` and
+           `uip maestro case --help` lists none of the three.
 
-So this is the SAME launcher-vs-tool split documented below, one layer down: the launcher
-is 1.202.0, the tools behind it are older, and the case verbs live in the newer tool.
-Before relying on the check/compile loop, confirm the verb exists in YOUR install:
+So an earlier note in this file claiming the verbs "do not exist" was reading one
+stale toolchain. They are real and shipping; assets/uip-catalog-snapshot.json
+(uip 1.202.0-dev.8414) lists them, and ~/src/cli/packages/case-tool asserts the tool
+exposes ["compile","check","decompile"].
+
+This is the launcher-vs-tool split documented below, one layer down: the launcher can
+be current while the tool behind it is months old, so the launcher version tells you
+nothing about verb availability. Check before relying on the loop:
 
     uip maestro case --help | grep -E 'check|compile|decompile'
 
-If absent, the SDK ships its own binaries (`case-check`, `case-compile`, `case-decompile`
-in @uipath/flow-sdk) and `uip maestro case validate` still owns compiled-artifact
-validation. Do not assume the loop below is executable because it is written down.
+If absent, the SDK ships its own binaries (`case-check`, `case-compile`,
+`case-decompile` in @uipath/flow-sdk — see Step 0) and `uip maestro case validate`
+still owns compiled-artifact validation. Either route is fine; what is not fine is
+assuming one without checking.
 
 Ceiling: every member here is VALIDATOR-confirmed. Nothing in this skill proves the
 platform EXECUTES a plan — live case rungs need a personal/debug robot the tenant does
@@ -1876,6 +1882,52 @@ it to the generated `slaId`/`escalationId`:
 - **Breach** = `{ sla }` alone (no `escalation`). **At-risk** = add `escalation`
   (an `at-risk` escalation declared on that same SLA). Never invent an escalation
   to "repair" a breach rule — that silently converts it to at-risk.
+
+#### Which shape to use — the response is TWO independent choices
+
+The two examples above pair *breach* with a same-stage task and *at-risk* with an
+interrupting lane, but those pairings are not forced. **Rule type and response
+target are independent axes**, and picking the wrong cell is the most common SLA
+mistake — the plan validates either way, so nothing catches it.
+
+| Response target | How to express it | `isInterrupting` | Stage count |
+| --- | --- | --- | --- |
+| Task in the **same** stage | `.task(...).entryWhen(rule('sla-status-change', …))` | n/a | unchanged |
+| **Non-interrupting** oversight lane | `.exceptionStage(...)` + `.entryWhen(rule('sla-status-change', …))`, **omit** `isInterrupting`, **omit** `.required()` | absent/false | **+1** |
+| **Interrupting** takeover lane | `.exceptionStage(...)` + `.entryWhen(…, { isInterrupting: true })` | `true` | **+1** |
+
+Either rule type can drive any target. In particular **a breach can target a
+non-interrupting oversight lane** — `slaId` alone, no `escalationId`, no
+`isInterrupting`, no `.required()`:
+
+```ts
+.sla({ displayName: 'Case SLA', count: 5, unit: 'd' })
+.exceptionStage('Breach Oversight', s => s                      // stageType: secondary
+  .entryWhen(rule('sla-status-change', { sla: 'Case SLA' }),    // breach: slaId alone
+             { displayName: 'On case SLA breach' })             // NO isInterrupting
+  .exitWhen(rule('required-tasks-completed'), { marksStageComplete: true })
+  .task('Notify Oversight', t => t
+    .action({ title: 'Review the breach', recipient: 'oversight@corp.com' })
+    .entryWhen(rule('current-stage-entered'))))
+  // NO .required() — the lane stays isRequired false and is not promoted to a
+  // regular stage, so `required-stages-completed` does not wait on it.
+```
+
+Three properties follow from that shape, and a checker may assert each:
+
+1. `.exceptionStage()` (not `.stage()`) is what makes the lane `stageType`
+   **secondary**. Using `.stage()` promotes it to a regular stage.
+2. Omitting `.required()` keeps `isRequired` **false**. A required oversight lane
+   blocks case completion until it runs, which for a breach handler means a case
+   that never completes when nothing breaches.
+3. Omitting `isInterrupting` leaves the primary stage running alongside the lane.
+   Add it only when the lane should *take over* from the primary stage.
+
+> **A response lane is an extra stage — count them.** If the spec says "four
+> stages" and you answered a breach with a same-stage task, you produced three and
+> the plan still validates. Conversely, do not mint a lane for a response that
+> belongs in the current stage. Decide the target from the requirement, then check
+> the resulting stage count against it before compiling.
 
 ```ts
 import { casePlan, rule, escalation, toUser, toGroup } from '@uipath/flow-sdk/case';
