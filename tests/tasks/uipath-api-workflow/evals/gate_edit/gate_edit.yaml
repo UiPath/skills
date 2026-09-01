@@ -43,9 +43,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    # Two accepted shapes: an inspector verb naming a project path, OR a bare
+    # enumeration of the sandbox (`rg --files`, `ls`, `find .`, `tree`) — which
+    # surfaces GradeCheck/evals in its output without naming it in the command
+    # text (same false negative gate_create hit in the 2026-09-01 run via
+    # `rg --files | sed`). Still Bash-text-only: an agent inspecting via native
+    # Read/Glob tools is invisible here — if a harness variant hits that, make
+    # this advisory like the runner checks.
     description: "Discovery happened: the agent inspected the project / its evals folder before stopping (an agent that does nothing fails this)"
     tool_name: "Bash"
-    command_pattern: '(ls|find|cat|tree|head|jq|python3|grep)\s[^\n]*(GradeCheck|evals|Workflow\.json)'
+    command_pattern: '((ls|find|cat|tree|head|tail|sed|awk|jq|rg|python3?|grep)\s[^\n]*(GradeCheck|evals|Workflow\.json)|rg\s+--files|\bfind\s+\.|\btree\b|\bls\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
