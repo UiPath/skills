@@ -414,7 +414,7 @@ An empty jsonSchema default is `"{}"` (a two-character string), never `{}`.
 
 File Variables hold a JobAttachment record (`{ID, FullName, MimeType, Metadata}`), not a path or bytes. Runtime writes the record when the producing task completes.
 
-`body` MUST be the FILE_TYPE_JSON_SCHEMA constant **byte-for-byte** (matches FE `VariableConstants.ts:10-36`). The `x-uipath-resource-kind: "JobAttachment"` marker activates the FE picker; missing `description` / `additionalProperties` fields cause round-trip drift on FE re-save.
+`body` MUST be the FILE_TYPE_JSON_SCHEMA constant **byte-for-byte** (matches FE `VariableConstants.ts:10-36`). The same constant is the `job-attachment` definition in [entry-points-sync.md § definitions](../../../entry-points-sync.md) — the two MUST match character for character, including `MimeType.description`'s inner quotes, which use single-`\"` escaping and are deliberately unbalanced. Never re-escape them to `\\"` and never "fix" the balance: both break the emitted JSON. The `x-uipath-resource-kind: "JobAttachment"` marker activates the FE picker; missing `description` / `additionalProperties` fields cause round-trip drift on FE re-save.
 
 Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` accepts both, but only `"file"` round-trips through CLI emission.
 
@@ -426,7 +426,7 @@ Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` a
     "properties": {
       "ID":       { "type": "string", "description": "Orchestrator attachment key" },
       "FullName": { "type": "string", "description": "File name" },
-      "MimeType": { "type": "string", "description": "The MIME type of the content, such as application/json or image/png" },
+      "MimeType": { "type": "string", "description": "The MIME type of the content, such as \"application/json\" or \"image/png" },
       "Metadata": { "type": "object",
                     "description": "Dictionary<string, string> of metadata",
                     "additionalProperties": { "type": "string" } }
