@@ -37,17 +37,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_any_node_type,
     assert_flow_has_node_type,
-    collect_outputs,
     get_last_debug_raw,
     run_debug,
 )
 import jira_is  # noqa: E402
-
-# Caps the TENANT PROBES only, never the candidate list: every candidate is
-# recorded for teardown, or a malformed flow's extra tickets leak in the shared
-# CE project. Each probe is a 120s CLI call, which is what the criterion's
-# `budget-guard: overhead` annotation funds on the success path.
-MAX_ISSUE_PROBES = 6
 
 JIRA_KEY = "uipath-atlassian-jira"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
@@ -95,12 +88,7 @@ def main() -> None:
     # Every CE-<n> key that appears anywhere in the debug payload — the create
     # nodes' responses land in elementExecutions/outputs, so this catches all
     # issues the loop created regardless of how the flow mapped its outputs.
-    # Declared outputs first: the probe budget is bounded, so a key that only
-    # appears in the raw envelope must not crowd out one the flow returned.
-    declared = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()]
-                if re.fullmatch(rf"{re.escape(project)}-\d+", s)]
-    scraped = re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(declared + scraped))
+    cands = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")))
     if not cands:
         _fail(f"no issue key (e.g. {project}-123) in flow debug payload — the loop created nothing")
     print(f"OK: candidate keys from debug: {cands}")
@@ -108,11 +96,11 @@ def main() -> None:
     # 3. TENANT --------------------------------------------------------------
     conn = jira_is.connection_id()
     found: dict[str, str] = {}  # summary -> key, for issues that are ours
-    for key in cands[:MAX_ISSUE_PROBES]:
+    for key in cands:
         fields = jira_is.get_issue(conn, key)
         if not fields:
             continue
-        _record_key(key)  # tenant-confirmed: safe for teardown to delete
+        _record_key(key)  # real issue this run created — always clean it up
         summary = fields.get("summary")
         if summary in want_marker:
             found[summary] = key

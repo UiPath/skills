@@ -20,7 +20,7 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, n
 
 run_limits:
   expected_turns: 55
-  task_timeout: 3300
+  task_timeout: 2700
   max_turns: 150
   turn_timeout: 900
 
@@ -68,7 +68,7 @@ success_criteria:
   - type: run_command
     description: "JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted"
     command: "python3 $TASK_DIR/check_jira_lifecycle.py"
-    timeout: 2280  # connection_id (2) + MAX_ISSUE_PROBES reads, 120s each
+    timeout: 1320
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

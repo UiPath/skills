@@ -39,12 +39,6 @@ from _shared.flow_check import (  # noqa: E402
 )
 import jira_is  # noqa: E402
 
-# Caps the TENANT PROBES only, never the candidate list: every candidate is
-# recorded for teardown, or a malformed flow's extra tickets leak in the shared
-# CE project. Each probe is a 120s CLI call, which is what the criterion's
-# `budget-guard: overhead` annotation funds on the success path.
-MAX_ISSUE_PROBES = 4
-
 JIRA_KEY = "uipath-atlassian-jira"
 JIRA_CREATE_OP = "create-issue"  # matched by op so a connector-proxy Create (op in endpoint) also counts
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
@@ -90,7 +84,7 @@ def main() -> None:
             try:
                 conn = jira_is.connection_id()
                 owned = [
-                    k for k in cands[:MAX_ISSUE_PROBES]
+                    k for k in cands
                     for f in [jira_is.get_issue(conn, k)]
                     if f is not None and correlation in str(f.get("summary", ""))
                 ]
@@ -116,9 +110,9 @@ def main() -> None:
             "flow did not execute the Create Issue activity"
         )
 
-    declared = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
-    scraped = re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(declared + scraped))
+    cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
+    cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
+    cands = list(dict.fromkeys(cands))
     if not cands:
         _fail(f"no Jira issue key (e.g. {project}-123) in flow debug outputs — the flow did not create a ticket")
     print(f"OK: candidate keys from debug: {cands}")
@@ -139,7 +133,7 @@ def main() -> None:
     # (e.g. if a wrong flow echoed some other CE key into its output).
     owned = [
         k
-        for k in cands[:MAX_ISSUE_PROBES]
+        for k in cands
         for f in [jira_is.get_issue(conn, k)]
         if f is not None and correlation in str(f.get("summary", ""))
     ]

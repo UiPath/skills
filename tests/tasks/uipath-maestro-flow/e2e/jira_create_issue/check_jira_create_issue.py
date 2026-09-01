@@ -29,12 +29,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro
 from _shared.flow_check import collect_outputs, get_last_debug_raw, run_debug  # noqa: E402
 import jira_is  # noqa: E402
 
-# Caps the TENANT PROBES only, never the candidate list: every candidate is
-# recorded for teardown, or a malformed flow's extra tickets leak in the shared
-# CE project. Each probe is a 120s CLI call, which is what the criterion's
-# `budget-guard: overhead` annotation funds on the success path.
-MAX_ISSUE_PROBES = 4
-
 JIRA_KEY = "uipath-atlassian-jira"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 
@@ -59,18 +53,15 @@ def main() -> None:
     # Candidate issue keys: clean output leaves + a project-scoped scan of the
     # raw debug payload (covers a key buried in a nested response blob).
     project = seed["project_key"]
-    # Declared outputs first, raw-envelope scrapings second: the probe budget is
-    # bounded, so an unrelated key found in the raw payload must never displace
-    # the key the flow actually returned.
-    declared = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
-    scraped = re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(declared + scraped))
+    cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
+    cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
+    cands = list(dict.fromkeys(cands))  # de-dup, keep order
     if not cands:
         _fail(f"no issue key (e.g. {project}-123) in flow debug outputs")
     print(f"OK: candidate keys from debug: {cands}")
 
     conn = jira_is.connection_id()
-    for key in cands[:MAX_ISSUE_PROBES]:
+    for key in cands:
         fields = jira_is.get_issue(conn, key)
         if fields and fields.get("summary") == seed["summary"]:
             Path(".created_keys").write_text(key + "\n")  # for teardown

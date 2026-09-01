@@ -82,7 +82,7 @@ success_criteria:
   - type: run_command
     description: "Seeded Sev1 debug run creates a real Jira ticket whose summary carries the seeded correlationId (verified by re-reading the tenant)"
     command: "python3 $TASK_DIR/check_escalation_jira_ticket.py"
-    timeout: 1600  # connection_id (2) + MAX_ISSUE_PROBES reads, on whichever path runs, 120s each
+    timeout: 1600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

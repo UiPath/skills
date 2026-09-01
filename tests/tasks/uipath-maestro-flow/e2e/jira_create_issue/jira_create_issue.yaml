@@ -15,7 +15,7 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, 
 
 run_limits:
   expected_turns: 40
-  task_timeout: 2400  # criteria grew 660s for the jira probes; keeps the agent's room
+  task_timeout: 1800
   max_turns: 120
   turn_timeout: 900
 
@@ -55,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "JiraCreateIssue checks: valid flow with Jira Create-Issue node, debug creates a real issue, and the tenant carries the seeded summary"
     command: "python3 $TASK_DIR/check_jira_create_issue.py"
-    timeout: 1800  # connection_id (2) + MAX_ISSUE_PROBES reads, 120s each
+    timeout: 1080
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

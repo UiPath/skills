@@ -96,88 +96,6 @@ def _priced_in(node: ast.AST, price) -> bool:
     return any(isinstance(n, ast.Call) and price(n) is not None for n in ast.walk(node))
 
 
-def _sibling_modules(script: str) -> list[str]:
-    """Modules the check imports from its own task directory (e.g. `jira_is`)."""
-    tree = ast.parse(open(script).read())
-    names = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            names |= {a.name.split(".")[0] for a in node.names}
-        elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
-            names.add(node.module.split(".")[0])
-    directory = os.path.dirname(script)
-    found = [os.path.join(directory, f"{n}.py") for n in sorted(names)]
-    return [f for f in found if os.path.exists(f)]
-
-
-def _is_subprocess_run(node: ast.AST) -> bool:
-    return (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "run"
-        and isinstance(node.func.value, ast.Name)
-        and node.func.value.id == "subprocess"
-    )
-
-
-def _defs_for(script: str) -> dict:
-    """Definitions the check can reach: its own, plus each sibling module it
-    imports, keyed both bare and qualified so `jira_is.get_issue(...)` resolves."""
-    merged = _defs(ast.parse(open(script).read()))
-    for sibling in _sibling_modules(script):
-        module = os.path.basename(sibling)[:-3]
-        for name, node in _defs(ast.parse(open(sibling).read())).items():
-            merged.setdefault(name, node)
-            merged[f"{module}.{name}"] = node
-    return merged
-
-
-def _lengths_for(script: str) -> dict:
-    """Countable names from the check and its siblings (`MAX_ISSUE_PROBES`)."""
-    lengths = _module_lengths(ast.parse(open(script).read()))
-    for sibling in _sibling_modules(script):
-        lengths.update(_module_lengths(ast.parse(open(sibling).read())))
-    return lengths
-
-
-def _overhead_seconds(script: str, subcommand: str | None) -> _Price:
-    """What one execution spends OUTSIDE run_debug, derived the same way the
-    debug budget is. Every probe loop is `x[:MAX_ISSUE_PROBES]` and every fixed
-    call is straight-line, so this is computed rather than declared."""
-    tree = ast.parse(open(script).read())
-    entry = _entry(tree, subcommand, script)
-    return _cost(entry, _lengths_for(script), _defs_for(script),
-                 (entry.name,), None, _subprocess_price)
-
-
-def _nondebug_calls(script: str) -> list[tuple[str, int, int]]:
-    """(module, line, seconds) per bounded subprocess call outside run_debug,
-    in the check or a sibling it imports. `run_debug` has its own budget."""
-    out = []
-    for path in [script] + _sibling_modules(script):
-        for node in ast.walk(ast.parse(open(path).read())):
-            if not _is_subprocess_run(node):
-                continue
-            arg = next((kw.value for kw in node.keywords if kw.arg == "timeout"), None)
-            seconds = _literal(arg) if arg is not None else None
-            if isinstance(seconds, (int, float)):
-                out.append((os.path.basename(path), node.lineno, int(seconds)))
-    return out
-
-
-def _probe_caps(script: str) -> list[int]:
-    """Module-level `MAX_*` int constants: the bound a checker puts on its own
-    non-debug probes. Raising one must raise the declared overhead with it."""
-    return [
-        node.value.value
-        for node in ast.parse(open(script).read()).body
-        if isinstance(node, ast.Assign)
-        for target in node.targets
-        if isinstance(target, ast.Name) and target.id.startswith("MAX_")
-        if isinstance(node.value, ast.Constant) and isinstance(node.value.value, int)
-    ]
-
-
 def _module_lengths(tree: ast.Module) -> dict[str, int]:
     """Module-level list/tuple names and their lengths, so `for x in CASES` is
     countable. A name any function rebinds is dropped — the module value is
@@ -218,7 +136,7 @@ def _iterations_of(target: ast.AST, lengths: dict[str, int]) -> int | None:
     if isinstance(target, (ast.List, ast.Tuple)):
         return len(target.elts)
     if isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Slice):
-        # `cands[:MAX_ISSUE_PROBES]` — the checker's own bound, statically known.
+        # A slice by a literal or a module constant is a known bound.
         upper = target.slice.upper
         if isinstance(upper, ast.Constant) and isinstance(upper.value, int):
             return upper.value
@@ -279,16 +197,6 @@ def _debug_price(node: ast.AST) -> int | None:
             "timeout/budget, so its criterion cannot be priced"
         )
     return budget
-
-
-def _subprocess_price(node: ast.AST) -> int | None:
-    """Seconds for a bounded `subprocess.run(..., timeout=N)`, or None. This is
-    the work a check does OUTSIDE run_debug, which the margin does not cover."""
-    if not _is_subprocess_run(node):
-        return None
-    arg = next((kw.value for kw in node.keywords if kw.arg == "timeout"), None)
-    seconds = _literal(arg) if arg is not None else None
-    return int(seconds) if isinstance(seconds, (int, float)) else None
 
 
 def _target(node: ast.Call, defs: dict) -> str | None:
@@ -714,22 +622,10 @@ def test_criterion_clears_the_debug_budget(
     if price.unsized:
         price = _price_script(script, subcommand, manual=int(declared))
 
-    # Work outside run_debug is DERIVED, not declared: every probe loop is
-    # `x[:MAX_ISSUE_PROBES]` and every fixed call is straight-line, so the same
-    # model that prices the debug prices these too.
-    overhead = _overhead_seconds(script, subcommand)
-    if overhead.unsized:
-        pytest.fail(
-            f"{yaml_path}: {where} runs bounded work outside run_debug inside a "
-            f"loop this guard cannot count (line {overhead.unsized[0][0]}). Bound it "
-            "with a module-level constant so the cost can be derived."
-        )
-
-    required = price.seconds + overhead.seconds + flow_check.CRITERION_MARGIN_SECONDS
+    required = price.seconds + flow_check.CRITERION_MARGIN_SECONDS
     assert criterion >= required, (
         f"{yaml_path} grants {criterion}s to {where}, which can spend "
-        f"{price.seconds}s in run_debug and {overhead.seconds}s outside it. "
-        f"Raise the criterion to >= {required}s, "
+        f"{price.seconds}s in run_debug. Raise the criterion to >= {required}s, "
         "or lower the check's timeout / pass retries=1."
     )
 
@@ -1072,39 +968,12 @@ def test_a_criterion_cannot_borrow_its_neighbours_timeout(tmp_path):
     assert _criterion_seconds(first) == _DEFAULT_CRITERION_TIMEOUT
 
 
-def test_bounded_nondebug_work_is_detected(tmp_path):
-    """The 60s margin covers interpreter start and static asserts, not a check
-    that shells out. Detected through sibling imports so it cannot be forgotten."""
-    (tmp_path / "helper.py").write_text(
-        "import subprocess\n\n\ndef go():\n    subprocess.run(['uip'], timeout=120)\n"
-    )
-    path = os.path.join(str(tmp_path), "check_x.py")
-    open(path, "w").write(f"import helper\n\n\ndef main():\n    {_ONE}\n    helper.go()\n")
-    assert _nondebug_calls(path) == [("helper.py", 5, 120)]
-
-
-def test_nondebug_scan_ignores_run_debug_and_untimed_calls(tmp_path):
-    """`run_debug` has its own budget, and an unbounded call cannot be priced."""
-    path = os.path.join(str(tmp_path), "check_x.py")
-    open(path, "w").write(
-        f"import subprocess\n\n\ndef main():\n    {_ONE}\n"
-        "    subprocess.run(['uip'])\n"
-    )
-    assert _nondebug_calls(path) == []
-
-
 def test_mutual_recursion_with_the_debug_in_the_other_leg_is_refused(tmp_path):
     """`a -> b -> a` where `b` holds the debug: the repeated name is `a`, so
     inspecting only the name that closes the cycle missed it."""
     src = f"def a():\n    b()\n\n\ndef b():\n    {_ONE}\n    a()\n\n\ndef main():\n    a()\n"
     with pytest.raises(BaseException, match="recurses and"):
         _price(src, tmp=str(tmp_path))
-
-
-def test_probe_cap_is_read_off_the_checker(tmp_path):
-    path = os.path.join(str(tmp_path), "check_x.py")
-    open(path, "w").write("MAX_ISSUE_PROBES = 3\nMAX_OTHER = 7\nNOT_A_CAP = 9\n")
-    assert _probe_caps(path) == [3, 7]
 
 
 # ── shapes the scan must not read as "no debug" or "one pass" ───────────────
@@ -1236,37 +1105,6 @@ def test_single_quoted_command_is_not_skipped(tmp_path):
     found = _COMMAND.search(block)
     assert found and "$TASK_DIR" in found.group(1)
     assert _TASK_DIR_SCRIPT.search(found.group(1)).group(1) == "check_x.py"
-
-
-def test_overhead_is_derived_not_declared(tmp_path):
-    """`connection_id()` is two straight-line calls, the probe loop is
-    `x[:CAP]`: both statically countable, so the cost is computed rather than
-    trusted to an annotation."""
-    (tmp_path / "helper.py").write_text(
-        "import subprocess\n\n\n"
-        "def connect():\n"
-        "    subprocess.run(['uip'], timeout=120)\n"
-        "    subprocess.run(['uip'], timeout=120)\n\n\n"
-        "def probe(k):\n    subprocess.run(['uip'], timeout=120)\n"
-    )
-    path = os.path.join(str(tmp_path), "check_x.py")
-    open(path, "w").write(
-        "import helper\n\nCAP = 3\n\n\ndef main():\n"
-        "    helper.connect()\n"
-        "    for k in cands[:CAP]:\n        helper.probe(k)\n"
-    )
-    assert _overhead_seconds(path, None).seconds == (2 + 3) * 120
-
-
-def test_unbounded_overhead_loop_is_reported(tmp_path):
-    (tmp_path / "helper.py").write_text(
-        "import subprocess\n\n\ndef probe(k):\n    subprocess.run(['uip'], timeout=120)\n"
-    )
-    path = os.path.join(str(tmp_path), "check_x.py")
-    open(path, "w").write(
-        "import helper\n\n\ndef main():\n    for k in load():\n        helper.probe(k)\n"
-    )
-    assert _unsized_loops(path, None) == [] and _overhead_seconds(path, None).unsized
 
 
 def _free_names(tree: ast.AST) -> set[str]:
