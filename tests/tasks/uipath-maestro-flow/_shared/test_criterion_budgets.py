@@ -296,17 +296,30 @@ def _cost(
             _body(node.finalbody, lengths, defs, seen, manual),
         )
     if isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
-        # Comprehensions loop too; one pass under-charged `[run_debug() for _ in x]`.
-        body = _merge(*[_cost(c, lengths, defs, seen, manual)
-                        for c in ast.iter_child_nodes(node)
-                        if not isinstance(c, ast.comprehension)])
-        runs = _iterations_of(node.generators[0].iter, lengths) if node.generators else None
-        guessed = ()
-        if runs is None:
-            guessed = (node.lineno,) if body.seconds else ()
-            runs = manual if manual is not None else 1
-        heads = _merge(*[_cost(g.iter, lengths, defs, seen, manual) for g in node.generators])
-        return _merge(heads, _Price(body.seconds * runs, body.unsized + guessed))
+        # Every generator multiplies, and a filter runs once per iteration of the
+        # generators to its left. Pricing only the first generator under-charged
+        # a nested comprehension, and dropping the filters priced a debug inside
+        # an `if` clause at zero, which skipped the criterion outright.
+        element = _merge(*[_cost(c, lengths, defs, seen, manual)
+                           for c in ast.iter_child_nodes(node)
+                           if not isinstance(c, ast.comprehension)])
+        runs, guessed, total = 1, (), _FREE
+        for gen in node.generators:
+            total = _merge(total, _cost(gen.iter, lengths, defs, seen, manual))
+            count = _iterations_of(gen.iter, lengths)
+            if count is None:
+                count = manual if manual is not None else 1
+                guessed = (node.lineno,)
+            runs *= count
+            for cond in gen.ifs:
+                priced = _cost(cond, lengths, defs, seen, manual)
+                total = _merge(total, _Price(priced.seconds * runs, priced.unsized))
+        if not element.seconds and not any(
+            _cost(c, lengths, defs, seen, manual).seconds
+            for g in node.generators for c in g.ifs
+        ):
+            guessed = ()
+        return _merge(total, _Price(element.seconds * runs, element.unsized + guessed))
     if isinstance(node, (ast.For, ast.While)):
         head = node.iter if isinstance(node, ast.For) else node.test
         body = _body(node.body, lengths, defs, seen, manual)
@@ -568,10 +581,32 @@ def _annotation_error(
 _CASES = sorted(_criteria(), key=lambda c: (c[0], c[2] or ""))
 
 
-def test_the_suite_was_actually_discovered():
-    """A broken walk would make every assertion below vacuously pass, so assert
-    both that criteria were found and that they priced a debug."""
-    assert len(_CASES) > 40
+def _eligible():
+    """Independently of `_criteria()`: every $TASK_DIR run_command whose script
+    exists, and every YAML with success_criteria. Counted a second way so a
+    parser regression cannot quietly shrink what the guard enforces."""
+    criteria = tasks = 0
+    for root, _dirs, files in os.walk(_SUITE_ROOT):
+        for name in files:
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            text = open(os.path.join(root, name)).read()
+            if _SUCCESS_CRITERIA.search(text):
+                tasks += 1
+            for block in _criterion_blocks(text, "run_command"):
+                command = _COMMAND.search(block)
+                script = _TASK_DIR_SCRIPT.search(command.group(1)) if command else None
+                if script and os.path.exists(os.path.join(root, script.group(1))):
+                    criteria += 1
+    return criteria, tasks
+
+
+def test_every_eligible_criterion_and_task_is_enforced():
+    """Thresholds like `> 40` stayed green while `_criteria()`'s `continue`
+    paths silently dropped most of the suite. Assert the exact counts instead."""
+    criteria, tasks = _eligible()
+    assert len(_CASES) == criteria, f"{criteria - len(_CASES)} criteria went undiscovered"
+    assert len(_TASK_BUDGETS) == tasks, f"{tasks - len(_TASK_BUDGETS)} tasks went undiscovered"
     priced = [c for c in _CASES if _budget_of_script(c[1], c[2]) is not None]
     assert len(priced) > 40, f"only {len(priced)} criteria resolved a budget"
 
@@ -901,13 +936,6 @@ def _task_budget_error(task_timeout: int, grading: int) -> str | None:
 _TASK_BUDGETS = sorted(_task_budgets())
 
 
-def test_every_task_with_criteria_was_discovered():
-    """Inheritors count too; skipping them silently exempted 58."""
-    assert len(_TASK_BUDGETS) > 90
-    inherited = [b for b in _TASK_BUDGETS if b[1] == _inherited_task_timeout()]
-    assert len(inherited) > 20, "experiment-default inheritance is not being resolved"
-
-
 @pytest.mark.parametrize(
     "yaml_path,task_timeout,grading",
     _TASK_BUDGETS,
@@ -1079,3 +1107,23 @@ def test_aliased_debug_import_is_refused(tmp_path):
     )
     with pytest.raises(BaseException, match="imports run_debug as"):
         _budget_of_script(path, None)
+
+
+def test_nested_comprehension_multiplies_every_generator(tmp_path):
+    """Pricing only the first generator under-charged by the rest."""
+    src = f"A = [1, 2]\nB = [1, 2, 3]\n\n\ndef main():\n    [{_ONE} for a in A for b in B]\n"
+    assert _price(src, tmp=str(tmp_path)) == 485 * 6
+
+
+def test_debug_inside_a_comprehension_filter_is_priced(tmp_path):
+    """Filters were excluded from the body, so this priced at zero and skipped
+    the criterion entirely."""
+    src = f"A = [1, 2]\n\n\ndef main():\n    [x for x in A if {_ONE}]\n"
+    assert _price(src, tmp=str(tmp_path)) == 485 * 2
+
+
+def test_comprehension_without_a_debug_is_not_reported(tmp_path):
+    src = f"A = [1, 2]\n\n\ndef main():\n    [x for x in load()]\n    {_ONE}\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == []

@@ -90,7 +90,7 @@ def main() -> None:
             try:
                 conn = jira_is.connection_id()
                 owned = [
-                    k for k in cands
+                    k for k in cands[:MAX_ISSUE_PROBES]
                     for f in [jira_is.get_issue(conn, k)]
                     if f is not None and correlation in str(f.get("summary", ""))
                 ]

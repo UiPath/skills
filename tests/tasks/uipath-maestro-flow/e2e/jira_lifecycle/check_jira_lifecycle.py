@@ -100,18 +100,13 @@ def main() -> None:
     print(f"OK: candidate keys from debug: {cands}")
 
     # 3. TENANT --------------------------------------------------------------
-    # Record before probing: every candidate came out of THIS run's debug payload,
-    # so teardown must see all of them even though only MAX_ISSUE_PROBES are
-    # verified. Capping the list itself leaked the rest in the shared CE project.
-    for key in cands:
-        _record_key(key)
-
     conn = jira_is.connection_id()
     found: dict[str, str] = {}  # summary -> key, for issues that are ours
     for key in cands[:MAX_ISSUE_PROBES]:
         fields = jira_is.get_issue(conn, key)
         if not fields:
             continue
+        _record_key(key)  # tenant-confirmed: safe for teardown to delete
         summary = fields.get("summary")
         if summary in want_marker:
             found[summary] = key

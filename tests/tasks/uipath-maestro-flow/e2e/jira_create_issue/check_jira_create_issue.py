@@ -61,13 +61,13 @@ def main() -> None:
     project = seed["project_key"]
     cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
     cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(cands))[:MAX_ISSUE_PROBES]  # de-dup, keep order, bound probes
+    cands = list(dict.fromkeys(cands))  # de-dup, keep order
     if not cands:
         _fail(f"no issue key (e.g. {project}-123) in flow debug outputs")
     print(f"OK: candidate keys from debug: {cands}")
 
     conn = jira_is.connection_id()
-    for key in cands:
+    for key in cands[:MAX_ISSUE_PROBES]:
         fields = jira_is.get_issue(conn, key)
         if fields and fields.get("summary") == seed["summary"]:
             Path(".created_keys").write_text(key + "\n")  # for teardown
