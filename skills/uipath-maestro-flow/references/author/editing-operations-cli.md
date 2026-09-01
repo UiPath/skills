@@ -21,7 +21,7 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 ```
 
 **What the CLI handles automatically:**
-- Inserts node into `nodes` array with a generated `id` — you do not choose it, there is no `--id` flag. See [Generated node IDs](#generated-node-ids) before you reference the node anywhere.
+- Inserts node into `nodes` array with a generated `id` — see [Generated node IDs](#generated-node-ids) before you reference that node anywhere
 - Copies the definition from the local registry cache into `definitions` (one per unique type)
 - Adds node output variables to `variables.nodes`
 

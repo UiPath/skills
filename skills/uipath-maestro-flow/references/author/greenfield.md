@@ -108,7 +108,7 @@ uip solution init "<SolutionName>" --output json \
 
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Drop the trailing `node add` segment when the flow is OOTB-only.
 
-> **Capture each generated id from this chain's output (`Data.Node.Id`) — never predict it.** There is no `--id` flag, and the id depends on both `--label` and what is already in the file. **Writing a `$vars.<nodeId>` reference in this same chain is forbidden** — a guessed id still passes `flow validate` and faults at runtime. All `$vars` references belong in T2, against the ids T1 returned. See [editing-operations-cli.md — Generated node IDs](editing-operations-cli.md#generated-node-ids).
+> **Capture each generated id from this chain's output (`Data.Node.Id`) — never predict it.** There is no `--id` flag, and the id depends on both `--label` and what is already in the file. **Writing a `$vars.<nodeId>` reference in this same chain is forbidden** — a guessed id still passes `flow validate` and faults at runtime. All `$vars` references belong in T2, against the ids T1 returned — and T3's `node configure <NODE_ID>` needs those same captured ids. See [editing-operations-cli.md — Generated node IDs](editing-operations-cli.md#generated-node-ids).
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
 
