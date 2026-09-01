@@ -1,8 +1,9 @@
 name: Run Coder Eval
 
 # Every historical run is titled "Run Coder Eval", so the run list is a wall of
-# identical rows. These three fields are what anyone actually scans for.
-run-name: ${{ inputs.task_globs }} · ${{ inputs.agent }} · @${{ github.actor }}
+# identical rows. Keep that prefix (it is how the workflow is recognised) and
+# append the three fields anyone actually scans for.
+run-name: Run Coder Eval · ${{ inputs.task_globs }} · ${{ inputs.agent }} · @${{ github.actor }}
 
 # GH-hosted runner for coder-eval against the skills task tree. Use cases:
 # single task ad-hoc, a folder, or (with explicit confirmation) the full
@@ -706,6 +707,112 @@ jobs:
               if redacted != text:
                   path.write_text(redacted, encoding="utf-8")
           PY
+      # ==================================================================
+      # Evalboard publish. Entirely additive and entirely best-effort: every
+      # step here warns and returns 0 rather than reddening a run, because a
+      # missing dashboard link must never be mistaken for a failed eval.
+      #
+      # Inert until `AZURE_STORAGE_KEY` is set as a repo secret, so this merges
+      # and behaves exactly as before while the credential is being provisioned.
+      #
+      # Authenticated with the SAME credential the ADO pipelines already use for
+      # this storage account (`AZURE_STORAGE_KEY` / `AZURE_STORAGE_ACCOUNT` out of
+      # `coder-eval-athena-{secrets,config}`), rather than a second, GitHub-only
+      # Entra app + federated credential. eval-runner passes the value straight to
+      # `BlobServiceClient(credential=...)`, and the Azure SDK sniffs the string,
+      # so the secret can hold either the account key or a container-scoped SAS
+      # token with no change here. Prefer the SAS: an account key is authority
+      # over the WHOLE account, including the `runs` container holding months of
+      # nightly history, and this workflow runs its definition from whatever
+      # branch the dispatcher picks.
+      # ==================================================================
+
+      - name: Publish the run to evalboard
+        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          # The only step in the job that sees the credential. Mirrors how the ADO
+          # pipelines scope it ("upload in its own step so AZURE_STORAGE_KEY is
+          # never in the eval step's env"): a task-driven agent with shell access
+          # runs in those other steps.
+          AZURE_STORAGE_KEY:          ${{ secrets.AZURE_STORAGE_KEY }}
+          AZURE_STORAGE_ACCOUNT:      ${{ vars.AZURE_STORAGE_ACCOUNT || 'coderevaltests' }}
+          # Hardcoded, with no variable override on purpose. Everything about this
+          # feature — the unlisted evalboard source, the 14-day expiry rule — is
+          # predicated on ad-hoc runs never landing in `runs`, and ADO already uses
+          # the name `AZURE_BLOB_CONTAINER` for `runs` itself.
+          AZURE_BLOB_CONTAINER:       runs-gha
+          EVALBOARD_BASE:             ${{ vars.EVALBOARD_BASE_URL || 'https://coder-evalboard.uipath-dev.com' }}
+          AGENT:                      ${{ inputs.agent }}
+          TASK_COUNT:                 ${{ needs.partition.outputs.linux_count }}
+          TASK_GLOBS_INPUT:           ${{ inputs.task_globs }}
+        run: |
+          set -uo pipefail
+          if ! command -v eval-runner > /dev/null 2>&1; then
+            echo "::warning::eval-runner is not installed — no evalboard link for this run"
+            exit 0
+          fi
+          if [ ! -f /tmp/runs/run.json ]; then
+            echo "::warning::/tmp/runs/run.json is missing — nothing to publish"
+            exit 0
+          fi
+
+          # `eval-runner upload` derives the blob id from the run directory's
+          # NAME, so the rename is how the id is chosen. Timestamp first to keep
+          # runs chronologically sortable, then the GitHub run id and attempt:
+          # uniqueness is the point, since two dispatches landing in the same
+          # second would otherwise share an id and silently overwrite each other.
+          # A COPY, not a move: this step now runs BEFORE the artifact upload and
+          # the verdict, which both read /tmp/runs, so the original has to survive.
+          # The tree is already stripped of .venv/node_modules by the cleanup step
+          # above, so the copy is cheap.
+          # All-hyphen after the timestamp: a `.` before the attempt number reads
+          # as a file extension in the URL path.
+          blob_id="$(date -u +%Y-%m-%d_%H-%M-%S)-gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cp -a /tmp/runs "/tmp/$blob_id" || {
+            echo "::warning::could not stage /tmp/runs for upload — no evalboard link for this run"
+            exit 0
+          }
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          if ! eval-runner upload "/tmp/$blob_id" \
+              --adhoc \
+              --title "gha #${GITHUB_RUN_NUMBER}: ${AGENT} x ${TASK_COUNT} linux task(s) by @${GITHUB_ACTOR} - ${TASK_GLOBS_INPUT}" \
+              --description "$run_url"; then
+            echo "::warning::evalboard upload failed — see the log above. The GitHub artifact is unaffected."
+            exit 0
+          fi
+
+          # ?src=gha is required: sourceById COERCES an absent src to the default
+          # source, so a stripped link 404s against the nightly container.
+          url="${EVALBOARD_BASE}/runs/${blob_id}?src=gha"
+          # Azure evaluates lifecycle rules once a day and can lag a day or two
+          # past the threshold, so the date is a floor rather than a promise.
+          expires="$(date -u -d '+14 days' +%Y-%m-%d 2> /dev/null || true)"
+          if [ -n "$expires" ]; then
+            when="on or after \`$expires\`"
+          else
+            when="about 14 days from now"
+          fi
+          # $GITHUB_STEP_SUMMARY is a SEPARATE file per step, and GitHub renders the
+          # job summary by concatenating them in step order. So the only way to put
+          # this block first is for the step itself to run before the one that
+          # appends run.md, which is why the publish moved above it and copies the
+          # run dir rather than moving it. Rewriting the file in place cannot work:
+          # a step only ever sees its own.
+          {
+            echo "### Evalboard"
+            echo ""
+            echo "[$url]($url)"
+            echo ""
+            echo "Covers the **Linux** tasks of this dispatch only. Deleted $when by the 14-day lifecycle rule on the \`$AZURE_BLOB_CONTAINER\` container."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Annotations render at the top of the run page, above the job list, so
+          # the link is reachable without opening the summary at all.
+          echo "::notice title=Evalboard::$url"
+          echo "Evalboard: $url"
+
 
       # The action reports where run.md is and leaves the writing to the consumer,
       # which is what lets this land AFTER the redaction above. Capped at 1 MB:
@@ -775,110 +882,6 @@ jobs:
           print(f"\n{ok}/{len(rows)} PASS (linux)")
           sys.exit(0 if rows and ok == len(rows) else 1)
           PY
-
-      # ==================================================================
-      # Evalboard publish. Entirely additive and entirely best-effort: every
-      # step here warns and returns 0 rather than reddening a run, because a
-      # missing dashboard link must never be mistaken for a failed eval.
-      #
-      # Inert until `AZURE_STORAGE_KEY` is set as a repo secret, so this merges
-      # and behaves exactly as before while the credential is being provisioned.
-      #
-      # Authenticated with the SAME credential the ADO pipelines already use for
-      # this storage account (`AZURE_STORAGE_KEY` / `AZURE_STORAGE_ACCOUNT` out of
-      # `coder-eval-athena-{secrets,config}`), rather than a second, GitHub-only
-      # Entra app + federated credential. eval-runner passes the value straight to
-      # `BlobServiceClient(credential=...)`, and the Azure SDK sniffs the string,
-      # so the secret can hold either the account key or a container-scoped SAS
-      # token with no change here. Prefer the SAS: an account key is authority
-      # over the WHOLE account, including the `runs` container holding months of
-      # nightly history, and this workflow runs its definition from whatever
-      # branch the dispatcher picks.
-      # ==================================================================
-
-      - name: Publish the run to evalboard
-        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
-        continue-on-error: true
-        env:
-          # The only step in the job that sees the credential. Mirrors how the ADO
-          # pipelines scope it ("upload in its own step so AZURE_STORAGE_KEY is
-          # never in the eval step's env"): a task-driven agent with shell access
-          # runs in those other steps.
-          AZURE_STORAGE_KEY:          ${{ secrets.AZURE_STORAGE_KEY }}
-          AZURE_STORAGE_ACCOUNT:      ${{ vars.AZURE_STORAGE_ACCOUNT || 'coderevaltests' }}
-          # Hardcoded, with no variable override on purpose. Everything about this
-          # feature — the unlisted evalboard source, the 14-day expiry rule — is
-          # predicated on ad-hoc runs never landing in `runs`, and ADO already uses
-          # the name `AZURE_BLOB_CONTAINER` for `runs` itself.
-          AZURE_BLOB_CONTAINER:       runs-gha
-          EVALBOARD_BASE:             ${{ vars.EVALBOARD_BASE_URL || 'https://coder-evalboard.uipath-dev.com' }}
-          AGENT:                      ${{ inputs.agent }}
-          TASK_COUNT:                 ${{ needs.partition.outputs.linux_count }}
-          TASK_GLOBS_INPUT:           ${{ inputs.task_globs }}
-        run: |
-          set -uo pipefail
-          if ! command -v eval-runner > /dev/null 2>&1; then
-            echo "::warning::eval-runner is not installed — no evalboard link for this run"
-            exit 0
-          fi
-          if [ ! -f /tmp/runs/run.json ]; then
-            echo "::warning::/tmp/runs/run.json is missing — nothing to publish"
-            exit 0
-          fi
-
-          # `eval-runner upload` derives the blob id from the run directory's
-          # NAME, so the rename is how the id is chosen. Timestamp first to keep
-          # runs chronologically sortable, then the GitHub run id and attempt:
-          # uniqueness is the point, since two dispatches landing in the same
-          # second would otherwise share an id and silently overwrite each other.
-          # Safe to move because this is the last step to touch /tmp/runs — the
-          # artifact upload and the verdict have both already run.
-          # All-hyphen after the timestamp: a `.` before the attempt number reads
-          # as a file extension in the URL path.
-          blob_id="$(date -u +%Y-%m-%d_%H-%M-%S)-gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          mv /tmp/runs "/tmp/$blob_id" || {
-            echo "::warning::could not stage /tmp/runs for upload — no evalboard link for this run"
-            exit 0
-          }
-
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          if ! eval-runner upload "/tmp/$blob_id" \
-              --adhoc \
-              --title "gha #${GITHUB_RUN_NUMBER}: ${AGENT} x ${TASK_COUNT} linux task(s) by @${GITHUB_ACTOR} - ${TASK_GLOBS_INPUT}" \
-              --description "$run_url"; then
-            echo "::warning::evalboard upload failed — see the log above. The GitHub artifact is unaffected."
-            exit 0
-          fi
-
-          # ?src=gha is required: sourceById COERCES an absent src to the default
-          # source, so a stripped link 404s against the nightly container.
-          url="${EVALBOARD_BASE}/runs/${blob_id}?src=gha"
-          # Azure evaluates lifecycle rules once a day and can lag a day or two
-          # past the threshold, so the date is a floor rather than a promise.
-          expires="$(date -u -d '+14 days' +%Y-%m-%d 2> /dev/null || true)"
-          if [ -n "$expires" ]; then
-            when="on or after \`$expires\`"
-          else
-            when="about 14 days from now"
-          fi
-          # Prepended, not appended: run.md is ~40 lines of tables, so an appended
-          # link lands below the fold. Moving this step earlier is not an option,
-          # because it MOVES /tmp/runs, which the artifact upload and the verdict
-          # both read. $GITHUB_STEP_SUMMARY is an ordinary file; truncate-and-rewrite
-          # rather than `mv` so the runner keeps tracking the same inode.
-          summary_tmp="$(mktemp)"
-          {
-            echo "### Evalboard"
-            echo ""
-            echo "[$url]($url)"
-            echo ""
-            echo "Covers the **Linux** tasks of this dispatch only. Deleted $when by the 14-day lifecycle rule on the \`$AZURE_BLOB_CONTAINER\` container."
-            echo ""
-            cat "$GITHUB_STEP_SUMMARY" 2> /dev/null || true
-          } > "$summary_tmp"
-          cat "$summary_tmp" > "$GITHUB_STEP_SUMMARY"
-          rm -f "$summary_tmp"
-          echo "Evalboard: $url"
 
   run-windows:
     needs: partition
