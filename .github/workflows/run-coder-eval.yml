@@ -632,16 +632,24 @@ jobs:
           fi
 
           # After the clamp, so a delegate run reports the -j it will actually use.
-          args+=(-j "$j" -v)
+          args+=(-j "$j" -v --model "$model")
 
-          echo "Running: coder-eval run $TASK_GLOBS --model $model ${args[*]} ($TASK_COUNT task files)"
+          # Task globs are `args` entries like everything else: the action
+          # promotes none of the CLI's flags to named inputs, so there is no
+          # `tasks:` or `model:` to pass separately. Word-split on purpose here
+          # (TASK_GLOBS is a space-separated list from the partition job) so each
+          # glob becomes its own argv entry; NOT pathname-expanded, because the
+          # CLI expands them itself and handles `**` without globstar.
+          # shellcheck disable=SC2206
+          args+=($TASK_GLOBS)
+
+          echo "Running: coder-eval run ${args[*]} ($TASK_COUNT task files)"
 
           # Multi-line step outputs need the heredoc form. The delimiter is
           # randomised because a value that happened to equal it, alone on a
           # line, would truncate the block.
           delim="ghaout$RANDOM$RANDOM$RANDOM"
           {
-            echo "model=$model"
             echo "extras=$extras"
             echo "extra_packages=$extra_packages"
             echo "args<<$delim"
@@ -656,32 +664,27 @@ jobs:
       # only by its own self-test. It installs coder-eval at the resolved pin
       # (plus `extras` / `extra-packages`) and runs it.
       #
-      # `minimum-task-score` is deliberately NOT set: the gate here is "every row
-      # is SUCCESS" (the verdict step below), which is a different predicate from
-      # a weighted_score floor. Swapping gate semantics inside a refactor whose
-      # premise is behaviour preservation would make a regression indistinguishable
-      # from the intended change.
+      # Everything the CLI takes — the task globs, --model, --type, -j, the -D
+      # overrides — is in the single `args` block the prep step composed. The
+      # action promotes none of the CLI's flags to named inputs, which is also why
+      # there is nothing here to turn the job-summary write off: the action does
+      # not write one. It is appended below instead, after redaction, which is the
+      # order this workflow needs and could not previously get.
       #
-      # `step-summary` is off for the same reason it cannot simply be turned on:
-      # the action writes run.md to the job summary immediately after the run,
-      # which is BEFORE any redaction step can execute. The summary is appended
-      # below instead, after redaction. Revisit once redaction moves upstream into
-      # the action.
+      # The JUnit report lands at /tmp/runs/junit.xml (derived from run-dir).
+      # Nothing here consumes it; it travels with the run into the artifact and
+      # the evalboard blob.
       - name: Run coder-eval
         id: eval
         uses: UiPath/coder_eval@v0
         with:
           version: ${{ needs.partition.outputs.coder_eval_version }}
           working-directory: tests
-          tasks: ${{ needs.partition.outputs.linux_globs }}
-          model: ${{ steps.prep.outputs.model }}
           extras: ${{ steps.prep.outputs.extras }}
           extra-packages: ${{ steps.prep.outputs.extra_packages }}
           args: ${{ steps.prep.outputs.args }}
           env: ${{ steps.prep.outputs.env_block }}
           run-dir: /tmp/runs
-          junit-path: /tmp/coder-eval-junit.xml
-          step-summary: "false"
 
       - name: Fix permissions on /tmp/runs
         if: always()
@@ -759,16 +762,22 @@ jobs:
                   path.write_text(redacted, encoding="utf-8")
           PY
 
-      # The action's own `step-summary` cannot be used for this: it writes run.md
-      # the instant the run finishes, which is before the redaction above can
-      # execute. Same output, correct order. Same 1 MB cap the action applies —
+      # The action reports where run.md is and leaves the writing to the consumer,
+      # which is what lets this land AFTER the redaction above. Capped at 1 MB:
       # GitHub rejects a job summary over 1 MiB outright, losing the verdict too.
+      #
+      # Read from the action's `run-md-path` output rather than rebuilding the
+      # path, with the literal as a fallback: a composite action's outputs may not
+      # propagate from a step that exited non-zero, and this step runs on failure.
       - name: Append the run report to the job summary
         if: always()
+        env:
+          RUN_MD: ${{ steps.eval.outputs.run-md-path }}
         run: |
           set -uo pipefail
-          if [ -f /tmp/runs/run.md ]; then
-            head -c 1000000 /tmp/runs/run.md >> "$GITHUB_STEP_SUMMARY"
+          run_md="${RUN_MD:-/tmp/runs/run.md}"
+          if [ -f "$run_md" ]; then
+            head -c 1000000 "$run_md" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No run.md produced._" >> "$GITHUB_STEP_SUMMARY"
           fi
