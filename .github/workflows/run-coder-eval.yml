@@ -868,8 +868,13 @@ jobs:
         if: always()
         run: |
           set -uo pipefail
-          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1 || true)
-          if [ -z "$run_dir" ]; then
+          # /tmp/runs IS the run dir (--run-dir above), so its subdirectories are
+          # VARIANTS. `ls -td */ | head -n 1` picked one of them: correct only
+          # while nightly.yaml declares a single variant, and a second variant
+          # would silently grade one arm and could turn a red run green. Same
+          # off-by-one the artifact globs carry a fix for.
+          run_dir=/tmp/runs
+          if [ ! -d "$run_dir" ] || [ -z "$(ls -A "$run_dir" 2>/dev/null)" ]; then
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
