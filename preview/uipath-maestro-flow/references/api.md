@@ -29,7 +29,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [entryInput](#entryinput-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
 
-**Generated descriptors** — [ConnectorValue](#connectorvalue-type) · [ConnectorLookupValue](#connectorlookupvalue-type) · [ConnectorMeta](#connectormeta-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [descriptor](#descriptor-function) · [TriggerMeta](#triggermeta-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [triggerDescriptor](#triggerdescriptor-function) · [LookupStrategy](#lookupstrategy-type) · [LookupSpec](#lookupspec-interface) · [LookupToken](#lookuptoken-interface) · [isLookupToken](#islookuptoken-function) · [lookupKey](#lookupkey-function) · [LookupBuilder](#lookupbuilder-type) · [lookup](#lookup-function) · [LookupResolution](#lookupresolution-interface) · [LookupResolutions](#lookupresolutions-type) · [resolvedValue](#resolvedvalue-function) · [unresolvedLookupMessage](#unresolvedlookupmessage-function) · [lookupSpecOf](#lookupspecof-function)
+**Generated descriptors** — [ConnectorValue](#connectorvalue-type) · [ConnectorLookupValue](#connectorlookupvalue-type) · [ConnectorMeta](#connectormeta-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [descriptor](#descriptor-function) · [TriggerMeta](#triggermeta-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [triggerDescriptor](#triggerdescriptor-function) · [LookupStrategy](#lookupstrategy-type) · [LookupSpec](#lookupspec-interface) · [LookupToken](#lookuptoken-interface) · [isLookupToken](#islookuptoken-function) · [lookupKey](#lookupkey-function) · [LookupBuilder](#lookupbuilder-type) · [lookup](#lookup-function) · [LookupResolution](#lookupresolution-interface) · [LookupResolutions](#lookupresolutions-type) · [resolvedValue](#resolvedvalue-function) · [unresolvedLookupMessage](#unresolvedlookupmessage-function) · [lookupSpecOf](#lookupspecof-function) · [refuseLookupToken](#refuselookuptoken-function)
 
 **Builders** — [FlowBuilder](#flowbuilder-class) · [StepList](#steplist-class) · [ArmBuilder](#armbuilder-class)
 
@@ -865,6 +865,13 @@ export declare function unresolvedLookupMessage(token: LookupToken): string;
 ````ts
 /** The `LookupSpec` for one field, or `undefined` when it earns no helper. */
 export declare function lookupSpecOf(reference: RawReference, invariant?: ReadonlySet<string>): LookupSpec | undefined;
+````
+
+## refuseLookupToken (function)
+
+````ts
+/** Refuse a lookup token where the family cannot resolve one. */
+export declare function refuseLookupToken(value: unknown, family: string, field: string): void;
 ````
 
 ## FlowBuilder (class)
