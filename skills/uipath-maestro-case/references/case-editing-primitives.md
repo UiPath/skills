@@ -12,7 +12,8 @@ All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `i
 
 - **Read** to load the file.
 - **Edit** for narrowly-scoped, unambiguous in-place replacements — default for all mutations after T01, and required for sections with <10 T-entries.
-- **Write** for exactly two things: the T01 scaffold (initial empty-file creation by the `case` plugin) and the Step 7 stage skeleton. Never for a populated `caseplan.json` — see § Skeleton-then-Edit.
+- **Write** (whole-file) for exactly two things: the T01 scaffold (initial empty-file creation by the `case` plugin) and the Step 7 stage skeleton. Never for a populated `caseplan.json`.
+- **Edit — or a single-hunk `apply_patch` on a harness with no `Edit` tool** — for every mutation after the skeleton. See § Skeleton-then-Edit for the tool table.
 
 **Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
@@ -57,6 +58,16 @@ Procedure per section:
 1. **Write 1 — T01 scaffold.** The empty case shell created by the `case` plugin.
 2. **Write 2 — stage skeleton (Step 7).** All stage nodes with their `id`, `data.label`, and empty containers: `data.tasks: []`, empty condition arrays, `layout: {}`, `schema.edges: []`. No tasks, no conditions, no SLA, no bindings. For a large case this is a few KB.
 3. **Every mutation after that is an Edit.** Tasks append into their stage's `data.tasks`, anchored on that stage's unique `"id": "Stage_…"`. Conditions, SLA, connector `caseShape`, and I/O values are all Edits against the node they belong to.
+
+**Which tool — "Edit" means a targeted patch, not a tool name.** Harnesses differ, and this contract is about the *size of the change you emit*, never about which tool emits it. Use whichever your harness actually has:
+
+| Your harness has | Emit the change as |
+|---|---|
+| An `Edit` tool | One `old_string` / `new_string` pair covering the smallest unambiguous slice. |
+| Only a patch tool (`apply_patch`, `Write` taking a patch) and **no `Edit`** | A **single-hunk patch touching only the target node's lines**. This is the compliant way to do it from a patch-based harness — it is not a workaround. |
+| Only whole-file write, no patch form at all | Say so in the completion report and keep sections as small as possible. This is the rare case; check for a patch tool first. |
+
+**A patch whose hunk spans the whole file is a whole-file Write wearing a patch costume** — it costs the same output tokens and carries the same field-drop risk, so it is forbidden on the same terms. What matters is that the emitted bytes are proportional to the change.
 
 **Never emit a whole-file Write of a populated `caseplan.json`.** Not to add a section, not to "get it all consistent", not to repair a validate error, and not because the file is now large. Once the skeleton exists, the file only grows by Edit.
 

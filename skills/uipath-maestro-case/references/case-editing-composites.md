@@ -1,5 +1,7 @@
 # Case Editing — Composite Operations
 
+> **"Edit" below means a targeted patch of one slice, not a tool name.** Use the `Edit` tool, or a single-hunk `apply_patch` if your harness has no `Edit` tool. A patch whose hunk spans the whole file is a whole-file Write in patch form and is forbidden the same way. Full tool table: [case-editing-primitives.md § Skeleton-then-Edit](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson).
+
 <!-- Split out of case-editing-operations.md so each part can be read whole. Foundations and the quick reference are in [case-editing-operations.md](case-editing-operations.md); the add/delete/bind atoms these recipes compose are in [case-editing-primitives.md](case-editing-primitives.md). -->
 
 > **Prerequisite:** every recipe below composes the atoms in [case-editing-primitives.md](case-editing-primitives.md) and obeys the per-section batch write contract there.
