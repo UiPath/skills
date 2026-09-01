@@ -32,6 +32,15 @@
             "async": true
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gate-sdd-write.sh\"\nexit $?\n"
+          }
+        ]
       }
     ],
     "SessionEnd": [
