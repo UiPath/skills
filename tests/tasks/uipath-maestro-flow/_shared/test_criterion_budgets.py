@@ -37,7 +37,10 @@ _SUITE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # an unanchored `timeout:` matches inside `turn_timeout:` and `task_timeout:`.
 _CRITERION_SPLIT = re.compile(r"\n\s*-\s+type:\s*")
 _TOP_LEVEL_KEY = re.compile(r"^[A-Za-z_][\w-]*:", re.M)
-_COMMAND = re.compile(r'command:\s*"?([^"\n]+)')
+# Everything from `command:` to the end of the criterion, so a quoting style
+# cannot hide the script: `command: 'python3 "$TASK_DIR/..."'` stopped a
+# quote-aware capture at the first inner `"` and silently skipped the criterion.
+_COMMAND = re.compile(r"command:\s*(.*)", re.S)
 _TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
@@ -506,6 +509,7 @@ def _criteria():
                 script = _TASK_DIR_SCRIPT.search(command.group(1))
                 if not script:
                     continue
+                first_line = command.group(1).split("\n")[0].strip().strip("'\"")
                 resolved = os.path.join(root, script.group(1))
                 if not os.path.exists(resolved):
                     continue
@@ -513,7 +517,7 @@ def _criteria():
                     (ln for ln in block.split("\n") if _TIMEOUT.search(ln)), ""
                 )
                 marker = _MANUAL_MARKER.search(timeout_line)
-                parts = command.group(1).split()
+                parts = first_line.split()
                 yield (
                     os.path.relpath(path, _SUITE_ROOT),
                     resolved,
@@ -1127,3 +1131,72 @@ def test_comprehension_without_a_debug_is_not_reported(tmp_path):
     path = os.path.join(str(tmp_path), "check_x.py")
     open(path, "w").write(src)
     assert _unsized_loops(path, None) == []
+
+
+# ── generated coverage ──────────────────────────────────────────────────────
+#
+# Hand-picked examples kept missing shapes (nested comprehensions priced by
+# their first generator, a debug inside a filter priced at zero). These generate
+# programs and check the model against what the program actually does.
+
+
+def _reference(text: str, path: str) -> int:
+    """What the program really spends: execute it with a counting run_debug."""
+    calls = []
+    ns = {"run_debug": lambda **kw: calls.append(flow_check.debug_budget(kw.get("timeout", 240)))}
+    exec(compile(text, path, "exec"), ns)  # noqa: S102 — generated, not user input
+    ns["main"]()
+    return sum(calls)
+
+
+_BODIES = [
+    "run_debug(timeout=240)",
+    "helper()",
+    "[run_debug(timeout=240) for _ in A]",
+    "[run_debug(timeout=240) for _ in A for _ in B]",
+    "[x for x in A if run_debug(timeout=240)]",
+    "[run_debug(timeout=240) for _ in enumerate(B)]",
+]
+_LOOPS = ["", "for _i in A:", "for _i in B:", "for _i in [1, 2, 3, 4]:", "for _i in sorted(A):"]
+
+
+@pytest.mark.parametrize("body", _BODIES)
+@pytest.mark.parametrize("loop", _LOOPS)
+def test_branch_free_programs_price_exactly(body, loop, tmp_path):
+    """No branches, so the worst case IS the actual case: the model must agree
+    with execution to the second."""
+    lines = ["A = [1, 2]", "B = [1, 2, 3]", "", "", "def helper():",
+             "    run_debug(timeout=240)", "", "", "def main():"]
+    lines += [f"    {loop}", f"        {body}"] if loop else [f"    {body}"]
+    text = "\n".join(lines) + "\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(text)
+    assert _budget_of_script(path, None) == _reference(text, path), text
+
+
+@pytest.mark.parametrize("arm", ["if flag:", "try:"])
+@pytest.mark.parametrize("body", _BODIES[:4])
+def test_branching_programs_are_an_upper_bound(arm, body, tmp_path):
+    """Exclusive arms take the priciest, so the model must never come in under
+    what a run actually spends."""
+    other = "else:" if arm.startswith("if") else "except Exception:"
+    text = "\n".join([
+        "A = [1, 2]", "B = [1, 2, 3]", "flag = True", "", "", "def helper():",
+        "    run_debug(timeout=240)", "", "", "def main():", f"    {arm}",
+        f"        {body}", f"    {other}", "        run_debug(timeout=240)",
+    ]) + "\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(text)
+    assert _budget_of_script(path, None) >= _reference(text, path), text
+
+
+def test_single_quoted_command_is_not_skipped(tmp_path):
+    """`command: 'python3 "$TASK_DIR/x.py"'` stopped a quote-aware capture at the
+    first inner quote, silently dropping the criterion from enforcement."""
+    block = """    description: "x"
+    command: 'python3 "$TASK_DIR/check_x.py" "a/*.json"'
+    timeout: 15
+"""
+    found = _COMMAND.search(block)
+    assert found and "$TASK_DIR" in found.group(1)
+    assert _TASK_DIR_SCRIPT.search(found.group(1)).group(1) == "check_x.py"

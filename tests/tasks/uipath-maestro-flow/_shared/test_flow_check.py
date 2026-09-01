@@ -1085,3 +1085,48 @@ def test_first_attempt_cap_must_strictly_outlive_the_cli(monkeypatch):
         run_debug(timeout=240, budget=31)
     assert calls["n"] == 0
     run_debug(timeout=240, budget=32)  # one more second is enough
+
+
+@pytest.mark.parametrize("seed", range(25))
+def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
+    """Random (timeout, budget, retries, backoff) against random attempt
+    durations and outcomes. Three invariants, none of which held by inspection
+    alone: the call never outlives its budget, every attempt gets a positive cap
+    that strictly outlives the CLI's own timeout, and nothing escapes as a crash
+    rather than a graded failure."""
+    import random
+
+    rng = random.Random(seed)
+    timeout = rng.choice([31, 45, 120, 180, 240, 480, 840])
+    retries = rng.choice([1, 2, 3, 5])
+    backoff = rng.choice([0, 1, 2.5, 5.0])
+    budget = rng.choice(
+        [None, None, debug_budget(timeout, retries, backoff), timeout + 60, 5000]
+    )
+    outs = [rng.choice([_COMPLETED, _POLL_TIMEOUT, _TRANSIENT_504]) for _ in range(10)]
+    spend = [rng.choice([1, timeout // 2, timeout, timeout * 3]) for _ in range(10)]
+
+    clock, caps, n = [0.0], [], [0]
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: "/tmp/proj")
+    monkeypatch.setattr(flow_check.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(flow_check.time, "sleep", lambda s: clock.__setitem__(0, clock[0] + s))
+
+    def fake_run(cmd, **kwargs):
+        cap = kwargs["timeout"]
+        caps.append((cap, int(cmd[cmd.index("--timeout") + 1])))
+        i = n[0]
+        n[0] += 1
+        clock[0] += min(spend[i % 10], cap)
+        return _cp(0 if outs[i % 10] is _COMPLETED else 1, outs[i % 10])
+
+    monkeypatch.setattr(flow_check.subprocess, "run", fake_run)
+    try:
+        run_debug(timeout=timeout, budget=budget, retries=retries, backoff_seconds=backoff)
+    except SystemExit:
+        pass  # a graded failure is a valid outcome; a crash is not
+
+    granted = budget if budget is not None else debug_budget(timeout, retries, backoff)
+    assert clock[0] <= granted, f"spent {clock[0]}s of a {granted}s budget"
+    for cap, cli in caps:
+        assert cap > 0, f"non-positive subprocess cap {cap}"
+        assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"
