@@ -362,8 +362,14 @@ def create_run_folder() -> str:
     the next seed.)
     """
     created = run_uip_json(["or", "folders", "create", RUN_FOLDER_NAME, "--output", "json"])
-    folder_key = str(created["Data"]["Key"])
-    print(f"OK: created run folder '{RUN_FOLDER_NAME}' ({folder_key})")
+    data = created["Data"]
+    folder_key = str(data["Key"])
+    # Report whether the API stamps CreationTime: the concurrent-instance age
+    # guard is inert without it (age unknown reads as old), and this line is
+    # the cheapest way to confirm the field exists on the real tenant.
+    stamp = data.get("CreationTime")
+    detail = f", CreationTime={stamp}" if stamp else " (no CreationTime on create)"
+    print(f"OK: created run folder '{RUN_FOLDER_NAME}' ({folder_key}){detail}")
     return folder_key
 
 
@@ -467,8 +473,13 @@ def seed_main() -> int:
     require_deployments_create()
     healed = heal_leftover_run_folder()
     require_domain_uncovered(healed)
-    run_folder_key = create_run_folder()
+    # Snapshot the projects BEFORE creating the folder, so the only step
+    # between the folder existing and the snapshot recording it is a local
+    # file write. A network failure in between would leave a folder teardown
+    # cannot see (it reads the scope from the snapshot) — recoverable, since
+    # the next seed heals it by name, but not worth the round trip.
     project_names = list_project_names()
+    run_folder_key = create_run_folder()
     write_snapshot(project_names, run_folder_key)
     print(f"Snapshotted {len(project_names)} pre-existing IXP project(s) to {SNAPSHOT}")
     return 0
