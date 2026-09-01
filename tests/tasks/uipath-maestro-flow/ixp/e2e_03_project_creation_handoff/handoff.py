@@ -9,24 +9,34 @@ One script, three subcommands, matching the task YAML's three hook points:
 
 **seed** fails loudly on any unmet precondition, naming the real cause before
 the agent spends its budget: the `deployments create` verb must exist (rides
-the CLI `dev` dist-tag), no published extractor may cover the fixture domain
-(a resolvable match makes reuse the correct agent action, so the redirect
-becomes unmeasurable — rotate the fixture domain per documents/README.md), and the
-runner must be able to create AND delete folders (teardown depends on it).
-It then snapshots the tenant: project-name digests plus a folder-Id watermark
-from a created-and-deleted sentinel (folder Ids are a monotonic sequence; a
-tenant can hold thousands of folders, so inventory diffing is not an option).
+the CLI `dev` dist-tag) and no published extractor may cover the fixture
+domain (a resolvable match makes reuse the correct agent action, so the
+redirect becomes unmeasurable — rotate the fixture domain per
+documents/README.md). It then creates the run-scoped Orchestrator folder the
+prompt names (RUN_FOLDER_NAME — the per-task fixed-name convention of
+tests/tasks/uipath-platform/cleanup.py's uuid8 tagging), first deleting any
+same-named leftover: a leftover OLDER than one task budget is the previous
+run's failed teardown, and deleting it removes the leaked deployment and its
+registry node, so seed self-heals the fixture domain without ever touching a
+folder it did not name. A same-named folder YOUNGER than that is presumed a
+live concurrent instance (the fixed name makes the task single-flight per
+tenant) and seed fails instead of deleting it. Finally it snapshots the
+tenant's project names as digests.
 
 **Why a snapshot-and-diff instead of asking the agent to record what it made:**
 the prompt deliberately never mentions IXP, projects, or deployments —
 recognising that a design-time project must be built first is the behaviour
 under test, and a "record what you created" instruction would leak the answer.
-The snapshot file is neutrally named and stores SHA-256 digests so an agent
-`ls`-ing the sandbox learns nothing.
+Naming the run FOLDER in the prompt leaks nothing (an admin-assigned sandbox
+folder is ordinary user language), so folder attribution is exact; project
+attribution still needs the diff. The snapshot file is neutrally named and
+stores SHA-256 digests so an agent `ls`-ing the sandbox learns nothing.
 
 **check** passes on either of two shapes, because flow-registry indexing
-latency is org-scoped weather (~25s when healthy; hours observed on the CI
-tenant, with the Message Bus publish measured clean at ~400ms):
+latency is org-scoped weather. Canonical measurement (2026-08-24, cited by
+every other comment that mentions it): ~25s when healthy, ~8 minutes observed
+during runs, hours at the tail on the CI tenant — with the Message Bus publish
+itself clean at ~400ms throughout. The two shapes:
 
 1. wired — a .flow node references this run's deployment or project, matched
    against parsed node fields, never file text;
@@ -41,14 +51,16 @@ PROPAGATION SIGNATURE so tenant weather is never misread as a skill
 regression.
 
 **teardown** deletes only what it can attribute to this run: a project must be
-wired into this sandbox's flow or be the only new project on the tenant; a
-folder must be created-after-seed (Id above the watermark) AND carry this
-run's deployment. Deleting the folder is what removes the deployment and its
-registry node — deployments have no delete verb of their own — which is what
-lets a passing run restore its own preconditions instead of permanently
-burning the fixture domain. Always exits 0: post_run runs after grading, so a
-cleanup problem must never turn a graded result into a failure (every failure
-is still printed).
+wired into this sandbox's flow OR carry a deployment whose FolderKey is the
+seed-created run folder. Anything else that appeared during the run is
+reported, never guessed at. The run folder itself is always deleted —
+deleting a folder is what removes its deployments and their registry nodes
+(deployments have no delete verb of their own) — which is what lets a passing
+run restore its own preconditions instead of permanently burning the fixture
+domain. No other folder is ever deleted: a deployment the agent parked
+elsewhere is reported as LEAKED for a hand-delete. Always exits 0: post_run
+runs after grading, so a cleanup problem must never turn a graded result into
+a failure (every failure is still printed).
 
 `uip ixp projects list` returns a PAGED envelope (`Data.Projects[]` + `Total`);
 `uip ixp deployments list` does NOT (bare array, nothing to guard truncation
@@ -67,7 +79,7 @@ import subprocess
 import sys
 import time
 import traceback
-import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -87,15 +99,41 @@ SNAPSHOT = ".grader_baseline.json"
 # page-fallen-off projects as newly created.
 PROJECT_LIST_LIMIT = "500"
 
-# Generous enough for `projects list` / `deployments list` on a cold tenant. The
-# YAML's pre_run / post_run / run_command timeouts must all exceed this.
-UIP_TIMEOUT_SECONDS = 120
+# Per-call cap. The YAML's pre_run / post_run / run_command timeouts (300s, the
+# harness hard cap) must all exceed this — and the worst case must too: seed
+# makes ~12 uip calls, so at 45s even four hung calls (180s) plus ~45s of
+# retry/re-probe sleeps and a nominal remainder fit under 300s, where the
+# previous 120s cap busted the budget at two hung calls. Every call seed/check/
+# teardown make is a list/get/registry/folder op that completes in seconds when
+# healthy — nothing here runs `projects create` (~50s; that's the agent's).
+UIP_TIMEOUT_SECONDS = 45
 
 # Node-type prefix for an IxP extraction node in a .flow.
 IXP_NODE_PREFIX = "uipath.ixp."
 
-# Folder deletes can fail transiently (provisioning race on the just-created
-# sentinel, GH run 32967816894; an "Error resolving folder" on a half-hour-old
+# The run-scoped Orchestrator folder: seed creates it, the prompt names it, and
+# it is the ONLY folder this script ever deletes. Fixed per task (the uuid8
+# suffix distinguishes this task from siblings, per the
+# tests/tasks/uipath-platform/cleanup.py convention), which makes the task
+# single-flight per tenant — see LIVE_FOLDER_AGE_SECONDS.
+# KEEP IN SYNC with the folder name in the task YAML's initial_prompt. The
+# name must not contain "ixp"/"project"/"publish" — the prompt carries it, and
+# never saying those is the point of the task.
+RUN_FOLDER_NAME = "flow-e2e-e9fbf2d0"
+
+# A same-named folder younger than this is presumed to belong to a LIVE
+# concurrent instance of this task (task_timeout is 3000s — anything younger
+# may still be running), not a failed teardown. Seed fails instead of deleting
+# it. A missing or unparseable CreationTime degrades to "old" (deletable), so
+# the guard never blocks on an optional field.
+LIVE_FOLDER_AGE_SECONDS = 3600.0
+
+# Well above any plausible folder count on the CI tenant; the lookup raises on
+# a full page rather than silently missing a leftover beyond it.
+FOLDER_LIST_LIMIT = "500"
+
+# Folder deletes can fail transiently (provisioning race on a just-created
+# folder, GH run 32967816894; an "Error resolving folder" on a half-hour-old
 # folder, GH run 32968685992 — the CLI's RetryWillNotFix hint was wrong both
 # times). Retried briefly wherever a folder is deleted. Env-tunable so the
 # unit-test suite is not slowed by real sleeps.
@@ -163,29 +201,44 @@ def project_digest(project_name: str) -> str:
     return hashlib.sha256(project_name.encode("utf-8")).hexdigest()
 
 
-def folder_id(folder_key: str) -> int | None:
-    """The folder's integer Id, or None if the folder no longer exists.
+def folder_exists(folder_key: str) -> bool:
+    """Whether the folder still resolves — teardown's already-gone check."""
+    completed = run_uip(["or", "folders", "get", folder_key, "--output", "json"])
+    return completed.returncode == 0
 
-    Folder Ids are a monotonic sequence (deletion never reuses one), so
-    comparing Ids orders folder creation — neither `folders create` nor
-    `folders get` exposes a timestamp, and a tenant can hold thousands of
-    folders, ruling out inventory snapshots.
+
+def folder_age_seconds(folder_key: str) -> float | None:
+    """Seconds since the folder's CreationTime, or None when undeterminable.
+
+    Best-effort by design: `or folders get` failing, or the timestamp field
+    missing or unparseable, returns None and the caller treats the folder as
+    old — the age guard must never block a run on an optional field.
     """
     completed = run_uip(["or", "folders", "get", folder_key, "--output", "json"])
     if completed.returncode != 0:
         return None
-    return int(json.loads(completed.stdout)["Data"]["Id"])
+    try:
+        raw = json.loads(completed.stdout)["Data"].get("CreationTime")
+        if not raw:
+            return None
+        created = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - created).total_seconds()
+    except Exception:
+        return None
 
 
-def write_snapshot(project_names: set[str], folder_id_watermark: int) -> None:
+def write_snapshot(project_names: set[str], run_folder_key: str) -> None:
     """Record the baseline as opaque digests — see the module docstring."""
     with open(SNAPSHOT, "w", encoding="utf-8") as handle:
-        # Neutral key names — see the module docstring on opacity. "mark" is
-        # the sentinel folder's Id: larger Id = created after seed.
+        # Neutral key names — see the module docstring on opacity. "scope" is
+        # the seed-created run folder's Key (a bare GUID leaks nothing the
+        # prompt's folder name doesn't already say).
         json.dump(
             {
                 "names": sorted(project_digest(name) for name in project_names),
-                "mark": folder_id_watermark,
+                "scope": run_folder_key,
             },
             handle,
             indent=2,
@@ -200,25 +253,13 @@ def _read_snapshot() -> dict[str, Any]:
         )
     with open(SNAPSHOT, encoding="utf-8") as handle:
         raw = json.load(handle)
-    return {"projects": set(raw["names"]), "watermark": int(raw["mark"])}
+    return {"projects": set(raw["names"]), "scope": str(raw["scope"])}
 
 
 def new_project_names() -> list[str]:
     """Project names that appeared since seed ran (tenant-wide — see module docstring)."""
     before = _read_snapshot()["projects"]
     return sorted(name for name in list_project_names() if project_digest(name) not in before)
-
-
-def folder_created_after_seed(folder_key: str) -> bool | None:
-    """True if the folder was created after seed ran, None if it is gone.
-
-    Necessary but not sufficient for deletion — teardown additionally requires
-    the folder to carry a deployment attributed to this run.
-    """
-    current_id = folder_id(folder_key)
-    if current_id is None:
-        return None
-    return current_id > _read_snapshot()["watermark"]
 
 
 def list_deployments(project_name: str) -> list[dict[str, Any]]:
@@ -264,53 +305,100 @@ DOMAIN_MARKERS = ("falcon", "raptor", "mews", "bird-of-prey", "bird_of_prey")
 DOMAIN_RECHECK_ATTEMPTS = 2
 DOMAIN_RECHECK_SECONDS = float(os.environ.get("HANDOFF_RETRY_SECONDS", "15"))
 
-_GUID_RE = re.compile(
-    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z", re.IGNORECASE
-)
 
+def run_folder_leftovers() -> list[str]:
+    """Keys of folders named RUN_FOLDER_NAME — leftovers of a failed teardown.
 
-# Folders self-heal must never delete, whatever residue they carry: the
-# tenant-standard roots every suite shares. Matched against every path segment
-# of the folder's identity, so a subfolder of Shared is refused too.
-PROTECTED_FOLDER_NAMES = {"shared", "default"}
-
-
-def folder_identity(folder_key: str) -> str | None:
-    """The folder's readable identity (name/path fields joined), or None.
-
-    None means the folder could not be positively identified — the caller must
-    treat that as "do not delete".
+    Exact name match only: this feeds the one delete path seed has, so nothing
+    the script did not itself name is ever a candidate. The envelope is
+    unwrapped tolerantly (bare array or a dict of one known list key) but an
+    unrecognised shape raises — a silent [] would skip the self-heal and block
+    the run on its own residue.
     """
-    completed = run_uip(["or", "folders", "get", folder_key, "--output", "json"])
-    if completed.returncode != 0:
-        return None
-    try:
-        data = json.loads(completed.stdout)["Data"]
-    except (json.JSONDecodeError, KeyError, TypeError):
-        return None
-    if not isinstance(data, dict):
-        return None
-    parts = [
-        str(data.get(field) or "")
-        for field in ("DisplayName", "Name", "FullyQualifiedName", "Path")
+    payload = run_uip_json(
+        ["or", "folders", "list", "--limit", FOLDER_LIST_LIMIT, "--output", "json"]
+    )
+    data = payload["Data"]
+    if isinstance(data, list):
+        entries = data
+    elif isinstance(data, dict):
+        for envelope_key in ("Folders", "Items", "Value", "Results"):
+            if envelope_key in data:
+                entries = data[envelope_key]
+                break
+        else:
+            raise RuntimeError(
+                f"unrecognised `or folders list` envelope: keys={sorted(data)}"
+            )
+    else:
+        raise RuntimeError(f"unrecognised `or folders list` payload: {type(data).__name__}")
+    if len(entries) >= int(FOLDER_LIST_LIMIT):
+        raise RuntimeError(
+            f"folder list returned a full page ({len(entries)}) — a leftover "
+            f"'{RUN_FOLDER_NAME}' could be beyond it; raise FOLDER_LIST_LIMIT"
+        )
+    return [
+        str(entry["Key"])
+        for entry in entries
+        if RUN_FOLDER_NAME
+        in (
+            entry.get("DisplayName"),
+            entry.get("Name"),
+            str(entry.get("FullyQualifiedName") or "").split("/")[-1],
+        )
     ]
-    return " ".join(part for part in parts if part)
 
 
-def folder_is_protected(identity: str) -> bool:
-    segments = re.split(r"[/\s]+", identity)
-    return any(segment.lower() in PROTECTED_FOLDER_NAMES for segment in segments)
+def heal_leftover_run_folders() -> bool:
+    """Delete any leftover run folder from a failed teardown; True if any went.
 
-
-def folder_key_from_node_type(node_type: str) -> str | None:
-    """The deployment folder's key: the trailing GUID of an IxP NodeType.
-
-    Deployed models register as uipath.ixp.{deploymentName}.{modelId}-{folderKey},
-    so the last 36 characters are the Orchestrator folder key — the handle that
-    deletes the deployment (deployments have no delete verb of their own).
+    A leftover carries the previous run's deployment, whose registry node
+    covers the fixture domain — deleting the folder is the self-heal that
+    unblocks the domain gate. Two refusals guard the delete: a folder young
+    enough to belong to a LIVE concurrent instance of this task raises rather
+    than yank a running sibling's folder (the fixed name makes this task
+    single-flight — see RUN_FOLDER_NAME), and a delete that keeps failing
+    raises because the same name is about to be recreated and a runner that
+    cannot delete folders cannot tear down either.
     """
-    match = _GUID_RE.search(node_type)
-    return match.group(0) if match else None
+    healed = False
+    for folder_key in run_folder_leftovers():
+        age = folder_age_seconds(folder_key)
+        if age is not None and age < LIVE_FOLDER_AGE_SECONDS:
+            raise RuntimeError(
+                f"folder '{RUN_FOLDER_NAME}' ({folder_key}) is only {age:.0f}s old — "
+                "younger than one task budget, so it likely belongs to a LIVE "
+                "concurrent instance of this task rather than a failed teardown. "
+                "Refusing to delete it: wait for that run to finish and retry, or "
+                "delete the folder by hand if you know it is a fresh leak."
+            )
+        completed = delete_folder_with_retry(folder_key)
+        if completed.returncode != 0:
+            detail = " ".join((completed.stderr or completed.stdout).split())
+            raise RuntimeError(
+                f"could not delete leftover run folder '{RUN_FOLDER_NAME}' "
+                f"({folder_key}, exit {completed.returncode}): {detail}. Teardown "
+                "depends on folder delete — fix the runner's folder-delete "
+                "permission or delete the folder by hand."
+            )
+        print(f"self-heal: deleted leftover run folder {folder_key} ('{RUN_FOLDER_NAME}')")
+        healed = True
+    return healed
+
+
+def create_run_folder() -> str:
+    """Create the run-scoped folder the prompt names; return its Key.
+
+    Also the create-permission pre-flight: a runner that cannot create folders
+    fails here, loudly, before the agent spends its budget. (Delete permission
+    is proven by heal_leftover_run_folders the first time it matters — a
+    delete-permission regression costs one leaked run, then fails loudly at
+    the next seed.)
+    """
+    created = run_uip_json(["or", "folders", "create", RUN_FOLDER_NAME, "--output", "json"])
+    folder_key = str(created["Data"]["Key"])
+    print(f"OK: created run folder '{RUN_FOLDER_NAME}' ({folder_key})")
+    return folder_key
 
 
 def require_deployments_create() -> None:
@@ -366,110 +454,42 @@ def resolvable_covering_nodes() -> tuple[list[str], int, int]:
     return covered, len(nodes), len(matched)
 
 
-def require_domain_uncovered() -> None:
+def require_domain_uncovered(healed: bool) -> None:
     """Fail if a resolvable published extractor already covers the fixture domain.
 
     If one does, reusing it is the correct agent action and the handoff never
     fires — the run would go red for a reason unrelated to the behaviour under
-    test. A covering node is usually this task's own leaked residue (a teardown
-    whose folder delete failed), so seed self-heals first: delete each covering
-    node's Orchestrator folder — the trailing GUID of its NodeType — then
-    re-probe. Registry deletion propagation can lag, so a node still resolvable
-    after the rechecks fails THIS run (the agent could reuse it) but the next
-    run starts clean. A block that persists across runs means the folder could
-    not be deleted, or a genuinely foreign extractor covers the domain — rotate
-    the fixture domain per documents/README.md.
+    test. When heal_leftover_run_folders just deleted a leftover, its node is
+    the likely cover and registry deletion propagation can lag, so the probe
+    re-checks a few times. A node still resolvable after that fails THIS run
+    (the agent could reuse it), but if the cover was the healed leftover the
+    next run starts clean; a persistent block means a genuinely foreign
+    extractor covers the domain — this script never deletes anything it did
+    not name, so delete that extractor's folder by hand if it is disposable,
+    or rotate the fixture domain per documents/README.md.
     """
     covered, total, matched = resolvable_covering_nodes()
+    if covered and healed:
+        for _ in range(DOMAIN_RECHECK_ATTEMPTS):
+            time.sleep(DOMAIN_RECHECK_SECONDS)
+            covered, total, matched = resolvable_covering_nodes()
+            if not covered:
+                print("OK: fixture domain clear after self-heal")
+                break
+
     if covered:
-        # Attribution guard: self-heal only fires on residue — a node whose
-        # backing project is GONE (teardown deleted the project but the folder
-        # delete failed). A live project still carrying a domain marker means a
-        # real extractor covers the domain; deleting its folder would destroy
-        # someone's work, so refuse and demand a deliberate manual action.
-        live_projects = list_project_names()
-        live_marker_projects = sorted(
-            name
-            for name in live_projects
-            if any(marker in name.lower() for marker in DOMAIN_MARKERS)
+        remedy = (
+            "A leftover run folder was deleted just now, so the registry may "
+            "still be serving its stale node — re-run the task."
+            if healed
+            else "No leftover run folder was found to heal, so this is a foreign "
+            "extractor: delete its folder by hand if it is disposable, or "
+            "rotate the fixture domain (documents/README.md)."
         )
-        if live_marker_projects:
-            raise RuntimeError(
-                f"the fixture domain is covered by {covered} and live IXP project(s) "
-                f"{live_marker_projects} still carry a domain marker — that is a real "
-                "extractor, not this task's leaked residue, so seed will NOT delete "
-                "its folder. Delete it deliberately if it is disposable, or rotate "
-                "the fixture domain (documents/README.md)."
-            )
-        deleted_any = False
-        for node_type in covered:
-            folder_key = folder_key_from_node_type(node_type)
-            if folder_key is None:
-                print(
-                    f"cannot self-heal '{node_type}' — no trailing folder-key GUID "
-                    "in the NodeType"
-                )
-                continue
-            # A live project embedded in the node's type means a real, living
-            # extractor whose project name happens to lack a marker — not
-            # residue. (Coverage matches DisplayName too, so marker-liveness
-            # alone can miss this.)
-            backing_live = [
-                name
-                for name in live_projects
-                if sanitize_registry_segment(name) in node_type.lower()
-            ]
-            if backing_live:
-                print(
-                    f"self-heal: '{node_type}' embeds live project(s) {backing_live} "
-                    "— a real extractor, refusing to delete its folder"
-                )
-                continue
-            # Second attribution guard: positively identify the folder and
-            # never touch a protected root — residue proves the NODE is
-            # orphaned, not that the FOLDER is ours (a prior run could have
-            # deployed into Shared against the prompt's steer).
-            identity = folder_identity(folder_key)
-            if identity is None:
-                print(
-                    f"self-heal: cannot read folder {folder_key} — refusing to "
-                    "delete a folder that can't be identified"
-                )
-                continue
-            if folder_is_protected(identity):
-                print(
-                    f"self-heal: folder {folder_key} ('{identity}') is a protected "
-                    "root — refusing to delete; remove the leaked deployment by hand"
-                )
-                continue
-            completed = delete_folder_with_retry(folder_key)
-            if completed.returncode == 0:
-                print(f"self-heal: deleted leaked folder {folder_key} backing '{node_type}'")
-                deleted_any = True
-            else:
-                detail = " ".join((completed.stderr or completed.stdout).split())
-                print(
-                    f"self-heal: could not delete folder {folder_key} "
-                    f"(exit {completed.returncode}): {detail}"
-                )
-
-        if deleted_any:
-            for _ in range(DOMAIN_RECHECK_ATTEMPTS):
-                time.sleep(DOMAIN_RECHECK_SECONDS)
-                covered, total, matched = resolvable_covering_nodes()
-                if not covered:
-                    print("OK: fixture domain clear after self-heal")
-                    break
-
-    if covered:
         raise RuntimeError(
             "the fixture domain is already covered by resolvable published "
             f"extractor(s) {covered} — the agent can correctly reuse one, so this "
-            "task cannot measure the handoff. Seed tried deleting each node's "
-            "Orchestrator folder (the trailing GUID of the NodeType). If a folder "
-            "was deleted just now, the registry may still be serving the stale "
-            "node — re-run the task. Otherwise delete the folder by hand or change "
-            "the fixture domain (documents/README.md)."
+            f"task cannot measure the handoff. {remedy}"
         )
     print(
         f"OK: none of the {total} published IxP node(s) cover the fixture domain "
@@ -477,37 +497,13 @@ def require_domain_uncovered() -> None:
     )
 
 
-def folder_id_watermark() -> int:
-    """Create and delete a sentinel folder; return its Id as the watermark.
-
-    Any folder with a larger Id was created after this moment (see folder_id).
-    Doubles as a permissions pre-flight: a runner that cannot create and delete
-    folders would leak a deployment at teardown — fail now, naming the cause,
-    before the agent spends its budget.
-    """
-    sentinel_name = f"baseline-marker-{uuid.uuid4().hex[:8]}"
-    created = run_uip_json(["or", "folders", "create", sentinel_name, "--output", "json"])
-    sentinel_key = created["Data"]["Key"]
-    sentinel_id = int(created["Data"]["Id"])
-    deleted = delete_folder_with_retry(sentinel_key)
-    if deleted.returncode != 0:
-        detail = " ".join((deleted.stdout or deleted.stderr).split())
-        raise RuntimeError(
-            f"could not delete sentinel folder {sentinel_key} (exit {deleted.returncode}) — "
-            "the runner lacks folder-delete permission, so teardown cannot remove the "
-            "run-scoped folder and every run would leak a deployment. Fix the runner role "
-            f"before running this task. Detail: {detail}"
-        )
-    print(f"OK: folder create/delete pre-flight passed (watermark Id {sentinel_id})")
-    return sentinel_id
-
-
 def seed_main() -> int:
     require_deployments_create()
-    require_domain_uncovered()
-    watermark = folder_id_watermark()
+    healed = heal_leftover_run_folders()
+    require_domain_uncovered(healed)
+    run_folder_key = create_run_folder()
     project_names = list_project_names()
-    write_snapshot(project_names, watermark)
+    write_snapshot(project_names, run_folder_key)
     print(f"Snapshotted {len(project_names)} pre-existing IXP project(s) to {SNAPSHOT}")
     return 0
 
@@ -561,9 +557,18 @@ def candidate_names() -> tuple[list[str], list[str]]:
     is nullable in the API, and an empty string is a substring of everything, so
     keeping one would match any stale node and defeat the residue guard.
 
-    Returns an empty list when nothing was created or nothing was deployed, after
-    printing which of the two it was.
+    Gating identifiers come ONLY from deployments in the seed-created run folder.
+    The snapshot diff is tenant-wide, so a project a concurrent task created and
+    deployed elsewhere can appear in it — counting that deployment would let a
+    foreign node satisfy the served-node probe and wrongly reject this run's
+    degraded fallback. The prompt directs everything into the run folder, so an
+    in-folder deployment is this run's by construction; off-folder ones are
+    printed and ignored.
+
+    Returns an empty list when nothing was created or nothing was deployed into
+    the run folder, after printing which of the two it was.
     """
+    scope = _read_snapshot()["scope"]
     created_projects = new_project_names()
     if not created_projects:
         print(
@@ -577,29 +582,34 @@ def candidate_names() -> tuple[list[str], list[str]]:
     names: list[str] = []
     deployment_names: list[str] = []
     for project_name in created_projects:
-        deployments = list_deployments(project_name)
-        for deployment in deployments:
+        in_scope = 0
+        for deployment in list_deployments(project_name):
             deployment_name = deployment["DeploymentName"]
             print(
                 f"  {project_name} -> DeploymentName={deployment_name} "
                 f"version={deployment['ModelVersion']} folder={deployment['FolderKey']}"
             )
+            if deployment["FolderKey"] != scope:
+                print(f"    ignored for gating: not in this run's folder ({scope})")
+                continue
+            in_scope += 1
             if deployment_name:
                 names.append(deployment_name)
                 deployment_names.append(deployment_name)
-        # Per-project, not run-wide: an undeployed sibling project (concurrent
-        # tenant activity) must not contribute a candidate name, or it could
-        # satisfy the gate without ever having been folder-deployed.
-        if deployments and project_name:
+        # Per-project, not run-wide: a sibling project with no in-folder
+        # deployment (concurrent tenant activity) must not contribute a
+        # candidate name, or it could satisfy the gate for a node this run
+        # never deployed.
+        if in_scope and project_name:
             names.append(project_name)
 
     if not names:
         print(
             f"FAIL: none of the project(s) {created_projects} created this run were "
-            "folder-deployed. "
-            "`uip ixp deployments create --folder-key <guid>` is what makes a trained "
-            "model appear in the Maestro flow registry; without it no uipath.ixp.* node "
-            "can exist for this project.",
+            "folder-deployed into this run's folder. "
+            "`uip ixp deployments create --folder-key <the folder the prompt names>` "
+            "is what makes a trained model appear in the Maestro flow registry; "
+            "without it no uipath.ixp.* node can exist for this project.",
             file=sys.stderr,
         )
         return [], []
@@ -616,15 +626,27 @@ def sanitize_registry_segment(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower())
 
 
+def name_matches(name: str, haystack: str) -> bool:
+    """One containment rule everywhere a run identifier is looked for: raw
+    (casefolded) or registry-sanitized, both sides. Keeps the .flow wired-match
+    and the registry probe in agreement — a DeploymentName carrying `_` or
+    uppercase still matches its own lowercased-and-hyphenated NodeType.
+    """
+    return (
+        name.lower() in haystack.lower()
+        or sanitize_registry_segment(name) in sanitize_registry_segment(haystack)
+    )
+
+
 def run_node_in_registry(names: list[str]) -> str | None:
     """The NodeType the registry currently serves for this run, or None.
 
     Pulls fresh, finds a uipath.ixp.* node that embeds one of this run's
-    identifiers — matching the raw name against DisplayName + NodeType and the
-    sanitized name against NodeType — and confirms it resolves via
-    `registry get`. Deliberately tolerant: any error reads as "not served" —
-    this probe decides whether the degraded fallback is available, and a broken
-    registry is exactly the case the fallback exists for.
+    identifiers — via name_matches, the same rule check_main applies to the
+    .flow — and confirms it resolves via `registry get`. Deliberately
+    tolerant: any error reads as "not served" — this probe decides whether the
+    degraded fallback is available, and a broken registry is exactly the case
+    the fallback exists for.
     """
     try:
         run_uip(["maestro", "flow", "registry", "pull", "--force"])
@@ -633,12 +655,8 @@ def run_node_in_registry(names: list[str]) -> str | None:
         )
         for node in payload["Data"]:
             node_type = str(node["NodeType"])
-            haystack = f"{node.get('DisplayName', '')} {node_type}".lower()
-            if any(
-                name.lower() in haystack
-                or sanitize_registry_segment(name) in node_type.lower()
-                for name in names
-            ):
+            haystack = f"{node.get('DisplayName', '')} {node_type}"
+            if any(name_matches(name, haystack) for name in names):
                 completed = run_uip(
                     ["maestro", "flow", "registry", "get", node_type, "--output", "json"]
                 )
@@ -669,7 +687,12 @@ def check_main() -> int:
     for flow_path, document in parsed.items():
         identifiers = ixp_node_identifiers(document)
         wired = next(
-            (name for name in names if any(name in found for found in identifiers)), None
+            (
+                name
+                for name in names
+                if any(name_matches(name, found) for found in identifiers)
+            ),
+            None,
         )
         if wired:
             print(f"OK: {flow_path} wires an IxP node for this run's project ({wired})")
@@ -740,7 +763,7 @@ def check_main() -> int:
             print(
                 f"  PROPAGATION SIGNATURE: '{name}' was created AND folder-deployed this run, "
                 "yet no flow wires it. On an environment with lagging registry indexing the "
-                "node can take hours to surface (measured 2026-08-24; ~22s when healthy), so "
+                "node can take hours to surface (~25s when healthy — module docstring), so "
                 "the agent could never have discovered it. This is tenant weather, not a "
                 "skill regression — see the task description before filing anything.",
                 file=sys.stderr,
@@ -776,8 +799,8 @@ def wired_ixp_references() -> str:
 
     Deliberately tolerant and glob-based rather than reusing flow_files():
     that helper sys.exits on an ambiguous or missing project, which is right
-    when grading and wrong here — cleanup falls back to the
-    only-one-new-project rule when there is no readable flow.
+    when grading and wrong here — with no readable flow, attribution proceeds
+    on the run-folder FolderKey alone.
     """
     references: list[str] = []
     for flow_path in glob.glob("**/*.flow", recursive=True):
@@ -795,76 +818,78 @@ def cleanup() -> None:
     if not os.path.exists(SNAPSHOT):
         print(f"SKIP: no {SNAPSHOT} — the pre_run seed step did not run.")
         return
+    run_folder_key = _read_snapshot()["scope"]
 
     created_projects = new_project_names()
+    deployment_records: list[tuple[str, str]] = []
     if not created_projects:
-        print("SKIP: no IXP project was created this run — nothing to clean up.")
-        return
+        print("No IXP project was created this run — only the run folder to remove.")
+    else:
+        # Read deployments BEFORE deleting: `deployments list` is project-scoped
+        # and 404s once the project is gone, so this is the last chance to name
+        # both what is attributable and what is being left behind.
+        deployments_by_project = {
+            project_name: list_deployments(project_name)
+            for project_name in created_projects
+        }
+        flow_text = wired_ixp_references()
 
-    # Read deployments BEFORE deleting: `deployments list` is project-scoped and
-    # 404s once the project is gone, so this is the last chance to name both what
-    # is attributable and what is being left behind.
-    deployments_by_project = {
-        project_name: list_deployments(project_name) for project_name in created_projects
-    }
-    flow_text = wired_ixp_references()
+        # Exact attribution only: wired into this sandbox's flow, or deployed
+        # into the folder seed created. Never "the only new project" — under
+        # parallel task dispatch (`make e2e`, run-coder-eval -j 4) the lone new
+        # project can be a sibling task's, and guessing deletes it mid-run.
+        attributable = [
+            project_name
+            for project_name, deployments in deployments_by_project.items()
+            if project_name in flow_text
+            or any(
+                deployment["DeploymentName"] and deployment["DeploymentName"] in flow_text
+                for deployment in deployments
+            )
+            or any(
+                deployment["FolderKey"] == run_folder_key for deployment in deployments
+            )
+        ]
 
-    attributable = [
-        project_name
-        for project_name, deployments in deployments_by_project.items()
-        if project_name in flow_text
-        or any(
-            deployment["DeploymentName"] and deployment["DeploymentName"] in flow_text
-            for deployment in deployments
-        )
-    ]
-    if not attributable and len(created_projects) == 1:
-        attributable = list(created_projects)
-        print(
-            f"Attributing '{created_projects[0]}' to this run: it is the only project "
-            "that appeared, so there is nothing to confuse it with."
-        )
+        unattributable = [name for name in created_projects if name not in attributable]
+        if unattributable:
+            print(
+                f"NOT DELETED: {unattributable} appeared during this run but are "
+                "neither wired into this sandbox's flow nor deployed into this "
+                "run's folder — they may belong to a concurrent run or another "
+                "user. Reported, not guessed at; delete by hand if they are ours."
+            )
 
-    unattributable = [name for name in created_projects if name not in attributable]
-    if unattributable:
-        print(
-            f"NOT DELETED: {unattributable} appeared during this run but are not wired "
-            "into this sandbox's flow, and more than one project appeared — they may "
-            "belong to a concurrent run or another user. Delete by hand if they are ours."
-        )
+        for project_name in attributable:
+            delete_project(project_name)
 
-    for project_name in attributable:
-        delete_project(project_name)
+        deployment_records = [
+            (deployment["DeploymentName"], deployment["FolderKey"])
+            for project_name in attributable
+            for deployment in deployments_by_project[project_name]
+        ]
 
     # Deployments cannot be deleted directly, but deleting their folder removes
-    # them (and their registry nodes) — see the module docstring. Only folders
-    # that are BOTH created-after-seed AND carrying this run's deployments
-    # qualify; folder_created_after_seed compares the folder's Id against the
-    # sentinel watermark seed recorded.
-    deployment_records = [
-        (deployment["DeploymentName"], deployment["FolderKey"])
-        for project_name in attributable
-        for deployment in deployments_by_project[project_name]
-    ]
-    deleted_folders: set[str] = set()
-    for folder_key in sorted({folder_key for _, folder_key in deployment_records}):
-        created_after_seed = folder_created_after_seed(folder_key)
-        if created_after_seed is None:
-            print(f"NOTE: folder {folder_key} is already gone — nothing to delete.")
-            deleted_folders.add(folder_key)
-        elif created_after_seed and delete_folder(folder_key):
-            deleted_folders.add(folder_key)
+    # them (and their registry nodes) — see the module docstring. The run folder
+    # seed created is the ONLY folder this script deletes; anything the agent
+    # parked elsewhere is reported below.
+    run_folder_deleted = False
+    if not folder_exists(run_folder_key):
+        print(f"NOTE: run folder {run_folder_key} is already gone — nothing to delete.")
+        run_folder_deleted = True
+    elif delete_folder(run_folder_key):
+        run_folder_deleted = True
 
     stranded = [
         (deployment_name, folder_key)
         for deployment_name, folder_key in deployment_records
-        if folder_key not in deleted_folders
+        if folder_key != run_folder_key or not run_folder_deleted
     ]
     if stranded:
         print(
-            f"LEAKED: {len(stranded)} deployment(s) remain — each sits in a "
-            "pre-existing folder (never deleted by this script) or in a folder "
-            "whose deletion failed above:"
+            f"LEAKED: {len(stranded)} deployment(s) remain — each sits outside "
+            "this run's folder (never deleted by this script) or in the run "
+            "folder whose deletion failed above:"
         )
         for deployment_name, folder_key in stranded:
             print(f"  - {deployment_name} in folder {folder_key}")

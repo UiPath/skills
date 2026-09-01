@@ -15,6 +15,7 @@ import os
 import pathlib
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -22,7 +23,7 @@ import pytest
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TASK_DIR)
 
-from handoff import SNAPSHOT, project_digest  # noqa: E402
+from handoff import RUN_FOLDER_NAME, SNAPSHOT, project_digest  # noqa: E402
 from handoff import DOMAIN_MARKERS  # noqa: E402
 
 # Built from the guard's own first marker, so rotating the fixture domain
@@ -36,10 +37,13 @@ DEPLOYMENT_NAME = "invoices-cccc3333-dddd4444-ixp"
 OTHER_PROJECT = "concurrent-eeee5555-ixp"
 OTHER_DEPLOYMENT = "concurrent-eeee5555-ffff6666-ixp"
 FOLDER_KEY = "5f31a6b2-fa5a-46a5-aac2-7eef48457811"
-# A folder created DURING the run (absent from the seed snapshot) — the only
-# kind teardown is allowed to delete.
+# The seed-created run folder (recorded in the snapshot's "scope") — the only
+# folder teardown deletes.
 RUN_FOLDER_KEY = "8c1d2e3f-0a1b-4c2d-9e3f-aabbccddee00"
 CONCURRENT_FOLDER_KEY = "9d2e3f4a-1b2c-4d3e-8f4a-bbccddeeff11"
+# A leftover folder named RUN_FOLDER_NAME from a previous run's failed
+# teardown — the only folder seed's self-heal deletes.
+LEFTOVER_FOLDER_KEY = "7a0b1c2d-3e4f-4a5b-8c6d-99aabbccdd22"
 MODEL_ID = "aae28538-450f-80f9-9f27-5e803b4ea473"
 
 # Stands in for the real CLI, reading canned answers from payload.json beside it.
@@ -116,32 +120,41 @@ elif argv[:3] == ["ixp", "deployments", "list"]:
         sys.exit(1)
     print(json.dumps({"Data": payload["deployments"].get(argv[3], [])}))
 elif argv[:3] == ["or", "folders", "create"]:
-    # Seed's sentinel: returns a fresh Key and the next Id in the tenant's
-    # monotonic sequence, which becomes the snapshot watermark.
+    # Seed's run folder: returns the Key teardown will read back as "scope".
     print(json.dumps({"Data": {
-        "Key": "sentinel-" + argv[3],
-        "Id": payload.get("sentinel_id", 100000),
+        "Key": payload.get("created_folder_key", "created-" + argv[3]),
         "Name": argv[3],
     }}))
+elif argv[:3] == ["or", "folders", "list"]:
+    entries = [
+        entry for entry in payload.get("folders", [])
+        if entry.get("Key") not in deleted_folders()
+    ]
+    print(json.dumps({"Data": entries}))
 elif argv[:3] == ["or", "folders", "get"]:
     folder_ids = payload.get("folder_ids", {})
     if argv[3] not in folder_ids or argv[3] in deleted_folders():
         print("folder not found", file=sys.stderr)
         sys.exit(1)
-    print(json.dumps({"Data": {"Key": argv[3], "Id": folder_ids[argv[3]]}}))
+    entry = {"Key": argv[3], "Id": folder_ids[argv[3]]}
+    created_at = payload.get("folder_created_at", {}).get(argv[3])
+    if created_at:
+        entry["CreationTime"] = created_at
+    print(json.dumps({"Data": entry}))
 elif argv[:3] == ["or", "folders", "delete"]:
     # Mirrors the real CLI: refuses without --yes, since the operation is
     # irreversible and the CLI never prompts.
     if "--yes" not in argv:
         print("Confirmation required: re-run with --yes.", file=sys.stderr)
         sys.exit(1)
-    if argv[3].startswith("sentinel-") and payload.get("sentinel_delete_failures", 0) > 0:
-        attempts_log = os.path.join(here, "sentinel_attempts.txt")
+    transient = payload.get("folder_delete_failures", {}).get(argv[3], 0)
+    if transient > 0:
+        attempts_log = os.path.join(here, "delete_attempts_" + argv[3] + ".txt")
         with open(attempts_log, "a") as handle:
             handle.write("x")
         with open(attempts_log) as handle:
             attempts_so_far = len(handle.read())
-        if attempts_so_far <= payload["sentinel_delete_failures"]:
+        if attempts_so_far <= transient:
             print("folder is still provisioning", file=sys.stderr)
             sys.exit(1)
     if argv[3] in payload.get("undeletable_folders", []):
@@ -167,8 +180,11 @@ def install_fake_uip(sandbox: pathlib.Path, **payload: Any) -> dict[str, str]:
     """Install the fake `uip` on a copy of PATH and return the env to run with."""
     payload.setdefault("projects", PRE_EXISTING)
     payload.setdefault("deployments", {})
-    # Ids ordered around the sentinel watermark (100000): FOLDER_KEY predates
-    # seed (protected), RUN_FOLDER_KEY and CONCURRENT_FOLDER_KEY come after.
+    # `folders list` inventory (leftover lookup) and `folders get` existence
+    # (teardown's already-gone check). Seed's `folders create` returns
+    # RUN_FOLDER_KEY so the snapshot's "scope" is deterministic.
+    payload.setdefault("folders", [])
+    payload.setdefault("created_folder_key", RUN_FOLDER_KEY)
     payload.setdefault(
         "folder_ids",
         {FOLDER_KEY: 50, RUN_FOLDER_KEY: 100010, CONCURRENT_FOLDER_KEY: 100020},
@@ -189,14 +205,24 @@ def install_fake_uip(sandbox: pathlib.Path, **payload: Any) -> dict[str, str]:
 
 
 def deployment(
-    name: str = DEPLOYMENT_NAME, folder_key: str = FOLDER_KEY
+    name: str = DEPLOYMENT_NAME, folder_key: str = RUN_FOLDER_KEY
 ) -> dict[str, Any]:
+    """Defaults to the seed-created run folder — the contract the prompt sets.
+
+    check's gating only counts deployments in that folder, so tests modelling a
+    deployment parked elsewhere pass folder_key explicitly.
+    """
     return {"DeploymentName": name, "ModelVersion": 0, "FolderKey": folder_key}
 
 
-def ixp_node_type(deployment_name: str) -> str:
+def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
     """The real registry shape: uipath.ixp.{deploymentName}.{modelId}-{folderKey}."""
-    return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{FOLDER_KEY}"
+    return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{folder_key}"
+
+
+def leftover_run_folder() -> dict[str, str]:
+    """A `folders list` entry for a previous run's leaked run folder."""
+    return {"Key": LEFTOVER_FOLDER_KEY, "DisplayName": RUN_FOLDER_NAME}
 
 
 def write_flow(sandbox: pathlib.Path, nodes: list[dict[str, Any]]) -> None:
@@ -229,14 +255,14 @@ def wired_flow(sandbox: pathlib.Path, deployment_name: str = DEPLOYMENT_NAME) ->
 def write_snapshot(
     sandbox: pathlib.Path,
     project_names: list[str],
-    watermark: int = 100000,
+    scope: str = RUN_FOLDER_KEY,
 ) -> None:
-    """Baseline in the same opaque form seed.py writes (digests + watermark)."""
+    """Baseline in the same opaque form seed writes (digests + run folder key)."""
     (sandbox / SNAPSHOT).write_text(
         json.dumps(
             {
                 "names": sorted(project_digest(name) for name in project_names),
-                "mark": watermark,
+                "scope": scope,
             }
         ),
         encoding="utf-8",
@@ -313,6 +339,34 @@ def test_passes_when_only_inputs_model_name_carries_the_deployment(
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
+def test_wired_match_survives_an_underscored_deployment_name(
+    sandbox: pathlib.Path,
+) -> None:
+    """The registry sanitizes the deployment name inside the NodeType
+    (lowercased, non-alnum runs → '-'). A node carrying no inputs.modelName
+    must still match via its sanitized type — otherwise a healthy wired run
+    prints PROPAGATION SIGNATURE, the mislabel this grader exists to prevent.
+    """
+    raw_name = "Falconry_Licences-cccc3333-ixp"
+    write_flow(
+        sandbox,
+        [
+            {
+                "id": "extract",
+                "type": (
+                    f"uipath.ixp.falconry-licences-cccc3333-ixp.{MODEL_ID}-{FOLDER_KEY}"
+                ),
+                "inputs": {},
+            }
+        ],
+    )
+    env = tenant(sandbox, deployments={CREATED_PROJECT: [deployment(raw_name)]})
+
+    completed = run_script("check", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "wires an IxP node" in completed.stdout
+
+
 def test_deployment_name_outside_an_ixp_node_is_a_degraded_pass_not_wiring(
     sandbox: pathlib.Path, one_new_deployed_project: dict[str, str]
 ) -> None:
@@ -383,6 +437,37 @@ def test_degraded_pass_via_a_breadcrumb_in_a_sibling_markdown_file(
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "OK (degraded)" in completed.stdout
     assert "PLAN.md" in completed.stdout
+
+
+def test_foreign_served_node_cannot_reject_the_degraded_fallback(
+    sandbox: pathlib.Path,
+) -> None:
+    """A concurrent task's project can appear in the tenant-wide diff already
+    folder-deployed elsewhere, with the registry serving ITS node. Gating
+    identifiers are scoped to this run's folder, so the foreign node must not
+    read as "the registry serves this run's node" and reject the fallback."""
+    write_flow(sandbox, [{"id": "placeholder", "type": "core.logic.mock"}])
+    project_dir = next(sandbox.glob("**/*.flow")).parent
+    (project_dir / "PLAN.md").write_text(
+        f"- swap the mock for {DEPLOYMENT_NAME}\n", encoding="utf-8"
+    )
+    foreign_node = ixp_node_type(OTHER_DEPLOYMENT, folder_key=CONCURRENT_FOLDER_KEY)
+    env = tenant(
+        sandbox,
+        projects=PRE_EXISTING + [CREATED_PROJECT, OTHER_PROJECT],
+        deployments={
+            CREATED_PROJECT: [deployment()],
+            OTHER_PROJECT: [
+                deployment(OTHER_DEPLOYMENT, folder_key=CONCURRENT_FOLDER_KEY)
+            ],
+        },
+        registry_nodes=[{"NodeType": foreign_node, "DisplayName": OTHER_DEPLOYMENT}],
+    )
+
+    completed = run_script("check", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "OK (degraded)" in completed.stdout
+    assert "ignored for gating" in completed.stdout
 
 
 def test_fails_when_no_project_was_created(sandbox: pathlib.Path) -> None:
@@ -466,24 +551,49 @@ def test_cli_failure_surfaces_the_exit_code_and_stderr(sandbox: pathlib.Path) ->
 
 
 def test_teardown_deletes_the_wired_project_and_reports_the_leak(
-    sandbox: pathlib.Path, one_new_deployed_project: dict[str, str]
+    sandbox: pathlib.Path,
 ) -> None:
+    """A wired project deployed OUTSIDE the run folder: project goes, leak named."""
     wired_flow(sandbox)
-    completed = run_script("teardown", sandbox, one_new_deployed_project)
+    env = tenant(
+        sandbox, deployments={CREATED_PROJECT: [deployment(folder_key=FOLDER_KEY)]}
+    )
+    completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert f"deleted IXP project '{CREATED_PROJECT}'" in completed.stdout
     assert "LEAKED" in completed.stdout
     assert DEPLOYMENT_NAME in completed.stdout
 
 
-def test_teardown_deletes_a_lone_new_project_even_when_nothing_was_wired(
+def test_teardown_reports_a_lone_undeployed_project_instead_of_guessing(
     sandbox: pathlib.Path,
 ) -> None:
-    """The common failure path: project built, run died before wiring it."""
+    """A lone new project is NOT assumed ours: under parallel dispatch
+    (`make e2e`, run-coder-eval -j 4) it can be a sibling task's — e.g.
+    uipath-ixp full_lifecycle — and guessing would delete it mid-run.
+    Undeployed leftovers are reported for a hand-delete, never deleted."""
     env = tenant(sandbox, deployments={CREATED_PROJECT: []})
     completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0
+    assert "deleted IXP project" not in completed.stdout
+    assert "NOT DELETED" in completed.stdout
+    assert CREATED_PROJECT in completed.stdout
+
+
+def test_teardown_deletes_an_unwired_project_deployed_into_the_run_folder(
+    sandbox: pathlib.Path,
+) -> None:
+    """The common failure path: project built and deployed, run died before
+    wiring it. The run-folder FolderKey attributes it exactly — no guessing."""
+    env = tenant(
+        sandbox,
+        deployments={CREATED_PROJECT: [deployment(folder_key=RUN_FOLDER_KEY)]},
+    )
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
     assert f"deleted IXP project '{CREATED_PROJECT}'" in completed.stdout
+    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+    assert "LEAKED" not in completed.stdout
 
 
 def test_teardown_refuses_to_delete_an_unattributable_concurrent_project(
@@ -496,7 +606,9 @@ def test_teardown_refuses_to_delete_an_unattributable_concurrent_project(
         projects=PRE_EXISTING + [CREATED_PROJECT, OTHER_PROJECT],
         deployments={
             CREATED_PROJECT: [deployment()],
-            OTHER_PROJECT: [deployment(OTHER_DEPLOYMENT)],
+            # The concurrent project's deployment sits in its own folder — it
+            # must stay unattributable.
+            OTHER_PROJECT: [deployment(OTHER_DEPLOYMENT, folder_key=CONCURRENT_FOLDER_KEY)],
         },
     )
     completed = run_script("teardown", sandbox, env)
@@ -538,13 +650,16 @@ def test_teardown_deletes_a_run_scoped_folder_and_its_deployment(
 
 
 def test_teardown_never_deletes_a_pre_existing_folder(
-    sandbox: pathlib.Path, one_new_deployed_project: dict[str, str]
+    sandbox: pathlib.Path,
 ) -> None:
     """A deployment the agent put in Shared leaks; Shared itself must survive."""
     wired_flow(sandbox)
-    completed = run_script("teardown", sandbox, one_new_deployed_project)
+    env = tenant(
+        sandbox, deployments={CREATED_PROJECT: [deployment(folder_key=FOLDER_KEY)]}
+    )
+    completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0
-    assert "deleted run-scoped folder" not in completed.stdout
+    assert f"deleted run-scoped folder {FOLDER_KEY}" not in completed.stdout
     assert "LEAKED" in completed.stdout
     assert FOLDER_KEY in completed.stdout
 
@@ -552,8 +667,8 @@ def test_teardown_never_deletes_a_pre_existing_folder(
 def test_teardown_leaves_a_new_folder_owned_by_a_concurrent_run(
     sandbox: pathlib.Path,
 ) -> None:
-    """New-since-seed is necessary but not sufficient: the folder must also
-    carry a deployment attributed to THIS run."""
+    """Only the seed-created run folder is deleted — a folder some concurrent
+    run created is never a candidate, whatever it carries."""
     wired_flow(sandbox)
     env = tenant(
         sandbox,
@@ -566,9 +681,22 @@ def test_teardown_leaves_a_new_folder_owned_by_a_concurrent_run(
     completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0
     assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
-    assert CONCURRENT_FOLDER_KEY not in completed.stdout.replace(
-        f"deleted run-scoped folder {RUN_FOLDER_KEY}", ""
-    ) or f"deleted run-scoped folder {CONCURRENT_FOLDER_KEY}" not in completed.stdout
+    assert f"deleted run-scoped folder {CONCURRENT_FOLDER_KEY}" not in completed.stdout
+
+
+def test_teardown_notes_an_already_gone_run_folder(sandbox: pathlib.Path) -> None:
+    """The agent (or a retried teardown) may have removed the folder already —
+    that is a NOTE, not a failure, and its deployment is not a leak."""
+    wired_flow(sandbox)
+    env = tenant(
+        sandbox,
+        deployments={CREATED_PROJECT: [deployment(folder_key=RUN_FOLDER_KEY)]},
+        folder_ids={FOLDER_KEY: 50},
+    )
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0
+    assert "already gone" in completed.stdout
+    assert "LEAKED" not in completed.stdout
 
 
 def test_teardown_reports_leak_when_the_folder_delete_fails(
@@ -605,37 +733,50 @@ def test_teardown_skips_cleanly_without_a_snapshot(sandbox: pathlib.Path) -> Non
 # ── seed ────────────────────────────────────────────────────────────────────
 
 
-def test_seed_snapshots_existing_projects_and_folders(sandbox: pathlib.Path) -> None:
+def test_seed_snapshots_existing_projects_and_records_the_run_folder(
+    sandbox: pathlib.Path,
+) -> None:
     env = install_fake_uip(sandbox)
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"created run folder '{RUN_FOLDER_NAME}'" in completed.stdout
     expected = {
         "names": sorted(project_digest(name) for name in PRE_EXISTING),
-        "mark": 100000,
+        "scope": RUN_FOLDER_KEY,
     }
     assert json.loads((sandbox / SNAPSHOT).read_text()) == expected
 
 
-def test_seed_retries_a_transiently_failing_sentinel_delete(
+def test_seed_retries_a_transiently_failing_leftover_delete(
     sandbox: pathlib.Path,
 ) -> None:
-    """Deleting a folder right after creating it can race provisioning —
-    a couple of transient failures must not abort the run (GH 32967816894)."""
-    env = install_fake_uip(sandbox, sentinel_delete_failures=2)
+    """Folder deletes can fail transiently (GH 32967816894, 32968685992) —
+    a couple of transient failures must not abort the run."""
+    env = install_fake_uip(
+        sandbox,
+        folders=[leftover_run_folder()],
+        folder_delete_failures={LEFTOVER_FOLDER_KEY: 2},
+    )
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "retrying in" in completed.stdout
     assert (sandbox / SNAPSHOT).exists()
 
 
-def test_seed_fails_when_the_sentinel_delete_never_succeeds(
+def test_seed_fails_when_the_leftover_delete_never_succeeds(
     sandbox: pathlib.Path,
 ) -> None:
-    """A persistent delete failure means teardown could not clean up either."""
-    env = install_fake_uip(sandbox, sentinel_delete_failures=99)
+    """A persistent delete failure means teardown could not clean up either —
+    and the same name is about to be recreated, so the run must not start."""
+    env = install_fake_uip(
+        sandbox,
+        folders=[leftover_run_folder()],
+        undeletable_folders=[LEFTOVER_FOLDER_KEY],
+    )
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
-    assert "folder-delete permission" in completed.stderr
+    assert "could not delete leftover run folder" in completed.stderr
+    assert "folder-delete" in completed.stderr
     assert not (sandbox / SNAPSHOT).exists()
 
 
@@ -734,7 +875,9 @@ def test_teardown_reads_deployments_before_deleting(sandbox: pathlib.Path) -> No
     LEAKED report — which is the only record of the un-removable residue.
     """
     wired_flow(sandbox)
-    env = tenant(sandbox)
+    env = tenant(
+        sandbox, deployments={CREATED_PROJECT: [deployment(folder_key=FOLDER_KEY)]}
+    )
 
     completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0, completed.stdout
@@ -795,6 +938,8 @@ def test_seed_fails_when_the_fixture_domain_is_already_covered(
     """A resolvable matching extractor makes reuse correct, so the test can't measure.
 
     Resolvable is the operative word — see the unresolvable-residue case below.
+    With no leftover run folder to heal, seed deletes NOTHING: a foreign
+    extractor's folder is a hand-delete, never this script's.
     """
     env = install_fake_uip(
         sandbox,
@@ -809,6 +954,8 @@ def test_seed_fails_when_the_fixture_domain_is_already_covered(
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
     assert "already covered" in completed.stderr
+    assert "foreign extractor" in completed.stderr
+    assert "deleted leftover run folder" not in completed.stdout
     assert not (sandbox / SNAPSHOT).exists()
 
 
@@ -857,40 +1004,93 @@ def test_seed_blocks_when_one_of_several_matches_still_resolves(
     assert stale not in completed.stderr
 
 
-def test_seed_self_heals_a_leaked_folder_deployment(sandbox: pathlib.Path) -> None:
-    """A resolvable covering node is usually this task's own leaked residue.
-
-    Deleting the node's Orchestrator folder (the trailing GUID of its NodeType)
-    removes the deployment, so seed does that itself and re-probes instead of
-    demanding a hand-delete — the rig heals the previous run's failed teardown
-    (GH run 32968685992 leaked exactly this shape).
+def test_seed_self_heals_a_leaked_run_folder(sandbox: pathlib.Path) -> None:
+    """A resolvable covering node is usually this task's own leaked residue —
+    a previous run's failed teardown left the run folder behind (GH run
+    32968685992 leaked exactly this shape). Seed deletes the folder it finds
+    under its own RUN_FOLDER_NAME — never one inferred from the node — which
+    removes the deployment, and the probe then finds the domain clear.
     """
-    leaked = ixp_node_type(COVERED_NAME)
+    leaked = ixp_node_type(COVERED_NAME, folder_key=LEFTOVER_FOLDER_KEY)
     env = install_fake_uip(
         sandbox,
+        folders=[leftover_run_folder()],
         registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
     )
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert f"self-heal: deleted leaked folder {FOLDER_KEY}" in completed.stdout
+    assert (
+        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
+        in completed.stdout
+    )
     assert (sandbox / SNAPSHOT).exists()
 
 
-def test_seed_blocks_when_the_self_heal_folder_delete_fails(
+def test_seed_refuses_to_delete_a_live_concurrent_runs_folder(
     sandbox: pathlib.Path,
 ) -> None:
-    """No usable self-heal → the original fail-fast, with the attempt reported."""
-    leaked = ixp_node_type(COVERED_NAME)
+    """The fixed folder name makes the task single-flight: a same-named folder
+    younger than one task budget is presumed a LIVE concurrent instance's, not
+    a failed teardown's, and seed must fail without deleting it."""
+    fresh = (datetime.now(timezone.utc) - timedelta(seconds=120)).isoformat()
     env = install_fake_uip(
         sandbox,
-        registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
-        undeletable_folders=[FOLDER_KEY],
+        folders=[leftover_run_folder()],
+        folder_ids={LEFTOVER_FOLDER_KEY: 77},
+        folder_created_at={LEFTOVER_FOLDER_KEY: fresh},
     )
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
-    assert "self-heal: could not delete folder" in completed.stdout
+    assert "LIVE concurrent instance" in completed.stderr
+    assert "deleted leftover run folder" not in completed.stdout
+    assert not (sandbox.parent / "bin" / "deleted_folders.txt").exists()
+    assert not (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_heals_an_old_leftover_with_a_parseable_creation_time(
+    sandbox: pathlib.Path,
+) -> None:
+    """Age guard, delete direction: a folder older than the live window is a
+    failed teardown's leftover and is healed. (The self-heal test above covers
+    the missing-CreationTime degradation — age unknown reads as old.)"""
+    stale = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+    env = install_fake_uip(
+        sandbox,
+        folders=[leftover_run_folder()],
+        folder_ids={LEFTOVER_FOLDER_KEY: 77},
+        folder_created_at={LEFTOVER_FOLDER_KEY: stale},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert (
+        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
+        in completed.stdout
+    )
+    assert (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_blocks_when_a_covering_node_is_not_the_run_folders(
+    sandbox: pathlib.Path,
+) -> None:
+    """A covering node backed by some OTHER folder is not residue seed may
+    touch: heal the leftover, but the still-covered domain fails the run
+    without deleting the foreign folder."""
+    foreign = ixp_node_type(COVERED_NAME, folder_key=CONCURRENT_FOLDER_KEY)
+    env = install_fake_uip(
+        sandbox,
+        folders=[leftover_run_folder()],
+        registry_nodes=[{"NodeType": foreign, "DisplayName": COVERED_NAME}],
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert (
+        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
+        in completed.stdout
+    )
     assert "already covered" in completed.stderr
     assert not (sandbox / SNAPSHOT).exists()
 
@@ -904,16 +1104,20 @@ def test_seed_blocks_this_run_when_the_registry_lags_the_self_heal(
     but the folder is gone, so the next run starts clean. The error must say
     a re-run is the remedy.
     """
-    leaked = ixp_node_type(COVERED_NAME)
+    leaked = ixp_node_type(COVERED_NAME, folder_key=LEFTOVER_FOLDER_KEY)
     env = install_fake_uip(
         sandbox,
+        folders=[leftover_run_folder()],
         registry_nodes=[{"NodeType": leaked, "DisplayName": COVERED_NAME}],
         sticky_nodes=[leaked],
     )
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
-    assert f"self-heal: deleted leaked folder {FOLDER_KEY}" in completed.stdout
+    assert (
+        f"self-heal: deleted leftover run folder {LEFTOVER_FOLDER_KEY}"
+        in completed.stdout
+    )
     assert "re-run the task" in completed.stderr
     assert not (sandbox / SNAPSHOT).exists()
 
