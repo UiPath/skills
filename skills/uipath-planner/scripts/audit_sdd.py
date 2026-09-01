@@ -360,6 +360,31 @@ RECIPIENT_PREFIX = re.compile(r"^(Role|User|UserGroup|Email|Expression):")
 FORBIDDEN_VOCAB = ["groupOperator", "savedFilterTrees", "io-binding", "auto-mint", "originalVar", "inputOutputs["]
 
 
+def decision_routed_behaviors(text: str) -> list[str]:
+    """`Behavior` prose from decision buttons that map a variable to a value.
+
+    A decision task's `**Actions:**` table routes outcomes:
+
+        | Button | Maps To                   | Behavior                       |
+        | Reject | reviewDecision = "Reject" | ... the Application Rejected lane |
+
+    A row whose `Maps To` carries an assignment is a deterministic route, so the
+    lane it names cannot be keyed on `user-selected-stage` (a picker is for a lane
+    a PERSON launches). Kept in code rather than in the template: the design
+    lane's reading budget is saturated, and prose that was long enough to land
+    this repair cost a passing task while prose short enough to be safe left the
+    agent churning without producing an SDD.
+    """
+    out: list[str] = []
+    for chunk in re.split(r"(?=\*\*Actions:\*\*)", text):
+        if not chunk.startswith("**Actions:**"):
+            continue
+        for _, cells in table_rows(chunk):
+            if len(cells) >= 3 and "=" in cells[1]:
+                out.append(cells[2])
+    return out
+
+
 def section_slice(text: str, heading: str) -> str:
     """Body of a `### {heading}` section up to the next heading of any level."""
     match = re.search(rf"^### {re.escape(heading)}\s*$(.*?)(?=^#{{1,5}} |\Z)", text, re.M | re.S)
@@ -435,6 +460,19 @@ def contract_findings(text: str, facts: dict) -> list[str]:
         findings.append("wait-for-user exit with no user-selected-stage entry anywhere — validate fails with 'no possible stage options'")
     if has_uss_entry and not has_wfu_exit:
         findings.append("user-selected-stage entry with no wait-for-user exit anywhere — validate fails with 'will never be met'")
+
+    routed = " || ".join(decision_routed_behaviors(text)).casefold()
+    if routed:
+        for kind, name, block in stage_blocks(text):
+            if kind != "Secondary Stage" or "user-selected-stage" not in block:
+                continue
+            if name.casefold() in routed:
+                findings.append(
+                    f"stage {name!r} is entered by user-selected-stage but a decision button routes to it "
+                    "— a picker rule cannot carry a deterministic route: key the entry on the decision "
+                    '(selected-stage-completed("<origin>") + IF on the fact) and give the origin the '
+                    "matching Marks Stage Complete: No diverting exit"
+                )
 
     # Case Exit Conditions: >= 1 completing row
     case_exit = section_slice(text, "Case Exit Conditions")
