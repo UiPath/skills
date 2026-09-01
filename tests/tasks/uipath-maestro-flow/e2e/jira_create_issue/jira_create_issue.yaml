@@ -55,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "JiraCreateIssue checks: valid flow with Jira Create-Issue node, debug creates a real issue, and the tenant carries the seeded summary"
     command: "python3 $TASK_DIR/check_jira_create_issue.py"
-    timeout: 1080
+    timeout: 1560  # budget-guard: overhead 480. connection_id (2) + up to 2 candidate reads, 120s each
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

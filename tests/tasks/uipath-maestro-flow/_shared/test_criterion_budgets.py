@@ -48,6 +48,10 @@ _SUCCESS_CRITERIA = re.compile(
 # coder_eval/models/criteria.py:185 — a criterion that declares none still costs
 # this, so counting it as 0 under-charges the grading sum.
 _DEFAULT_CRITERION_TIMEOUT = 30
+# Bounded work a check does OUTSIDE run_debug — the jira checks resolve a
+# connection and re-read issues, each a 120s CLI call. The count comes from
+# runtime data, so it is declared and checked, never guessed.
+_OVERHEAD_MARKER = re.compile(r"#\s*budget-guard:[^#\n]*?\boverhead\s+(\d+)")
 # `xN` is required: an unverified annotation is just a comment.
 _MANUAL_MARKER = re.compile(r"#\s*budget-guard:\s*manual(?:\s*x\s*(\d+))?")
 
@@ -82,6 +86,45 @@ def _is_run_debug(node: ast.AST) -> bool:
 
 def _calls_in(node: ast.AST) -> list[ast.Call]:
     return [n for n in ast.walk(node) if _is_run_debug(n)]
+
+
+def _sibling_modules(script: str) -> list[str]:
+    """Modules the check imports from its own task directory (e.g. `jira_is`)."""
+    tree = ast.parse(open(script).read())
+    names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names |= {a.name.split(".")[0] for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+            names.add(node.module.split(".")[0])
+    directory = os.path.dirname(script)
+    found = [os.path.join(directory, f"{n}.py") for n in sorted(names)]
+    return [f for f in found if os.path.exists(f)]
+
+
+def _is_subprocess_run(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "subprocess"
+    )
+
+
+def _nondebug_calls(script: str) -> list[tuple[str, int, int]]:
+    """(module, line, seconds) per bounded subprocess call outside run_debug,
+    in the check or a sibling it imports. `run_debug` has its own budget."""
+    out = []
+    for path in [script] + _sibling_modules(script):
+        for node in ast.walk(ast.parse(open(path).read())):
+            if not _is_subprocess_run(node):
+                continue
+            arg = next((kw.value for kw in node.keywords if kw.arg == "timeout"), None)
+            seconds = _literal(arg) if arg is not None else None
+            if isinstance(seconds, (int, float)):
+                out.append((os.path.basename(path), node.lineno, int(seconds)))
+    return out
 
 
 def _module_lengths(tree: ast.Module) -> dict[str, int]:
@@ -415,6 +458,7 @@ def _criteria():
                     _criterion_seconds(block),
                     # "" marks a marker with no count, distinct from no marker.
                     (marker.group(1) or "") if marker else None,
+                    int(over.group(1)) if (over := _OVERHEAD_MARKER.search(timeout_line)) else None,
                 )
 
 
@@ -483,12 +527,12 @@ def test_the_suite_was_actually_discovered():
 
 
 @pytest.mark.parametrize(
-    "yaml_path,script,subcommand,criterion,declared",
+    "yaml_path,script,subcommand,criterion,declared,overhead",
     _CASES,
-    ids=[f"{y}:{s or '-'}" for y, _p, s, _t, _d in _CASES],
+    ids=[f"{y}:{s or '-'}" for y, _p, s, _t, _d, _o in _CASES],
 )
 def test_criterion_clears_the_debug_budget(
-    yaml_path, script, subcommand, criterion, declared
+    yaml_path, script, subcommand, criterion, declared, overhead
 ):
     price = _price_script(script, subcommand)
     if price is None:
@@ -503,7 +547,25 @@ def test_criterion_clears_the_debug_budget(
     if price.unsized:
         price = _price_script(script, subcommand, manual=int(declared))
 
-    required = price.seconds + flow_check.CRITERION_MARGIN_SECONDS
+    # Bounded non-debug work: detected so it cannot be forgotten, declared
+    # because its call count comes from runtime data.
+    nondebug = _nondebug_calls(script)
+    if nondebug and overhead is None:
+        where_calls = ", ".join(f"{m}:{ln} ({sec}s)" for m, ln, sec in nondebug[:4])
+        pytest.fail(
+            f"{yaml_path}: {where} also runs bounded work outside run_debug "
+            f"({where_calls}), which this guard prices at nothing and the "
+            f"{flow_check.CRITERION_MARGIN_SECONDS}s margin does not cover. "
+            "Annotate the timeout with `# budget-guard: overhead <seconds>` for "
+            "the success path's worth and the guard will fund it."
+        )
+    if overhead is not None and not nondebug:
+        pytest.fail(
+            f"{yaml_path}: {where} does no bounded work outside run_debug, so "
+            "the `budget-guard: overhead` annotation is stale. Remove it."
+        )
+
+    required = price.seconds + (overhead or 0) + flow_check.CRITERION_MARGIN_SECONDS
     assert criterion >= required, (
         f"{yaml_path} grants {criterion}s to {where}, which can spend "
         f"{price.seconds}s in run_debug. Raise the criterion to >= {required}s, "
@@ -854,3 +916,30 @@ def test_a_criterion_cannot_borrow_its_neighbours_timeout(tmp_path):
     )
     first = next(_criterion_blocks(text, "run_command"))
     assert _criterion_seconds(first) == _DEFAULT_CRITERION_TIMEOUT
+
+
+def test_bounded_nondebug_work_is_detected(tmp_path):
+    """The 60s margin covers interpreter start and static asserts, not a check
+    that shells out. Detected through sibling imports so it cannot be forgotten."""
+    (tmp_path / "helper.py").write_text(
+        "import subprocess\n\n\ndef go():\n    subprocess.run(['uip'], timeout=120)\n"
+    )
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(f"import helper\n\n\ndef main():\n    {_ONE}\n    helper.go()\n")
+    assert _nondebug_calls(path) == [("helper.py", 5, 120)]
+
+
+def test_nondebug_scan_ignores_run_debug_and_untimed_calls(tmp_path):
+    """`run_debug` has its own budget, and an unbounded call cannot be priced."""
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(
+        f"import subprocess\n\n\ndef main():\n    {_ONE}\n"
+        "    subprocess.run(['uip'])\n"
+    )
+    assert _nondebug_calls(path) == []
+
+
+def test_overhead_annotation_parses_off_the_timeout_line():
+    line = "    timeout: 1800  # budget-guard: overhead 480. connection_id (2) + 2 reads"
+    assert int(_OVERHEAD_MARKER.search(line).group(1)) == 480
+    assert _OVERHEAD_MARKER.search("    timeout: 1800  # nothing declared") is None

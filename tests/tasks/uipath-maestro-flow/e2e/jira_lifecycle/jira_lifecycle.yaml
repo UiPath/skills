@@ -68,7 +68,7 @@ success_criteria:
   - type: run_command
     description: "JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted"
     command: "python3 $TASK_DIR/check_jira_lifecycle.py"
-    timeout: 1320
+    timeout: 1920  # budget-guard: overhead 600. connection_id (2) + 3 seeded issue reads, 120s each
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

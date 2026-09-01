@@ -55,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "JiraSearchTriage checks: valid flow with a JQL search feeding a loop of Add-Comment, debug completes, and both seeded issues carry the triage comment"
     command: "python3 $TASK_DIR/check_jira_search_triage.py"
-    timeout: 1320
+    timeout: 1800  # budget-guard: overhead 480. connection_id (2) + 2 seeded issue reads, 120s each
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

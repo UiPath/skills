@@ -241,7 +241,8 @@ def run_debug(
 
     # One deadline for the whole call: an attempt gets `timeout`, or the
     # remainder when that is smaller.
-    if budget is None:
+    derived = budget is None
+    if derived:
         budget = debug_budget(timeout, retries, backoff_seconds)
     # Both floors, because they guard different quantities: the aggregate keeps
     # a retry fundable, the per-attempt one keeps the subprocess cap above the
@@ -256,8 +257,9 @@ def run_debug(
     if budget < _MIN_RETRY_BUDGET_SECONDS:
         _fail(
             f"run_debug budget of {budget}s is below the {_MIN_RETRY_BUDGET_SECONDS}s "
-            "floor (the CLI timeout minimum plus its headroom); raise `budget` or "
-            "`timeout`"
+            "floor (the CLI timeout minimum plus its headroom); "
+            + ("raise `timeout`" if derived else "raise `budget`, or omit it so "
+               "debug_budget(timeout, ...) derives the deadline")
         )
     deadline = time.monotonic() + budget
     out_of_budget = False
