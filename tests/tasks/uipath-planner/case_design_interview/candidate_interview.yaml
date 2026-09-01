@@ -54,7 +54,7 @@ success_criteria:
   # agent stopping at exactly the draft step.
   - type: run_command
     description: "design lane produced a design document (draft or finalized)"
-    command: "ls *sdd*.md 2>/dev/null | grep -q ."
+    command: "ls sdd.draft.md sdd.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -67,7 +67,7 @@ success_criteria:
       from pathlib import Path
       text = " ".join(
           path.read_text(encoding="utf-8", errors="ignore")
-          for path in sorted(Path(".").glob("*sdd*.md"))
+          for path in (Path("sdd.draft.md"), Path("sdd.md"))
           if path.is_file()
       ).lower()
       has_onsite = "onsite" in text or "loop" in text
@@ -85,7 +85,7 @@ success_criteria:
 
   - type: run_command
     description: "design declares all 3 exception lanes"
-    command: "cat *sdd*.md 2>/dev/null | grep -Eiq 'rejected' && cat *sdd*.md 2>/dev/null | grep -Eiq 'withdrawn' && cat *sdd*.md 2>/dev/null | grep -Eiq 'on hold'"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && grep -Eiq 'rejected' \"$f\" && grep -Eiq 'withdrawn' \"$f\" && grep -Eiq 'on hold' \"$f\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -93,7 +93,7 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 7 primary stages (not truncated)"
-    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

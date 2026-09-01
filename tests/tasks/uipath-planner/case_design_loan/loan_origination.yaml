@@ -54,7 +54,7 @@ success_criteria:
   # agent stopping at exactly the draft step.
   - type: run_command
     description: "design lane produced a design document (draft or finalized)"
-    command: "ls *sdd*.md 2>/dev/null | grep -q ."
+    command: "ls sdd.draft.md sdd.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -70,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "design declares all 4 exception lanes"
-    command: "cat *sdd*.md 2>/dev/null | grep -Eiq 'customer comms' && cat *sdd*.md 2>/dev/null | grep -Eiq 'escalation' && cat *sdd*.md 2>/dev/null | grep -Eiq 'withdrawn' && cat *sdd*.md 2>/dev/null | grep -Eiq 'rejected'"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && grep -Eiq 'customer comms' \"$f\" && grep -Eiq 'escalation' \"$f\" && grep -Eiq 'withdrawn' \"$f\" && grep -Eiq 'rejected' \"$f\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -78,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 6 primary stages (not truncated)"
-    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 6 ]"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 6 ]"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
