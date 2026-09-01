@@ -217,6 +217,53 @@ For `Llm` simulations, `--output-schema` is **auto-resolved from the `.flow` fil
 
 Simulations are stored inline in the data point's `simulations` array within the eval set JSON. Running `simulation add` twice for the same `<component-id>` on the same data point replaces the existing simulation.
 
+### Child Simulations (Agent Tool Simulation)
+
+When a flow has an agent node, you can simulate individual tools inside that agent instead of mocking the whole agent as one unit. Use `--parent <agent-component-id>` to target a child tool. The child's `<component-id>` is the tool's runtime name (e.g. `Web_Search`, `Send_Email`), not a workflow node ID.
+
+```bash
+# Add a child tool simulation (Static — fixed output).
+# If no parent simulation exists for <agent-node-id>, one is auto-created
+# (type: agent, strategy: Llm).
+uip maestro flow eval simulation add Web_Search \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --strategy Static \
+  --mock-value '{"results": [{"title": "Example", "url": "https://example.com"}]}' \
+  --path <flow_project> --output json
+
+# Add a child tool simulation (Llm — prompt-guided)
+uip maestro flow eval simulation add Send_Email \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --strategy Llm \
+  --simulation-instructions "Return a success status with a generated messageId." \
+  --output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}' \
+  --path <flow_project> --output json
+
+# List child simulations on an agent node
+uip maestro flow eval simulation list \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --path <flow_project> --output json
+
+# Remove a child simulation
+uip maestro flow eval simulation remove Web_Search \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --path <flow_project> --output json
+```
+
+No separate parent simulation step is needed — passing `--parent` auto-creates the parent simulation (type `agent`, strategy `Llm`) if it does not exist yet. This means a single command is enough to add a child tool simulation.
+
+When `--parent` is used, `--component-type` defaults to `Node` (the convention for child tool simulations). You can override it if needed.
+
+Child simulations are stored in the parent's `childSimulations` array in the eval set JSON. Running `simulation add` with `--parent` twice for the same child `<component-id>` replaces the existing child simulation.
+
 ## Anti-patterns
 
 - **Don't hand-write `id` UUIDs on data points.** Use `uip maestro flow eval add` so the CLI generates fresh UUIDs and keeps `evalSetId` consistent with the parent set.
