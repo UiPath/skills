@@ -91,18 +91,20 @@ Execution order: 5.9 → 6 → 6.1 → 6.2 → 6.3 → 7 → 9 → 9.4 → 11 �
 
 ## Step 5.9 — Phase 2 read manifest (mandatory, before any write)
 
-Derive the complete list of references this build needs from `tasks.md`, then read every file on that list **before** Step 6. Do not defer a read to the step that consumes it. Deciding mid-build which plugin to open is how an entire task class gets skipped: the agent writes the stages it has shapes for, never works out that it also needed `tasks/<type>/impl-json.md`, and emits zero task nodes while `validate` still returns `Valid`.
+Derive the complete list of references this build needs from `sdd.md`, then read every file on that list **before** Step 6. Do not defer a read to the step that consumes it. Deciding mid-build which plugin to open is how an entire task class gets skipped: the agent writes the stages it has shapes for, never works out that it also needed `tasks/<type>/impl-json.md`, and emits zero task nodes while `validate` still returns `Valid`.
 
-**Step 1 — derive.** The derivation source is `tasks.md`, which Phase 1 wrote. Read it and collect these four sets. Collect every one; do not drop a set because it looks small or familiar.
+**Step 1 — derive.** Derive from **`sdd.md`** — the approved design, and per Rule 2 the sole post-design input. Collect these four sets. Collect every one; do not drop a set because it looks small or familiar.
 
-1. Every distinct `- type:` value across all §4.6 task T-entries.
-2. Every distinct trigger type in §4.3.
-3. Every distinct condition scope in §4.7.
-4. Whether §4.8 declares any SLA or escalation object.
+| Set | Where it lives in `sdd.md` |
+|---|---|
+| 1. Every distinct task `type` | the `Type` row of each `##### Task` block |
+| 2. Every distinct trigger type | § Section 1, the case trigger declaration |
+| 3. Every distinct condition scope | the Entry Condition / Exit Condition tables on each stage and task |
+| 4. Whether any SLA or escalation exists | any SLA row on a stage or task |
 
-**If `tasks.md` does not exist or has no T-entries, Phase 1 has not run — stop and run it.** Do not start Phase 2 from the SDD, and do not write `caseplan.json` first and back-fill `tasks.md` afterwards: a plan written after the artifact it was supposed to drive is paperwork, not a plan, and every downstream check that reads `tasks.md` (task placement, entry rules, cross-task references, the §4.8 SLA set) is then validating the build against itself. Rule 6 makes `tasks.md` lossless for exactly this reason. Go back to [planning.md](planning.md), write `tasks.md`, then re-enter here.
+The SDD is present from the first turn of the build and is what every later step is graded against, so the manifest is derivable before any other artifact exists.
 
-**Fallback source — SDD, only when Phase 1 legitimately produced no `tasks.md`** (a resumed session whose plan file was lost, or a brownfield edit entering mid-pipeline): derive the same four sets from `sdd.md` instead — task `type` values from each `##### Task` block, trigger types from §1, condition scopes from the Entry/Exit Condition tables, and SLA presence from any SLA row. The manifest is identical either way; only the source differs. Say in the completion report which source was used.
+**If `tasks/tasks.md` is present, read it too and take the union.** It is a convenience, never the authority: a plan can be stale, partial, or written after the artifact it was meant to drive. Where the two disagree, the SDD wins and the discrepancy goes in the completion report. **Do not stop or backtrack because `tasks.md` is missing** — a missing plan file never blocks Phase 2.
 
 **Step 2 — build the manifest.** The read list is the fixed core plus one file per distinct value found in Step 1.
 
@@ -117,7 +119,7 @@ Fixed core — always on the manifest, every build, no exceptions:
 
 Per distinct task `type` — the plan's `type` value is the schema name, not the plugin folder name. Map it through this table; two of the nine differ:
 
-| `tasks.md` `- type:` | Add to manifest |
+| SDD task `Type` | Add to manifest |
 |---|---|
 | `process` | [`plugins/tasks/process/impl-json.md`](plugins/tasks/process/impl-json.md) |
 | `agent` | [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md) |
@@ -133,7 +135,7 @@ Per distinct trigger type, add `plugins/triggers/<manual|timer|event>/impl-json.
 
 **Step 3 — read.** Read every manifest file in full, to its `<!-- END: … -->` marker, per Rule 24 of `SKILL.md`. Read them as one batch before Step 6; do not interleave manifest reads with writes. Read each file once — the per-plugin single-read rule above still applies, and the manifest is that single read.
 
-**The manifest is a floor, never a ceiling.** It is the minimum set this build cannot be correct without. It is not the complete list of what you may need, and finishing it does not mean you are done reading. Whenever a step, a plugin, or a `tasks.md` row references a shape or procedure you have not read, read that file too — the manifest never overrides Rule 24. A build that reads only the manifest and nothing else has under-read.
+**The manifest is a floor, never a ceiling.** It is the minimum set this build cannot be correct without. It is not the complete list of what you may need, and finishing it does not mean you are done reading. Whenever a step, a plugin, or an SDD row references a shape or procedure you have not read, read that file too — the manifest never overrides Rule 24. A build that reads only the manifest and nothing else has under-read.
 
 **Exact paths, not directories.** Each manifest entry names one file. `planning.md` and `impl-json.md` are different documents with different content, and reading the sibling does NOT satisfy the entry: `plugins/variables/global-vars/planning.md` does not satisfy `plugins/variables/global-vars/impl-json.md`. Planning references describe what to decide; `impl-json.md` carries the JSON shape you are about to write. Check each entry off by its full path.
 
@@ -141,7 +143,7 @@ Per distinct trigger type, add `plugins/triggers/<manual|timer|event>/impl-json.
 
 Two distinct build defects follow from a skipped entry, and `uip maestro case validate` catches neither:
 
-1. A task `type` present in `tasks.md` whose `impl-json.md` was never read — those task nodes come out missing or malformed, and `validate` returns `Valid` for a caseplan whose stages contain no tasks at all.
+1. A task `type` present in the SDD whose `impl-json.md` was never read — those task nodes come out missing or malformed, and `validate` returns `Valid` for a caseplan whose stages contain no tasks at all.
 2. A fixed-core entry skipped because the plan "obviously" does not need it — `global-vars/impl-json.md` carries the formal-argument output shape, and skipping it silently produces formal outputs with a null `var`, which `validate` also passes.
 
 The manifest is bounded by what the plan actually contains — it is not the full reference tree, and every file on it is needed.
