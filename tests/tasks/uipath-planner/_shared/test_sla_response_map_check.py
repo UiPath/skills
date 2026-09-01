@@ -210,3 +210,34 @@ def test_stage_scope_qualifier_does_not_mask_a_genuine_mismatch():
     issues = check(text)
     assert any("targets 'Assess'" in issue for issue in issues), issues
 
+
+def test_case_scope_may_carry_the_root_qualifier():
+    """`case: root` names the same target as bare `case`.
+
+    Run 33448258234 produced a map that was otherwise fully closed — the checker
+    reported "1 interrupting enter-stage lane" once this matched — but failed on
+    `sla-status-change("root","Case Resolution SLA")` targets 'root' but every
+    row ... is scoped ['case: root'].
+    """
+    for scope in ("case", "case: root", "case:root"):
+        text = sdd(
+            f"| {scope} | Case Resolution SLA | Breached | enter-stage "
+            "| Case SLA Oversight | Yes | takeover |\n",
+            "#### Stage Entry Conditions\n"
+            "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+            '| sla-status-change("root","Case Resolution SLA","breached") | - | Yes |\n',
+        )
+        assert check(text) == [], f"{scope!r} should satisfy a root-targeted call"
+
+
+def test_case_scope_does_not_swallow_a_stage_scoped_row():
+    """A stage-scoped row must still not satisfy a root-targeted call."""
+    text = sdd(
+        "| stage: Triage | Case Resolution SLA | Breached | enter-stage "
+        "| Case SLA Oversight | Yes | wrong target |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("root","Case Resolution SLA","breached") | - | Yes |\n',
+    )
+    assert any("targets 'root'" in issue for issue in check(text)), check(text)
+

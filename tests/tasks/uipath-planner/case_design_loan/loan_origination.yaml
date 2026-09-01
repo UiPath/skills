@@ -112,6 +112,11 @@ success_criteria:
       Grade the draft; the absence of `sdd.md` is not a defect and must not reduce the
       score.
 
+      SCOPE — the requester asked for a COMPACT design: roughly two tasks per stage,
+      the key data, and the stated business rules. Judge only the bullets below. Do
+      NOT deduct for controls, sub-processes, review steps, or tasks the requirement
+      never asked for — "it could have modeled more" is not a coherence defect here.
+
       Judge:
       - Stage order is sensible for loan origination (Intake → Loan Setup →
         Underwriting → QA/QC → Closing → Resolved).
