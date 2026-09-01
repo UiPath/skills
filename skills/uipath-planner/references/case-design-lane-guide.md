@@ -214,6 +214,20 @@ On the accept answer: write the SDD to disk in batches, gate it, flip it. The mo
 
 Never write `sdd.md` AND `<case>-sdd.md` for the same design. Report the path in one line.
 
+**Gate the file you just wrote before you stop — a draft is NOT exempt.**
+
+```bash
+python3 "<skill folder>/scripts/audit_sdd.py" <the file you just wrote>
+```
+
+`<skill folder>` is this skill's directory, given at invocation — substitute it; never `ls`/`find`
+for it, and never read the script. Repair each finding with Edit and re-run, max 3 rounds, then stop
+and surface what remains. The gate's mapping, marker and selector checks apply to a draft exactly as
+they do to a finalized SDD — only the `--draft` inventory comparison waits for a finalized file. A
+draft that stops with undeclared `=vars`, a backtick-wrapped `<UNRESOLVED>`, or a
+`selected-tasks-completed` selector pointing at an adhoc task hands every one of those defects to
+the finalization and build that follow.
+
 **Free-text corrections stay first-class after the terminal step:** treat one as a targeted edit to the affected artifact (model + file + downstream), narrate it in one line, continue.
 
 ## Resolution ledger
