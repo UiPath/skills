@@ -39,9 +39,10 @@ from _shared.flow_check import (  # noqa: E402
 )
 import jira_is  # noqa: E402
 
-# A malformed flow can emit any number of issue keys, and each probe is a
-# 120s CLI call. Bounded so the criterion's `budget-guard: overhead`
-# annotation stays true whatever the agent produced.
+# Caps the TENANT PROBES only, never the candidate list: every candidate is
+# recorded for teardown, or a malformed flow's extra tickets leak in the shared
+# CE project. Each probe is a 120s CLI call, which is what the criterion's
+# `budget-guard: overhead` annotation funds on the success path.
 MAX_ISSUE_PROBES = 2
 
 JIRA_KEY = "uipath-atlassian-jira"
@@ -83,7 +84,7 @@ def main() -> None:
                 s.decode() if isinstance(s, bytes) else (s or "")
                 for s in (exc.stdout, exc.stderr)
             )
-        cands = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)))[:MAX_ISSUE_PROBES]
+        cands = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)))
         owned = []
         if cands:
             try:
@@ -117,7 +118,7 @@ def main() -> None:
 
     cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
     cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(cands))[:MAX_ISSUE_PROBES]
+    cands = list(dict.fromkeys(cands))
     if not cands:
         _fail(f"no Jira issue key (e.g. {project}-123) in flow debug outputs — the flow did not create a ticket")
     print(f"OK: candidate keys from debug: {cands}")
@@ -138,7 +139,7 @@ def main() -> None:
     # (e.g. if a wrong flow echoed some other CE key into its output).
     owned = [
         k
-        for k in cands
+        for k in cands[:MAX_ISSUE_PROBES]
         for f in [jira_is.get_issue(conn, k)]
         if f is not None and correlation in str(f.get("summary", ""))
     ]

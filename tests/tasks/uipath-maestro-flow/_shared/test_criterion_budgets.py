@@ -67,7 +67,9 @@ def _literal(node: ast.AST):
 def _budget_of_call(call: ast.Call) -> int | None:
     """`debug_budget` for one `run_debug(...)` call, or None if an argument that
     drives it is not a literal (a variable timeout cannot be checked here)."""
-    kwargs = {kw.arg: _literal(kw.value) for kw in call.keywords if kw.arg}
+    if any(kw.arg is None for kw in call.keywords):
+        return None  # **splat: the real arguments are not visible here
+    kwargs = {kw.arg: _literal(kw.value) for kw in call.keywords}
     if "budget" in kwargs:
         return kwargs["budget"] if isinstance(kwargs["budget"], int) else None
     passed = {k: kwargs[k] for k in ("timeout", "retries", "backoff_seconds") if k in kwargs}
@@ -77,11 +79,13 @@ def _budget_of_call(call: ast.Call) -> int | None:
 
 
 def _is_run_debug(node: ast.AST) -> bool:
-    return (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "run_debug"
-    )
+    """Bare or `mod.run_debug`. Matching only a Name made an attribute call read
+    as no debug at all, skipping the criterion."""
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", None)
+    return name == "run_debug"
 
 
 def _calls_in(node: ast.AST) -> list[ast.Call]:
@@ -151,7 +155,8 @@ def _module_lengths(tree: ast.Module) -> dict[str, int]:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     lengths[target.id] = len(node.value.elts)
-    for func in (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)):
+    kinds = (ast.FunctionDef, ast.AsyncFunctionDef)
+    for func in (n for n in ast.walk(tree) if isinstance(n, kinds)):
         for node in ast.walk(func):
             targets = node.targets if isinstance(node, ast.Assign) else []
             for target in targets:
@@ -163,12 +168,8 @@ def _module_lengths(tree: ast.Module) -> dict[str, int]:
 _TRANSPARENT_ITERATORS = ("enumerate", "list", "reversed", "sorted", "tuple")
 
 
-def _iterations(loop: ast.AST, lengths: dict[str, int]) -> int | None:
-    """Iterations of ``loop``, or None when not static (a ``while``, or a ``for``
-    over runtime seeds). None is reported, never assumed to be 1."""
-    if not isinstance(loop, ast.For):
-        return None
-    target = loop.iter
+def _iterations_of(target: ast.AST, lengths: dict[str, int]) -> int | None:
+    """Length of an iterable expression, or None when that is not static."""
     if (
         isinstance(target, ast.Call)
         and isinstance(target.func, ast.Name)
@@ -181,6 +182,12 @@ def _iterations(loop: ast.AST, lengths: dict[str, int]) -> int | None:
     if isinstance(target, ast.Name):
         return lengths.get(target.id)
     return None
+
+
+def _iterations(loop: ast.AST, lengths: dict[str, int]) -> int | None:
+    """Iterations of ``loop``, or None when not static (a ``while``, or a ``for``
+    over runtime seeds). None is reported, never assumed to be 1."""
+    return _iterations_of(loop.iter, lengths) if isinstance(loop, ast.For) else None
 
 
 class _Price(NamedTuple):
@@ -288,6 +295,18 @@ def _cost(
             _worst([_body(h.body, lengths, defs, seen, manual) for h in node.handlers]),
             _body(node.finalbody, lengths, defs, seen, manual),
         )
+    if isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+        # Comprehensions loop too; one pass under-charged `[run_debug() for _ in x]`.
+        body = _merge(*[_cost(c, lengths, defs, seen, manual)
+                        for c in ast.iter_child_nodes(node)
+                        if not isinstance(c, ast.comprehension)])
+        runs = _iterations_of(node.generators[0].iter, lengths) if node.generators else None
+        guessed = ()
+        if runs is None:
+            guessed = (node.lineno,) if body.seconds else ()
+            runs = manual if manual is not None else 1
+        heads = _merge(*[_cost(g.iter, lengths, defs, seen, manual) for g in node.generators])
+        return _merge(heads, _Price(body.seconds * runs, body.unsized + guessed))
     if isinstance(node, (ast.For, ast.While)):
         head = node.iter if isinstance(node, ast.For) else node.test
         body = _body(node.body, lengths, defs, seen, manual)
@@ -312,7 +331,8 @@ def _body(stmts: list, lengths, defs, seen=(), manual=None) -> _Price:
 
 
 def _defs(tree: ast.Module) -> dict[str, ast.FunctionDef]:
-    return {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    kinds = (ast.FunctionDef, ast.AsyncFunctionDef)
+    return {n.name: n for n in ast.walk(tree) if isinstance(n, kinds)}
 
 
 def _entry(tree: ast.Module, subcommand: str | None, path: str) -> ast.FunctionDef:
@@ -330,6 +350,20 @@ def _entry(tree: ast.Module, subcommand: str | None, path: str) -> ast.FunctionD
     return entry
 
 
+def _reject_aliased_debug(tree: ast.Module, path: str) -> None:
+    """`run_debug` under another name reads as no debug, silently skipping the
+    criterion. Refuse rather than guess."""
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        for alias in node.names:
+            if alias.name == "run_debug" and alias.asname:
+                pytest.fail(
+                    f"{path}: imports run_debug as `{alias.asname}`, which this "
+                    "guard cannot follow. Import it under its own name."
+                )
+
+
 def _price_script(
     path: str, subcommand: str | None, manual: int | None = None
 ) -> _Price | None:
@@ -339,6 +373,7 @@ def _price_script(
     every such loop, which is why the caller refuses more than one: applying N
     to both under-charges whenever the other runs more often."""
     tree = ast.parse(open(path).read())
+    _reject_aliased_debug(tree, path)
     if not _calls_in(tree):
         return None
     lengths, defs = _module_lengths(tree), _defs(tree)
@@ -1002,3 +1037,45 @@ def test_probe_cap_is_read_off_the_checker(tmp_path):
     path = os.path.join(str(tmp_path), "check_x.py")
     open(path, "w").write("MAX_ISSUE_PROBES = 3\nMAX_OTHER = 7\nNOT_A_CAP = 9\n")
     assert _probe_caps(path) == [3, 7]
+
+
+# ── shapes the scan must not read as "no debug" or "one pass" ───────────────
+
+
+def test_keyword_splat_is_unpriceable(tmp_path):
+    """`run_debug(**opts)` hides its arguments; pricing the default would accept
+    an under-budgeted criterion."""
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write('def main():\n    run_debug(**{"timeout": 600})\n')
+    with pytest.raises(BaseException, match="non-literal"):
+        _budget_of_script(path, None)
+
+
+def test_comprehension_over_a_runtime_iterable_is_reported(tmp_path):
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(f"def main():\n    [{_ONE} for _ in load()]\n")
+    assert _unsized_loops(path, None) == [2]
+
+
+def test_comprehension_over_a_literal_multiplies(tmp_path):
+    src = f"A = [1, 2, 3]\n\n\ndef main():\n    [{_ONE} for _ in A]\n"
+    assert _price(src, tmp=str(tmp_path)) == 485 * 3
+
+
+def test_async_entry_point_is_priced(tmp_path):
+    assert _price(f"async def main():\n    {_ONE}\n", tmp=str(tmp_path)) == 485
+
+
+def test_attribute_style_debug_call_is_priced(tmp_path):
+    """`mod.run_debug(...)` read as no debug and skipped the whole criterion."""
+    src = "def main():\n    mod.run_debug(timeout=240)\n"
+    assert _price(src, tmp=str(tmp_path)) == 485
+
+
+def test_aliased_debug_import_is_refused(tmp_path):
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(
+        "from flow_check import run_debug as rd\n\n\ndef main():\n    rd(timeout=240)\n"
+    )
+    with pytest.raises(BaseException, match="imports run_debug as"):
+        _budget_of_script(path, None)

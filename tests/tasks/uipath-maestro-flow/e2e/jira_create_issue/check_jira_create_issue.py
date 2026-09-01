@@ -29,9 +29,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro
 from _shared.flow_check import collect_outputs, get_last_debug_raw, run_debug  # noqa: E402
 import jira_is  # noqa: E402
 
-# A malformed flow can emit any number of issue keys, and each probe is a
-# 120s CLI call. Bounded so the criterion's `budget-guard: overhead`
-# annotation stays true whatever the agent produced.
+# Caps the TENANT PROBES only, never the candidate list: every candidate is
+# recorded for teardown, or a malformed flow's extra tickets leak in the shared
+# CE project. Each probe is a 120s CLI call, which is what the criterion's
+# `budget-guard: overhead` annotation funds on the success path.
 MAX_ISSUE_PROBES = 2
 
 JIRA_KEY = "uipath-atlassian-jira"

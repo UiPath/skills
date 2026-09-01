@@ -15,7 +15,7 @@ tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, 
 
 run_limits:
   expected_turns: 40
-  task_timeout: 1800
+  task_timeout: 2400  # criteria grew 660s for the jira probes; keeps the agent's room
   max_turns: 120
   turn_timeout: 900
 
