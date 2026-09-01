@@ -80,5 +80,11 @@ success_criteria:
       (ATTUNU)`. Score 0.0 if the reply shows only raw codes without friendly
       names, or only friendly names without codes. Ignore whether the CLI
       call succeeded — the rubric is solely about reporting format.
+
+      Judge the pairing, not the typography. Markdown around either half is
+      irrelevant: backticks, bold, italics, list bullets, and a hyphen or
+      dash inside the friendly name all still score 1.0. For example
+      "- Attended - Named User (`ATTUNU`)" scores 1.0 — the friendly name and
+      its code are present and paired.
     weight: 2.0
     pass_threshold: 1.0

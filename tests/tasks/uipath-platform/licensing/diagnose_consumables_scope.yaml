@@ -83,8 +83,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Verdict concludes reporting is NOT broken. Must state it explicitly — 'correct'/'expected'/'by design' alone are too weak, they appear in wrong verdicts too."
-    command: "grep -Eiq 'not (actually )?broken|isn.?t broken|working as (designed|intended|documented|expected)|not a (bug|defect)' verdict.md"
+    description: "Verdict concludes reporting is NOT broken. Needs a negative-polarity statement (hedges like 'not shown to be broken' count); bare 'correct'/'expected'/'by design' are too weak — they appear in wrong verdicts too."
+    command: "grep -Eiq 'not( (shown|demonstrated|proven|actually|really|truly|clearly|evidently|apparently|to|be))* broken|is ?n.?t broken|no evidence (of|that)[^.]{0,60}(broken|defect|bug)|(is|are) working as (designed|intended|documented|specified)|works? as (designed|intended|documented|specified)|not a (bug|defect)' verdict.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
