@@ -1,9 +1,7 @@
 name: Run Coder Eval
 
-# Every one of the ~2,500 historical runs is titled "Run Coder Eval", so the run
-# list is a wall of identical rows: nobody can find their own dispatch, see what a
-# colleague tested, or spot a duplicate. These three fields are what anyone
-# actually scans for.
+# Every historical run is titled "Run Coder Eval", so the run list is a wall of
+# identical rows. These three fields are what anyone actually scans for.
 run-name: ${{ inputs.task_globs }} · ${{ inputs.agent }} · @${{ github.actor }}
 
 # GH-hosted runner for coder-eval against the skills task tree. Use cases:
@@ -135,10 +133,8 @@ jobs:
       # the nightly VM also read, overridable to dry-run a candidate release)
       # and the coder_eval_uipath plugin ref (delegate-sdk only). Mirrors the
       # version resolution in daily.sh.
-      # The agent image tag is resolved HERE rather than in the Linux job's
-      # install step, because that step is now the composite action and no longer
-      # runs before the docker pull. Same defaulting as before: blank
-      # coder_eval_image_tag means the pinned coder-eval version.
+      # The image tag is resolved here, not in the Linux job: that step is now the
+      # composite action and no longer runs before the docker pull.
       - name: Resolve coder-eval version + coder_eval_uipath ref
         id: ceref
         env:
@@ -223,11 +219,9 @@ jobs:
     # hiccups, etc.).
     timeout-minutes: 330
     name: Run coder-eval (Linux)
-    # JOB-level, deliberately, and not workflow-level: a `permissions:` block
-    # makes every permission it omits `none` for every job it covers, so a
-    # workflow-level one would silently strip the Windows job's token too. The
-    # file declares none today, which is why this is purely additive here.
-    #   contents: read   -> actions/checkout
+    # JOB-level, not workflow-level: a `permissions:` block makes every omitted
+    # permission `none` for every job it covers, so a workflow-level one would
+    # silently strip the Windows job's token. `contents: read` is for checkout.
     permissions:
       contents: read
     # Disable uip CLI version-sync: a task's `uip login status` re-pins
@@ -235,11 +229,9 @@ jobs:
     # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
-      # Whether this dispatch can publish an evalboard link, as a plain boolean
-      # string. The `secrets` context is NOT available in any `if:`, so the gate
-      # has to be laundered through the job env like this; deriving a boolean
-      # rather than exporting the secret itself keeps the credential out of every
-      # step but the one that uploads.
+      # The `secrets` context is NOT available in any `if:`, so the gate is
+      # laundered through the job env. A boolean, not the secret, so the
+      # credential stays in the one step that uploads.
       EVALBOARD_UPLOAD_ENABLED: ${{ secrets.AZURE_STORAGE_KEY != '' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
@@ -282,38 +274,24 @@ jobs:
 
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      # coder-eval itself is no longer installed here: the composite action
-      # (`uses: UiPath/coder_eval@v0`, below) does it, via `uv tool install`, from
-      # the same `tests/.coder-eval-version` pin the partition job resolved. Its
-      # `extras` and `extra-packages` inputs carry what this step used to compose
-      # by hand — including, for delegate-sdk, the coder_eval_uipath plugin, which
-      # must share an environment with coder-eval for its `coder_eval.plugins`
-      # entry point to be discovered at all.
-      #
-      # The coupling that step documented is unchanged and still deliberate: the
-      # pin must sit INSIDE the plugin's declared coder-eval range. If a
-      # tests/.coder-eval-version bump lands before coder_eval_uipath widens its
-      # range, the install fails at resolve time with uv's "requirements are
-      # unsatisfiable" — loudly, before any task runs, and only on delegate-sdk,
-      # because `--with` requirements co-resolve with the tool's own. Fix by
-      # widening the plugin's range, or pass an in-range coder_eval_version.
+      # coder-eval is installed by the composite action below, not here, via
+      # `uv tool install` at the pin the partition job resolved; its `extras` and
+      # `extra-packages` inputs carry what this step used to compose by hand.
+      # The old coupling holds: the pin must sit inside the plugin's declared
+      # coder-eval range, or the install fails at resolve time (delegate-sdk
+      # only) because `--with` requirements co-resolve with the tool's own.
 
-      # `uv tool install` puts its shims in uv's tool bin dir, and both the
-      # action's `coder-eval` and the uploader's `eval-runner` are found only if
-      # that dir is on PATH. It is on PATH on the GitHub-hosted images; do not
-      # assume it on `uipath-ubuntu-latest`, which is a different image.
+      # Both the action's `coder-eval` and the uploader's `eval-runner` are uv
+      # tool shims, found only if uv's tool bin dir is on PATH. It is on the
+      # GitHub-hosted images; do not assume it on `uipath-ubuntu-latest`.
       - name: Ensure the uv tool bin dir is on PATH
         run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      # The blob uploader behind the evalboard link. A SEPARATE package from the
-      # plugin above — coder_eval_uipath ships `coder-eval-uipath` (the plugin) at
-      # its root and `coder-eval-uipath-eval-runner` (this CLI) under
-      # eval_runner/ — so it goes in its own isolated tool environment and cannot
-      # perturb the one the action builds. All six of its dependencies are public
-      # PyPI; no private index is involved.
-      #
-      # Skipped entirely until AZURE_STORAGE_KEY is set, and non-fatal even then:
-      # a missing uploader costs the link, never the run.
+      # The blob uploader behind the evalboard link — a SEPARATE package from the
+      # plugin above (`coder-eval-uipath-eval-runner`, under eval_runner/), so it
+      # gets its own tool environment and cannot perturb the action's. Skipped
+      # until AZURE_STORAGE_KEY is set, and non-fatal: a missing uploader costs
+      # the link, never the run.
       - name: Install the evalboard uploader
         if: env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
@@ -411,22 +389,12 @@ jobs:
       - name: Stage _shared grader helpers
         run: bash tests/scripts/stage_shared.sh
 
-      # ==================================================================
-      # The run is a two-step split: this step COMPUTES, the composite action
-      # below EXECUTES. It exists because `working-directory:` is illegal on a
-      # `uses:` step and a job-level `defaults.run` does not reach inside a
-      # composite action, so everything conditional has to be resolved into
-      # plain inputs first.
-      #
-      # The body is the head of the old single `Run coder-eval` step, moved
-      # rather than rewritten: same guards, same order, same messages. The two
-      # mechanical changes are that each `export FOO=bar` became a line in the
-      # env-block accumulator, and the trailing `coder-eval run ...` is gone.
-      # Review it as a diff against that step, not as new code.
-      #
-      # TASK_GLOBS is the partition-resolved list of *file paths* (not globs) and
-      # is handed straight to the action's `tasks` input, which word-splits it.
-      # ==================================================================
+      # Two-step split: this step COMPUTES, the composite action below EXECUTES.
+      # `working-directory:` is illegal on a `uses:` step and a job-level
+      # `defaults.run` does not reach inside a composite, so everything
+      # conditional has to be resolved into plain inputs first. The body is the
+      # head of the old single `Run coder-eval` step, moved rather than
+      # rewritten — review it as a diff against that step.
       - name: Prepare the coder-eval invocation
         id: prep
         env:
@@ -478,21 +446,12 @@ jobs:
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
 
-          # Environment forwarded to the coder-eval process via the action's
-          # `env` input, which exports these for that process only — never into
-          # $GITHUB_ENV, so nothing bleeds into later steps. Built from a name
-          # list so it cannot drift from the `env:` block above: compare the two
-          # lists, not 20 hand-written lines.
-          #
-          # This is EVERY non-_VAR entry of that block, including the ones only the
-          # shell below reads, so the environment coder-eval sees is unchanged by
-          # the split. Not merely defensive: coder-eval's docker driver forwards
-          # CODEX_MODEL and ANTIGRAVITY_MODEL into task containers by default
-          # (the passthrough list in models/sandbox.py), where they select the
-          # model should agent.model ever be unset — so dropping them because the
-          # shell also reads them would be a real change. An empty value forwards
-          # as empty, which is what the `env:` block already produced for an unset
-          # repo variable. Every value must be single-line; all of these are.
+          # Forwarded to coder-eval via the action's `env` input, which exports
+          # these for that process only. A name list, so it cannot drift from the
+          # `env:` block above. Deliberately EVERY non-_VAR entry of that block,
+          # including ones only this shell reads: the docker driver forwards
+          # CODEX_MODEL / ANTIGRAVITY_MODEL into task containers, where they pick
+          # the model if agent.model is unset. Values must be single-line.
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
                       BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
@@ -502,12 +461,9 @@ jobs:
             env_lines+=("$name=${!name}")
           done
 
-          # Args appended to `coder-eval run`, ONE PER LINE. The action appends
-          # each verbatim with no word splitting and no pathname expansion, which
-          # is exactly what the delegate `-D` override below needs: to bash the
-          # `[...]` list is a character class, and an unquoted expansion silently
-          # collapses the whole flag to `...extra=<char>` if a file of that name
-          # exists in the tests/ cwd.
+          # Args appended to `coder-eval run`, ONE PER LINE, each verbatim — no
+          # word splitting, no pathname expansion. That is what the delegate `-D`
+          # override needs: to bash its `[...]` list is a character class.
           args=(-e experiments/nightly.yaml)
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
@@ -518,11 +474,10 @@ jobs:
           # experiment YAML pins no model (it is shared by all harnesses). Driver
           # is unchanged (docker here).
           #
-          # `extras` are the agent's own host-side SDK plus the litellm judge
-          # transport nightly.yaml's checker_context routes through. They go into
-          # the install requirement, not a second install: the action's tool
-          # environment shadows every other coder-eval on PATH, so an extra added
-          # beside it would never be imported by the CLI that runs.
+          # `extras` are the agent's host-side SDK plus the litellm judge
+          # transport. They go into the install requirement, not a second
+          # install: the action's tool environment shadows every other
+          # coder-eval on PATH.
           extras="litellm"
           extra_packages=""
           if [ "$AGENT" = "codex" ]; then
@@ -541,11 +496,9 @@ jobs:
             # model must always be passed.
             model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
             args+=(--type delegate-sdk)
-            # The plugin must resolve into the SAME environment as coder-eval for
-            # its `coder_eval.plugins` entry point to be discovered; that is what
-            # `extra-packages` (uv tool install --with) does, and why the pin and
-            # the plugin still co-resolve in one invocation. Path is relative to
-            # the action's working-directory (tests/).
+            # The plugin must share coder-eval's environment for its
+            # `coder_eval.plugins` entry point to be found, which is what
+            # `extra-packages` does. Path is relative to tests/.
             extra_packages="../coder_eval_uipath"
             # That checkout is best-effort now (it also feeds the evalboard
             # uploader), so assert it here: for delegate-sdk it is mandatory, and
@@ -588,10 +541,8 @@ jobs:
                 echo "::error::no $key in $AUTH_FILE — the ROPC login did not complete"
                 exit 1
               fi
-              # refresh-auth.sh already ::add-mask::ed the token at mint time and
-              # `chmod -R o+rwX ~/.uipath` leaves it readable job-wide, so routing
-              # it through a step output adds no exposure. Re-masking is one line
-              # and survives anyone reordering those steps.
+              # Already masked at mint time, and the file is readable job-wide,
+              # so a step output adds no exposure. Re-masking survives a reorder.
               if [ "$out" = "AUTH_TOKEN" ]; then
                 echo "::add-mask::$val"
               fi
@@ -660,25 +611,15 @@ jobs:
             echo "$delim"
           } >> "$GITHUB_OUTPUT"
 
-      # The published composite action, consumed as a real dependent rather than
-      # only by its own self-test. It installs coder-eval at the resolved pin
-      # (plus `extras` / `extra-packages`) and runs it.
-      #
-      # Everything the CLI takes — the task globs, --model, --type, -j, the -D
-      # overrides — is in the single `args` block the prep step composed. The
-      # action promotes none of the CLI's flags to named inputs, which is also why
-      # there is nothing here to turn the job-summary write off: the action does
-      # not write one. It is appended below instead, after redaction, which is the
-      # order this workflow needs and could not previously get.
-      #
-      # The JUnit report lands at /tmp/runs/junit.xml (derived from run-dir).
-      # Nothing here consumes it; it travels with the run into the artifact and
-      # the evalboard blob.
+      # The published composite action, consumed as a real dependent. Everything
+      # the CLI takes is in the single `args` block the prep step composed: the
+      # action promotes none of its flags to named inputs. That is also why there
+      # is no job-summary switch here — the action writes none, so the report is
+      # appended below, after redaction. JUnit lands at /tmp/runs/junit.xml and
+      # travels with the run into the artifact and the blob.
       - name: Run coder-eval
         id: eval
-        # TEMPORARY: pinned to the PR-147 head so this workflow can be validated
-        # against the eight-input action BEFORE that PR merges and Release moves
-        # `v0`. Revert to `@v0` before merging — the v0 tag still serves the old
+        # TEMPORARY — REVERT TO @v0 BEFORE MERGING. `v0` still serves the old
         # ten-input action, which would silently ignore every input below.
         uses: UiPath/coder_eval@a747ce353111beadd51a6370b9e8e2dba88f4133  # bai/action-inputs-and-gha-source
         with:
@@ -909,9 +850,8 @@ jobs:
             exit 0
           fi
 
-          # ?src=gha is required, not cosmetic: sourceById COERCES an unknown or
-          # absent src to the default source instead of throwing, so a link with
-          # it stripped 404s against the nightly container with no explanation.
+          # ?src=gha is required: sourceById COERCES an absent src to the default
+          # source, so a stripped link 404s against the nightly container.
           url="${EVALBOARD_BASE}/runs/${blob_id}?src=gha"
           # Azure evaluates lifecycle rules once a day and can lag a day or two
           # past the threshold, so the date is a floor rather than a promise.
