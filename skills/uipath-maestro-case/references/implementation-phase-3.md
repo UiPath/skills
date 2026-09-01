@@ -12,7 +12,7 @@ Before any Phase 3 mutation:
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
 
-   **If your harness has no TodoWrite tool, the step list is still binding.** It is the phase's execution order, not bookkeeping: without it the tail of the phase — Step 11.5 and the Step 12 checks — is what gets dropped, and both are things `uip maestro case validate` cannot see. Keep the list explicitly and run every item through Step 12's verification commands before declaring Phase 3 done.
+   **The step list is the phase's execution order, not bookkeeping — and it is binding whether or not you have a TodoWrite tool.** The tail of this phase is what gets dropped: Step 11.5 and the Step 12 checks, both invisible to `uip maestro case validate`. This has been observed on harnesses **with** working todo tools and full tracking — one build called TaskCreate/TaskUpdate 16 times and still never mentioned Step 11.5, leaving 3 unresolved `vars.$xref` markers and a stale `bindings_v2.json`. Seeding todos is not the safeguard. Running each step's verification command is.
    1. Read the Phase 3 manifest (Step 9.65)
    2. Wire connector task schemas (Step 9.7)
    3. Bind task I/O values (Step 9.8)

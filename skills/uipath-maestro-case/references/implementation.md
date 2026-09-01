@@ -67,7 +67,7 @@ issues = []
 
 Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Replace any Phase 1 todos — do not append.
 
-**If your harness has no TodoWrite tool, the list is still the phase's execution order and every item is still mandatory.** Track it explicitly. The failure mode this prevents is silent: the phase's *last* items get dropped, and the last items are the sweeps and regenerations that `uip maestro case validate` cannot check.
+**The list is the phase's execution order and every item is mandatory, with or without a TodoWrite tool.** The failure mode is silent and tool-independent: the phase's *last* items get dropped — the sweeps and regenerations `uip maestro case validate` cannot check. Agents that track todos diligently drop them too, so treat the per-step verification commands as the safeguard, not the todo list.
 
 1. Read the Phase 2 manifest (Step 5.9)
 2. Scaffold solution + project + root case (Step 6)
