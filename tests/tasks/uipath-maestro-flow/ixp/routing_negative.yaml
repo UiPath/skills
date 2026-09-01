@@ -59,6 +59,13 @@ dataset:
 initial_prompt: |
   ${row.prompt}
 
+  Scope: this is a routing check, not a build-to-run task. A skeleton whose
+  nodes cover the steps of the request is enough — leave a node unconfigured
+  rather than leaving a step out or stopping to ask. Do NOT ask for approval,
+  confirmation, or missing details; pick a sensible default and state it in
+  your final report. Do not iterate to make the flow runnable — a broken
+  skeleton is acceptable.
+
 success_criteria:
   # Inverted twin of the positive routing.yaml artifact check.
   - type: run_command
