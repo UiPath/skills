@@ -106,7 +106,9 @@ PROJECT_LIST_LIMIT = "500"
 # previous 120s cap busted the budget at two hung calls. Every call seed/check/
 # teardown make is a list/get/registry/folder op that completes in seconds when
 # healthy — nothing here runs `projects create` (~50s; that's the agent's).
-UIP_TIMEOUT_SECONDS = 45
+# Env-tunable (like HANDOFF_RETRY_SECONDS) so the unit tests can exercise the
+# timeout path without waiting out the real cap.
+UIP_TIMEOUT_SECONDS = float(os.environ.get("HANDOFF_UIP_TIMEOUT_SECONDS", "45"))
 
 # Node-type prefix for an IxP extraction node in a .flow.
 IXP_NODE_PREFIX = "uipath.ixp."
@@ -124,9 +126,17 @@ RUN_FOLDER_NAME = "flow-e2e-e9fbf2d0"
 # A same-named folder younger than this is presumed to belong to a LIVE
 # concurrent instance of this task (task_timeout is 3000s — anything younger
 # may still be running), not a failed teardown. Seed fails instead of deleting
-# it. A missing or unparseable CreationTime degrades to "old" (deletable), so
-# the guard never blocks on an optional field.
+# it. Age comes from the stamp below; a missing or unparseable stamp degrades
+# to "old" (deletable), so the guard never blocks on an optional field.
 LIVE_FOLDER_AGE_SECONDS = 3600.0
+
+# The folder API exposes no creation time (verified 2026-09-01 on the CI
+# tenant: Name/Id/Key/Description/Path/ParentID/FolderType/IsPersonal/
+# ProvisionType/PermissionModel/FeedType — nothing temporal), so seed writes
+# its own: this marker plus a UTC ISO-8601 timestamp goes into the folder's
+# Description at create time (`folders create -d`), and heal reads it back.
+# The rest of the description explains the folder to anyone browsing the tenant.
+STAMP_MARKER = "created="
 
 # Folder deletes can fail transiently (provisioning race on a just-created
 # folder, GH run 32967816894; an "Error resolving folder" on a half-hour-old
@@ -153,13 +163,26 @@ def delete_folder_with_retry(folder_key: str) -> subprocess.CompletedProcess[str
 
 
 def run_uip(arguments: list[str]) -> subprocess.CompletedProcess[str]:
-    """Run one `uip` subcommand, capturing both streams."""
-    return subprocess.run(
-        ["uip", *arguments],
-        capture_output=True,
-        text=True,
-        timeout=UIP_TIMEOUT_SECONDS,
-    )
+    """Run one `uip` subcommand, capturing both streams.
+
+    A call that outlives UIP_TIMEOUT_SECONDS raises a RuntimeError naming the
+    command and the cap: `registry pull --force` is environment weather
+    (seconds on CI, minutes observed elsewhere), and a bare TimeoutExpired
+    traceback would read as a grader defect.
+    """
+    try:
+        return subprocess.run(
+            ["uip", *arguments],
+            capture_output=True,
+            text=True,
+            timeout=UIP_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"`uip {' '.join(arguments)}` exceeded {UIP_TIMEOUT_SECONDS:g}s — "
+            "environment weather (registry pull is the usual culprit), not a "
+            "skill defect; re-run."
+        ) from exc
 
 
 def run_uip_json(arguments: list[str]) -> dict[str, Any]:
@@ -208,24 +231,29 @@ def folder_get(identifier: str) -> dict[str, Any] | None:
     completed = run_uip(["or", "folders", "get", identifier, "--output", "json"])
     if completed.returncode != 0:
         return None
-    data = json.loads(completed.stdout)["Data"]
-    # A "not found" that exits 0 with a null/empty envelope reads as absent
-    # rather than crashing the caller on a missing Key.
-    return data if isinstance(data, dict) and data.get("Key") else None
+    payload = json.loads(completed.stdout)
+    data = payload.get("Data")
+    # The CLI's failure envelope has no Data key (verified: exit 1 plus
+    # {Result: Failure, Message, Instructions, ...}). Should a CLI line ever
+    # exit 0 with that envelope, it must still read as absent, not crash.
+    if payload.get("Result") == "Failure" or not isinstance(data, dict) or not data.get("Key"):
+        return None
+    return data
 
 
 def age_seconds(folder: dict[str, Any]) -> float | None:
-    """Seconds since the folder's CreationTime, or None when undeterminable.
+    """Seconds since seed stamped the folder's Description, or None if unstamped.
 
-    Best-effort by design: a missing or unparseable timestamp returns None and
-    the caller treats the folder as old — the age guard must never block a run
-    on an optional field.
+    Best-effort by design: no stamp (a pre-stamp leftover, a hand-made folder,
+    the API's default "No description") or an unparseable one returns None and
+    the caller treats the folder as old — the guard must never block a run on
+    a missing field.
     """
-    raw = folder.get("CreationTime")
-    if not raw:
+    match = re.search(re.escape(STAMP_MARKER) + r"(\S+)", str(folder.get("Description") or ""))
+    if not match:
         return None
     try:
-        created = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        created = datetime.fromisoformat(match.group(1))
     except ValueError:
         return None
     if created.tzinfo is None:
@@ -332,7 +360,7 @@ def heal_leftover_run_folder() -> bool:
     age = age_seconds(leftover)
     if age is not None and age < LIVE_FOLDER_AGE_SECONDS:
         raise RuntimeError(
-            f"folder '{RUN_FOLDER_NAME}' ({folder_key}) is only {age:.0f}s old — "
+            f"folder '{RUN_FOLDER_NAME}' ({folder_key}) was stamped only {age:.0f}s ago — "
             "younger than one task budget, so it likely belongs to a LIVE "
             "concurrent instance of this task rather than a failed teardown. "
             "Refusing to delete it: wait for that run to finish and retry, or "
@@ -353,7 +381,7 @@ def heal_leftover_run_folder() -> bool:
 
 
 def create_run_folder() -> str:
-    """Create the run-scoped folder the prompt names; return its Key.
+    """Create the run-scoped folder the prompt names, stamped; return its Key.
 
     Also the create-permission pre-flight: a runner that cannot create folders
     fails here, loudly, before the agent spends its budget. (Delete permission
@@ -361,15 +389,16 @@ def create_run_folder() -> str:
     delete-permission regression costs one leaked run, then fails loudly at
     the next seed.)
     """
-    created = run_uip_json(["or", "folders", "create", RUN_FOLDER_NAME, "--output", "json"])
-    data = created["Data"]
-    folder_key = str(data["Key"])
-    # Report whether the API stamps CreationTime: the concurrent-instance age
-    # guard is inert without it (age unknown reads as old), and this line is
-    # the cheapest way to confirm the field exists on the real tenant.
-    stamp = data.get("CreationTime")
-    detail = f", CreationTime={stamp}" if stamp else " (no CreationTime on create)"
-    print(f"OK: created run folder '{RUN_FOLDER_NAME}' ({folder_key}){detail}")
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    description = (
+        f"uipath-maestro-flow handoff e2e run folder | {STAMP_MARKER}{stamp} | "
+        "only a failed teardown leaves it behind; disposable once older than one hour"
+    )
+    created = run_uip_json(
+        ["or", "folders", "create", RUN_FOLDER_NAME, "-d", description, "--output", "json"]
+    )
+    folder_key = str(created["Data"]["Key"])
+    print(f"OK: created run folder '{RUN_FOLDER_NAME}' ({folder_key}), stamped {stamp}")
     return folder_key
 
 

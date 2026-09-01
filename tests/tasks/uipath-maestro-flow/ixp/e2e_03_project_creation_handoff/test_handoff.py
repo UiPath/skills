@@ -23,7 +23,7 @@ import pytest
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TASK_DIR)
 
-from handoff import RUN_FOLDER_NAME, SNAPSHOT, project_digest  # noqa: E402
+from handoff import RUN_FOLDER_NAME, SNAPSHOT, STAMP_MARKER, project_digest  # noqa: E402
 from handoff import DOMAIN_MARKERS  # noqa: E402
 
 # Built from the guard's own first marker, so rotating the fixture domain
@@ -55,13 +55,17 @@ FAKE_UIP = '''#!/usr/bin/env python3
 Uses print(..., file=sys.stderr) rather than stderr.write with an escape, so this
 script carries no backslash escapes that could be mangled when embedded.
 """
-import json, os, sys
+import json, os, sys, time
 
 here = os.path.dirname(os.path.abspath(__file__))
 payload = json.load(open(os.path.join(here, "payload.json")))
 deleted_log = os.path.join(here, "deleted.txt")
 deleted_folders_log = os.path.join(here, "deleted_folders.txt")
 argv = sys.argv[1:]
+
+# A command matching a `slow_commands` substring stalls, for the timeout test.
+if any(slow in " ".join(argv) for slow in payload.get("slow_commands", [])):
+    time.sleep(payload.get("slow_seconds", 3))
 
 
 def deleted_projects():
@@ -121,10 +125,13 @@ elif argv[:3] == ["ixp", "deployments", "list"]:
     print(json.dumps({"Data": payload["deployments"].get(argv[3], [])}))
 elif argv[:3] == ["or", "folders", "create"]:
     # Seed's run folder: returns the Key teardown will read back as "scope".
-    print(json.dumps({"Data": {
-        "Key": payload.get("created_folder_key", "created-" + argv[3]),
-        "Name": argv[3],
-    }}))
+    # A `-d` description is persisted so a later `folders get` serves it back,
+    # as the real API does.
+    key = payload.get("created_folder_key", "created-" + argv[3])
+    if "-d" in argv:
+        with open(os.path.join(here, "description_" + key + ".txt"), "w") as handle:
+            handle.write(argv[argv.index("-d") + 1])
+    print(json.dumps({"Data": {"Key": key, "Name": argv[3]}}))
 elif argv[:3] == ["or", "folders", "get"]:
     # The real verb resolves either a folder key or a folder name.
     match = None
@@ -137,8 +144,18 @@ elif argv[:3] == ["or", "folders", "get"]:
         if argv[3] in folder_ids:
             match = {"Key": argv[3], "Id": folder_ids[argv[3]]}
     if match is None or match["Key"] in deleted_folders():
+        if payload.get("not_found_exits_zero"):
+            # A CLI line that reports not-found as a zero-exit failure envelope
+            # (no Data key) must still read as absent to the grader.
+            print(json.dumps({"Result": "Failure", "Message": "Error resolving folder"}))
+            sys.exit(0)
         print("folder not found", file=sys.stderr)
         sys.exit(1)
+    stored = os.path.join(here, "description_" + match["Key"] + ".txt")
+    if os.path.exists(stored):
+        with open(stored) as handle:
+            match["Description"] = handle.read()
+    match.setdefault("Description", "No description")
     print(json.dumps({"Data": match}))
 elif argv[:3] == ["or", "folders", "delete"]:
     # Mirrors the real CLI: refuses without --yes, since the operation is
@@ -227,15 +244,15 @@ def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
     return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{folder_key}"
 
 
-def leftover_run_folder(created_at: str | None = None) -> dict[str, str]:
+def leftover_run_folder(stamped_at: str | None = None) -> dict[str, str]:
     """A previous run's leaked run folder, resolvable by RUN_FOLDER_NAME.
 
-    Without created_at the folder reports no CreationTime — the age-unknown
+    Without stamped_at the Description is the API default — the unstamped
     case, which the guard treats as an old leftover (deletable).
     """
     entry = {"Key": LEFTOVER_FOLDER_KEY, "DisplayName": RUN_FOLDER_NAME}
-    if created_at:
-        entry["CreationTime"] = created_at
+    if stamped_at:
+        entry["Description"] = f"e2e run folder | {STAMP_MARKER}{stamped_at} | disposable"
     return entry
 
 
@@ -1052,7 +1069,7 @@ def test_seed_refuses_to_delete_a_live_concurrent_runs_folder(
     younger than one task budget is presumed a LIVE concurrent instance's, not
     a failed teardown's, and seed must fail without deleting it."""
     fresh = (datetime.now(timezone.utc) - timedelta(seconds=120)).isoformat()
-    env = install_fake_uip(sandbox, folders=[leftover_run_folder(created_at=fresh)])
+    env = install_fake_uip(sandbox, folders=[leftover_run_folder(stamped_at=fresh)])
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode != 0
@@ -1062,14 +1079,14 @@ def test_seed_refuses_to_delete_a_live_concurrent_runs_folder(
     assert not (sandbox / SNAPSHOT).exists()
 
 
-def test_seed_heals_an_old_leftover_with_a_parseable_creation_time(
+def test_seed_heals_an_old_leftover_with_a_parseable_stamp(
     sandbox: pathlib.Path,
 ) -> None:
     """Age guard, delete direction: a folder older than the live window is a
     failed teardown's leftover and is healed. (The self-heal test above covers
-    the missing-CreationTime degradation — age unknown reads as old.)"""
+    the unstamped degradation — age unknown reads as old.)"""
     stale = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-    env = install_fake_uip(sandbox, folders=[leftover_run_folder(created_at=stale)])
+    env = install_fake_uip(sandbox, folders=[leftover_run_folder(stamped_at=stale)])
 
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
@@ -1078,6 +1095,43 @@ def test_seed_heals_an_old_leftover_with_a_parseable_creation_time(
         in completed.stdout
     )
     assert (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_stamps_the_run_folder_it_creates(sandbox: pathlib.Path) -> None:
+    """The folder API has no creation time, so seed writes its own into the
+    Description at create time — the stamp the concurrency guard reads back."""
+    env = install_fake_uip(sandbox)
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "stamped" in completed.stdout
+    stored = (sandbox.parent / "bin" / f"description_{RUN_FOLDER_KEY}.txt").read_text()
+    assert STAMP_MARKER in stored
+    stamp = stored.split(STAMP_MARKER, 1)[1].split()[0]
+    age = (datetime.now(timezone.utc) - datetime.fromisoformat(stamp)).total_seconds()
+    assert 0 <= age < 120
+
+
+def test_seed_treats_a_zero_exit_failure_envelope_as_absent(
+    sandbox: pathlib.Path,
+) -> None:
+    """The CLI's not-found envelope carries no Data key. It exits 1 today; a
+    line that ever exits 0 with it must read as 'no leftover', not KeyError."""
+    env = install_fake_uip(sandbox, not_found_exits_zero=True)
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert (sandbox / SNAPSHOT).exists()
+
+
+def test_a_hung_uip_call_is_named_not_a_traceback(sandbox: pathlib.Path) -> None:
+    """`registry pull --force` is environment weather; a call outliving the cap
+    must fail naming the command and the cap, not as a bare TimeoutExpired."""
+    env = install_fake_uip(sandbox, slow_commands=["registry pull"], slow_seconds=3)
+    env["HANDOFF_UIP_TIMEOUT_SECONDS"] = "1"
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert "exceeded 1s" in completed.stderr
+    assert "registry pull" in completed.stderr
+    assert "TimeoutExpired" not in completed.stderr.strip().splitlines()[-1]
 
 
 def test_seed_blocks_when_a_covering_node_is_not_the_run_folders(
