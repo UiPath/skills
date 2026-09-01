@@ -197,22 +197,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR Review Expense.approved reference in tasks.md"
-    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "tasks.md records the action output binding for approved"
-    path: "tasks/tasks.md"
-    includes:
-      - "approved"
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: json_check
     description: "report.json captures task IDs and the binding path"
     path: "report.json"

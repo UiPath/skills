@@ -1,0 +1,84 @@
+experiment_id: case-sdk
+description: >-
+  Runs the case suite against `uipath-maestro-case` in its post-replacement form:
+  the `.case.ts` builder-SDK authoring path. On 2026-09-01 this fork replaced the
+  11,928-line direct-`caseplan.json` skill with the builder SDK under the same
+  name, so there is no longer a rival skill to shadow or compete with — the
+  catalog is the full shipped `skills/` tree and the question is simply whether
+  the SDK path works.
+
+  tempdir driver, not docker: `skills-image`/`skills-codex` are not built on this
+  host and the daemon is down. Tasks here therefore use deterministic criteria
+  only — no llm_judge — so a run needs no CODEX_* checker route.
+
+  NOTE: `tests/tasks/uipath-maestro-case/` also holds 65 task YAMLs written
+  against the OLD direct-JSON mechanism. They are NOT ported and will fail under
+  this experiment. Select the ported ones explicitly (init_validate/,
+  skill_routing/) rather than running the whole directory.
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    turn_timeout: 900
+
+  sandbox:
+    driver: tempdir
+    # Inert under tempdir (env is inherited); required if this experiment is ever
+    # switched to the docker driver, where nothing crosses the boundary implicitly.
+    docker:
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - NODE_AUTH_TOKEN
+
+  agent:
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    plugins:
+      # FULL catalog on purpose — see description. uipath-case-sdk and
+      # uipath-maestro-case are both present and compete for the same request.
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  pre_run:
+    # Runtime npm auth for the @uipath scope. `@uipath/flow-sdk` is published ONLY
+    # to GitHub Packages, so without this every in-sandbox
+    # `npm install @uipath/flow-sdk` 404s against the public registry and the
+    # compile step is unreachable — the agent then hand-writes caseplan.json and
+    # the suite reports a false green. flow-v2-preview.yaml carries the same block.
+    #
+    # DIVERGENCE FROM flow-v2-preview.yaml, DO NOT "FIX": that experiment writes
+    # "$HOME/.npmrc" because it runs under the docker driver, where $HOME is
+    # in-container. This experiment runs under tempdir, where pre_run executes on
+    # the HOST with the host $HOME — writing there would clobber the developer's
+    # real ~/.npmrc. Project-level ./.npmrc in the sandbox cwd is what npm reads
+    # for the project and is destroyed with the sandbox.
+    #
+    # ${NODE_AUTH_TOKEN} stays literal: npm expands it at read time, so no token
+    # is written to disk.
+    - command: |-
+        printf '%s\n' \
+          '@uipath:registry=https://npm.pkg.github.com/' \
+          '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' \
+          > .npmrc
+      timeout: 30
+
+  checker_context:
+    api_route:
+      route: litellm
+      model: gpt-5.6-luna
+      params:
+        api_version: "2024-05-01"
+      env_params:
+        api_base: CODEX_BASE_URL
+        api_key: CODEX_API_KEY
+
+  post_run:
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default

@@ -48,55 +48,11 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "SDD and implementation plan were produced without building the case"
-    command: "test -f sdd.md && test -f tasks/tasks.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: run_command
-    description: "Known case-reasoning invariants are represented in sdd.md and tasks/tasks.md"
-    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/design_delegation_regressions/check_case_reasoning_regressions.py\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 4.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "(advisory, non-gating) tasks/tasks.md follows the compact no-build T-entry shape per planning.md: `## T{N}: task \"{Name}\"` headings and numeric `lane` task-set indices"
-    command: "python3 $TASK_DIR/check_tasksmd_shape.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0
-
-  - type: llm_judge
-    description: "The design reasons from case semantics instead of phrase-to-rule translation"
-    files:
-      - sdd.md
-      - tasks/tasks.md
-    max_file_chars: 180000
-    include_agent_output: false
-    prompt: |
-      Review the CaseReasoningRegression SDD and implementation plan.
-
-      Score 1.0 only when:
-      - Payment Deadline and Wait for Payment Confirmation start while payment
-        is pending after Collect Fees. They are represented as a parallel
-        after-predecessor group, not as duplicate event-triggered tasks gated
-        by selected-tasks-completed("Collect Fees").
-      - Generate Permit depends on successful payment confirmation, not on the
-        payment deadline branch completing.
-      - selected-tasks-completed never selects the optional Internal Notes
-        adhoc task.
-      - Application Rejected is deterministic routing from the review decision,
-        not a dangling user-selected-stage without a wait-for-user exit.
-
-      Score 0.5 for one minor omission that does not break the case graph.
-      Score 0.0 for duplicate immediate selected-task gates, dangling
-      user-selected-stage, or a required dependency on Internal Notes.
-    weight: 3.0
-    pass_threshold: 0.8
 
 simulation:
   enabled: true

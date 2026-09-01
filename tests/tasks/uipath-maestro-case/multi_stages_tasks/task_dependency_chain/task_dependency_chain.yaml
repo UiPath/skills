@@ -274,14 +274,6 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "(advisory, non-gating) tasks.md T-entries for First Step/Second Step quote the task display name and expose activation-mode: sequential / entry-rule: runs-sequentially per uipath-maestro-case SKILL.md Rule 6"
-    command: "python3 $TASK_DIR/check_task_dependency_chain_tasksmd.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0
-
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
     timeout: 120

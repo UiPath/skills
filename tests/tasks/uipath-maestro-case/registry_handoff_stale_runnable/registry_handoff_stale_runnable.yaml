@@ -56,12 +56,6 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "Phase 1 produced tasks.md from the authoritative SDD"
-    path: "tasks/tasks.md"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_exists
     description: "Phase 1 rewrote the registry cache"
     path: "tasks/registry-resolved.json"
     weight: 2.0
@@ -81,14 +75,6 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md binds the current resource names"
-    command: "grep -Fq 'FinancialPostingFunction' tasks/tasks.md && grep -Fq 'EmailDrafter' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

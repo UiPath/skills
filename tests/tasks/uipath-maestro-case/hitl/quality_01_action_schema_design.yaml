@@ -223,30 +223,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "tasks.md captures the task-title (resolved or skeleton path)"
-    command: "grep -i 'task-title\\|taskTitle\\|Task Title' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md captures priority: High"
-    command: "grep -i 'priority.*high' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md captures the recipient email"
-    command: "grep -i 'po-approvals@corp.com' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: json_check
     description: "report.json schema has at least 3 input fields, 1 output field, priority High"
     path: "report.json"

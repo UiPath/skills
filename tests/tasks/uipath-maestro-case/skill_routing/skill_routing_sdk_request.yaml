@@ -1,0 +1,55 @@
+task_id: skill-case-activation-sdk-request
+description: >
+  Cheap activation check: given a request phrased in the builder SDK's own terms
+  (`.case.ts`, `casePlan()`, `@uipath/flow-sdk/case`), does `uipath-maestro-case`
+  fire, and does the nearest plausible mis-route (`uipath-maestro-flow`, which owns
+  the sibling Flow builder on the same SDK) stay quiet?
+
+  History: this task was originally a routing contest between `uipath-case-sdk` and
+  the direct-JSON `uipath-maestro-case`, and it passed 2/2 on 2026-09-01. That
+  contest no longer exists — the SDK skill replaced the direct-JSON skill under the
+  same name on this fork, so the negative criterion was retargeted from the retired
+  rival (which would have made the task assert that the skill under test both fired
+  and did not) to a sibling that genuinely competes for the same phrasing.
+tags: [uipath-maestro-case, smoke, mode:build]
+
+run_limits:
+  expected_turns: 3
+  max_turns: 6
+  task_timeout: 420
+
+initial_prompt: |
+  I want to author a UiPath Case plan as TypeScript using the builder SDK —
+  a `LoanApproval.case.ts` that calls `casePlan(...)` from
+  `@uipath/flow-sdk/case`, with one stage "Review".
+
+  Load the skill that covers this authoring path and tell me the exact
+  install and compile/validate loop it prescribes. Do not scaffold the project yet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent did NOT mis-route a case request to the Flow builder skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: ""
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The Step 0 install prose is the fix that this suite motivated: agents were
+  # spending >50% of a run hunting the filesystem for a package that is simply
+  # npm-installable. A skill that describes the compile loop without naming the
+  # install is the defect. Advisory (pass_threshold 0) because this is a 3-turn
+  # activation row and the phrasing of an answer is not the behaviour under test.
+  - type: command_executed
+    description: "ADVISORY: did the agent surface the npm install step at all?"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+(install|i)\s+.*@uipath/flow-sdk'
+    min_count: 0
+    weight: 0.5
+    pass_threshold: 0

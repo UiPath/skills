@@ -1,0 +1,123 @@
+task_id: skill-case-sdk-init-validate
+description: >
+  Port of skill-case-init-validate onto the builder-SDK authoring path. Same goal
+  (a minimal validated Case project from an sdd.md), different mechanism: author
+  `<Name>.case.ts` with the fluent builder, then compile to caseplan.json and
+  validate. Criteria are split so a run localizes where the path breaks — source
+  authored vs. compiled artifact produced vs. validate reached — because
+  `uip maestro case compile` is absent from some installed CLI/tool combinations
+  even when the catalog lists it.
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 60
+  max_turns: 80
+
+initial_prompt: |
+  Author a UiPath Case Management project called "OnboardingCase" using the
+  TypeScript builder SDK: a manual trigger and a single stage named "Intake".
+  Produce the compiled caseplan.json and make sure it validates.
+
+  Use this sdd.md as the sole input — write it to sdd.md first, then build
+  from it:
+
+  ```
+  # OnboardingCase
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Intake (regular stage) — receives the case after the manual trigger.
+  ```
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat every approval / review / publish hard stop as pre-approved. Choose
+    the "continue" or "skip publish" branch. Do NOT call AskUserQuestion — it
+    is not available in this harness.
+  - If a prescribed `uip` subcommand does not exist on this install, say so
+    explicitly, then reach the goal by whatever route the skill documents as
+    the fallback. Do not silently substitute a different authoring mechanism.
+  - Do not deploy or debug against a tenant. Local validation only.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "sdd.md fixture was written"
+    path: "sdd.md"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A .case.ts builder source was authored (the SDK path's own artifact)"
+    command: "find . -type f -name '*.case.ts' -not -path '*/node_modules/*' | head -n 1 | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # MECHANISM GATES. Without these the suite scores a false green: on the
+  # 2026-09-01 run all criteria passed 1.000 while the agent never installed the
+  # SDK and never compiled — it hand-wrote caseplan.json to match its own
+  # .case.ts, i.e. it silently executed the RIVAL skill's mechanism (direct JSON
+  # authoring) while nominally loading this skill. "A caseplan.json exists" is
+  # outcome-shaped but mechanism-blind, so it cannot tell compiled from typed.
+  - type: run_command
+    description: "The builder SDK was really installed in the sandbox (not merely imported in text)"
+    command: "test -d node_modules/@uipath/flow-sdk || find . -maxdepth 4 -type d -path '*node_modules/@uipath/flow-sdk' | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The compiler must be INVOKED and must SUCCEED. The loose earlier form
+  # (bare `case-compile` substring) scored 2/1 on the 2026-09-01 run, and one of
+  # those matches was `which case-compile case-check` — a discovery probe, not an
+  # execution. So the criterion would have greened a run that only looked for the
+  # compiler. Three independent tightenings:
+  #   1. the compiler name must sit at a command boundary (start, newline, or
+  #      after ; | &) with an optional npx/node launcher AND an optional path
+  #      prefix, so `which <name>` and `ls <name>` cannot satisfy it. The path
+  #      prefix `(?:\S*/)?` is REQUIRED, not optional polish: the canonical
+  #      invocation is `./node_modules/.bin/case-compile <file>`, and a first
+  #      version of this pattern without it scored a real, successful compile as
+  #      0/1 (run 3, 2026-09-01) — a false negative worse than the false positive
+  #      it replaced. Do not re-narrow this without testing the bin-path form.
+  #   2. it must be followed by an argument, so a bare mention cannot match;
+  #   3. exclude_pattern drops discovery verbs, and require_success drops a call
+  #      that ran but failed.
+  # exclude_pattern is deliberately NARROW: coder_eval tests it against BOTH the
+  # raw and shell-normalized haystacks, so a broad term (ls, find, grep) risks
+  # excluding a genuine compile that happens to be chained with one.
+  - type: command_executed
+    description: "A real compile route was EXECUTED and succeeded (not merely probed for)"
+    tool_name: "Bash"
+    command_pattern: '(?:(?:^|[;&|]\s*|\n\s*)(?:npx\s+(?:--\S+\s+)*|node\s+)?(?:\S*/)?(?:case-compile|compile-cli)\s+[^\s;|&]|uip\s+maestro\s+case\s+compile\s+[^\s;|&])'
+    exclude_pattern: '(?:\bwhich\b|command\s+-v|\btype\s+-p|npm\s+ls|--help)'
+    require_success: true
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A caseplan.json was produced"
+    command: "find . -type f -name caseplan.json -not -path '*/node_modules/*' -not -path '*/.venv/*' | head -n 1 | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the compiled case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

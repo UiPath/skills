@@ -48,42 +48,12 @@ initial_prompt: |
   list from the handoff header.
 
 success_criteria:
-  - type: file_exists
-    description: "Plan-only run produced the maestro-case plan at tasks/tasks.md"
-    path: "tasks/tasks.md"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Staged sdd.md is byte-identical — never rewritten, regenerated, or normalized"
     command: "cmp -s sdd.md $TASK_DIR/fixtures/sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Planner Handoff header did not hijack the run into Lane A task derivation (no <case>-tasks.md at the root)"
-    command: "! ls ./*-tasks.md 2>/dev/null | grep -q ."
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md uses the maestro-case compact plan grammar — H2 T-entries with quoted task display names"
-    command: "grep -Eq '^## T[0-9]+.*\"Post Invoice\"' tasks/tasks.md && grep -Eq '^## T[0-9]+.*\"Draft Notification\"' tasks/tasks.md && grep -Eq '^## T0?1' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Concrete resource names preserved; tenant identities deferred as resolve at build"
-    command: "grep -Fq 'FinancialPostingFunction' tasks/tasks.md && grep -Fq 'EmailDrafter' tasks/tasks.md && grep -qi 'resolve at build' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

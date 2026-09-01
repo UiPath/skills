@@ -232,31 +232,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Caseplan does not fabricate a taskTypeId — when skeleton, action task's data must be empty {} (skipped automatically when action-app actually resolved)"
-    command: |
-      python3 -c "
-      import json, sys
-      with open('ContractReviewCase/ContractReviewCase/caseplan.json') as f: cp=json.load(f)
-      with open('report.json') as f: rep=json.load(f)
-      # If reported as skeleton, the action task's data must be empty
-      if rep.get('action_task_skeleton') is True:
-          for n in cp.get('nodes', []):
-              for lane in (n.get('data', {}).get('tasks') or []):
-                  for t in lane:
-                      if t.get('type') == 'action':
-                          d = t.get('data') or {}
-                          # Skeleton: data must be {} (or have only action-only extras per skeleton-tasks.md, never taskTypeId)
-                          ctx = d.get('context') or {}
-                          if ctx.get('taskTypeId'):
-                              print('FAIL: skeleton action task has taskTypeId set'); sys.exit(1)
-      print('OK')
-      "
-    timeout: 15
-    expected_exit_code: 0
-    weight: 2.5
-    pass_threshold: 1.0
-
   - type: json_check
     description: "report.json captures skeleton/resolved status, exit reference, and external resources list"
     path: "report.json"

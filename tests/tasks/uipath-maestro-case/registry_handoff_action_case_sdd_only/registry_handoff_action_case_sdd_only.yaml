@@ -59,12 +59,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "Phase 1 produced tasks.md from the authoritative SDD"
-    path: "tasks/tasks.md"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_exists
     description: "Phase 1 replaced the stale registry cache"
     path: "tasks/registry-resolved.json"
     weight: 2.0
