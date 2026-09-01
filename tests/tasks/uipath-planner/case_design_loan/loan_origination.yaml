@@ -117,6 +117,14 @@ success_criteria:
       NOT deduct for controls, sub-processes, review steps, or tasks the requirement
       never asked for — "it could have modeled more" is not a coherence defect here.
 
+      A DRAFT may legitimately leave one routing decision to the reviewer. If the draft
+      MODELS an outcome (it has an exit or route) and its Open items / Review Flags section
+      NAMES that outcome as a decision for the reviewer — e.g. "Offer declined ... decide
+      whether this routes to Withdrawn or stays a standalone disposition" — that is the
+      documented draft convention (unfixable business choices become review items, per the
+      skill's layer-closure rule) and is NOT a routing defect. An outcome left dangling with
+      no exit and no mention IS the defect this bullet is for.
+
       Judge:
       - Stage order is sensible for loan origination (Intake → Loan Setup →
         Underwriting → QA/QC → Closing → Resolved).
