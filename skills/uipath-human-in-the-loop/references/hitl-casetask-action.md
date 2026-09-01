@@ -234,7 +234,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 
 ### Step 4 — Discover Upstream Variables
 
-Read available case variables from the top-level `variables` field in `caseplan.json` (current schema is flat — no `root` wrapper; see [case-schema.md](../../uipath-maestro-case/references/case-schema.md#top-level-shape) in the case skill):
+Read available case variables from the top-level `variables` field in `caseplan.json` (current schema is flat — no `root` wrapper; see the `uipath-maestro-case` skill, section *Variable types*):
 
 ```json
 {
@@ -244,7 +244,7 @@ Read available case variables from the top-level `variables` field in `caseplan.
 }
 ```
 
-For cross-task references, source values come from upstream task `outputs[].var` — see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md) in the case skill for the full discovery procedure.
+For cross-task references, source values come from upstream task `outputs[].var` — for the full discovery procedure load the `uipath-maestro-case` skill and read its *Task io-binding — pass inputs, capture outputs* section.
 
 > **No root-level bindings needed for QuickForm.** Unlike App-based (Path 2), QuickForm does **not** add entries to the top-level `bindings[]` array.
 
@@ -270,7 +270,7 @@ Each field in `outputs[]` and `inOuts[]` exposes its value downstream via the fi
 
 Downstream task input value: `"=vars.decision"`. The selected outcome is available via the task's `Action` output (see Step 3).
 
-For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
+For the full cross-task wiring procedure, load the `uipath-maestro-case` skill and read its *Task io-binding — pass inputs, capture outputs* section.
 
 ---
 
@@ -328,7 +328,7 @@ Add 2 entries to the top-level `bindings[]` array — one for `name` and one for
 
 `resourceKey` = `<folderPath>.<deploymentTitle>`. Binding IDs: `b` + 8 chars.
 
-For the full binding procedure, see [bindings/impl-json.md](../../uipath-maestro-case/references/plugins/variables/bindings/impl-json.md) in the case skill.
+For the full binding procedure, load the `uipath-maestro-case` skill and read its *Reference a REAL resource — discover before you invent* section.
 
 ### Step 4 — Write the Task
 
@@ -367,7 +367,7 @@ For the full binding procedure, see [bindings/impl-json.md](../../uipath-maestro
 
 > **`hitlType` is `"custom"` for app-based tasks.** App-based tasks have no schema file at all — the form is defined by the deployed app itself, not by a schema document. **Never write `_schemaFileId` or `hitlSchemaId` for an app-based task** — those two context entries exist only on the QuickForm path (Path 1), where they identify the `.hitl.json` schema file. An app-based task is fully described by `data.name`/`data.folderPath` (the bindings to the deployed app) plus `data.inputs[]`/`data.outputs[]` (from `tasks describe`) — nothing else identifies its "schema."
 
-For the full `inputs[]`/`outputs[]` variable shapes, see [action/impl-json.md](../../uipath-maestro-case/references/plugins/tasks/action/impl-json.md).
+For the full `inputs[]`/`outputs[]` variable shapes, load the `uipath-maestro-case` skill and read its *Action Center tasks — form fields, labels, action app* section (exact option shapes are in that skill's `references/api.md`).
 
 ---
 
@@ -410,4 +410,4 @@ Downstream task input: `"value": "=vars.decision"`.
 
 Downstream task input: `"value": "=vars.decisionVar"`.
 
-For the full cross-task wiring procedure, see [bindings-and-expressions.md](../../uipath-maestro-case/references/bindings-and-expressions.md).
+For the full cross-task wiring procedure, load the `uipath-maestro-case` skill and read its *Task io-binding — pass inputs, capture outputs* section.

@@ -117,7 +117,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-insights` | Preview |
 | `uipath-ixp` | In-development |
 | `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | In-development |
+| `uipath-maestro-case` | Preview |
 | `uipath-maestro-flow` | In-development |
 | `uipath-mcp-servers` | In-development |
 | `uipath-planner` | Preview |
