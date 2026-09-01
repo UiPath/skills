@@ -1,0 +1,25 @@
+{"id": "uipath-functions-js-001", "prompt": "Scaffold a new TypeScript coded function with uip function new and explain the generated project layout", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-002", "prompt": "How do I declare input and output contracts with defineSchema<T>() in my UiPath function?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-003", "prompt": "Write a defineFunction handler that exposes POST /invoice and validates the JSON body", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-004", "prompt": "My coded app frontend gets Failed to fetch from the JS function after exactly 25 seconds — why?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-005", "prompt": "uip function serve runs on port 7070 but ctx.user is null in my handler — how do I test with a token locally?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-006", "prompt": "Migrate this zod contract in my TypeScript function to a schema-first one Studio Web can extract", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-007", "prompt": "Should my JS function handler throw FunctionError or return badRequest for invalid input?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-008", "prompt": "Deployed function fails every route with errorCode 4801 after I added an npm dependency", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-009", "prompt": "How do I call Orchestrator with @uipath/uipath-typescript from inside a coded function?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-010", "prompt": "Add a storage bucket resource to bindings_v2.json in my TypeScript function project", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-011", "prompt": "Wire my React coded app to a JS function backend on localhost:7070 without adding a Vite proxy", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-012", "prompt": "My TS function works under serve but every route hangs after deploying — imports look fine locally", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-013", "prompt": "What does uip function pack put in the nupkg for a TypeScript project and does the lockfile ship?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-014", "prompt": "Start my JavaScript coded function as an Orchestrator job instead of calling its HTTP endpoint", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-015", "prompt": "Difference between ctx.user.accessToken and ctx.robot.accessToken in a JS coded function?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-016", "prompt": "logger versus console.log in a TypeScript coded function — which one reaches Orchestrator job logs?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-017", "prompt": "Build a TS function that reads a Secret credential asset using its robot identity, not the caller token", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-018", "prompt": "POST to my deployed JS function returns 400 errorCode 4804 whenever the request body is empty", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-019", "prompt": "Register my JS function project in a solution — uip function init says it is Python only", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-020", "prompt": "Which packages go in dependencies versus devDependencies for a coded function that imports axios at runtime?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-021", "prompt": "Add a path parameter like /invoices/:id to my defineFunction route and read it in the handler", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-022", "prompt": "What is the HTTPS invoke URL for my deployed TypeScript function and where does the folder key come from?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-023", "prompt": "How does uip function serve discover handlers in functions/*.ts and sync the uipath.json map?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-024", "prompt": "TypeScript function or Python function — which should back my coded app's REST endpoints?", "expected_skill": "uipath-functions-js"}
+{"id": "uipath-functions-js-025", "prompt": "Call a Coupa connection through Integration Service from inside my TypeScript coded function", "expected_skill": "uipath-functions-js"}

@@ -1,6 +1,6 @@
 ---
 name: uipath-functions
-description: "UiPath Coded Functions — deterministic Python units built via `uip function` (new/init/run/pack/publish); the `functions` map in `uipath.json`, `entry-points.json`, Pydantic Input/Output. Rule-based logic, data transforms, ERP/Integration Service connector calls — no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents."
+description: "UiPath Coded Functions — deterministic Python units built via `uip function` (`new -l py`/init/run/pack/publish); `pyproject.toml`, the `functions` map in `uipath.json`, `entry-points.json`, Pydantic Input/Output, lazy `UiPath()` SDK singleton, `bindings.json` resource bindings. Rule-based logic, data transforms, ERP/Integration Service connector calls, invoked as Maestro Service Tasks or via Orchestrator `POST /Jobs/StartJobs` — no LLM reasoning or agent loop. For JS/TS functions (`defineFunction`, `package.json`, `uip function new -l ts|js`, `bindings_v2.json`)→uipath-functions-js. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -25,20 +25,9 @@ A Python Coded Function can be invoked from any UiPath surface:
 | Orchestrator API | `POST /Jobs/StartJobs` |
 | CLI | `uip function pack` → `uip function publish` |
 
-### Python Functions vs JS Functions
+### Python vs JS/TS Functions
 
-| | Python Coded Function | JS/TS Function |
-|---|---|---|
-| **Job semantics** | Yes — Orchestrator job ID, audit trail, retry, scheduling | No — inline HTTP only, no job lifecycle |
-| **Invocation** | Maestro, Flow, Agents, Orchestrator API | HTTP endpoint (BFF for Coded Apps) |
-| **Runtime** | Serverless or Local Unattended Robot | Serverless HTTP shared tier |
-| **SDK access** | Full UiPath Python SDK (assets, buckets, queues, connections) | Workload token forwarding only |
-| **Scaffold** | `uip function new <name> --language py` | `uip function new <name> --language ts` (default) |
-| **Init** | `uip function init` (generates entry-points.json) | Not needed |
-| **Local dev** | `uip function run` | `uip function serve` + `uip function run` |
-| **Best for** | Agentic process steps, ERP integration, document AI, data pipelines | Backend-for-Frontend for Coded Apps |
-
-Use Python when the logic needs job semantics, platform SDK access, or is invoked from Maestro/agents. Use JS when the caller is a Coded App frontend and low HTTP latency matters.
+This skill covers **Python** functions only. JS/TS functions (`defineFunction` handlers, `package.json` projects, HTTP triggers for Coded App backends) → `uipath-functions-js`. Both languages run as Orchestrator jobs; JS/TS functions can additionally expose HTTP endpoints. Language split at the CLI: Python scaffolds with `uip function new <name> -l py` and requires `uip function init`; TypeScript is the default language and has no `init` step.
 
 ---
 
@@ -54,7 +43,7 @@ uip function publish              # upload .nupkg to Orchestrator (prompts for f
 uip function push                 # sync project to Studio Web
 ```
 
-> `uip function run` works for both Python and JS/TS. `uip function serve` is **JS/TS only** — it starts the local HTTP server that `run` invokes against.
+> `uip function run` works for both Python and JS/TS. `uip function serve` is **JS/TS only** — the JS/TS local HTTP server and dev loop are covered by `uipath-functions-js`.
 
 ---
 
@@ -64,8 +53,8 @@ uip function push                 # sync project to Studio Web
 
 ```bash
 uip function new <name> --language py       # Python Coded Function
-uip function new <name> --language ts       # TypeScript Function (JS/TS, no job semantics)
-uip function new <name> --language js       # JavaScript Function (JS/TS, no job semantics)
+uip function new <name> --language ts       # TypeScript Function → uipath-functions-js
+uip function new <name> --language js       # JavaScript Function → uipath-functions-js
 ```
 
 **`--language py` is required for Python.** The default language is TypeScript — omitting `--language` scaffolds a JS/TS project. Always pass `-l py` or `--language py` when building a Python Coded Function.
@@ -285,6 +274,6 @@ uip function push
 - The `functions` map in `uipath.json` marks the project as a Coded Function (`determine_project_type()` reads the entrypoint type from `uipath.json`)
 - `uip function init` must run before `pack` or `push` — it generates `entry-points.json`
 - Python Functions have full job semantics: Orchestrator job ID, audit trail, retry, scheduling
-- JS Functions have no job semantics and cannot be started as Orchestrator jobs — use Python when the caller is Maestro, a Flow, or an agent
-- `uip function run` works for both Python and JS/TS local execution; `uip function serve` is JS/TS only (starts the local HTTP server that `run` invokes against)
+- JS/TS Functions also run as Orchestrator jobs and can expose HTTP endpoints — authoring, testing, and deploying them is `uipath-functions-js` territory
+- `uip function run` works for both Python and JS/TS local execution; `uip function serve` is JS/TS only (see `uipath-functions-js`)
 - If cloud-backed work requires authentication, run `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.

@@ -527,7 +527,7 @@ Rule: case-design-layers-guide.md § Layer 3 (External names). -->
 
 ### Coded Functions
 
-<!-- Optional. Include only when an extracted TypeScript / JavaScript / Python function is justified. Lane A routes each function build to `uipath-functions` before consumer tasks. -->
+<!-- Optional. Include only when an extracted TypeScript / JavaScript / Python function is justified. Lane A routes each function build by language — Python → `uipath-functions`, TS/JS → `uipath-functions-js` — before consumer tasks. -->
 
 | Function | Called From Task | Input → Output (typed) | Purpose / Dependencies |
 |---|---|---|---|

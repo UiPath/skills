@@ -1,0 +1,62 @@
+task_id: skill-functions-js-http-author
+description: >
+  Authoring e2e for a JS/TS coded function inside an existing project. Seeds a
+  scaffolded TypeScript Functions project (uipath.json functions map + one
+  health endpoint) and asks for a new HTTP function with a schema-first
+  contract and correct error semantics. Grades the artifact shape the skill
+  teaches: default-exported defineFunction, method+path pair, defineSchema<T>()
+  contracts, FunctionError with a real HTTP status, hand-synced uipath.json
+  map, SDK kept in devDependencies. The sandbox is offline for the private
+  @uipath/coded-functions-js-sdk package, so install/serve/publish are out of
+  scope by design — the prompt says so and a criterion enforces it.
+tags: [uipath-functions-js, e2e, mode:build, lifecycle:generate]
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-functions-js/http_function_author/_fixtures/quote-fns ."
+    timeout: 10
+
+run_limits:
+  expected_turns: 15
+  max_turns: 30
+  turn_timeout: 1200
+
+initial_prompt: |
+  I have a UiPath JS/TS coded-functions project at `quote-fns/`. Add a new
+  HTTP function `quote`:
+
+  - `POST /quote`
+  - input: `items` — array of `{ sku: string, price: number, qty: number }`
+  - output: `total` (number) and `lines` — array of `{ sku: string, lineTotal: number }`
+  - orders with a total above 10000 must be rejected with HTTP status 422 and
+    a message naming the limit
+
+  Dependencies are NOT installed in this sandbox and the package registry is
+  unreachable — author statically. Do NOT run npm/pnpm/yarn/bun install, do
+  NOT start a server, do NOT pack or publish. Because pack cannot run here,
+  update `uipath.json`'s functions map by hand to include the new entry.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "New function file created under functions/"
+    path: "quote-fns/functions/quote.ts"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No dependency install attempted (offline sandbox, prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: '(npm|pnpm|yarn|bun)\s+(ci|install|i)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "defineFunction shape, schema-first contracts, FunctionError 422, uipath.json map, dependency placement"
+    command: "python3 $TASK_DIR/check_http_function_author.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

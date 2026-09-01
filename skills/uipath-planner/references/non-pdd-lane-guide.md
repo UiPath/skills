@@ -13,7 +13,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
 1. **Provided context document** — if the entry guard classified a document as "Other context", read it now. Any question its content answers counts as resolved; its content feeds the plan.
 
 2. **Filesystem detection** — use `Glob` / `Read` / `Grep` (cross-platform) in current directory, then in the parent, NEVER shell-specific pipelines (`ls` globs, `grep` over pipes, `/dev/null` fail on native PowerShell):
-   - `Glob`: `project.json`, `*.xaml`, `*.cs`, `*.flow`, `flow_files/*.flow`, `*.bpmn`, `caseplan.json`, `agent.json`, `pyproject.toml`, `.uipath/*`, `app.config.json`, `*.uipx`, `element.json`, `*.py`.
+   - `Glob`: `project.json`, `*.xaml`, `*.cs`, `*.flow`, `flow_files/*.flow`, `*.bpmn`, `caseplan.json`, `agent.json`, `pyproject.toml`, `uipath.json`, `package.json`, `.uipath/*`, `app.config.json`, `*.uipx`, `element.json`, `*.py`.
    - `project.json` found → `Read` it and check `targetFramework` and dependencies structurally (no regex-over-cat).
    - `pyproject.toml` found → `Read` it and disambiguate: an agent-framework dependency (`langgraph`, `llamaindex`, `openai-agents`) or a sibling `agent.json` → **Agents**; a sibling `uipath.json` with a `functions` map (or `entry-points.json` from `uip function init`) → **Functions**; a bare `uipath` dependency with neither → inspect further or ask (a `.venv/` directory is NOT required and proves nothing).
    - Root-level `*.json` with none of the above → `Grep` for `"document.dsl"` (API Workflow project).
@@ -27,6 +27,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
    | `agent.json` | `uipath-agents` (low-code) |
    | `pyproject.toml` + agent-framework dependency (langgraph / llamaindex / openai-agents) | `uipath-agents` (coded) |
    | `pyproject.toml` + `uipath.json` with a `functions` map | `uipath-functions` |
+   | `package.json` + `uipath.json` with a `functions` map | `uipath-functions-js` |
    | JSON containing `document.dsl` | `uipath-api-workflow` |
    | `.uipath/` or `app.config.json` | `uipath-coded-apps` |
    | `element.json` (+ `element-metadata.json`) | `uipath-connector-builder` |
