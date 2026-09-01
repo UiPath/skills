@@ -276,13 +276,14 @@ Built-ins use `validatorType` and `validatorParameters`. Every parameter require
 }
 ```
 
-**Parameter-less validators (`user_prompt_attacks`, `prompt_injection`) take NO parameters — set `validatorParameters: []`.** `user_prompt_attacks` is Llm-scope, PreExecution only, `block`/`log`/`escalate` — binary detection via Azure Prompt Shield, no params:
+**`user_prompt_attacks` takes NO parameters — set `validatorParameters: []`** (Llm-scope, PreExecution only, `block`/`log`/`escalate`; binary detection via Azure Prompt Shield). `prompt_injection` is NOT parameter-less — it takes a `threshold` number, e.g. `{ "$parameterType": "number", "id": "threshold", "value": 0.5 }`. Example `user_prompt_attacks`:
 
 ```json
 {
   "$guardrailType": "builtInValidator",
   "id": "<UUID>",
   "name": "User prompt attack guardrail",
+  "description": "Blocks adversarial user-prompt attacks (Azure Prompt Shield).",
   "validatorType": "user_prompt_attacks",
   "validatorParameters": [],
   "action": { "$actionType": "block", "reason": "Adversarial input detected — execution blocked." },

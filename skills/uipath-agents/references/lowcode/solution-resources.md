@@ -114,7 +114,7 @@ Binding values use this form:
   "key": "<binding-key>",
   "value": {
     "name": { "defaultValue": "<name>", "isExpression": false },
-    "folderPath": { "defaultValue": "<folder>", "isExpression": false }
+    "folderPath": { "defaultValue": "<folder>", "isExpression": false }  // omit for connection bindings (bind by connection.id)
   },
   "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
 }
