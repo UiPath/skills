@@ -15,8 +15,7 @@ Two jobs, one entry point:
 Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live tasks — implementation always routes to a specialist.
 
 **Every design file you write is gated before you stop — drafts included.** After writing an SDD or
-a draft, run `python3 "<this skill's folder>/scripts/audit_sdd.py" <the file you wrote>`, repair each
-finding with Edit, re-run (max 3 rounds), then stop. Writing the file is not the end of the turn; the
+a draft, run `python3 "<this skill's folder>/scripts/audit_sdd.py" <the file you wrote>`, then repair its findings. Repair in ONE pass, working from the findings' own line numbers — do NOT re-read the whole document between edits, and do not re-derive the design. Anything still open after that single pass becomes a Review Flags row and you STOP: a draft with a noted flag is a better outcome than a turn that never returns. Never spend more than a few edits here. Writing the file is not the end of the turn; the
 gate passing is. A design that stops un-gated ships undeclared `=vars` and illegal selectors into
 every later phase.
 

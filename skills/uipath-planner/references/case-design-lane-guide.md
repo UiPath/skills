@@ -221,8 +221,9 @@ python3 "<skill folder>/scripts/audit_sdd.py" <the file you just wrote>
 ```
 
 `<skill folder>` is this skill's directory, given at invocation — substitute it; never `ls`/`find`
-for it, and never read the script. Repair each finding with Edit and re-run, max 3 rounds, then stop
-and surface what remains. The gate's mapping, marker and selector checks apply to a draft exactly as
+for it, and never read the script. Repair in ONE pass from the findings' line numbers — do not
+re-read the whole document between edits and do not re-derive the design — then stop and surface
+anything still open as a Review Flags row. A noted flag beats a turn that never returns. The gate's mapping, marker and selector checks apply to a draft exactly as
 they do to a finalized SDD — only the `--draft` inventory comparison waits for a finalized file. A
 draft that stops with undeclared `=vars`, a backtick-wrapped `<UNRESOLVED>`, or a
 `selected-tasks-completed` selector pointing at an adhoc task hands every one of those defects to
