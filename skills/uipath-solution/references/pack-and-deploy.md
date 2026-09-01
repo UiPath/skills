@@ -85,6 +85,54 @@ uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --outpu
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
+### Publishing to a non-tenant feed
+
+By default everything targets the **tenant** feed. A package can instead go to your
+Personal Workspace or to a specific **folder feed**. Start by listing what you can
+actually target — a raw folder key is not necessarily a publishable feed:
+
+```bash
+uip solution feeds list --output json
+```
+
+`Data` is a list of `{ Name, Key, Type, IsMyPersonalWorkspace }` where `Type` is
+`Tenant`, `PersonalWorkspace`, or `Folder`. Only feeds in this list can be
+targeted; passing anything else fails with *"is not an available publish
+location"*. Personal Workspaces belonging to other users are filtered out even
+when you can browse them.
+
+Then target a feed with `--feed <name-or-key>` (accepts either the feed's name or
+its folder key) or `--personal-workspace`:
+
+```bash
+# Publish into a folder feed
+uip solution publish ./output/MySolution_2.0.0.zip --feed "Finance" --output json
+
+# Publish into your own Personal Workspace
+uip solution publish ./output/MySolution_2.0.0.zip --personal-workspace --output json
+```
+
+The same two flags scope the rest of the lifecycle, and they are **mutually
+exclusive** everywhere:
+
+| Command | What the flag scopes |
+|---|---|
+| `uip solution publish --feed / --personal-workspace` | Which feed the package is uploaded to |
+| `uip solution deploy run --feed / --personal-workspace` | Which feed the package is deployed **from** |
+| `uip solution deploy list --feed / --personal-workspace` | Which feed's deployments are listed |
+| `uip solution packages list --feed / --personal-workspace` | Which feed's packages are listed |
+| `uip solution packages delete --feed / --personal-workspace` | Which feed the version is deleted from |
+
+**Deploy from the feed you published to.** A package published to a folder feed or
+Personal Workspace is not in the tenant feed, so a plain `deploy run` cannot see
+it — pass the same `--feed` / `--personal-workspace` there too. Likewise, omitting
+the flag on `packages list` shows only tenant packages, which is the usual reason
+a freshly published feed package looks missing.
+
+`deploy run --feed` also accepts `--parent-folder-path` / `--parent-folder-key` to
+pick **where inside** the feed's folder the deployment lands; without them it goes
+to the feed folder itself.
+
 ## Step 3 (Alternative): Upload to Studio Web
 
 If the goal is browser-based editing rather than deployment, use `upload` instead of `publish`:

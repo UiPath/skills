@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ 4db8e12. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ 122da6a. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -15,21 +15,20 @@ belong upstream.
 -->
 # UiPath Case Management — TypeScript Builder SDK
 
-Author a Case plan as TypeScript and compile it to schema V30 `caseplan.json`.
-The builder declares stages, tasks, conditions, variables, and triggers; a Case
-plan has no control-flow edges.
+Author a Case plan as TypeScript and compile it to schema V30 `caseplan.json`; a Case plan declares stages and conditions, not control-flow edges.
 
-Use this file as a router. Read only the reference named by the capability you
-need, then let TypeScript and `case check` provide the detailed contract.
+Use this as a router: read only the capability reference you need, then let TypeScript and `case check` provide the detailed contract.
 
 ## Workflow
 
-1. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
-2. Import from `@uipath/flow-sdk/case` and default-export a chain ending in `.build()`.
-3. Start from the closest staged `examples/*.case.ts` and change only the scenario data.
-4. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
-5. Compile into the scaffolded Case project, then run `uip maestro case validate`.
-6. Run live debug only when the task requires runtime evidence and provides tenant resources.
+1. Scaffold with `uip solution init <SolutionName>`, then run `uip maestro case init <CaseName>` inside it. Scaffold once: exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates. If a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
+2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
+3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
+4. Import from `@uipath/flow-sdk/case`; default-export a chain ending in `.build()`.
+5. Start from the closest staged `examples/*.case.ts`; change only scenario data.
+6. Run `uip maestro case check <Name>.case.ts --source` after each structural change.
+7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
+8. Run live debug only when requested and tenant resources are available.
 
 ## Capability router
 
@@ -39,7 +38,7 @@ need, then let TypeScript and `case check` provide the detailed contract.
 | Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](references/api.md#casebuilder-class) | `examples/IntakeBinding.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](references/api.md#rule-function) | `examples/ClaimReviewSLA.case.ts` |
-| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess` | [TaskBuilder](references/api.md#taskbuilder-class) | `examples/ClaimReviewSLA.case.ts` |
+| Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](references/api.md#taskbuilder-class) | `examples/ClaimReviewSLA.case.ts` |
 | Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
@@ -82,15 +81,21 @@ export default casePlan('loan-approval')
 uip maestro case check <Name>.case.ts --source
 uip maestro case compile <Name>.case.ts -o <project>/caseplan.json
 uip maestro case validate <project>/caseplan.json --output json
+uip solution resources remove <orphan-key> --solution-folder <solution> --output json
+uip solution resources refresh --solution-folder <solution> --output json
 ```
 
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
 
+Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
+API workflow, or sub-case; never fabricate a name or folder. A destination's
+`selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
+
 ## Evidence boundary
 
-Static success proves the source and artifact contracts. It does not prove live
-resource resolution, human outcomes, timers, skipped-task completion behavior,
-or business-calendar semantics. Read [Case runtime decisions](references/case-runtime.md)
-when one of those affects the requested outcome.
+Static success proves the source and artifact contracts. It proves neither live
+behavior (resource resolution, human outcomes, timers, skipped-task completion,
+business calendars) nor the design decisions no schema checks: lane routing,
+non-completing exits, declared optionality, SDD fidelity. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.

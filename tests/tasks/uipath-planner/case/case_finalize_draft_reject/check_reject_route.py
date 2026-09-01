@@ -4,7 +4,7 @@
 The staged draft authors the Application Rejected lane as `user-selected-stage`
 while its Requirements say rejection follows automatically from the Reviewer
 Decision. `user-selected-stage` is the picker rule, not a deterministic route
-(references/case-design-layers-guide.md § Layer closure — blocking checks 2/3 (lane entry + producer)), so
+(references/case/case-design-layers-guide.md § Layer closure — blocking checks 2/3 (lane entry + producer)), so
 finalization must re-key the lane on the decision fact and add the origin's
 gated diverting exit plus a mutually-exclusive completion gate.
 
@@ -19,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from _shared.entry_rule_check import (  # noqa: E402
     column,
@@ -83,7 +83,7 @@ def main() -> None:
             fail(
                 f"{LANE!r} is entered by user-selected-stage, but rejection is deterministic from "
                 "the Reviewer Decision — a picker rule cannot carry a decision route "
-                "(references/case-design-layers-guide.md § Layer closure — blocking check 2)"
+                "(references/case/case-design-layers-guide.md § Layer closure — blocking check 2)"
             )
 
         keyed = [

@@ -268,10 +268,10 @@ jobs:
         run: |
           set -euo pipefail
           case "$AGENT" in
-            codex)        pkgs=("coder-eval[codex]==$CE_VERSION") ;;
-            antigravity)  pkgs=("coder-eval[antigravity]==$CE_VERSION") ;;
-            delegate-sdk) pkgs=("coder-eval==$CE_VERSION" ./coder_eval_uipath) ;;
-            *)            pkgs=("coder-eval==$CE_VERSION") ;;
+            codex)        pkgs=("coder-eval[codex,litellm]==$CE_VERSION") ;;
+            antigravity)  pkgs=("coder-eval[antigravity,litellm]==$CE_VERSION") ;;
+            delegate-sdk) pkgs=("coder-eval[litellm]==$CE_VERSION" ./coder_eval_uipath) ;;
+            *)            pkgs=("coder-eval[litellm]==$CE_VERSION") ;;
           esac
           uv pip install --system "${pkgs[@]}"
           python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
@@ -631,13 +631,13 @@ jobs:
           # in-process reason — the docker path bakes it into the agent image.
           case "$AGENT" in
             codex)
-              uv pip install --system "coder-eval==$CE_VERSION"
+              uv pip install --system "coder-eval[litellm]==$CE_VERSION"
               uv pip install --system --prerelease=allow --index-strategy unsafe-best-match \
                 "openai-codex==0.1.0b3"
               ;;
-            antigravity)  uv pip install --system "coder-eval[antigravity]==$CE_VERSION" ;;
-            delegate-sdk) uv pip install --system "coder-eval==$CE_VERSION" ./coder_eval_uipath ;;
-            *)            uv pip install --system "coder-eval==$CE_VERSION" ;;
+            antigravity)  uv pip install --system "coder-eval[antigravity,litellm]==$CE_VERSION" ;;
+            delegate-sdk) uv pip install --system "coder-eval[litellm]==$CE_VERSION" ./coder_eval_uipath ;;
+            *)            uv pip install --system "coder-eval[litellm]==$CE_VERSION" ;;
           esac
           python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
 
