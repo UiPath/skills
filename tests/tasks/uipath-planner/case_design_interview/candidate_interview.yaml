@@ -142,6 +142,17 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
 
+  - type: run_command
+    description: >
+      generated SDD is mechanically sound — variable lineage closes, every =vars reference
+      resolves, per-gate rule legality holds, task types are in the closed enum, and every
+      stage has legal entry/exit conditions. Substring checks cannot see any of this.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
 simulation:
   enabled: true
   persona: |
