@@ -87,7 +87,7 @@ success_criteria:
     # budget (measured: 2 of 3 codex runs raised subprocess.TimeoutExpired), so
     # the criterion was scoring 0 on runner latency rather than on the flow.
     # 660 leaves headroom over the checker's own 600s run_debug timeout.
-    timeout: 660
+    timeout: 1320
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
