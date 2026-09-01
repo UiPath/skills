@@ -676,7 +676,11 @@ jobs:
       # the evalboard blob.
       - name: Run coder-eval
         id: eval
-        uses: UiPath/coder_eval@v0
+        # TEMPORARY: pinned to the PR-147 head so this workflow can be validated
+        # against the eight-input action BEFORE that PR merges and Release moves
+        # `v0`. Revert to `@v0` before merging — the v0 tag still serves the old
+        # ten-input action, which would silently ignore every input below.
+        uses: UiPath/coder_eval@a747ce353111beadd51a6370b9e8e2dba88f4133  # bai/action-inputs-and-gha-source
         with:
           version: ${{ needs.partition.outputs.coder_eval_version }}
           working-directory: tests
