@@ -14,11 +14,6 @@ Two jobs, one entry point:
 
 Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live tasks — implementation always routes to a specialist.
 
-**A design you author is gated before you stop — drafts included (Case Design Lane only; draft FINALIZATION already has its own gate at the lane guide's § Terminal step, so never add a second pass there).** After writing an SDD or
-a draft, run `python3 "<this skill's folder>/scripts/audit_sdd.py" <the file you wrote>`, then repair its findings. Repair in ONE pass, working from the findings' own line numbers — do NOT re-read the whole document between edits, and do not re-derive the design. Anything still open after that single pass becomes a Review Flags row and you STOP: a draft with a noted flag is a better outcome than a turn that never returns. Never spend more than a few edits here. Writing the file is not the end of the turn; the
-gate passing is. A design that stops un-gated ships undeclared `=vars` and illegal selectors into
-every later phase.
-
 **Paths in this skill are already known — never search for them.** Every `references/…`,
 `assets/…`, and `scripts/…` path below is relative to this skill's own directory, which you
 were given when this skill was invoked: join the two and `Read` the file directly. Do NOT

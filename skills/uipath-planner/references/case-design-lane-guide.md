@@ -207,29 +207,15 @@ On the accept answer: write the SDD to disk in batches, gate it, flip it. The mo
 | Mode | File | After the write |
 |---|---|---|
 | Build handoff (`uipath-maestro-case` asked for a build, no `sdd.md`) | `sdd.md` at the working root — NEVER overwrite an existing one; abort and surface it | Do NOT stop. The Build answer already carried consent: the build's phases start immediately in this conversation (`uip solution init` + its Phase 1, verifying the resolved identities instead of re-discovering them) |
-| Direct design (design/generate a case SDD, greenfield, no PDD) | `<CASE_NAME_KEBAB>-sdd.md` | **Run the gate below, repair its findings, THEN** STOP — the write is a turn boundary; `## Next Steps` points at Lane A or `uipath-maestro-case` for a later, opt-in turn |
-| Draft request (user asked for a reviewable draft and to stop) | `sdd.draft.md`, or `<name>-sdd.draft.md` when the request names the file | **Run the gate below on the draft, repair its findings, THEN** STOP. Never promote a draft |
+| Direct design (design/generate a case SDD, greenfield, no PDD) | `<CASE_NAME_KEBAB>-sdd.md` | STOP — the write is a turn boundary; `## Next Steps` points at Lane A or `uipath-maestro-case` for a later, opt-in turn |
+| Draft request (user asked for a reviewable draft and to stop) | `sdd.draft.md`, or `<name>-sdd.draft.md` when the request names the file | STOP. Never promote a draft |
 | Draft finalization (a `sdd.draft.md` exists, user asks to finalize) | the draft's basename minus `.draft` | STOP. §Resumption owns the procedure; the draft stays on disk beside the final |
 | PDD-driven case (a PDD routed to Phase D, scope picked Case Management) | the standard Phase D output path ([sdd-generation-guide.md](sdd-generation-guide.md)) | Standard Phase D flow — the case body still obeys the layers guide and the template |
 
 Never write `sdd.md` AND `<case>-sdd.md` for the same design. Report the path in one line.
 
-**Gate the file you just wrote before you stop — a draft is NOT exempt.**
-
-```bash
-python3 "<skill folder>/scripts/audit_sdd.py" <the file you just wrote>
-```
-
-`<skill folder>` is this skill's directory, given at invocation — substitute it; never `ls`/`find`
-for it, and never read the script. Repair in ONE pass from the findings' line numbers — do not
-re-read the whole document between edits and do not re-derive the design — then stop and surface
-anything still open as a Review Flags row. A noted flag beats a turn that never returns. The gate's mapping, marker and selector checks apply to a draft exactly as
-they do to a finalized SDD — only the `--draft` inventory comparison waits for a finalized file. A
-draft that stops with undeclared `=vars`, a backtick-wrapped `<UNRESOLVED>`, or a
-`selected-tasks-completed` selector pointing at an adhoc task hands every one of those defects to
-the finalization and build that follow.
-
 **Free-text corrections stay first-class after the terminal step:** treat one as a targeted edit to the affected artifact (model + file + downstream), narrate it in one line, continue.
+
 
 ## Resolution ledger
 
