@@ -200,7 +200,11 @@ Mechanized by `audit_sdd.py` — the template's § Validation footer is the cont
 On the accept answer: write the SDD to disk in batches, gate it, flip it. The mode decides only the filename and whether the turn ends.
 
 1. **Seed Write, then Edit-append per section.** Seed Write: title + `## Document History` + the Planner Handoff header stamped `Status: draft`, `Template validation: pending` + `## Table of Contents`. Then Edit-append in template order — Section 1 → Section 2 one stage block at a time (every primary and secondary stage in source order) → Section 3 → Section 4 → `## Next Steps` — composing each section just before its append, not the whole document up front; no re-Read between sibling appends. The partial file on disk is the recovery point for a mid-turn failure or compaction (§Failure modes). Never `cp`/`mv`/`rsync` an artifact into place.
-2. **Gate the written file:** run the §Template conformance gate (`audit_sdd.py`). Repair findings with targeted Edits and re-run — max 3 rounds, then stop and present what remains. One structural Read is allowed here.
+2. **Gate the written file — RUN this command, citing the gate is not running it:**
+
+       python3 "<skill folder>/scripts/case/audit_sdd.py" <the file you just wrote>
+
+   Repair findings with targeted Edits and re-run — max 3 rounds, then stop and present what remains. One structural Read is allowed here. **The turn is NOT over while the gate reports `AUDIT FAIL`** — writing the file is not the terminal step; a gated file is. This applies to a draft exactly as it does to `sdd.md`.
 3. **Ready flip is the LAST Edit:** `Status: ready`, `Template validation: passed`. Drafts keep `Status: draft`. An interrupted run leaves a resumable `draft` on disk.
 4. **Filename by mode** — a user-specified output path always wins:
 
