@@ -438,12 +438,14 @@ Verify the agent ran a specific CLI command (matched by regex). From `init_valid
   pass_threshold: 1.0   # fraction of min_count required to pass
 ```
 
-**Scope lookaheads and excludes to ONE command segment.** The grader runs one `pattern.search()` per Bash tool call (`re.DOTALL`) and also matches a normalized haystack with newlines collapsed to spaces — so `(?=[\s\S]*--flag)` and `exclude_pattern` see every command batched into that call (codex chains `a && b` or stacks lines; a call-wide exclude then vetoes a correct command). Use the segment idiom `S = (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*` ("rest of THIS command", stops at newline, `&&`, `||`, `;`, `|`, or the next `uip`) and inline negatives instead of `exclude_pattern`:
+**Scope lookaheads and excludes to ONE command segment.** The grader runs one `pattern.search()` per Bash tool call (`re.DOTALL`) and also matches a shlex-normalized haystack — so `(?=[\s\S]*--flag)` and `exclude_pattern` see every command batched into that call (codex chains `a && b` or stacks lines; a call-wide exclude then vetoes a correct command). Use the segment idiom `S = (?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*` ("rest of THIS command", stops at `&&`, `||`, `;`, `|`, or the next `uip`) and inline negatives instead of `exclude_pattern`:
 
 ```yaml
 # S expanded inline — YAML single quotes, no escaping needed
-command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)'
+command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?=(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--span-id)(?!(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--agent-id)'
 ```
+
+**Do NOT put `\n` in that stop list.** Normalization does not collapse a backslash line continuation: `shlex.split` re-emits `\` + newline as a literal `'\n'` token, and the join puts it back as a bare newline. So both haystacks keep the line break, a guard that stops at any newline dies there, and every backslash-continued command scores 0 — which is how most agents write a long `uip` call. `\s(?:uip|\$UIP)\s` is what actually separates stacked commands; the newline term adds no scoping and only breaks continuations. `tests/scripts/test_command_pattern_segment_guard.py` replays a 7-control matrix through a copy of the grader and fails red if the term comes back.
 
 ### `file_exists`
 
