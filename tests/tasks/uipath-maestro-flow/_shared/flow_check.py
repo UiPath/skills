@@ -254,13 +254,16 @@ def run_debug(
             f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the subprocess "
             "cap could not outlive it; raise `timeout`"
         )
-    if budget < _MIN_RETRY_BUDGET_SECONDS:
+    # Floored at the CLI minimum, not at _MIN_RETRY_BUDGET_SECONDS: that is the
+    # threshold for funding ANOTHER attempt, and `retries=1` never wants one.
+    if budget <= _MIN_CLI_TIMEOUT_SECONDS:
         _fail(
-            f"run_debug budget of {budget}s is below the {_MIN_RETRY_BUDGET_SECONDS}s "
-            "floor (the CLI timeout minimum plus its headroom); "
+            f"run_debug budget of {budget}s is at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum; "
             + ("raise `timeout`" if derived else "raise `budget`, or omit it so "
                "debug_budget(timeout, ...) derives the deadline")
         )
+
     deadline = time.monotonic() + budget
     out_of_budget = False
 

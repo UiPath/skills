@@ -29,6 +29,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro
 from _shared.flow_check import collect_outputs, get_last_debug_raw, run_debug  # noqa: E402
 import jira_is  # noqa: E402
 
+# A malformed flow can emit any number of issue keys, and each probe is a
+# 120s CLI call. Bounded so the criterion's `budget-guard: overhead`
+# annotation stays true whatever the agent produced.
+MAX_ISSUE_PROBES = 2
+
 JIRA_KEY = "uipath-atlassian-jira"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 
@@ -55,7 +60,7 @@ def main() -> None:
     project = seed["project_key"]
     cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
     cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")
-    cands = list(dict.fromkeys(cands))  # de-dup, keep order
+    cands = list(dict.fromkeys(cands))[:MAX_ISSUE_PROBES]  # de-dup, keep order, bound probes
     if not cands:
         _fail(f"no issue key (e.g. {project}-123) in flow debug outputs")
     print(f"OK: candidate keys from debug: {cands}")

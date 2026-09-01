@@ -559,6 +559,18 @@ def test_criterion_clears_the_debug_budget(
             "Annotate the timeout with `# budget-guard: overhead <seconds>` for "
             "the success path's worth and the guard will fund it."
         )
+    if nondebug and overhead is not None:
+        # Weak but non-zero corroboration: the declared total must be whole
+        # calls at the price the code actually uses. Catches a typo or a number
+        # picked out of the air; the call COUNT still comes from the bound the
+        # checker enforces (MAX_ISSUE_PROBES and friends).
+        unit = min(sec for _m, _ln, sec in nondebug)
+        if overhead < unit or overhead % unit:
+            pytest.fail(
+                f"{yaml_path}: {where} declares `overhead {overhead}`, which is "
+                f"not a whole number of {unit}s calls. Its bounded work costs "
+                f"{unit}s a call, so the declaration should be a multiple of it."
+            )
     if overhead is not None and not nondebug:
         pytest.fail(
             f"{yaml_path}: {where} does no bounded work outside run_debug, so "
@@ -943,3 +955,12 @@ def test_overhead_annotation_parses_off_the_timeout_line():
     line = "    timeout: 1800  # budget-guard: overhead 480. connection_id (2) + 2 reads"
     assert int(_OVERHEAD_MARKER.search(line).group(1)) == 480
     assert _OVERHEAD_MARKER.search("    timeout: 1800  # nothing declared") is None
+
+
+def test_overhead_must_be_whole_calls():
+    """A number picked out of the air is not a bound. It has to be whole calls
+    at the price the code uses; the COUNT comes from the checker's own cap."""
+    unit = 120
+    for declared, ok in ((480, True), (600, True), (500, False), (60, False)):
+        whole = declared >= unit and not declared % unit
+        assert whole is ok, declared

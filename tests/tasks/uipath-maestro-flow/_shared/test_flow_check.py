@@ -984,9 +984,18 @@ def test_budget_below_the_cli_floor_is_rejected(monkeypatch):
     """A budget under the floor hands the subprocess a smaller cap than the
     CLI's own `--timeout`: the #2776 SIGKILL, rebuilt from the other side."""
     calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
-    with pytest.raises(SystemExit, match="below the 90s floor"):
+    with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
         run_debug(timeout=240, budget=25)
     assert calls["n"] == 0  # rejected before spawning anything
+
+
+def test_retries_1_below_the_retry_threshold_is_allowed(monkeypatch):
+    """`_MIN_RETRY_BUDGET_SECONDS` funds ANOTHER attempt, so flooring the total
+    against it rejected `retries=1` budgets that only ever need one."""
+    assert debug_budget(45, retries=1) < flow_check._MIN_RETRY_BUDGET_SECONDS
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(timeout=45, retries=1)
+    assert calls["caps"] == [45]
 
 
 def test_run_debug_refuses_a_retry_it_cannot_fund(monkeypatch):
