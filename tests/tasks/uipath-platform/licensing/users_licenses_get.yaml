@@ -40,8 +40,9 @@ initial_prompt: |
     environment. Commands may fail with auth errors — that is expected. Run
     each command once and move on. Do NOT retry or attempt to login.
   - If the CLI fails, still resolve the most common user-bundle name → code
-    mappings from the UiPath docs license-codes page so you can demonstrate
-    the required reporting format.
+    mappings from the UiPath docs license-codes page, and list them in
+    `bundles.md` in the same friendly-name-plus-code form, so the reporting
+    format is demonstrated whether or not the lookup returns bundles.
   - Use `--output json` on every uip command.
 
 success_criteria:
