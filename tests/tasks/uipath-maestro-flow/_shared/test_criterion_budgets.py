@@ -32,17 +32,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import flow_check  # noqa: E402
 
 _SUITE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_RUN_COMMAND_SPLIT = re.compile(r"\n\s*-\s+type:\s*run_command")
+# Split on ANY criterion so a block ends at its neighbour, and stop at the next
+# top-level KEY (not any column-0 char — comments live there too). Both anchored:
+# an unanchored `timeout:` matches inside `turn_timeout:` and `task_timeout:`.
+_CRITERION_SPLIT = re.compile(r"\n\s*-\s+type:\s*")
+_TOP_LEVEL_KEY = re.compile(r"^[A-Za-z_][\w-]*:", re.M)
 _COMMAND = re.compile(r'command:\s*"?([^"\n]+)')
-_TIMEOUT = re.compile(r"timeout:\s*(\d+)")
+_TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
-# Anchored so it cannot match `turn_timeout:` / `task_timeout:`.
-_ANY_COMMAND_TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
 # Only these timeouts run inside the watchdog.
 _SUCCESS_CRITERIA = re.compile(
-    r"^success_criteria:\n(.*?)(?=^\S|\Z)", re.M | re.S
+    r"^success_criteria:\n(.*?)(?=^[A-Za-z_][\w-]*:|\Z)", re.M | re.S
 )
+# coder_eval/models/criteria.py:185 — a criterion that declares none still costs
+# this, so counting it as 0 under-charges the grading sum.
+_DEFAULT_CRITERION_TIMEOUT = 30
 # `xN` is required: an unverified annotation is just a comment.
 _MANUAL_MARKER = re.compile(r"#\s*budget-guard:\s*manual(?:\s*x\s*(\d+))?")
 
@@ -329,6 +334,22 @@ def _inherited_task_timeout() -> int:
     return int(found.group(1))
 
 
+def _criterion_blocks(text: str, kind: str | None = None):
+    """Each criterion's own text, cut at its neighbour or the next top-level key.
+    The leading newline lets a body that starts at its first item split like a
+    whole file does."""
+    for block in _CRITERION_SPLIT.split("\n" + text)[1:]:
+        stop = _TOP_LEVEL_KEY.search(block)
+        block = block[: stop.start()] if stop else block
+        if kind is None or block.startswith(kind):
+            yield block
+
+
+def _criterion_seconds(block: str) -> int:
+    found = _TIMEOUT.search(block)
+    return int(found.group(1)) if found else _DEFAULT_CRITERION_TIMEOUT
+
+
 def _task_budgets():
     """(yaml, effective task_timeout, worst-case grading) per task.
 
@@ -348,7 +369,10 @@ def _task_budgets():
             yield (
                 os.path.relpath(path, _SUITE_ROOT),
                 int(declared.group(1)) if declared else inherited,
-                sum(int(m) for m in _ANY_COMMAND_TIMEOUT.findall(criteria.group(1))),
+                sum(
+                    _criterion_seconds(b)
+                    for b in _criterion_blocks(criteria.group(1))
+                ),
             )
 
 
@@ -362,7 +386,7 @@ def _criteria():
                 continue
             path = os.path.join(root, name)
             text = open(path).read()
-            for block in _RUN_COMMAND_SPLIT.split(text)[1:]:
+            for block in _criterion_blocks(text, "run_command"):
                 command = _COMMAND.search(block)
                 if not command:
                     continue
@@ -375,14 +399,13 @@ def _criteria():
                 timeout_line = next(
                     (ln for ln in block.split("\n") if _TIMEOUT.search(ln)), ""
                 )
-                found = _TIMEOUT.search(timeout_line)
                 marker = _MANUAL_MARKER.search(timeout_line)
                 parts = command.group(1).split()
                 yield (
                     os.path.relpath(path, _SUITE_ROOT),
                     resolved,
                     parts[-1] if parts[-1].isidentifier() else None,
-                    int(found.group(1)) if found else None,
+                    _criterion_seconds(block),
                     # "" marks a marker with no count, distinct from no marker.
                     (marker.group(1) or "") if marker else None,
                 )
@@ -700,6 +723,26 @@ def test_annotation_policy(price, declared, seeded, expected):
 # and broke on smoke.yaml, where the two are equal.
 
 
+def _grading_of(text: str) -> int:
+    """Worst-case grading seconds for a task YAML's success_criteria."""
+    body = _SUCCESS_CRITERIA.search(text)
+    return sum(_criterion_seconds(b) for b in _criterion_blocks(body.group(1))) if body else 0
+
+
+def _task_budget_error(task_timeout: int, grading: int) -> str | None:
+    """Why this task can never complete, or None. Pure, so the fixtures below
+    exercise the same rule the suite is held to instead of restating it."""
+    if task_timeout > grading:
+        return None
+    return (
+        f"worst-case grading is {grading}s against a task_timeout of "
+        f"{task_timeout}s, so the watchdog can fire before grading finishes no "
+        "matter how fast the agent is. It SIGKILLs the run and reports TIMEOUT, "
+        f"losing every criterion. Raise task_timeout well above {grading}s (the "
+        "agent needs the remainder), or lower the criterion timeouts."
+    )
+
+
 _TASK_BUDGETS = sorted(_task_budgets())
 
 
@@ -716,66 +759,76 @@ def test_every_task_with_criteria_was_discovered():
     ids=[y for y, _t, _g in _TASK_BUDGETS],
 )
 def test_grading_alone_fits_the_task_timeout(yaml_path, task_timeout, grading):
-    assert task_timeout > grading, (
-        f"{yaml_path}: worst-case grading is {grading}s against a task_timeout "
-        f"of {task_timeout}s, so the watchdog can fire before grading finishes "
-        "no matter how fast the agent is. It SIGKILLs the run and reports "
-        "TIMEOUT, losing every criterion. Raise task_timeout well above "
-        f"{grading}s (the agent needs the remainder), or lower the criterion "
-        "timeouts."
-    )
+    problem = _task_budget_error(task_timeout, grading)
+    assert problem is None, f"{yaml_path}: {problem}"
+
+
+def _fixture(tmp_path, body: str) -> str:
+    path = tmp_path / "x.yaml"
+    path.write_text(body)
+    return path.read_text()
 
 
 def test_impossible_task_is_rejected(tmp_path):
     """Grading alone at or above the cap: no agent run fits."""
-    yaml = tmp_path / "x.yaml"
-    yaml.write_text(
+    text = _fixture(
+        tmp_path,
         "run_limits:\n  turn_timeout: 900\n  task_timeout: 600\n\n"
-        "success_criteria:\n  - type: run_command\n    timeout: 600\n"
+        "success_criteria:\n  - type: run_command\n    timeout: 600\n",
     )
-    text = yaml.read_text()
-    grading = sum(
-        int(m)
-        for m in _ANY_COMMAND_TIMEOUT.findall(_SUCCESS_CRITERIA.search(text).group(1))
-    )
-    assert grading == 600
-    assert int(_TASK_TIMEOUT.search(text).group(1)) <= grading  # the rejected shape
+    assert _grading_of(text) == 600
+    assert _task_budget_error(600, _grading_of(text))
 
 
 def test_smoke_shaped_task_is_not_flagged(tmp_path):
     """smoke.yaml has task_timeout == turn_timeout, which the earlier
     `grading + turn_timeout` draft made impossible. The floor must accept it."""
-    yaml = tmp_path / "x.yaml"
-    yaml.write_text(
+    text = _fixture(
+        tmp_path,
         "run_limits:\n  turn_timeout: 900\n  task_timeout: 900\n\n"
-        "success_criteria:\n  - type: run_command\n    timeout: 210\n"
+        "success_criteria:\n  - type: run_command\n    timeout: 210\n",
     )
-    text = yaml.read_text()
-    grading = sum(
-        int(m)
-        for m in _ANY_COMMAND_TIMEOUT.findall(_SUCCESS_CRITERIA.search(text).group(1))
-    )
-    assert int(_TASK_TIMEOUT.search(text).group(1)) > grading
+    assert _task_budget_error(900, _grading_of(text)) is None
 
 
 def test_grading_excludes_pre_and_post_run(tmp_path):
     """Both run outside the watchdog (orchestrator.py 468 / 579 vs 484-499)."""
-    yaml = tmp_path / "x.yaml"
-    yaml.write_text(
+    text = _fixture(
+        tmp_path,
         "pre_run:\n  - command: seed\n    timeout: 500\n\n"
         "success_criteria:\n  - type: run_command\n    timeout: 60\n\n"
-        "post_run:\n  - command: cleanup\n    timeout: 400\n"
+        "post_run:\n  - command: cleanup\n    timeout: 400\n",
     )
-    body = _SUCCESS_CRITERIA.search(yaml.read_text()).group(1)
-    assert _ANY_COMMAND_TIMEOUT.findall(body) == ["60"]
+    assert _grading_of(text) == 60
 
 
 def test_grading_scan_ignores_the_limit_keys_themselves(tmp_path):
-    """`turn_timeout:` / `task_timeout:` are not command time."""
-    yaml = tmp_path / "x.yaml"
-    yaml.write_text(
-        "run_limits:\n  turn_timeout: 900\n  task_timeout: 1200\n\n"
-        "success_criteria:\n  - type: run_command\n    timeout: 60\n"
+    """An unanchored `timeout:` matches inside `turn_timeout:`/`task_timeout:`."""
+    text = _fixture(
+        tmp_path,
+        "success_criteria:\n  - type: run_command\n"
+        "    turn_timeout: 900\n    task_timeout: 1200\n    timeout: 60\n",
     )
-    body = _SUCCESS_CRITERIA.search(yaml.read_text()).group(1)
-    assert _ANY_COMMAND_TIMEOUT.findall(body) == ["60"]
+    assert _grading_of(text) == 60
+
+
+def test_criterion_without_a_timeout_costs_the_coder_eval_default(tmp_path):
+    """Counting it as 0 under-charged; coder_eval defaults it to 30s."""
+    text = _fixture(
+        tmp_path,
+        "success_criteria:\n  - type: run_command\n    command: a\n"
+        "  - type: run_command\n    command: b\n    timeout: 100\n",
+    )
+    assert _grading_of(text) == _DEFAULT_CRITERION_TIMEOUT + 100
+
+
+def test_a_criterion_cannot_borrow_its_neighbours_timeout(tmp_path):
+    """Blocks end at the next criterion, so a missing timeout is the default and
+    never a number lifted from the item below it."""
+    text = _fixture(
+        tmp_path,
+        "success_criteria:\n  - type: run_command\n    command: a\n"
+        "  - type: run_command\n    command: b\n    timeout: 900\n",
+    )
+    first = next(_criterion_blocks(text, "run_command"))
+    assert _criterion_seconds(first) == _DEFAULT_CRITERION_TIMEOUT
