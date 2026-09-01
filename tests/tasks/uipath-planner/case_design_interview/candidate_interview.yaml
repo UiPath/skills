@@ -135,9 +135,12 @@ success_criteria:
       Judge:
       - Stage order is sensible for hiring (Application Received → Recruiter
         Screen → Technical Screen → Onsite Loop → Debrief → Offer → Hired).
-      - Task types fit the work (ATS sync, recruiter/HM screens, coding exercise,
-        interview scorecards, debrief decision, comp/offer, offer letter via
-        DocuSign, Workday HRIS handoff at Hired).
+      - The tasks that ARE present use types fitting their work. The parenthetical
+        here — ATS sync, recruiter/HM screens, coding exercise, interview scorecards,
+        debrief decision, comp/offer, offer letter via DocuSign, Workday HRIS handoff
+        — lists EXAMPLES of this domain, not an inventory the design must contain. At
+        about two tasks per stage a seven-stage design cannot hold all of them; a
+        missing example is not a defect, a present task carrying the wrong type is.
       - The 3 exception lanes (Rejected, Withdrawn, On Hold) are entered by a
         sensible trigger and correctly terminal (Rejected / Withdrawn) or
         resumable (On Hold).

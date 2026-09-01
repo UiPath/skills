@@ -120,9 +120,12 @@ success_criteria:
       Judge:
       - Stage order is sensible for loan origination (Intake → Loan Setup →
         Underwriting → QA/QC → Closing → Resolved).
-      - Task types fit the work (credit pulls, eligibility, appraisal, UCC/title,
-        financial analysis, credit memo, compliance, closing docs, recording,
-        disbursement).
+      - The tasks that ARE present use types fitting their work. The parenthetical
+        here — credit pulls, eligibility, appraisal, UCC/title, financial analysis,
+        credit memo, compliance, closing docs, recording, disbursement — lists
+        EXAMPLES of this domain, not an inventory the design must contain. At about
+        two tasks per stage a six-stage design cannot hold all ten; a missing example
+        is not a defect, a present task carrying the wrong type is.
       - The 4 exception lanes (Customer Comms, Escalation, Withdrawn, Rejected)
         are entered by a sensible trigger and correctly terminal (Withdrawn /
         Rejected) or returning (Escalation / Customer Comms).
