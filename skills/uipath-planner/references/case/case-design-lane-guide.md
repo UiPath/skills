@@ -8,9 +8,9 @@ Case knowledge is split three ways. Read all three to begin, in parallel, **at m
 |---|---|
 | this file | the conversation: entry, tenant grounding, authoring policy, the one confirmation, the write |
 | [case-design-layers-guide.md](case-design-layers-guide.md) | the case model and every design **Default** — skeleton, gates, data, SLAs, naming, the closure checklist |
-| [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
+| [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
 
-That is the COMPLETE design reading set. NEVER read `scripts/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (tasks.md, caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
+That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (tasks.md, caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
 
 **Draft finalization reads less (hard):** this file's §Resumption + §Terminal step, `sdd.draft.md`, and the template (its validation footer is the gate) — once each. NOT the layers guide: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists.
 
@@ -106,7 +106,7 @@ When the user mentions `file`, `attachment`, `PDF`, `upload`, `evidence`, `recei
 
 ### Sketch — best assumption, every field
 
-Fill the complete SDD shape against [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) from what Listen captured. Every open field takes the **Default** stated in its layer ([case-design-layers-guide.md](case-design-layers-guide.md)) — decided and disclosed, never asked. Platform schema and compliance constraints override user phrasing (§Authoring policy): apply silently, then surface as a decision line.
+Fill the complete SDD shape against [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) from what Listen captured. Every open field takes the **Default** stated in its layer ([case-design-layers-guide.md](case-design-layers-guide.md)) — decided and disclosed, never asked. Platform schema and compliance constraints override user phrasing (§Authoring policy): apply silently, then surface as a decision line.
 
 Settle before Confirm: case name, prefix, ≥ 1 trigger, ≥ 1 stage, ≥ 1 typed task per stage, ≥ 1 case exit — by user input or by layer default.
 
@@ -210,7 +210,7 @@ On the accept answer: write the SDD to disk in batches, gate it, flip it. The mo
 | Direct design (design/generate a case SDD, greenfield, no PDD) | `<CASE_NAME_KEBAB>-sdd.md` | STOP — the write is a turn boundary; `## Next Steps` points at Lane A or `uipath-maestro-case` for a later, opt-in turn |
 | Draft request (user asked for a reviewable draft and to stop) | `sdd.draft.md`, or `<name>-sdd.draft.md` when the request names the file | STOP. Never promote a draft |
 | Draft finalization (a `sdd.draft.md` exists, user asks to finalize) | the draft's basename minus `.draft` | STOP. §Resumption owns the procedure; the draft stays on disk beside the final |
-| PDD-driven case (a PDD routed to Phase D, scope picked Case Management) | the standard Phase D output path ([sdd-generation-guide.md](sdd-generation-guide.md)) | Standard Phase D flow — the case body still obeys the layers guide and the template |
+| PDD-driven case (a PDD routed to Phase D, scope picked Case Management) | the standard Phase D output path ([sdd-generation-guide.md](../sdd-generation-guide.md)) | Standard Phase D flow — the case body still obeys the layers guide and the template |
 
 Never write `sdd.md` AND `<case>-sdd.md` for the same design. Report the path in one line.
 
@@ -243,7 +243,7 @@ user-facing** (Resources and Integrations carries every user-relevant outcome).
 
 ## HTML preview
 
-Optional, **on-request only** — never offered proactively. Self-contained local HTML review of the case design (Case Definition, collapsible Stages & Tasks, Personas, Integrations; filters and search). Generation: Read [`assets/templates/sdd-viewer.html`](../assets/templates/sdd-viewer.html), replace the `__SDD_DATA__` token in its `<script id="sdd-data">` block with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse the SDD when the model is live), Write `./sdd-viewer.html`, tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue. Downstream build phases ignore this file.
+Optional, **on-request only** — never offered proactively. Self-contained local HTML review of the case design (Case Definition, collapsible Stages & Tasks, Personas, Integrations; filters and search). Generation: Read [`assets/templates/case/sdd-viewer.html`](../../assets/templates/case/sdd-viewer.html), replace the `__SDD_DATA__` token in its `<script id="sdd-data">` block with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse the SDD when the model is live), Write `./sdd-viewer.html`, tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue. Downstream build phases ignore this file.
 
 ## Resumption
 
@@ -274,7 +274,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 10. Write, gate, flip per §Terminal step (the draft on disk is also a recovery point, so a compaction means re-finalizing from it), then the audit with the draft comparison:
 
     ```bash
-    python3 "<this skill's folder>/scripts/audit_sdd.py" <final SDD path> --draft <draft path>
+    python3 "<this skill's folder>/scripts/case/audit_sdd.py" <final SDD path> --draft <draft path>
     # python3 absent (common on Windows) → retry the same line with `python`, then `py`
     ```
 

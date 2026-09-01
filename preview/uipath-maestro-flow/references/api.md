@@ -29,13 +29,13 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [entryInput](#entryinput-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
 
-**Generated descriptors** — [descriptor](#descriptor-function) · [triggerDescriptor](#triggerdescriptor-function)
+**Generated descriptors** — [ConnectorValue](#connectorvalue-type) · [ConnectorLookupValue](#connectorlookupvalue-type) · [ConnectorMeta](#connectormeta-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [descriptor](#descriptor-function) · [TriggerMeta](#triggermeta-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [triggerDescriptor](#triggerdescriptor-function) · [LookupStrategy](#lookupstrategy-type) · [LookupSpec](#lookupspec-interface) · [LookupToken](#lookuptoken-interface) · [isLookupToken](#islookuptoken-function) · [lookupKey](#lookupkey-function) · [LookupBuilder](#lookupbuilder-type) · [lookup](#lookup-function) · [LookupResolution](#lookupresolution-interface) · [LookupResolutions](#lookupresolutions-type) · [resolvedValue](#resolvedvalue-function) · [unresolvedLookupMessage](#unresolvedlookupmessage-function) · [lookupSpecOf](#lookupspecof-function) · [refuseLookupToken](#refuselookuptoken-function)
 
 **Builders** — [FlowBuilder](#flowbuilder-class) · [StepList](#steplist-class) · [ArmBuilder](#armbuilder-class)
 
 **Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [PublishedFunctionInputs](#publishedfunctioninputs-interface) · [SendMessageInputs](#sendmessageinputs-interface) · [WaitForMessageInputs](#waitformessageinputs-interface) · [ConversationContextInputs](#conversationcontextinputs-interface) · [CreateOutgoingCallInputs](#createoutgoingcallinputs-interface) · [EndCallInputs](#endcallinputs-interface) · [VoiceAgentInputs](#voiceagentinputs-interface) · [ConversationalAgentInputs](#conversationalagentinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
 
-**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [RawReference](#rawreference-type) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -484,7 +484,7 @@ Behavior and worked examples: [queue.md](queue.md).
  * generated descriptor supplies the nodeType and statically-checked input types:
  * `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
  */
-export declare function connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
+export declare function connector<I, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
 
 /**
  * Stringly form, for a connector with no prepared module —
@@ -630,6 +630,58 @@ export declare const types: {
 };
 ````
 
+## ConnectorValue (type)
+
+````ts
+/** What a generated `Inputs` property accepts: the value, or an expression. */
+export type ConnectorValue<T> = Expr | (T extends readonly (infer E)[] ? Array<E | Expr> : T);
+````
+
+## ConnectorLookupValue (type)
+
+````ts
+/** `ConnectorValue` for a field that also accepts an unresolved lookup. */
+export type ConnectorLookupValue<T> = LookupToken | (T extends readonly (infer E)[] ? Array<E | Expr | LookupToken> : T | Expr);
+````
+
+## ConnectorMeta (interface)
+
+````ts
+/** Runtime metadata a generated descriptor carries. `nodeType` is `uipath.connector.<key>.<action>` (no `@version`). */
+export interface ConnectorMeta {
+    nodeType: string;
+    version?: string;
+    requiresConnection?: boolean;
+    requiresFolderKey?: boolean;
+    /**
+     * Which OBJECT this descriptor addresses, for a **generic** operation whose
+     * nodeType covers many (`…netsuite.get-record` covers 182). Baked in by the
+     * generator so `connector(D, …)` needs no `{ object }`; an explicit
+     * `{ object }` still wins.
+     */
+    objectName?: string;
+    /**
+     * The operation's resolvable lookup fields, keyed by field name — generated
+     * from each input's `reference` block. Absent when the operation has none.
+     */
+    lookups?: Readonly<Record<string, LookupSpec>>;
+}
+````
+
+## ConnectorDescriptor (type)
+
+````ts
+/**
+ * A generated, typed connector descriptor: `ConnectorMeta` branded with
+ * phantom input/output types. `__inputs`/`__outputs` never materialize at
+ * runtime — they exist only so `connector(descriptor, inputs)` can infer types.
+ */
+export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
+    readonly __inputs?: I;
+    readonly __outputs?: O;
+};
+````
+
 ## descriptor (function)
 
 ````ts
@@ -639,7 +691,39 @@ export declare const types: {
  * Curried so the generator names `I`/`O` explicitly while TS still narrows the
  * literal (`nodeType`, flags) from `as const`.
  */
-export declare function descriptor<I = Record<string, unknown>, O = Record<string, unknown>>(): <const D extends ConnectorMeta>(d: D) => D & ConnectorDescriptor<I, O>;
+export declare function descriptor<I = Record<string, unknown>, O = Record<string, unknown>>(): <const D extends ConnectorMeta>(d: D) => D & {
+    readonly __inputs?: I;
+    readonly __outputs?: O;
+};
+````
+
+## TriggerMeta (interface)
+
+````ts
+/** Runtime metadata a generated trigger descriptor carries. */
+export interface TriggerMeta {
+    /** Connector key, e.g. `'uipath-atlassian-jira'`. */
+    connector: string;
+    /** Curated event id, e.g. `'issue-created'` (the last segment of the nodeType). */
+    event: string;
+    version?: string;
+    /** Human label from the registry catalog, e.g. `'Issue Created'` (docs only). */
+    displayName?: string;
+}
+````
+
+## TriggerDescriptor (type)
+
+````ts
+/**
+ * A generated, typed connector-trigger descriptor: `TriggerMeta` branded
+ * with phantom `where`/output types. Offline both are loose; a connection-scoped
+ * generator can narrow them. `__where`/`__output` never materialize at runtime.
+ */
+export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
+    readonly __where?: W;
+    readonly __output?: O;
+};
 ````
 
 ## triggerDescriptor (function)
@@ -651,6 +735,143 @@ export declare function descriptor<I = Record<string, unknown>, O = Record<strin
  * generator names `W`/`O` explicitly while TS narrows the literal.
  */
 export declare function triggerDescriptor<W = Record<string, string>, O = Record<string, unknown>>(): <const D extends TriggerMeta>(d: D) => D & TriggerDescriptor<W, O>;
+````
+
+## LookupStrategy (type)
+
+````ts
+/** How `prepare` should retrieve the collection, chosen from the metadata. */
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
+````
+
+## LookupSpec (interface)
+
+````ts
+/** One lookup field's retrieval contract, generated from `reference`. */
+export interface LookupSpec {
+    /** The collection holding the records, e.g. `curated_users`. */
+    objectName?: string;
+    /** The path to call, filter included, e.g. `/curated_users?fields=id`. */
+    path: string;
+    /** Every field the collection can be searched by. */
+    by: readonly string[];
+    /** The field whose value is sent to the connector, e.g. `id`. */
+    value: string;
+    /** `{ byEmail: 'profile.email' }` — only for names with an unambiguous alias. */
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    /** For `strategy: 'dependent'`, the fields that must resolve first. */
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupToken (interface)
+
+````ts
+/** An unresolved lookup: what `.byEmail(…)` returns. */
+export interface LookupToken {
+    readonly __lookup: {
+            readonly nodeType: string;
+            readonly field: string;
+            readonly by: string;
+            readonly value: unknown;
+        };
+}
+````
+
+## isLookupToken (function)
+
+````ts
+/** True when `v` is an unresolved `LookupToken`. */
+export declare function isLookupToken(v: unknown): v is LookupToken;
+````
+
+## lookupKey (function)
+
+````ts
+/** The identity of one resolution, as `prepare` records it and `compile` reads it. */
+export declare function lookupKey(nodeType: string, field: string, by: string, value: unknown): string;
+````
+
+## LookupBuilder (type)
+
+````ts
+/** What `lookup(...)` returns: the generic form plus any generated aliases. */
+export type LookupBuilder<S extends LookupSpec | undefined = undefined> = S extends LookupSpec ? {
+    by(name: S['by'][number], value: unknown): LookupToken;
+} & {
+    [K in keyof S['aliases']]: (value: unknown) => LookupToken;
+} : {
+    by(name: string, value: unknown): LookupToken;
+};
+````
+
+## lookup (function)
+
+````ts
+/** Begin resolving a lookup field on a generated descriptor. */
+export declare function lookup<D extends LookupBearing, F extends keyof NonNullable<D['lookups']> & string>(descriptor: D, field: F): LookupBuilder<NonNullable<D['lookups']>[F] extends LookupSpec ? NonNullable<D['lookups']>[F] : never>;
+
+/** Begin resolving a lookup field addressed by connector key and action. */
+export declare function lookup(key: string, action: string, field: string): LookupBuilder;
+````
+
+## LookupResolution (interface)
+
+````ts
+/** One recorded resolution, as `connectors-local/resolutions.json` stores it. */
+export interface LookupResolution {
+    nodeType: string;
+    field: string;
+    by: string;
+    /** The human-meaningful value the author wrote. */
+    match: string;
+    /** The opaque id the connector wants. */
+    value: string;
+}
+````
+
+## LookupResolutions (type)
+
+````ts
+/** Every recorded resolution, keyed by `lookupKey`. */
+export type LookupResolutions = Readonly<Record<string, LookupResolution>>;
+````
+
+## resolvedValue (function)
+
+````ts
+/** The recorded id for a token, or `undefined`. */
+export declare function resolvedValue(token: LookupToken, resolutions: LookupResolutions): string | undefined;
+````
+
+## unresolvedLookupMessage (function)
+
+````ts
+/** The message for a lookup nothing has resolved — the command that fixes it. */
+export declare function unresolvedLookupMessage(token: LookupToken): string;
+````
+
+## lookupSpecOf (function)
+
+````ts
+/** The `LookupSpec` for one field, or `undefined` when it earns no helper. */
+export declare function lookupSpecOf(reference: RawReference, invariant?: ReadonlySet<string>): LookupSpec | undefined;
+````
+
+## refuseLookupToken (function)
+
+````ts
+/** Refuse a lookup token where the family cannot resolve one. */
+export declare function refuseLookupToken(value: unknown, family: string, field: string): void;
 ````
 
 ## FlowBuilder (class)
@@ -2079,15 +2300,6 @@ export type TriggerSpec = {
 };
 ````
 
-## TriggerDescriptor (type)
-
-````ts
-export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
-    readonly __where?: W;
-    readonly __output?: O;
-};
-````
-
 ## ChildFlow (type)
 
 ````ts
@@ -2217,42 +2429,24 @@ export type ActionSpec = {
 };
 ````
 
-## ConnectorDescriptor (type)
-
-````ts
-export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
-    readonly __inputs?: I;
-    readonly __outputs?: O;
-};
-````
-
 ## ErrorEnvelopeField (type)
 
 ````ts
 export type ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status';
 ````
 
-## ConnectorMeta (interface)
+## RawReference (type)
 
 ````ts
-export interface ConnectorMeta {
-    nodeType: string;
-    version?: string;
-    requiresConnection?: boolean;
-    requiresFolderKey?: boolean;
+type RawReference = {
     objectName?: string;
-}
-````
-
-## TriggerMeta (interface)
-
-````ts
-export interface TriggerMeta {
-    connector: string;
-    event: string;
-    version?: string;
-    displayName?: string;
-}
+    path?: string;
+    lookupNames?: string[];
+    lookupValue?: string;
+    filterPattern?: string;
+    childPath?: string;
+    dependsOn?: string[];
+} | undefined;
 ````
 
 ## EventFilter (interface)
