@@ -43,8 +43,10 @@ references below.
 
 ### Editing an existing `.bpmn` (preserve what you did not author)
 
-The skill can edit an existing file. Make **surgical** edits and preserve
-content you did not author: unknown `uipath:*` elements, `uipath:migrationVersion`,
+The skill can edit an existing file. If the edit introduces one of the shapes in
+[Patterns](#patterns), use that guide — inserting a pattern into a running
+process is a normal edit, not a reason to skip the shape. Make **surgical**
+edits and preserve content you did not author: unknown `uipath:*` elements, `uipath:migrationVersion`,
 tags, imported Integration Service payloads, and stable element IDs. Do not
 regenerate the whole file or drop extension data the skill does not recognize —
 preserve-only structures (see the blocklist in
@@ -73,6 +75,43 @@ Two halves make a valid Maestro `.bpmn`:
    attributes, no subprocess/loop structure, and no diagram. Author all of these
    from [references/structural-bpmn.md](references/structural-bpmn.md), which is
    grounded in the registry spec and the Studio Web canvas serializer.
+
+## Patterns
+
+Seven recurring process shapes, for building a new process and for extending
+one that already runs. Each guide gives a worked-out topology — nodes, wiring,
+gateway conditions, variables — and the reasoning behind it. Many topologies
+pass validation for the same request; these are known-good shapes, not
+specifications. Adapt them: add steps, drop branches, and change
+counts as the process needs. Each guide's "Why it works" names the parts that
+carry the shape — change those and you are building something else, so say so.
+Read the guide for each pattern the process actually uses — one for a simple
+process, several for a composed one — and none for a pattern you are not
+building.
+
+Every guide's shape table marks each node **Entry** (omit when inserting into a
+process that already runs), **Mechanism** (changing it changes the pattern), or
+**Placeholder** (bind it, or skip it if the process already does this).
+
+| Pattern | Reach for it when | Guide |
+| --- | --- | --- |
+| `ai-decision-review` | AI makes one call; act on it, or a human reviews it | [ai-decision-review-guide.md](references/patterns/ai-decision-review-guide.md) |
+| `approval-chain` | A request needs sign-off from several people | [approval-chain-guide.md](references/patterns/approval-chain-guide.md) |
+| `smart-triage` | Inbound work sorted into categories, each handled elsewhere | [smart-triage-guide.md](references/patterns/smart-triage-guide.md) |
+| `external-wait` | The process waits on an outside party under an SLA | [external-wait-guide.md](references/patterns/external-wait-guide.md) |
+| `high-volume-batch` | Many independent items processed in one run | [high-volume-batch-guide.md](references/patterns/high-volume-batch-guide.md) |
+| `failure-escalation` | Unhandled failures must never disappear silently | [failure-escalation-guide.md](references/patterns/failure-escalation-guide.md) |
+| `queue-distribution` | An Orchestrator queue hands work across runtimes | [queue-distribution-guide.md](references/patterns/queue-distribution-guide.md) |
+
+**Do not reach for a pattern** when the ask is a short linear process, a single
+node, or a change that does not introduce one of these shapes. A pattern is
+never a wrapper to retrofit onto work that does not need one.
+
+Using more than one pattern in one process? Read
+[references/patterns/composing-guide.md](references/patterns/composing-guide.md)
+first — which pattern keeps its start event, the four ways the rest join it, how
+variables cross a nesting boundary, and the two placements the engine
+constrains. A single pattern needs only its own guide.
 
 ## Workflow
 
@@ -120,8 +159,11 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    every selection with the user (use AskUserQuestion). Never fabricate an identifier.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
-   each chosen registry-owned node only. Enrich `Intsvc.*` connector nodes with
-   `--connection-id`/`--object-name`. Do not call `registry get` for structural
+   each chosen registry-owned node only. Fetch every chosen template in **one**
+   Bash call, not one command per turn — each shell round-trip is a model turn
+   and dozens of them exhaust the run's time budget before authoring finishes:
+   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
+   Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams. If a registry template's BPMN host tag is PascalCase (for example
@@ -132,8 +174,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not
-   reverse-engineer authoring patterns from task fixtures or generated package
-   files** — fixture spelunking is the top reason authoring runs out of time.
+   reverse-engineer authoring patterns from task fixtures, generated package
+   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
+   spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
@@ -167,12 +210,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
-   If the user asks to package or operate, run
-   `uip maestro bpmn update-metadata <file.bpmn>` to generate the five package
-   metadata files. Only fall back to the minimal local metadata shape in
+   If the user asks for the package metadata files, or to package or operate,
+   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
+   files, and keep its output as written — that shape is the contract `pack`
+   consumes. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
-   when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
-   synthetic local project.
+   when the CLI is unavailable. Every root start event needs a
+   `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements` or
+   the project generates zero entry points.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
@@ -262,6 +307,28 @@ and honestly surfaced to the user as gaps when asked.
 10. **Confirm before any cloud change.** Upload, publish, deploy, run, pause,
    resume, cancel, retry, and migrate require explicit user consent; validate
    locally first.
+11. **Retry is node configuration, never canvas.** Handle transient failures
+   with `uipath:retry` on the activity. Never draw a retry loop from gateways
+   and timer events. See
+   [references/structural-bpmn.md](references/structural-bpmn.md#choosing-an-error-handling-construct).
+12. **Task SLA is task configuration, never canvas.** Approval timers,
+   reassignment, and escalation-on-breach live on the user task. Do not model
+   them as boundary timers around it.
+13. **An error event subprocess is interrupting and terminal.** When it fires,
+   the normal path stops and the instance records **Completed**, not Faulted.
+   Every path through it must end in an explicitly named outcome, or a handled
+   failure is indistinguishable from success. For recover-and-continue, attach
+   an error boundary event instead.
+14. **A different target system is not, by itself, a different shape.** Swapping
+   Document Understanding for a UiPath agent, or Outlook for Gmail, changes a
+   binding. Reshape when the process genuinely differs — not merely because the
+   target system did.
+15. **You author the process; you are never a participant in it.** Where a shape
+   calls for reasoning, classification, or extraction at runtime, place and bind
+   the node that will perform it — a UiPath agent, Document Understanding, a
+   business rule task. Never do that work at authoring time or hardcode its
+   result. Bare "agent" in any process description means a UiPath agent, never
+   you.
 
 ## References
 
@@ -269,6 +336,7 @@ and honestly surfaced to the user as gaps when asked.
 | --- | --- |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
+| Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |
 | Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |

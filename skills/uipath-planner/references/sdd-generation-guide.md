@@ -70,7 +70,7 @@ Record both choices — they go into the SDD's `## Planner Handoff` header (Phas
 In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD (Phase 3 Step 2 item 3)
 - Skip Phase 2 architecture review (generate, do not wait)
-- Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
+- Still ask the SME Review resolution question before finalizing (Step 1.5) — this is a hard blocker on `Status: ready`, not on the Step 0 skeleton write
 - Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
 - **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the five highest-leverage architectural picks with one-sentence reasons. See Phase 3 Step 2 item 3 for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
@@ -85,14 +85,17 @@ Create progress-tracking tasks via `TaskCreate` so the user can see where the SD
 TaskCreate: subject="Read PDD and extract data",        activeForm="Reading PDD…"
 TaskCreate: subject="Select product",                    activeForm="Selecting product…"
 TaskCreate: subject="Generate architecture (Phase 2)",   activeForm="Generating architecture…"
+TaskCreate: subject="Write SDD skeleton to disk",        activeForm="Writing SDD skeleton…"
 TaskCreate: subject="Generate full SDD (Phase 3)",       activeForm="Generating SDD sections…"
 TaskCreate: subject="Resolve SME review items",          activeForm="Resolving SME review items…"
-TaskCreate: subject="Write SDD to disk",                 activeForm="Writing SDD…"
+TaskCreate: subject="Finalize SDD (Status: ready)",      activeForm="Finalizing SDD…"
 ```
 
 Mark each task `in_progress` when starting and `completed` when done.
 
 **Rule G-8 — Task creation is best-effort and never blocks SDD output.** If any `TaskCreate` or `TaskUpdate` call fails (tool unavailable, runtime error, timeout), log a single warning to the user, continue the SDD generation without progress tasks, and do not retry. The SDD file itself is the authoritative deliverable. Progress tasks are a UX convenience only.
+
+**Rule G-9 — the disk write is task 4, never the last task.** "Write SDD skeleton to disk" sits BEFORE "Generate full SDD (Phase 3)" in this list because [Phase 3 Step 0](#step-0-write-the-sdd-skeleton-to-disk--hard-gate) is a hard gate: the file must exist on disk before you generate a single Phase 3 section. Do NOT reorder this list so that every write lands at the end, and do NOT collapse tasks 4 and 7 into one terminal "write the SDD" task. A long autonomous turn can be hard-killed by the per-turn watchdog mid-generation; a plan that defers the only deliverable to its final task loses the entire run, while a skeleton already on disk leaves a detectable, gradeable `Status: draft` SDD.
 
 > If Step 0.5 `TaskCreate` failed, silently skip every subsequent `Mark "X" as in_progress / as completed` instruction in this guide — the tasks do not exist to update, and a second warning to the user is noise.
 
@@ -301,7 +304,7 @@ The architectural core sections differ per template. For each product, generate 
 - §3 Personas & App Views
 - §4 Integrations (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
 - Case section headings render in the template's long form (`## Section 1: Case Definition`, …) — the heading TEXT is load-bearing downstream (`uipath-maestro-case` parses it verbatim); `§N` is the reference notation in planner docs only. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
-- Case body content obeys [references/case/](case/) — the model ([case/model.md](case/model.md)), authoring method ([case/authoring.md](case/authoring.md)), render contracts, and the finalization gate ([case/review.md](case/review.md)); tenant grounding runs per [case/grounding.md](case/grounding.md). For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case-design-lane-guide.md) — not the generic 3-phase model in this guide.
+- Case body content obeys [case-design-layers-guide.md](case/case-design-layers-guide.md) (model, authoring method, closure checklist) and the case SDD template's inline render contract (gate: `audit_sdd.py` per its § Validation footer); tenant grounding runs per the lane's §Tenant grounding. For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case/case-design-lane-guide.md) — not the generic 3-phase model in this guide.
 
 **Agents:**
 - §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function)
@@ -357,8 +360,8 @@ For each integrated component detected in Phase 1 (and each non-primary placemen
 - **Integration Service connectors** → list in Application Inventory (RPA) or Connectors section (others); check `uip is connectors list` — implementation task routes to `uipath-platform` to configure an existing connector, or `uipath-connector-builder` to build a custom one when none exists
 - **IXP / Document Understanding models** (extraction from semi-structured documents) → list in the host template's "IXP / Document Understanding Models" table (Flow / BPMN / Case / Agent / RPA templates carry it); for an API Workflow or Coded App primary, record the model as its own row in §Solution / Project Breakdown instead. Implementation task routes to `uipath-ixp`, ordered before its consumers
 - **Coded Functions** (TypeScript / JavaScript / Python — atomic deterministic transform / compute: parsing, scoring, custom-auth API calls, IS-connection queries) — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step); host-native logic stays in the host's own inventory → list in the host template's "Coded Functions" table (Flow / BPMN / Case / Agent templates carry it). Implementation task routes to `uipath-functions`, ordered before its consumers; no per-project SDD file (see [Template Mapping](product-selection-guide.md#template-mapping))
-- **RPA processes called by Flow/Agent/Case** → list in Integrated Components section; implementation task will create the RPA project
-- **API Workflows called by Flow/Agent/Case** — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step) (host cannot call natively, 2+ consumers, or independent lifecycle); a host-capable direct call stays in the host inventory as `Access Method = Direct HTTP` → list in Integrated Components section; implementation task will create the API Workflow project
+- **RPA processes called by Flow/BPMN/Agent/Case** → list in Integrated Components section; implementation task will create the RPA project
+- **API Workflows called by Flow/BPMN/Agent/Case** — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step) (host cannot call natively, 2+ consumers, or independent lifecycle); a host-capable direct call stays in the host inventory as `Access Method = Direct HTTP` → list in Integrated Components section; implementation task will create the API Workflow project. Extraction never changes `SDD scope` ([derived-component rule](product-selection-guide.md#solution-signals))
 
 ### Step 5: Present Architecture for Review
 
@@ -368,9 +371,26 @@ Present the architectural core to the user. Wait for approval or adjustments.
 
 ## Phase 3 — Full SDD Generation
 
-> **Progress:** Mark "Generate architecture (Phase 2)" as `completed`. Mark "Generate full SDD (Phase 3)" as `in_progress`.
+> **Progress:** Mark "Generate architecture (Phase 2)" as `completed`. Mark "Write SDD skeleton to disk" as `in_progress`.
 
-> **Write early, append incrementally — the file on disk is the deliverable.** Do NOT hold the entire SDD in context and write only at the very end. As soon as Phase 2 has produced the architectural core, write a first valid file: the title/header + `## Planner Handoff` header **and** the `<!-- planner-handoff:v1 -->` marker + `## Decisions Made` block (autonomous) + the Phase 1 / Phase 2 sections you already have. Then append the remaining Phase 3 sections to that file with follow-up `Edit`/`Write` calls. Rationale: a long autonomous turn can hit the per-turn watchdog mid-generation — an incrementally-written file leaves a gradeable, useful SDD on disk instead of nothing. The Planner Handoff header + marker MUST be in this first write so detection (and grading) works even on a partial file — **with `Status: draft` and `Template validation: pending`**: the marker says "planner SDD", the Status field says whether it is consumable. Step 1.5 (SME resolution) and the Step 2 superset check still run; they patch and verify the already-on-disk file rather than gating the first write. Flipping `Status` to `ready` is the LAST write of Phase D — an interrupted run leaves `draft` on disk and Lane A refuses to derive tasks from it.
+### Step 0: Write the SDD Skeleton to Disk — Hard Gate
+
+**Write the file to disk now, before generating any Phase 3 section.** This is an action, not advice: Step 1 does not begin until a `Write` call has created the SDD file (Step 2 item 7 resolves the path and the Solution-scope file set). Do NOT hold the entire SDD in context and write only at the very end.
+
+**First, run the collision check — the skeleton write is the write that can clobber.** Before writing anything, apply the re-run handling in Step 2 item 6: if a target file already exists, resolve it with that `AskUserQuestion` (keep / regenerate / resume / write as `-v2-`) and honour the answer here. "Keep the existing SDD and stop" ends Phase D with no write at all; "Resume generation" patches the existing draft instead of overwriting it. Only "Regenerate" and the no-file-exists case write a fresh skeleton. Item 6 then has nothing left to ask.
+
+The skeleton write contains, in this order:
+
+1. The title/header + `## Document History`.
+2. The `<!-- planner-handoff:v1 -->` marker **and** the `## Planner Handoff` header, with `Status: draft` and `Template validation: pending` (full field list in Step 2 item 2). Both signals MUST be in this first write so detection — and grading — works even on a partial file: the marker says "planner SDD", the `Status` field says whether it is consumable.
+3. The `## Decisions Made` block (autonomous mode) and the `## Recommended Scope` block (both modes) — formats in Step 2 item 3.
+4. Every Phase 1 / Phase 2 section you already have.
+
+Then append the remaining Phase 3 sections to that file with follow-up `Edit` / `Write` calls **as you generate them** — do not buffer them in context and do not rewrite the whole file per section.
+
+**Rationale.** A long autonomous turn can be hard-killed by the per-turn watchdog mid-generation. An incrementally-written file leaves a gradeable, useful SDD on disk; a buffered one leaves nothing at all. Step 1.5 (SME resolution) and the Step 2 superset check still run — they patch and verify the file already on disk rather than gating the first write. Flipping `Status` to `ready` is the LAST write of Phase D, so an interrupted run leaves `draft` on disk and Lane A refuses to derive tasks from it.
+
+> **Progress:** Mark "Write SDD skeleton to disk" as `completed`. Mark "Generate full SDD (Phase 3)" as `in_progress`.
 
 ### Step 1: Generate Remaining Sections
 
@@ -406,7 +426,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 > **Progress:** Mark "Generate full SDD (Phase 3)" as `completed`. Mark "Resolve SME review items" as `in_progress`.
 
-Before writing the SDD, collect all `[SME REVIEW]` items. If there are any:
+Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. If there are any:
 
 > **Batching rule — `AskUserQuestion` 4-option cap.** Each `AskUserQuestion` question accepts at most 4 options. If there are 1-4 items, send one question. If there are 5-8 items, send a single `AskUserQuestion` call with **two questions** (each ≤4 options), grouped by SDD section. If there are more than 8 items, send one `AskUserQuestion` call per batch of up to 8 (two questions each), waiting for answers between batches. **Do not flatten >4 items into one question** — the call will fail validation.
 
@@ -427,11 +447,11 @@ Before writing the SDD, collect all `[SME REVIEW]` items. If there are any:
 
 This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD.
 
-### Step 2: Write the SDD File(s)
+### Step 2: Finalize the SDD File(s)
 
-> **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
+> **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Finalize SDD (Status: ready)" as `in_progress`.
 
-1. Assemble all sections in template order. If you followed the write-early principle above, the file already holds the header + handoff + Phase 1/2 sections — finalize it by appending/patching the remaining sections in template order rather than rewriting from scratch.
+1. Assemble all sections in template order. The Step 0 skeleton already holds the header + handoff + `## Decisions Made` / `## Recommended Scope` + Phase 1/2 sections — finalize it by appending/patching the remaining sections in template order rather than rewriting from scratch.
 2. **Fill the `## Planner Handoff` header** that appears near the top of every template. Every template places it after `## Document History`. This is the load-bearing detection contract. The Entry Guard accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file (so a later session, or a hand-written SDD, still routes to Lane A):
 
    ```markdown
@@ -499,7 +519,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ```
 
 5. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
-6. **Re-run handling.** If `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user via `AskUserQuestion`:
+6. **Re-run handling — already resolved at Step 0.** This check runs BEFORE the Step 0 skeleton write (that is the write that can clobber an existing file); by the time you reach here the answer is already applied, so do not re-ask. The question, for reference and for the Step 0 gate: if `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user via `AskUserQuestion`:
 
    First read the existing file's handoff `Status`:
 
@@ -580,7 +600,7 @@ Skip this step entirely when the user did not ask for Word output.
 
 ### Step 3: Proceed to Lane A (Task Derivation)
 
-> **Progress:** Mark "Write SDD to disk" as `completed`. All progress tasks are now done.
+> **Progress:** Mark "Finalize SDD (Status: ready)" as `completed`. All progress tasks are now done.
 
 The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan section inside the SDD. Do not create implementation `TaskCreate` calls during Phase D. Do not start executing.**
 

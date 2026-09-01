@@ -82,10 +82,20 @@ uip login status --output json
 Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). The project lands at `<cwd>/<ROUTING_NAME>`. Pre-warm = **extract the starter kit there, then install deps** — both in the background. Extraction uses the OS `tar` (built into Windows 10+, macOS, Linux — identical on every platform, no hand-rolled code), feeding the archive on **stdin** (`-f -`) so GNU tar doesn't misread the `C:\…` drive colon as a remote host (see `plugins/build/impl.md § The starter-kit archive`). One background call (chain with `&&`):
 
 ```bash
-mkdir -p "<ROUTING_NAME>" && tar -xz -C "<ROUTING_NAME>" -f - < "<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz" && node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
+mkdir -p "<ROUTING_NAME>" && tar --no-same-owner --no-same-permissions -xz -C "<ROUTING_NAME>" -f - < "<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz" && node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
 ```
 
 The extract is fast; `--prewarm` then runs `npm ci` (the slow part) so it overlaps plan approval. ⚠️ `run_in_background: true` is a tool call parameter, not a shell flag. Without it, the call blocks before the plan appears.
+
+**If that command exits non-zero — repair `<ROUTING_NAME>` in place. Never scaffold into a second folder.**
+
+A partial extract (`Cannot mkdir`, `Cannot open: File exists`, `Permission denied`) leaves a half-populated project. Re-run the exact same command once — `tar` overwrites and the scaffold is idempotent, so a transient failure clears. If it fails again, delete and retry once:
+
+```bash
+rm -rf "<ROUTING_NAME>" && mkdir -p "<ROUTING_NAME>" && tar --no-same-owner --no-same-permissions -xz -C "<ROUTING_NAME>" -f - < "<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz" && node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
+```
+
+If `rm -rf` itself is denied, the sandbox — not the kit — is at fault: **stop and report it.** Do NOT pick a new `<ROUTING_NAME>` to route around the error. An abandoned scaffold sitting beside the real one is indistinguishable from the real one to anything that later has to locate the project, and every downstream step then has a coin flip in it.
 
 > **What the user should see:** Only the plan text. Nothing else — not file reads, not login output, not pre-warm status, not bash results, and no question popup. If there is ANY output before the plan, or any tool call in the plan response, that is a bug.
 

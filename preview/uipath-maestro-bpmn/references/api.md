@@ -9,13 +9,92 @@ Exact `@uipath/flow-sdk/bpmn` authoring signatures and option shapes, from the p
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**BPMN authoring** — [bpmn](#bpmn-function)
+> **This page is compact on purpose, and it is not the whole truth.** `@remarks`
+> and `@example` bodies are omitted here. The package's own **`.d.ts` files carry
+> them in full**, they are installed alongside your project, and they are the
+> authoritative declarations this page is generated from — so when a signature
+> names a type whose members or rules you need, read the declaration:
+>
+> ```bash
+> grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
+> #  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts
+> ```
+>
+> Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no
+> types and no comments.
+
+**BPMN authoring** — [errorSchema](#errorschema-const) · [errorSchemaWithResponse](#errorschemawithresponse-const) · [bpmn](#bpmn-function)
 
 **Builders** — [BpmnBuilder](#bpmnbuilder-class) · [ScopeBuilder](#scopebuilder-class) · [SubProcessBuilder](#subprocessbuilder-class)
 
-**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
+**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ReceiveMessageOpts](#receivemessageopts-interface) · [ConnectorEventOpts](#connectoreventopts-interface) · [ExternalTaskOpts](#externaltaskopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface)
+**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [ExtensionPayload](#extensionpayload-interface) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [TypedContextRow](#typedcontextrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [ErrorLike](#errorlike-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface) · [ErrorMappingRow](#errormappingrow-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
+
+## errorSchema (const)
+
+````ts
+/** The `Error` variable's shape — the platform's own error envelope. */
+export declare const errorSchema: {
+    readonly type: "object";
+    readonly properties: {
+        readonly code: {
+            readonly type: "string";
+        };
+        readonly message: {
+            readonly type: "string";
+        };
+        readonly detail: {
+            readonly type: "string";
+        };
+        readonly category: {
+            readonly type: "string";
+        };
+        readonly status: {
+            readonly type: "number";
+        };
+        readonly element: {
+            readonly type: "string";
+        };
+    };
+};
+````
+
+## errorSchemaWithResponse (const)
+
+````ts
+/**
+ * The same envelope plus `response` — what a node whose failure carries a payload
+ * writes, and what the same source calls *"the generic failure mapping shape, which
+ * includes a `response` key"*, distinguishing it from `errorSchema`.
+ */
+export declare const errorSchemaWithResponse: {
+    readonly type: "object";
+    readonly properties: {
+        readonly response: {
+            readonly type: "string";
+        };
+        readonly code: {
+            readonly type: "string";
+        };
+        readonly message: {
+            readonly type: "string";
+        };
+        readonly detail: {
+            readonly type: "string";
+        };
+        readonly category: {
+            readonly type: "string";
+        };
+        readonly status: {
+            readonly type: "number";
+        };
+        readonly element: {
+            readonly type: "string";
+        };
+    };
+};
+````
 
 ## bpmn (function)
 
@@ -37,6 +116,8 @@ export declare class BpmnBuilder extends ScopeBuilder {
     name(n: string): this;
     /** Process-level metadata — see `ProcessMetadata`. */
     metadata(meta: ProcessMetadata): this;
+    /** Name a JSON Schema once so several variables can share it. */
+    schema(id: string, schema: unknown): this;
     /**
      * Declare an external identifier the process needs supplied — a base URL, a
      * folder path, a process name (`uipath:binding`). Expressions read it as
@@ -118,6 +199,11 @@ declare abstract class ScopeBuilder {
      */
     executeApiWorkflow(id: string, opts: OrchestratorOpts): this;
     /**
+     * Execute a **business rule** and wait for it (`Orchestrator.BusinessRules`, on a
+     * `bpmn:businessRuleTask`).
+     */
+    businessRule(id: string, opts: OrchestratorOpts): this;
+    /**
      * Add an item to an Orchestrator **queue** (`Orchestrator.CreateQueueItem`, or
      * `Orchestrator.CreateAndWaitForQueueItem` when `wait` is set).
      */
@@ -127,6 +213,32 @@ declare abstract class ScopeBuilder {
      * `uipath:activity` / `Actions.HITL`).
      */
     humanTask(id: string, opts: HumanTaskOpts): this;
+    /**
+     * Wait for an internal message from another Maestro process
+     * (`Maestro.ReceiveMessageEvent` on a `bpmn:intermediateCatchEvent`).
+     */
+    receiveMessage(id: string, opts: ReceiveMessageOpts): this;
+    /**
+     * Wait mid-flow for an Integration Service connector event
+     * (`Intsvc.WaitForEvent` on a `bpmn:receiveTask`).
+     */
+    waitForEvent(id: string, connector: string, event: string, opts: ConnectorEventOpts): this;
+    /**
+     * START the process when an Integration Service connector event fires
+     * (`Intsvc.EventTrigger` on a `bpmn:startEvent` carrying a message event
+     * definition).
+     */
+    eventTrigger(id: string, connector: string, event: string, opts: ConnectorEventOpts): this;
+    /**
+     * Invoke an external agent through an Integration Service connector
+     * (`Intsvc.SyncAgentExecution` / `Intsvc.AsyncAgentExecution`).
+     */
+    externalAgent(id: string, connector: string, action: string, inputs: Record<string, unknown>, opts: ExternalTaskOpts): this;
+    /**
+     * Invoke an external workflow through an Integration Service connector
+     * (`Intsvc.SyncWorkflowExecution` / `Intsvc.AsyncWorkflowExecution`).
+     */
+    externalWorkflow(id: string, connector: string, action: string, inputs: Record<string, unknown>, opts: ExternalTaskOpts): this;
     /**
      * ANY registry-backed node, by extension type — the generic form the typed
      * methods are sugar over.
@@ -143,6 +255,8 @@ declare abstract class ScopeBuilder {
     /** A return value (`uipath:output`). */
     output(id: string, type: TypeDesc, opts?: VarOpts): this;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## SubProcessBuilder (class)
@@ -193,8 +307,20 @@ export interface StartOpts {
     name?: string;
     /** Start when this message arrives — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
+    /**
+     * Catch an error — an INTERRUPTING error start event
+     * (`bpmn:errorEventDefinition`), declaring/reusing a definitions-level
+     * `bpmn:error`. Pass a name, or `{ name, code }` when the wire code differs.
+     */
+    error?: ErrorLike;
     /** Start on a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
+    /** Also declare this timed start as a platform TRIGGER (`Intsvc.TimerTrigger`). */
+    trigger?: true | {
+            outputVar?: string;
+        };
+    /** A `uipath:mapping` mapping process inputs onto variables — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 }
 ````
 
@@ -212,11 +338,16 @@ export interface EndOpts {
     terminate?: boolean;
     /** End by throwing this message — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
-    /** End by throwing this error (a name, or `{ name, code }`) — declares/reuses a definitions-level `bpmn:error`. */
+    /**
+     * End by throwing this error (a name, or `{ name, code }`) — declares/reuses a
+     * definitions-level `bpmn:error`.
+     */
     error?: string | {
             name: string;
             code?: string;
         };
+    /** A `uipath:mapping` mapping variables onto process outputs — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 }
 ````
 
@@ -234,6 +365,8 @@ export interface CatchOpts {
     message?: string;
     /** Wait for a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
+    /** An extension payload on the event — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 }
 ````
 
@@ -246,6 +379,8 @@ export interface ThrowOpts {
     name?: string;
     /** The message to throw — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
+    /** An extension payload on the event — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 }
 ````
 
@@ -269,11 +404,13 @@ export interface BoundaryOpts {
     message?: string;
     /** Fire on a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
-    /** Catch this error (a name, or `{ name, code }`) — declares/reuses a definitions-level `bpmn:error`. */
-    error?: string | {
-            name: string;
-            code?: string;
-        };
+    /**
+     * Catch an error: `true` for ANY error, or a name (or `{ name, code }`) to catch
+     * one declared kind — see `ErrorLike`.
+     */
+    error?: ErrorLike;
+    /** A `uipath:activity` capturing the error payload — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 }
 ````
 
@@ -296,14 +433,33 @@ export interface GatewayOpts {
 export interface ScriptTaskOpts extends ActivityOpts {
     /** Display name the designer shows on the task. */
     name?: string;
-    /** The script body (Jint JavaScript). */
+    /**
+     * The script body (Jint JavaScript). Each `inputs` key is available as a
+     * top-level identifier (for example `inputs: { amount: '=vars.amount' }`
+     * makes the script read `amount`, not `args.amount`).
+     */
     script: string;
     /** The script language marker. Defaults to `'JavaScript'` (Jint). */
     scriptFormat?: string;
     /** `uipath:input` rows: field name → `=`-expression read into the script. */
     inputs?: Record<string, string>;
-    /** `uipath:output` rows: variable id → `=`-expression (usually `=result.<x>`). */
+    /** `uipath:output` rows: variable id → `=`-expression. */
     outputs?: Record<string, string>;
+    /**
+     * Output rows spelled out, replacing the ones `outputs` derives — see
+     * `TypedOutputRow`.
+     */
+    outputRows?: TypedOutputRow[];
+    /**
+     * The `uipath:inputSchema` body inside the mapping's `uipath:context` — a JSON
+     * Schema for the `args` the script receives. Real script tasks all carry one.
+     */
+    inputSchema?: unknown;
+    /**
+     * The mapping's extension type. Defaults to `'BPMN.Variables'`, which is the
+     * only value the runtime contract defines.
+     */
+    type?: string;
 }
 ````
 
@@ -329,6 +485,8 @@ export interface PlainTaskOpts extends ActivityOpts {
     /** Which task element to emit. Defaults to `bpmn:task`. */
     element?: PlainTaskElement;
 }
+
+// PlainTaskElement = 'bpmn:task' | 'bpmn:userTask' | 'bpmn:serviceTask' | 'bpmn:sendTask' | 'bpmn:manualTask' | 'bpmn:businessRuleTask' | 'bpmn:receiveTask'
 ````
 
 ## BpmnConnectorOpts (type)
@@ -494,6 +652,83 @@ export interface HumanTaskOpts extends ActivityOpts {
 }
 ````
 
+## ReceiveMessageOpts (interface)
+
+````ts
+/** Options for `.receiveMessage()` — `Maestro.ReceiveMessageEvent`. */
+export interface ReceiveMessageOpts extends ActivityOpts {
+    /** Display name the designer shows on the event. */
+    name?: string;
+    /** The message name to wait for — the type's required `name` context field. */
+    message: string;
+    /** Correlation reference matching this receive to its sender. */
+    reference: string;
+    /** Variable the typed response lands in. Defaults to `<id>_response`. */
+    outputVar?: string;
+    /** `=`-expression that skips the event when truthy. */
+    skipCondition?: string;
+    /** There is deliberately NO `outputs` here, unlike `.humanTask()`. */
+    readonly outputs?: never;
+}
+````
+
+## ConnectorEventOpts (interface)
+
+````ts
+/** Shared options for the two connector-event methods. */
+export interface ConnectorEventOpts extends ActivityOpts {
+    /** Display name; defaults to the descriptor's own label. */
+    name?: string;
+    /** Symbolic binding name for the Integration Service connection. */
+    connection: string;
+    /** Symbolic binding name for the folder. */
+    folder: string;
+    /** The folder path the type requires alongside the key. Defaults to `/Shared`. */
+    folderPath?: string;
+    /** Pin the descriptor version, as `.connector()` does. */
+    version?: string;
+    /**
+     * The `where` scope narrowing the subscription, when the operation declares
+     * parameters. `Library.eventParameterFields()` is the authority on which names an
+     * operation accepts — and note that "declares none" is a real answer for some
+     * operations (HTTP Webhook scopes by the connection), not a lookup failure.
+     */
+    filter?: Record<string, unknown>;
+    /** Extra event parameters, for operations that declare them. */
+    parameters?: Record<string, unknown>;
+    /** Variable the event payload lands in. Defaults to `<id>_result`. */
+    outputVar?: string;
+    /** Fields to pull out of the payload into variables, e.g. `{ amount: '=amount' }`. */
+    outputs?: Record<string, string>;
+    /** `=`-expression that skips the node when truthy. */
+    skipCondition?: string;
+}
+````
+
+## ExternalTaskOpts (interface)
+
+````ts
+/** Options for `.externalAgent()` / `.externalWorkflow()`. */
+export interface ExternalTaskOpts extends ActivityOpts {
+    /** Display name; defaults to the descriptor's own label. */
+    name?: string;
+    /** `sync` waits for the result; `async` starts it and moves on. */
+    mode: 'sync' | 'async';
+    /** Symbolic binding name for the Integration Service connection. */
+    connection: string;
+    /** Symbolic binding name for the folder. */
+    folder: string;
+    /** Pin the descriptor version. */
+    version?: string;
+    /** Variable the response lands in. Defaults to `<id>_result`. */
+    outputVar?: string;
+    /** Fields to pull out of the response into variables — see `ConnectorEventOpts.outputs`. */
+    outputs?: Record<string, string>;
+    /** `=`-expression that skips the node when truthy. */
+    skipCondition?: string;
+}
+````
+
 ## ActivityNodeOpts (interface)
 
 ````ts
@@ -503,6 +738,8 @@ export interface ActivityNodeOpts extends ActivityOpts {
     name?: string;
     /** `uipath:context` values, by the registry's field names. */
     context?: Record<string, unknown>;
+    /** Context rows spelled out, replacing `context` — see `TypedContextRow`. */
+    contextRows?: TypedContextRow[];
     /** The payload, shaped by the type's `inputPattern`. */
     inputs?: Record<string, unknown>;
     /** Variable the type's own output lands in. Defaults to `<id>_<outputName>`. */
@@ -516,6 +753,16 @@ export interface ActivityNodeOpts extends ActivityOpts {
      * `TypedOutputRow`.
      */
     outputRows?: TypedOutputRow[];
+    /**
+     * The `uipath:type` `version` attribute. Defaults to `'v1'`, which is what the
+     * registry's own `XmlTemplate` writes.
+     */
+    typeVersion?: string;
+    /**
+     * The `uipath:inputSchema` body inside `uipath:context` — a JSON Schema for the
+     * payload the node accepts.
+     */
+    inputSchema?: unknown;
     /** `=`-expression that skips the node when truthy (activity/event tags only). */
     skipCondition?: string;
     /**
@@ -536,6 +783,11 @@ export interface SubProcessOpts extends ActivityOpts {
     name?: string;
     /** Mark an EVENT sub-process — started by an event inside it, not by an incoming flow. */
     triggeredByEvent?: boolean;
+    /**
+     * A `uipath:mapping` on the sub-process itself, mapping its results back out to
+     * the enclosing scope's variables — see `ExtensionPayload`.
+     */
+    payload?: ExtensionPayload;
 }
 ````
 
@@ -564,6 +816,13 @@ export interface VarOpts {
     default?: unknown;
     /** When set, the variable is scoped to that element rather than root/global. */
     elementId?: string;
+    /**
+     * The declaration's BODY — a JSON Schema describing the shape of a `jsonSchema`
+     * (or `json`) variable.
+     */
+    schema?: unknown;
+    /** Mark the declaration `required="true"`, as a process input can be. */
+    required?: boolean;
 }
 ````
 
@@ -575,10 +834,17 @@ export interface VarOpts {
  * variable task, a connector task, a sub-process.
  */
 export interface ActivityOpts {
+    /**
+     * `uipath:tags` on the activity — key/value pairs the designer carries alongside
+     * the node, as a SIBLING of its payload.
+     */
+    tags?: Record<string, string>;
     /** Retry the activity when it fails — see `RetrySpec`. */
     retry?: RetrySpec;
     /** Run it once per item of a collection — see `LoopSpec`. */
     loop?: LoopSpec;
+    /** Classify the activity's failures — see `ErrorMappingRow`. */
+    errorMapping?: ErrorMappingRow[];
 }
 ````
 
@@ -628,6 +894,7 @@ export interface BuiltBpmn {
     nodes: BpmnNode[];
     flows: BpmnFlow[];
     metadata?: ProcessMetadata;
+    schemas: Map<string, unknown>;
 }
 ````
 
@@ -639,6 +906,18 @@ export type BpmnNode = {
     id: string;
     name?: string;
     event?: EventDef;
+    /**
+     * A registry-backed TRIGGER declaration on this event, on top of its event
+     * definition — see `StartOpts.trigger`. The two are orthogonal halves
+     * of one element: the definition schedules, this names the node type and
+     * declares the payload variable.
+     */
+    trigger?: {
+        type: string;
+        outputVar?: string;
+    };
+    /** A `uipath:mapping` / `uipath:activity` payload on the event — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 } | {
     kind: 'boundaryEvent';
     id: string;
@@ -646,6 +925,8 @@ export type BpmnNode = {
     attachedTo: string;
     cancelActivity: boolean;
     event: EventDef;
+    /** A `uipath:activity` payload on the boundary — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
 } | {
     kind: GatewayKind;
     id: string;
@@ -659,6 +940,12 @@ export type BpmnNode = {
     scriptFormat: string;
     inputs: Record<string, string>;
     outputs: Record<string, string>;
+    /** The mapping's extension type — see `ScriptTaskOpts.type`. */
+    type: string;
+    /** The `uipath:inputSchema` body — see `ScriptTaskOpts.inputSchema`. */
+    inputSchema?: unknown;
+    /** Output rows spelled out, replacing the ones `outputs` would derive. */
+    outputRows?: TypedOutputRow[];
 }) | (ActivityNodeFields & {
     kind: 'task';
     id: string;
@@ -698,10 +985,68 @@ export type BpmnNode = {
     outputs?: Record<string, string>;
     /** Output rows spelled out, replacing the derived ones — see `TypedOutputRow`. */
     outputRows?: TypedOutputRow[];
+    /** The `uipath:type` `version` attribute — see `ActivityNodeOpts.typeVersion`. */
+    typeVersion?: string;
+    /** The `uipath:inputSchema` body — see `ActivityNodeOpts.inputSchema`. */
+    inputSchema?: unknown;
+    /** Context rows spelled out — see `TypedContextRow`. */
+    contextRows?: TypedContextRow[];
     /** `=`-expression that skips the node when truthy. */
     skipCondition?: string;
     /** Emit `context` exactly as given — for importers; see `TypedNodeInput`. */
     contextVerbatim?: boolean;
+}) | (ActivityNodeFields & {
+    kind: 'connectorEvent';
+    id: string;
+    name?: string;
+    /**
+     * `trigger` STARTS the process (`Intsvc.EventTrigger`, a `bpmn:startEvent`
+     * carrying a message event definition); `event` pauses one mid-flow
+     * (`Intsvc.WaitForEvent`, a `bpmn:receiveTask`). The platform ships both for
+     * one connector operation and the namespace is the only difference, which is
+     * why one node kind carries both.
+     */
+    subscribe: 'trigger' | 'event';
+    /**
+     * Connector key + event name, resolved against the library at serialize.
+     *
+     * `eventName` rather than `event`: this union's event nodes already carry an
+     * `event?: EventDef` (the BPMN event DEFINITION), and reusing the name broke
+     * the `'event' in n` narrowing `check()` uses to validate timers.
+     */
+    key: string;
+    eventName: string;
+    version?: string;
+    /** Symbolic binding names, as `.connector()` takes them. */
+    connection?: string;
+    folder?: string;
+    /** The folder PATH, which the type requires alongside the folder key. */
+    folderPath?: string;
+    /** The `where` scope and extra event parameters, when the operation declares any. */
+    filter?: Record<string, unknown>;
+    parameters?: Record<string, unknown>;
+    outputVar?: string;
+    outputs?: Record<string, string>;
+    skipCondition?: string;
+}) | (ActivityNodeFields & {
+    kind: 'externalTask';
+    id: string;
+    name?: string;
+    /** Which family — an external agent or an external workflow. */
+    family: 'agent' | 'workflow';
+    /** `sync` waits for the result; `async` starts it and moves on. */
+    mode: 'sync' | 'async';
+    /** Connector key + action, resolved against the library at serialize. */
+    key: string;
+    action: string;
+    version?: string;
+    /** The invocation payload — one merged `body` row, per the type's template. */
+    inputs: Record<string, unknown>;
+    connection?: string;
+    folder?: string;
+    outputVar?: string;
+    outputs?: Record<string, string>;
+    skipCondition?: string;
 }) | (ActivityNodeFields & {
     kind: 'plainTask';
     id: string;
@@ -710,6 +1055,8 @@ export type BpmnNode = {
     element: PlainTaskElement;
 }) | (ActivityNodeFields & {
     kind: 'subProcess';
+    /** A `uipath:mapping` on the sub-process element — see `ExtensionPayload`. */
+    payload?: ExtensionPayload;
     id: string;
     name?: string;
     triggeredByEvent?: boolean;
@@ -717,6 +1064,10 @@ export type BpmnNode = {
     flows: BpmnFlow[];
     variables: BpmnVarDecl[];
 });
+
+// EventKind = 'startEvent' | 'endEvent' | 'intermediateCatchEvent' | 'intermediateThrowEvent'
+// GatewayKind = 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway' | 'eventBasedGateway'
+// PlainTaskElement = 'bpmn:task' | 'bpmn:userTask' | 'bpmn:serviceTask' | 'bpmn:sendTask' | 'bpmn:manualTask' | 'bpmn:businessRuleTask' | 'bpmn:receiveTask'
 ````
 
 ## BpmnFlow (interface)
@@ -741,7 +1092,12 @@ export interface BpmnVarDecl {
     direction: VarDirection;
     default?: unknown;
     elementId?: string;
+    schema?: unknown;
+    required?: boolean;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
+// VarDirection = 'input' | 'inputOutput' | 'output'
 ````
 
 ## DefinitionsRegistry (class)
@@ -778,6 +1134,8 @@ export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, 
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## MessageDecl (interface)
@@ -828,12 +1186,27 @@ export type EventDef = {
 } | {
     type: 'timer';
     timer: TimerSpec;
-} | {
+}
+/**
+ * An error definition. `errorRef` absent is BPMN's CATCH-ANY: a bare
+ * `<bpmn:errorEventDefinition />` pointing at no declaration, which catches every
+ * error rather than one named kind.
+ */
+ | {
     type: 'error';
-    errorRef: string;
+    errorRef?: string;
 } | {
     type: 'terminate';
 };
+````
+
+## ExtensionPayload (interface)
+
+````ts
+export interface ExtensionPayload {
+    type: string;
+    outputRows: TypedOutputRow[];
+}
 ````
 
 ## GatewayKind (type)
@@ -846,8 +1219,10 @@ export type GatewayKind = 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGat
 
 ````ts
 export interface ActivityNodeFields {
+    tags?: Record<string, string>;
     retry?: RetrySpec;
     loop?: LoopSpec;
+    errorMapping?: ErrorMappingRow[];
 }
 ````
 
@@ -860,6 +1235,22 @@ export interface TypedOutputRow {
     var?: string;
     source?: string;
     schema?: unknown;
+    custom?: boolean;
+    description?: string;
+    target?: string;
+}
+````
+
+## TypedContextRow (interface)
+
+````ts
+export interface TypedContextRow {
+    name: string;
+    type?: string;
+    value?: string;
+    body?: unknown;
+    target?: string;
+    required?: boolean;
 }
 ````
 
@@ -873,6 +1264,15 @@ export type PlainTaskElement = 'bpmn:task' | 'bpmn:userTask' | 'bpmn:serviceTask
 
 ````ts
 export type VarDirection = 'input' | 'inputOutput' | 'output';
+````
+
+## ErrorLike (type)
+
+````ts
+export type ErrorLike = true | string | {
+    name: string;
+    code?: string;
+};
 ````
 
 ## TimerLike (type)
@@ -890,6 +1290,7 @@ export interface ConnectorMeta {
     requiresConnection?: boolean;
     requiresFolderKey?: boolean;
     objectName?: string;
+    lookups?: Readonly<Record<string, LookupSpec>>;
 }
 ````
 
@@ -925,4 +1326,45 @@ export interface LoopSpec {
     sequential?: boolean;
     completion?: string;
 }
+````
+
+## ErrorMappingRow (interface)
+
+````ts
+export interface ErrorMappingRow {
+    code: string;
+    retryable?: boolean;
+    id?: string;
+    priority?: number | string;
+    condition?: string;
+    detail?: string;
+}
+````
+
+## LookupSpec (interface)
+
+````ts
+export interface LookupSpec {
+    objectName?: string;
+    path: string;
+    by: readonly string[];
+    value: string;
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupStrategy (type)
+
+````ts
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
 ````

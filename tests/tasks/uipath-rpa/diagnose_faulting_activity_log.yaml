@@ -1,0 +1,98 @@
+task_id: skill-rpa-diagnose-faulting-activity-log
+description: >
+  Skill-guided evaluation (diagnose mode, D3 log triage): the agent is handed a
+  static UiPath Robot job log that ends in one unhandled exception and must read
+  it, identify the faulting activity by DisplayName, name the exception type, and
+  write a root-cause + fix to diagnosis.md. There is NO workflow to build or run
+  — the fixture is a log, so the task carries zero Studio-host cost and stays
+  fast even on the Windows lane. Complements skill-rpa-fix-broken-xaml-validate-loop (D1
+  validate->fix on a broken artifact) with the D3 "read a failed run's log"
+  archetype the suite otherwise lacks. Adapted from the Autopilot.Evaluation RPA
+  golden scenario `diagnose-medium-faulting-activity-from-log`; the log is inlined
+  in the prompt (matching the repo's fixture-in-prompt convention) and grading is
+  deterministic (no LLM judge).
+tags: [uipath-rpa, windows, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  max_turns: 30
+  turn_timeout: 900
+  task_timeout: 900
+
+initial_prompt: |
+  A UiPath robot job for the "InvoiceProcessing" process crashed with an
+  unhandled exception. First, write the execution log to disk verbatim at
+  `./execution.log` (its content is authoritative — write it exactly):
+
+  ```
+  2026-08-26 09:14:02.113 Info  InvoiceProcessing Execution started (job 7f3c1a20, process InvoiceProcessing, robot RPA-Bot-07, folder Finance)
+  2026-08-26 09:14:02.550 Trace InvoiceProcessing Activity 'Use Application/Browser Chrome' started
+  2026-08-26 09:14:05.201 Info  InvoiceProcessing Browser opened: https://vendor-portal.example.com/invoices
+  2026-08-26 09:14:05.640 Trace InvoiceProcessing Activity 'Type Into ''Search invoices''' started
+  2026-08-26 09:14:06.010 Trace InvoiceProcessing Activity 'Click ''Search''' started
+  2026-08-26 09:14:07.884 Info  InvoiceProcessing Results table rendered (12 rows)
+  2026-08-26 09:14:07.900 Trace InvoiceProcessing Activity 'Get Text ''Invoice Number''' started
+  2026-08-26 09:14:08.120 Info  InvoiceProcessing Get Text 'Invoice Number' -> "INV-2026-00841"
+  2026-08-26 09:14:08.140 Trace InvoiceProcessing Activity 'Get Text ''Invoice Total''' started
+  2026-08-26 09:14:18.145 Warn  InvoiceProcessing Get Text 'Invoice Total' retry 1/3 (element not found, waiting)
+  2026-08-26 09:14:28.150 Warn  InvoiceProcessing Get Text 'Invoice Total' retry 2/3 (element not found, waiting)
+  2026-08-26 09:14:38.155 Warn  InvoiceProcessing Get Text 'Invoice Total' retry 3/3 (element not found, waiting)
+  2026-08-26 09:14:38.160 Error InvoiceProcessing Get Text 'Invoice Total': UiPath.Core.SelectorNotFoundException: Cannot find the UI element corresponding to this selector: <webctrl tag='SPAN' class='inv-amount' /> . Timeout reached: 30000 ms.
+  2026-08-26 09:14:38.170 Error InvoiceProcessing Job faulted with an unhandled exception. Execution stopped.
+  ```
+
+  Then diagnose the failure and write your analysis to `./diagnosis.md`. Your
+  diagnosis must name the faulting activity by its DisplayName, the exception
+  type, a plausible root cause, and a concrete fix. Do NOT blame an earlier
+  activity that succeeded.
+
+  Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "The execution.log fixture was written to disk"
+    path: "execution.log"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "The agent produced a diagnosis.md file"
+    path: "diagnosis.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Core outcome: the diagnosis names the correct faulting activity AND the
+  # correct exception type. Both planted strings must appear. The activity
+  # DisplayName carries embedded single quotes; matched as a substring.
+  - type: file_contains
+    description: "Diagnosis names the faulting activity and the exception type"
+    path: "diagnosis.md"
+    includes:
+      - "Get Text 'Invoice Total'"
+      - "UiPath.Core.SelectorNotFoundException"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Root cause is selector/element oriented (not a generic "it failed"), and a
+  # concrete remediation direction is present. Either keyword family satisfies
+  # each sub-assertion.
+  - type: file_check
+    description: "Diagnosis gives a selector-oriented root cause and a concrete fix"
+    path: "diagnosis.md"
+    patterns:
+      - pattern: '(?i)selector|element (?:not|no longer) (?:found|match)|not present|async|timed? ?out'
+        must_match: true
+      - pattern: '(?i)re-?indicate|harden|stable anchor|explicit wait|retry|try.?catch|update the selector'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guard: the agent did NOT misattribute the fault to an activity that
+  # succeeded earlier in the log.
+  - type: file_check
+    description: "Diagnosis does not blame the earlier successful 'Invoice Number' extraction"
+    path: "diagnosis.md"
+    patterns:
+      - pattern: "(?i)Get Text 'Invoice Number'.{0,80}(?:faulted|failed|threw|root cause|caused)"
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0

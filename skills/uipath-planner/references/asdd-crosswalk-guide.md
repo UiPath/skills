@@ -18,7 +18,9 @@ The markdown SDD this skill writes is the **agent-first** artifact: implementati
 
 3. **Match** each template section to its markdown-SDD source(s) per the crosswalk.
 
-4. **Compute missing pieces.** For a template section with no direct SDD source, derive it from SDD data when present; when it needs information the SDD does not hold, insert a labelled placeholder and add it to a list the user must fill. Never fabricate.
+4. **Compute missing pieces.** For a template section with no direct SDD source, derive it from SDD data when present; when it needs information the SDD does not hold, write the literal marker `[SME REVIEW]` followed by what is needed, and add the item to a list the user must fill. Never fabricate.
+
+   > **Marker discipline (see SKILL.md Critical Rule 10).** `[SME REVIEW]` and `[DEFAULT]` are the only gap markers, written verbatim with nothing else inside the brackets — the note goes after the closing bracket (`[SME REVIEW] repository not recorded in the source SDD`). Do not invent a second vocabulary (`[PLACEHOLDER]`, `[TBD]`, `<fill in>`) and do not decorate the marker (`[SME REVIEW — …]`); both are invisible to the reviewer grepping the client document for open items. **Markers already in the source SDD copy through byte-for-byte** — this crosswalk relocates content, it never re-words a gap the SDD author recorded.
 
 5. **Assemble** the matched + computed content into the template's section order, then convert:
 
@@ -37,17 +39,17 @@ RPA / Master-Project oriented. Left column = the template's sections; fill each 
 | **2. AUTOMATED PROCESS DETAILS** — Master Project Name, Robot Type, Orchestrator used?, Scalable, UiPath version | §1 (name) + §16 Deployment Environment (Robot type, Orchestrator, UiPath/Studio version, Scalable) | Direct map. `[SME REVIEW]` carries through where §16 is unfilled. |
 | **3.1 Architectural structure** (diagram) | §10 Master Project Architecture data-flow diagram; §2 Process Map for a single project | Place the Mermaid diagram (render separately if images are needed). |
 | **3.2 Master Project Runtime Details** | Production environment→§16; Prerequisites to run→§16 Runtime Prerequisites; Input Data→§5 Data Definitions; Expected output→§1/§5; How to start→§16 Trigger; Reporting→§16/§8; How is Orchestrator used→§16; Password/compliance→§15 Credentials & Assets + constraints; Stored credentials→§15; List of queue names→§12 Queue Architecture; Schedule→§16; Resolutions→§16 | Assemble one table from several SDD sections. |
-| **3.3 Project name N** (per project) — dev environment, prerequisites, repository, configuration method, reused components, new reusable components | §10/§11 per sub-project; prerequisites→§16; configuration method→§15/§11; reused + new reusable components→§14 Packages / §11 (libraries) | One block per project in §10/§11. Dev-environment name and repository are usually `[SME REVIEW]` → placeholder. |
+| **3.3 Project name N** (per project) — dev environment, prerequisites, repository, configuration method, reused components, new reusable components | §10/§11 per sub-project; prerequisites→§16; configuration method→§15/§11; reused + new reusable components→§14 Packages / §11 (libraries) | One block per project in §10/§11. Dev-environment name and repository are usually `[SME REVIEW]` in §16 — carry the marker through verbatim. |
 | **3.4 Project(s) workflows** — Workflow Name, Description (I/O params) | §3 Detailed Process Steps + §11 Project Structure (workflow list) | — |
 | **3.5 Packages** — Package name, Description | §14 Packages | Direct map. |
 | **3.6 Architectural structure** (2nd diagram) | §12 Queue Architecture diagram, or an alternate §10 view | May duplicate 3.1 in the template — emit the queue/running-order view here. |
-| **4.1 Future improvements** | Out of Scope items + open `[SME REVIEW]` items | Compute candidates; else placeholder for the user. |
-| **4.2 Other remarks** | Assumptions / `[DEFAULT]` notes | Placeholder if none. |
+| **4.1 Future improvements** | Out of Scope items + open `[SME REVIEW]` items | Compute candidates; else one `[SME REVIEW]` line for the user. |
+| **4.2 Other remarks** | Assumptions / `[DEFAULT]` notes | One `[SME REVIEW]` line if none. |
 | **5. GLOSSARY** | The template's standard term list | Reuse as-is; append process-specific terms only if the SDD defined any. |
 
 ## Section gaps
 
-- **Template section with no SDD source** → compute from SDD data; if it needs engagement info the SDD lacks (dev-environment names, repository paths, commercials, timeline), leave a labelled placeholder for the user.
+- **Template section with no SDD source** → compute from SDD data; if it needs engagement info the SDD lacks (dev-environment names, repository paths, commercials, timeline), write `[SME REVIEW]` plus what is needed. Every such section ends up carrying the literal `[SME REVIEW]` string — that is how the reviewer finds them.
 - **SDD section with no template home** (e.g. §17 Testing Strategy, §4 Business Rules, §6 Value Mappings when the template omits them) → append under the nearest fit or an appendix; do not silently drop content.
 
 ## Non-RPA SDDs

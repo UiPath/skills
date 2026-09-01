@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "d8a87528-2dd7-4ae4-a88d-08dec8c34f7c",
+    "Projects": [
+        {
+            "Type": "CaseManagement",
+            "ProjectRelativePath": "LinearThreeStages/project.uiproj",
+            "Id": "08b4ee08-6a88-4cc0-96ef-a955406c502d"
+        }
+    ]
+}

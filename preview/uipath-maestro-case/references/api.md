@@ -9,13 +9,27 @@ Exact `@uipath/flow-sdk/case` authoring signatures and option shapes, from the p
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**Case authoring** — [rule](#rule-function) · [escalation](#escalation-function) · [toUser](#touser-function) · [toGroup](#togroup-function) · [manualTrigger](#manualtrigger-function) · [timerTrigger](#timertrigger-function) · [eventTrigger](#eventtrigger-function) · [jsonSchema](#jsonschema-function) · [casePlan](#caseplan-function)
+> **This page is compact on purpose, and it is not the whole truth.** `@remarks`
+> and `@example` bodies are omitted here. The package's own **`.d.ts` files carry
+> them in full**, they are installed alongside your project, and they are the
+> authoritative declarations this page is generated from — so when a signature
+> names a type whose members or rules you need, read the declaration:
+>
+> ```bash
+> grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
+> #  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts
+> ```
+>
+> Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no
+> types and no comments.
+
+**Case authoring** — [rule](#rule-function) · [when](#when-function) · [escalation](#escalation-function) · [toUser](#touser-function) · [toGroup](#togroup-function) · [manualTrigger](#manualtrigger-function) · [timerTrigger](#timertrigger-function) · [eventTrigger](#eventtrigger-function) · [jsonSchema](#jsonschema-function) · [casePlan](#caseplan-function)
 
 **Builders** — [CaseBuilder](#casebuilder-class) · [StageBuilder](#stagebuilder-class) · [TaskBuilder](#taskbuilder-class)
 
-**Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ConnectorOpts](#connectoropts-interface)
+**Option shapes** — [RuleOpts](#ruleopts-interface) · [EscalationOpts](#escalationopts-interface) · [ManualTriggerOpts](#manualtriggeropts-interface) · [TimerTriggerOpts](#timertriggeropts-interface) · [ResolvedEventTriggerOpts](#resolvedeventtriggeropts-interface) · [EventTriggerOpts](#eventtriggeropts-interface) · [EventSubscription](#eventsubscription-interface) · [TriggerOptions](#triggeroptions-interface) · [SlaOpts](#slaopts-interface) · [EntryOpts](#entryopts-interface) · [ExitOpts](#exitopts-interface) · [ExternalTaskOptions](#externaltaskoptions-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-interface) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TypeDesc](#typedesc-type) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [BuiltStage](#builtstage-interface) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TimerSpecData](#timerspecdata-interface) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface)
+**Supporting types** — [CaseRuleType](#caseruletype-type) · [CaseRule](#caserule-interface) · [WhenExpression](#whenexpression-interface) · [BuiltEscalation](#builtescalation-interface) · [EscalationRecipient](#escalationrecipient-interface) · [BuiltTrigger](#builttrigger-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [JsonSchemaType](#jsonschematype-interface) · [WaitConnectorSpec](#waitconnectorspec-type) · [EscalationTrigger](#escalationtrigger-type) · [CaseTriggerKind](#casetriggerkind-type) · [TaskOutputBinding](#taskoutputbinding-interface) · [TriggerMeta](#triggermeta-interface) · [TypeDesc](#typedesc-type) · [CaseAppConfig](#caseappconfig-interface) · [CaseLayout](#caselayout-interface) · [CaseRuleGrid](#caserulegrid-type) · [BuiltCase](#builtcase-interface) · [WaitConnectorPlaceholderSpec](#waitconnectorplaceholderspec-interface) · [EventFilter](#eventfilter-interface) · [CaseAppSection](#caseappsection-interface) · [CaseNodeLayout](#casenodelayout-interface) · [BuiltStage](#builtstage-interface) · [CaseRuleInput](#caseruleinput-type) · [SlaUnit](#slaunit-type) · [CaseVarDecl](#casevardecl-interface) · [BuiltCaseExitCondition](#builtcaseexitcondition-interface) · [BuiltSla](#builtsla-interface) · [CaseAppDetailValue](#caseappdetailvalue-type) · [UnresolvedReferenceTaskKind](#unresolvedreferencetaskkind-type) · [ConnectorDescriptor](#connectordescriptor-type) · [RecipientType](#recipienttype-type) · [ActionField](#actionfield-interface) · [TimerSpecData](#timerspecdata-type) · [BuiltTask](#builttask-interface) · [StageExitType](#stageexittype-type) · [SelectNextStageSpec](#selectnextstagespec-interface) · [BuiltEntryCondition](#builtentrycondition-interface) · [BuiltExitCondition](#builtexitcondition-interface) · [ConnectorMeta](#connectormeta-interface) · [ExternalExecutionMode](#externalexecutionmode-type) · [TaskKind](#taskkind-type) · [TaskRef](#taskref-interface) · [ActionSpecData](#actionspecdata-interface) · [ConnectorSpecData](#connectorspecdata-type) · [ExternalTaskSpecData](#externaltaskspecdata-interface) · [TaskInputBinding](#taskinputbinding-interface) · [BuiltTaskEntryCondition](#builttaskentrycondition-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
 
 ## rule (function)
 
@@ -26,6 +40,15 @@ generated from the built types; longer tutorials stay in the node references.
  * `entryWhen`/`exitWhen`/etc.
  */
 export declare function rule(type: CaseRuleType, opts?: RuleOpts): CaseRule;
+
+// CaseRuleType = 'case-entered' | 'required-tasks-completed' | 'required-stages-completed' | 'selected-stage-completed' | 'selected-stage-exited' | 'selected-tasks-completed' | 'current-stage-entered' | 'adhoc' | 'runs-sequentially' | 'user-selected-stage' | 'wait-for-connector' | 'sla-status-change'
+````
+
+## when (function)
+
+````ts
+/** Gate a condition slot only on case data without naming its default event. */
+export declare function when(expression: string): WhenExpression;
 ````
 
 ## escalation (function)
@@ -68,9 +91,13 @@ export declare function timerTrigger(opts: TimerTriggerOpts): BuiltTrigger;
 ````ts
 /**
  * An Integration Service **event** trigger — an external event (a new row, an
- * email, a webhook) starts the case. Emits `data.inputs.serviceType:
- * "Intsvc.EventTrigger"`; payload fields map onto its `outputs[]`.
+ * email, a webhook) starts the case. A generated descriptor supplies the
+ * connector and event identity; serialization resolves its context, inputs,
+ * outputs, and root bindings through the connector library.
  */
+export declare function eventTrigger<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: ResolvedEventTriggerOpts<W>): BuiltTrigger;
+
+/** An Integration Service event trigger in placeholder or stringly-resolved form. */
 export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
 ````
 
@@ -83,6 +110,8 @@ export declare function eventTrigger(opts?: EventTriggerOpts): BuiltTrigger;
  * `TypeDesc` is expected.
  */
 export declare function jsonSchema(body: unknown): JsonSchemaType;
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## casePlan (function)
@@ -104,8 +133,19 @@ declare class CaseBuilder {
     description(text: string): this;
     /** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`). */
     identifier(id: string, type?: 'constant' | 'external'): this;
-    /** Turn the generated Case App on or off. */
-    caseApp(enabled?: boolean): this;
+    /** Turn the generated Case App on or off, or configure its summary and sections. */
+    caseApp(enabledOrConfig?: boolean | CaseAppConfig): this;
+    /**
+     * Enable optional tasks whose entry rule is `adhoc`, allowing them to be
+     * started through the Case ad-hoc message contract.
+     */
+    allowAdhocTasks(enabled?: boolean): this;
+    /**
+     * Set optional designer layout for stages and triggers by their author-level
+     * names. This metadata does not affect Case behavior. Unknown or ambiguous
+     * names fail serialization rather than being silently dropped.
+     */
+    layout(layout: CaseLayout): this;
     /**
      * Declare case In-args. Each value is a `TypeDesc`, or `{ type, default }`
      * to set a default. Pass `{ from: <trigger> }` to bind the args to a trigger —
@@ -156,6 +196,8 @@ declare class CaseBuilder {
     /** Finish the plan and return the description the serializer writes. */
     build(): BuiltCase;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## StageBuilder (class)
@@ -191,6 +233,11 @@ declare class TaskBuilder {
     process(name: string, opts?: {
             folder?: string;
         }): this;
+    /**
+     * Preserve an explicitly unresolved published-resource task as a typed
+     * skeleton whose serialized `data` is `{}`.
+     */
+    unresolved(kind: UnresolvedReferenceTaskKind): this;
     /** Reference a published agent. */
     agent(name: string, opts?: {
             folder?: string;
@@ -211,6 +258,14 @@ declare class TaskBuilder {
     caseManagement(name: string, opts?: {
             folder?: string;
         }): this;
+    /** Reference a published Maestro Flow. */
+    flowProcess(name: string, opts?: {
+            folder?: string;
+        }): this;
+    /** Invoke an external agent through its generated Integration Service descriptor. */
+    externalAgent<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
+    /** Invoke an external workflow through its generated Integration Service descriptor. */
+    externalWorkflow<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, opts: ExternalTaskOptions<I>): this;
     /**
      * An Action Center human task. `recipient` may be an email (→ Type 2) or
      * `{ type, value }`. `inputs`/`outputs` declare the task's form fields — inputs
@@ -239,19 +294,24 @@ declare class TaskBuilder {
     connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;
     /**
      * A wait-for-connector task — suspend the stage until an Integration Service
-     * **event** fires. Omit the spec (or `connectorKey`/`operation`) for a
-     * **placeholder** (a connector not yet registered): `data.uipath` carries only
-     * `serviceType: "Intsvc.WaitForEvent"`. Naming the connector/operation emits the
-     * `context` subscription. (A fully *resolved* subscription — real
-     * connection/typeId — needs live connector resolution and is out of scope.)
+     * **event** fires. A generated descriptor supplies the connector/event identity;
+     * serialization resolves its full subscription through the connector library.
      */
+    waitForConnector<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: TriggerOptions<W>): this;
+    /** A wait-for-connector task in placeholder or stringly-resolved form. */
     waitForConnector(spec?: WaitConnectorSpec): this;
     /** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`). */
-    waitForTimer(spec?: TimerSpecData): this;
+    waitForTimer(spec: TimerSpecData): this;
     /** Mark this task required, so its stage cannot complete without it. */
     required(value?: boolean): this;
     /** Run this task at most once, even if its entry condition is met again. */
     runOnce(value?: boolean): this;
+    /**
+     * Run this task again whenever its entry condition is met after stage re-entry.
+     * This is the semantic inverse of `TaskBuilder.runOnce` and emits an explicit
+     * `shouldRunOnlyOnce: false`.
+     */
+    runOnReEntry(): this;
     /** Describe this task. */
     description(text: string): this;
     /** Skip this task when the `=js:` expression is truthy. */
@@ -282,6 +342,9 @@ declare class TaskBuilder {
             displayName?: string;
         }): this;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
+// UnresolvedReferenceTaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management'
 ````
 
 ## RuleOpts (interface)
@@ -335,6 +398,8 @@ export interface EscalationOpts {
     atRiskPercentage?: number;
     displayName?: string;
 }
+
+// EscalationTrigger = 'at-risk' | 'sla-breached'
 ````
 
 ## ManualTriggerOpts (interface)
@@ -364,12 +429,37 @@ export interface TimerTriggerOpts {
 }
 ````
 
+## ResolvedEventTriggerOpts (interface)
+
+````ts
+/** Options for the typed `eventTrigger(Descriptor, options)` form. */
+export interface ResolvedEventTriggerOpts<W extends Record<string, string> = Record<string, string>> extends TriggerOptions<W> {
+    /** Trigger node label. */
+    name?: string;
+    /** Trigger node description. */
+    description?: string;
+    /** Event-payload fields to extract into readable case variables. */
+    outputs?: Record<string, string | {
+            source: string;
+            type?: TypeDesc;
+        }>;
+}
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
+````
+
 ## EventTriggerOpts (interface)
 
 ````ts
 export interface EventTriggerOpts {
     name?: string;
     description?: string;
+    /**
+     * Stringly resolved subscription. Prefer the descriptor overload when a
+     * prepared connector module is available. Omit this for the legacy
+     * `serviceType`-only placeholder.
+     */
+    subscription?: EventSubscription;
     /**
      * Optional event-payload extractions. Each key is a case-variable name read
      * downstream as `=vars.<name>`; each value is the payload field expression
@@ -380,6 +470,62 @@ export interface EventTriggerOpts {
             source: string;
             type?: TypeDesc;
         }>;
+}
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
+````
+
+## EventSubscription (interface)
+
+````ts
+/** What a connector event subscribes to. */
+export interface EventSubscription {
+    /** Connector key, e.g. `'uipath-microsoft-outlook365'`. */
+    connector: string;
+    /** The curated event, e.g. `'email-received'`. */
+    event: string;
+    /**
+     * The connector's event parameters — what SCOPES the subscription. For Outlook
+     * email-received that is `{ parentFolderId: '<mail folder id>' }`; the field
+     * names come from the connector, and the ids are only resolvable against the
+     * bound connection (`uip is triggers describe <key> <EVENT> <object>
+     * --connection-id <id>`).
+     */
+    where?: Record<string, string>;
+    /** Optional filters on the payload. Omit to take every event in scope. */
+    filters?: EventFilter[];
+    /** bindings.json id for the connection (defaults to the flow's single binding). */
+    connection?: string;
+    /** bindings.json id for the folder key. */
+    folder?: string;
+    version?: string;
+}
+````
+
+## TriggerOptions (interface)
+
+````ts
+/**
+ * The typed `onEvent`/`waitForEvent` options — everything an
+ * `EventSubscription` carries except `connector`/`event`, which the
+ * `TriggerDescriptor` supplies. `where` is generic so a connection-scoped
+ * descriptor (C4) can type its parameter names; offline it is a loose string map.
+ */
+export interface TriggerOptions<W = Record<string, string>> {
+    /**
+     * The subscription's scope — the connector's event parameters, which is what IS
+     * registers. Loose offline; for Outlook `email-received` that is
+     * `{ parentFolderId: '<mail folder id>' }`.
+     */
+    where?: W;
+    /** Optional filters on the payload. Omit to take every event in scope. */
+    filters?: EventFilter[];
+    /** bindings.json id for the connection (defaults to the flow's single binding). */
+    connection?: string;
+    /** bindings.json id for the folder key. */
+    folder?: string;
+    /** Override the descriptor's version. */
+    version?: string;
 }
 ````
 
@@ -406,6 +552,8 @@ export interface SlaOpts {
     /** Escalations fired off this deadline. */
     escalations?: BuiltEscalation[];
 }
+
+// SlaUnit = 'min' | 'h' | 'd' | 'w' | 'm'
 ````
 
 ## EntryOpts (interface)
@@ -438,7 +586,32 @@ export interface ExitOpts {
      * an exit that routes there).
      */
     exitToStage?: string;
+    /**
+     * Enable the runtime select-next-stage API for this `wait-for-user` exit.
+     * `objectName` is the Data Fabric entity that receives `{ instanceId, nextStage }`.
+     */
+    selectNextStage?: SelectNextStageSpec;
 }
+
+// StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin'
+````
+
+## ExternalTaskOptions (interface)
+
+````ts
+/** Required wiring and typed inputs for an external agent/workflow invocation. */
+export interface ExternalTaskOptions<I extends Record<string, unknown>> {
+    /** Symbolic Integration Service connection name declared in `bindings.json`. */
+    connection: string;
+    /** Symbolic Orchestrator folder binding name declared in `bindings.json`. */
+    folder: string;
+    /** Closed runtime mode; each family lowers this to its exact supported service type. */
+    mode: ExternalExecutionMode;
+    /** Inputs statically checked by the generated connector descriptor. */
+    inputs: I;
+}
+
+// ExternalExecutionMode = 'sync' | 'async'
 ````
 
 ## ConnectorOpts (interface)
@@ -471,6 +644,17 @@ export type CaseRuleType = 'case-entered' | 'required-tasks-completed' | 'requir
 export interface CaseRule extends RuleOpts {
     rule: CaseRuleType;
 }
+
+// CaseRuleType = 'case-entered' | 'required-tasks-completed' | 'required-stages-completed' | 'selected-stage-completed' | 'selected-stage-exited' | 'selected-tasks-completed' | 'current-stage-entered' | 'adhoc' | 'runs-sequentially' | 'user-selected-stage' | 'wait-for-connector' | 'sla-status-change'
+````
+
+## WhenExpression (interface)
+
+````ts
+export interface WhenExpression {
+    readonly kind: 'case-when-expression';
+    readonly expression: string;
+}
 ````
 
 ## BuiltEscalation (interface)
@@ -499,7 +683,19 @@ export interface BuiltTrigger {
     description?: string;
     timeCycle?: string;
     eventOutputs?: TaskOutputBinding[];
+    eventSubscription?: EventSubscription;
 }
+
+// CaseTriggerKind = 'manual' | 'timer' | 'event'
+````
+
+## TriggerDescriptor (type)
+
+````ts
+export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
+    readonly __where?: W;
+    readonly __output?: O;
+};
 ````
 
 ## JsonSchemaType (interface)
@@ -511,13 +707,10 @@ export interface JsonSchemaType {
 }
 ````
 
-## WaitConnectorSpec (interface)
+## WaitConnectorSpec (type)
 
 ````ts
-export interface WaitConnectorSpec {
-    connectorKey?: string;
-    operation?: string;
-}
+export type WaitConnectorSpec = WaitConnectorPlaceholderSpec | EventSubscription;
 ````
 
 ## EscalationTrigger (type)
@@ -540,18 +733,51 @@ export interface TaskOutputBinding {
     source: string;
     type: TypeDesc;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
+````
+
+## TriggerMeta (interface)
+
+````ts
+export interface TriggerMeta {
+    connector: string;
+    event: string;
+    version?: string;
+    displayName?: string;
+}
 ````
 
 ## TypeDesc (type)
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
+````
+
+## CaseAppConfig (interface)
+
+````ts
+export interface CaseAppConfig {
+    summary: string;
+    sections: CaseAppSection[];
+}
+````
+
+## CaseLayout (interface)
+
+````ts
+export interface CaseLayout {
+    stages?: Record<string, CaseNodeLayout>;
+    triggers?: Record<string, CaseNodeLayout>;
+}
 ````
 
 ## CaseRuleGrid (type)
 
 ````ts
-export type CaseRuleGrid = CaseRule | CaseRule[] | CaseRule[][];
+export type CaseRuleGrid = CaseRuleInput | CaseRuleInput[] | CaseRuleInput[][];
 ````
 
 ## BuiltCase (interface)
@@ -565,11 +791,61 @@ export interface BuiltCase {
     identifier: string;
     identifierType: 'constant' | 'external';
     caseAppEnabled: boolean;
+    caseAppConfig?: CaseAppConfig;
+    allowAdhocOptionalStageTasks?: boolean;
     vars: CaseVarDecl[];
     stages: BuiltStage[];
     caseExit: BuiltCaseExitCondition[];
     slaRules: BuiltSla[];
     triggers: BuiltTrigger[];
+    layout?: CaseLayout;
+}
+````
+
+## WaitConnectorPlaceholderSpec (interface)
+
+````ts
+export interface WaitConnectorPlaceholderSpec {
+    connectorKey?: string;
+    operation?: string;
+}
+````
+
+## EventFilter (interface)
+
+````ts
+export interface EventFilter {
+    field: string;
+    contains: string;
+}
+````
+
+## CaseAppSection (interface)
+
+````ts
+export interface CaseAppSection {
+    id?: string;
+    title: string;
+    details: Record<string, CaseAppDetailValue>;
+}
+````
+
+## CaseNodeLayout (interface)
+
+````ts
+export interface CaseNodeLayout {
+    position?: {
+            x: number;
+            y: number;
+        };
+    style?: Record<string, string | number>;
+    measured?: {
+            width: number;
+            height: number;
+        };
+    width?: number;
+    height?: number;
+    zIndex?: number;
 }
 ````
 
@@ -586,6 +862,12 @@ export interface BuiltStage {
     exit: BuiltExitCondition[];
     slaRules: BuiltSla[];
 }
+````
+
+## CaseRuleInput (type)
+
+````ts
+export type CaseRuleInput = CaseRule | WhenExpression;
 ````
 
 ## SlaUnit (type)
@@ -605,6 +887,8 @@ export interface CaseVarDecl {
     body?: unknown;
     sourceTrigger?: BuiltTrigger;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## BuiltCaseExitCondition (interface)
@@ -627,6 +911,29 @@ export interface BuiltSla {
     expression: string;
     escalations: BuiltEscalation[];
 }
+
+// SlaUnit = 'min' | 'h' | 'd' | 'w' | 'm'
+````
+
+## CaseAppDetailValue (type)
+
+````ts
+export type CaseAppDetailValue = string | number | boolean | null;
+````
+
+## UnresolvedReferenceTaskKind (type)
+
+````ts
+export type UnresolvedReferenceTaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management';
+````
+
+## ConnectorDescriptor (type)
+
+````ts
+export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
+    readonly __inputs?: I;
+    readonly __outputs?: O;
+};
 ````
 
 ## RecipientType (type)
@@ -641,27 +948,35 @@ export type RecipientType = 0 | 1 | 2 | 3;
 export interface ActionField {
     name: string;
     type?: TypeDesc;
+    subType?: string;
     displayName?: string;
+    value?: string;
+    required?: boolean;
+    options?: Array<{
+            value: string;
+            label: string;
+        }>;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
-## ConnectorDescriptor (type)
+## TimerSpecData (type)
 
 ````ts
-export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
-    readonly __inputs?: I;
-    readonly __outputs?: O;
+export type TimerSpecData = {
+    duration: string;
+    date?: never;
+    cycle?: never;
+} | {
+    duration?: never;
+    date: string;
+    cycle?: never;
+} | {
+    duration?: never;
+    date?: never;
+    cycle: string;
 };
-````
-
-## TimerSpecData (interface)
-
-````ts
-export interface TimerSpecData {
-    duration?: string;
-    date?: string;
-    cycle?: string;
-}
 ````
 
 ## BuiltTask (interface)
@@ -673,6 +988,7 @@ export interface BuiltTask {
     ref?: TaskRef;
     action?: ActionSpecData;
     connector?: ConnectorSpecData;
+    external?: ExternalTaskSpecData;
     timer?: TimerSpecData;
     waitConnector?: WaitConnectorSpec;
     required?: boolean;
@@ -683,12 +999,32 @@ export interface BuiltTask {
     outputs?: TaskOutputBinding[];
     entry: BuiltTaskEntryCondition[];
 }
+
+// TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'flow-process' | 'external-agent' | 'external-workflow' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector'
 ````
 
 ## StageExitType (type)
 
 ````ts
 export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
+````
+
+## SelectNextStageSpec (interface)
+
+````ts
+export interface SelectNextStageSpec {
+    objectName: string;
+    connector?: {
+            /** Integration Service connector key, for example `uipath-http-webhook`. */
+            connectorKey: string;
+            /** Connector event operation, for example `GENERIC`. */
+            operation: string;
+            /** Symbolic connection name declared in bindings.json. */
+            connection?: string;
+            /** Symbolic folder name declared in bindings.json. */
+            folder?: string;
+        };
+}
 ````
 
 ## BuiltEntryCondition (interface)
@@ -709,8 +1045,11 @@ export interface BuiltExitCondition {
     marksStageComplete?: boolean;
     type?: StageExitType;
     exitToStage?: string;
+    selectNextStage?: SelectNextStageSpec;
     rules: CaseRule[][];
 }
+
+// StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin'
 ````
 
 ## ConnectorMeta (interface)
@@ -722,13 +1061,20 @@ export interface ConnectorMeta {
     requiresConnection?: boolean;
     requiresFolderKey?: boolean;
     objectName?: string;
+    lookups?: Readonly<Record<string, LookupSpec>>;
 }
+````
+
+## ExternalExecutionMode (type)
+
+````ts
+export type ExternalExecutionMode = 'sync' | 'async';
 ````
 
 ## TaskKind (type)
 
 ````ts
-export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
+export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'flow-process' | 'external-agent' | 'external-workflow' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
 ````
 
 ## TaskRef (interface)
@@ -765,6 +1111,17 @@ export type ConnectorSpecData = Extract<ActionSpec, {
 }>;
 ````
 
+## ExternalTaskSpecData (interface)
+
+````ts
+export interface ExternalTaskSpecData {
+    mode: ExternalExecutionMode;
+    connector: ConnectorSpecData;
+}
+
+// ExternalExecutionMode = 'sync' | 'async'
+````
+
 ## TaskInputBinding (interface)
 
 ````ts
@@ -773,6 +1130,8 @@ export interface TaskInputBinding {
     value: string;
     type: TypeDesc;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## BuiltTaskEntryCondition (interface)
@@ -782,4 +1141,32 @@ export interface BuiltTaskEntryCondition {
     displayName?: string;
     rules: CaseRule[][];
 }
+````
+
+## LookupSpec (interface)
+
+````ts
+export interface LookupSpec {
+    objectName?: string;
+    path: string;
+    by: readonly string[];
+    value: string;
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupStrategy (type)
+
+````ts
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
 ````

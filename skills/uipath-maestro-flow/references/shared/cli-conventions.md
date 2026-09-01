@@ -103,7 +103,7 @@ Most agent-side retry loops on `uip --output json` parsing come from guessing th
 
 ### Cross-references
 
-The broad-discovery recipe above is used in [author/references/plugins/connector/planning.md](../author/references/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/references/plugins/connector/impl.md](../author/references/plugins/connector/impl.md) for connection-resource lookup. Keep the three in sync on the **preference** (always `--output-filter`) and the **shape pin** (`registry search` Data is a flat array of PascalCase objects); each file may pick a projection appropriate to its task.
+The broad-discovery recipe above is used in [author/plugins/connector/planning.md](../author/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/plugins/connector/impl.md](../author/plugins/connector/impl.md) for connection-resource lookup. Keep the three in sync on the **preference** (always `--output-filter`) and the **shape pin** (`registry search` Data is a flat array of PascalCase objects); each file may pick a projection appropriate to its task.
 
 ## 4. CLI output JSON shape
 
@@ -158,15 +158,19 @@ uip or folders list --output json
 
 Or pull it from the job/process context (e.g., `Data.folderKey` on a job status response, or from the debug output's surrounding metadata).
 
-## 7. `UIPCLI_LOG_LEVEL=info` for debug runs
+## 7. `UIP_LOG_LEVEL=info` for debug runs
 
-Set `UIPCLI_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail in the CLI output. Without it, debug runs return only the final result.
+Set `UIP_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail in the CLI output. Without it, debug runs return only the final result.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
-The env var has no effect on other subcommands.
+At `info` the run narrates the `jobKey`, the `instanceId`, and the Studio Web URL to **stderr**. Capture stderr, not just stdout: when a run overruns its poll budget the CLI reports only `Debug polling timed out after <N>s` on stdout, with no instance identifier — the stderr narration is then the only way to find the instance and inspect it (`uip maestro flow debug-instance incidents <instanceId>`).
+
+> **The variable is `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL`.** The CLI reads only the former; the latter is silently ignored, so a command prefixed with it produces no extra output at all. `--log-level <level>` is the equivalent global flag.
+
+The level applies to every `uip` command, not just `flow debug`.
 
 ## 8. Global options
 

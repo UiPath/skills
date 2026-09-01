@@ -5,7 +5,7 @@ description: >
   via process-index.json, and direct caseplan.json write of a `type: "rpa"`
   task. Validates the resulting case file and runs `uip maestro case debug`
   end-to-end, asserting only that the case finalStatus is `Completed`.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:operate, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
 run_limits:

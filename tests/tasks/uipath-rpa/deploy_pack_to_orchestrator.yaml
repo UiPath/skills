@@ -1,0 +1,122 @@
+task_id: skill-rpa-deploy-pack-to-orchestrator
+description: >
+  Skill-guided evaluation (operate mode, O2/O9 deploy archetype): the agent
+  scaffolds a minimal modern Portable process, then packages it for Orchestrator
+  with `uip rpa pack` (the skill teaches `uip rpa pack` -> `uip or packages
+  upload`; there is no `uip rpa publish`). The deterministic, offline-gradable
+  signal is that the project PACKS cleanly into a .nupkg — the artifact the
+  upload step would push. Actual publish to a live Orchestrator folder needs a
+  tenant connection and is exercised only when cloud auth is present (advisory,
+  ungated). Fills the operate/deploy gap the suite lacks — skill-rpa-run-smoke-
+  output covers `run`, this covers pack/deploy. Adapted from the
+  Autopilot.Evaluation RPA golden scenario `gen-medium-deploy-to-shared-folder`,
+  reduced to the deterministic pack proxy (LLM judge and live-publish dropped).
+
+  Platform note: `uip rpa pack` compiles the project via the headless Studio host
+  (UiPath.Studio.Helm) and needs a Windows + Studio-class runner; the pack
+  outcome grades only there. The behavioral criteria (init/pack invocation shape)
+  grade the command surface on any runner.
+tags: [uipath-rpa, windows, integration, mode:operate, lifecycle:generate, outcome-graded]
+max_iterations: 2
+
+run_limits:
+  max_turns: 60
+  turn_timeout: 2000
+  task_timeout: 2000
+
+initial_prompt: |
+  Create a minimal UiPath automation called "DeployDemo" in the current
+  directory, then package it for deployment to Orchestrator.
+
+  Requirements:
+  - It is a brand-new project (none exists yet) — scaffold it with the RPA
+    skill's normal `init` flow. It must be a modern cross-platform (Portable)
+    XAML project.
+  - The workflow (`DeployDemo/Main.xaml`) must log a single message via a
+    Log Message / Write Line activity — the process is intentionally trivial;
+    the deliverable is packaging, not workflow logic.
+  - Bring the workflow to per-file `validate` clean, then package the project
+    into a `.nupkg` with the skill's pack command. Write the pack output to a
+    directory OUTSIDE the project (a sibling), not inside it.
+  - If — and only if — a UiPath tenant is authenticated in this environment,
+    also upload the package to the Orchestrator "Shared" folder. If no tenant is
+    available, stop after producing the `.nupkg`; do not fabricate a publish.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+  Important:
+  - The `uip` CLI is available in this sandbox. Choose the correct CLI for a
+    modern project. There is no `uip rpa publish` — pack, then upload the
+    package.
+  - Use `--output json` on commands whose output you parse.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded a modern Portable (cross-platform) project with uip rpa init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+init\b[\s\S]*--target-framework\s+"?Portable"?'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "DeployDemo project.json was created"
+    path: "DeployDemo/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Main.xaml is a valid Process workflow that logs a message (VB, not C#)"
+    path: "DeployDemo/Main.xaml"
+    patterns:
+      - pattern: '<Activity\b'
+        must_match: true
+      - pattern: '(?i)LogMessage|WriteLine'
+        must_match: true
+      - pattern: 'CSharpValue|CSharpReference'
+        must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran per-file uip rpa validate before packing"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+validate\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Core operate action: the agent packaged the project for deployment.
+  - type: command_executed
+    description: "Agent packaged the project with uip rpa pack"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*rpa\s+pack\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Outcome (Windows runner only): an independent pack re-run produces a .nupkg —
+  # the deterministic proxy for publish. Output dir is a SIBLING of the project
+  # (packing into a descendant of the project dir is rejected by the tool). The
+  # Python wrapper resolves the absolute project path (cross-platform) and the
+  # `uip` shim via shutil.which (handles Windows uip.cmd PATHEXT).
+  - type: run_command
+    description: "uip rpa pack produces a .nupkg for the DeployDemo project"
+    command: |-
+      python3 -c "import subprocess, os, sys, shutil, glob; uip = shutil.which('uip') or 'uip'; out = os.path.abspath('.pack-out-deploy-demo'); rc = subprocess.call([uip, 'rpa', 'pack', os.path.abspath('DeployDemo'), out, '--output', 'json']); sys.exit(0 if rc == 0 and glob.glob(os.path.join(out, '*.nupkg')) else 1)"
+    expected_exit_code: 0
+    timeout: 240
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (ungated): records a publish attempt when a tenant is present.
+  # pass_threshold 0 — never docks an agent that correctly stops at pack when no
+  # tenant is available.
+  - type: command_executed
+    description: "Advisory: agent attempted to upload the package to Orchestrator (only when a tenant is available)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+packages\s+upload\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

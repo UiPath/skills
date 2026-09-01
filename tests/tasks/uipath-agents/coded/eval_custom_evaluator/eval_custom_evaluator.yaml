@@ -3,14 +3,16 @@ description: >
   Custom evaluator lifecycle. Verifies the skill guides the agent to scaffold
   a custom evaluator with `uip codedagent add evaluator`, implement it, and
   register it with `uip codedagent register evaluator` to generate the JSON
-  spec. The evaluator must be wired into an eval set and run successfully.
-  The greeter is deliberately non-deterministic (varied greeting phrasing per
-  run): deterministic no-LLM logic is a Coded Function and the skill redirects
-  it to uipath-functions, which has no eval lifecycle. Non-determinism is what
-  makes this an agent workload that needs evals — do not reword the prompt
-  back to "pure deterministic Python", and keep the prompt free of
-  implementation hints (no framework, node, or randomness mechanics).
-tags: [uipath-agents, smoke, coded, lifecycle:validate, feature:eval]
+  spec. The evaluator must be wired into an eval set and run successfully
+  (every case gets a numeric score; at least one scores > 0). Scenario: a
+  `topic-detector` agent reads a short two-person conversation and names the
+  topic discussed; the custom evaluator decides whether the detected topic
+  is correct. Topic detection over free-form dialogue needs an LLM call, so
+  the workload is genuinely agentic, and the lenient/synonym-aware
+  correctness judgement is a natural custom-code fit that no built-in
+  evaluator covers. Keep the prompt free of implementation hints (no
+  framework, node, or matching mechanics).
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:validate, feature:eval]
 
 run_limits:
   expected_turns: 65
@@ -19,18 +21,21 @@ run_limits:
   max_turns: 90
 
 initial_prompt: |
-  I want a small UiPath coded agent called `greeter` — given a name
-  it should politely greet that person back. Mix up the phrasing a
-  bit so it doesn't sound canned.
+  I want a small UiPath coded agent called `topic-detector`. Give it a
+  short conversation — a few lines back and forth between two people —
+  and it should tell me, in a word or two, what topic they were
+  discussing.
 
-  Once it's running locally, I want a custom evaluator for it that
-  flags whether the agent responds quickly enough — say, under about
-  half a second. Hook that evaluator up to an eval set with a couple
-  of test cases and run it locally — no cloud reporting — and write
-  the results out so I can review them.
+  Once it's running locally, I want a custom evaluator for it — my own
+  code, not one of the built-in ones — that decides whether the agent
+  got the topic right for a given conversation. Be reasonable about
+  wording: if the conversation is about fixing a car, "car repair" and
+  "auto repair" should both count. Hook that evaluator up to an eval
+  set with a couple of conversations and run it locally — no cloud
+  reporting — and write the results out so I can review them.
 
-  Build it here. It's all local — no sign-in, nothing to publish or
-  deploy. Work straight through in one pass.
+  Build it here. It's all local — nothing to publish or deploy. Work
+  straight through in one pass.
 
 success_criteria:
   - type: command_executed

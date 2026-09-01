@@ -61,8 +61,16 @@ def find_project_root(start: Path) -> Path:
     """Locate the generated dashboard project root.
 
     The skill scaffolds into a <routingName> subdirectory (e.g. agent-health-x7k2),
-    so the project may be at cwd OR one level (or more) below it. The root is the
-    shallowest directory containing package.json AND (intent.json OR a src/ dir).
+    so the project may be at cwd OR one level (or more) below it. A candidate is any
+    directory containing package.json AND (intent.json OR a src/ dir).
+
+    A failed scaffold can leave an abandoned husk beside the real project at the SAME
+    depth (both have package.json + src/). Depth alone cannot separate them, so rank
+    by build completeness FIRST: a project carrying intent.json / metrics / dashboard
+    output always beats a bare husk. Remaining ties break on depth, then on path
+    string -- never on set iteration order, which Python randomizes per process and
+    which silently turned this check into a coin flip.
+
     Falls back to ``start`` when nothing matches (so structural checks emit a clear
     'package.json not found' failure).
     """
@@ -78,8 +86,17 @@ def find_project_root(start: Path) -> Path:
             candidates.append(d)
     if not candidates:
         return start
-    # Shallowest (fewest path parts) wins.
-    return sorted(set(candidates), key=lambda p: len(p.parts))[0]
+
+    def rank(p: Path):
+        # Higher completeness first, then shallower, then lexical (fully deterministic).
+        built = (
+            (p / "intent.json").exists()
+            + any(d.is_dir() for d in (p / "metrics", p / "src" / "metrics"))
+            + (p / "src" / "dashboard").is_dir()
+        )
+        return (-built, len(p.parts), p.as_posix())
+
+    return sorted(set(candidates), key=rank)[0]
 
 
 def find_files(root: Path, suffix: str, path_contains: str = "") -> list:

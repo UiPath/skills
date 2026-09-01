@@ -93,7 +93,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 **Field semantics on the T-entry:**
 
 - `category` — required, one of `In`, `Out`, `Variable`
-- `type` — required, one of `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`
+- `type` — required, one of `string`, `number`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`. **Emit the SDD's declared type verbatim — never substitute a near-equivalent.** `number` and `integer` are distinct and both valid; rewriting an SDD `number` as `integer` (or `float`/`double` as `number`) produces a caseplan that validates but no longer matches the declared contract, and downstream extract rows inherit the wrong type. If the SDD names a type not listed here, keep it as written and record it as a Review Flag rather than mapping it onto the nearest listed value.
 - `sourceTrigger` — T-number when the value comes from a single trigger's payload (Variable category)
 - `sourceTriggers` — for a `Variable`: CSV of T-numbers when multiple triggers populate it. For an `In`-arg: a single `T<N>` selecting the trigger it binds to (blank → primary trigger T02; never a CSV). Replaces the legacy `triggerRef` field.
 - `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
@@ -117,7 +117,9 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 
 ## Types
 
-`"string"` | `"integer"` | `"float"` | `"double"` | `"boolean"` | `"datetime"` | `"date"` | `"jsonSchema"` | `"file"`
+`"string"` | `"number"` | `"integer"` | `"float"` | `"double"` | `"boolean"` | `"datetime"` | `"date"` | `"jsonSchema"` | `"file"`
+
+This list is not a normalisation target. Carry the SDD's type across unchanged; `number` -> `integer` is the substitution that has actually shipped and it silently breaks the extract rows typed from that variable.
 
 ## Naming
 

@@ -29,7 +29,7 @@ export default flow('observatory-seeing')
   .step('fetchSun', http({
     url: tmpl`https://api.sunrise-sunset.org/json?lat=${input('lat')}&lng=${input('lng')}&formatted=0`,
     managed: true,
-    // Declare what we read, or flow-check refuses the read (FC507).
+    // Declare what we read, or the read is refused.
     returns: { results: 'object' },
   }))
   // Service down / rate-limited / unknown coordinates: carry on with a stated
@@ -42,7 +42,7 @@ export default flow('observatory-seeing')
   // Success path — reached only when the call actually succeeded.
   .step('describe', script({
     // Read the DECLARED field (`body.results`) and index it in JS; reading
-    // `body.results.sunset` through $vars would be FC507 (declaration stops at
+    // `body.results.sunset` through $vars would not resolve (declaration stops at
     // `results`).
     code: 'const r = $vars.fetchSun.output.body.results || {};\nreturn { line: "best viewing after " + (r.sunset || "sunset") };',
   }))

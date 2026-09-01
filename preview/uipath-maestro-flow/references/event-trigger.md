@@ -21,12 +21,38 @@ Signatures:
 ## Tenant discovery
 
 Event parameters and their ids can be connection-specific. Resolve them from
-the bound live connection rather than inferring them from a display label:
+the bound live connection rather than inferring them from a display label or
+copying an id from an example, cached descriptor, or earlier session.
 
 ```bash
-uip is triggers describe <connector> <event> <object> \
+# When a folder path is specified, scope connection discovery to that exact
+# folder. Do not choose a same-connector row from an all-folders listing.
+uip or folders get <folder-path> --output json
+uip is connections list <connector> --folder-key <folder-key> --output json
+
+# Enumerate the event's object types on the exact connection the Flow will bind.
+# Use the Integration Service operation (for example EMAIL_RECEIVED), not the
+# builder event slug (for example email-received).
+uip is triggers objects <connector> <operation> \
+  --connection-id <connection-id> --output json
+
+# Describe the selected object to confirm its event-parameter contract.
+uip is triggers describe <connector> <operation> <object> \
+  --connection-id <connection-id> --output json
+
+# If the contract names a reference object, list its values on that connection.
+uip is resources run list <connector> <reference-object> \
   --connection-id <connection-id> --output json
 ```
+
+Use the selected reference row's live `Id` for an id-valued event parameter.
+For Outlook `email-received`, for example, select the `Message` object, confirm
+that `parentFolderId` references `MailFolder`, list `MailFolder`, and pass the
+Inbox row's `Id` as `where.parentFolderId`; the display name `Inbox` and an id
+from another connection are not substitutes.
+Before finishing, inspect the emitted node's `inputs.detail.eventParameters`
+and confirm it contains the selected id and the connection/folder bindings refer
+to the same connection used for discovery.
 
 `contains` uses case-sensitive substring matching, so preserve scenario casing.
 If a known tenant event is absent after refreshing the registry/cache, report a

@@ -5,7 +5,7 @@ description: >
   calls `uip platform licenses consumables get --mode folders --tenant <name>
   --unit <code> --start-date <iso> --end-date <iso> --output json`.
   CLI auth failure is expected offline.
-tags: [uipath-platform, smoke, licensing, consumables]
+tags: [uipath-platform, smoke, licensing, consumables, mode:operate, lifecycle:discover]
 
 sandbox:
   # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a

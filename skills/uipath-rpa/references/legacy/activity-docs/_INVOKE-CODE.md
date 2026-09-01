@@ -298,7 +298,7 @@ for (int i = 0; i < keys.Length; i++) {
 14. **Avoid modifying code dynamically** in loops — each unique code string triggers new compilation
 
 ### Namespace Conflicts
-15. **C# `System` namespace conflict** — using `HttpClient` may fail because `System` is both a namespace and a member. Use `global::System.Net.Http.HttpClient` instead. (Bug fix: STUD-77435)
+15. **C# `System` namespace conflict** — using `HttpClient` may fail because `System` is both a namespace and a member. Use `global::System.Net.Http.HttpClient` instead.
 16. **Workflow imports filter** — only namespaces that exist in loaded assemblies are passed to compiler. If you need `System.Net.Http`, ensure the assembly is loaded.
 
 ### Assemblies

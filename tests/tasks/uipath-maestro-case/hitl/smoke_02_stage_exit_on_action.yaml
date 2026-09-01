@@ -4,7 +4,8 @@ description: >
   using `selected-tasks-completed` referencing the action TaskId, and routes
   to a downstream stage. Verifies the exit-condition rule type and that the
   TaskId is referenced from the rule.
-tags: [uipath-maestro-case, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
+
 initial_prompt: |
   Create a UiPath Case Management project named "PurchaseApprovalCase" with
   this shape:
