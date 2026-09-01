@@ -98,11 +98,13 @@ def _priced_in(node: ast.AST, price) -> bool:
 
 
 def _module_lengths(tree: ast.Module) -> dict[str, int]:
-    """Module-level list/tuple names and their lengths, so `for x in CASES` is
-    countable. A name any function rebinds is dropped — the module value is
-    shadowed where the loop reads it, and a wrong multiplier beats no multiplier
-    only in the wrong direction."""
-    lengths = {}
+    """Module-level names whose length or value is a known literal, so
+    `for x in CASES` and `x[:CAP]` are countable.
+
+    A name is dropped if ANYTHING could change it after the literal: another
+    assignment in any form, an augmented assignment, or a mutating method call
+    on it. A stale length under-prices the loop that reads it."""
+    lengths, tainted = {}, set()
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, int):
             for target in node.targets:
@@ -112,14 +114,32 @@ def _module_lengths(tree: ast.Module) -> dict[str, int]:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     lengths[target.id] = len(node.value.elts)
-    kinds = (ast.FunctionDef, ast.AsyncFunctionDef)
-    for func in (n for n in ast.walk(tree) if isinstance(n, kinds)):
-        for node in ast.walk(func):
-            targets = node.targets if isinstance(node, ast.Assign) else []
-            for target in targets:
-                if isinstance(target, ast.Name):
-                    lengths.pop(target.id, None)
-    return lengths
+
+    seen_once = set()
+    for node in ast.walk(tree):
+        targets = []
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, (ast.AugAssign, ast.AnnAssign, ast.NamedExpr)):
+            targets = [node.target]
+        elif isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+            targets = [node.target]
+        elif isinstance(node, ast.withitem) and node.optional_vars is not None:
+            targets = [node.optional_vars]
+        for target in targets:
+            for name in (n.id for n in ast.walk(target) if isinstance(n, ast.Name)):
+                # A second binding of any kind, or any binding that is not the
+                # module-level literal, makes the recorded length unreliable.
+                if isinstance(node, ast.Assign) and node in tree.body and name not in seen_once:
+                    seen_once.add(name)
+                    continue
+                tainted.add(name)
+        # `CASES.extend(...)`, `.append(...)`, anything with it as receiver.
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            receiver = node.func.value
+            if isinstance(receiver, ast.Name):
+                tainted.add(receiver.id)
+    return {name: n for name, n in lengths.items() if name not in tainted}
 
 
 _TRANSPARENT_ITERATORS = ("enumerate", "list", "reversed", "sorted", "tuple")
@@ -336,8 +356,10 @@ def _cost(
             ((node.lineno, node.col_offset),) if test.seconds or body.seconds else ()
         )
         return _merge(
+            # The condition is evaluated once more than the body: the check that
+            # ends the loop. `break` only lowers that, so it stays an upper bound.
             _Price(
-                (test.seconds + body.seconds) * runs,
+                test.seconds * (runs + 1) + body.seconds * runs,
                 test.unsized + body.unsized + guessed,
             ),
             _body(node.orelse, lengths, defs, seen, manual, price),
@@ -388,13 +410,29 @@ def _reject_aliased_debug(tree: ast.Module, path: str) -> None:
     """`run_debug` under another name reads as no debug, silently skipping the
     criterion. Refuse rather than guess."""
     for node in ast.walk(tree):
-        if not isinstance(node, ast.ImportFrom):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name == "run_debug" and alias.asname:
+                    pytest.fail(
+                        f"{path}: imports run_debug as `{alias.asname}`, which "
+                        "this guard cannot follow. Import it under its own name."
+                    )
+        # `rd = run_debug` / `rd = flow_check.run_debug`: calls through `rd` are
+        # invisible to the scan, which would exempt the criterion entirely.
+        value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)) else None
+        source = (
+            value.id if isinstance(value, ast.Name)
+            else value.attr if isinstance(value, ast.Attribute)
+            else None
+        )
+        if source != "run_debug":
             continue
-        for alias in node.names:
-            if alias.name == "run_debug" and alias.asname:
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for name in (n.id for t in targets for n in ast.walk(t) if isinstance(n, ast.Name)):
+            if name != "run_debug":
                 pytest.fail(
-                    f"{path}: imports run_debug as `{alias.asname}`, which this "
-                    "guard cannot follow. Import it under its own name."
+                    f"{path}: binds run_debug to `{name}`, which this guard "
+                    "cannot follow. Call it under its own name."
                 )
 
 
@@ -1251,3 +1289,52 @@ def test_undefined_names_are_scope_aware(source, expected, tmp_path):
     path = os.path.join(str(tmp_path), "check_x.py")
     open(path, "w").write(source)
     assert _undefined_names(path) == expected
+
+
+def _unsized(tmp_path, src):
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    return _unsized_loops(path, None)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["CASES.extend([2, 3])", "CASES += [2, 3]", "CASES.append(2)", "CASES = load()"],
+)
+def test_a_mutated_literal_is_no_longer_a_count(mutation, tmp_path):
+    """A stale length under-prices the loop that reads it: `CASES = [1]` then
+    `CASES.extend([2, 3])` ran three times and was priced as one."""
+    src = f"CASES = [1]\n{mutation}\n\n\ndef main():\n    for c in CASES:\n        {_ONE}\n"
+    assert _unsized(tmp_path, src), f"{mutation} left a stale length in place"
+
+
+def test_an_untouched_literal_still_counts(tmp_path):
+    src = f"CASES = [1, 2, 3]\n\n\ndef main():\n    for c in CASES:\n        {_ONE}\n"
+    assert _price(src, tmp=str(tmp_path)) == 485 * 3
+
+
+@pytest.mark.parametrize(
+    "alias",
+    ["    rd = run_debug\n    rd(timeout=600)", "    rd = flow_check.run_debug\n    rd(timeout=600)"],
+)
+def test_assignment_alias_of_run_debug_is_refused(alias, tmp_path):
+    """Calls through `rd` are invisible to the scan, so the criterion would be
+    exempted from the budget guard entirely rather than under-priced."""
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(f"import flow_check\nfrom flow_check import run_debug\n\n\ndef main():\n{alias}\n")
+    with pytest.raises(BaseException, match="binds run_debug to"):
+        _budget_of_script(path, None)
+
+
+def test_rebinding_run_debug_to_its_own_name_is_allowed(tmp_path):
+    """`run_debug = flow_check.run_debug` keeps calls visible, and the suite
+    does exactly this in check_customer_escalation_triage.py."""
+    src = f"import flow_check\n\nrun_debug = flow_check.run_debug\n\n\ndef main():\n    {_ONE}\n"
+    assert _price(src, tmp=str(tmp_path)) == 485
+
+
+def test_while_condition_runs_once_more_than_the_body(tmp_path):
+    """A terminating loop evaluates its condition N+1 times: the check that ends
+    it. Charging N left the criterion short by a whole debug_budget."""
+    src = f"def main():\n    while {_ONE}:\n        {_ONE}\n"
+    assert _price(src, tmp=str(tmp_path)) == 485 * 2 + 485 * 1
