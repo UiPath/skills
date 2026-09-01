@@ -29,11 +29,20 @@ Scope and limits:
   inline at the call site, so a ``verify_case(case)`` inside that loop is
   multiplied with it rather than counted once.
 - A loop whose count only exists at runtime (``seed.json``) is NOT quietly
-  priced at one pass. The criterion must be sized by hand and marked
-  ``# budget-guard: manual`` on its ``timeout:`` line, which records that a
-  human did the arithmetic. The one-pass floor still applies on top.
-  "Cannot compute" must never read as "fine": that is how
-  billing_invoice_lookup sat 555s short while this guard was green.
+  priced at one pass. The criterion must declare the count on its ``timeout:``
+  line as ``# budget-guard: manual xN``, and the guard then checks THAT
+  arithmetic — a bare ``manual`` is refused, a stale one is refused, and where
+  the task ships a ``seed.py`` that states its cases literally, ``N`` is
+  cross-checked against it. An annotation nobody verifies is just a comment.
+- Pricing and "did we have to guess?" come out of ONE traversal (:class:`_Price`).
+  When they walked separately they disagreed about scope, and a loop inside a
+  helper was priced at one pass while going unreported.
+
+"Cannot compute" must never read as "fine". Every round of review on this guard
+found a live under-budgeted criterion hiding behind exactly that reflex:
+wiki_pageviews behind an unresolvable subcommand, decision behind ``max()``,
+billing_invoice_lookup behind an uncounted loop, customer_escalation_triage
+behind an unverified annotation.
 """
 
 from __future__ import annotations
@@ -42,6 +51,7 @@ import ast
 import os
 import re
 import sys
+from typing import NamedTuple
 
 import pytest
 
@@ -55,8 +65,10 @@ _COMMAND = re.compile(r'command:\s*"?([^"\n]+)')
 _TIMEOUT = re.compile(r"timeout:\s*(\d+)")
 _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
 # A criterion whose check loops over runtime seeds cannot be priced statically.
-# The author sizes it and signs off with this marker; the floor still applies.
-_MANUAL_MARKER = re.compile(r"#\s*budget-guard:\s*manual")
+# The author supplies the pass count and the guard checks THAT arithmetic — a
+# bare `manual` with no count is refused, because an unverified annotation is
+# just a comment.
+_MANUAL_MARKER = re.compile(r"#\s*budget-guard:\s*manual(?:\s*x\s*(\d+))?")
 
 
 def _literal(node: ast.AST):
@@ -93,25 +105,35 @@ def _calls_in(node: ast.AST) -> list[ast.Call]:
 
 def _module_lengths(tree: ast.Module) -> dict[str, int]:
     """Module-level names bound to a literal list or tuple, and their lengths.
-    This is what makes ``for raw, label in CASES`` a countable loop."""
+    This is what makes ``for raw, label in CASES`` a countable loop.
+
+    A name any function rebinds is dropped: the module value would be shadowed
+    at the point the loop reads it, and a wrong multiplier is worse than none."""
     lengths = {}
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.value, (ast.List, ast.Tuple)):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     lengths[target.id] = len(node.value.elts)
+    for func in (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)):
+        for node in ast.walk(func):
+            targets = node.targets if isinstance(node, ast.Assign) else []
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    lengths.pop(target.id, None)
     return lengths
 
 
 _TRANSPARENT_ITERATORS = ("enumerate", "list", "reversed", "sorted", "tuple")
 
 
-def _iterations(loop: ast.For, lengths: dict[str, int]) -> int | None:
+def _iterations(loop: ast.AST, lengths: dict[str, int]) -> int | None:
     """How many times ``loop`` runs, or None when that is not static.
 
-    A loop reading its cases from ``seed.json`` is unknowable here, and is
-    reported rather than assumed to run once — see
-    :func:`_unsized_loops`."""
+    A ``while``, or a ``for`` over cases read from ``seed.json``, is unknowable
+    here. It is reported rather than assumed to run once."""
+    if not isinstance(loop, ast.For):
+        return None
     target = loop.iter
     if (
         isinstance(target, ast.Call)
@@ -127,72 +149,139 @@ def _iterations(loop: ast.For, lengths: dict[str, int]) -> int | None:
     return None
 
 
+class _Price(NamedTuple):
+    """Seconds one execution can spend, and the loops we had to guess at.
+
+    Both come out of ONE traversal on purpose. When the cost model and the
+    "did we guess?" detector walked separately they disagreed about scope, and
+    a loop inside a helper was priced at one pass while going unreported."""
+
+    seconds: int
+    unsized: tuple[int, ...]
+
+
+_FREE = _Price(0, ())
+
+
+def _merge(*prices: _Price) -> _Price:
+    """Sequential composition: seconds add, guesses accumulate."""
+    return _Price(
+        sum(p.seconds for p in prices),
+        tuple(sorted({line for p in prices for line in p.unsized})),
+    )
+
+
+def _worst(prices: list[_Price]) -> _Price:
+    """Exclusive composition: the priciest arm wins, but every arm's guesses
+    are reported — any of them may be the one that runs."""
+    if not prices:
+        return _FREE
+    return _Price(
+        max(p.seconds for p in prices),
+        tuple(sorted({line for p in prices for line in p.unsized})),
+    )
+
+
 def _cost(
     node: ast.AST,
     lengths: dict[str, int],
     defs: dict[str, ast.FunctionDef],
     seen: frozenset = frozenset(),
-) -> int:
+    manual: int | None = None,
+) -> _Price:
     """What one execution of ``node`` can spend in ``run_debug``.
 
     Straight-line calls ADD UP: ``check_decision_flow.py`` runs two in one
     ``main()`` and the criterion has to fund both. Mutually exclusive branches
     (``if`` / ``match`` / ``try``) take the most expensive arm instead, so an
     ``if/elif`` dispatch over cases (``check_wiki_pageviews_flow.py``) is
-    charged for the one branch that runs, not all of them. A countable loop
-    multiplies its body; an uncountable one counts once and is reported by
-    :func:`_unsized_loops`.
+    charged for the one branch that runs, not all of them.
 
     A call to a module-level function is costed INLINE, at the call site, so a
     helper invoked once per seed (``verify_case`` in the escalation checks) is
-    multiplied with the loop around it rather than counted once. ``seen`` breaks
-    recursion."""
+    multiplied with the loop around it rather than counted once. ``seen``
+    breaks recursion.
+
+    A countable loop multiplies its body. An uncountable one is charged
+    ``manual`` passes when the criterion supplies that count, and one pass
+    otherwise — in which case its line is reported so the caller can refuse to
+    accept the number."""
     if _is_run_debug(node):
-        return _budget_of_call(node) or 0
+        budget = _budget_of_call(node)
+        if budget is None:
+            # Reachable code only: a dead helper's variable timeout is not this
+            # guard's problem.
+            pytest.fail(
+                f"line {node.lineno}: run_debug called with a non-literal "
+                "timeout/budget, so its criterion cannot be priced"
+            )
+        return _Price(budget, ())
     if (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
         and node.func.id in defs
         and node.func.id not in seen
     ):
-        inner = _cost(defs[node.func.id], lengths, defs, seen | {node.func.id})
+        inner = _cost(defs[node.func.id], lengths, defs, seen | {node.func.id}, manual)
         args = node.args + [kw.value for kw in node.keywords]
-        return inner + sum(_cost(a, lengths, defs, seen) for a in args)
+        return _merge(inner, *[_cost(a, lengths, defs, seen, manual) for a in args])
     if isinstance(node, ast.If):
-        return _cost(node.test, lengths, defs, seen) + max(
-            _body(node.body, lengths, defs, seen),
-            _body(node.orelse, lengths, defs, seen),
+        return _merge(
+            _cost(node.test, lengths, defs, seen, manual),
+            _worst(
+                [
+                    _body(node.body, lengths, defs, seen, manual),
+                    _body(node.orelse, lengths, defs, seen, manual),
+                ]
+            ),
         )
     if isinstance(node, ast.IfExp):
-        return _cost(node.test, lengths, defs, seen) + max(
-            _cost(node.body, lengths, defs, seen),
-            _cost(node.orelse, lengths, defs, seen),
+        return _merge(
+            _cost(node.test, lengths, defs, seen, manual),
+            _worst(
+                [
+                    _cost(node.body, lengths, defs, seen, manual),
+                    _cost(node.orelse, lengths, defs, seen, manual),
+                ]
+            ),
         )
     if isinstance(node, ast.Match):
-        return _cost(node.subject, lengths, defs, seen) + max(
-            [0] + [_body(c.body, lengths, defs, seen) for c in node.cases]
+        return _merge(
+            _cost(node.subject, lengths, defs, seen, manual),
+            _worst([_body(c.body, lengths, defs, seen, manual) for c in node.cases]),
         )
     if isinstance(node, ast.Try):
-        return (
-            _body(node.body, lengths, defs, seen)
-            + _body(node.orelse, lengths, defs, seen)
-            + max([0] + [_body(h.body, lengths, defs, seen) for h in node.handlers])
-            + _body(node.finalbody, lengths, defs, seen)
+        return _merge(
+            _body(node.body, lengths, defs, seen, manual),
+            _body(node.orelse, lengths, defs, seen, manual),
+            _worst([_body(h.body, lengths, defs, seen, manual) for h in node.handlers]),
+            _body(node.finalbody, lengths, defs, seen, manual),
         )
     if isinstance(node, (ast.For, ast.While)):
-        runs = _iterations(node, lengths) if isinstance(node, ast.For) else None
-        return (
-            _cost(node.iter, lengths, defs, seen)
-            if isinstance(node, ast.For)
-            else _cost(node.test, lengths, defs, seen)
-        ) + _body(node.body, lengths, defs, seen) * (1 if runs is None else runs) + _body(
-            node.orelse, lengths, defs, seen
+        head = node.iter if isinstance(node, ast.For) else node.test
+        body = _body(node.body, lengths, defs, seen, manual)
+        runs = _iterations(node, lengths)
+        guessed = ()
+        if runs is None:
+            # Only a loop that actually costs something needs sizing.
+            guessed = (node.lineno,) if body.seconds else ()
+            runs = manual if manual is not None else 1
+        return _merge(
+            _cost(head, lengths, defs, seen, manual),
+            _Price(body.seconds * runs, body.unsized + guessed),
+            _body(node.orelse, lengths, defs, seen, manual),
         )
-    return sum(_cost(c, lengths, defs, seen) for c in ast.iter_child_nodes(node))
+    return _merge(
+        *[_cost(c, lengths, defs, seen, manual) for c in ast.iter_child_nodes(node)]
+    ) if list(ast.iter_child_nodes(node)) else _FREE
 
 
-def _body(stmts: list, lengths, defs, seen=frozenset()) -> int:
-    return sum(_cost(s, lengths, defs, seen) for s in stmts)
+def _body(stmts: list, lengths, defs, seen=frozenset(), manual=None) -> _Price:
+    return _merge(*[_cost(s, lengths, defs, seen, manual) for s in stmts]) if stmts else _FREE
+
+
+def _defs(tree: ast.Module) -> dict[str, ast.FunctionDef]:
+    return {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
 
 
 def _entry(tree: ast.Module, subcommand: str | None, path: str) -> ast.FunctionDef:
@@ -213,47 +302,68 @@ def _entry(tree: ast.Module, subcommand: str | None, path: str) -> ast.FunctionD
     return entry
 
 
-def _defs(tree: ast.Module) -> dict[str, ast.FunctionDef]:
-    return {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+def _price_script(
+    path: str, subcommand: str | None, manual: int | None = None
+) -> _Price | None:
+    """Price one execution of ``path``, or None when it runs no debug at all.
 
-
-def _unsized_loops(path: str, subcommand: str | None) -> list[int]:
-    """Line numbers of loops that run a debug an unknown number of times.
-
-    A loop counts if its body costs anything, whether it calls ``run_debug``
-    directly or through a helper. These are the criteria a human has to size,
-    because the case list only exists at runtime (``seed.json``). The guard
-    refuses to guess."""
-    tree = ast.parse(open(path).read())
-    lengths, defs = _module_lengths(tree), _defs(tree)
-    lines = []
-    for node in ast.walk(_entry(tree, subcommand, path)):
-        if not isinstance(node, (ast.For, ast.While)):
-            continue
-        if not _body(node.body, lengths, defs):
-            continue
-        if isinstance(node, ast.While) or _iterations(node, lengths) is None:
-            lines.append(node.lineno)
-    return sorted(set(lines))
-
-
-def _budget_of_script(path: str, subcommand: str | None) -> int | None:
-    """Worst-case budget for one execution of ``path``, or None when the module
-    runs no debug at all."""
+    ``manual`` is the per-loop pass count the criterion declares for loops this
+    guard cannot count. It applies to every such loop in the script; with more
+    than one that over-charges, which is the safe direction."""
     tree = ast.parse(open(path).read())
     if not _calls_in(tree):
         return None
-    if any(_budget_of_call(c) is None for c in _calls_in(tree)):
-        pytest.fail(f"{path}: run_debug called with a non-literal timeout/budget")
     lengths, defs = _module_lengths(tree), _defs(tree)
     entry = _entry(tree, subcommand, path)
     # Seed `seen` with the entry so a self-call is not charged a second level.
-    return _cost(entry, lengths, defs, frozenset({entry.name})) or None
+    price = _cost(entry, lengths, defs, frozenset({entry.name}), manual)
+    return price if price.seconds else None
+
+
+def _budget_of_script(path: str, subcommand: str | None) -> int | None:
+    price = _price_script(path, subcommand)
+    return price.seconds if price else None
+
+
+def _unsized_loops(path: str, subcommand: str | None) -> list[int]:
+    price = _price_script(path, subcommand)
+    return list(price.unsized) if price else []
+
+
+_SEED_CASE_NAMES = ("cases", "seed_cases")
+
+
+def _seed_case_count(script: str) -> int | None:
+    """Cases the task's own ``seed.py`` writes, when it states them literally.
+
+    This is what turns the declared ``manual xN`` from an assertion into a
+    checked one. Returns None when the generator does not exist, does not name
+    its cases, or names them more than once with different lengths — better no
+    cross-check than a wrong one."""
+    seed = os.path.join(os.path.dirname(script), "seed.py")
+    if not os.path.exists(seed):
+        return None
+    counts = set()
+    for node in ast.walk(ast.parse(open(seed).read())):
+        if isinstance(node, ast.Assign) and isinstance(node.value, (ast.List, ast.Tuple)):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id.lower() in _SEED_CASE_NAMES:
+                    counts.add(len(node.value.elts))
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if getattr(key, "value", None) in _SEED_CASE_NAMES and isinstance(
+                    value, (ast.List, ast.Tuple)
+                ):
+                    counts.add(len(value.elts))
+    return counts.pop() if len(counts) == 1 else None
 
 
 def _criteria():
-    """(yaml, script, subcommand, criterion timeout) for every run_command
-    criterion in the suite that points at a $TASK_DIR check script."""
+    """(yaml, script, subcommand, criterion timeout, declared pass count) for
+    every run_command criterion in the suite that points at a $TASK_DIR check.
+
+    The timeout and its ``budget-guard`` annotation are read off the SAME line,
+    so an annotation cannot drift away from the number it explains."""
     for root, _dirs, files in os.walk(_SUITE_ROOT):
         for name in files:
             if not name.endswith((".yaml", ".yml")):
@@ -262,7 +372,6 @@ def _criteria():
             text = open(path).read()
             for block in _RUN_COMMAND_SPLIT.split(text)[1:]:
                 command = _COMMAND.search(block)
-                timeout = _TIMEOUT.search(block)
                 if not command:
                     continue
                 script = _TASK_DIR_SCRIPT.search(command.group(1))
@@ -271,14 +380,19 @@ def _criteria():
                 resolved = os.path.join(root, script.group(1))
                 if not os.path.exists(resolved):
                     continue
+                timeout_line = next(
+                    (ln for ln in block.split("\n") if _TIMEOUT.search(ln)), ""
+                )
+                found = _TIMEOUT.search(timeout_line)
+                marker = _MANUAL_MARKER.search(timeout_line)
                 parts = command.group(1).split()
-                sub = parts[-1] if parts[-1].isidentifier() else None
                 yield (
                     os.path.relpath(path, _SUITE_ROOT),
                     resolved,
-                    sub,
-                    int(timeout.group(1)) if timeout else None,
-                    bool(_MANUAL_MARKER.search(block)),
+                    parts[-1] if parts[-1].isidentifier() else None,
+                    int(found.group(1)) if found else None,
+                    # "" marks a marker with no count, distinct from no marker.
+                    (marker.group(1) or "") if marker else None,
                 )
 
 
@@ -295,37 +409,54 @@ def test_the_suite_was_actually_discovered():
 
 
 @pytest.mark.parametrize(
-    "yaml_path,script,subcommand,criterion,manual",
+    "yaml_path,script,subcommand,criterion,declared",
     _CASES,
-    ids=[f"{y}:{s or '-'}" for y, _p, s, _t, _m in _CASES],
+    ids=[f"{y}:{s or '-'}" for y, _p, s, _t, _d in _CASES],
 )
 def test_criterion_clears_the_debug_budget(
-    yaml_path, script, subcommand, criterion, manual
+    yaml_path, script, subcommand, criterion, declared
 ):
-    budget = _budget_of_script(script, subcommand)
-    if budget is None:
+    price = _price_script(script, subcommand)
+    if price is None:
         return  # static-only criterion, nothing to fund
     where = f"{os.path.basename(script)}{f' {subcommand}' if subcommand else ''}"
     assert criterion is not None, f"{yaml_path}: run_command has no timeout:"
 
-    # An uncountable loop is NOT quietly priced at one iteration. Either the
-    # author sizes the criterion and says so, or this fails.
-    unsized = _unsized_loops(script, subcommand)
-    if unsized and not manual:
+    if declared is not None and not price.unsized:
+        pytest.fail(
+            f"{yaml_path}: {where} has no loop this guard needs help counting, "
+            "so the `budget-guard: manual` annotation is stale. Remove it."
+        )
+    if price.unsized and declared is None:
         pytest.fail(
             f"{yaml_path}: {where} runs a debug inside a loop whose iteration "
-            f"count is not static (line{'s' if len(unsized) > 1 else ''} "
-            f"{', '.join(map(str, unsized))}), so this guard can only price one "
-            f"pass ({budget}s). Size the criterion for the real case count, then "
-            "mark it `# budget-guard: manual` on the timeout line to record that "
-            "a human did the arithmetic."
+            f"count is not static (line{'s' if len(price.unsized) > 1 else ''} "
+            f"{', '.join(map(str, price.unsized))}), so this guard can only "
+            f"price one pass ({price.seconds}s). Annotate the timeout with "
+            "`# budget-guard: manual xN` for the real pass count and the guard "
+            "will check the arithmetic."
         )
+    if price.unsized:
+        if not declared:
+            pytest.fail(
+                f"{yaml_path}: {where} is marked `budget-guard: manual` with no "
+                "count. Write `manual xN` so the number can be checked rather "
+                "than trusted."
+            )
+        seeded = _seed_case_count(script)
+        if seeded is not None and int(declared) != seeded:
+            pytest.fail(
+                f"{yaml_path}: {where} declares `manual x{declared}` but the "
+                f"task's seed.py writes {seeded} cases. Fix whichever is wrong; "
+                "a declared count that nobody checks is how this guard drifts."
+            )
+        price = _price_script(script, subcommand, manual=int(declared))
 
-    required = budget + flow_check.CRITERION_MARGIN_SECONDS
+    required = price.seconds + flow_check.CRITERION_MARGIN_SECONDS
     assert criterion >= required, (
-        f"{yaml_path} grants {criterion}s to {where}, which can spend {budget}s "
-        f"in run_debug. Raise the criterion to >= {required}s, or lower the "
-        "check's timeout / pass retries=1."
+        f"{yaml_path} grants {criterion}s to {where}, which can spend "
+        f"{price.seconds}s in run_debug. Raise the criterion to >= {required}s, "
+        "or lower the check's timeout / pass retries=1."
     )
 
 
@@ -400,3 +531,96 @@ def test_module_without_an_entry_point_fails_loudly(tmp_path):
     open(path, "w").write(src)
     with pytest.raises(BaseException, match="neither main"):
         _budget_of_script(path, None)
+
+
+def test_loop_inside_a_helper_is_reported(tmp_path):
+    """The mirror of the escalation shape: the LOOP is in the helper, not the
+    entry. The detector once walked only the entry while the cost model walked
+    helpers too, so this was priced at one pass and never reported."""
+    src = (
+        "def sweep():\n    for c in load():\n        run_debug(timeout=240)\n\n\n"
+        "def main():\n    sweep()\n"
+    )
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [2]
+    assert _budget_of_script(path, None) == 485
+
+
+def test_declared_pass_count_multiplies_the_runtime_loop(tmp_path):
+    src = f"def main():\n    for c in load():\n        {_ONE}\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _price_script(path, None).seconds == 485  # floor, one pass
+    assert _price_script(path, None, manual=3).seconds == 1455
+
+
+def test_price_and_report_come_from_one_traversal(tmp_path):
+    """`_Price` carries both so the cost model and the detector cannot disagree
+    about scope, which is how the helper-loop gap opened."""
+    src = (
+        f"CASES = [1, 2]\n\n\ndef main():\n    for c in CASES:\n        {_ONE}\n"
+        "    for d in load():\n        run_debug(timeout=240)\n"
+    )
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    price = _price_script(path, None)
+    assert price.seconds == 970 + 485  # static loop x2, runtime loop x1
+    assert price.unsized == (7,)
+
+
+def test_exclusive_branches_report_every_arms_guesses(tmp_path):
+    """Only one arm runs, but either might be the one that does, so both arms'
+    unsized loops must surface."""
+    src = (
+        "def main():\n    if x:\n        for c in load():\n"
+        f"            {_ONE}\n    else:\n        for d in other():\n"
+        f"            {_ONE}\n"
+    )
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [3, 6]
+
+
+def test_locally_rebound_list_is_not_treated_as_static(tmp_path):
+    """A module constant a function overwrites is shadowed where the loop reads
+    it, so its length must not be used as a multiplier."""
+    src = (
+        f"CASES = [1, 2, 3]\n\n\ndef main():\n    CASES = load()\n"
+        f"    for c in CASES:\n        {_ONE}\n"
+    )
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _unsized_loops(path, None) == [6]
+    assert _budget_of_script(path, None) == 485
+
+
+def test_dead_helper_with_a_variable_timeout_is_not_our_problem(tmp_path):
+    """The non-literal check follows reachable code only."""
+    src = f"def unused():\n    run_debug(timeout=n)\n\n\ndef main():\n    {_ONE}\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    assert _budget_of_script(path, None) == 485
+
+
+def test_reachable_variable_timeout_fails_loudly(tmp_path):
+    src = "def main():\n    run_debug(timeout=n)\n"
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write(src)
+    with pytest.raises(BaseException, match="non-literal"):
+        _budget_of_script(path, None)
+
+
+def test_seed_case_count_reads_a_literal_generator(tmp_path):
+    open(os.path.join(str(tmp_path), "seed.py"), "w").write(
+        'payload = {"cases": [{"a": 1}, {"a": 2}, {"a": 3}]}\n'
+    )
+    assert _seed_case_count(os.path.join(str(tmp_path), "check_x.py")) == 3
+
+
+def test_seed_case_count_declines_when_ambiguous(tmp_path):
+    """Two different literal case lists: no cross-check beats a wrong one."""
+    open(os.path.join(str(tmp_path), "seed.py"), "w").write(
+        'a = {"cases": [1, 2]}\nb = {"cases": [1, 2, 3]}\n'
+    )
+    assert _seed_case_count(os.path.join(str(tmp_path), "check_x.py")) is None
