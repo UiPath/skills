@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 122da6a. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ b570962. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -51,9 +51,10 @@ Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor
 If the request mentions `loadByDefault`, dependent dropdowns, preselected
 reference values, `customFieldsRequestDetails`, or other connection-specific
 fields, the static library descriptor is not sufficient. Before authoring the
-connector call, resolve the real parent values, run `uip maestro registry
-prepare <connector-key> <action> --connection-id <id>` with every required
+connector call, resolve the real parent values, run
+`npx flow-sdk registry prepare <connector-key> <action>` with every required
 `-f NAME=VALUE`, and import the generated `connectors-local/<key>.ts` descriptor.
+It finds the connection itself and writes `bindings.json`.
 
 Do not substitute manual `resources run list` lookups plus a static
 `connectors/<key>.ts` import: the lookups choose values but do not create the

@@ -90,16 +90,22 @@ the tenant, so it needs a live Integration Service connection and a logged-in
 `uip`; without one, fall back to the curated operation in the markdown library.
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> \
-  --connection-id <connection-id>
+npx flow-sdk registry prepare <connector-key> <action>
 # Generic operation: materialize the one connected object the task uses.
-npx flow-sdk registry prepare <connector-key> <action> \
-  --connection-id <connection-id> --object <api-object-name>
+npx flow-sdk registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
 The result lands in `./connectors-local/`, which the compilers union over the
 library. Calls accumulate, so preparing a second operation keeps the first.
+
+`prepare` picks the connection itself (see below). Pass `--connection-id <id>`
+only to pin a specific one, and expect it to be checked: a connection whose
+`State` is not `Enabled` is refused, naming the enabled alternatives. A `Failed`
+connection answers field discovery with an empty schema, so preparing through
+it would write an overlay with no fields and the next compile would still
+reject every input as unknown — the refusal is the only signal that says
+"connection", not "field".
 
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
@@ -291,7 +297,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> --connection-id <connection-id> \
+npx flow-sdk registry prepare <connector-key> <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -359,8 +365,16 @@ channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 
 ```bash
 npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
-  --connection-id <id> --resolve channel:profile.email=dustin@example.com
+  --resolve channel:profile.email=dustin@example.com
 ```
+
+**You do not need to find the connection first.** `prepare` discovers it from
+`uip is connections list` — your own folder first, the tenant second — and writes
+both the connection id AND its folder key into `bindings.json`. So one command
+covers the lookup, the connection binding and the folder binding. Pass
+`--connection <name>` only when several connections match the same connector;
+it reports the candidates rather than guessing, because connections for one
+connector are not interchangeable.
 
 `check` names the exact command when a lookup is unresolved, and warns when a
 lookup field is given a literal id. Run it before compiling: it finds everything
