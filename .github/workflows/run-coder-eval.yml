@@ -227,24 +227,20 @@ jobs:
     # makes every permission it omits `none` for every job it covers, so a
     # workflow-level one would silently strip the Windows job's token too. The
     # file declares none today, which is why this is purely additive here.
-    #   id-token: write  -> mint the OIDC token the evalboard upload exchanges
-    #                       for an Azure credential (no storage key in a secret)
     #   contents: read   -> actions/checkout
     permissions:
-      id-token: write
       contents: read
-    # The federated credential's subject is `repo:UiPath/skills:environment:
-    # eval-upload`. Environment scope rather than branch scope because
-    # workflow_dispatch can target ANY branch and Entra subjects do not wildcard
-    # reliably, so a branch-scoped credential would break on the next dispatch
-    # from a feature branch. NOTE: adding a protection rule to this environment
-    # would gate EVERY dispatch of this workflow behind it.
-    environment: eval-upload
     # Disable uip CLI version-sync: a task's `uip login status` re-pins
     # ~/.uipath/config.json to a stale line and, via nightly.yaml's shared
     # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
+      # Whether this dispatch can publish an evalboard link, as a plain boolean
+      # string. The `secrets` context is NOT available in any `if:`, so the gate
+      # has to be laundered through the job env like this; deriving a boolean
+      # rather than exporting the secret itself keeps the credential out of every
+      # step but the one that uploads.
+      EVALBOARD_UPLOAD_ENABLED: ${{ secrets.AZURE_STORAGE_KEY != '' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
@@ -271,7 +267,7 @@ jobs:
       # PAT out of .git/config: this checkout doubles as the overlay docker build
       # context below.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
-        if: inputs.agent == 'delegate-sdk' || vars.AZURE_EVAL_UPLOAD_CLIENT_ID != ''
+        if: inputs.agent == 'delegate-sdk' || env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
         with:
           repository: UiPath/coder_eval_uipath
@@ -316,10 +312,10 @@ jobs:
       # perturb the one the action builds. All six of its dependencies are public
       # PyPI; no private index is involved.
       #
-      # Skipped entirely until the Azure identity exists, and non-fatal even then:
+      # Skipped entirely until AZURE_STORAGE_KEY is set, and non-fatal even then:
       # a missing uploader costs the link, never the run.
       - name: Install the evalboard uploader
-        if: vars.AZURE_EVAL_UPLOAD_CLIENT_ID != ''
+        if: env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
         run: |
           set -euo pipefail
@@ -831,62 +827,36 @@ jobs:
       # step here warns and returns 0 rather than reddening a run, because a
       # missing dashboard link must never be mistaken for a failed eval.
       #
-      # Inert until `AZURE_EVAL_UPLOAD_CLIENT_ID` is set as a repo variable, so
-      # this merges and behaves exactly as before while the Azure identity is
-      # still being provisioned.
+      # Inert until `AZURE_STORAGE_KEY` is set as a repo secret, so this merges
+      # and behaves exactly as before while the credential is being provisioned.
+      #
+      # Authenticated with the SAME credential the ADO pipelines already use for
+      # this storage account (`AZURE_STORAGE_KEY` / `AZURE_STORAGE_ACCOUNT` out of
+      # `coder-eval-athena-{secrets,config}`), rather than a second, GitHub-only
+      # Entra app + federated credential. eval-runner passes the value straight to
+      # `BlobServiceClient(credential=...)`, and the Azure SDK sniffs the string,
+      # so the secret can hold either the account key or a container-scoped SAS
+      # token with no change here. Prefer the SAS: an account key is authority
+      # over the WHOLE account, including the `runs` container holding months of
+      # nightly history, and this workflow runs its definition from whatever
+      # branch the dispatcher picks.
       # ==================================================================
 
-      # Requested straight from the Actions OIDC endpoint rather than through
-      # azure/login, which would additionally need the `az` CLI present on this
-      # runner image (a self-hosted one, so do not assume it). Writing the token
-      # to a file and pointing AZURE_FEDERATED_TOKEN_FILE at it is all
-      # DefaultAzureCredential needs to resolve via WorkloadIdentityCredential.
-      # No storage account key is involved anywhere: workflow_dispatch runs the
-      # workflow definition from whatever branch the dispatcher picks, so a key in
-      # a repo secret would let any branch read or delete months of nightly
-      # history on the same account.
-      - name: Mint an Azure OIDC token
-        if: always() && vars.AZURE_EVAL_UPLOAD_CLIENT_ID != ''
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
-            echo "::warning::no OIDC request URL in the environment (id-token permission?) — no evalboard link for this run"
-            exit 0
-          fi
-          # api://AzureADTokenExchange is the audience an Entra federated
-          # credential validates against.
-          if ! resp="$(curl -sSf \
-              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange")"; then
-            echo "::warning::OIDC token request failed — no evalboard link for this run"
-            exit 0
-          fi
-          # Never echoed: the response body is a bearer assertion.
-          printf '%s' "$resp" | python3 -c 'import json,sys; sys.stdout.write(json.load(sys.stdin)["value"])' \
-            > "$RUNNER_TEMP/azure-oidc-token"
-          chmod 600 "$RUNNER_TEMP/azure-oidc-token"
-          if [ ! -s "$RUNNER_TEMP/azure-oidc-token" ]; then
-            echo "::warning::OIDC response carried no token — no evalboard link for this run"
-            rm -f "$RUNNER_TEMP/azure-oidc-token"
-            exit 0
-          fi
-          echo "OIDC token minted; subject is repo:$GITHUB_REPOSITORY:environment:eval-upload"
-
       - name: Publish the run to evalboard
-        if: always() && vars.AZURE_EVAL_UPLOAD_CLIENT_ID != ''
+        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
         env:
-          # Client and tenant ids are identifiers, not secrets, so they live as
-          # repo variables — and the absence of the client id is what gates every
-          # step in this block.
-          AZURE_CLIENT_ID:            ${{ vars.AZURE_EVAL_UPLOAD_CLIENT_ID }}
-          AZURE_TENANT_ID:            ${{ vars.AZURE_EVAL_UPLOAD_TENANT_ID }}
-          AZURE_FEDERATED_TOKEN_FILE: ${{ runner.temp }}/azure-oidc-token
-          # AZURE_STORAGE_KEY is deliberately left UNSET: an empty key is what
-          # makes eval-runner fall through to DefaultAzureCredential.
-          AZURE_STORAGE_ACCOUNT:      ${{ vars.AZURE_EVAL_UPLOAD_STORAGE_ACCOUNT || 'coderevaltests' }}
-          AZURE_BLOB_CONTAINER:       ${{ vars.AZURE_EVAL_UPLOAD_CONTAINER || 'runs-gha' }}
+          # The only step in the job that sees the credential. Mirrors how the ADO
+          # pipelines scope it ("upload in its own step so AZURE_STORAGE_KEY is
+          # never in the eval step's env"): a task-driven agent with shell access
+          # runs in those other steps.
+          AZURE_STORAGE_KEY:          ${{ secrets.AZURE_STORAGE_KEY }}
+          AZURE_STORAGE_ACCOUNT:      ${{ vars.AZURE_STORAGE_ACCOUNT || 'coderevaltests' }}
+          # Hardcoded, with no variable override on purpose. Everything about this
+          # feature — the unlisted evalboard source, the 14-day expiry rule — is
+          # predicated on ad-hoc runs never landing in `runs`, and ADO already uses
+          # the name `AZURE_BLOB_CONTAINER` for `runs` itself.
+          AZURE_BLOB_CONTAINER:       runs-gha
           EVALBOARD_BASE:             ${{ vars.EVALBOARD_BASE_URL || 'https://coder-evalboard.uipath-dev.com' }}
           AGENT:                      ${{ inputs.agent }}
           TASK_COUNT:                 ${{ needs.partition.outputs.linux_count }}
@@ -895,10 +865,6 @@ jobs:
           set -uo pipefail
           if ! command -v eval-runner > /dev/null 2>&1; then
             echo "::warning::eval-runner is not installed — no evalboard link for this run"
-            exit 0
-          fi
-          if [ ! -f "$AZURE_FEDERATED_TOKEN_FILE" ]; then
-            echo "::warning::no Azure OIDC token on disk — no evalboard link for this run"
             exit 0
           fi
           if [ ! -f /tmp/runs/run.json ]; then
