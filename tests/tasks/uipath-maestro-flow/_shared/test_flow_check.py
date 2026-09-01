@@ -1075,3 +1075,13 @@ def test_timeout_at_or_below_the_cli_minimum_is_rejected(monkeypatch):
     with pytest.raises(SystemExit, match="at or below the CLI's 30s"):
         run_debug(timeout=20, retries=10)
     assert calls["n"] == 0
+
+
+def test_first_attempt_cap_must_strictly_outlive_the_cli(monkeypatch):
+    """An integer budget floors one second short, so `budget=31` yields a 30s
+    cap against a 30s CLI timeout: no room for the CLI to report first."""
+    calls = _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    with pytest.raises(SystemExit, match="cap its first attempt at 30s"):
+        run_debug(timeout=240, budget=31)
+    assert calls["n"] == 0
+    run_debug(timeout=240, budget=32)  # one more second is enough

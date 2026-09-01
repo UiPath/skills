@@ -25,6 +25,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro
 from _shared.flow_check import assert_flow_has_node_type, run_debug  # noqa: E402
 import jira_is  # noqa: E402
 
+# The seed writes 2 issues and each read is a 120s CLI call. Bounded so the
+# criterion's `budget-guard: overhead` annotation stays true if the seed grows.
+MAX_ISSUE_PROBES = 2
+
 JIRA_KEY = "uipath-atlassian-jira"
 SEARCH_OP_RE = re.compile(r"search[\s_-]?issues|search-issues-by-jql", re.IGNORECASE)
 
@@ -52,7 +56,7 @@ def main() -> None:
 
     conn = jira_is.connection_id()
     marker = seed["processed_comment"]
-    for key in seed["issue_keys"]:
+    for key in seed["issue_keys"][:MAX_ISSUE_PROBES]:
         fields = jira_is.get_issue(conn, key)
         if not fields:
             _fail(f"seeded issue {key} not found on re-read")

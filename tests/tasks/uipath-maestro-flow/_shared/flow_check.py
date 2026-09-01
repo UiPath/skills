@@ -256,10 +256,15 @@ def run_debug(
         )
     # Floored at the CLI minimum, not at _MIN_RETRY_BUDGET_SECONDS: that is the
     # threshold for funding ANOTHER attempt, and `retries=1` never wants one.
-    if budget <= _MIN_CLI_TIMEOUT_SECONDS:
+    # `budget - 1`: the deadline is read microseconds after it is set, so an
+    # integer budget always floors one second short. The first attempt's cap has
+    # to STRICTLY outlive `cli_timeout`, or the CLI loses the race to report.
+    if min(timeout, budget - 1) <= _MIN_CLI_TIMEOUT_SECONDS:
         _fail(
-            f"run_debug budget of {budget}s is at or below the CLI's "
-            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum; "
+            f"run_debug would cap its first attempt at "
+            f"{min(timeout, budget - 1)}s, at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the CLI could "
+            "not self-terminate first; "
             + ("raise `timeout`" if derived else "raise `budget`, or omit it so "
                "debug_budget(timeout, ...) derives the deadline")
         )

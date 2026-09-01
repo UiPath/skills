@@ -127,6 +127,19 @@ def _nondebug_calls(script: str) -> list[tuple[str, int, int]]:
     return out
 
 
+def _probe_caps(script: str) -> list[int]:
+    """Module-level `MAX_*` int constants: the bound a checker puts on its own
+    non-debug probes. Raising one must raise the declared overhead with it."""
+    return [
+        node.value.value
+        for node in ast.parse(open(script).read()).body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id.startswith("MAX_")
+        if isinstance(node.value, ast.Constant) and isinstance(node.value.value, int)
+    ]
+
+
 def _module_lengths(tree: ast.Module) -> dict[str, int]:
     """Module-level list/tuple names and their lengths, so `for x in CASES` is
     countable. A name any function rebinds is dropped — the module value is
@@ -205,7 +218,7 @@ def _cost(
     node: ast.AST,
     lengths: dict[str, int],
     defs: dict[str, ast.FunctionDef],
-    seen: frozenset = frozenset(),
+    seen: tuple = (),
     manual: int | None = None,
 ) -> _Price:
     """What one execution of ``node`` can spend in ``run_debug``.
@@ -230,16 +243,18 @@ def _cost(
         args = [_cost(a, lengths, defs, seen, manual) for a in node.args]
         args += [_cost(kw.value, lengths, defs, seen, manual) for kw in node.keywords]
         if name in seen:
-            # Depth is no more knowable than a loop count, so refuse rather than
-            # price one pass — the same contract loops get.
-            if _calls_in(defs[name]):
+            # Inspect the whole CYCLE, not the name that closes it: in a -> b -> a
+            # the debug may live in b while a is the repeated name.
+            cycle = seen[seen.index(name):] + (name,)
+            if any(_calls_in(defs[c]) for c in cycle if c in defs):
                 pytest.fail(
-                    f"line {node.lineno}: `{name}` recurses and runs a debug, so "
+                    f"line {node.lineno}: the cycle {' -> '.join(cycle)} recurses and "
+                    "runs a debug, so "
                     "its cost cannot be counted. Flatten the recursion or bound "
                     "it in a loop this guard can size."
                 )
             return _merge(*args)
-        inner = _cost(defs[name], lengths, defs, seen | {name}, manual)
+        inner = _cost(defs[name], lengths, defs, seen + (name,), manual)
         return _merge(inner, *args)
     if isinstance(node, ast.If):
         return _merge(
@@ -292,7 +307,7 @@ def _cost(
     )
 
 
-def _body(stmts: list, lengths, defs, seen=frozenset(), manual=None) -> _Price:
+def _body(stmts: list, lengths, defs, seen=(), manual=None) -> _Price:
     return _merge(*[_cost(s, lengths, defs, seen, manual) for s in stmts])
 
 
@@ -329,7 +344,7 @@ def _price_script(
     lengths, defs = _module_lengths(tree), _defs(tree)
     entry = _entry(tree, subcommand, path)
     # Seed `seen` with the entry so a self-call is not charged a second level.
-    price = _cost(entry, lengths, defs, frozenset({entry.name}), manual)
+    price = _cost(entry, lengths, defs, (entry.name,), manual)
     return price if price.seconds else None
 
 
@@ -570,6 +585,15 @@ def test_criterion_clears_the_debug_budget(
                 f"{yaml_path}: {where} declares `overhead {overhead}`, which is "
                 f"not a whole number of {unit}s calls. Its bounded work costs "
                 f"{unit}s a call, so the declaration should be a multiple of it."
+            )
+        # Tie the declaration to the cap the checker enforces, so raising one
+        # without the other fails instead of silently under-funding.
+        caps = _probe_caps(script)
+        if caps and overhead // unit < max(caps):
+            pytest.fail(
+                f"{yaml_path}: {where} declares {overhead // unit} calls of "
+                f"{unit}s but caps its probes at {max(caps)}, which it can spend "
+                "on top of the fixed calls. Raise the overhead with the cap."
             )
     if overhead is not None and not nondebug:
         pytest.fail(
@@ -964,3 +988,17 @@ def test_overhead_must_be_whole_calls():
     for declared, ok in ((480, True), (600, True), (500, False), (60, False)):
         whole = declared >= unit and not declared % unit
         assert whole is ok, declared
+
+
+def test_mutual_recursion_with_the_debug_in_the_other_leg_is_refused(tmp_path):
+    """`a -> b -> a` where `b` holds the debug: the repeated name is `a`, so
+    inspecting only the name that closes the cycle missed it."""
+    src = f"def a():\n    b()\n\n\ndef b():\n    {_ONE}\n    a()\n\n\ndef main():\n    a()\n"
+    with pytest.raises(BaseException, match="recurses and"):
+        _price(src, tmp=str(tmp_path))
+
+
+def test_probe_cap_is_read_off_the_checker(tmp_path):
+    path = os.path.join(str(tmp_path), "check_x.py")
+    open(path, "w").write("MAX_ISSUE_PROBES = 3\nMAX_OTHER = 7\nNOT_A_CAP = 9\n")
+    assert _probe_caps(path) == [3, 7]
