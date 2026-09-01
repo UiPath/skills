@@ -147,6 +147,15 @@ Alternatives:
 
 Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
 
+## Selector Strings in XAML — Single Quotes, Escaped Once
+
+A selector travels through two layers before the matcher sees it: the XAML attribute, and — when the value is an expression — the VB/C# string literal. Both delimit with `"`.
+
+- **Quote inner selector attributes with single quotes:** `<webctrl id='btnSave' tag='BUTTON' />`. Double quotes collide with both delimiters, must then be escaped (`tag=&quot;BUTTON&quot;`), and the value reaching the matcher carries the stray quote characters — the target silently never matches.
+- **Escape `<`, `>`, `&` exactly once** (`&lt;`, `&gt;`, `&amp;`). A double-escaped selector (`&amp;lt;webctrl …`) is read as literal text rather than markup, so the target resolves to nothing.
+
+Both defects are runtime-only — `validate` and `build` pass. Prefer generated targets (`uia-configure-target`) over hand-written selector strings; after editing one by hand, re-read the raw attribute value in the file to confirm the escaping level.
+
 ## ActivityAction/ActivityFunc Initialization
 
 Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `ActivityAction` to wrap their child content. The XAML pattern is:
