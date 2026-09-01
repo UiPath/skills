@@ -58,7 +58,9 @@ For each top-level Step 0 entry, check whether tasks.md references it either as 
 |---|---|---|---|
 | Scenario E (`=` custom) | `""` | the expression | `""` |
 | reassign (`->`) | `"=<allocated id>"` | the SDD name | absent |
-| bare auto-mint | `"=<id>"` | the `id` | absent |
+| bare auto-mint | `"=<id>"` | the bare `<id>`, no `=` | absent |
+
+**`vars.` never appears in an output `target`.** `=vars.<id>` is the *input*-side binding form written by Step 9.8; on an output `target` the correct form is `=<id>`. Writing `target: "=vars.APIOutput1"` or `value: "=APIOutput1"` on a bare auto-mint output are both defects — that row is `value: "APIOutput1"`, `target: "=APIOutput1"`.
 
 Never blank a `target` or `value` on a reassign or auto-mint row to satisfy the rule above — those carry real values, and emptying them is a different defect. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it. Canonicalize `=metadata.X` to `=js:metadata.X` in both `value` and `source`; retain the SDD-natural form in `tasks.md`. For a quoted string literal, treat the quotes as SDD delimiters: `status = "InReview"` emits JSON `"value": "InReview", "source": "InReview"` — never embed the delimiters as payload (`"value": "\"InReview\""`).
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).

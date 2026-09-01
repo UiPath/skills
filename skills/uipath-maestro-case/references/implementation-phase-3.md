@@ -59,7 +59,8 @@ Add, when Step 1 found any connector task or any `wait-for-connector` rule:
 
 | Must hold at Phase 3 exit | Written by | Manifest file |
 |---|---|---|
-| Every task input reference is `=vars.<outputReferenceId>` — the `vars.` prefix is required; a bare `=<id>` is wrong | Step 9.8 | `io-binding/impl-json.md` |
+| Every task **input** reference is `=vars.<outputReferenceId>` — on inputs the `vars.` prefix is required, and a bare `=<id>` there is wrong | Step 9.8 | `io-binding/impl-json.md` |
+| Every **output** `target` is `=<id>` with **no** `vars.` prefix, and a bare auto-mint output's `value` is the bare `<id>` with no `=` — the input rule above does not apply to outputs | Step 9 / 9.7 | `io-binding/impl-json.md` § Output Binding Shapes |
 | Zero `vars.$xref(` markers remain anywhere in `caseplan.json` | Step 11.5 | `io-binding/impl-json.md`, `bindings-and-expressions.md` |
 | `bindings_v2.json` carries a `resources[]` key for every resolved resource task | Step 9.7 Phase C | `bindings-v2-sync.md` |
 | Every formal argument has a non-null `var` and a synthetic `id` | Step 12 Check 10 | `global-vars/impl-json.md` |
