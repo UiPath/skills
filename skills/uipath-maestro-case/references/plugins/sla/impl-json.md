@@ -148,4 +148,28 @@ A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach
 - Confirm every emitted `sla_` and `esc_` ID appears in `id-map.json`. Step 10 must resolve every `sla-status-change` rule against IDs already emitted on the declared target.
 - Run the section-boundary validation after all SLA targets have been written (not per-target); the Phase 2 preview profile runs later after conditions.
 
+**Completeness gate — count, do not eyeball.** SLA is written late in Phase 2, and the observed failure is a partial pass: some targets written, the rest silently dropped. One real build emitted 2 of 4 targets, with no root SLA, no `Settlement` stage SLA, every `escalationRule` left `[]`, and a gated stage flattened to a lone `=js:true` row. `uip maestro case validate` passed all of it.
+
+Before leaving this step, enumerate every SLA the SDD declares — the Case-Level SLA row, each stage's SLA, each task's SLA — and confirm one target per declaration:
+
+```bash
+cat <Solution>/<Project>/caseplan.json | python3 -c '
+import json,sys
+p=json.load(sys.stdin)
+root=(p.get("metadata") or {}).get("slaRules") or []
+print("root:", len(root))
+for n in (p.get("nodes") or p.get("schema",{}).get("nodes") or []):
+    if "Stage" in str(n.get("type")):
+        d=n.get("data") or {}
+        r=d.get("slaRules") or []
+        print("stage", d.get("label"), "rules:", len(r),
+              "escalations:", sum(len(x.get("escalationRule") or []) for x in r))'
+```
+
+Three things this catches that prose does not:
+
+1. **A declared SLA with no target row** — a stage printing `rules: 0` that the SDD gave an SLA, or `root: 0` when a Case-Level SLA row exists.
+2. **A gated SLA collapsed to its default** — a conditional SLA needs the override row PLUS a trailing `=js:true` default, so `rules: 1` on a gated target is wrong; it must be 2 or more.
+3. **Escalations dropped** — `escalations: 0` on an SLA whose SDD rows declare At-Risk or Breached notifications. The notify-only response IS an escalation entry here; dropping it silently removes the notification.
+
 <!-- END: impl-json.md -->
