@@ -179,3 +179,65 @@ def test_matching_scope_passes_closure():
     )
     issues = [i for i in check(text) if "scoped" in i or "no SLA Response Map row" in i]
     assert not issues, issues
+
+
+def test_stage_scope_may_carry_the_stage_slug_as_a_qualifier():
+    """`stage: Assess (`assess`)` names the same stage as target 'Assess'.
+
+    Branch run 33429105211 was told every row titled 'Assess SLA' was
+    "scoped ['stage: Assess (`assess`)']" and so did not match target 'Assess'.
+    The trailing slug is annotation, not part of the stage name.
+    """
+    text = sdd(
+        "| stage: Assess (`assess`) | Assess SLA | Breached | enter-stage "
+        "| Assess Oversight | Yes | management takeover |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA breached") | - | Yes |\n',
+    )
+    assert check(text) == []
+
+
+def test_stage_scope_qualifier_does_not_mask_a_genuine_mismatch():
+    """Stripping the qualifier must not make a DIFFERENT stage match."""
+    text = sdd(
+        "| stage: Triage (`triage`) | Assess SLA | Breached | enter-stage "
+        "| Assess Oversight | Yes | wrong stage |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA breached") | - | Yes |\n',
+    )
+    issues = check(text)
+    assert any("targets 'Assess'" in issue for issue in issues), issues
+
+
+def test_case_scope_may_carry_the_root_qualifier():
+    """`case: root` names the same target as bare `case`.
+
+    Run 33448258234 produced a map that was otherwise fully closed — the checker
+    reported "1 interrupting enter-stage lane" once this matched — but failed on
+    `sla-status-change("root","Case Resolution SLA")` targets 'root' but every
+    row ... is scoped ['case: root'].
+    """
+    for scope in ("case", "case: root", "case:root"):
+        text = sdd(
+            f"| {scope} | Case Resolution SLA | Breached | enter-stage "
+            "| Case SLA Oversight | Yes | takeover |\n",
+            "#### Stage Entry Conditions\n"
+            "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+            '| sla-status-change("root","Case Resolution SLA","breached") | - | Yes |\n',
+        )
+        assert check(text) == [], f"{scope!r} should satisfy a root-targeted call"
+
+
+def test_case_scope_does_not_swallow_a_stage_scoped_row():
+    """A stage-scoped row must still not satisfy a root-targeted call."""
+    text = sdd(
+        "| stage: Triage | Case Resolution SLA | Breached | enter-stage "
+        "| Case SLA Oversight | Yes | wrong target |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("root","Case Resolution SLA","breached") | - | Yes |\n',
+    )
+    assert any("targets 'root'" in issue for issue in check(text)), check(text)
+

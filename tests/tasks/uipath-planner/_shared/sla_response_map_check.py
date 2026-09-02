@@ -180,9 +180,22 @@ def check(text: str) -> list[str]:
         scope = scope.strip().casefold()
         target = target.strip().strip('"').strip("'").casefold()
         if target == "root":
-            return scope == "case"
+            # Case scope is documented as the bare word `case`; an agent
+            # generalising from `stage: <name>` / `task: <name>` writes
+            # `case: root`, which names the same target. Closure is about the
+            # target, not the vocabulary — the template-conformance gate owns
+            # wording. Run 33448258234 failed on exactly this.
+            return bool(re.fullmatch(r"case(?:\s*:\s*(?:root|case))?", scope))
         match = re.match(r"stage\s*:\s*(.+)", scope)
-        return bool(match) and match.group(1).strip() == target
+        if not match:
+            return False
+        # The Scope cell may carry the stage's slug as a trailing qualifier —
+        # `stage: Assess (`assess`)` — which is annotation, not part of the
+        # stage name. Branch run 33429105211 was told every row titled
+        # 'Assess SLA' was "scoped ['stage: Assess (`assess`)']" and therefore
+        # did not match target 'Assess', which is the same name.
+        name = re.sub(r"\s*\([^)]*\)\s*$", "", match.group(1)).strip().strip("`")
+        return name == target
 
     for args, entry_interrupting in entries.items():
         sla_title = ""

@@ -10,8 +10,6 @@ description: >
   that the map's Interrupting cell matches the Stage Entry Conditions row it produces —
   the guard against defaulting every SLA lane to interrupting.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conversational]
-max_iterations: 1
-
 run_limits:
   task_timeout: 4200
   max_turns: 90
@@ -21,10 +19,9 @@ initial_prompt: |
   Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
   Design only: stop before creating caseplan.json, and do not scaffold a solution.
 
-  The design is settled — do not interview me, and do NOT call AskUserQuestion (it is not
-  available in this harness). Treat the plan as pre-approved and proceed. Do not query the
-  tenant registry, connections, schemas, or users; use concrete intended resource names and
-  mark identities `resolve at build`.
+  The design is settled — do not redesign it or re-interview me on the timing rules below.
+  Do not query the tenant registry, connections, schemas, or users; use concrete intended
+  resource names and mark identities `resolve at build`.
 
   The case has three stages: Triage, Assess, Resolve.
 
@@ -58,3 +55,23 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+# The Case Design Lane gates on one Case Review approval. Without a simulator the
+# agent has nobody to approve it and the prompt's old "do NOT call AskUserQuestion"
+# ban left it no legal way to ask, so the whole ask-walk collapsed into one thinking
+# turn: run 2026-08-31_04-15-47 spent 57.1m of 57.8m generation thinking across 20
+# tool calls and wrote no sdd.md before the 3600s turn wall (ERROR, no criteria
+# graded). Simulation is the documented fix for that shape, not a bigger budget.
+simulation:
+  enabled: true
+  persona: |
+    You are the operations owner who supplied the three timing rules in the
+    opening message.
+  goal: |
+    Get an approved sdd.md carrying the SLA Response Map, then stop before any build.
+  constraints:
+    - "Answer concisely and accept reasonable defaults that do not change the stated stages, SLA targets, or the three SLA responses."
+    - "When shown the design confirmation, approve it on the first pass and ask the assistant to stop at the approved sdd.md."
+    - "Do not authorize creating caseplan.json, scaffolding a solution, running, publishing, or deploying."
+    - "Decline any optional HTML-preview offer."
+  max_turns: 12
