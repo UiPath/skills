@@ -171,8 +171,11 @@ Use `core.logic.mock` for TBD steps, missing resources, or prototypes; it has `i
 Prefer, in order:
 
 1. A curated Integration Service connector ([connector](plugins/connector/planning.md)).
-2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
-3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
+2. A generated non-catalog activity when the connector lacks the activity but reports `v4Compatible` ([connector — decision order](plugins/connector/planning.md#decision-order)).
+3. `core.action.http.v2` connector mode when the connector lacks the activity and does not report `v4Compatible`, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
+4. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
+
+Tiers 2 and 3 are decided by one call: `uip is connectors metadata <key> --output json`, then `Data[0].Flags.v4Compatible`.
 
 **Data Fabric entity records are the one exception, and the split is by operation.** Record CRUD has two paths — the native `core.datafabric.*` nodes and the `uipath-uipath-dataservice` connector activities:
 
