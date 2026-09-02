@@ -3,8 +3,9 @@
 > **Quick reference index.** Use `--help` for full option details on any command.
 
 **Global flags:**
-- `--output json` — always use when calling programmatically
-- `--output-filter <expr>` — JMESPath filter for JSON output
+- `--output json` — always use when you parse the output (extract a field, branch on a flag)
+- `--output markdown` — use when you only read the output. Prose passes through verbatim instead of arriving as an escaped JSON string, and lists render as tables. Available when `uip --help` lists `markdown` among the `--output` values; an older `uip` silently falls back to `json`
+- `--output-filter <expr>` — JMESPath filter, applied before the format. Works with every `--output` value
 - `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
 - `--tenant <name>` — tenant override (defaults to authenticated tenant)
 - `--verbose` — enable debug logging
