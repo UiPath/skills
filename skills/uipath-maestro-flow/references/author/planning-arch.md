@@ -92,6 +92,7 @@ Read the relevant plugin `planning.md` when selecting a type.
 | `core.trigger.manual` | inline | On-demand user or API start |
 | `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Recurring schedule |
 | IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | External event; type `uipath.connector.trigger.<key>.<trigger>` |
+| `core.trigger.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Flow starts when a phone call arrives on a bound number (inbound voice topology) |
 
 Every flow has exactly one trigger, first in topology. IS connector triggers replace manual or scheduled triggers. `core.trigger.manual` has no inputs and output port `output`.
 
@@ -109,6 +110,8 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Fire-and-forget robot work |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Robot work with result wait |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Inline human review, approval, or data entry |
+| `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Dial an outbound phone call and emit its `callContext` (outbound voice topology) |
+| `uipath.conversational.voice.end-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | End the active call in a voice flow |
 
 ### Control Flow
 
@@ -132,6 +135,7 @@ Connector nodes are Integration Service nodes, not built-in. They appear after `
 | --- | --- | --- |
 | `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent scaffolded inside this flow via `uip agent init --inline-in-flow`, tightly coupled, not independently reused |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Separate in-solution or published agent, reusable and independently versioned |
+| `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext` |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table).
 
@@ -153,7 +157,7 @@ IxP has a two-segment tail, unlike other resource types' single `{key}` tail; bo
 
 Use `core.logic.mock` for TBD steps, missing resources, or prototypes; it has `input` -> `output`.
 
-## Selecting External Services
+## Selecting External Service Nodes
 
 Prefer, in order:
 
@@ -170,6 +174,7 @@ Every edge requires `sourcePort` and `targetPort`.
 | `core.trigger.manual` | — | `output` |
 | `core.trigger.scheduled` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
+| `core.trigger.voice` | — | `output` |
 | `uipath.connector.event.*` | `input` | `output`, `error` |
 | `core.action.script` | `input` | `success`, `error` |
 | `core.action.http.v2` | `input` | `default`, `error`, `branch-{id}` dynamic per `inputs.branches` |
@@ -186,6 +191,9 @@ Every edge requires `sourcePort` and `targetPort`.
 | `core.subflow` | `input` | `output`, `error` |
 | `core.logic.mock` | `input` | `output` |
 | `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.agent.voice` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.conversational.voice.create-outgoing-call` | `input` | `success`, `error` |
+| `uipath.conversational.voice.end-call` | `input` | `success`, `error` |
 | `uipath.core.agent.*` | `input` | `output`, `error` |
 | `uipath.core.rpa-workflow.*` | `input` | `output`, `error` |
 | `uipath.core.human-task.*` | `input` | `output`, `error` |
@@ -284,11 +292,11 @@ Prefix each item with `**[REQUIRED]**` or `**[OPTIONAL]**`. Include unresolved u
 Before presenting the plan, validate every rule:
 
 1. First line is `graph LR`, not `flowchart`.
-2. Node IDs contain only `[a-zA-Z0-9_]`.
+2. Node IDs contain only `[a-zA-Z0-9_]`; use `fetchData`, not `fetch-data` or `fetch.data`.
 3. IDs must not start with or equal reserved words: `end`, `subgraph`, `graph`, `flowchart`, `direction`, `click`, `style`, `classDef`, `class`, `linkStyle`, `callback`, `default`. Avoid IDs such as `endWarm`, `defaultPath`, and `styleNode`.
-4. Labels have no quotes or prohibited special characters.
-5. Shapes are only `(text)`, `[text]`, and `{text}`.
-6. Edges use `-->` or `-->|label|`; empty labels such as `-->||` are invalid.
+4. Labels have no quotes or prohibited special characters; replace `>` / `<` with words like over/under.
+5. Shapes are only `(text)`, `[text]`, and `{text}`. Do NOT use `([text])` (stadium), `{{text}}` (hexagon), or other extended shapes.
+6. Edges use `-->` or `-->|label|`; empty labels such as `-->||` are invalid. Write `A -->|success| B`, not `A -->success B` or `A --success--> B`.
 7. Subgraph IDs are unique and do not collide with node IDs.
 8. Every `subgraph` has a matching `end`.
 9. Do not use semicolons.

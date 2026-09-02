@@ -21,6 +21,11 @@ If global installation fails with a permission error, prompt the user to rerun i
 
 Use `uip maestro flow` for CLI version **≥ 0.3.4** and `uip flow` for versions **< 0.3.4**: <!-- uip-check-skip -->
 
+| Installed version | Command prefix | Example |
+| --- | --- | --- |
+| **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
+| **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
+
 
 ```bash
 MIN_VERSION="0.3.4"
@@ -46,7 +51,7 @@ uip maestro flow instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --ou
 
 Do not use `--format json`; it does not exist and produces `error: unknown option '--format'` with exit code 3 on every `uip` subcommand. Ignore the benign `--localstorage-file` warning when it appears.
 
-## 3. Extract with `--output-filter`
+## 3. Prefer `--output-filter` for extraction
 
 Prefer `--output-filter '<jmespath>'` for field or projection extraction. It is a global flag on every subcommand, applies to the `Data` envelope before printing, and expressions start at `Data` (never `Data.`).
 
@@ -89,7 +94,7 @@ Verify the shape before parsing; most parsing retries result from an incorrect s
 
 ### Cross-references
 
-Keep the broad-discovery recipe aligned with [author/references/plugins/connector/planning.md](../author/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/references/plugins/connector/impl.md](../author/plugins/connector/impl.md) for connection-resource lookup. Both files use the `--output-filter` preference and the `registry search` flat-array/PascalCase shape; each may use a task-specific projection.
+Keep the broad-discovery recipe aligned with [author/plugins/connector/planning.md](../author/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/plugins/connector/impl.md](../author/plugins/connector/impl.md) for connection-resource lookup. Both files use the `--output-filter` preference and the `registry search` flat-array/PascalCase shape; each may use a task-specific projection.
 
 ## 4. Check the JSON response shape
 
@@ -130,7 +135,7 @@ uip login
 uip login --authority https://alpha.uipath.com    # non-production environments
 ```
 
-## 6. Supply `--folder-key`
+## 6. `--folder-key` requirement
 
 Run all `uip maestro flow instance` and `uip maestro flow incident get` commands with `--folder-key <FOLDER_KEY>` (or `-f`). Without it, the request is rejected before reaching the API.
 

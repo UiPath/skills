@@ -10,7 +10,7 @@ There is no automatic project-to-flow conversion. Re-host only orchestration:
 
 1. Keep coded/RPA components and agents as resource nodes; do not rewrite them into Maestro. Use `uipath.core.rpa-workflow.*` and `uipath.core.agent.*`; see the relevant plugin's `planning.md`.
 2. Lift ordering, waits, and branches into explicit trigger → steps → decisions → end topology.
-3. Make sleeps, polling, and “check again later” first-class Maestro wait, delay, HITL, or `create-and-wait` nodes.
+3. Make sleeps, polling, and "check again later" first-class Maestro wait, delay, HITL, or `create-and-wait` nodes.
 4. Publish executors or keep them in-solution, then resolve them with `registry list --local` for in-solution projects.
 
 The result should be a thin flow delegating work to existing artifacts. Author it as greenfield ([greenfield.md](greenfield.md)), discovering artifacts during [planning-arch.md](planning-arch.md). Apply [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home): migrate for long waits, human approvals, parallel branches, or per-case visibility; do not migrate short, fully automated, fire-once scripts when orchestration overhead is not worthwhile.
@@ -43,6 +43,7 @@ For edits touching multiple top-level arrays, follow [parallel same-file Edit ru
 | **Add a connector trigger** | Remove the manual trigger; add and configure the connector trigger with a connection. Use [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) and [connector-trigger/impl.md](plugins/connector-trigger/impl.md). |
 | **Add a resource node** | Discover through the registry (`--local` for in-solution, or tenant registry for published); add with `Edit`; wire edges. Use the relevant plugin's `impl.md` and [editing-operations-json.md](editing-operations-json.md). |
 | **Add an inline agent node** | Embed `uipath.agent.autonomous` with an inline agent definition in the flow project. See [inline-agent/planning.md](plugins/inline-agent/planning.md) for inline versus published selection and [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, JSON, and validation. |
+| **Add voice nodes** | Turn a flow into a phone conversation: a `uipath.agent.voice` inline conversational agent wired to a live call, plus the trigger, create-call, and end-call nodes. Binding an inbound number happens at deploy time, not in the `.flow`. See [inline-voice-agent/planning.md](plugins/inline-voice-agent/planning.md) for the two topologies and trunk requirements, and [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) for node JSON, `callContext` wiring, and number binding. |
 | **Add a HITL QuickForm node** | Insert the human approval/review/enrichment checkpoint and wire its `completed` port. See [Edit/Write: Add a node](editing-operations-json.md) and [hitl/impl.md](plugins/hitl/impl.md). |
 
 OOTB structural CRUD uses Edit/Write only; there is no CLI opt-in path for other flow-graph edits.
@@ -50,9 +51,9 @@ OOTB structural CRUD uses Edit/Write only; there is no CLI opt-in path for other
 ## After edits
 
 1. Run `uip maestro flow validate <ProjectName>.flow --output json`. Fix errors and re-validate.
-2. Run `uip maestro flow format <ProjectName>.flow --output json`. Run it before publish or debug (see “Always run `flow format` after edits” in [the Author capability index](CAPABILITY.md)); without it, stale or hand-edited `layout` data renders as misshapen rectangles in Studio Web.
+2. Run `uip maestro flow format <ProjectName>.flow --output json`. Run it before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](CAPABILITY.md)); without it, stale or hand-edited `layout` data renders as misshapen rectangles in Studio Web.
 
-## “Refusing to serialize a vX workflow” — migrate first
+## "Refusing to serialize a vX workflow" — migrate first
 
 If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v<current> file format`, run:
 

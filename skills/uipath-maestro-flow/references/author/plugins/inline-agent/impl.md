@@ -4,6 +4,7 @@ This skill covers flow-specific operations for low-code inline agent nodes: scaf
 
 Node type: `uipath.agent.autonomous`. Bind the agent directory with `inputs.source = <projectId>`. BPMN type, `serviceType` (`Orchestrator.StartInlineAgentJob`), version, and context come from its `definitions[]` entry. Coded Python agents use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`); inline agents are low-code only.
 
+<a id="configure-agentjson"></a>
 ## 1. Scaffold and configure the inline agent
 
 Run:
@@ -30,6 +31,7 @@ Configure `<FlowProjectDir>/<projectId>/agent.json`:
 
 After editing `messages[].content`, run `uip agent refresh` to regenerate `contentTokens`; do not hand-author them. `content` is authoritative. Tokens use `type: "simpleText"` or `type: "variable"`; variable `rawString` is brace-free. `uip agent validate` is read-only and does not repair mismatches.
 
+<a id="wiring-flow-variables-into-agent-prompts"></a>
 ## 2. Wire flow inputs into prompts
 
 Author and align all three pieces; the CLI does not derive them. `uip agent refresh` does not scan prompts, derive `inputSchema`, or populate `agentInputVariables`; it only regenerates `messages[].contentTokens`. The converter builds runtime `JobArguments` only from the flow node's `inputs.agentInputVariables[]`, not from `$vars` tokens in `agent.json`.
@@ -43,7 +45,7 @@ Use `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`:
 | `messages[].content` | `{{input.<trigger>__output__<var>}}`; never `$vars` or `{{plainName}}` |
 | `messages[].contentTokens[]` | One `{ "type": "variable", "rawString": "input.<trigger>__output__<var>" }` per interpolation; literals are `simpleText` |
 
-The bound source must be a real `.flow` node ID with an edge path reaching the agent. See [../../../../shared/node-output-wiring.md](../../../shared/node-output-wiring.md).
+The bound source must be a real `.flow` node ID with an edge path reaching the agent. See [../../../shared/node-output-wiring.md](../../../shared/node-output-wiring.md).
 
 For a trigger, declare the variable in `variables.globals[]`, for example:
 
@@ -51,7 +53,7 @@ For a trigger, declare the variable in `variables.globals[]`, for example:
 { "id": "invoiceNumber", "direction": "in", "type": "string", "triggerNodeId": "start" }
 ```
 
-Read it as `$vars.<triggerId>.output.<id>`. `flow validate` does not verify that the referenced variable exists; an undeclared binding passes validation and faults at debug with empty `JobArguments`. Declare agent-fed flow outputs as `direction: "out"` globals and map them on every reachable End node. See [../../../../shared/variables-and-expressions.md](../../../shared/variables-and-expressions.md) (§ Input associated with a trigger) and [../../editing-operations-json.md § Add a workflow variable](../../editing-operations-json.md#add-a-workflow-variable).
+Read it as `$vars.<triggerId>.output.<id>`. `flow validate` does not verify that the referenced variable exists; an undeclared binding passes validation and faults at debug with empty `JobArguments`. Declare agent-fed flow outputs as `direction: "out"` globals and map them on every reachable End node. See [../../../shared/variables-and-expressions.md](../../../shared/variables-and-expressions.md) (§ Input associated with a trigger) and [../../editing-operations-json.md § Add a workflow variable](../../editing-operations-json.md#add-a-workflow-variable).
 
 Do not write `inputs.systemPrompt` or `inputs.userPrompt` on the flow node. A present prompt string makes `@uipath/flow-converter` prune every `agentInputVariables[]` entry not referenced by that text (`@uipath/flow-converter`; prune present 0.25.1 through 0.42.0). Empty strings fail validation. Canonical prompts belong in `agent.json`.
 
@@ -78,6 +80,7 @@ Run refresh after changing `content`. For `"Invoice Number: {{input.start__outpu
 
 If `uip agent validate` reports `Expected type "simpleText"…`, `Expected "input.X" but got "{{input.X}}"`, or `contentTokens has N entries but content requires M`, fix `content` if needed and run refresh; do not edit `rawString`.
 
+<a id="registry-validation"></a>
 ## 3. Validate the registry and add the node
 
 Run:
@@ -114,6 +117,7 @@ Use `Edit` / `Write` for graph edits. Do not use Flow CLI `node add`, `edge add`
 
 Copy the definition verbatim from `Data.Node` or the top-level node object, depending on CLI/plugin version. Set `typeVersion` to its exact `version`; add `variables.nodes[]` entries for `autonomousAgent1.output` and `autonomousAgent1.error` with `binding.nodeId` and matching `binding.outputId`; add `layout.nodes.<agentNodeId>`; then run `flow format` for final positioning.
 
+<a id="adding-resource-nodes"></a>
 ## 4. Wire edges and resources
 
 Add normal edges with `Edit` / `Write`:
@@ -184,6 +188,7 @@ uip solution resources refresh --output json
 
 Run `uip solution resources refresh` for every kind except built-in tools. Built-ins use `referenceKey: null` and `type: "internal"`, require no `bindings[]`, solution files, or solution refresh. For process tools, context, and escalation, pass `--bindings-target <FlowProjectDir>/bindings_v2.json`; refresh regenerates `bindings_v2.json`, so never hand-edit it. Verify refresh and validate both report `"resources": N` with `N > 0`.
 
+<a id="refresh-and-validate"></a>
 ## 5. Refresh and validate the complete flow
 
 Run:
@@ -224,8 +229,8 @@ Declare each flow output as a `direction: "out"` global and map it on every reac
 | Debug shows `JobArguments {"input":""}` or `AGENT_STARTUP.INPUT_VALIDATION_ERROR` (`"Field required"`, incident `170002`) | Node prompt keys caused converter pruning. Delete them or run refresh; verify no `systemPrompt` key. A placeholder that references no input cannot preserve delivery. |
 | `inputs.source` matches no directory or the wrong agent runs | Use the exact UUID directory/project ID; remove stale or human-readable folder names. |
 | `Orchestrator.StartAgentJob` or runtime mismatch | Remove instance `model`; use the registry definition with `model.serviceType: "Orchestrator.StartInlineAgentJob"`. |
-| Studio Web says “System prompt is required” | Ensure real `agent.json.messages[]` content, refresh, validate, and re-import. Remove node prompt keys. |
-| “Could not find process for tool” or empty/missing `bindings_v2.json` | Run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json`, validate, then `uip solution resources refresh`. Do not hand-edit `bindings_v2.json`. |
+| Studio Web says "System prompt is required" | Ensure real `agent.json.messages[]` content, refresh, validate, and re-import. Remove node prompt keys. |
+| "Could not find process for tool" or empty/missing `bindings_v2.json` | Run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json`, validate, then `uip solution resources refresh`. Do not hand-edit `bindings_v2.json`. |
 | Tool cannot resolve | Add definition-declared top-level `bindings[]`; match node `inputs.source` and `resource.json.id`; run refresh with `--bindings-target`, validate, and solution refresh. |
 | `inputs.agentProjectId` unrecognized | Use `inputs.source`; `agentProjectId` is invalid. |
 | `uip agent validate` rejects the project | Delete `entry-points.json` and `project.uiproj` from the inline directory. |
@@ -233,7 +238,7 @@ Declare each flow output as a `direction: "out"` global and map it on every reac
 | Token errors (`Expected type "simpleText" but got "text"`; braces in `rawString`; wrong count) | Fix `content` and run refresh; never hand-edit tokens. |
 | Literal `{{input.X}}` at runtime | Add `X` to `inputSchema.properties`; run flow validation. |
 | Debug `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` with literal `input.<key>` | Replace `value: "=js:$vars…"` with `binding: "=$vars.<trigger>.output.<var>"`; declare the trigger global. If binding is correct, remove node prompt keys. |
-| Debug `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` “Template placeholders detected instead of actual values” | The converter ignored `value`; use `binding` and strip `=js:`. Then check prompt-key pruning. |
+| Debug `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` "Template placeholders detected instead of actual values" | The converter ignored `value`; use `binding` and strip `=js:`. Then check prompt-key pruning. |
 | Typed flow output is null although validation passes | List every field in `agentOutputVariables[]` and map End nodes to flat `=js:$vars.<node>.output.<field>` paths, without `.content.`. |
 
 ### Repair a stale definition

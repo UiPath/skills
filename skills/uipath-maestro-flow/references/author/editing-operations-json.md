@@ -109,7 +109,7 @@ Every node, including `core.control.end` and `core.logic.terminate`, requires `d
 Orchestrator-job nodes (`api-workflow`, `rpa-workflow`, `agent`, `agentic-process`, `function`) declare `error` only with `source: "=Error"`; `output` is derived. Their converter copies authored `source` verbatim and injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` only when non-empty `outputs` omits `output`. A wrong source such as `=result.response` makes downstream `$vars.{nodeId}.output` null while validation passes. Other action/trigger nodes ignore instance `outputs`; End / Terminate nodes are exceptions. See [end/impl.md](plugins/end/impl.md) and [file-format.md — Node outputs](../shared/file-format.md#node-outputs).
 
 3. Add one exact registry definition per unique `type:typeVersion`; match instance `typeVersion` to its `version`.
-4. For `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`, add two top-level `bindings[]` entries per resource (`name` and `folderPath`) with `resourceKey` exactly matching `definition.model.bindings.resourceKey`. Keep `<bindings.*>` placeholders verbatim; the emitter rewrites them by `(resourceKey, name)`. Missing entries may pass validation but fail debug with “Folder does not exist or the user does not have access to the folder.”
+4. For `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`, add two top-level `bindings[]` entries per resource (`name` and `folderPath`) with `resourceKey` exactly matching `definition.model.bindings.resourceKey`. Keep `<bindings.*>` placeholders verbatim; the emitter rewrites them by `(resourceKey, name)`. Missing entries may pass validation but fail debug with "Folder does not exist or the user does not have access to the folder."
 5. Add `variables.nodes` entries for `output` and action-node `error`:
 
 ```json
@@ -203,7 +203,7 @@ Add to `variables.globals`:
 
 Map every `out` variable on every reachable End node. Add `variableUpdates` for nodes modifying `inout` state. Attachment-carrying inputs must use `"type": "file"`, not `"object"`, or attachment binding breaks and IxP extraction faults with `[430002]`; see [plugins/ixp/impl.md#debug](plugins/ixp/impl.md#debug). See [variables-and-expressions.md](../shared/variables-and-expressions.md).
 
-### Add End-node output mapping
+### Add output mapping on an End node
 
 On every reachable End node, map every `out` variable:
 
@@ -292,7 +292,7 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 
 **Tool:** `Edit` (or `Write` when scaffolding from a template).
 
-1. Add a `core.subflow` parent with `typeVersion: "1.0.0"`, `display`, inputs, and error output:
+1. Add a `core.subflow` parent with `display`, inputs, and error output (the JSON below pins `typeVersion`):
 
 ```json
 {

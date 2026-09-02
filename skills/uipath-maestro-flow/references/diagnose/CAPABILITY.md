@@ -8,7 +8,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 >
 > **Inherited rules:** use `--output json` and prefer `--output-filter` for extraction; do not run `flow debug` without consent; never invoke other skills automatically; use the dropdown question pattern; provide plain-English narration and a granular progress list only when the user asks for verbosity, and remain silent by default. These rules apply in addition to the rules below.
 
-## When to use
+## When to use this capability
 
 - Triage a failed `flow debug` or deployed process run.
 - Read incidents for the error category, message, and faulting element.
@@ -24,12 +24,14 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 3. **Never call underlying APIs directly.** Run supported `uip` CLI commands; `instance` and `incident` are the diagnostic surface.
 4. **When the local `.flow` may differ from the deployed BPMN, fetch the deployed asset.** Run `uip maestro flow instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json` and correlate against what actually ran.
 
-## Workflow and references
+## Workflow
 
 | Journey | Read |
 | --- | --- |
 | Triage a failed run (priority ladder) | [troubleshooting-guide.md](troubleshooting-guide.md) |
 | Look up a known failure mode | [failure-modes.md](failure-modes.md) |
+
+## Common tasks
 
 | Need | Read |
 | --- | --- |

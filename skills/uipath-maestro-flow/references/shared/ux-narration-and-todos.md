@@ -46,36 +46,36 @@ Use or adapt these patterns:
 
 | Step | Narration |
 |---|---|
-| Login probe | “Checking whether you're logged in to the UiPath tenant…” |
+| Login probe | "Checking whether you're logged in to the UiPath tenant…" |
 <!--skill-flavor:flow-project-creation-narration:start-->
-| Solution scaffold | “Scaffolding a new solution at `<path>` so the Flow project has a parent.” |
-| Flow init | “Initializing the Flow project. This creates the `.flow` file you'll edit.” |
-| Verify project layout | “Confirming the solution/project layout is correct before continuing.” |
+| Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
+| Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
+| Verify project layout | "Confirming the solution/project layout is correct before continuing." |
 <!--skill-flavor:flow-project-creation-narration:end-->
-| Registry discovery | “Looking up `<node-type>` in the registry so I can wire its inputs correctly…” |
-| Node add | “Adding the `<node-type>` node and copying its registry definition into the file…” |
-| Edit flow JSON | “Editing the flow JSON to add the `<thing>`.” |
-| Edge wiring | “Wiring `<from>` → `<to>` so data flows in the right order.” |
-| Variable mapping | “Mapping output variables on the End node — every reachable End needs them.” |
-| Script body update | “Updating the script body in the `<nodeId>` node.” |
-| Resource refresh | “Syncing connection and resource declarations into the solution before upload…” |
-| Validate | “Running validate. This catches missing edges, bad expressions, and wiring mistakes.” |
-| Format | “Formatting the layout. Studio Web renders nodes correctly only after format normalizes their sizes.” |
-| Studio Web upload | “Pushing to Studio Web. This is the safe path — no execution, just the visual editor.” |
-| Pack for Orchestrator | “Packing the solution for Orchestrator deploy…” |
-| Orchestrator publish | “Publishing the package to Orchestrator…” |
-| Debug consent | “Running debug end-to-end. Real systems will be hit (emails sent, Slack posts, API calls).” |
-| Process run | “Triggering the deployed process now…” |
-| Job status | “Checking the job's current status…” |
-| Job traces | “Pulling traces — verbose execution timeline.” |
-| Instance pause | “Pausing the running instance…” |
-| Instance resume | “Resuming the instance from where it paused…” |
-| Instance cancel | “Cancelling the instance…” |
-| Instance retry | “Retrying the faulted instance from the last successful checkpoint…” |
-| Incident fetch | “Fetching the incident record — this is the structured error report from the failed run.” |
-| Variable inspection | “Reading the runtime variable state at the moment of failure…” |
-| Flow correlation | “Mapping the faulting element ID back to a node in your `.flow` file…” |
-| Traces, last resort | “Pulling traces. Last resort — the previous steps weren't enough.” |
+| Registry discovery | "Looking up `<node-type>` in the registry so I can wire its inputs correctly…" |
+| Node add | "Adding the `<node-type>` node and copying its registry definition into the file…" |
+| Edit flow JSON | "Editing the flow JSON to add the `<thing>`." |
+| Edge wiring | "Wiring `<from>` → `<to>` so data flows in the right order." |
+| Variable mapping | "Mapping output variables on the End node — every reachable End needs them." |
+| Script body update | "Updating the script body in the `<nodeId>` node." |
+| Resource refresh | "Syncing connection and resource declarations into the solution before upload…" |
+| Validate | "Running validate. This catches missing edges, bad expressions, and wiring mistakes." |
+| Format | "Formatting the layout. Studio Web renders nodes correctly only after format normalizes their sizes." |
+| Studio Web upload | "Pushing to Studio Web. This is the safe path — no execution, just the visual editor." |
+| Pack for Orchestrator | "Packing the solution for Orchestrator deploy…" |
+| Orchestrator publish | "Publishing the package to Orchestrator…" |
+| Debug consent | "Running debug end-to-end. Real systems will be hit (emails sent, Slack posts, API calls)." |
+| Process run | "Triggering the deployed process now…" |
+| Job status | "Checking the job's current status…" |
+| Job traces | "Pulling traces — verbose execution timeline." |
+| Instance pause | "Pausing the running instance…" |
+| Instance resume | "Resuming the instance from where it paused…" |
+| Instance cancel | "Cancelling the instance…" |
+| Instance retry | "Retrying the faulted instance from the last successful checkpoint…" |
+| Incident fetch | "Fetching the incident record — this is the structured error report from the failed run." |
+| Variable inspection | "Reading the runtime variable state at the moment of failure…" |
+| Flow correlation | "Mapping the faulting element ID back to a node in your `.flow` file…" |
+| Traces, last resort | "Pulling traces. Last resort — the previous steps weren't enough." |
 
 ## Progress-list threshold
 
@@ -100,7 +100,7 @@ Do not create todos for registry lookup, `ls`/`cat`/`Glob` path checks, pre-edit
 
 When scope changes:
 
-1. Narrate the pivot, for example: “Switching from connector to HTTP node. Updating todos.”
+1. Narrate the pivot, for example: "Switching from connector to HTTP node. Updating todos."
 2. Mark obsolete in-flight todos cancelled and remove them; insert todos for the new direction in the correct position; retain completed todos as history.
 3. Continue with the new in-progress todo.
 
@@ -111,5 +111,5 @@ When scope changes:
 - Never show narration or a user-facing todo list without an engagement trigger.
 - When engaged, never omit narration at a step transition or the required list for a standard journey.
 - Never create a todo per bash call.
-- Never use first-person filler such as “Let me,” “I'll go ahead,” or “I'm going to.”
+- Never use first-person filler such as "Let me", "I'll go ahead", or "I'm going to".
 - Never repeat the previous narration; move to the next logical step.

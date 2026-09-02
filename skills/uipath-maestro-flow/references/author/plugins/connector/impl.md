@@ -40,7 +40,7 @@ An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`
 3. **Operation label ≠ HTTP verb** — a semantic operation (e.g. `Update`) pairs with any verb (e.g. `POST /usergroups.users.update`). `flow validate` accepts it; do not "fix" the method to match the label.
 4. **Not connection-scoped** — `--connection-id` on `registry get` adds no custom fields.
 
-## No-live-tenant or planning-only configuration
+## No-Live-Tenant / Planned Configuration
 
 If `node configure` cannot run:
 
@@ -90,7 +90,7 @@ Use case-sensitive `Name` as `objectName`, never `DisplayName`. `Path` is the en
 
 ### Step 3 — Describe the resource and read the cache
 
-Read `<objectName>` from the node definition copied into `definitions[]`, never from the node-type suffix or by case conversion. Read `model.context[]` `{name:"objectName", value:"…"}` or `objectName` inside the `configuration` `=jsonString:` blob.
+Read `<objectName>` from the node definition copied into `definitions[]`, never from the node-type suffix or by case conversion. Read `model.context[]` `{name:"objectName", value:"…"}` or `objectName` inside the `configuration` `=jsonString:` blob. Example: node type `…google-gmail.send-email` has objectName `SendEmail` (not `send_email`); `…teams.send-bot-direct-message` has objectName `bot_direct_messages` (not `send-bot-direct-message`). kebab→snake and kebab→Pascal are both guesses that 404.
 
 Sequence dependent calls; do not parallelize `node add`, `registry get`, and `describe`. If describe returns 404, reread `objectName` and retry; do not skip describe.
 
@@ -101,7 +101,7 @@ uip is resources describe "<connector-key>" "<objectName>" \
   --connection-id "<id>" --operation Create --output json
 ```
 
-Then run `cat <metadataFile path from response>` and read the full cached metadata. Pass `--operation` as the node definition's `model.context[].method` verbatim. Do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method` as the describe lookup key.
+Then run `cat <metadataFile path from response>` and read the full cached metadata. Pass `--operation` as the node definition's `model.context[].method` verbatim. E.g. Jira `curated_get_issue` → `GETBYID`; Data Service `QueryEntityRecordsCurated` → `POST`. Do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method` as the describe lookup key.
 
 > **`4.0.0` activities** — positional is the `activityName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<activityName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
 
@@ -226,7 +226,7 @@ Inspect both `objectActions[]` and `connectorMethodInfo.design.actions[]`. Suppo
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 
-Encode tokens longest-first: `:::` → `_sub_`; `[*]` → `_array`; `::` → `_sub_`; `.` → `_sub_`. Use camelCase keys and include every token from `apiConfiguration.url` and `body`:
+Encode tokens longest-first: `:::` → `_sub_`; `[*]` → `_array`; `::` → `_sub_`; `.` → `_sub_`. Examples: `fields.project.key` → `fields_sub_project_sub_key`; `items[*]` → `items_array`; `tenantEntityName` → `tenantEntityName` (unchanged). Use camelCase keys and include every token from `apiConfiguration.url` and `body`:
 
 ```json
 "customFieldsRequestDetails": {
@@ -238,7 +238,82 @@ Encode tokens longest-first: `:::` → `_sub_`; `[*]` → `_array`; `::` → `_s
 }
 ```
 
-`customFieldsRequestDetails` complements runtime parameters: put raw parent values in `bodyParameters`, `queryParameters`, or `pathParameters`, and encoded values in the design-time cache. Values are strings or `null`; `parameterValues` is never an object map. The cache is embedded in `essentialConfiguration.customFieldsRequestDetails`, not set as a top-level `inputs.detail` field. Pass runtime values and the cache in the same configure call — omitting the runtime bucket is the most common mistake; the design-time cache alone does not feed the connector at runtime. The CLI does not validate action existence or token coverage, so Step 3a is mandatory.
+`customFieldsRequestDetails` complements runtime parameters: put raw parent values in `bodyParameters`, `queryParameters`, or `pathParameters`, and encoded values in the design-time cache. Values are strings or `null`; `parameterValues` is never an object map. The cache is embedded in `essentialConfiguration.customFieldsRequestDetails`, not set as a top-level `inputs.detail` field. Pass runtime values and the cache in the same configure call — omitting the runtime bucket is the most common mistake; the design-time cache alone does not feed the connector at runtime. Concrete (Jira Create Issue): `bodyParameters.fields.project.key = "<PROJECT_KEY>"` AND `parameterValues = [["fields_sub_project_sub_key", "<PROJECT_KEY>"]]`. Dropping the runtime-input copy manifests as `DAP-DT-_2003 refField with name <X> not found` at activity load. The CLI does not validate action existence or token coverage, so Step 3a is mandatory.
+
+**Worked `--detail` payloads** — each passes BOTH the runtime bucket and the design-time cache in one call.
+
+Jira Create Issue — `source: method` (raw `fields.project.key` in body + encoded `fields_sub_project_sub_key` in cache):
+
+```bash
+uip maestro flow node configure <file> <nodeId> --detail "$(cat <<'JSON'
+{
+  "connectionId": "<id>",
+  "folderKey": "<key>",
+  "method": "POST",
+  "endpoint": "/curated_create_issue",
+  "bodyParameters": {
+    "fields.project.key": "<PROJECT_KEY>",
+    "fields.issuetype.id": "3",
+    "fields.summary": "Created from Maestro"
+  },
+  "customFieldsRequestDetails": {
+    "objectActionName": "GenerateSchema",
+    "parameterValues": [
+      ["fields_sub_project_sub_key", "<PROJECT_KEY>"],
+      ["fields_sub_issuetype_sub_id", "3"]
+    ]
+  }
+}
+JSON
+)" --output json
+```
+
+Snowflake Execute Query — `source: field` (SQL string is the parent field; `query` unchanged, no dots):
+
+```bash
+uip maestro flow node configure <file> <nodeId> --detail "$(cat <<'JSON'
+{
+  "connectionId": "<id>",
+  "folderKey": "<key>",
+  "method": "POST",
+  "endpoint": "/executeQuery",
+  "bodyParameters": {
+    "query": "SELECT id, name FROM customers WHERE active = TRUE"
+  },
+  "customFieldsRequestDetails": {
+    "objectActionName": "generateSchema",
+    "parameterValues": [
+      ["query", "SELECT id, name FROM customers WHERE active = TRUE"]
+    ]
+  }
+}
+JSON
+)" --output json
+```
+
+Dataservice V3 Query Entity Records — `source: method` (`tenantEntityName` unchanged, no dots):
+
+```bash
+uip maestro flow node configure <file> <nodeId> --detail "$(cat <<'JSON'
+{
+  "connectionId": "<id>",
+  "folderKey": "<key>",
+  "method": "POST",
+  "endpoint": "/v3/QueryEntityRecords/query",
+  "queryParameters": {
+    "entityScope": "tenant",
+    "tenantEntityName": "\"my-entity\""
+  },
+  "customFieldsRequestDetails": {
+    "objectActionName": "FetchObjectMetadataTenant",
+    "parameterValues": [
+      ["tenantEntityName", "\"my-entity\""]
+    ]
+  }
+}
+JSON
+)" --output json
+```
 
 ## IS CLI commands
 

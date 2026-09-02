@@ -2,6 +2,7 @@
 
 IxP Extraction nodes invoke published tenant-specific UiPath Intelligent eXtraction Platform (IxP) models. Their node type is `uipath.ixp.{sanitized-modelName}.{sanitized-fullyQualifiedName}`. Sanitize both tail segments in order: lowercase, then replace each run of characters outside `[a-z0-9]` with one `-`; slashes, spaces, underscores, dots, and dash runs collapse to `-`. The registry adds the separators. Always use the `nodeType` returned by `uip maestro flow registry search`, never construct it manually.
 
+<a id="listing-published-models"></a>
 ## Discovery and listing
 
 For Maestro-flow questions about available IxP models, runtime projects, document extractors, or extraction nodes, use the `uipath-maestro-flow` Skill's registry search, not the `uipath-ixp` Skill. `uip ixp projects ...` lists IxP-product projects, not models wired into the Maestro flow registry. Each `Data[]` entry is one published model/runtime project visible to the flow registry.
@@ -71,6 +72,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 Always land the extraction node, even when configuration is incomplete; see [Landing the node when you cannot fully configure it](#landing-the-node-when-you-cannot-fully-configure-it).
 
+<a id="authoring-rules"></a>
 ## JSON structure and authoring
 
 An IxP instance has `inputs` and `outputs`, with no top-level `model`. The slim manifest `model` (`{ type, serviceType }`) exists only in `definitions[]`; the BPMN serializer injects runtime `model.context`, `model.version`, `model.inputs`, and `model.outputs`.

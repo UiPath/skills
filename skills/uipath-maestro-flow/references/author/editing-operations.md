@@ -2,7 +2,7 @@
 
 Strategy selection and shared concepts for modifying `.flow` files. Author non-carve-out structural changes directly in `.flow`; reserve CLI for documented product-managed configuration carve-outs.
 
-## Tool Selection and Required Strategy
+## Tool Selection Ladder
 
 Pick the lowest-numbered tool that fits. If none fits, stop and ask the user. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, shell heredocs) are a last resort and require explicit user approval; see rung 4.
 
@@ -10,6 +10,8 @@ Pick the lowest-numbered tool that fits. If none fits, stop and ask the user. Sc
 2. **Structural `.flow` mutations:** use `Edit` for all OOTB node CRUD, edges, variables, in-place values, output mapping, subflows, scheduled triggers, non-connector resources, and inline-agent nodes/wiring.
 3. **Wholesale rewrite:** use `Write` only when ≥70% of nodes change, such as scaffolding from a template. Never use it on a flow containing CLI-owned nodes (connector, connector-trigger, managed HTTP): it clobbers their CLI-owned `bindings[]` / `inputs.detail`, which `flow validate` will not catch. Use `Edit` (rung 2). If using `Write`, run `node configure` **as the last write** to touch `inputs.detail` / `bindings[]`; a later `Write` re-clobbers it. See [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node).
 4. **Anything else:** stop and ask the user. Before any scripting language, surface the trade-offs (state bypass, opaque diff, no interruption point) and offer exactly: **Use `Edit` instead** / **Use `Write` (full rewrite)** / **Approve the script for this change** / **Cancel** / **Something else**. Proceed only after explicit approval for this specific change. See the dropdown question rule in [SKILL.md](../../SKILL.md).
+
+### Why not Python / Node / jq / sed?
 
 CLI auto-manages cross-cutting state (`definitions[]`, `variables.nodes`, edge references, layout); scripting bypasses that and requires hand-rolling it. `Edit` provides a line-by-line diff and is atomic per call; sequential calls remain interruptible, unlike one script. If a change is too tangled for sequential `Edit` calls, use `Write` for the whole file or stop and ask the user. See [editing-operations-json.md](editing-operations-json.md) and the SKILL.md rule on forbidden tools.
 

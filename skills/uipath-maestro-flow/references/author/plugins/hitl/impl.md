@@ -62,7 +62,7 @@ Rules:
 - Output fields use `variable: "vars.<globalName>"` (`vars.` required) and no `binding`.
 - InOut fields use both properties in those formats.
 - Use `schemaId` (not `id`) at schema level and generate a fresh UUID.
-- Use `typeVersion: "1.0"` for this node. **Do not run `registry get` to derive it; do not use `"1.1"` or another version.**
+- `typeVersion` — always `"1.0"` for this node. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - Do not include a `model` block on node instances; only the definition carries it.
 - `outputs` contains only `output` (with `properties` for output/inOut fields plus `Action`) and `status` (with outcome `enum`/`default`). Do not add per-field `custom: true` entries.
 - Ports: `input` (target) → `outcome-completed` (source, label: Completed).

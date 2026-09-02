@@ -40,6 +40,8 @@ uip maestro flow eval list --set "<set_name>" --path <flow_project> --output jso
 uip maestro flow eval remove "<id_or_name>" --set "<set_name>" --path <flow_project> --output json
 ```
 
+<a id="--criteria"></a>
+<a id="--input-file-keypath"></a>
 ### Inputs, Expected Values, and Criteria
 
 `--inputs` must contain only keys matching the chosen entry point's declared input variables. If a variable is missing, add it or change the input JSON. To add a string input named `name`, run:

@@ -15,6 +15,7 @@ Prefer a curated connector activity. If none exists, try connector mode. If it c
 
 The `--detail` payload differs by mode only in `authentication` (`"connector"` or `"manual"`) and connector-only fields `targetConnector`, `connectionId`, and `folderKey`. Connector-mode `url` is relative to the connector base; manual-mode `url` is absolute. Node creation, dynamic values, branches, edges, and debugging are shared.
 
+<a id="critical-use-node-configure"></a>
 ## Configure through the CLI
 
 Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files. Run `uip maestro flow node configure`; it builds the required configuration from `--detail`, including `essentialConfiguration`. `core.action.http.v2` is CLI-owned per [Author capability — Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node), with the same envelope rules as connector activities.
@@ -29,6 +30,7 @@ uip maestro flow registry get core.action.http.v2 --output json
 
 Confirm `Data.Node.handleConfiguration` has target port `input` and source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`; `Data.Node.supportsErrorHandling: true`; and model `serviceType` is `Intsvc.UnifiedHttpRequest`. HTTP v2 uses the implicit `error` port pattern shared by action nodes (see [Action Node Structure](../../../shared/action-nodes.md)).
 
+<a id="add-the-node"></a>
 ## Add and configure
 
 Run:
@@ -69,6 +71,7 @@ uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
 
 `timeout` is an ISO 8601 duration such as `PT15M`, `PT1H`, or `P1D` and defaults to `PT15M`. `retryCount` is an integer and defaults to `0`. `branches` is optional and belongs at `inputs.branches`, not `inputs.detail.branches`. Do not edit `inputs.*` afterward or hand-author the definition; run `uip maestro flow node add` and `uip maestro flow node configure`.
 
+<a id="dynamic-values-in-url--headers--body--query"></a>
 ## Dynamic values
 
 Do not use `{$vars.x}` brace templates in IS activity inputs. Runtime `{...}` interpolation applies to native flow fields, not `inputs.detail.bodyParameters` on HTTP v2 or `uipath.connector.*` activities; such templates can be sent literally and cause a 400 response.

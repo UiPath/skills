@@ -68,7 +68,7 @@ uip maestro flow eval run results <eval_set_run_id> \
   --path ./MySolution/MyFlow --output json
 ```
 
-## Workflow and references
+## Workflow
 
 | Need | Read |
 | --- | --- |
@@ -81,7 +81,7 @@ uip maestro flow eval run results <eval_set_run_id> \
 | Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first) | [upload-safety.md](upload-safety.md) |
 <!--skill-flavor:upload-safety-workflow-row:end-->
 
-### Common tasks
+## Common tasks
 
 - **Add an evaluator:** [evaluators-guide.md](evaluators-guide.md) + [commands-reference.md — Evaluators](commands-reference.md#evaluators)
 - **Pick an evaluator type:** [evaluators-guide.md — When to Pick Each Type](evaluators-guide.md#when-to-pick-each-type)
