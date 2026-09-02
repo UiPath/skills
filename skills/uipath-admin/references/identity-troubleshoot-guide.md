@@ -6,13 +6,15 @@ Investigation playbooks for identity, access, and security issues using `uip adm
 
 ---
 
-## Playbook 1 — "User can't access resource X"
+## Playbook 1 — "Access denied (HTTP 403)"
 
-**Symptoms:** A user cannot publish, receives a 403, or has no access.
+**Symptoms:** A user cannot publish, receives a 403, has no access, or was assigned a role that appears to do nothing. These are one scenario, not several.
 
-**Root causes (most → least common):** missing role at the correct scope; role lacks the permission; user is not in the expected group; user is disabled or not activated.
+**Root causes (most → least common):** the principal holds no role carrying the required permission; the permission is granted but at the wrong scope path (wrong or missing service segment, wrong scope level, wrong tenant); the user is not in the expected group; the user is disabled or not activated.
 
-### Step 1 — Resolve the principal
+The canonical branch — missing permission versus mis-scoped grant — is [diagnose/failure-modes.md → Access denied](diagnose/failure-modes.md#access-denied-http-403). Steps 1 and 3 below are the identity-side checks that come first.
+
+### Step 1 — Resolve the principal and confirm it is active
 
 Run:
 
@@ -20,7 +22,7 @@ Run:
 uip admin users list --search "<EMAIL_OR_NAME>" --output json
 ```
 
-Extract `id` (GUID) and `isActive`. If `isActive` is `false`, the user is deactivated; stop.
+Extract `id` (GUID) and `isActive`. If `isActive` is `false`, the user is deactivated; that is the root cause — stop.
 
 ### Step 2 — Check effective access
 
@@ -36,21 +38,11 @@ For folder-level access, run:
 uip admin authorization check-access <USER_GUID> --scope Folder --folder-id <FOLDER_UUID> --output json
 ```
 
-Inspect `Data.roleAssignments[]`: `roleName`, `scopeType`, and `securityPrincipalType` (`direct` = user assignment; `inherited` or `Group` = group inheritance). Check for the required permission, such as `Publish`.
+Inspect `Data.roleAssignments[]`. Label every nested entry by `securityPrincipalType`: `User` with the queried id is a **direct** grant; `Group` is **inherited** through group membership. Record `roleName`, `ownerServiceName`, `scopeType`, and the grant's scope path for each granted role.
 
-### Step 3 — List current role assignments
+### Step 3 — Check group membership
 
-Run:
-
-```bash
-uip admin authorization roles assignments list --identity-id <USER_GUID> --output json
-```
-
-Compare assignments with the required role and scope. Check `ownerServiceName` and `scopeType`; an `Organization` role does not grant folder-level permissions.
-
-### Step 4 — Check group membership
-
-Run:
+When access is expected to arrive through a group, run:
 
 ```bash
 uip admin groups list --output json
@@ -62,15 +54,22 @@ For each relevant group, run:
 uip admin groups members list <GROUP_ID> --output json
 ```
 
-If group inheritance is expected and the user is absent, identify that as the gap.
+If the user is absent from the group that carries the role, the gap is membership — not the role or its scope.
+
+### Step 4 — Branch: missing permission, or right permission at the wrong scope
+
+Look up the permission the denied action requires ([permission-catalog.md](authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action)), then take the branch:
+
+- **No effective role carries it** → [Cause A](diagnose/failure-modes.md#cause-a--the-permission-is-not-granted). Find a role that does with `roles list --service <SERVICE>` and `roles get <ROLE_ID>` (compare `ActionDetails[].Name`). To extend a custom role instead, re-fetch first and send the full action set — `roles update` is a PUT-style upsert (Rule 12).
+- **A role carries it but the grant sits elsewhere** → [Cause B](diagnose/failure-modes.md#cause-b--the-permission-is-granted-at-the-wrong-scope). Verify `ownerServiceName` against the scope-path service segment (Rule 17). A `Tenant` role cannot provide folder-level access: use a `Project`-scoped role, or Orchestrator's own folder roles (`uip or roles`, `uipath-platform`).
 
 ### Step 5 — Diagnose and recommend
 
 Report:
 - **Principal:** `<displayName> (<email>) — <id>`
-- **Current access:** roles and scopes
-- **Missing:** required role or permission
-- **Fix:** "Assign role X at scope Y" or "Add user to group Z"
+- **Current access:** roles, scopes, and whether each is direct or inherited
+- **Missing:** the required permission, or the scope path the existing grant should sit at
+- **Fix:** "Assign role X at scope Y", "Add user to group Z", or "Re-create the assignment at `<path>`" — present it; do not execute it
 
 ---
 
@@ -124,49 +123,7 @@ For each `Data.auditEvents[]`, check `status` (`0` = Success, `1` = Failure), pa
 
 ---
 
-## Playbook 3 — "Role misconfiguration"
-
-**Symptoms:** A custom role lacks its intended permission, or a user has a role but cannot perform an action.
-
-### Step 1 — Inspect the role
-
-Run:
-
-```bash
-uip admin authorization roles list --output json
-```
-
-Find the role by name, then run:
-
-```bash
-uip admin authorization roles get <ROLE_ID> --output json
-```
-
-Check `actions[]` (permission strings such as `OR.Folders.Create`) against the Permission Catalog by running:
-
-```bash
-uip admin authorization permissions list --service <SERVICE> --output json
-```
-
-### Step 2 — Verify scope alignment
-
-The role's `scopeType` (`Organization` / `TenantGlobal` / `Tenant` / `Project`) must match its assignment scope; an `Organization` role cannot be assigned at `Folder` scope. Run:
-
-```bash
-uip admin authorization roles assignments list --identity-id <USER_GUID> --output json
-```
-
-Verify `ownerServiceName` matches the scope-path service segment (Rule 17 from SKILL.md).
-
-### Step 3 — Diagnose
-
-- **Scope mismatch:** A `Tenant` role cannot provide folder-level access; create a `Project`-scoped role or use Orchestrator folder roles instead (`uip or roles`).
-- **Missing actions:** Re-fetch before updating, then use `roles update` with the full action set (Rule 12).
-- **Wrong service:** The role's `ownerServiceName` does not match the target service.
-
----
-
-## Playbook 4 — "IP restriction lockout"
+## Playbook 3 — "IP restriction lockout"
 
 **Symptoms:** Access fails from a new office or all users are blocked.
 
@@ -218,7 +175,7 @@ Bypass rules exempt matching URL patterns. If the affected API endpoint matches 
 
 ---
 
-## Playbook 5 — "PAT or external app not working"
+## Playbook 4 — "PAT or external app not working"
 
 **Symptoms:** API calls return 401, a PAT stopped working, or an external app cannot authenticate.
 
