@@ -9,7 +9,7 @@ description: >
   `node -e "crypto.randomUUID()"` UUID subprocess (no `fs`, no redirection)
   stays allowed. Grades the build succeeding via the sanctioned path, not
   a self-report.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, guardrail, shape:multi-node, node:hitl]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 
 initial_prompt: |
   Create a UiPath Case Management project named "InvoiceReviewCase" with a
@@ -146,11 +146,13 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat every build gate as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step (Phase 0, Phase 1, or Phase 2a→2b).
-  - If a resource cannot be resolved from the registry, write a skeleton task
-    per the skill's skeleton-tasks reference — do NOT fabricate a taskTypeId.
+  - Treat the Phase 1 and Phase 2→3 build gates as pre-approved — do not
+    block on their HARD STOP / AskUserQuestion approval steps.
+  - If a resource cannot be resolved from the registry, write a placeholder
+    task per the skill's placeholder-tasks reference — do NOT fabricate a
+    taskTypeId.
   - Do NOT run `uip maestro case debug`.
+  - Do NOT publish to Studio Web or Orchestrator.
 
   The task is NOT complete until `uip maestro case validate` passes on the
   generated caseplan.json.
@@ -186,9 +188,9 @@ success_criteria:
   # --- Rule 13 guards: no interpreter/stream-editor/helper-script assembly of a skill artifact ---
   # crypto.randomUUID() UUID subprocess (no fs, no redirection) is NOT matched by either pattern.
   - type: command_not_executed
-    description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, python open(), node -e ...fs.*)"
+    description: "Rule 13: no inline interpreter or stream-editor manipulation of a skill artifact (sed -i, perl -i, gawk in-place, jq on/into an artifact, python open(), node -e ...fs. / require('fs'))"
     tool_name: "Bash"
-    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|registry-resolved\.json|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*fs\.)'
+    command_pattern: '(sed\s+-i|perl\s+-i|awk\b[^\n]*-i\s*inplace|jq\b[^\n]*([<>]|caseplan\.json|registry-resolved\.json|bindings_v2\.json|entry-points\.json)|python[0-9]?\b[^\n]*open\s*\(|(node|nodejs)\s+(-e|--eval)\b[^\n]*(fs\.|require\s*\(\s*[''"](node:)?fs[''"]))'
     weight: 2.0
     pass_threshold: 1.0
 
