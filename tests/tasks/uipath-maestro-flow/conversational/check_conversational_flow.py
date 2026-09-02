@@ -211,6 +211,29 @@ def check_settings(flow: dict) -> int:
     return 0
 
 
+def _reaches(start_ids: set[str], targets: set[str], edges: list[dict]) -> bool:
+    """True when any `targets` node is reachable from `start_ids` by edges.
+
+    The loop back to the wait node does not have to be direct — a send-message
+    between the agent and the wait node is a normal shape.
+    """
+    seen: set[str] = set()
+    queue = [i for i in start_ids if i]
+    while queue:
+        current = queue.pop()
+        if current in targets:
+            return True
+        if current in seen:
+            continue
+        seen.add(current)
+        queue.extend(
+            str(e.get("targetNodeId"))
+            for e in edges
+            if e.get("sourceNodeId") == current and e.get("targetNodeId")
+        )
+    return False
+
+
 def check_loop(flow: dict) -> int:
     """A conversation trigger starts it, and the agent loops back to the wait node.
 
@@ -233,9 +256,12 @@ def check_loop(flow: dict) -> int:
     if not _nodes_of(flow, WAIT_FOR_MESSAGE):
         problems.append(f"no {WAIT_FOR_MESSAGE} node — the chat never takes a turn")
 
+    agents = _conversational_agents(flow)
+    if not agents:
+        problems.append("no conversational agent node in the flow")
+
     ports_by_id = {
-        n.get("id"): ("success" if _is_inline(n) else "output")
-        for n in _conversational_agents(flow)
+        n.get("id"): ("success" if _is_inline(n) else "output") for n in agents
     }
     wait_ids = {n.get("id") for n in _nodes_of(flow, WAIT_FOR_MESSAGE)}
     edges = flow.get("edges") or []
@@ -255,12 +281,14 @@ def check_loop(flow: dict) -> int:
                 f"{flavor} conversational agent continues; it leaves on {ports}"
             )
             continue
-        # The chat only takes a second turn if that edge returns to the wait node.
-        if not any(e.get("targetNodeId") in wait_ids for e in continuation):
-            targets = sorted({str(e.get("targetNodeId")) for e in continuation})
+        # The chat only takes a second turn if the wait node is reachable from
+        # there — directly, or through a send-message.
+        starts = {str(e.get("targetNodeId")) for e in continuation}
+        if not _reaches(starts, wait_ids, edges):
             problems.append(
-                f"{agent_id}'s {expected!r} edge goes to {targets}, not back to a "
-                f"{WAIT_FOR_MESSAGE} node — the chat would not take another turn"
+                f"{agent_id}'s {expected!r} edge leads to {sorted(starts)} and no "
+                f"{WAIT_FOR_MESSAGE} node is reachable from there — the chat would "
+                "not take another turn"
             )
 
     if problems:
