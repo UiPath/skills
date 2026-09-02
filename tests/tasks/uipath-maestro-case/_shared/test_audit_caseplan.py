@@ -199,6 +199,108 @@ def test_dropped_case_exit_rules_fail():
     assert any("caseExitRules" in f for f in missing)
 
 
+# --------------------------------------------------------------------------
+# Row counts, not truthiness
+#
+# Every condition/trigger check compares an SDD row count against what the
+# caseplan kept. A build that keeps 1 of 3 rows is the archetypal lossy build
+# this gate exists to catch, so the comparison must be on totals -- but `>=`,
+# not `==`: rows legitimately group into one condition's AND-group, and one row
+# legitimately fans out into several OR-groups.
+# --------------------------------------------------------------------------
+
+STAGE_EXIT_ROW = "| `required-tasks-completed` | \u2014 | exit-only | Yes | Complete Rule 1 |"
+CASE_EXIT_ROW = "| `required-stages-completed` | \u2014 | Case exited | Yes | Done |"
+TRIGGER_ROW = "| T02 | Manual | Manual | N/A |"
+TASK_ENTRY_ROW = "| `runs-sequentially` | \u2014 | Entry Rule 1 |"
+
+
+def _repeat_row(sdd, row, times):
+    return sdd.replace(row, "\n".join(f"{row[:-1]}{n} |" for n in range(1, times + 1)))
+
+
+def test_partially_kept_stage_exit_rows_fail():
+    """1 of 3 exit rows kept: `exitConditions` is truthy, two rows are gone."""
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_repeat_row(SDD, STAGE_EXIT_ROW, 3)),
+        audit_caseplan.parse_caseplan(copy.deepcopy(CASEPLAN)),
+    )
+    assert any("SDD declares 3 exit condition row(s), caseplan keeps 1" in f for f in missing)
+
+
+def test_partially_kept_case_exit_rules_fail():
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_repeat_row(SDD, CASE_EXIT_ROW, 4)),
+        audit_caseplan.parse_caseplan(copy.deepcopy(CASEPLAN)),
+    )
+    assert any("SDD declares 4 Case Exit Condition row(s)" in f and "keeps 1 rule(s)" in f for f in missing)
+
+
+def test_partially_kept_triggers_fail():
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_repeat_row(SDD, TRIGGER_ROW, 3)),
+        audit_caseplan.parse_caseplan(copy.deepcopy(CASEPLAN)),
+    )
+    assert any("SDD declares 3 trigger(s), caseplan has 1 trigger node(s)" in f for f in missing)
+
+
+def test_partially_kept_task_entry_rows_fail():
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_repeat_row(SDD, TASK_ENTRY_ROW, 2)),
+        audit_caseplan.parse_caseplan(copy.deepcopy(CASEPLAN)),
+    )
+    assert any("SDD declares 2 entry condition row(s), caseplan keeps 1" in f for f in missing)
+
+
+def test_empty_rules_task_entry_envelope_fails():
+    """`[{"rules": []}]` is truthy but carries nothing -- it hangs `debug` like `[]`."""
+    plan = copy.deepcopy(CASEPLAN)
+    plan["nodes"][1]["data"]["tasks"][0][0]["entryConditions"] = [{"id": "c1", "rules": []}]
+    missing, _ = run(plan)
+    assert any("entryConditions carry no rules" in f for f in missing)
+
+
+def test_empty_rules_task_entry_envelope_fails_without_sdd_rows():
+    """The gate must not depend on the SDD declaring an entry table for the task."""
+    sdd = SDD.replace(TASK_ENTRY_ROW, "")
+    assert audit_caseplan.parse_sdd(sdd)["stages"][0]["tasks"][0]["entry_rows"] == 0
+    plan = copy.deepcopy(CASEPLAN)
+    plan["nodes"][1]["data"]["tasks"][0][0]["entryConditions"] = [{"id": "c1", "rules": []}]
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(sdd), audit_caseplan.parse_caseplan(plan)
+    )
+    assert any("entryConditions carry no rules" in f for f in missing)
+
+
+def test_rows_grouped_into_one_and_clause_are_clean():
+    """Three rows, one condition, three AND-ed rules -- nothing was dropped."""
+    plan = copy.deepcopy(CASEPLAN)
+    plan["nodes"][1]["data"]["tasks"] = []
+    plan["nodes"][1]["data"]["exitConditions"] = [
+        {"id": "x1", "rules": [[{"rule": "required-tasks-completed"}, {"rule": "a"}, {"rule": "b"}]]}
+    ]
+    sdd = _repeat_row(SDD, STAGE_EXIT_ROW, 3)
+    missing, _ = audit_caseplan.compare(audit_caseplan.parse_sdd(sdd), audit_caseplan.parse_caseplan(plan))
+    assert not [f for f in missing if "exit condition row(s)" in f]
+
+
+def test_one_row_fanned_out_into_or_groups_is_clean():
+    plan = copy.deepcopy(CASEPLAN)
+    plan["nodes"][1]["data"]["exitConditions"] = [
+        {"id": "x1", "rules": [[{"rule": "required-tasks-completed"}], [{"rule": "selected-tasks-completed"}]]}
+    ]
+    missing, _ = run(plan)
+    assert missing == []
+
+
+def test_stage_condition_with_an_empty_rules_array_fails():
+    """A condition object with no rules is truthy but carries nothing."""
+    plan = copy.deepcopy(CASEPLAN)
+    plan["nodes"][1]["data"]["exitConditions"] = [{"id": "x1", "rules": []}]
+    missing, _ = run(plan)
+    assert any("caseplan has no exit rules" in f for f in missing)
+
+
 def test_type_mismatch_fails():
     plan = copy.deepcopy(CASEPLAN)
     plan["nodes"][1]["data"]["tasks"][0][0]["type"] = "action"
@@ -282,3 +384,190 @@ def test_cli_exits_zero_when_clean(tmp_path, capsys):
     finally:
         sys.argv = argv
     assert "AUDIT OK" in capsys.readouterr().out
+
+
+def _run_cli(tmp_path, sdd_text, plan=None):
+    plan_path = tmp_path / "caseplan.json"
+    sdd_path = tmp_path / "sdd.md"
+    plan_path.write_text(json.dumps(plan if plan is not None else CASEPLAN))
+    sdd_path.write_text(sdd_text)
+    argv = sys.argv
+    sys.argv = ["audit_caseplan.py", str(plan_path), "--sdd", str(sdd_path)]
+    try:
+        return audit_caseplan.main()
+    finally:
+        sys.argv = argv
+
+
+def test_cli_fails_when_the_sdd_parses_to_nothing(tmp_path, capsys):
+    """Every check is 'SDD declares X -> caseplan has X', so a zero-element parse
+    passes vacuously. An unrecognized SDD must fail, not print AUDIT OK."""
+    with pytest.raises(SystemExit) as excinfo:
+        _run_cli(tmp_path, "# Notes\n\nUnrelated prose with no stages at all.\n")
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert "AUDIT FAIL" in err
+    assert "stages=0" in err
+
+
+def test_cli_fails_when_stage_headings_are_the_wrong_level(tmp_path, capsys):
+    """`#### Stage 1: Intake` is invisible to the level-3 stage matcher."""
+    with pytest.raises(SystemExit) as excinfo:
+        _run_cli(tmp_path, SDD.replace("### Stage 1: Intake", "#### Stage 1: Intake"))
+    assert excinfo.value.code == 1
+    assert "stages=0" in capsys.readouterr().err
+
+
+def test_ok_line_carries_the_parse_census(tmp_path, capsys):
+    """A zero in the census is the reader's signal that the parse degraded."""
+    _run_cli(tmp_path, SDD)
+    out = capsys.readouterr().out
+    assert "AUDIT OK" in out
+    assert "stages=1" in out and "tasks=1" in out and "vars=1" in out
+
+
+def test_fail_output_also_carries_the_census(tmp_path, capsys):
+    plan = copy.deepcopy(CASEPLAN)
+    plan["nodes"][1]["data"]["tasks"][0][0]["entryConditions"] = []
+    with pytest.raises(SystemExit):
+        _run_cli(tmp_path, SDD, plan)
+    assert "stages=1" in capsys.readouterr().err
+
+
+TASK_ROW = "| 1 | Check Order | api-workflow | sequential | Yes |"
+
+
+def _two_task_sdd(first, second):
+    return SDD.replace(
+        TASK_ROW,
+        f"| 1 | {first} | api-workflow | sequential | Yes |\n"
+        f"| 2 | {second} | api-workflow | sequential | Yes |",
+    )
+
+
+def _renamed_plan(*display_names):
+    plan = copy.deepcopy(CASEPLAN)
+    template = plan["nodes"][1]["data"]["tasks"][0][0]
+    plan["nodes"][1]["data"]["tasks"] = [[
+        {**copy.deepcopy(template), "id": f"t{i}", "displayName": name}
+        for i, name in enumerate(display_names)
+    ]]
+    return plan
+
+
+def test_prefix_match_does_not_double_bind_an_exact_match():
+    """'Check' resolves through the suffix branch to 'Check Order', which then
+    exact-matches the same node -- the dropped task must still be reported."""
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_two_task_sdd("Check", "Check Order")),
+        audit_caseplan.parse_caseplan(copy.deepcopy(CASEPLAN)),
+    )
+    assert any("'Check': declared in the SDD" in f for f in missing)
+
+
+def test_tasks_sharing_a_normalized_key_do_not_double_bind():
+    """`norm` drops trailing parentheticals, so both SDD rows key to 'approve'."""
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_two_task_sdd("Approve (initial)", "Approve (final)")),
+        audit_caseplan.parse_caseplan(_renamed_plan("Approve (final)")),
+    )
+    assert any("'Approve (initial)': declared in the SDD" in f for f in missing)
+
+
+def test_tasks_sharing_a_normalized_key_both_match_when_both_are_present():
+    missing, warn = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(_two_task_sdd("Approve (initial)", "Approve (final)")),
+        audit_caseplan.parse_caseplan(_renamed_plan("Approve (initial)", "Approve (final)")),
+    )
+    assert missing == []
+    assert not [w for w in warn if "no matching SDD task row" in w]
+
+
+# --------------------------------------------------------------------------
+# Heading and column-header dialects
+#
+# Every check reads "the SDD declares X, so caseplan.json must have X". A
+# heading or column header the parser does not recognize therefore deletes a
+# whole check class silently -- the gate keeps printing AUDIT OK while nothing
+# in that class is audited. These pin the accepted dialects and, where a dialect
+# cannot be accepted, that the drop is reported instead of skipped.
+# --------------------------------------------------------------------------
+
+def test_numbered_section_headings_are_matched():
+    """`### 1.5 Case Variables` used to normalize to '1 5 case variables' and
+    miss, taking all seven declared variables with it."""
+    numbered = (
+        SDD.replace("### Case Triggers", "### 1.3 Case Triggers")
+        .replace("### Case Exit Conditions", "### 1.4 Case Exit Conditions")
+        .replace("### Case Variables", "### 1.5 Case Variables")
+    )
+    parsed = audit_caseplan.parse_sdd(numbered)
+    assert parsed["parse_notes"] == []
+    assert parsed["variables"] == ["orderId"]
+    assert parsed["triggers"] == 1 and parsed["case_exit_rows"] == 1
+
+
+def test_letter_suffixed_section_number_is_matched():
+    parsed = audit_caseplan.parse_sdd(
+        SDD.replace("### Case Exit Conditions", "### 1.4a Case Exit Conditions")
+    )
+    assert parsed["parse_notes"] == [] and parsed["case_exit_rows"] == 1
+
+
+def test_completion_conditions_spelling_is_matched():
+    parsed = audit_caseplan.parse_sdd(
+        SDD.replace("### Case Exit Conditions", "### Case Completion Conditions")
+        .replace("#### Stage Exit Conditions", "#### Stage Completion Conditions")
+    )
+    assert parsed["parse_notes"] == []
+    assert parsed["case_exit_rows"] == 1
+    assert parsed["stages"][0]["exit_rows"] == 1
+
+
+def test_bare_triggers_heading_is_matched():
+    parsed = audit_caseplan.parse_sdd(SDD.replace("### Case Triggers", "### Triggers"))
+    assert parsed["parse_notes"] == [] and parsed["triggers"] == 1
+
+
+def test_tasks_table_without_a_name_column_is_reported():
+    """A `| # | Task Title | ...` header parses zero tasks; deleting every task
+    from the caseplan would otherwise yield MISSING: []."""
+    parsed = audit_caseplan.parse_sdd(SDD.replace("| Task Name |", "| Task Title |"))
+    assert parsed["stages"][0]["tasks"] == []
+    assert any("no Task Name/Task/Name column" in n for n in parsed["parse_notes"])
+
+
+def test_case_variables_table_without_a_name_column_is_reported():
+    parsed = audit_caseplan.parse_sdd(SDD.replace("| Name | Category |", "| Key | Category |"))
+    assert parsed["variables"] == []
+    assert any("no Name/Variable/Variable Name column" in n for n in parsed["parse_notes"])
+
+
+def test_renamed_tasks_heading_is_reported():
+    parsed = audit_caseplan.parse_sdd(SDD.replace("#### Tasks", "#### Stage Task Summary"))
+    assert parsed["stages"][0]["tasks"] == []
+    assert any("'Stage Task Summary'" in n for n in parsed["parse_notes"])
+
+
+def test_lookalike_heading_is_quiet_when_its_class_is_already_populated():
+    """An appendix `### Process Variables` next to a parsed `### Case Variables`
+    feeds nothing and must not be reported."""
+    parsed = audit_caseplan.parse_sdd(
+        SDD + "\n### Process Variables\n\n| Variable | Type |\n|---|---|\n| tmp | string |\n"
+    )
+    assert parsed["parse_notes"] == [] and parsed["variables"] == ["orderId"]
+
+
+def test_lookalike_heading_is_reported_when_its_class_is_empty():
+    parsed = audit_caseplan.parse_sdd(SDD.replace("### Case Variables", "### Process Variables"))
+    assert parsed["variables"] == []
+    assert any("'Process Variables'" in n for n in parsed["parse_notes"])
+
+
+def test_cli_fails_on_a_degraded_parse(tmp_path, capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        _run_cli(tmp_path, SDD.replace("| Task Name |", "| Task Title |"))
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert "did not parse cleanly" in err
+    assert "Repair the SDD, not caseplan.json" in err

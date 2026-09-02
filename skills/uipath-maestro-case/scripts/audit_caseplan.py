@@ -16,10 +16,18 @@ resource-key shape are checked here, per task, against what the SDD declared.
 WARN findings (EXTRA caseplan elements, placeholder tasks, surviving
 `<UNRESOLVED>` markers) are reported but do not fail the run.
 
-Scope note: SDD *rendering* conventions (heading shape, `**SLA Title:**` on its
-own line) are not audited here -- they belong to the SDD author. This gate only
-checks that what the SDD declares exists in the caseplan, plus the
-`sla-status-change(...)` reference arity that both artifacts share.
+Every check has the shape "the SDD declares X, so caseplan.json must have X",
+so an SDD the parser does not recognize would pass vacuously. The run therefore
+fails when the parse yields no stages, and both the OK and FAIL lines carry the
+parse census (`stages=N tasks=N vars=N ...`) so a degraded parse is visible.
+
+Scope note: SDD *rendering* conventions (`**SLA Title:**` on its own line) are
+not audited here -- they belong to the SDD author. This gate only checks that
+what the SDD declares exists in the caseplan, plus the `sla-status-change(...)`
+reference arity that both artifacts share. Section headings and table headers are
+the exception, because the parser reads them: common dialects are accepted, and a
+heading or column header that would silently empty a check class fails the run
+with `did not parse cleanly` -- repair the SDD for those, not the caseplan.
 """
 
 from __future__ import annotations
@@ -31,7 +39,7 @@ from pathlib import Path
 
 HEADING = re.compile(r"(?m)^(#{1,6})[ \t]+(.*?)[ \t]*$")
 STAGE_HEADING = re.compile(r"^(?:\w+\s+)?Stage(?:\s+\d+)?\s*[:.]\s*(.+)$", re.I)
-TASK_HEADING = re.compile(r"^Task\s+[\d.]+\s*[:.]\s*(.+)$", re.I)
+TASK_HEADING = re.compile(r"^Task\s+[A-Z]?[\d.]+\s*[:.]\s*(.+)$", re.I)
 SEPARATOR_CELL = re.compile(r"^:?-{2,}:?$")
 PLACEHOLDER_CELLS = {"", "-", "—", "–", "n/a", "na", "none", "tbd"}
 STAGE_NODE_TYPES = {"case-management:Stage", "case-management:ExceptionStage"}
@@ -43,12 +51,55 @@ UNRESOLVED = re.compile(r"<UNRESOLVED[^>]*>", re.I)
 # -- while the caseplan label holds the bare name.
 TRAILING_SLUG = re.compile(r"\s*\((?:`[^`]*`|[a-z0-9_-]+)\)\s*$", re.I)
 
+# Fixed section headings vary between SDD authors: a section number can lead
+# (`### 1.5 Case Variables`, `### Section 2: ...`) and "Completion" stands in for
+# "Exit". Exact-equality matching dropped those headings, and with them the whole
+# check class the section feeds -- so matching strips a leading section number
+# and lists every accepted spelling here.
+SECTION_NUMBER = re.compile(r"^(?:section )?[a-z]?\d+[a-z]?(?: \d+[a-z]?)* ")
+CASE_EXIT_HEADINGS = ("Case Exit Conditions", "Case Completion Conditions")
+CASE_TRIGGER_HEADINGS = ("Case Triggers", "Triggers")
+CASE_SLA_HEADINGS = ("Case-Level SLA Escalation Rules",)
+CASE_VARIABLE_HEADINGS = ("Case Variables",)
+STAGE_ENTRY_HEADINGS = ("Stage Entry Conditions",)
+STAGE_EXIT_HEADINGS = ("Stage Exit Conditions", "Stage Completion Conditions")
+STAGE_SLA_HEADINGS = ("Stage SLA",)
+STAGE_TASK_HEADINGS = ("Tasks",)
+
+# A heading that reads like one of the audited sections above but matches none of
+# the accepted spellings. `topic_of` names the datum such a heading would feed;
+# the heading is reported only when that datum is still empty, so a look-alike
+# heading elsewhere in the document (an appendix `### Process Variables` next to a
+# parsed `### Case Variables`) stays quiet while a genuinely skipped section does
+# not. An unrecognized heading that owns a datum deletes a whole check class, and
+# the gate then passes vacuously.
+TOPIC_SUFFIX = re.compile(r"(?:^|\s)(conditions|variables|triggers|sla)$")
+
 
 def norm(value: str | None) -> str:
     """Match key for a display name: case-folded, whitespace-collapsed, unpunctuated,
     with any trailing `(slug)` dropped."""
     text = TRAILING_SLUG.sub("", (value or "").strip()).strip('`"“”‘’ ')
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", text.casefold())).strip()
+
+
+def heading_key(title: str | None) -> str:
+    """`norm` for a fixed section heading, with any leading section number
+    (`1.5 `, `Section 2: `) dropped."""
+    return SECTION_NUMBER.sub("", norm(title))
+
+
+def heading_is(title: str, *accepted: str) -> bool:
+    return heading_key(title) in {heading_key(a) for a in accepted}
+
+
+def topic_of(title: str) -> str | None:
+    """The audited datum an unmatched heading looks like it would feed, if any."""
+    key = heading_key(title)
+    if {"task", "tasks"} & set(key.split()):
+        return "tasks"
+    match = TOPIC_SUFFIX.search(key)
+    return match.group(1) if match else None
 
 
 def is_blank(cell: str) -> bool:
@@ -109,6 +160,22 @@ def cell(row: list[str], index: int | None) -> str:
     return row[index] if index is not None and index < len(row) else ""
 
 
+def no_name_column_note(title: str, wanted: tuple[str, ...], header: list[str]) -> str:
+    return (
+        f"section {title!r}: the table has rows but no {'/'.join(wanted)} column "
+        f"(header: {' | '.join(header) or '<none>'}) -- every row is skipped, "
+        f"so the section contributes nothing to audit"
+    )
+
+
+def unrecognized_heading_note(title: str, level: int) -> str:
+    return (
+        f"heading {title!r} (level {level}) reads like an audited section but matches no "
+        f"accepted spelling -- rename it to one of the canonical headings, or the checks "
+        f"it feeds are skipped"
+    )
+
+
 def field(block: str, label: str) -> str | None:
     match = re.search(rf"(?im)^\*\*{re.escape(label)}:?\*\*[ \t]*(.*)$", block)
     return match.group(1).strip() if match else None
@@ -120,32 +187,53 @@ def field(block: str, label: str) -> str | None:
 
 def parse_sdd(text: str) -> dict:
     heads = section_blocks(text)
-    sdd: dict = {"stages": [], "case_exit_rows": 0, "triggers": 0, "variables": [], "sla_case": False}
+    sdd: dict = {
+        "stages": [], "case_exit_rows": 0, "triggers": 0, "variables": [],
+        "sla_case": False, "parse_notes": [],
+    }
+    notes: list[str] = sdd["parse_notes"]
+    lookalikes: list[tuple[str, str]] = []
 
     for head in heads:
         title = head["title"]
         body = head["body"]
 
-        if head["level"] == 3 and norm(title) == norm("Case Exit Conditions"):
+        if head["level"] != 3:
+            continue
+
+        if heading_is(title, *CASE_EXIT_HEADINGS):
             sdd["case_exit_rows"] = len(first_table(body)[1])
-        elif head["level"] == 3 and norm(title) == norm("Case Triggers"):
+        elif heading_is(title, *CASE_TRIGGER_HEADINGS):
             sdd["triggers"] = len(first_table(body)[1])
-        elif head["level"] == 3 and norm(title) == norm("Case-Level SLA Escalation Rules"):
+        elif heading_is(title, *CASE_SLA_HEADINGS):
             sdd["sla_case"] = bool(first_table(body)[1])
-        elif head["level"] == 3 and norm(title) == norm("Case Variables"):
+        elif heading_is(title, *CASE_VARIABLE_HEADINGS):
             header, rows = first_table(body)
-            name_at = column(header, "Name", "Variable", "Variable Name")
+            wanted = ("Name", "Variable", "Variable Name")
+            name_at = column(header, *wanted)
+            if rows and name_at is None:
+                notes.append(no_name_column_note(title, wanted, header))
             for row in rows:
                 name = cell(row, name_at)
                 if name and not is_blank(name):
                     sdd["variables"].append(name.strip("`"))
-        elif head["level"] == 3 and STAGE_HEADING.match(title):
-            sdd["stages"].append(parse_stage(STAGE_HEADING.match(title).group(1), head["body"]))
+        elif STAGE_HEADING.match(title):
+            sdd["stages"].append(parse_stage(STAGE_HEADING.match(title).group(1), head["body"], notes))
+        else:
+            topic = topic_of(title)
+            if topic in ("conditions", "variables", "triggers"):
+                lookalikes.append((title, topic))
 
+    empty = {
+        "conditions": not sdd["case_exit_rows"],
+        "variables": not sdd["variables"],
+        "triggers": not sdd["triggers"],
+    }
+    notes.extend(unrecognized_heading_note(t, 3) for t, topic in lookalikes if empty[topic])
     return sdd
 
 
-def parse_stage(name: str, body: str) -> dict:
+def parse_stage(name: str, body: str, notes: list[str] | None = None) -> dict:
     stage: dict = {
         "name": name.strip(),
         "tasks": [],
@@ -155,18 +243,24 @@ def parse_stage(name: str, body: str) -> dict:
         "required": field(body, "Required for Case Completion"),
     }
     details: dict[str, dict] = {}
+    notes = notes if notes is not None else []
+    stage_notes: list[str] = []
+    lookalikes: list[tuple[str, str]] = []
 
     for head in section_blocks(body):
         title, block = head["title"], head["body"]
-        if head["level"] == 4 and norm(title) == norm("Stage Entry Conditions"):
+        if head["level"] == 4 and heading_is(title, *STAGE_ENTRY_HEADINGS):
             stage["entry_rows"] = len(first_table(block)[1])
-        elif head["level"] == 4 and norm(title) == norm("Stage Exit Conditions"):
+        elif head["level"] == 4 and heading_is(title, *STAGE_EXIT_HEADINGS):
             stage["exit_rows"] = len(first_table(block)[1])
-        elif head["level"] == 4 and norm(title) == norm("Stage SLA"):
+        elif head["level"] == 4 and heading_is(title, *STAGE_SLA_HEADINGS):
             stage["has_sla"] = bool(first_table(block)[1])
-        elif head["level"] == 4 and norm(title) == norm("Tasks"):
+        elif head["level"] == 4 and heading_is(title, *STAGE_TASK_HEADINGS):
             header, rows = first_table(block)
-            name_at = column(header, "Task Name", "Task", "Name")
+            wanted = ("Task Name", "Task", "Name")
+            name_at = column(header, *wanted)
+            if rows and name_at is None:
+                stage_notes.append(no_name_column_note(title, wanted, header))
             type_at = column(header, "Type", "Task Type")
             mode_at = column(header, "Activation Mode", "Activation")
             req_at = column(header, "Required")
@@ -183,6 +277,8 @@ def parse_stage(name: str, body: str) -> dict:
                     "identity_resolved": False,
                     "entry_rows": 0,
                 })
+        elif head["level"] == 4 and topic_of(title) in ("conditions", "sla", "tasks"):
+            lookalikes.append((title, topic_of(title)))
         elif head["level"] == 5 and TASK_HEADING.match(title):
             detail_name = TASK_HEADING.match(title).group(1).strip()
             entry = 0
@@ -215,6 +311,22 @@ def parse_stage(name: str, body: str) -> dict:
             if not task["type"] and detail["type"]:
                 task["type"] = detail["type"]
             task["detail_type"] = detail["type"]
+    empty = {
+        "conditions": not (stage["entry_rows"] or stage["exit_rows"]),
+        "sla": not stage["has_sla"],
+        "tasks": not stage["tasks"],
+    }
+    stage_notes.extend(unrecognized_heading_note(t, 4) for t, topic in lookalikes if empty[topic])
+    if details and not stage["tasks"] and not stage_notes:
+        # `##### Task <n>.<m>:` blocks exist, so the stage has tasks -- the Tasks
+        # table they belong to was neither found nor parsed, and nothing above
+        # already explains why.
+        stage_notes.append(
+            f"{len(details)} `Task <n>.<m>:` detail section(s) but no task row parsed -- the "
+            f"`#### Tasks` table is missing or has no Task Name column, so none of its tasks "
+            f"are audited"
+        )
+    notes.extend(f"stage {stage['name']!r}: {note}" for note in stage_notes)
     stage["detail_names"] = list(details)
     return stage
 
@@ -226,7 +338,8 @@ def parse_stage(name: str, body: str) -> dict:
 def parse_caseplan(doc: dict) -> dict:
     plan: dict = {"stages": [], "triggers": 0, "variables": [], "bindings": doc.get("bindings") or []}
     metadata = doc.get("metadata") or {}
-    plan["case_exit_rules"] = len(metadata.get("caseExitRules") or [])
+    plan["case_exit_conditions"] = metadata.get("caseExitRules") or []
+    plan["case_exit_rules"] = len(plan["case_exit_conditions"])
     plan["case_sla"] = bool(metadata.get("slaRules"))
 
     variables = doc.get("variables") or {}
@@ -288,16 +401,89 @@ def binding_for(plan: dict, expression) -> dict | None:
 # Comparison
 # --------------------------------------------------------------------------
 
-def resolve_task(plan_tasks: dict, key: str, seen: set[str]) -> dict | None:
-    """Exact display-name match, else the one unseen caseplan task whose name is
-    the SDD name plus a disambiguating suffix."""
-    if key in plan_tasks:
-        return plan_tasks[key]
-    candidates = [
-        task for name, task in plan_tasks.items()
-        if name not in seen and name.startswith(key + " ")
+def resolve_tasks(sdd_tasks: list[dict], plan_tasks: list[dict]) -> list[int | None]:
+    """Bind each SDD task row to at most one caseplan task, returned by index.
+
+    Tiers run as separate passes over every row -- exact display name, then
+    normalized name, then the SDD name plus a disambiguating suffix -- so a
+    loose suffix match can never consume the node an exact row needs, and one
+    caseplan task can never absorb two rows and hide a dropped one. The looser
+    tiers bind only when exactly one unbound caseplan task qualifies: `norm`
+    strips punctuation and trailing parentheticals, so `Approve (initial)` and
+    `Approve (final)` share a key and must be reported, not silently paired.
+    """
+    bound: list[int | None] = [None] * len(sdd_tasks)
+    taken: set[int] = set()
+
+    def free(predicate) -> list[int]:
+        return [i for i, task in enumerate(plan_tasks) if i not in taken and predicate(task)]
+
+    def bind(row: int, index: int) -> None:
+        bound[row] = index
+        taken.add(index)
+
+    for row, task in enumerate(sdd_tasks):
+        hits = free(lambda t, name=task["name"]: (t["name"] or "") == name)
+        if hits:
+            bind(row, hits[0])
+
+    ambiguous: set[int] = set()
+    for row, task in enumerate(sdd_tasks):
+        if bound[row] is not None:
+            continue
+        hits = free(lambda t, key=norm(task["name"]): norm(t["name"]) == key)
+        if len(hits) == 1:
+            bind(row, hits[0])
+        elif hits:
+            # Several caseplan tasks collapse to this key. Leave the row
+            # unbound rather than guessing, and skip the suffix tier so it
+            # cannot bind some unrelated task instead.
+            ambiguous.add(row)
+
+    for row, task in enumerate(sdd_tasks):
+        if bound[row] is not None or row in ambiguous:
+            continue
+        hits = free(lambda t, key=norm(task["name"]): norm(t["name"]).startswith(key + " "))
+        if len(hits) == 1:
+            bind(row, hits[0])
+
+    return bound
+
+
+def rule_total(conditions: list | None) -> int:
+    """Rules kept across a condition list (`Rules = Rule[][]` -- case-schema.md §5).
+
+    Counts rules, never condition objects: an SDD condition table row maps to a
+    rule, but several rows may legitimately merge into one condition's AND-group
+    (and one row may fan out into several OR-groups), so the condition count is
+    not comparable to the row count while the rule total is.
+    """
+    total = 0
+    for condition in conditions or []:
+        for group in (condition or {}).get("rules") or []:
+            total += len(group) if isinstance(group, list) else 1
+    return total
+
+
+def coverage_finding(label: str, kind: str, rows: int, conditions: list | None) -> list[str]:
+    """Compare an SDD condition table against the rules the caseplan kept.
+
+    `>=`, not `==`: grouping and DNF fan-out both push the rule total above the
+    row count legitimately, so only a total BELOW the row count is evidence rows
+    were dropped. Truthiness alone is not enough -- a build that keeps 1 of 3
+    rows is the archetypal lossy build this gate exists to catch.
+    """
+    if not rows:
+        return []
+    total = rule_total(conditions)
+    if total >= rows:
+        return []
+    if not total:
+        return [f"{label}: SDD declares {rows} {kind} condition row(s), caseplan has no {kind} rules"]
+    return [
+        f"{label}: SDD declares {rows} {kind} condition row(s), caseplan keeps {total} {kind} "
+        f"rule(s) -- rows may group into fewer conditions, never into fewer rules"
     ]
-    return candidates[0] if len(candidates) == 1 else None
 
 
 def compare(sdd: dict, plan: dict) -> tuple[list[str], list[str]]:
@@ -315,42 +501,40 @@ def compare(sdd: dict, plan: dict) -> tuple[list[str], list[str]]:
             continue
         seen_stages.add(key)
 
-        if stage["entry_rows"] and not target["entry"]:
-            missing.append(
-                f"stage {stage['name']!r}: SDD declares {stage['entry_rows']} entry condition row(s), caseplan has none"
-            )
-        if stage["exit_rows"] and not target["exit"]:
-            missing.append(
-                f"stage {stage['name']!r}: SDD declares {stage['exit_rows']} exit condition row(s), caseplan has none"
-            )
+        stage_label = f"stage {stage['name']!r}"
+        missing.extend(coverage_finding(stage_label, "entry", stage["entry_rows"], target["entry"]))
+        missing.extend(coverage_finding(stage_label, "exit", stage["exit_rows"], target["exit"]))
         if stage["has_sla"] and not target["sla"]:
             missing.append(f"stage {stage['name']!r}: SDD declares a Stage SLA, caseplan has no slaRules")
 
-        plan_tasks = {norm(t["name"]): t for t in target["tasks"]}
-        seen_tasks: set[str] = set()
+        seen_tasks: set[int] = set()
 
-        for task in stage["tasks"]:
-            task_key = norm(task["name"])
-            found = resolve_task(plan_tasks, task_key, seen_tasks)
-            if found is None:
+        for task, index in zip(stage["tasks"], resolve_tasks(stage["tasks"], target["tasks"])):
+            if index is None:
                 missing.append(
                     f"stage {stage['name']!r} task {task['name']!r}: declared in the SDD, absent from caseplan.json"
                 )
                 continue
-            seen_tasks.add(norm(found["name"]))
+            seen_tasks.add(index)
+            found = target["tasks"][index]
             label = f"stage {stage['name']!r} task {task['name']!r}"
 
             if task["type"] and norm(task["type"]) != norm(found["type"]):
                 missing.append(f"{label}: SDD type {task['type']!r}, caseplan type {found['type']!r}")
 
             # `validate` only WARNS here; a real miss hangs `case debug` forever.
-            if not found["entry"]:
-                missing.append(
-                    f"{label}: no entryConditions in caseplan.json -- `validate` only warns, "
-                    f"but a task with no entry rule hangs `case debug` indefinitely"
-                )
-            elif task["entry_rows"] and not any((c.get("rules") or []) for c in found["entry"]):
-                missing.append(f"{label}: entryConditions carry no rules")
+            # Gate on the rule total, never the envelope: `[{"rules": []}]` is
+            # truthy but carries nothing, and hangs `debug` exactly like `[]`.
+            if not rule_total(found["entry"]):
+                if not found["entry"]:
+                    missing.append(
+                        f"{label}: no entryConditions in caseplan.json -- `validate` only warns, "
+                        f"but a task with no entry rule hangs `case debug` indefinitely"
+                    )
+                else:
+                    missing.append(f"{label}: entryConditions carry no rules")
+            else:
+                missing.extend(coverage_finding(label, "entry", task["entry_rows"], found["entry"]))
 
             resolved = (task["resolved_resource"] or "").strip()
             is_placeholder = not found["data"]
@@ -364,8 +548,8 @@ def compare(sdd: dict, plan: dict) -> tuple[list[str], list[str]]:
 
             missing.extend(binding_findings(plan, found, label))
 
-        for extra in target["tasks"]:
-            if norm(extra["name"]) not in seen_tasks:
+        for index, extra in enumerate(target["tasks"]):
+            if index not in seen_tasks:
                 warn.append(
                     f"stage {stage['name']!r} task {extra['name']!r}: in caseplan.json, no matching SDD task row"
                 )
@@ -374,15 +558,27 @@ def compare(sdd: dict, plan: dict) -> tuple[list[str], list[str]]:
         if extra_key not in seen_stages:
             warn.append(f"stage {extra['name']!r}: in caseplan.json, no matching SDD stage")
 
-    if sdd["case_exit_rows"] and not plan["case_exit_rules"]:
+    case_exit_total = rule_total(plan["case_exit_conditions"])
+    if sdd["case_exit_rows"] and not case_exit_total:
         missing.append(
             f"case: SDD declares {sdd['case_exit_rows']} Case Exit Condition row(s), "
             f"caseplan metadata.caseExitRules is empty"
+        )
+    elif sdd["case_exit_rows"] > case_exit_total:
+        missing.append(
+            f"case: SDD declares {sdd['case_exit_rows']} Case Exit Condition row(s), "
+            f"caseplan metadata.caseExitRules keeps {case_exit_total} rule(s) -- rows may group "
+            f"into fewer conditions, never into fewer rules"
         )
     if sdd["sla_case"] and not plan["case_sla"]:
         missing.append("case: SDD declares Case-Level SLA Escalation Rules, caseplan metadata.slaRules is empty")
     if sdd["triggers"] and not plan["triggers"]:
         missing.append(f"case: SDD declares {sdd['triggers']} trigger(s), caseplan has no trigger node")
+    elif sdd["triggers"] > plan["triggers"]:
+        # One trigger row is one trigger node -- no grouping applies here.
+        missing.append(
+            f"case: SDD declares {sdd['triggers']} trigger(s), caseplan has {plan['triggers']} trigger node(s)"
+        )
 
     plan_variables = {norm(v) for v in plan["variables"] if v}
     for name in sdd["variables"]:
@@ -444,6 +640,17 @@ def registry_findings(path: Path) -> list[str]:
     return []
 
 
+def census(sdd: dict) -> str:
+    """Parse tally for the OK/FAIL line -- a zero here means the parser did not
+    recognize the SDD, not that the SDD is empty."""
+    return (
+        f"parsed sdd: stages={len(sdd['stages'])} "
+        f"tasks={sum(len(s['tasks']) for s in sdd['stages'])} "
+        f"vars={len(sdd['variables'])} triggers={sdd['triggers']} "
+        f"case-exit-rows={sdd['case_exit_rows']}"
+    )
+
+
 def main() -> None:
     args = list(sys.argv[1:])
     sdd_path: Path | None = None
@@ -463,7 +670,31 @@ def main() -> None:
     doc = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     sdd_text = sdd_path.read_text(encoding="utf-8")
 
-    missing, warn = compare(parse_sdd(sdd_text), parse_caseplan(doc))
+    sdd = parse_sdd(sdd_text)
+    tally = census(sdd)
+    if sdd["parse_notes"]:
+        print(
+            f"AUDIT FAIL -- {sdd_path.name} did not parse cleanly ({tally}); each finding below "
+            f"silently empties a check class. Repair the SDD, not caseplan.json:",
+            file=sys.stderr,
+        )
+        for number, note in enumerate(sdd["parse_notes"], 1):
+            print(f"  {number}. {note}", file=sys.stderr)
+        sys.exit(1)
+    if not sdd["stages"]:
+        print(
+            f"AUDIT FAIL -- nothing parsed from {sdd_path.name} ({tally}); the gate would pass vacuously.",
+            file=sys.stderr,
+        )
+        print(
+            "  Every check reads 'the SDD declares X, so caseplan.json must have X' -- with zero stages "
+            "parsed there is nothing to check. Repair the SDD, not caseplan.json: stage headings must be "
+            "level-3 `### Stage <n>: <Name>`, with a `#### Tasks` table under each.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    missing, warn = compare(sdd, parse_caseplan(doc))
     missing.extend(sla_reference_findings(sdd_text, sdd_path.name))
     if registry_path is not None and registry_path.exists():
         warn.extend(registry_findings(registry_path))
@@ -472,13 +703,13 @@ def main() -> None:
         print(f"  WARN: {note}", file=sys.stderr)
     if missing:
         shown = missing[:40]
-        print("AUDIT FAIL -- MISSING IN CASEPLAN; repair these, then re-run:", file=sys.stderr)
+        print(f"AUDIT FAIL -- MISSING IN CASEPLAN ({tally}); repair these, then re-run:", file=sys.stderr)
         for number, finding in enumerate(shown, 1):
             print(f"  {number}. {finding}", file=sys.stderr)
         if len(missing) > len(shown):
             print(f"  ... and {len(missing) - len(shown)} more", file=sys.stderr)
         sys.exit(1)
-    print("AUDIT OK: caseplan.json covers every SDD element")
+    print(f"AUDIT OK: caseplan.json covers every SDD element ({tally})")
 
 
 if __name__ == "__main__":
