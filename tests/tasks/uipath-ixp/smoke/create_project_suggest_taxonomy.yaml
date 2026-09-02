@@ -12,9 +12,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Create an IXP project named ap-invoices from the invoices in ./invoices/,
@@ -27,21 +29,37 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent created ap-invoices via `projects create` from ./invoices/"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+create\b(?=.*ap-invoices).*)[^\r\n]*$
+    verb: "ixp projects create"
+    tool: "uip"
+    positional: ["ap-invoices"]
+    value_flags: ["description", "d", "output"]
     weight: 3.0
     pass_threshold: 1.0
 
   # Autopilot path: let IXP suggest the taxonomy. --skip-taxonomy or a manual
-  # import would defeat the test.
-  - type: file_matches_regex
-    description: "Agent did NOT skip or hand-import the taxonomy (autopilot suggests it)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+(create\b.*--skip-taxonomy|import-taxonomy)\b)[^\r\n]*$
-    must_match: false
-    weight: 1.0
+  # import would defeat the test. One regex alternation became two guards, since
+  # cli_called cannot OR across facet sets; 0.5 each keeps the old 1.0 total.
+  #
+  # `present` is load-bearing on the first: a value-bearing --skip-taxonomy would
+  # swallow the folder path, and the guard would pass on the call it forbids.
+  - type: cli_called
+    description: "Agent did NOT skip the taxonomy on create (autopilot suggests it)"
+    verb: "ixp projects create"
+    tool: "uip"
+    flags:
+      skip-taxonomy: {present: true}
+    min_count: 0
+    max_count: 0
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent did NOT hand-import a taxonomy (autopilot suggests it)"
+    verb: "ixp projects import-taxonomy"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 0.5
     pass_threshold: 1.0
