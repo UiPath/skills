@@ -22,6 +22,7 @@ Artifacts:
 - `{name}-mapping.yarrrml.yml` — YARRRML bindings
 - `{name}-functions*.ttl` — optional SPARQL read functions
 - `{name}-{actionName}.ttl` — optional SQL write actions
+- `{workdir}/jobs/{actionName}.ts` — job source for a coded action, written in a high-level language (currently supported: TypeScript)
 
 ## Delegated handoff contract
 
@@ -35,7 +36,7 @@ CLASS_MAP: class -> entityName, entityId, folderId, readOnly (optional, rare)
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
-OPERATIONS: grouped query operations and structured write actions, if any
+OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and a CODED action additionally carries its reads (bind name + SELECT statement), its writes union, and its process name. TTL emission maps CODED to the wire value ont:language "IMPERATIVE".
 DEPLOYMENT_MODE: delegated; generate artifacts and run local preflight only; authoring owns backend validation and all uploads
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
@@ -112,6 +113,7 @@ Read only the references needed for the artifact being generated:
 - [YARRRML mapping](references/mapping-yarrrml-guide.md)
 - [Functions and actions](references/functions-patterns-guide.md)
 - [Action contract](references/action-table-contract-guide.md)
+- [Coded action contract](references/coded-action-contract-guide.md)
 
 Use the same build → preview → local check → user confirmation → write sequence for each artifact. Present one combined draft summary and obtain one batch confirmation before writing.
 
@@ -138,6 +140,7 @@ Run all gates against the exact files that will be uploaded:
 5. **Class deployability gate:** every class is the domain of at least one property and is instantiated in the mapping.
 6. **Relationship gate:** every FK-shaped relationship has an object property and mapping join, or an explicit packed-FK exemption.
 7. **Semantic gate:** check domain completeness, constraint coverage, column alignment, policy coherence, and function/action consistency.
+8. **Coded-action contract gate:** run `tools/coded_action_preflight.py` against every coded action's TTL+job pair.
 
 Fix failures before backend calls. A `DEPLOYED` state does not prove that relationships were modeled.
 
@@ -161,7 +164,7 @@ In delegated mode, stop after local preflight and return:
 
 ```text
 ARTIFACTS: absolute paths
-GATES: all seven gate results
+GATES: all eight gate results
 ARTIFACT_INVENTORY: exact preflight artifact_inventory
 BACKEND_VALIDATION: not run
 UPLOADED: none
