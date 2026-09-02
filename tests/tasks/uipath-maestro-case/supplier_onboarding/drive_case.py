@@ -17,10 +17,13 @@ Two lookups are deliberately narrow. `uip tasks list` is tenant-wide, so a title
 from __future__ import annotations
 
 import argparse
+import atexit
 import datetime
 import json
+import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -29,7 +32,11 @@ sys.path.insert(0, str(HERE.parent))
 from _shared.case_check import find_project_dir, find_solution_dir  # noqa: E402
 
 # The folder that owns the case instance; the stage-selection message is addressed to it.
-CASE_FOLDER_KEY = "30b98ad6-522a-4630-85d5-5eb625387f2b"
+# Read off the instance rather than pinned: the case is published into whatever folder the
+# run's own solution lands in, and a pinned key sends every folder-scoped call to a folder
+# that may not exist — which the CLI answers with a 404 the callers cannot tell from an
+# empty result.
+CASE_FOLDER_KEY = ""
 
 WITHDRAWN = "Application withdrawn"
 CHECKING = "Checking the application"
@@ -80,17 +87,13 @@ ROUTES = {
         ("Validate application details", "approve"),
         ("Record buyer review decision", "approve"),
         ("Record compliance review decision", "approve"),
-        ("Confirm supplier portal access", "approve"),
     ],
 }
 
-# Each stage's escalation writes its OWN revised-date variable. Crossing them is the defect the
-# sla route exists to catch, so the other three must stay empty while one stage breaches.
+# The intake escalation writes its own revised-date variable, and it is the only escalation the
+# case authors. The SDD declares this one variable; nothing else carries a revised date.
 REVISED_DATE = {
     CHECKING: "ApplicationCheckRevisedDate",
-    BUYER: "BuyerReviewRevisedDate",
-    COMPLIANCE: "ComplianceReviewRevisedDate",
-    SETUP: "SupplierSetupRevisedDate",
 }
 
 # The case's own variable names, as the SDD declares them. `instance variables` returns Globals
@@ -115,6 +118,23 @@ GATE_TIMEOUT = 420
 # Long enough to outlast the slowest route. The sla route spends its first sixteen minutes
 # waiting for a deadline to pass, so the debug wait has to clear that plus the work after it.
 DEBUG_TIMEOUT = 2100
+
+
+# The running `case debug` session, so every exit path can end it. A route that fails
+# after starting debug used to leave it alive: `fail` exits through `sys.exit`, which the
+# one `finally` in `main` sits after, and the next route's `case debug` then never created
+# an instance — three routes, one instance, two 600s timeouts.
+_DEBUG_SESSION: list = []
+
+
+def _end_debug_session() -> None:
+    for proc in _DEBUG_SESSION:
+        if proc.poll() is None:
+            proc.kill()
+    _DEBUG_SESSION.clear()
+
+
+atexit.register(_end_debug_session)
 
 
 def fail(msg: str):
@@ -189,12 +209,38 @@ def task_watermark() -> int:
     return max(ids) if ids else 0
 
 
-def newest_instance(after_iso: str):
-    """The instance this run started. Instances from earlier runs are still listed, so the creation time is the only thing that tells them apart."""
-    rows = run_list(["uip", "maestro", "case", "instance", "list", "--output", "json"])
-    rows = [r for r in rows if r.get("InstanceId") and (r.get("CreatedTimeUtc") or "") >= after_iso]
-    rows.sort(key=lambda r: r.get("CreatedTimeUtc") or "", reverse=True)
-    return rows[0]["InstanceId"] if rows else None
+def instance_ids() -> dict:
+    """Every case instance the tenant currently lists, keyed by id, valued by folder key."""
+    return {
+        r["InstanceId"]: (r.get("FolderKey") or "")
+        for r in run_list(["uip", "maestro", "case", "instance", "list", "--output", "json"])
+        if r.get("InstanceId")
+    }
+
+
+def appeared_since(before: dict) -> str:
+    """The instance that exists now and did not before `case debug` was started.
+
+    A set difference against a snapshot, rather than anything read off an instance's own
+    fields. A debug instance carries nothing that says which case it is: the create call
+    writes `PackageKey`, `ProcessKey` and `PackageVersion` as `Guid.Empty`, an empty display
+    name, and `PackageId` as the Studio Web project's guid. `case debug` prints nothing
+    before the instance exists either. Two suites debugging at the same moment is the one
+    case this cannot resolve, and it says so rather than driving whichever came first.
+    """
+    fresh = {k: v for k, v in instance_ids().items() if k not in before}
+    if not fresh:
+        return ""
+    global CASE_FOLDER_KEY
+    if len(fresh) > 1:
+        fail(
+            f"{len(fresh)} case instances appeared while this route was starting "
+            f"({sorted(fresh)}); another suite is debugging into this tenant at the same "
+            "moment and no field says which one is ours"
+        )
+    instance_id, folder = next(iter(fresh.items()))
+    CASE_FOLDER_KEY = folder
+    return instance_id
 
 
 def pending_task(watermark: int, title: str, done: set = frozenset(), instance_id: str = ""):
@@ -488,6 +534,7 @@ def drive_sla(instance_id: str, watermark: int, who: str, done: set, answered: s
 
 
 def main() -> int:
+    global CASE_FOLDER_KEY
     parser = argparse.ArgumentParser()
     parser.add_argument("--route", choices=sorted(ROUTES), required=True)
     args = parser.parse_args()
@@ -501,9 +548,12 @@ def main() -> int:
     # anything. A build missing a task title or an escalation task cannot be driven, and
     # discovering that after starting the case costs a solution upload and a live instance per
     # route for a fact that was in the file all along.
+    # Only the tasks this route COMPLETES need an Action Center title. The sla route also asserts
+    # a delay note ran, but that is a connector task: it fires on its own and carries no title,
+    # so requiring one would reject a plan that is perfectly drivable.
     needed = [name for name, _action in steps]
     if args.route == "sla":
-        needed += ["Escalate delayed application check", "Send delay note for the application check"]
+        needed.append("Escalate delayed application check")
     missing = [name for name in needed if not task_title(name)]
     if missing:
         fail(f"the plan cannot be driven: {missing}. Each is a task this route has to complete, "
@@ -520,21 +570,38 @@ def main() -> int:
         fail(f"solution resources refresh exit {refresh.returncode}\n{refresh.stdout}\n{refresh.stderr}")
 
     watermark = task_watermark()
+    # Snapshot before starting debug: the instance this route drives is the one that was
+    # not here a moment ago.
+    before_debug = instance_ids()
     started = time.time()
-    started_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
+    # stderr folded into stdout: two pipes with one reader leaves the other to fill, and
+    # a 64 KB buffer is enough for `case debug` to block before it ever creates the
+    # instance. Two routes waited out the full 600s timeout that way while the first,
+    # quieter one succeeded.
     debug = subprocess.Popen(
         ["uip", "maestro", "case", "debug", project_dir, "--output", "json"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
+    _DEBUG_SESSION.append(debug)
 
-    instance_id = None
-    while instance_id is None and time.time() - started < INSTANCE_TIMEOUT:
+    # Drained on a thread so a full pipe cannot block the debug process, and so its output
+    # is available to quote when no instance appears.
+    def drain_debug(sink: list) -> None:
+        for line in iter(debug.stdout.readline, ""):
+            sink.append(line)
+
+    debug_lines: list = []
+    threading.Thread(target=drain_debug, args=(debug_lines,), daemon=True).start()
+
+    instance_id = ""
+    while not instance_id and time.time() - started < INSTANCE_TIMEOUT:
         time.sleep(POLL_SLEEP)
-        instance_id = newest_instance(started_iso)
-    if instance_id is None:
+        instance_id = appeared_since(before_debug)
+    if not instance_id:
         debug.kill()
-        fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug")
+        fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
+             f"debug output so far:\n{''.join(debug_lines)[:1500]}")
     print(f"instance {instance_id}")
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
     # fresh process, so the id is handed over on disk. It goes in the sandbox working directory,
@@ -547,7 +614,8 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             runs = []
     runs = [r for r in runs if r.get("route") != args.route]
-    runs.append({"route": args.route, "instance_id": instance_id})
+    runs.append({"route": args.route, "instance_id": instance_id,
+                 "folder_key": CASE_FOLDER_KEY})
     # `runs` accumulates across routes so the outcome probe grades every one of them; the flat
     # pair stays for the child-case cleanup, which only needs the last instance to find its package.
     state_path.write_text(
@@ -620,17 +688,13 @@ def main() -> int:
         own = REVISED_DATE[CHECKING]
         if not g.get(own):
             fail(f"{own} is empty; the intake escalation must record the new date it was given")
-        crossed = [v for k, v in REVISED_DATE.items() if k != CHECKING and g.get(v)]
-        if crossed:
-            fail(f"only the intake phase breached, yet {crossed} also carry a date; "
-                 f"the four phases must each write their own slot")
         # The delay note is what the supplier actually receives, so it has to have run, not just
         # been wired. Its task id comes from the plan rather than a hardcoded name.
         note_id = task_id_for("Send delay note for the application check")
         ran = {r.get("ElementId") for r in executions(instance_id) if r.get("Status") == "Completed"}
         if note_id not in ran:
             fail(f"the intake phase breached but its delay note never ran; the supplier was told nothing")
-        print(f"  {own}={g.get(own)!r}; the other three phase slots are empty; delay note sent")
+        print(f"  {own}={g.get(own)!r}; delay note sent")
     elif args.route == "withdraw":
         if outcome != "Withdrawn":
             fail(f"the supplier withdrew but CaseOutcome={outcome!r}; {WITHDRAWN!r} must close the case as withdrawn")

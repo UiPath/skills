@@ -353,6 +353,20 @@ jobs:
           # mirrors coder-eval's own grant_container_access.
           chmod -R o+rwX "$HOME/.uipath"
 
+          # The ROPC token lives ~1h; a single case-management task runs longer
+          # than that (100 min observed). nightly.yaml bind-mounts ~/.uipath and
+          # the delegate host re-reads it per turn, so a re-minted file is picked
+          # up mid-run — the VM cron keeps its own refresher for exactly this.
+          # Re-mint every 45 min, well inside the TTL, and re-widen the mode each
+          # time because refresh-auth.sh writes .auth back at 600. Failures are
+          # swallowed: a transient identity-server error must not kill the run,
+          # and the next tick retries. The runner is ephemeral, so the loop dies
+          # with the job.
+          nohup bash -c 'while sleep 2700; do
+            bash .github/scripts/refresh-auth.sh && chmod -R o+rwX "$HOME/.uipath"
+          done' >> "$RUNNER_TEMP/token-refresher.log" 2>&1 &
+          disown
+
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
       # tree. Co-locate a copy of each group's _shared into its task dirs first.

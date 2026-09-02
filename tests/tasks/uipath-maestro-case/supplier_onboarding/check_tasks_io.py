@@ -22,6 +22,13 @@ Seven assertions.
     would otherwise mint a second supplier record.
  6. The child case does not block the parent.
  7. Each of the four on-demand tasks lives in exactly one stage, its own.
+ 8. Every input the SDD binds to an expression carries one in the plan. An input
+    emitted as `""` reaches the runtime as a missing field: the agent job for
+    'Confirm offering category match' shipped with all three of its inputs empty
+    and faulted on `Field required [type=missing, input_value={}]`, which stopped
+    the case in its first stage. `validate` accepts an empty input, and until this
+    check existed nothing else read the input side at all.
+
 
 Read-only. Exit 0 clean, 1 on findings.
 """
@@ -39,7 +46,7 @@ import caseplan_reader as P  # noqa: E402
 from _shared.case_check import task_is_skeleton  # noqa: E402
 
 def main() -> int:
-    E.sdd_facts()
+    facts = E.sdd_facts()
     caseplan = P.load()
     problems: list[str] = []
 
@@ -255,6 +262,25 @@ def main() -> int:
                     f"on-demand task {name!r} entry rules are {sorted(rules)}; a manually "
                     "launched task needs its own `adhoc` rule"
                 )
+
+    # ---- 8. inputs the SDD binds are bound in the plan ---------------------
+    for name, fields in sorted(facts["bound_inputs"].items()):
+        task = names_to_task.get(name)
+        if task is None:
+            continue
+        # A connector nests its payload under `body`, so the flat `value` is empty by
+        # design there; `task_input_expressions` walks both shapes.
+        bound = {field for field, _expr in P.task_input_expressions(task)}
+        blank = sorted(
+            entry.get("name") for entry in P.task_inputs(task)
+            if entry.get("name") in fields and not str(entry.get("value") or "").strip()
+            and entry.get("name") not in bound
+        )
+        if blank:
+            problems.append(
+                f"task {name!r} emits {blank} with no binding; the SDD's Inputs table gives "
+                "each an expression, and an empty input reaches the runtime as a missing field"
+            )
 
     print(f"checked {P.find_caseplan()}")
     print(f"tasks: {total}  types: {dict(sorted(types.items()))}")

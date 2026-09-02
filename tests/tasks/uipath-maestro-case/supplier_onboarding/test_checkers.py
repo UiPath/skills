@@ -990,6 +990,31 @@ class TasksIoTests(CheckerBase):
         task(plan, "Record buyer review decision")["data"].pop("recipient", None)
         self.rejects(plan, "reaches nobody")
 
+    def test_rejects_an_input_the_sdd_binds_but_the_plan_leaves_empty(self):
+        # The shape an agent shipped: the fields are declared, every binding dropped. The
+        # runtime reads that as a missing field, not as an empty string, and the agent job
+        # for one of these faulted on `Field required [type=missing, input_value={}]`.
+        plan = baseline_plan()
+        item = task(plan, "Pull supplier records and screening")
+        item["data"]["inputs"] = [
+            {"name": field, "type": "string", "value": ""}
+            for field in sorted(
+                E.sdd_facts()["bound_inputs"]["Pull supplier records and screening"]
+            )
+        ]
+        self.rejects(plan, "with no binding")
+
+    def test_accepts_the_same_inputs_once_they_carry_their_expressions(self):
+        plan = baseline_plan()
+        item = task(plan, "Pull supplier records and screening")
+        item["data"]["inputs"] = [
+            {"name": field, "type": "string", "value": f"=vars.{field}"}
+            for field in sorted(
+                E.sdd_facts()["bound_inputs"]["Pull supplier records and screening"]
+            )
+        ]
+        self.accepts(plan)
+
     def test_rejects_a_restated_required_flag_on_a_task_input(self):
         # The flag compiles into the dispatch's own required array, so a bound value that
         # resolves empty fails the job before it starts. validate reports Valid.
