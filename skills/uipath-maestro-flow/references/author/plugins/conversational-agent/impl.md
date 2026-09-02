@@ -50,6 +50,8 @@ uip agent validate "<FlowProject>/<uuid>" --inline-in-flow
 
 `refresh` rebuilds `contentTokens[]` from `messages[].content`. **Skip it and `agent validate` fails** with `contentTokens has 0 entries but content requires 1` — the error does not name `agent refresh`, so it is easy to get stuck on.
 
+Run `refresh` after any `agent.json` edit — for an in-solution agent too, without the flag: `uip agent refresh "<AgentProject>"`. A published agent has no local file, so there is nothing to refresh.
+
 Settings that matter for a conversational agent:
 
 | Key | Value | Why |

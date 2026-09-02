@@ -60,6 +60,7 @@ SETTINGS_KEYS = {
 PLACEHOLDER_PROMPTS = {
     "",
     "you are an agentic assistant.",
+    "you are a helpful agentic assistant.",
     "you are an assistant.",
     "you are a helpful assistant.",
     "you are a chat agent.",
@@ -393,12 +394,11 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
             f"{label}: metadata.isConversational is "
             f"{metadata.get('isConversational')!r}, expected true"
         )
-    # The engine reads this, and the conversational node's manifest caps it at 8.
     iterations = settings.get("maxIterations")
-    if not isinstance(iterations, int) or iterations > 8:
+    if not isinstance(iterations, int) or not 1 <= iterations <= 8:
         problems.append(
             f"{label}: settings.maxIterations is {iterations!r}; the "
-            "conversational node caps it at 8"
+            "conversational node caps it at 1-8"
         )
     system = next(
         (
@@ -412,8 +412,8 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
     if prompt.lower() in PLACEHOLDER_PROMPTS or len(prompt) < MIN_PROMPT_LEN:
         problems.append(
             f"{label} has no real system prompt (got {prompt[:60]!r}) — the "
-            "scaffold ships it blank, and a generic filler leaves the chat with "
-            "no persona the task asked for"
+            "scaffold ships a generic default (blank for an inline agent), and "
+            "filler leaves the chat with no persona the task asked for"
         )
     return True
 
