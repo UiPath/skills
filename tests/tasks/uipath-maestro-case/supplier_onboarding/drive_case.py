@@ -619,6 +619,16 @@ def main() -> int:
     while not instance_id and time.time() - started < INSTANCE_TIMEOUT:
         time.sleep(POLL_SLEEP)
         instance_id = appeared_since(before_debug)
+        if instance_id:
+            break
+        # `case debug` exits 1 the moment its upload or import fails, and it says why on the
+        # stream this thread is draining. Waiting the full timeout out anyway turned a
+        # one-line error into `no case instance appeared`, three times per run.
+        if debug.poll() is not None:
+            fail(
+                f"`case debug` exited {debug.returncode} before any instance appeared, after "
+                f"{time.time() - started:.0f}s:\n{''.join(debug_lines)[-4000:]}"
+            )
     if not instance_id:
         debug.kill()
         fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
