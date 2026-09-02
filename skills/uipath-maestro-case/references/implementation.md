@@ -278,6 +278,8 @@ Per-task composition (in reasoning, before that task's Edit) per [`plugins/varia
 1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
 2. Cross-task references (`input <- "Stage"."Task".output`): resolve the source output reference ID from the just-Read `caseplan.json` using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
 
+**A `=js:` value is JavaScript source, so a line break inside one of its string literals is already the two characters `\` and `n`.** `caseplan.json` is JSON, so on disk that is `\\n`. Writing `\n` makes JSON decode it to a real line break inside the `"` literal, and Jint rejects the expression at evaluation with `Invalid or unexpected token`. Nothing before the run objects: `validate` does not parse `=js:` bodies and the packer copies the break into the `.bpmn`. This holds for every path that writes an `=js:` value into `caseplan.json`, this Edit included.
+
 If a cross-task reference points to a task that does not exist in the just-Read `caseplan.json`, halt — the SDD orders the consumer before its producer; report to the user.
 
 One validate at section end.
