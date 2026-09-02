@@ -38,7 +38,8 @@ const fs = require('fs');
 // --- Extensibility tables (keep in sync with the CLI enums) -----------------
 
 // JsonDataType
-const SUPPORTED_TYPES = ['string', 'integer', 'number', 'boolean', 'array', 'object', 'file'];
+// prettier-ignore
+const SUPPORTED_TYPES = ['string', 'integer', 'number', 'boolean', 'array', 'object', 'file', 'ContentValidationData'];
 
 // JsonFormatType
 const SUPPORTED_FORMATS = ['uuid', 'date'];
@@ -59,6 +60,7 @@ const TYPE_SYSTEM_MAP = {
   boolean: 'System.Boolean',
   object: 'System.Object',
   file: 'UiPath.Platform.ResourceHandling.IResource',
+  ContentValidationData: 'UiPath.DocumentProcessing.Contracts.Actions.ContentValidationData',
   // `array` is a collection wrapper around its `items` type, not a System.* leaf.
 };
 

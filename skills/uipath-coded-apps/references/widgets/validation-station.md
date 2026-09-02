@@ -179,7 +179,11 @@ interface FormProps {
 }
 
 function Form({ onInitTheme }: FormProps) {
-  const [data, setData] = useState<DuFramework.ContentValidationData | null>(null);
+  // Keep the bag: contentValidationData has to go back to completeTask untouched.
+  const [taskData, setTaskData] = useState<{
+    contentValidationData?: DuFramework.ContentValidationData | null;
+  } | null>(null);
+  const data = taskData?.contentValidationData ?? null;
   const [taskId, setTaskId] = useState<number | undefined>(undefined);
   const [folderId, setFolderId] = useState<number | undefined>(undefined);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -188,8 +192,8 @@ function Form({ onInitTheme }: FormProps) {
 
   useEffect(() => {
     codedActionAppService.getTask().then((task) => {
-      // task.data is typed `unknown`; the payload is ContentValidationData
-      setData(task.data as DuFramework.ContentValidationData);
+      // task.data is typed `unknown`; it is the inputs bag from action-schema.json.
+      setTaskData(task.data as { contentValidationData?: DuFramework.ContentValidationData });
       setTaskId(task.taskId);
       setFolderId(task.folderId);
       setIsReadonly(task.isReadOnly);
@@ -199,19 +203,21 @@ function Form({ onInitTheme }: FormProps) {
     });
   }, [onInitTheme]);
 
-  // Submit succeeded → approve the task. Widget shows no error toast — handle failure here.
+  // Submit succeeded → complete the task. Widget shows no error toast — handle failure here.
   const handleSubmitComplete = useCallback(
     async (result: SaveValidatedDataResult) => {
       if (!result.success) {
         codedActionAppService.showMessage(result.error, MessageSeverity.Error);
         return;
       }
-      await codedActionAppService.completeTask('Approve', {});
+      // completeTask REPLACES the task's data. contentValidationData must go back exactly as
+      // getTask() gave it; any other field can carry what the reviewer changed.
+      await codedActionAppService.completeTask('Submit', taskData);
     },
-    [],
+    [taskData],
   );
 
-  // Report-as-exception is not persisted by the widget — call the SDK, then reject the task.
+  // Report-as-exception is not persisted by the widget — the host calls the SDK itself.
   const handleReportException = useCallback(
     async (documentId: string, reason: string) => {
       if (taskId === undefined) return;
@@ -228,7 +234,8 @@ function Form({ onInitTheme }: FormProps) {
         );
         return;
       }
-      await codedActionAppService.completeTask('Reject', {});
+      // Do NOT complete the task for submitExceptionReport.
+      codedActionAppService.showMessage('Exception reported.', MessageSeverity.Success);
     },
     [taskId, folderId],
   );
@@ -265,26 +272,63 @@ import { UiPath } from '@uipath/uipath-typescript/core';
 import { CodedActionAppService } from '@uipath/coded-action-app';
 
 export const sdk = new UiPath();
-await sdk.initialize();
 export const codedActionAppService = new CodedActionAppService();
 ```
 
-`action-schema.json` for a DU validation task typically has no `inputs`/`outputs` — the widget owns the data contract. A minimal schema:
+> **No `sdk.initialize()`** (Critical Rule 17) — Action Center injects the session; `initialize()`
+> starts a PKCE redirect that cannot complete in an iframe. Only the web app below authenticates.
+
+
+**The widget's only schema requirement is one `ContentValidationData` input** — the dedicated type
+the CLI maps to `UiPath.DocumentProcessing.Contracts.Actions.ContentValidationData`. That field is
+the entire contract between the automation and the widget: it reads the document from the bucket
+and writes the validated result back itself, so it needs nothing in `outputs`, `inOuts`, or
+`outcomes`.
+
+Everything else is up to the action. The widget can sit alongside the host's own controls, so add
+whatever outputs, inOuts, and outcomes that action needs. For a widget-only app, default to a
+single `Submit` outcome.
 
 ```json
 {
-  "inputs":  { "type": "object", "properties": {} },
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "contentValidationData": { "type": "ContentValidationData", "required": true }
+    }
+  },
   "outputs": { "type": "object", "properties": {} },
   "inOuts":  { "type": "object", "properties": {} },
   "outcomes": {
     "type": "object",
     "properties": {
-      "Approve": { "type": "string" },
-      "Reject":  { "type": "string" }
+      "Submit": { "type": "string" }
     }
   }
 }
 ```
+
+> **Never model that input as `"type": "object"` with the members inlined** — the members are
+> dropped and the field degrades to `System.Object`.
+
+## What the host still owns
+
+**Size it.** The widget renders the bare custom element
+`<ui-du-validation-station-standalone-wc-element>`, which is `display: inline` — an auto-height
+host collapses the viewer to nothing.
+
+```css
+.validation-host { position: relative; flex: 1; min-height: 0; display: flex; }
+.validation-host > ui-du-validation-station-standalone-wc-element {
+  display: block; flex: 1; min-width: 0;
+}
+```
+
+**Its loading/error states are unstyled `<div>`s** (`Loading...`, `Failed to load document
+artifacts: …`) and there is no prop to override them.
+
+**Its theme tokens are sealed in the shadow root** (`:host(.light)`), so `var(--color-background)`
+does not resolve in host CSS. To match the widget's surface, use `#ffffff` light / `#182027` dark.
 
 ## Integration: Web App
 
@@ -452,7 +496,9 @@ Runnable end-to-end example (task list + selection + all five subcomponents wire
 - **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, { taskType: TaskType.DocumentValidation }, folderId)` first.
 - **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmitComplete` with `success: true` — submit may fail validation, and completing early submits unvalidated data.
 - **Do not assume the widget shows an error on failure — it does not.** `onSubmitComplete`/`onSaveAsDraftComplete` with `success: false` render no UI; surface the error yourself (`showMessage`, toast, etc.).
-- **Do not treat `onReportExceptionComplete` like the save callbacks.** It receives `(documentId, reason)`, not `SaveValidatedDataResult`, and persists nothing — you must call `OrchestratorDuModule.submitExceptionReport(...)` before completing the task.
+- **Do not treat `onReportExceptionComplete` like the save callbacks.** It receives `(documentId, reason)`, not `SaveValidatedDataResult`, and persists nothing — you must call `OrchestratorDuModule.submitExceptionReport(...)` yourself.
+- **Do not complete the task after reporting an exception.** 
+- **Always pass `contentValidationData` back to `completeTask` verbatim.** `completeTask(outcome, data)` **replaces** the task's data, so `{}` — or any payload missing that field — wipes it. Every other field is free to change: send whatever the action's own controls collected alongside it. (`Tasks.complete()` in a web app differs: `data` is optional for `TaskType.DocumentValidation`, and omitting it is not the same as passing `{}`.)
 
 Subcomponents (compose-your-own layout) only:
 
