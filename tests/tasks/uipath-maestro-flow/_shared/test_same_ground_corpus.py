@@ -1,8 +1,9 @@
 """Permanent same-ground contract for uipath-maestro-flow eval tasks.
 
-The temporary allowlists name pre-campaign debt. Each family batch removes its
-own entries as the task contract becomes neutral; exact equality prevents stale
-allowlist entries from hiding completed work.
+The temporary allowlists name pre-campaign debt plus tasks that landed on
+`main` after the alignment sweep and have not been aligned yet. Each family
+batch removes its own entries as the task contract becomes neutral; exact
+equality prevents stale allowlist entries from hiding completed work.
 """
 
 from __future__ import annotations
@@ -12,11 +13,22 @@ from pathlib import Path
 
 FLOW_TASKS = Path(__file__).resolve().parent.parent
 
-V1_AUTHORING_ALLOWLIST = set()
+# Post-sweep upstream arrivals, carried as-is until their own alignment pass:
+# - evaluate/child_simulation (#2965, 2026-09-02) gates on `uip solution init`
+#   and `uip maestro flow init` telemetry.
+# - ixp/e2e_03_project_creation_handoff (#2809, 2026-09-02) gates on two
+#   skill_triggered criteria and tells the agent not to run `flow debug`.
+V1_AUTHORING_ALLOWLIST = {
+    "evaluate/child_simulation/child_simulation_crud.yaml",
+}
 
-SKILL_TELEMETRY_ALLOWLIST = set()
+SKILL_TELEMETRY_ALLOWLIST = {
+    "ixp/e2e_03_project_creation_handoff/e2e_03_project_creation_handoff.yaml",
+}
 
-FORBIDDEN_PROMPT_ALLOWLIST = set()
+FORBIDDEN_PROMPT_ALLOWLIST = {
+    "ixp/e2e_03_project_creation_handoff/e2e_03_project_creation_handoff.yaml",
+}
 
 # These born-neutral escalation tasks are outside the recipe-edit sweep. Their
 # prompts already require the same-name solution and tell the agent to leave
