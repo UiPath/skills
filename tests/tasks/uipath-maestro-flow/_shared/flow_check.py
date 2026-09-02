@@ -108,6 +108,8 @@ _POLL_TIMEOUT_ATTEMPTS = 2
 # 5xx, matching the CLI's own "retry once before reporting") that keeps a third
 # full-length attempt out of every criterion ceiling. `retries=3` still works.
 _DEFAULT_RETRIES_TIMEOUT = 240
+# One backend read of a faulted instance's incidents; never worth more of the criterion budget.
+_INCIDENTS_TIMEOUT_SECONDS = 60
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF_SECONDS = 5.0
 
@@ -390,6 +392,7 @@ def run_debug(
         _fail(
             f"flow debug exit {r.returncode}{spent}\n"
             f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            + _incident_details(_parse_json(r.stdout))
         )
     data = _parse_json(r.stdout)
     if data is None:
@@ -397,7 +400,7 @@ def run_debug(
     payload = _get_ci(data, "Data") or {}
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
-        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
+        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}" + _incident_details(data))
     if unreadable is not None:
         # Every attempt completed, and every attempt's outputs were unreadable.
         # This is an infrastructure failure (INFRA), not a verdict on the flow:
@@ -1699,6 +1702,43 @@ def assert_no_flow_files() -> None:
 
 
 # ── Internals ───────────────────────────────────────────────────────────────
+
+
+def _incident_details(envelope: dict | None) -> str:
+    """The backend's own account of a faulted debug run, for the failure text.
+
+    `flow debug` reports a fault as one line per incident (`[102003] Integration
+    Services bad request (element createIssue)`) and defers the provider's
+    message to `uip maestro flow debug-instance incidents <id>`. That message is
+    the cause — 2026-09-01: `errors - {reporter=Specify a valid value for
+    Reporter}` behind six identical `[102003]` failures across three arms and two
+    weeks, none of whose task.json said so. Fetch it while the instance is still
+    on the tenant (it is gone within days) so the criterion output carries it.
+
+    Best-effort and side-effect-free: returns "" when there is no instance id,
+    the CLI is unavailable, or the tenant answers with anything but a list.
+    """
+    data = _get_ci(envelope, "Data") or {}
+    instance_id = _get_ci(data, "instanceId", "InstanceId")
+    if not instance_id:
+        return ""
+    try:
+        r = subprocess.run(
+            ["uip", "maestro", "flow", "debug-instance", "incidents", str(instance_id), "--output", "json"],
+            capture_output=True, text=True, timeout=_INCIDENTS_TIMEOUT_SECONDS,
+        )
+        parsed = _parse_json(r.stdout) or {}
+        incidents = _get_ci(parsed, "Data")
+        if not isinstance(incidents, list) or not incidents:
+            return ""
+        lines = [
+            f"  - element={_get_ci(i, 'elementId', 'ElementId')} code={_get_ci(i, 'errorCode', 'ErrorCode')} "
+            f"{_get_ci(i, 'errorMessage', 'ErrorMessage')}: {_get_ci(i, 'errorDetails', 'ErrorDetails')}"
+            for i in incidents if isinstance(i, dict)
+        ]
+        return "\nincidents (uip maestro flow debug-instance incidents):\n" + "\n".join(lines)
+    except Exception:  # noqa: BLE001 — diagnostics must never mask the real failure
+        return ""
 
 
 def _parse_json(stdout: str) -> dict | None:
