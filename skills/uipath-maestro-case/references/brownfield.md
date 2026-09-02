@@ -6,7 +6,7 @@ Targeted changes to an existing `caseplan.json`. Skips the design handoff and th
 
 ## When this journey applies
 
-`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no resolution phase, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
 
 ## Kickoff — set dev expectations first
 
@@ -99,7 +99,7 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 
 | Option | What it does |
 |---|---|
-| **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
+| **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, Action: Action, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl and the `Action` (`Imported`/`Overwritten`). |
 | **Run debug session** | Phase 6 — executes the case for real (consent-gated, Rule 12). |
 | **Publish to Orchestrator** | Phase 7 — `uip maestro case pack` (mandatory BPMN recompile), then `uip solution pack`, then `uip solution publish` to the tenant solution feed (consent-gated, Rule 12). |
 | **Done** (default) | Stop here. |

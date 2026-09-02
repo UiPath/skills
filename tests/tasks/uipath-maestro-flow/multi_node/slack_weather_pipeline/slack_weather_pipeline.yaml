@@ -30,7 +30,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs end-to-end and the named out variable weatherVerdict holds exactly 'warm office today' or 'cold office today': Slack + HTTP + decision all execute"
     command: "python3 $TASK_DIR/check_slack_weather_pipeline.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

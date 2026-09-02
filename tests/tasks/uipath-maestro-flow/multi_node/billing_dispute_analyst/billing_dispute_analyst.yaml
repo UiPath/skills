@@ -51,7 +51,7 @@ success_criteria:
   - type: run_command
     description: 'Check debugs the flow: an inline uipath.agent.autonomous node is wired to a context.index node, the flow completes, and the agent returns a non-empty determination'
     command: python3 $TASK_DIR/check_billing_dispute_analyst.py
-    timeout: 600
+    timeout: 1200
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

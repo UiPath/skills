@@ -51,6 +51,8 @@ Passing flow data into an inline agent requires **three hand-authored, aligned**
 
 Self-check the CLI you run: `uip maestro flow validate` must pass a prompt-less node and must fail empty-string prompts. Never add stub prompts. If validate rejects the absent keys, see § Refresh and Validate § Older CLI.
 
+> **Encoding note.** Author the flat `__` form shown above — it is always valid and is what packaging ships to the runtime, so keep writing it. A newer nested encoding also exists (dotted prompt tokens like `{{input.a.b.c}}` with a matching nested `inputSchema`); **do not produce it**. An `agent.json` you open may already be in the newer nested form; leave it as-is and keep writing flat.
+
 The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (`agent.json` `inputSchema`), and **Resolution** (`{{input.<key>}}` in `messages[].content`) — and their examples are in the table below. `flow validate` catches a Resolution↔Contract mismatch (a `{{input.K}}` that's malformed or names a key not in `inputSchema`), but a missing/wrong **Delivery** binding passes validate and only shows up as empty input at `flow debug`. Agent-side `inputSchema`/`contentTokens` mechanics: the `uipath-agents` skill's [inline-in-flow § Wiring Flow Inputs Into an Inline Agent](../../../../../uipath-agents/references/lowcode/capabilities/inline-in-flow/inline-in-flow.md#wiring-flow-inputs-into-an-inline-agent-required).
 
 - **A flow pulled from Studio Web carries node prompts mirrored from `agent.json`.** The canvas writes node `inputs` into `agent.json.messages[]` on save and back on load. Those mirrored prompts are safe only if they reference every `agentInputVariables[]` key. Otherwise run `uip agent refresh --inline-in-flow` — shell-ify strips node prompts and keeps structural inputs.
@@ -61,7 +63,7 @@ The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (
 > { "id": "invoiceNumber", "direction": "in", "type": "string", "triggerNodeId": "start" }
 > ```
 >
-> Bind it on the agent node (`agentInputVariables[]`, `=$vars.start.output.invoiceNumber`) and reference it in the prompt as `{{input.start__output__invoiceNumber}}`. Likewise, flow outputs the agent feeds (e.g. `determination`, `rationale`) must be declared as `direction: "out"` globals and mapped on every reachable End node. Full schema and the `$vars.{triggerNodeId}.output.{id}` access rule: [../../../../shared/variables-and-expressions.md](../../../shared/variables-and-expressions.md) (§ Input associated with a trigger); declaring/mapping mechanics: [../../editing-operations-json.md § Add a workflow variable](../../editing-operations-json.md#add-a-workflow-variable).
+> Bind it on the agent node (`agentInputVariables[]`, `=$vars.start.output.invoiceNumber`) and reference it in the prompt as `{{input.start__output__invoiceNumber}}`. Likewise, flow outputs the agent feeds (e.g. `determination`, `rationale`) must be declared as `direction: "out"` globals and mapped on every reachable End node. Full schema and the `$vars.{triggerNodeId}.output.{id}` access rule: [../../../shared/variables-and-expressions.md](../../../shared/variables-and-expressions.md) (§ Input associated with a trigger); declaring/mapping mechanics: [../../editing-operations-json.md § Add a workflow variable](../../editing-operations-json.md#add-a-workflow-variable).
 
 | Where | What | Example |
 | --- | --- | --- |
@@ -70,7 +72,7 @@ The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (
 | `agent.json` `messages[].content` | `{{input.<trigger>__output__<var>}}` (the `input.` form — never `$vars`). | `"Invoice: {{input.start__output__invoiceNumber}}"` |
 | `agent.json` `messages[].contentTokens[]` | One `{ "type": "variable", "rawString": "input.<trigger>__output__<var>" }` per `{{ ... }}` token in `content` (brace-free `rawString`). | `{ "type": "variable", "rawString": "input.start__output__invoiceNumber" }` |
 
-Each binding's source `$vars.<node>.output.<field>` must reference a real node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../../shared/node-output-wiring.md](../../../shared/node-output-wiring.md) for the full expression contract.
+Each binding's source `$vars.<node>.output.<field>` must reference a real node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../shared/node-output-wiring.md](../../../shared/node-output-wiring.md) for the full expression contract.
 
 ### The `content` ↔ `contentTokens` mirror invariant
 

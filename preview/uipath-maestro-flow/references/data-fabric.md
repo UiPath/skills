@@ -12,6 +12,12 @@ entity is reached through the Integration Service connector key
 Read entity records with filters (`core.datafabric.read`) and write fields back
 to one record (`core.datafabric.update`).
 
+Data Fabric **events** (Record Created / Record Updated on an entity) are
+Integration Service connector events on `uipath-uipath-dataservice`, not this
+node family: `onEvent(RecordCreated, { object: '<Entity>', … })`, with the
+entity named through `object`. See
+[`event-trigger.md`](event-trigger.md#generic-events-name-the-object).
+
 Signatures: `dataFabricRead({ entity, filters? })`;
 `dataFabricUpdate({ entity, record, set })`.
 

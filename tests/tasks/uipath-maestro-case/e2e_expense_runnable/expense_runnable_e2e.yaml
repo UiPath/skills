@@ -10,7 +10,7 @@ description: >
   harness runs uip maestro case debug to prove the case executes to
   finalStatus=Completed across the Submission -> Manager Approval -> Finance
   Approval -> Payment -> Approved happy path, binding real deployed resources
-  (WeatherAPI, CountLetters, ProcurementProcess, ProjectEuler, CaseTest).
+  (WeatherAPI, CountLetters, ProcurementProcess, HelpDeskLookup, CaseTest).
 tags:
   - uipath-maestro-case
   - e2e
@@ -57,15 +57,15 @@ initial_prompt: |
     with "Node already added to the graph" in this eval environment.
   - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
     deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
-    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `ProjectEuler` →
-    `RPA Workflow`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
+    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `HelpDeskLookup`
+    → `HelpDeskLookup`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
     alias for a deployed name. The alias on the left is NOT a resource key: keep
     every `resourceKey` — and the matching `bindings_v2.json` `key` — as the
     composite `<folderPath>.<deployed name>` (e.g.
     `Shared/uipath-agents/WeatherAPI.WeatherAPI`).
-  - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 6 debug. Choose the
-    continue / skip-publish path and keep going.
+  - Treat all hard stops after the SDD as pre-approved, including the Phase 2
+    publish-for-review and Phase 6 debug. Choose the continue / skip-publish
+    path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Do NOT run `uip maestro case debug` yourself — the harness runs it.
   - The task is NOT complete until
@@ -86,6 +86,16 @@ success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
     command: "uip maestro case validate ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan covers every declaration in the staged sdd.md — no dropped stage, task, variable, condition or SLA row, and every task carries an entry rule (validate only warns; a miss hangs debug)"
+    command: >-
+      python3 $SKILLS_REPO_PATH/skills/uipath-maestro-case/scripts/audit_caseplan.py
+      ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1)
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

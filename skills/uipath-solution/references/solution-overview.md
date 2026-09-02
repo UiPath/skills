@@ -129,17 +129,24 @@ uip solution
   │     ├── status <id>                   Check deployment status
   │     ├── list                          List deployments
   │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
+  │     ├── upgrade <deployment-key>      Move a deployment to a newer package version in place, keeping its existing configuration
   │     ├── uninstall <name>              Uninstall a deployment
   │     └── config
   │           ├── get <package-name>      Fetch default deploy config
   │           ├── set <file> ...          Set a resource property in config
   │           ├── link <file> <resource>  Link to an existing Orchestrator resource
   │           └── unlink <file> <resource> Remove a resource link
+  ├── feeds
+  │     └── list                          List the feeds you can publish or deploy to (tenant, your Personal Workspace, folder feeds)
   └── packages
         ├── list                          List published solution packages
         ├── download <name> [version]      Download a published solution package .zip
         └── delete <name> <version>       Delete a specific package version
 ```
+
+`publish`, `deploy run`, `deploy list`, `packages list` and `packages delete` all take
+`--feed <name-or-key>` or `--personal-workspace` to target a feed other than the
+tenant's. See [Pack and Deploy — Publishing to a non-tenant feed](pack-and-deploy.md#publishing-to-a-non-tenant-feed).
 
 ---
 

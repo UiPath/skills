@@ -20,6 +20,26 @@ Signatures:
   { connection: 'jira', folder: 'shared' }))
 ```
 
+## Three contracts to settle before authoring
+
+Check these before the first connector call; they are the common places where a
+plausible Flow compiles but loses the intended runtime or Studio Web contract:
+
+1. **Runtime strings use `tmpl`, not `js`.** For example,
+   ``where: tmpl`invoiceNumber = '${input('invoiceNumber')}'` `` builds a string.
+   ``js`invoiceNumber = '${input('invoiceNumber')}'` `` is JavaScript assignment
+   syntax and evaluates to only the assigned value. See
+   [Structured filters](#structured-filters-ceql).
+2. **Schema-dynamic fields require a prepared descriptor.** Resolving parent
+   values is not enough: run `registry prepare` with those values and import the
+   generated descriptor so the Flow retains its schema-replay metadata. See
+   [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop).
+3. **Paged reference lookups use exactly `nextPage`.** When
+   `Pagination.HasMore` is true, pass `Pagination.NextPageToken` as
+   `--query "nextPage=<token>"`; do not guess `page`, `pageToken`, or
+   `nextPageToken`. See
+   [Resolving connection-scoped reference values](#resolving-connection-scoped-reference-values).
+
 ## Discovering operations and fields
 
 `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
@@ -70,16 +90,22 @@ the tenant, so it needs a live Integration Service connection and a logged-in
 `uip`; without one, fall back to the curated operation in the markdown library.
 
 ```bash
-uip maestro registry prepare <connector-key> <action> \
-  --connection-id <connection-id>
+npx flow-sdk registry prepare <connector-key> <action>
 # Generic operation: materialize the one connected object the task uses.
-uip maestro registry prepare <connector-key> <action> \
-  --connection-id <connection-id> --object <api-object-name>
+npx flow-sdk registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
 The result lands in `./connectors-local/`, which the compilers union over the
 library. Calls accumulate, so preparing a second operation keeps the first.
+
+`prepare` picks the connection itself (see below). Pass `--connection-id <id>`
+only to pin a specific one, and expect it to be checked: a connection whose
+`State` is not `Enabled` is refused, naming the enabled alternatives. A `Failed`
+connection answers field discovery with an empty schema, so preparing through
+it would write an overlay with no fields and the next compile would still
+reject every input as unknown — the refusal is the only signal that says
+"connection", not "field".
 
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
@@ -149,46 +175,51 @@ uip is resources describe <connector-key> <object> --connection-id <id> \
 
 ## Structured filters (CEQL)
 
-For an Integration Service list operation, preserve the FilterBuilder contract
-as a structured tree. A raw CEQL string such as `status='Active'` is only the
-runtime query; it does not describe the filter tree Studio Web needs.
+An Integration Service list operation takes a server-side filter through a
+FilterBuilder parameter — usually `where`, sometimes `q`. **Write the CEQL
+string; the SDK derives the tree.**
 
-```json
-{
-  "groupOperator": 0,
-  "index": 0,
-  "filters": [
-    {
-      "id": "status",
-      "operator": "Equals",
-      "value": {
-        "value": "Active",
-        "rawString": "\"Active\"",
-        "isLiteral": true
-      }
-    }
-  ],
-  "groups": []
-}
+```ts
+connector('uipath-microsoft-azureactivedirectory', 'list-groups',
+  { where: "displayName = 'active' AND createdDateTime >= '2026-01-01T00:00:00Z'" },
+  { connection: 'entra', folder: 'shared' })
 ```
 
-`groupOperator` is numeric (`0` for And, `1` for Or). Use the field id from the
-operation schema and the product operator name, such as `Equals`; do not replace
-the tree with `{ "ceql": "..." }` or an ad-hoc description object.
+That emits BOTH halves the artifact must carry: the runtime query at
+`inputs.detail.queryParameters.where`, and the design-time tree at
+`essentialConfiguration.savedFilterTrees.where` inside the node's
+`configuration`. Studio Web renders the FilterBuilder from the tree; product
+validation rejects a filter that has only one of the two, so a string alone
+fails `validate` even though the run would have worked.
 
-When the environment provides the node-configure authoring command, pass the
-tree under `filter` so the CLI can emit both the runtime CEQL query and the
-design-time saved filter tree:
+If the task also asks for the filter tree as a separate review artifact,
+compile first and copy the emitted
+`configuration.essentialConfiguration.savedFilterTrees.<parameter>` value
+verbatim into that file (directly or under a named top-level property). Do not
+replace it with an ad hoc `{ field, operator, value }` object or only the CEQL
+string. The serialized tree must retain its numeric `groupOperator` and
+`filters` array.
 
-```bash
-uip maestro flow node configure <flow-file> <node-id> \
-  --detail '{"filter": {"groupOperator": 0, "index": 0, "filters": [{"id": "status", "operator": "Equals", "value": {"value": "Active", "rawString": "\"Active\"", "isLiteral": true}}], "groups": []}}' \
-  --output json
-```
+Supported: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`,
+`Like`, their `Not` forms, and `Is Null` / `Is Not Null`. Combine with `AND` or
+`OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND`
+and `OR` at one level is refused rather than guessed, because a tree carries one
+operator per level.
 
-If the request is offline and asks only for a reviewable filter plan, save this
-same tree in the requested JSON artifact. Do not fabricate a connected node or
-resource binding when no tenant connection exists.
+Three spellings are compile errors here rather than a tenant-side
+`[102003] Integration Services bad request`:
+
+| Wrong | Why | Right |
+|---|---|---|
+| `'accountNumber' = 'ACC123'` | a quoted token is a VALUE to CEQL | `accountNumber = 'ACC123'` |
+| `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
+| `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
+
+**A filter built from a runtime value keeps the runtime half only.** The tree
+holds literals, so a `js` template in `where` emits the query and no tree — which
+`validate` rejects. Where the filter must vary per run, filter server-side on
+what is constant and narrow the rest downstream, or accept the design-time gap
+deliberately.
 
 ## Schema-dynamic operations: the parent-field loop
 
@@ -242,6 +273,25 @@ uip is resources describe <connector-key> <object> \
 That placeholder is also the **ordering**: resolve `fields.project.key` before
 you can resolve `fields.issuetype.id`.
 
+**A second declaration shape has no placeholder.** Data Service
+(`uipath-uipath-dataservice`) operations such as `create-entity-record`,
+`update-entity-record` and the file-record-field operations declare their parent
+through the registry's schema action (`GenerateSchema` over `entityName`), not
+through a reference path. Their describe with no values returns only the static
+inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
+`compile` refuses `title`, `description`, … as unknown. `prepare` names the
+parent when you omit it; the fix is always the entity name:
+
+```bash
+npx flow-sdk registry prepare uipath-uipath-dataservice create-entity-record \
+  -f entityName=FlowCodeEvalEntity
+# → 8 input field(s): entityName, expansionLevel + the entity's own fields
+```
+
+Do not work around the refusal — not with `rawNode`, not by editing the emitted
+`.flow`, not by hand-writing a `connectors-local/` overlay. Each produces a node
+the platform cannot run.
+
 Parent-field names are operation-specific. Copy each `Name` exactly from this
 operation's describe response; do not reuse the dotted names from the
 `create-issue` example for another action (for example, Jira `get-issue` uses
@@ -266,7 +316,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-uip maestro registry prepare <connector-key> <action> --connection-id <connection-id> \
+npx flow-sdk registry prepare <connector-key> <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -322,8 +372,61 @@ debug are the evidence.
 ## Resolving connection-scoped reference values
 
 Fields such as Slack channels and mailbox folders store ids, not display names.
-Resolve them against the same connection the flow binds instead of copying an id
-from another connection or session:
+
+**If a field is marked LOOKUP, do not guess it and do not resolve it by hand.**
+Use the field's helper and record the value once with `prepare`. This one rule
+covers 1,071 fields across 104 connectors, so it is worth knowing before any
+particular connector is:
+
+```ts
+channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
+```
+
+```bash
+npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
+  --resolve channel:profile.email=dustin@example.com
+```
+
+**You do not need to find the connection first.** `prepare` discovers it from
+`uip is connections list` — your own folder first, the tenant second — and writes
+both the connection id AND its folder key into `bindings.json`. So one command
+covers the lookup, the connection binding and the folder binding. Pass
+`--connection <name>` only when several connections match the same connector;
+it reports the candidates rather than guessing, because connections for one
+connector are not interchangeable. When the candidates share a name, pick one
+by the `--connection-id <id>` each candidate line prints; `bindings.json` is
+written on that route too. The entries are named `<connector's last segment>`
+(`slack`) and `shared` unless you pass `--bind-connection` / `--bind-folder`;
+`connection:` and `folder:` in source must use those names, and `compile` warns
+`CONNECTION_STUB` when they do not resolve to a tenant id.
+
+`check` names the exact command when a lookup is unresolved, and warns when a
+lookup field is given a literal id. It also speaks up when a lookup field is
+bound to a runtime expression (`LOOKUP_RUNTIME_VALUE`): a warning that states
+the id the field sends (`reporter.accountId`, not a name), and an error when
+the expression reads an e-mail field into a lookup that neither sends nor
+searches by e-mail — there an address is never that id, and the provider
+refuses it only once the flow runs. (A field that sends an e-mail, such as
+SendGrid's `from`, takes one silently.) A required lookup field you have no
+value for is resolved with its helper, not filled from a look-alike input. Run
+`check` before compiling: it finds everything else that is wrong first, so the
+one expensive call is spent last.
+
+Each operation's markdown page lists its lookup fields, the helper for each, and
+what it can be searched by. The generated descriptor carries the same facts as a
+comment above the `export const`, so `grep -B6 'export const SendMessageToUser'`
+answers it too.
+
+Two cases have **no** helper on purpose, and for them a plain string is correct:
+a field whose `reference` merely enumerates legal values (what you send back is
+what you searched for), and a collection that is the same in every tenant
+(country lists, timezones). Their pages say so and print the command that shows
+the accepted values.
+
+The rest of this section is the manual route — needed only when a field carries
+no lookup, or when you are inspecting a collection rather than resolving a value.
+Resolve against the same connection the flow binds, never by copying an id from
+another connection or session:
 
 **Choose the collection from the prepared action definition before the first
 `resources run list` call.** Run `registry prepare` first and find the target

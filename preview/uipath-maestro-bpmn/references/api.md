@@ -23,13 +23,78 @@ generated from the built types; longer tutorials stay in the node references.
 > Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no
 > types and no comments.
 
-**BPMN authoring** — [bpmn](#bpmn-function)
+**BPMN authoring** — [errorSchema](#errorschema-const) · [errorSchemaWithResponse](#errorschemawithresponse-const) · [bpmn](#bpmn-function)
 
 **Builders** — [BpmnBuilder](#bpmnbuilder-class) · [ScopeBuilder](#scopebuilder-class) · [SubProcessBuilder](#subprocessbuilder-class)
 
 **Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ReceiveMessageOpts](#receivemessageopts-interface) · [ConnectorEventOpts](#connectoreventopts-interface) · [ExternalTaskOpts](#externaltaskopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [ExtensionPayload](#extensionpayload-interface) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [TypedContextRow](#typedcontextrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [ErrorLike](#errorlike-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface) · [ErrorMappingRow](#errormappingrow-interface)
+**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [ExtensionPayload](#extensionpayload-interface) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [TypedContextRow](#typedcontextrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [ErrorLike](#errorlike-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface) · [ErrorMappingRow](#errormappingrow-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
+
+## errorSchema (const)
+
+````ts
+/** The `Error` variable's shape — the platform's own error envelope. */
+export declare const errorSchema: {
+    readonly type: "object";
+    readonly properties: {
+        readonly code: {
+            readonly type: "string";
+        };
+        readonly message: {
+            readonly type: "string";
+        };
+        readonly detail: {
+            readonly type: "string";
+        };
+        readonly category: {
+            readonly type: "string";
+        };
+        readonly status: {
+            readonly type: "number";
+        };
+        readonly element: {
+            readonly type: "string";
+        };
+    };
+};
+````
+
+## errorSchemaWithResponse (const)
+
+````ts
+/**
+ * The same envelope plus `response` — what a node whose failure carries a payload
+ * writes, and what the same source calls *"the generic failure mapping shape, which
+ * includes a `response` key"*, distinguishing it from `errorSchema`.
+ */
+export declare const errorSchemaWithResponse: {
+    readonly type: "object";
+    readonly properties: {
+        readonly response: {
+            readonly type: "string";
+        };
+        readonly code: {
+            readonly type: "string";
+        };
+        readonly message: {
+            readonly type: "string";
+        };
+        readonly detail: {
+            readonly type: "string";
+        };
+        readonly category: {
+            readonly type: "string";
+        };
+        readonly status: {
+            readonly type: "number";
+        };
+        readonly element: {
+            readonly type: "string";
+        };
+    };
+};
+````
 
 ## bpmn (function)
 
@@ -51,6 +116,8 @@ export declare class BpmnBuilder extends ScopeBuilder {
     name(n: string): this;
     /** Process-level metadata — see `ProcessMetadata`. */
     metadata(meta: ProcessMetadata): this;
+    /** Name a JSON Schema once so several variables can share it. */
+    schema(id: string, schema: unknown): this;
     /**
      * Declare an external identifier the process needs supplied — a base URL, a
      * folder path, a process name (`uipath:binding`). Expressions read it as
@@ -376,7 +443,7 @@ export interface ScriptTaskOpts extends ActivityOpts {
     scriptFormat?: string;
     /** `uipath:input` rows: field name → `=`-expression read into the script. */
     inputs?: Record<string, string>;
-    /** `uipath:output` rows: variable id → `=`-expression (usually `=result.<x>`). */
+    /** `uipath:output` rows: variable id → `=`-expression. */
     outputs?: Record<string, string>;
     /**
      * Output rows spelled out, replacing the ones `outputs` derives — see
@@ -388,7 +455,10 @@ export interface ScriptTaskOpts extends ActivityOpts {
      * Schema for the `args` the script receives. Real script tasks all carry one.
      */
     inputSchema?: unknown;
-    /** The mapping's extension type. Defaults to `'BPMN.ScriptTask'`. */
+    /**
+     * The mapping's extension type. Defaults to `'BPMN.Variables'`, which is the
+     * only value the runtime contract defines.
+     */
     type?: string;
 }
 ````
@@ -824,6 +894,7 @@ export interface BuiltBpmn {
     nodes: BpmnNode[];
     flows: BpmnFlow[];
     metadata?: ProcessMetadata;
+    schemas: Map<string, unknown>;
 }
 ````
 
@@ -1177,7 +1248,7 @@ export interface TypedContextRow {
     name: string;
     type?: string;
     value?: string;
-    body?: string;
+    body?: unknown;
     target?: string;
     required?: boolean;
 }
@@ -1219,6 +1290,7 @@ export interface ConnectorMeta {
     requiresConnection?: boolean;
     requiresFolderKey?: boolean;
     objectName?: string;
+    lookups?: Readonly<Record<string, LookupSpec>>;
 }
 ````
 
@@ -1267,4 +1339,32 @@ export interface ErrorMappingRow {
     condition?: string;
     detail?: string;
 }
+````
+
+## LookupSpec (interface)
+
+````ts
+export interface LookupSpec {
+    objectName?: string;
+    path: string;
+    by: readonly string[];
+    value: string;
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupStrategy (type)
+
+````ts
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
 ````

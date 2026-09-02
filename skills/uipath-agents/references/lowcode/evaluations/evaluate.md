@@ -66,7 +66,7 @@ The CLI auto-discovers evaluators in `evals/evaluators/` and eval sets, includin
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| Solution ID could not be resolved | Agent's solution not uploaded to Studio Web | Run `uip solution upload . --output json` (add `--force` to replace an existing cloud solution), or pass `--solution-id <id>` explicitly to `uip agent eval run start` |
+| Solution ID could not be resolved | Agent's solution not uploaded to Studio Web | Run `uip solution upload . --output json` (imports as new or overwrites the existing cloud solution in place), or pass `--solution-id <id>` explicitly to `uip agent eval run start` |
 | `No evaluators found` | Empty `evals/evaluators/` directory | Run `uip agent eval evaluator add` or re-init with `uip agent init` |
 | `No test cases in eval set` | Eval set has no evaluations | Run `uip agent eval add` to add test cases |
 | `Unknown evaluator type "X"` | Wrong case on `--type` | Use kebab-case only: `semantic-similarity`, `trajectory` |

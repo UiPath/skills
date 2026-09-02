@@ -62,9 +62,11 @@ uip agent memory add SupportRecall \
 | `--threshold` | Retrieval score threshold; default `0` |
 | `--result-count` | Number of memory results; default `3` |
 | `--search-mode` | `hybrid` or `semantic`; default `hybrid` |
-| `--field name=weight` | Input field weighting; repeat for multiple fields |
+| `--field name=weight` | Input field weighting; `name` = agent `inputSchema` key (inline: `<trigger>__output__<var>`); repeat for multiple fields |
 | `--disable-dynamic-few-shot` | Attach the memory space without runtime retrieval |
 | `--path` | Agent project directory; default `.` |
+
+**`--field` names an `inputSchema` key, not a flow variable** — the value is read from the agent's `input` under that key. For inline agents (`--inline-in-flow`), use the flattened key `<triggerNodeId>__output__<var>` (see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § Wiring Flow Inputs Into an Inline Agent); e.g. `--field start__output__userQuestion=1`. Passing the un-flattened global name (`--field userQuestion=1`) names a field the agent never receives, and `validate` does not catch it.
 
 ### 3. Seed optional memory items
 

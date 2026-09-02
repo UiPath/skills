@@ -19,7 +19,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
 | `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `isRequired` | sdd.md (default `true`) |  |
 
 ## Task Title Fallback
@@ -52,43 +52,43 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 > Resolved action tasks only — placeholders skip this entire section (see § Unresolved Fallback).
 
-- If sdd.md **names a specific user email**, record the bare email exactly as authored in `tasks.md`; never replace it with a UUID resolved for an SLA recipient or write the SLA-only `<uuid> / <email>` pair. Sets `assignmentCriteria: "user"` at execution time.
-- If sdd.md **names a group or role**, do **not** record a recipient — group assignment is configured separately via Actions app rules. Record a note in `tasks.md` so the user remembers to configure group assignment externally.
-- If sdd.md is **silent on assignee**, **prompt the user** using **AskUserQuestion** with a direct open-ended prompt:
-  > "The action task '<display-name>' has no assignee specified in sdd.md. Who should receive it? Enter an email, a group/role name, or 'Skip' to leave it unassigned for now."
+`recipient` decides whose Actions queue the task lands in. Planning records a bare value; the build wraps it into the `{ Type, Value }` object the caseplan carries.
 
-  Parse the user's response:
-  - Looks like an email → record as `recipient: <email>`.
-  - Group / role name → omit recipient; record a note in `tasks.md` reminding the user to configure group assignment externally.
-  - `Skip` or empty → omit recipient.
+1. **sdd.md names a user email** — record the bare email exactly as authored: `recipient: alex@corp.com`.
+2. **sdd.md names a group or role** — record the bare group name behind a `UserGroup:` prefix: `recipient: UserGroup: Compliance`. The prefix is what marks it a group; it is stripped from the value. Do not look the group up.
+3. **sdd.md is silent** — ask with **AskUserQuestion**, using a direct open-ended prompt rather than a finite option list:
+   > "The action task '<display-name>' has no assignee specified in sdd.md. Who should receive it? Enter an email, a group/role name, or 'Skip' to leave it unassigned for now."
 
-For open-ended inputs like an email address, use a direct prompt rather than AskUserQuestion with a finite option list.
+   Then apply rule 1 or 2 to the answer. `Skip`, empty, or a non-interactive run with no answer available → omit `recipient` and record an `assignment-note` saying the task will reach nobody until someone assigns it.
 
-## tasks.md Entry Format
+> **This field holds a name, never a UUID.** An assignment recipient is not an escalation recipient: an SLA escalation writes `{ scope, target, value }` and needs the directory UUID in `target`, while an assignment writes one field that holds the name or email. The two shapes read alike, so the SLA plugin's group-to-UUID lookup looks reusable here. It is not, and a UUID in this field is rejected at runtime.
 
-Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](../../../placeholder-tasks.md#tasksmd-planning-entry-shape).
+> **A group must already have folder access, which this skill cannot grant.** It reaches the task only when it exists in Orchestrator **and** holds a role on the task's folder; `uip admin groups create` gives it neither. Without both the task is created and reaches nobody — the same visible outcome as omitting the recipient, and `validate` sees neither. Record an `assignment-note` naming the group so the user can grant it access.
 
-```markdown
-## T<n>: Add action task "<display-name>" to "<stage>"
-- taskTypeId: <action-app-id>
-- name: "<selected-deployment-title>"
-- folder-path: "<selected-deployment-folder>"
-- task-title: "<title-shown-to-user>"
-- priority: Medium
-- recipient: user@company.com   # omit when group-assigned or when user chose Skip
-- assignment-note: "<free-form note if group-assigned>"   # optional
-- runOnlyOnce: false   # from sdd.md "Run Only Once" column
-- inputs:
-  - <input_name> <- "<Stage>"."<Task>".<output>
-  - <input_name> = "<literal-or-expression>"
-- outputs:
-  - <SDD output row, copied verbatim>
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+## Fields to Resolve
+
+Ledger entry in `tasks/registry-resolved.json` for a resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
+
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "action",
+  "cacheFile": "action-apps-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<selected-deployment-title>",
+  "taskTypeId": "<action-app-id>",
+  "folder-path": "<selected-deployment-folder>",
+  "recipient": "user@company.com",
+  "assignment-note": "<why the task is unassigned, or the group that needs folder access>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`recipient` carries the resolved assignee — `UserGroup: <group name>` for a group, omitted on Skip or no answer; `assignment-note` is optional. `matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object.
+
+Everything else the SDD declares — task title, priority, inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. Phase 2 reads it straight from there ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

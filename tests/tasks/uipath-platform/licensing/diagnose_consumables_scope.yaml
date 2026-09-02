@@ -34,20 +34,19 @@ initial_prompt: |
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands may fail with auth errors — that is expected. Run
     each command once and move on. Do NOT retry or attempt to login.
-  - Use `--output json` on every uip command.
 
 success_criteria:
   - type: run_command
-    description: "Agent ran a tenant-scoped consumables summary to reproduce observation 1 (.uip-cmdlog shim log)"
-    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]summary' | grep -Eq -- '--tenant[= ]default'"
+    description: "Agent ran a tenant-scoped consumables summary to reproduce observation 1 (.uip-cmdlog shim log). Summary is the CLI default mode, so an omitted --mode counts."
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Ev -- '--mode[= ](daily|folders)' | grep -Eq -- '--tenant[= ]default'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Agent also ran the summary UNSCOPED, so scoped and account-wide figures could be compared — the diagnostic move, not just an assertion about it"
-    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]summary' | grep -v -- '--tenant' | grep -q ."
+    description: "Agent also ran the summary UNSCOPED, so scoped and account-wide figures could be compared — the diagnostic move, not just an assertion about it. Summary is the CLI default mode, so an omitted --mode counts."
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Ev -- '--mode[= ](daily|folders)' | grep -v -- '--tenant' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -69,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Verdict explains observation 1: cross-tenant pool figures are suppressed under --tenant"
-    command: "grep -Eiq 'suppress|scoped|by design|deliberat|expected behaviou?r' verdict.md"
+    command: "grep -Eiq 'suppress|by design|deliberat|expected behaviou?r|no tenant attribution|not attributed|account.?(level|wide) only' verdict.md"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -84,8 +83,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Verdict concludes reporting is NOT broken"
-    command: "grep -Eiq 'not broken|no.{0,3}t broken|working as|correct|by design|expected' verdict.md"
+    description: "Verdict concludes reporting is NOT broken. Needs a negative-polarity statement (hedges like 'not shown to be broken' count); bare 'correct'/'expected'/'by design' are too weak — they appear in wrong verdicts too."
+    command: "grep -Eiq 'not( (shown|demonstrated|proven|actually|really|truly|clearly|evidently|apparently|to|be))* broken|is ?n.?t broken|no evidence (of|that)[^.]{0,60}(broken|defect|bug)|(is|are) working as (designed|intended|documented|specified)|works? as (designed|intended|documented|specified)|not a (bug|defect)' verdict.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
