@@ -89,6 +89,10 @@ tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
 # Git worktrees
 .worktrees/
 
+# Local scratch projects and probe artifacts. Untracked by design: these hold
+# real tenant identifiers (connection IDs, folder keys, account names).
+.local/
+
 # Node (package.json lives at the repo root for the @uipath/skills package)
 node_modules/
 package-lock.json
