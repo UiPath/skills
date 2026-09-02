@@ -11,7 +11,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 | `displayName` (from element title) | yes | Stage label |
 | `description` | yes | Always emit, sourced from the SDD row's description field. |
 | `isRequired` | yes | From `sdd.md`; fall back to `false` when the SDD does not specify. Consumed by later case-exit rule `required-stages-completed`. |
-| Stage kind | yes | `primary` or `secondary` — determined by the stage kind (`Create stage …` vs `Create secondary stage …`) |
+| Stage kind | yes | `primary` or `secondary` — from the SDD Section 2 stage heading (`### Stage <N>: …` vs `### Secondary Stage: …`) and its `Stage Kind` field. Emitted as `data.stageType`: omitted for primary, `"secondary"` for secondary. |
 
 ## ID generation
 
