@@ -23,7 +23,7 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
 | `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `isRequired` | sdd.md (default `true`) |  |
 
 ## Task Title Fallback
@@ -69,31 +69,30 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 > **A group must already have folder access, which this skill cannot grant.** It reaches the task only when it exists in Orchestrator **and** holds a role on the task's folder; `uip admin groups create` gives it neither. Without both the task is created and reaches nobody — the same visible outcome as omitting the recipient, and `validate` sees neither. Record an `assignment-note` naming the group so the user can grant it access.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](../../../placeholder-tasks.md#tasksmd-planning-entry-shape).
+Ledger entry in `tasks/registry-resolved.json` for a resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
 
-```markdown
-## T<n>: Add action task "<display-name>" to "<stage>"
-- taskTypeId: <action-app-id>
-- name: "<selected-deployment-title>"
-- folder-path: "<selected-deployment-folder>"
-- task-title: "<title-shown-to-user>"
-- priority: Medium
-- recipient: user@company.com   # or UserGroup: <group name>; omit when Skip or no answer
-- assignment-note: "<why the task is unassigned, or the group that needs folder access>"   # optional
-- runOnlyOnce: false   # from sdd.md "Run Only Once" column
-- inputs:
-  - <input_name> <- "<Stage>"."<Task>".<output>
-  - <input_name> = "<literal-or-expression>"
-- outputs:
-  - <SDD output row, copied verbatim>
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "action",
+  "cacheFile": "action-apps-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<selected-deployment-title>",
+  "taskTypeId": "<action-app-id>",
+  "folder-path": "<selected-deployment-folder>",
+  "recipient": "user@company.com",
+  "assignment-note": "<why the task is unassigned, or the group that needs folder access>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`recipient` carries the resolved assignee — `UserGroup: <group name>` for a group, omitted on Skip or no answer; `assignment-note` is optional. `matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object.
+
+Everything else the SDD declares — task title, priority, inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. Phase 2 reads it straight from there ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

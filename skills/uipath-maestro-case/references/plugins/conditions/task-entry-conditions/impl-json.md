@@ -41,8 +41,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Locate the target task inside `stageNode.data.tasks[lane][index]` (search every lane until the task ID is found)
 5. Initialize `task.entryConditions = []` if absent
-6. Read `rule-type` from tasks.md; pick the recipe below
-7. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+6. Read the rule type from the SDD's Entry Condition table; pick the recipe below
+7. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 8. Append the condition object to `task.entryConditions[]`
 
 ## Rule Types
@@ -65,7 +65,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array. Resolve each planned selector to its taskId via `tasks/id-map.json` using the task's EXACT `tasks.md` display name — never a paraphrase or shortened form. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work. **Never write a `selected-tasks-completed` rule with an empty or partially resolved `selectedTasksIds`** — an unresolvable name is a stop-and-ask (AskUserQuestion: name the intended task, or repair the plan), never an empty emit. `uip maestro case validate`'s `has no task(s) selected` finding must never be the discovery mechanism (Step 12 Check 13 catches it first).
+`selectedTasksIds` is a JSON string array. Resolve each planned selector to its taskId via `tasks/id-map.json` using the task's EXACT SDD display name — never a paraphrase or shortened form. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work. **Never write a `selected-tasks-completed` rule with an empty or partially resolved `selectedTasksIds`** — an unresolvable name is a stop-and-ask (AskUserQuestion: name the intended task, or repair the plan), never an empty emit. `uip maestro case validate`'s `has no task(s) selected` finding must never be the discovery mechanism (Step 12 Check 13 catches it first).
 
 ### adhoc — expression gate
 
@@ -157,8 +157,8 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+Confirm target task's `entryConditions[]` length equals the number of Entry Condition rows the SDD declares for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
 
-**This count-parity check is not a safety net on its own** — it only confirms Step 10 wrote what `tasks.md §4.7` asked for; if `tasks.md` never recorded a task-entry T-entry (a Phase 1 planning gap), parity holds at zero and the task silently ends up with no entry rule, which hangs `case debug` indefinitely instead of failing any build-time check. [`implementation.md § Step 12 Check 15`](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) is the mandatory backstop that re-derives the expected rule from `tasks.md`/the source SDD independent of whether Step 10 ran.
+**This count-parity check is not a safety net on its own** — it only confirms Step 10 wrote what the SDD's condition rows asked for; if the write was skipped entirely (a Phase 1 planning gap), parity holds at zero and the task silently ends up with no entry rule, which hangs `case debug` indefinitely instead of failing any build-time check. [`implementation.md § Step 12 Check 15`](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) is the mandatory backstop that re-derives the expected rule from the source SDD independent of whether Step 10 ran.
 
 <!-- END: impl-json.md -->

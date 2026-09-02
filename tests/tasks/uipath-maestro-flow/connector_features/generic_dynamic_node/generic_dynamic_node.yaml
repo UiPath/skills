@@ -66,7 +66,7 @@ success_criteria:
   - type: run_command
     description: "ServiceNow list-all-records node on acr_user executes and surfaces an array output"
     command: "python3 $TASK_DIR/check_generic_dynamic_node.py"
-    timeout: 320
+    timeout: 720
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

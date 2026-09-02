@@ -56,7 +56,7 @@ Output: `{ Entry, Config, Connections }` where:
    - **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option** (an existing connection may not fit the intent).
    - **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
 3. **Create chosen** → create the connection, then continue to Step 3 with the returned `ConnectionId`. Procedure — background `is connections create`, capture `ConnectionId`, headless fallback: [§ Creating a Connection](#creating-a-connection).
-4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `input-values:`. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
+4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks/registry-resolved.json` and omit its `input-values` key. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
 
 #### Creating a Connection
 
@@ -75,7 +75,7 @@ uip is connections create "<connector-key>" --output json
 4. **On failure — surface and re-prompt, never stall.** The create failed if the command **exits non-zero**, the JSON `Result` is `"Failure"`, or no `Data.ConnectionId` is returned (e.g. OAuth denied/failed, browser closed, connector misconfigured). On auth failure the command **exits** (verified: exit 1) — it does not hang. Do NOT silently proceed and do NOT leave planning incomplete:
    1. Show the user the failure `Message` (and `Instructions` if present) verbatim — do not invent a cause. Example: `{ "Result": "Failure", "Message": "Authentication failed", "Instructions": "Check credentials and try again." }`.
    2. Re-prompt via **AskUserQuestion**: **Retry create** (re-run `is connections create`) / **Skip (defer)**.
-   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `tasks.md`** so planning completes.
+   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `registry-resolved.json`** so resolution completes.
 
 **Headless / no-browser fallback** (CI, remote sandbox, no display) — the agent cannot complete browser OAuth. Either ask the user to run `! uip is connections create "<connector-key>" --output json` in their own terminal and paste back the `ConnectionId`, or run with `--no-wait` to get the pending authorization URL, surface it, and poll until `State: Enabled`.
 
@@ -133,7 +133,7 @@ Each `inputs.*` entry with a `reference` carries a pre-built `discoverCommand`:
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing `registry-resolved.json` / minting the spec. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -167,20 +167,29 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ---
 
-## Output Contract to Tasks.md
+## Output Contract to `registry-resolved.json`
 
-Record the resolved values in `tasks.md` under the task entry:
+Record the resolved values on the task's ledger entry, alongside Rule 9's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
-```markdown
-## T25: Add connector-activity task "Create Jira Issue" to "Triage"
-- type-id: 718fdc36-73a8-3607-8604-ddef95bb9967
-- connection-id: 7622a703-5d85-4b55-849b-6c02315b9e6e
-- connector-key: uipath-atlassian-jira
-- object-name: issue
-- input-values: {"bodyParameters":{"fields.project.key":"PROJ","fields.issuetype.id":"10004"}}
-- filter: {"groupOperator":"And","filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Open\"","value":"Open"},"uiId":null}]}
+```json
+{
+  "stage": "Triage",
+  "task": "Create Jira Issue",
+  "taskType": "connector-activity",
+  "type-id": "718fdc36-73a8-3607-8604-ddef95bb9967",
+  "connection-id": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+  "connector-key": "uipath-atlassian-jira",
+  "object-name": "issue",
+  "input-values": { "bodyParameters": { "fields.project.key": "PROJ", "fields.issuetype.id": "10004" } },
+  "filter": {
+    "groupOperator": "And",
+    "filters": [
+      { "id": "Status", "operator": "Equals", "value": { "isLiteral": true, "rawString": "\"Open\"", "value": "Open" }, "uiId": null }
+    ]
+  }
+}
 ```
 
-Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
+`input-values` and `filter` are real JSON objects, not strings — Phase 2 reads them back verbatim into `--input-details` ([connector-activity/impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)). Also record the selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
 
 <!-- END: connector-integration.md -->

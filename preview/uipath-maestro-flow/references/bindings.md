@@ -17,7 +17,7 @@ connectors-local/
       ...generated descriptor data...
 ```
 
-`uip maestro registry prepare` prints the import for
+`npx flow-sdk registry prepare` prints the import for
 `connectors-local/<connector-key>.ts`.
 The generated descriptor data lives below `connectors-local/descriptors/`; do
 not import it directly. `bindings.json` stays at the root and is independent of
@@ -42,8 +42,61 @@ the resource kind and emitted binding purpose explicit.
 | `default` | one of `resourceKey` / `default` | Fallback when `resourceKey` is absent. Shipped examples repeat the resource key here. |
 | `propertyAttribute` | no | `"ConnectionId"` for a connection or `"FolderKey"` for a folder. |
 
+## Where both values come from
+
+**Usually you do not fill these in at all.**
+`npx flow-sdk registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
+Reach for the manual route below only when you are authoring bindings without
+running `prepare`.
+
+If you are doing it by hand: `uip is connections list --all-folders` returns the
+connection id **and its folder key** on the same record, so one call answers both.
+Always pass `--all-folders`: the default listing is your own folder only, and a
+connection shared from another folder (the usual case on a team tenant) is
+invisible without it — an empty or unrelated default listing is not evidence
+that the connection does not exist.
+
+```bash
+uip is connections list --all-folders --output json
+```
+
+```text
+{
+  "Name": "dustin.metzgar",
+  "Id": "c03a1967-f702-47d2-9ede-917aed159805",
+  "Folder": "dustin.metzgar@uipath.com's workspace",
+  "FolderKey": "b53217ce-25b2-46cd-a6b0-b73c6ba5894c",
+  "ConnectorKey": "uipath-salesforce-slack",
+  "State": "Enabled"
+}
+```
+
+`Id` is the connection binding's `resourceKey`; **`FolderKey` is the folder
+binding's**. Never fill either with a made-up GUID or with the binding's own
+name: `compile` refuses a binding whose `resourceKey` is its own name, warns
+`CONNECTION_STUB` on an all-zero GUID, an `<angle-bracket>` placeholder, any
+non-GUID value or a symbol no entry declares (the run would fault at dispatch —
+`'Connection' has an invalid GUID value` or a `401 Invalid Organization or User
+secret`), and a plausible-looking but wrong GUID still compiles and faults at run
+time. Only an id read from the tenant is right.
+
+Several connections often share one name (a team tenant can hold three Slack
+connections all named `is-sandboxes`, in different folders). A name then cannot
+pick one: `prepare … --connection <name>` lists each candidate with its
+`--connection-id <id>` and folder — pass the id of the one in the folder you mean,
+and `prepare` still writes both entries into `bindings.json`.
+
+**Do not go looking in Orchestrator for the folder.** `uip or folders list` is a
+different resource with different keys, and a folder binding wants the one the
+CONNECTION lives in — which you already have. Measured on the eval corpus: an
+agent that had already listed the connection went on to spend three to four
+further calls on `uip or --help`, `uip or folders --help` and `folders list`,
+searching for a folder matching the symbolic name in its prompt. The symbolic
+name (`slack`, `shared`) is just the label you pass to `connector()`; it is never
+something to search the tenant for.
+
 Copy this two-connector, one-folder example and replace all three placeholders
-with values from the live connection listing:
+with values from the connection listing above:
 
 ```json
 {

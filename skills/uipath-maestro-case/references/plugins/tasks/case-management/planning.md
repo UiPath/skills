@@ -24,7 +24,7 @@ If sdd.md describes a simple stage-to-stage flow within the same case, do not us
 | `folder-path` | Selected registry `folders[0].fullyQualifiedName` | Binds to `data.folderPath`; use the SDD `Folder Path` only as a concrete lookup hint. `<UNRESOLVED>` means name-only discovery. |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `caseManagement-index.json`; mirrors sdd.md `Resource Identity` when already resolved. |
 | `inputs` | sdd.md task data mapping | Passed as case-instance inputs to the sub-case |
-| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
+| `outputs` | sdd.md task Outputs + `tasks describe` schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 | `isRequired` | sdd.md (default `true`) | |
 
@@ -40,26 +40,30 @@ Case-management lookups stay in `caseManagement-index.json` — never adopt a sa
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagement-index.json>`, using the preserved sdd.md `Child Case` name even when folder/identity are unresolved. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md). Note: if the referenced sub-case has not been deployed yet, it will not appear in the registry — the user must deploy it before the parent case can reference it.
+Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagement-index.json>`, using the preserved sdd.md `Child Case` name even when folder/identity are unresolved. Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md). Note: if the referenced sub-case has not been deployed yet, it will not appear in the registry — the user must deploy it before the parent case can reference it.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T<n>: Add case-management task "<display-name>" to "<stage>"
-- taskTypeId: <entityKey>
-- name: "<child-case-name>"
-- folder-path: "<folder>"
-- inputs:
-  - <input_name> = "<value>"
-- outputs:
-  - <SDD output row, copied verbatim>
-- runOnlyOnce: false
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "case-management",
+  "cacheFile": "caseManagement-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<child-case-name>",
+  "taskTypeId": "<entityKey>",
+  "folder-path": "<folder>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object (or `null` after a genuine empty lookup — see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape)).
+
+Everything else the SDD declares — inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. The ledger holds only what the registry lookup produced; Phase 2 reads the contract straight from the SDD ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

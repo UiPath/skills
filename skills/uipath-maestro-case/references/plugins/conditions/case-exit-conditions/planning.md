@@ -12,9 +12,9 @@ Pick this plugin when the sdd.md **literally uses the phrase "case exit conditio
 
 For stage-level conditions, use [stage-entry-conditions](../stage-entry-conditions/planning.md) / [stage-exit-conditions](../stage-exit-conditions/planning.md). For task-level, use [task-entry-conditions](../task-entry-conditions/planning.md).
 
-## No omission — one T-task per sdd.md case-exit row
+## No omission — one caseplan element per sdd.md case-exit row
 
-Every case-exit condition declared in sdd.md gets its own T-task — **including rule-type `required-stages-completed` with `marks-case-complete: true`** (the "preferred pattern"). Never skip a condition because it's the default completion shape. If sdd.md wrote the row, `tasks.md` emits the T-task.
+Every case-exit condition declared in sdd.md gets its own caseplan element — **including rule-type `required-stages-completed` with `marks-case-complete: true`** (the "preferred pattern"). Never skip a condition because it's the default completion shape. If sdd.md wrote the row, the build emits the element.
 
 ## Required Fields from sdd.md
 
@@ -26,7 +26,7 @@ Every case-exit condition declared in sdd.md gets its own T-task — **including
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | Resolved from stage capture map |
 | `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution). |
 
 ## Rule-Type Catalog (case-exit scope)
 
@@ -57,21 +57,22 @@ Add non-completing exit conditions only when the sdd.md explicitly describes an 
 
 ## Ordering
 
-Case exit conditions are created **after** all stages exist (so `selectedStageId` can resolve via the stage capture map). In `tasks.md`, place these between stage conditions and SLA.
+Case exit conditions are created **after** all stages exist (so `selectedStageId` can resolve via the stage capture map). In execution order, place these between stage conditions and SLA.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-```markdown
-## T<n>: Add case-exit condition — <summary>
+A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector`. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
+```text
+case-exit condition — <summary>
 - display-name: "<name>"                 # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-case-complete
 - marks-case-complete: true
 - rule-type: required-stages-completed
 - selected-stage: "<stage-name>"        # only for selected-stage-* rule-types
 - condition-expression: "=js:vars.X..."  # optional gate on case state, NOT the event payload
-- order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § registry-resolved.json fields (resolution)](../../../connector-trigger-planning.md#registry-resolvedjson-fields-resolution).
 
 <!-- END: planning.md -->

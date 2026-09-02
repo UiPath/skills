@@ -3,8 +3,8 @@ description: >
   Quality test: agent maps a business description to a correctly-shaped
   `action` task — taskTitle, priority, recipient, and the planned input/
   output fields. Verifies that even when the action-app is unresolved
-  (skeleton path), the agent still records the planning fields in tasks.md
-  and writes valid JSON. Tests action-task field design (priority enum,
+  (skeleton path), the agent still records the planning fields in the
+  resolution audit and writes valid JSON. Tests action-task field design (priority enum,
   recipient handling, taskTitle requirement).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
@@ -184,9 +184,10 @@ initial_prompt: |
   - Treat the generated plan as pre-approved — do not block on any HARD STOP
     / AskUserQuestion approval step.
   - If the action-app or the process resource is unresolved, write a
-    skeleton task per the skeleton-tasks reference. The `tasks.md` plan
-    must still capture taskTitle, priority, recipient, and the intended
-    inputs/outputs in a fenced wiring-notes block.
+    skeleton task per the skeleton-tasks reference. That task's
+    `tasks/registry-resolved.json` entry must still capture taskTitle,
+    priority, recipient, and the intended inputs/outputs in a fenced
+    wiring-notes block.
   - Do NOT run `uip maestro case debug`.
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
@@ -198,7 +199,7 @@ initial_prompt: |
       "input_fields":  ["<field names>"],
       "output_fields": ["<field names>"]
     },
-    "task_title": "<taskTitle from tasks.md or caseplan.json>",
+    "task_title": "<taskTitle from registry-resolved.json or caseplan.json>",
     "priority":   "<priority value>",
     "recipient":  "<recipient or empty if none>",
     "validation_passed": true
@@ -224,24 +225,24 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md captures the task-title (resolved or skeleton path)"
-    command: "grep -i 'task-title\\|taskTitle\\|Task Title' tasks/tasks.md"
+    description: "the task-title is captured (caseplan on the resolved path, registry audit on the skeleton path)"
+    command: "grep -ri 'task-title\\|taskTitle\\|Task Title' tasks/registry-resolved.json VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md captures priority: High"
-    command: "grep -i 'priority.*high' tasks/tasks.md"
+    description: "priority: High is captured (caseplan or registry audit)"
+    command: "grep -ri 'priority.*high' tasks/registry-resolved.json VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md captures the recipient email"
-    command: "grep -i 'po-approvals@corp.com' tasks/tasks.md"
+    description: "the recipient email is captured (caseplan or registry audit)"
+    command: "grep -ri 'po-approvals@corp.com' tasks/registry-resolved.json VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

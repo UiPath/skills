@@ -29,7 +29,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [PlainTaskOpts](#plaintaskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [HttpOpts](#httpopts-interface) · [OrchestratorOpts](#orchestratoropts-interface) · [OrchestratorAsyncOpts](#orchestratorasyncopts-interface) · [QueueItemOpts](#queueitemopts-interface) · [HumanTaskOpts](#humantaskopts-interface) · [ReceiveMessageOpts](#receivemessageopts-interface) · [ConnectorEventOpts](#connectoreventopts-interface) · [ExternalTaskOpts](#externaltaskopts-interface) · [ActivityNodeOpts](#activitynodeopts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [ExtensionPayload](#extensionpayload-interface) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [TypedContextRow](#typedcontextrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [ErrorLike](#errorlike-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface) · [ErrorMappingRow](#errormappingrow-interface)
+**Supporting types** — [ProcessMetadata](#processmetadata-interface) · [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BindingsRegistry](#bindingsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [ExtensionPayload](#extensionpayload-interface) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [TypedOutputRow](#typedoutputrow-interface) · [TypedContextRow](#typedcontextrow-interface) · [PlainTaskElement](#plaintaskelement-type) · [VarDirection](#vardirection-type) · [ErrorLike](#errorlike-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface) · [ErrorMappingRow](#errormappingrow-interface) · [LookupSpec](#lookupspec-interface) · [LookupStrategy](#lookupstrategy-type)
 
 ## errorSchema (const)
 
@@ -1290,6 +1290,7 @@ export interface ConnectorMeta {
     requiresConnection?: boolean;
     requiresFolderKey?: boolean;
     objectName?: string;
+    lookups?: Readonly<Record<string, LookupSpec>>;
 }
 ````
 
@@ -1338,4 +1339,32 @@ export interface ErrorMappingRow {
     condition?: string;
     detail?: string;
 }
+````
+
+## LookupSpec (interface)
+
+````ts
+export interface LookupSpec {
+    objectName?: string;
+    path: string;
+    by: readonly string[];
+    value: string;
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupStrategy (type)
+
+````ts
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
 ````
