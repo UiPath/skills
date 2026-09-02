@@ -18,6 +18,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
 <!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
+| [`flow debug` fails at solution upload](#flow-debug-fails-at-solution-upload-before-any-element-runs) | Debug fails before any element runs; no incidents, no element executions | The local `.uipx` carries a cloud `SolutionId`, so debug overwrites that solution instead of importing a new one; the CLI falls back to import only when Studio Web answers "not found" |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (the missing-`=js:` validator + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
 ---
@@ -316,6 +317,36 @@ Add two entries to the top-level `bindings[]` array per resource node — `name`
 
 ---
 
+## `flow debug` fails at solution upload, before any element runs
+
+### Symptom
+
+`uip maestro flow debug` returns `Result: "Failure"` from the upload step rather than from the flow. Recognisable by:
+
+- the CLI logged `Attempting to overwrite existing solution <id> on Studio Web...` immediately before failing;
+- the envelope carries no run data at all — no `incidents`, no `elementExecutions`;
+- `Retry: "RetryWillNotFix"`.
+
+`flow validate` still passes, and an earlier debug in the same session may well have completed. The flow is not the problem, and the envelope's generic `Instructions` (check the project, the folder, Studio Web availability) are red herrings here. `uip solution upload` fails the same way on the same project — both take the same overwrite path.
+
+### Cause
+
+A prior successful `flow debug` or `solution upload` stamped the cloud `SolutionId` into the local `.uipx`. Both commands then try to **overwrite** that cloud solution instead of importing a new one, and the CLI falls back to import only when Studio Web answers "not found" — any other rejection is fatal. No flag switches a debug back to import.
+
+### Fix
+
+1. **Rule out a transient.** A retryable envelope (`Retry` says so, or the message is a 5xx or a timeout) needs nothing but the command again.
+2. **Reset the local id.** Replace `SolutionId` in `<Solution>/<Solution>.uipx` with a fresh GUID, then re-run debug: Studio Web imports a new solution and the run proceeds. Replace the value — deleting the field fails `.uipx` validation. The next successful upload stamps the new cloud id back, so a persistently broken overwrite needs the reset before each run.
+3. **Clean up.** The solution the old id named is now orphaned; delete it if it is no longer wanted.
+
+**Do not scaffold a second solution or project to route around this, and do not re-author the flow.** Cloning the Flow project into a new solution does produce a green run, but it leaves two `project.uiproj` in the tree, and every tool that resolves *the* Flow project by discovery then has nothing to pick between. If the reset does not clear the failure, stop and report the upload error.
+
+### Reference
+
+[operate/run.md](../operate/run.md) — the debug command and its pre-flight.
+
+---
+
 ## `flow validate` passes, `flow debug` faults
 
 ### Symptom
@@ -346,7 +377,7 @@ Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expr
 
 ### Fix
 
-Triage via the diagnostic priority ladder in [troubleshooting-guide.md](troubleshooting-guide.md). Match the incident message and faulting element to the patterns above.
+First check that the flow ran at all: an envelope with no `elementExecutions` failed upstream of execution, not in the flow — see [`flow debug` fails at solution upload](#flow-debug-fails-at-solution-upload-before-any-element-runs). Otherwise triage via the diagnostic priority ladder in [troubleshooting-guide.md](troubleshooting-guide.md), matching the incident message and faulting element to the patterns above.
 
 ### Reference
 
