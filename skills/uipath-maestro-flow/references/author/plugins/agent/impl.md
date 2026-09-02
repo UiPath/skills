@@ -189,6 +189,16 @@ Worked example: trigger → agent → end, flow input surfaced through the trigg
 
 The agent node's `inputs.<INPUT_FIELD>` then references `$vars.trigger1.output.<INPUT_FIELD>` (shape 1 above). Upstream values always read as `$vars.<nodeId>.output.<field>`; flow-level globals read as `$vars.<global>`.
 
+## Conversational Agents
+
+A conversational (text chat) agent uses this node type with a different input shape — `isConversational: true` plus a `conversationalAgentSettings` block, instead of the agent's own schema fields. It also needs the conversation trigger and wait-for-message loop around it.
+
+All of that — the five-key settings block, the node JSON, the loop, and the ports — lives in [conversational-agent/impl.md](../conversational-agent/impl.md). Come back here only for discovery: an in-solution agent is visible only with `--local`.
+
+```bash
+uip maestro flow registry get "uipath.core.agent.<projectId>" --local --output json
+```
+
 ## Accessing Output
 
 The agent's response is available downstream:

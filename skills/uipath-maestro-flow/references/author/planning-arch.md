@@ -121,6 +121,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | --- | --- | --- |
 | `core.trigger.manual` | _(inline — no plugin)_ | Flow is started on demand by a user or API call |
 | `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Flow runs on a recurring schedule |
+| `core.trigger.conversation` | [conversational-agent](plugins/conversational-agent/planning.md) | Flow starts when a chat conversation is created, and emits its `conversationId` |
 | `core.trigger.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Flow starts when a phone call arrives on a bound number (inbound voice topology) |
 | IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
 
@@ -144,6 +145,9 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
+| `uipath.conversational.wait-for-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Pause until the user sends a chat message; returns the conversation context |
+| `uipath.conversational.send-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Write a message the flow composes itself into the chat |
+| `uipath.conversational.get-conversation-context` | [conversational-agent](plugins/conversational-agent/planning.md) | Read recent exchanges without waiting for a new message |
 | `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Dial an outbound phone call and emit its `callContext` (outbound voice topology) |
 | `uipath.conversational.voice.end-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | End the active call in a voice flow |
 
@@ -171,12 +175,13 @@ Connector nodes call external services via Integration Service. They are **not**
 
 ### Agent Nodes
 
-Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks. Two kinds exist — pick based on reuse and lifecycle:
+Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks. Pick based on where the agent lives and what it does:
 
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
 | `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
+| `uipath.agent.conversational` | [conversational-agent](plugins/conversational-agent/planning.md) | AI agent that holds a text chat, streaming its replies to the conversation. In-solution and published chat agents use `uipath.core.agent.{key}` above |
 | `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext` |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
@@ -223,6 +228,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | --- | --- | --- |
 | `core.trigger.manual` | — | `output` |
 | `core.trigger.scheduled` | — | `output` |
+| `core.trigger.conversation` | — | `output` |
 | `core.trigger.voice` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
 | `uipath.connector.event.*` (Wait for events) | `input` | `output`, `error` |
@@ -241,7 +247,11 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.subflow` | `input` | `output`, `error` |
 | `core.logic.mock` | `input` | `output` |
 | `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.agent.conversational` | `input` | `success`, `escalation`, `context`, `tool` |
 | `uipath.agent.voice` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.conversational.wait-for-message` | `input` | `output` |
+| `uipath.conversational.send-message` | `input` | `output` |
+| `uipath.conversational.get-conversation-context` | `input` | `output` |
 | `uipath.conversational.voice.create-outgoing-call` | `input` | `success`, `error` |
 | `uipath.conversational.voice.end-call` | `input` | `success`, `error` |
 | `uipath.core.agent.*` | `input` | `output`, `error` |
@@ -598,6 +608,13 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 - Low-code agent tightly coupled to this flow, bundled inside the flow project -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
 - Coded (Python) agent, or any agent that lives as a separate project (in this solution or published to Orchestrator) -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+
+### "I need to have a text conversation with a user"
+
+- A chat the flow holds turn by turn — user types, agent answers, repeat -> [conversational-agent](plugins/conversational-agent/planning.md) (`core.trigger.conversation` + `uipath.conversational.wait-for-message` + a conversational agent)
+- The agent for that chat lives inside this flow project -> `uipath.agent.conversational`, same plugin
+- The agent is a sibling project or already published -> [agent](plugins/agent/planning.md#conversational-agents) (`uipath.core.agent.{key}` with `isConversational`)
+- One question with a typed answer, no back-and-forth -> [hitl](plugins/hitl/planning.md), not a chat loop
 
 ### "I need an LLM to process rows of a CSV or summarize a document"
 

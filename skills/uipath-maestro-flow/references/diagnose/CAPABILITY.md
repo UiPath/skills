@@ -36,6 +36,8 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | I need to... | Read these |
 | --- | --- |
 | **Triage a failed flow run** | [troubleshooting-guide.md](troubleshooting-guide.md) |
+| **An in-solution chat agent shows as autonomous** | The registry builds that node from the sibling project's `agent.json` and falls back to autonomous when it cannot read it. `--log-level debug` names the reason ("Unparseable agent.json" / "No readable agent.json"); nothing else reports it. See [author/plugins/conversational-agent/impl.md](../author/plugins/conversational-agent/impl.md#resolve-the-agent) |
+| **A chat flow "hangs" or times out during debug** | Not a fault. `flow debug` hands a `core.trigger.conversation` flow off rather than running it, and a flow parked on `wait-for-message` is waiting for a user message that no headless run will send. Drive it from a chat UI — Studio Web or the UiPath Maestro VS Code extension — see [author/plugins/conversational-agent/impl.md](../author/plugins/conversational-agent/impl.md#debug--the-cli-hands-off) |
 | **Find the error message and faulting element** | [troubleshooting-guide.md — Step 2 Fetch incidents](troubleshooting-guide.md#step-2--fetch-incidents) |
 | **See data state at the time of failure** | [troubleshooting-guide.md — Step 3 Fetch runtime variable state](troubleshooting-guide.md#step-3--fetch-runtime-variable-state) |
 | **Map a faulting element ID to a `.flow` node** | [troubleshooting-guide.md — Step 4 Correlate with the flow definition](troubleshooting-guide.md#step-4--correlate-with-the-flow-definition) |

@@ -48,6 +48,11 @@ uip maestro flow registry get <node-type> --output json
 | `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/impl.md)                 |
 | `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
 | `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
+| `core.trigger.conversation`     | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.agent.conversational`   | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.conversational.wait-for-message` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.conversational.send-message` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
+| `uipath.conversational.get-conversation-context` | [conversational-agent/impl.md](plugins/conversational-agent/impl.md) |
 | `core.trigger.voice`            | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
 | `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |

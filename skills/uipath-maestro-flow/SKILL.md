@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build or edit requests, adding or listing IXP model/document-extraction nodes for a Flow. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
+description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build or edit requests, adding or listing IXP model/document-extraction nodes for a Flow. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; triggers, schedules; validate. Build conversational flows; chat, chatbot, voice, phone calls. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -20,6 +20,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 - Validate or format a Flow file locally
 - Apply Node ownership — Edit/Write for user-owned nodes, CLI for CLI-owned nodes (see Author capability)
 - Configure connector, connector-trigger, or managed HTTP nodes; scaffold inline-agent projects
+- Build a conversational flow — text chat with an inline, in-solution, or published agent, or voice over a phone call (see Author capability)
 - Add IxP / document-extraction nodes to a flow, or list IxP models available to Maestro Flow through the flow registry
 - Plan a complex flow before building
 

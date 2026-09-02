@@ -1,0 +1,126 @@
+task_id: skill-flow-conversational-chat-loop
+description: >
+  The text chat topology — core.trigger.conversation -> wait-for-message ->
+  uipath.agent.conversational, looping back to the wait node on the agent's
+  `success` port. Grades the three things that fail silently: the five-key
+  `conversationalAgentSettings` block (only Studio Web's panel derives the four
+  runtime fields from `context`, so a CLI-authored flow that stops at `context`
+  and `conversationId` ships an agent with no chat history and still validates); the
+  `success` port, since the agent has no `output` handle; and the conversation
+  trigger, which is the only thing that marks the packed flow conversational —
+  an agent on a manual trigger packs clean and is never listed. Also catches
+  the `=js:` string form, which renders as literal text rather than a binding.
+  Fully offline — init / author / validate need no login.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 80
+  # Same 900 both default.yaml and smoke.yaml set. This build is shorter than
+  # the voice topologies — three nodes and one loop edge — but the settings
+  # block is hand-authored JSON, which is where the turns go.
+  turn_timeout: 900
+
+initial_prompt: |
+  Build a UiPath Flow project named "SupportChat" that holds a text chat with a
+  user: it starts when a conversation begins, waits for the user's message, and
+  has an AI agent answer. After answering it must go back to waiting, so the
+  user can keep the conversation going.
+
+  Build the agent inside the flow project rather than as a separate project, and
+  give it a system prompt telling it to act as a friendly support assistant and
+  keep answers short.
+
+  This sandbox has no UiPath tenant and is not logged in, so:
+  - Do NOT run anything that needs a live connection, and do NOT pack, deploy,
+    or upload. In particular, do not run `uip maestro flow debug`.
+
+  The task is NOT complete until `uip maestro flow validate` passes on the
+  generated flow.
+
+# Every criterion discovers the project dynamically: `flow init` wraps it in a
+# `<Name>Solution/` the prompt does not pin, so a hardcoded `path:` would score
+# 0.0 on a valid build (#2213).
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The headline check. Validate only requires conversationId, so a node with
+  # just context + conversationId passes — nothing else here would catch an
+  # agent that ships without chat history.
+  - type: run_command
+    description: "conversationalAgentSettings carries all five keys, each a jsExpression off the same wait node's conversationContext"
+    command: "python3 $TASK_DIR/check_conversational_flow.py settings"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the conversation trigger, wait-for-message, and the conversational agent"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+      '"core.trigger.conversation"'
+      '"uipath.conversational.wait-for-message"'
+      '"uipath.agent.conversational"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Conversation trigger replaced the manual one, and the agent loops back on its success port"
+    command: "python3 $TASK_DIR/check_conversational_flow.py loop"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "agent.json is conversational — engine, isConversational, maxIterations within the node's cap, and a real system prompt"
+    command: "python3 $TASK_DIR/check_conversational_flow.py agent-json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `flow debug` on a conversation trigger uploads the solution and hands off to
+  # Studio Web. The sandbox has no tenant, so attempting it is both a rule
+  # breach and a wasted turn.
+  - type: command_not_executed
+    description: "Agent did not run flow debug, which uploads the solution and hands off to Studio Web"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold: 0) — record convention adherence without docking
+  # an agent that reaches the same graded outcome another way.
+  - type: command_executed
+    description: "Advisory: agent scaffolded the chat agent with uip agent init --inline-in-flow --conversational"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--conversational'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent rebuilt contentTokens with uip agent refresh --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
