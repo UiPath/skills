@@ -17,6 +17,7 @@ Two lookups are deliberately narrow. `uip tasks list` is tenant-wide, so a title
 from __future__ import annotations
 
 import argparse
+import atexit
 import datetime
 import json
 import re
@@ -117,6 +118,23 @@ GATE_TIMEOUT = 420
 # Long enough to outlast the slowest route. The sla route spends its first sixteen minutes
 # waiting for a deadline to pass, so the debug wait has to clear that plus the work after it.
 DEBUG_TIMEOUT = 2100
+
+
+# The running `case debug` session, so every exit path can end it. A route that fails
+# after starting debug used to leave it alive: `fail` exits through `sys.exit`, which the
+# one `finally` in `main` sits after, and the next route's `case debug` then never created
+# an instance — three routes, one instance, two 600s timeouts.
+_DEBUG_SESSION: list = []
+
+
+def _end_debug_session() -> None:
+    for proc in _DEBUG_SESSION:
+        if proc.poll() is None:
+            proc.kill()
+    _DEBUG_SESSION.clear()
+
+
+atexit.register(_end_debug_session)
 
 
 def fail(msg: str):
@@ -565,6 +583,7 @@ def main() -> int:
         ["uip", "maestro", "case", "debug", project_dir, "--output", "json"],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
+    _DEBUG_SESSION.append(debug)
 
     # Drained on a thread so a full pipe cannot block the debug process, and so its output
     # is available to quote when no instance appears.
