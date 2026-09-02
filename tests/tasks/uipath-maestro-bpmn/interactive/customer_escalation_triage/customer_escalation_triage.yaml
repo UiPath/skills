@@ -52,11 +52,6 @@ agent:
     You may invoke installed executables such as uip and python3 and use the
     Skill tool, but do not read files outside this workspace. Do not access
     sibling runs/* directories.
-  # Keep the complex authoring turn action-oriented. Without a cap, the model
-  # can spend an entire response enumerating the graph instead of writing it.
-  # Interview turns naturally use much less than this.
-  sdk_options:
-    max_thinking_tokens: 6000
 
 sandbox:
   python: {}
@@ -287,8 +282,6 @@ success_criteria:
       type: claude-code
       allowed_tools: ["mcp__coder_eval_judge__submit_verdict"]
       disallowed_tools: ["Bash", "Read", "Glob", "Grep", "Write", "Edit"]
-      sdk_options:
-        max_thinking_tokens: 500
     weight: 4.0
     pass_threshold: 1.0
 
