@@ -597,7 +597,11 @@ def main() -> int:
     # instance. Two routes waited out the full 600s timeout that way while the first,
     # quieter one succeeded.
     debug = subprocess.Popen(
-        ["uip", "maestro", "case", "debug", project_dir, "--output", "json"],
+        # `--log-level debug` because three guesses at why a second route gets no instance
+        # were all wrong, and the command says nothing at default level: the failure message
+        # quoted an empty stream every time.
+        ["uip", "maestro", "case", "debug", project_dir,
+         "--output", "json", "--log-level", "debug"],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
     _DEBUG_SESSION.append(debug)
@@ -618,7 +622,8 @@ def main() -> int:
     if not instance_id:
         debug.kill()
         fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
-             f"debug output so far:\n{''.join(debug_lines)[:1500]}")
+             f"debug output so far ({len(debug_lines)} line(s)), exit="
+             f"{debug.poll()}:\n{''.join(debug_lines)[-4000:]}")
     print(f"instance {instance_id}")
     _OWN_INSTANCE.append((instance_id, CASE_FOLDER_KEY))
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
