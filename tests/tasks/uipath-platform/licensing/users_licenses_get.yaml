@@ -4,7 +4,7 @@ description: >
   user currently leases and reports the result using the friendly-name format
   from the docs. Verifies (1) `uip platform users licenses get <user>
   --output json` shape, (2) docs page fetch for code resolution, and
-  (3) the written answer reports bundles as `<Friendly Name> (<CODE>)`.
+  (3) the written answer pairs each bundle's friendly name with its code.
   CLI auth failure is expected in this offline environment.
 tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:discover]
 
@@ -78,13 +78,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Pairing, not typography: a friendly name followed by its parenthesised
-  # code, tolerating markdown (backticks, bold, list bullets) around either
-  # half. Rejects the two failure modes that matter — bare codes with no
-  # friendly name, and friendly names with no code.
+  # Pairing, not typography: a friendly name followed by its code, separated
+  # by either "(" (inline, "Attended - Named User (ATTUNU)") or "|" (a markdown
+  # table row). Markdown around either half is tolerated. Rejects the two
+  # failure modes that matter — bare codes with no friendly name, and friendly
+  # names with no code.
   - type: run_command
-    description: "bundles.md reports at least one bundle as `<Friendly Name> (<CODE>)`"
-    command: "grep -Eq '(Attended|Unattended|Developer|Tester|Named User|Citizen|Automation)[A-Za-z .*`-]{0,40}\\( *[`*]* *[A-Z][A-Z0-9]{3,} *[`*]* *\\)' bundles.md"
+    description: "bundles.md pairs at least one bundle's friendly name with its code (inline or table)"
+    command: "grep -Eq '(Attended|Unattended|Developer|Tester|Named User|Citizen|Automation)[A-Za-z .*`-]{0,40}[(|][ `*]*[A-Z][A-Z0-9]{3,}' bundles.md"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
