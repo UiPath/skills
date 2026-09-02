@@ -16,7 +16,11 @@ Build, run, and publish UiPath API Workflows: JSON conforming to CNCF Serverless
 
 ## When to Use This Skill
 
-Use for API workflow JSON creation/editing, local `uip api-workflow run`, validation, build/packaging, publishing, operating published workflows, and activities including Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
+Use for API workflow JSON creation/editing, local runs, validation, build/packaging, publishing, operating published workflows, and activities including Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
+<!--skill-flavor:surface-lifecycle-scope:start-->
+<!--skill-flavor:surface-lifecycle-scope:end-->
+<!--skill-flavor:surface-operations-scope:start-->
+<!--skill-flavor:surface-operations-scope:end-->
 
 Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded RPA (`uipath-rpa`), coded agents (`uipath-agents`), or Coded Web Apps (`uipath-coded-apps`). API-workflow evals are only `evals/` beside `Workflow.json` using `evals/<scope>/eval-sets/`; `evals/eval-sets/` is for low-code agents and Flow evals for `uipath-maestro-flow`.
 
@@ -24,8 +28,10 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 0. **Escalate judgment-based forks before building.** If a connection is unavailable, no curated activity exists, an undocumented HTTP fallback is needed, an assumed input is missing, or structurally different workflows are plausible, perform only shared discovery, then stop with trade-offs and a recommendation. Do not build every branch. Mechanical choices need no escalation.
 1. **Know before writing.** Read an existing workflow before editing and the relevant template before creating.
-2. **Start minimal and iterate.** Add one activity at a time; validate and, after consent, run with `--no-auth --output json`; fix and repeat.
+<!--skill-flavor:runtime-validation-contract:start-->
+2. **Start minimal, iterate to correct.** Add one activity at a time. Run with `--no-auth --output json` after each addition. Fix what breaks. Repeat.
 3. **Validate before running.** `uip api-workflow validate` is autonomous/offline. `run` is runtime validation, may access HTTP or connections, and requires consent.
+<!--skill-flavor:runtime-validation-contract:end-->
 4. **Fix by category:** Structure > Expression > Activity Config > Logic.
 
 ## Critical Rules
@@ -38,7 +44,9 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 4. **Exports.** Every activity should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
 
+<!--skill-flavor:designer-literal-runtime-comparison:start-->
 5. **Literal expressions.** In Assign `set`, Response, If `when`, and variable contexts, string literals must be expressions such as `"${'literal'}"`; numbers, booleans, and references need no wrapping. Connector `bodyParameters`, `queryParameters`, and `pathParameters` instead use bare literals; references remain expressions. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) and [references/troubleshooting.md](references/troubleshooting.md#studioweb-roundtrip-pitfalls).
+<!--skill-flavor:designer-literal-runtime-comparison:end-->
 
 6. **Assign.** Each Assign sets exactly one variable. Studio Web collapses multi-key `set`; use sequential Assign activities and merge each single key through the variables export.
 
@@ -58,7 +66,9 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 14. **JavaScript.** Scripts read `$context`, `$workflow`, and `$input` as globals and must return a value. Keep standard Studio Web `run.script.arguments` scaffolding: `"${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"`; runtime ignores it.
 
+<!--skill-flavor:response-roundtrip-validation:start-->
 15. **Response.** `markJobAsFailed` is a sibling of `response`. Always use `then: "end"`; `then: "exit"` is for branches/loops. Object responses use one expression, e.g. `"${{ key: $context.variables.value }}"`, not independently interpolated fields. Single values may use `"${$context.outputs.Activity}"` or `"${'done'}"`. `${ { ... } }` and `${{ ... }}` are both valid; stay consistent. After Studio Web saves, treat disk as authoritative and rerun `uip api-workflow run --no-auth` after reapplying needed workarounds.
+<!--skill-flavor:response-roundtrip-validation:end-->
 
 16. **Connectors and HTTP are registry-generated only.** Run `uip api-workflow registry resolve` then `stub`; never guess `uiPathActivityTypeId`, `metadata.configuration`, activity kind, endpoint, `SlotKey`, or `ExportBucketKey`; use stub output verbatim.
    - A keyword `resolve` miss is not proof of no curated activity because it AND-matches tokens. Identify product/vendor with `uip is connectors list --filter`, then enumerate with `uip is activities list <connector-key>` before fallback.
@@ -68,20 +78,30 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
    - After every stub, check required fields using resource description or stub inputs, then re-stub with `--inputs` if needed.
    - Connector parameters use flat dotted keys and bare literals; do not use `${'literal'}`.
    - Do not use `UiPath.Http` with a vendor connection UUID. IntSvc results are wrapped; read `$context.outputs.<ExportBucketKey>.content.<field>`.
+<!--skill-flavor:connector-solution-registration:start-->
    - In Solutions mode, sync IntSvc bindings with `uip api-workflow bindings sync --workflow <Workflow.json>` and refresh with `uip solution resource refresh --solution-folder <path>`. Skip for HTTP, non-connectors, and standalone projects.
+<!--skill-flavor:connector-solution-registration:end-->
    - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for discovery, fields, multipart, and examples.
 
+<!--skill-flavor:runtime-invocation-io:start-->
 17. **CLI input.** Pass JSON as a string: `--input-arguments '{"key":"value"}'`; invalid JSON exits 1.
 
 18. **CLI output.** Parse with `--output json`. Success: `{ "Result": "Success", "Code": "WorkflowRun", "Data": {...} }`; failure: `{ "Result": "Failure", "Message": "...", "Instructions": "..." }` with exit 1.
+<!--skill-flavor:runtime-invocation-io:end-->
 
+<!--skill-flavor:project-creation:start-->
 19. **Project creation and publishing.** Scaffold with `uip api-workflow init <name>`; do not hand-assemble project files. Project commands include `build <projectDir>` and `pack <projectDir> <outputDir>`. Use `uip solution pack` and `uip solution publish`; there is no `uip api-workflow publish`. Solution type is `"Api"`.
 
 19a. **Init shape and registration.** Run `uip api-workflow init <name> --output json` inside the solution directory. It creates `project.uiproj`, `Workflow.json`, `entry-points.json`, and `bindings_v2.json`, and registers the project in the nearest `.uipx`. Use `--skip-solution-registration` only when explicitly requested for a standalone CLI/local project. Always create a full project, never a lone workflow file. Do not use solution project add/remove or change existing project IDs. For legacy `project.json`, initialize a fresh sibling and move content into its `Workflow.json`, or convert in place; see [references/troubleshooting.md](references/troubleshooting.md). Runtime success does not prove Studio Web compatibility; init-produced shape does.
+<!--skill-flavor:project-creation:end-->
 
+<!--skill-flavor:runtime-validation-limit:start-->
 20. **Static validation.** Run `uip api-workflow validate <Workflow.json> --output json` as the last autonomous command in every author/edit cycle. On `Result: "Failure"`, read `Instructions`, fix the activity at its JSON path, and repeat until `Data.Status: "Valid"`. Prioritize semantic-tail errors over duplicate `oneOf` noise. Validation catches malformed JSON, unknown types, required-field errors, bad evaluate settings, duplicate/empty variables, and empty task lists; not broken connections, wrong resource IDs, runtime expression errors, unwrapped literals, or multi-key Assign sets.
+<!--skill-flavor:runtime-validation-limit:end-->
 
+<!--skill-flavor:runtime-execution-consent:start-->
 21. **Runtime consent.** Never run `uip api-workflow run` without explicit consent. After validation, ask whether to skip, run `--no-auth`, or run with auth. Recommend `--no-auth` for control-flow-only workflows and HTTP with `ImplicitConnection`; recommend authenticated execution only for IntSvc after confirming real side effects. Authenticated calls may send emails, create tickets, or upload files. Loop-mode consent authorizes eval rows with `--no-auth`, but authenticated connector runs still require explicit consent.
+<!--skill-flavor:runtime-execution-consent:end-->
 
 22. **TDD gate.** Check `<project>/evals/` on every create/edit. Without it, do not offer tests, create the folder, or mention loop mode. With it, stop before modifying `Workflow.json` or evals and ask whether existing cases change or new cases are added, and whether to run/retry until all pass or author once. If rows exist, report their count and summarize each; if empty, propose 2–3 cases. After answers, declare `input.schema` and `output.schema`, update evals, author, then run rows only in loop mode or hand over in author-once mode. Behavior changes require identifying affected rows and asking whether expectations should change. A request not to ask keeps existing tests and does not authorize runtime. See [references/testing-and-evals.md](references/testing-and-evals.md) §3.
 
@@ -111,15 +131,21 @@ Copy minimal shapes from references. Create from the template and place activiti
 
 ### Phase 3: Validate, Then Run With Consent
 
+<!--skill-flavor:validation-run-lifecycle:start-->
 ```bash
 uip api-workflow validate ./<project>/Workflow.json --output json
 uip api-workflow run ./<project>/Workflow.json [--no-auth] --output json
 ```
 
-Validate autonomously and fix until valid; then ask before running. If skipped, provide the exact command. Triage failures as Structure > Expression > Activity Config > Logic; see [references/troubleshooting.md](references/troubleshooting.md).
+Validate autonomously and fix until valid; then ask before running. If skipped, provide the exact command.
+<!--skill-flavor:validation-run-lifecycle:end-->
+<!--skill-flavor:runtime-troubleshooting:start-->
+Triage failures as Structure > Expression > Activity Config > Logic; see [references/troubleshooting.md](references/troubleshooting.md).
+<!--skill-flavor:runtime-troubleshooting:end-->
 
 ### Phase 4: Package, Publish, and Operate
 
+<!--skill-flavor:deployment-lifecycle:start-->
 Confirm init-produced shape, then:
 
 ```bash
@@ -128,7 +154,9 @@ uip solution publish <outputDir>/<package>.zip --tenant <TENANT_NAME> --output j
 ```
 
 Publishing requires `uip login`. The packager detects `Type: "Api"`, validates/copies workflows, generates deployment metadata, and produces a `.nupkg` inside a `.zip`. After deployment, operate through Orchestrator/API triggers, jobs, connections, logs, and traces; local `uip api-workflow` verbs no longer operate the published workflow. See [references/operating-published-workflows.md](references/operating-published-workflows.md), delegating depth to `uipath-platform` or `uipath-troubleshoot` when appropriate.
+<!--skill-flavor:deployment-lifecycle:end-->
 
+<!--skill-flavor:quick-start-create:start-->
 ## Quick Start (CREATE from scratch)
 
 ```bash
@@ -143,6 +171,7 @@ uip solution pack . ./build --name <PackageName> --version 1.0.0 --output json
 uip login
 uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 ```
+<!--skill-flavor:quick-start-create:end-->
 
 ## Reference Navigation
 
@@ -152,12 +181,18 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | [references/http-retry-config.md](references/http-retry-config.md) | Workflow-level HTTP retry/backoff |
 | [references/task-types.md](references/task-types.md) | Activity shapes, required fields, exports, mistakes |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
-| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Registry resolve/stub, connections, fields, multipart, examples |
+| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Expressions, context, inputs, scripts, exports, strict mode |
+<!--skill-flavor:cli-reference-navigation:start-->
 | [references/cli-reference.md](references/cli-reference.md) | API workflow, solution, login, build, pack, validate, publish |
+<!--skill-flavor:cli-reference-navigation:end-->
+<!--skill-flavor:published-reference-navigation:start-->
 | [references/operating-published-workflows.md](references/operating-published-workflows.md) | Published triggers, connections, jobs, logs, traces |
+<!--skill-flavor:published-reference-navigation:end-->
 | [references/troubleshooting.md](references/troubleshooting.md) | Runtime, structure, expression, connector, response, packaging, publish failures |
 | [references/testing-and-evals.md](references/testing-and-evals.md) | Eval contract, scoring, raw outputs, test-until-green protocol |
+<!--skill-flavor:reference-navigation-extra:start-->
+<!--skill-flavor:reference-navigation-extra:end-->
 
 ## Templates
 
@@ -165,9 +200,13 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - [assets/templates/conditional-workflow-example.json](assets/templates/conditional-workflow-example.json) — conditional branching/error handling.
 - [assets/templates/loop-aggregation-example.json](assets/templates/loop-aggregation-example.json) — loop aggregation.
 - [assets/templates/nested-control-flow-example.json](assets/templates/nested-control-flow-example.json) — deeply nested control flow.
+<!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
+<!--skill-flavor:template-execution-proof:end-->
 - [assets/templates/vendor-curated-call-example.json](assets/templates/vendor-curated-call-example.json) — IntSvc activity; replace its connection sentinel before writing.
+<!--skill-flavor:solution-resource-template:start-->
 - [assets/templates/solution-connection-resource-template.json](assets/templates/solution-connection-resource-template.json) — Solutions-mode IntSvc connection resource.
+<!--skill-flavor:solution-resource-template:end-->
 
 ## Anti-patterns
 
@@ -175,8 +214,12 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - Do not wrap connector parameter literals as `${'literal'}`.
 - Do not ship connection or URL replacement sentinels.
 - Do not read later workflow inputs from `$input.<name>`.
+<!--skill-flavor:runtime-execution-antipattern:start-->
 - Do not run autonomously or authenticated vendor calls without consent.
+<!--skill-flavor:runtime-execution-antipattern:end-->
+<!--skill-flavor:project-creation-antipatterns:start-->
 - Do not hand-assemble legacy projects, emit a lone `Workflow.json`, or use solution project add/remove.
+<!--skill-flavor:project-creation-antipatterns:end-->
 - Do not treat runtime, pack, or publish success as Studio Web compatibility proof.
 - Do not copy expected eval outputs from PascalCased CLI display data; derive keys from `output.schema` and Response, using raw output for expectations.
 - Do not author first when `evals/` exists; apply rule 22. Do not create or offer evals when absent. Do not change logic merely to satisfy stale expectations.
@@ -185,6 +228,8 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 
 If a command fails with the same error twice, investigate instead of retrying. Allow at most three attempts per operation, then stop and report what was tried.
 
+<!--skill-flavor:authentication-remediation:start-->
 - Authentication/organization errors: ask the user to run `uip login`.
+<!--skill-flavor:authentication-remediation:end-->
 - File-not-found errors: verify paths with `ls`.
 - Repeated structural errors: reread the workflow and relevant reference.

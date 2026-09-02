@@ -73,7 +73,7 @@ Define variables at `document.metadata.variables.schema.document` using JSON Sch
 
 ## Inputs and Outputs
 
-Declare workflow I/O at the root with JSON Schema. Inputs come from `--input-arguments` JSON or the calling workflow. Read them as `$workflow.input.<name>` from any task. `$input.<name>` works only on the first task. Outputs are read from the final `Response` task's `response` value.
+Declare workflow I/O at the root with JSON Schema. Outputs are read from the final `Response` task's `response` value.
 
 <!--skill-flavor:runtime-input-output:start-->
 Inputs come from `--input-arguments` JSON or the calling workflow. Read them as `$workflow.input.<name>` from any task. (Reading as `$input.<name>` only works on the very first task — see [expressions-and-context.md](expressions-and-context.md).)

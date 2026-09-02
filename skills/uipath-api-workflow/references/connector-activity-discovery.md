@@ -60,7 +60,7 @@ uip is connections list --output json
 uip is connections list --all-folders --output json
 ```
 
-Search both results for the required `ConnectorKey`, try another UUID, and ping it. The unfiltered list can expose stale/orphaned records; `--all-folders` is required before concluding that no connection exists. It cannot be combined with `--folder` or `--folder-key`. Only after all three listings yield no UUID that pings successfully should you stop and tell the user to re-authenticate with `uip is connections edit <connection-uuid>` or create a connection in StudioWeb.
+Search both results for the required `ConnectorKey`, try another UUID, and ping it. The unfiltered list can expose stale/orphaned records; `--all-folders` is required before concluding that no connection exists. It cannot be combined with `--folder` or `--folder-key`. Only after all three listings yield no UUID that pings successfully should you stop — see the connection-remediation note below.
 
 <!--skill-flavor:connection-remediation:start-->
 Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
@@ -143,6 +143,8 @@ uip solution resources refresh --solution-folder Solution --output json
 
 If offline hand-authoring is unavoidable, write `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`, starting from [assets/templates/solution-connection-resource-template.json](../assets/templates/solution-connection-resource-template.json). Use the exact connection `Name`, `ConnectorKey`, `ConnectorName`, connector version from `essentialConfiguration.connectorVersion` (or `"1.0.0"` if unparseable), pinged UUID as `resource.key`, and the existing resource folder's `folders[0].fullyQualifiedName` (default `"solution_folder"`). The key must equal both workflow connection IDs and the binding key. Write one file per unique UUID. Do not hand-author `bindings_v2.json` or debug overwrites when the CLI commands are available.
 <!--skill-flavor:solution-metadata:end-->
+<!--skill-flavor:worked-example-solution-metadata:start-->
+<!--skill-flavor:worked-example-solution-metadata:end-->
 
 ## Http versus IntSvc
 
@@ -171,13 +173,7 @@ uip is resources describe <connector-key> <object-name> --connection-id <uuid> -
 uip api-workflow registry stub <activity-type-id> --object-name <object-name> --connection-id <uuid> --output json
 ```
 
-Generic activities require `--object-name` unless the definition pins one, and require IS metadata to resolve verb and path; unlike Curated activities they hard-fail when metadata is unavailable or the object lacks the operation. Operation casing is normalized to lowercase in `metadata.configuration`. Prefer Curated activities because Generic operations are auto-generated and less thoroughly verified. Inspect describe metadata for path parameter formats; after a 404 run:
-
-```bash
-uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>
-```
-
-If that also 404s, use a Curated activity or Http kind.
+Generic activities require `--object-name` unless the definition pins one, and require IS metadata to resolve verb and path; unlike Curated activities they hard-fail when metadata is unavailable or the object lacks the operation. Operation casing is normalized to lowercase in `metadata.configuration`. Prefer Curated activities because Generic operations are auto-generated and less thoroughly verified. Inspect describe metadata for path-parameter formats; on a 404, cross-check with the path-parameter diagnostic below, then fall back to a Curated activity or Http kind.
 
 <!--skill-flavor:export-bucket-stability:start-->
 - **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
@@ -186,6 +182,7 @@ If that also 404s, use a Curated activity or Http kind.
 - **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
 <!--skill-flavor:generic-resource-runtime-diagnostic:end-->
 
+<!--skill-flavor:solution-resource-fields:start-->
 ## Solution resources as activity fields
 
 For fields referring to a process, queue, asset, or other Solution resource, use the resource **name** in runtime parameters and the resource **key** in picker metadata:
@@ -199,10 +196,13 @@ uip api-workflow registry stub <activity-type-id> \
 ```
 
 Read the name and key from the corresponding Solution resource file. `Data.SolutionResourceFields` identifies these fields. Do not put the key in `--inputs` or the name in `--resource-key`. Deployment bindings are produced by `bindings sync`; picker display uses `savedResourceSelections`; the referenced resource must be deployed and visible to the connection.
+<!--skill-flavor:solution-resource-fields:end-->
 
 ## Response shape and field rules
 
 Both Http and IntSvc outputs are envelopes: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`. Read payloads under `.content`; IntSvc list payloads may be arrays directly, not `.content.value[]`. Inspect `optionalConfiguration.fieldsContainer.outputJsonSchema`: `type: "object"` means a single item; `type: "array"` means a list. Local CLI may return `content` as a JSON string while cloud returns a parsed value; normalize defensively in scripts. Use optional chaining and log the full output once if the expected shape is absent.
+<!--skill-flavor:runtime-content-normalization-comment:start-->
+<!--skill-flavor:runtime-content-normalization-comment:end-->
 
 ### Rule (a) — flat dotted keys
 
@@ -252,7 +252,6 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 <!--skill-flavor:required-field-antipattern:start-->
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.
 <!--skill-flavor:required-field-antipattern:end-->
-- Do not skip Solution catalogue synchronization in Solutions-mode projects. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resources refresh --solution-folder <path>`; see [Step 5](#step-5-solutions-mode-intsvc-connection-synchronization).
 
 <!--skill-flavor:solution-metadata-antipattern:start-->
 - **Do NOT skip the Solution catalogue sync in Solutions-mode projects.** Two files MUST exist: the catalogue resource (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without both, the properties panel flags the activity with "to debug this resource, select a connection for it from the resource definition page" and clicking the activity nulls `with.connectionId`. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resources refresh --solution-folder <path>` to write both. See [Step 5](#step-5-solutions-mode-intsvc-connection-synchronization).
