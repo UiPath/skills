@@ -21,12 +21,16 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir.
 
+> **Never run `flow debug` in the background or under a short tool timeout.** It takes 1 to 5 minutes and prints its JSON only when it exits. Run it in the foreground and wait for the process to end. If a tool cuts the wait short and reports "still running", poll that same process until it exits — do not start a second run, do not read the output file yet. An empty output file means the run is still going, not that it returned no result.
+
 Pass input arguments when the flow has input parameters:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
+
+Build those inputs from real records, never from invented values — an invented key matches no record, every lookup returns `[]`, and the run faults on empty data. Read the entity `Id` from `uip df entities list --output json`, then a live record from `uip df records list <ENTITY_ID> --output json`.
 
 Bind local files to file-typed input variables with `--attachment <variableId>=<localPath>` (repeatable). `<variableId>` (left of `=`) must match the `id` of a `variables.globals[]` entry with `direction:"in"` and `type:"file"`:
 
@@ -56,13 +60,13 @@ If either value is missing from the response, emit the label with `<not returned
 
 ### When the run faults
 
-`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there, never by re-running. Apply this filter on the debug call itself so the cause prints alongside the report fields:
+`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there, never by re-running. Redirect stdout to a file and extract the cause from the file; on a faulted run the CLI ignores `--output-filter` and prints the full 240 KB response, so the filter is not a way to shrink it:
 
 ```bash
-uip maestro flow debug <PROJECT_DIR> --output json --output-filter '{studioWebUrl: studioWebUrl, instanceId: instanceId, jobKey: jobKey, finalStatus: finalStatus, incidents: incidents[].{elementId: elementId, errorCode: errorCode, fault: dependentFaultCode, details: errorDetails}, faults: variables.elements[?outputs.Error].{elementId: elementId, code: outputs.Error.code, detail: outputs.Error.detail}}'
+uip maestro flow debug <PROJECT_DIR> --output json > debug.json
 ```
 
-Fault-code lookup and the file-based extraction path: [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
+Extraction commands and fault-code lookup: [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
 
 See [shared/cli-commands.md — uip maestro flow debug](../shared/cli-commands.md#uip-maestro-flow-debug) for additional options.
 

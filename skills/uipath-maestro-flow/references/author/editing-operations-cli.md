@@ -104,11 +104,16 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
 
 The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/impl.md](plugins/connector/impl.md), [connector-trigger/impl.md](plugins/connector-trigger/impl.md), and [http/impl.md](plugins/http/impl.md) for the exact fields.
 
-**Shell quoting tip:** For complex `--detail` JSON, write it to a temp file:
+**Shell quoting — write the JSON to a file first.** Never hand-escape quotes inside the shell command. `--detail` takes inline JSON only; there is no file flag. Write the payload with a quoted heredoc, then substitute the file:
 
 ```bash
-uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json
+cat > detail.json <<'EOF'
+{"connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>", "method": "POST", "endpoint": "/Account"}
+EOF
+uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat detail.json)" --output json
 ```
+
+`<<'EOF'` (quoted delimiter) stops the shell from touching the body, so `=js:` expressions, backticks, `${...}`, and nested quotes reach the CLI byte for byte. Nesting an `=js:` expression inside `--detail '<json>'` instead doubles its backslashes; the saved expression then faults at runtime with `[400300] Error evaluating expression … Invalid or unexpected token`, and a stray quote aborts the command with `zsh: parse error`.
 
 ### Configure a managed HTTP node
 

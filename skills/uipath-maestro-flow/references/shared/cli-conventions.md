@@ -78,6 +78,8 @@ uip … registry search slack --output json --output-filter "[?contains(NodeType
 uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
 ```
 
+> **Exception — a faulted `flow debug`.** The CLI ignores `--output-filter` on that one response and prints the whole envelope. Redirect stdout to a file and extract from the file instead — see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
+
 Treat `Data: []` with exit 0 as a valid but mismatched expression, not proof of absence. Only invalid syntax or type errors fail with exit 3.
 
 Use `python3 -c` or `jq` only when JMESPath cannot perform a multi-step join across CLI calls, JSON-to-CSV or JSON-to-env-var conversion, or conditional output based on multiple fields. Verify the shape first:

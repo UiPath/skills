@@ -27,23 +27,15 @@ Two fields hold the cause:
 | Fault code + faulting element | `Data.incidents[].dependentFaultCode`, `.elementId`, `.errorCode`, `.errorDetails` |
 | Fault detail (the real message) | `Data.variables.elements[].outputs.Error.detail`, `.code` |
 
-### For a fresh run — project them with `--output-filter`
-
-`--output-filter` applies JMESPath to the `Data` envelope before printing (write expressions starting at `Data`, no `Data.` prefix). It collapses the response to the reporting fields plus the cause, so the fault never scrolls past you:
-
-```bash
-uip maestro flow debug <PROJECT_DIR> --output json --output-filter '{studioWebUrl: studioWebUrl, instanceId: instanceId, jobKey: jobKey, finalStatus: finalStatus, incidents: incidents[].{elementId: elementId, errorCode: errorCode, fault: dependentFaultCode, details: errorDetails}, faults: variables.elements[?outputs.Error].{elementId: elementId, code: outputs.Error.code, detail: outputs.Error.detail}}'
-```
-
-`studioWebUrl` and `instanceId` are kept because [operate/run.md — Reporting debug runs](../operate/run.md#reporting-debug-runs-to-the-user) requires both in the summary.
-
-### For a response already saved to a file
+### Redirect stdout to a file, then extract
 
 Logs go to stderr and JSON to stdout, so redirect stdout to keep the full response:
 
 ```bash
 uip maestro flow debug <PROJECT_DIR> --output json > debug.json
 ```
+
+Wait for the process to exit before reading the file. `flow debug` prints its JSON only at the end of a 1–5 minute run, so an empty file means the run is still going — see [operate/run.md — Debug](../operate/run.md#debug--controlled-end-to-end-run).
 
 Extract both fields:
 
@@ -66,6 +58,8 @@ for element in data["variables"]["elements"]:
         print(element["elementId"], error["code"], error["detail"])
 EOF
 ```
+
+Do not rely on `--output-filter` to shrink this response: the CLI applies it only when the run succeeds. On a faulted run it prints the full envelope, 200 KB and more.
 
 ### Match the fault code
 
