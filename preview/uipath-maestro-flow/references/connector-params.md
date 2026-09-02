@@ -393,7 +393,12 @@ both the connection id AND its folder key into `bindings.json`. So one command
 covers the lookup, the connection binding and the folder binding. Pass
 `--connection <name>` only when several connections match the same connector;
 it reports the candidates rather than guessing, because connections for one
-connector are not interchangeable.
+connector are not interchangeable. When the candidates share a name, pick one
+by the `--connection-id <id>` each candidate line prints; `bindings.json` is
+written on that route too. The entries are named `<connector's last segment>`
+(`slack`) and `shared` unless you pass `--bind-connection` / `--bind-folder`;
+`connection:` and `folder:` in source must use those names, and `compile` warns
+`CONNECTION_STUB` when they do not resolve to a tenant id.
 
 `check` names the exact command when a lookup is unresolved, and warns when a
 lookup field is given a literal id. It also speaks up when a lookup field is
