@@ -550,6 +550,31 @@ def drive_sla(instance_id: str, watermark: int, who: str, done: set, answered: s
         pass
 
 
+def clear_solution_id(solution_dir: str) -> None:
+    """Drop the SolutionId a previous debug session wrote into the `.uipx`.
+
+    `case debug` imports the solution on its first run and writes the new id back. Every
+    later run reads that id and calls Overwrite instead, and Overwrite answers this
+    solution with 400 code 1001. The CLI falls back to a fresh import only on 404, so
+    routes after the first one died at upload and reported `no case instance appeared`.
+    Clearing the id puts every route on the import path the first one took.
+    """
+    manifest = next(iter(sorted(Path(solution_dir).glob("*.uipx"))), None)
+    if manifest is None:
+        return
+    try:
+        doc = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"could not read {manifest} to clear its SolutionId: {exc}")
+        return
+    stale = doc.pop("SolutionId", None)
+    if not stale:
+        return
+    # 4-space indent matches what the CLI itself writes back, so the file does not churn.
+    manifest.write_text(json.dumps(doc, indent=4), encoding="utf-8")
+    print(f"cleared SolutionId {stale} from {manifest.name}; debug will import a fresh copy")
+
+
 def main() -> int:
     global CASE_FOLDER_KEY
     parser = argparse.ArgumentParser()
@@ -578,6 +603,7 @@ def main() -> int:
 
     project_dir = find_project_dir()
     solution_dir = find_solution_dir()
+    clear_solution_id(solution_dir)
 
     refresh = subprocess.run(
         ["uip", "solution", "resources", "refresh", "--solution-folder", solution_dir, "--output", "json"],
