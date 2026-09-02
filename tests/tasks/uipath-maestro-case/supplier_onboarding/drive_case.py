@@ -313,7 +313,13 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
     folder_id = str(task.get("FolderId") or "")
     if not folder_id:
         fail(f"task {task_id} carries no FolderId; cannot complete it")
-    run(["uip", "tasks", "assign", task_id, "--user", who, "--output", "json"])
+    # Checked, because an unchecked assign surfaces two steps later as `tasks complete`
+    # reporting "This action is no longer assigned to you", which names the symptom and
+    # hides whether the assign was refused or the task was reassigned after it.
+    assigned = envelope(["uip", "tasks", "assign", task_id, "--user", who, "--output", "json"])
+    if assigned.get("Result") != "Success":
+        fail(f"assigning task {task_id} to {who} failed: "
+             f"{assigned.get('Message') or assigned.get('Code') or assigned}")
     reply = envelope([
         "uip", "tasks", "complete", task_id,
         "--type", "AppTask",
