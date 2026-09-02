@@ -47,6 +47,12 @@ defaults:
       model: gpt-5.6-luna
       params:
         api_version: "2024-05-01"
+        # coder_eval's litellm judge has no retry of its own (judge_litellm.py
+        # calls acompletion bare; only judge_bedrock.py wraps a RetryConfig), so
+        # a transient provider 5xx/timeout ERRORs the task and discards every
+        # criterion already scored. `params` passes through to acompletion
+        # verbatim, so retry is configured here. Drop once upstream retries.
+        num_retries: 3
       env_params:
         api_base: CODEX_BASE_URL
         api_key: CODEX_API_KEY

@@ -249,10 +249,13 @@ checker_context:
     model: azure/gpt-5.6-luna
     params:
       api_version: "2024-05-01"
+      num_retries: 3
     env_params:
       api_base: CODEX_BASE_URL
       api_key: CODEX_API_KEY
 ```
+
+`num_retries` is mandatory, not tuning. coder_eval's litellm judge has no retry of its own — `judge_litellm.py` calls `litellm.acompletion` bare, while only `judge_bedrock.py` wraps a `RetryConfig` — so a transient provider `InternalServerError` or `Timeout` raises `JudgeInfrastructureError` (CE039) and ERRORs the whole task. Worse, `checker.py`'s `check_all_async` accumulates results in a local list and lets that exception propagate, so every criterion already scored is discarded too: nightly `2026-08-31_04-15-47` lost 20 tasks this way, one of them a 21-criterion e2e whose 18 passing deterministic checks were thrown away by a single 500 on the judge at position 19. `params` is spliced into the `acompletion` call verbatim, so retry is configurable here; `num_retries` is a litellm-level kwarg and is never forwarded to the provider, so `drop_params` does not strip it. Remove once the litellm judge retries upstream.
 
 `route: litellm` is `llm_judge`-only and safe as an experiment default even when `simulation.enabled: true`: the simulator resolves its own route independently of `checker_context.api_route` (coder_eval `_resolve_routes`/`simulator_route`), so it's unaffected by this override. It is **not** safe combined with an enabled `agent_judge` criterion — coder_eval still rejects that combination at setup, since `agent_judge` shares `eval_route` with `llm_judge`. This repo has no `agent_judge` criteria today; if one is added, override `checker_context.api_route` back to `bedrock`/`direct` on that specific task.
 
