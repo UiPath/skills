@@ -29,7 +29,11 @@ sys.path.insert(0, str(HERE.parent))
 from _shared.case_check import find_project_dir, find_solution_dir  # noqa: E402
 
 # The folder that owns the case instance; the stage-selection message is addressed to it.
-CASE_FOLDER_KEY = "30b98ad6-522a-4630-85d5-5eb625387f2b"
+# Read off the instance rather than pinned: the case is published into whatever folder the
+# run's own solution lands in, and a pinned key sends every folder-scoped call to a folder
+# that may not exist — which the CLI answers with a 404 the callers cannot tell from an
+# empty result.
+CASE_FOLDER_KEY = ""
 
 WITHDRAWN = "Application withdrawn"
 CHECKING = "Checking the application"
@@ -190,7 +194,11 @@ def newest_instance(after_iso: str):
     rows = run_list(["uip", "maestro", "case", "instance", "list", "--output", "json"])
     rows = [r for r in rows if r.get("InstanceId") and (r.get("CreatedTimeUtc") or "") >= after_iso]
     rows.sort(key=lambda r: r.get("CreatedTimeUtc") or "", reverse=True)
-    return rows[0]["InstanceId"] if rows else None
+    if not rows:
+        return None
+    global CASE_FOLDER_KEY
+    CASE_FOLDER_KEY = rows[0].get("FolderKey") or ""
+    return rows[0]["InstanceId"]
 
 
 def pending_task(watermark: int, title: str, done: set = frozenset(), instance_id: str = ""):
@@ -546,7 +554,8 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             runs = []
     runs = [r for r in runs if r.get("route") != args.route]
-    runs.append({"route": args.route, "instance_id": instance_id})
+    runs.append({"route": args.route, "instance_id": instance_id,
+                 "folder_key": CASE_FOLDER_KEY})
     # `runs` accumulates across routes so the outcome probe grades every one of them; the flat
     # pair stays for the child-case cleanup, which only needs the last instance to find its package.
     state_path.write_text(

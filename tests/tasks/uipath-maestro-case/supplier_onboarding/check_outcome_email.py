@@ -37,7 +37,10 @@ from pathlib import Path
 HERE = Path(__file__).parent
 RUN_STATE = Path(".supplier-onboarding-run.json")
 
-CASE_FOLDER_KEY = "30b98ad6-522a-4630-85d5-5eb625387f2b"
+# No pinned folder: the case lands in whatever folder the run's own solution creates, and
+# drive_case.py records the one its instance reported. A pinned key aims every lookup at a
+# folder that may not exist, and the CLI answers that with a 404 — which the old reader
+# could not tell from an instance that genuinely carries no id.
 OUTLOOK_CONNECTOR = "uipath-microsoft-outlook365"
 OUTLOOK_CONNECTION = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
 # `parentFolderId` is required: without it the query returns nothing at all.
@@ -74,12 +77,22 @@ def uip(args: list[str], timeout: int = 120) -> dict:
         return {"Result": "Failure", "Message": proc.stdout[:400]}
 
 
-def external_id(instance_id: str) -> str:
-    data = uip(["maestro", "case", "instance", "get", instance_id,
-                "-f", CASE_FOLDER_KEY]).get("Data") or {}
-    # Empty rather than fatal: a route that should send nothing has nothing to identify, so the
-    # caller decides whether a missing id is a finding.
-    return str(data.get("ExternalId") or "")
+def external_id(instance_id: str, folder_key: str) -> tuple[str, str]:
+    """The instance's ExternalId, and the reason it is absent when it is.
+
+    Returns `(id, "")` on success and `("", reason)` otherwise. The two cases are reported
+    separately because they call for opposite responses: a lookup that failed says nothing
+    about the build, while an instance that genuinely carries no id means its messages cannot
+    be attributed. The engine mints one for every debug instance
+    (`ExternalIdGenerator.Make8DigitCode`), so in practice the empty case is a lookup fault.
+    """
+    if not folder_key:
+        return "", "drive_case recorded no folder for it"
+    reply = uip(["maestro", "case", "instance", "get", instance_id, "-f", folder_key])
+    if reply.get("Result") != "Success":
+        return "", f"the lookup failed: {str(reply.get('Message'))[:120]}"
+    token = str((reply.get("Data") or {}).get("ExternalId") or "")
+    return (token, "") if token else ("", "the instance reports no ExternalId")
 
 
 def sent_messages() -> list:
@@ -132,14 +145,14 @@ def main() -> int:
     for entry in sorted(runs, key=lambda r: r.get("route") or ""):
         route = entry["route"]
         instance_id = entry.get("instance_id") or ""
-        token = external_id(instance_id)
+        token, reason = external_id(instance_id, entry.get("folder_key") or "")
         if token:
             tokens[route] = token
             print(f"route {route!r}: expecting {EXPECTED_SENDS[route]} buyer notification(s) "
                   f"carrying ExternalId {token}")
             continue
-        message = (f"instance {instance_id} (route {route!r}) reports no ExternalId; nothing "
-                   "identifies its messages")
+        message = (f"instance {instance_id} (route {route!r}) has no usable ExternalId — "
+                   f"{reason}; nothing identifies its messages")
         if EXPECTED_SENDS[route]:
             problems.append(message)
         else:
