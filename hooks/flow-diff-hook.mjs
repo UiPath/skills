@@ -33,8 +33,8 @@ function readStdin() {
   });
 }
 
-/** Walk up from `startDir` looking for `.uipath/flow-agent-hook.json`; return the socket path. */
-function discoverSocket(startDir) {
+/** Walk up from `startDir` looking for `.uipath/flow-agent-hook.json`; return `{socket, token}`. */
+function discoverEndpoint(startDir) {
   let dir = startDir;
   for (let i = 0; i < 40 && dir; i++) {
     const candidate = path.join(dir, '.uipath', 'flow-agent-hook.json');
@@ -42,14 +42,16 @@ function discoverSocket(startDir) {
       if (fs.existsSync(candidate)) {
         const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8'));
         if (parsed && typeof parsed.socket === 'string') {
-          return parsed.socket;
+          return { socket: parsed.socket, token: typeof parsed.token === 'string' ? parsed.token : undefined };
         }
       }
     } catch {
       /* ignore and keep walking */
     }
     const parent = path.dirname(dir);
-    if (parent === dir) break;
+    if (parent === dir) {
+      break;
+    }
     dir = parent;
   }
   return null;
@@ -114,9 +116,9 @@ async function main() {
   const cwd = payload.cwd || process.cwd();
 
   if (event === 'Stop') {
-    const socketPath = discoverSocket(cwd);
-    if (socketPath) {
-      await sendRequest(socketPath, { event: 'Stop', sessionId: payload.session_id });
+    const endpoint = discoverEndpoint(cwd);
+    if (endpoint) {
+      await sendRequest(endpoint.socket, { event: 'Stop', sessionId: payload.session_id, token: endpoint.token });
     }
     process.exit(0);
   }
@@ -131,18 +133,19 @@ async function main() {
     process.exit(0); // Not a flow edit — let it proceed normally.
   }
 
-  const socketPath = discoverSocket(path.dirname(filePath)) || discoverSocket(cwd);
-  if (!socketPath) {
+  const endpoint = discoverEndpoint(path.dirname(filePath)) || discoverEndpoint(cwd);
+  if (!endpoint) {
     process.exit(0); // Extension not listening — defer to Claude's normal flow.
   }
 
-  const response = await sendRequest(socketPath, {
+  const response = await sendRequest(endpoint.socket, {
     event: 'PreToolUse',
     tool: payload.tool_name,
     filePath,
     permissionMode: payload.permission_mode,
     toolInput,
     sessionId: payload.session_id,
+    token: endpoint.token,
   });
 
   const decision = response && response.decision;
