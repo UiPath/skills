@@ -12,9 +12,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Delete the IXP project my_invoices-f1afa9ef-ixp.
@@ -26,10 +28,14 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent deleted the project via `projects delete … -y/--yes`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--yes\b|-y\b)).*)[^\r\n]*$
+    verb: "ixp projects delete"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      # Quoted: bare `yes` is a YAML 1.1 boolean. `present` also keeps the switch
+      # from consuming the project name that follows it in `delete -y <project>`.
+      "yes": {present: true, aliases: ["y"]}
     weight: 3.0
     pass_threshold: 1.0

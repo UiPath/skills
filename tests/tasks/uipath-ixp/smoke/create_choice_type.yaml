@@ -11,9 +11,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, create a new Field Type named
@@ -30,10 +32,23 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  # The three display values are asserted against --choices, not the whole line:
+  # the prompt's own instructions text contains "not present", "True" and "False",
+  # so the regex this replaced was satisfied by --instructions alone.
+  - type: cli_called
     description: "Agent created the choice type via `data-types add … --kind choice … --choices`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+data-types\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*clause presence)(?=.*--kind\s+choice)(?=.*--choices)(?=.*[Tt]rue)(?=.*[Ff]alse)(?=.*[Nn]ot[ _-]?[Pp]resent)(?=.*--instructions).*)[^\r\n]*$
+    verb: "ixp data-types add"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      name: "clause presence"
+      kind: "choice"
+      choices:
+        matches_regex: '(?=[\s\S]*[Tt]rue)(?=[\s\S]*[Ff]alse)(?=[\s\S]*[Nn]ot[ _-]?[Pp]resent)'
+      instructions: {present: true}
+    # `present` deliberately does not make a flag value-bearing, so --instructions
+    # and the kind-choice-mandatory --input-value are declared here to keep their
+    # values out of the positionals.
+    value_flags: ["instructions", "input-value", "output"]
     weight: 3.0
     pass_threshold: 1.0
