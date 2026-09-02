@@ -10,7 +10,7 @@ description: >
   harness runs uip maestro case debug to prove the case executes to
   finalStatus=Completed across the Submission -> Manager Approval -> Finance
   Approval -> Payment -> Approved happy path, binding real deployed resources
-  (WeatherAPI, CountLetters, ProcurementProcess, ProjectEuler, CaseTest).
+  (WeatherAPI, CountLetters, ProcurementProcess, HelpDeskLookup, CaseTest).
 tags:
   - uipath-maestro-case
   - e2e
@@ -57,8 +57,8 @@ initial_prompt: |
     with "Node already added to the graph" in this eval environment.
   - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
     deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
-    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `ProjectEuler` →
-    `RPA Workflow`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
+    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `HelpDeskLookup`
+    → `HelpDeskLookup`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
     alias for a deployed name. The alias on the left is NOT a resource key: keep
     every `resourceKey` — and the matching `bindings_v2.json` `key` — as the
     composite `<folderPath>.<deployed name>` (e.g.
