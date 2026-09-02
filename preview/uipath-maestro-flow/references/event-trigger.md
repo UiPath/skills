@@ -59,6 +59,58 @@ If a known tenant event is absent after refreshing the registry/cache, report a
 cache-generation gap instead of inventing a node type, binding, or field. Do
 not patch a prebuilt sample/cache entry to make the missing event appear.
 
+## Generic events: name the object
+
+Most connectors expose their record events generically — `record-created`,
+`record-updated` (Data Fabric, Salesforce, ServiceNow, Jira, Dynamics, …).
+One node type covers every object of the connection, so the subscription must
+say which one with `object`. It is not an event parameter: these operations
+take none, so `where` stays empty and `check` refuses a subscription that
+omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
+
+```ts
+import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataservice.ts';
+
+// Start when a ContractRegistry record is created with dueDate before 2026-08-04.
+.trigger(onEvent(RecordCreated, {
+  object: 'ContractRegistry',
+  filters: [{ field: 'dueDate', lessThan: '2026-08-04' }],
+  connection: 'dataFabric', folder: 'shared',
+}))
+
+// Pause until a FileUploadVerify_20260618 record is updated.
+.step('updated', waitForEvent(RecordUpdated, {
+  object: 'FileUploadVerify_20260618', connection: 'dataFabric', folder: 'shared',
+}))
+```
+
+The objects come from the bound connection, never from a guess:
+
+```bash
+uip is triggers objects uipath-uipath-dataservice CREATED --connection-id <id> --output json
+```
+
+The emitted node carries the object as `inputs.detail.objectName` (and inside
+`configuration`), its event as `eventType`, and the platform-declared
+`eventMode`. A curated event (Outlook `email-received`, OneDrive `file-created`)
+has its object built in — passing `object` there is an error.
+
+## Filter operators
+
+A filter is `{ field, <operator>: value }` with exactly one operator. The
+vocabulary is the designer's, and each form compiles to the same
+`filterExpression` the canvas would write:
+
+| Operator | Value | Emitted expression |
+|---|---|---|
+| `contains`, `startsWith`, `endsWith` | text | `contains(subject,'Invoice')` |
+| `equals`, `notEquals` | text, number or boolean | `status=='open'`, ``priority==`3` `` |
+| `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual` | number, or an ISO date string | ``priority>`3` ``, `to_number(dueDate)<to_number('2026-08-04')` |
+
+Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath
+compares numbers only, so the subscription would match nothing. Write the
+value as a number or an ISO-8601 date, or use a text operator.
+
 ## Evidence boundary
 
 A local start-trigger run injects a payload; it does not fire a subscription.

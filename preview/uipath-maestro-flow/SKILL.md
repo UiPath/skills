@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ c30ff64. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 965313a. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -296,6 +296,7 @@ export default flow('mail').trigger(onEvent(mail))
 ```
 
 Resolve scope names and ids from the bound connection; preserve filter casing.
+A generic event (`record-created`/`record-updated`) needs `object: '<Entity>'` — never put it in `where`.
 Use the reference's completion contract before debugging: an injected start
 payload can exercise downstream wiring, but it is not a subscription witness.
 
