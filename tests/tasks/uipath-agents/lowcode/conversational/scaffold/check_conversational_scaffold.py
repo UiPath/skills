@@ -10,7 +10,7 @@ edits (model override, system prompt, etc.).
 Checks:
   1. metadata.isConversational == true
   2. settings.engine == "conversational-v1"
-  3. settings.maxIterations absent
+  3. settings.maxIterations 1-8
   4. outputSchema.properties is empty {} (Rule 26 — never populate)
   5. messages[1] (user role) content has no {{input.*}} template, and
      contentTokens contain no `variable` entries (§ Messages)
@@ -52,13 +52,13 @@ def assert_conversational_essentials(agent: dict) -> None:
         )
     print('OK: settings.engine == "conversational-v1"')
 
-    if "maxIterations" in settings:
+    iterations = settings.get("maxIterations")
+    if not isinstance(iterations, int) or not 1 <= iterations <= 8:
         sys.exit(
-            f'FAIL: settings.maxIterations must be absent for conversational '
-            f'(CLI omits it; conversational has no iteration cap), '
-            f'got {settings.get("maxIterations")!r}'
+            f"FAIL: settings.maxIterations must be 1-8 for conversational, "
+            f"got {iterations!r}"
         )
-    print("OK: settings.maxIterations absent")
+    print(f"OK: settings.maxIterations == {iterations}")
 
     output_props = (agent.get("outputSchema") or {}).get("properties") or {}
     if output_props:
