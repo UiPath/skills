@@ -19,6 +19,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 ## Critical rules
 
+0. **Read the faulted `flow debug` response before any other call — never re-run debug to "see the error again".** See [troubleshooting-guide.md — Step 0](troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
 1. **Investigate in order: incidents → variables → flow correlation → traces.** Stop when the root cause is identified; traces are verbose and last-resort. See [troubleshooting-guide.md](troubleshooting-guide.md).
 2. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` and `incident get` commands.** Run `uip or folders list --output json` to obtain the folder key, or obtain it from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#6---folder-key-requirement).
 3. **Never call underlying APIs directly.** Run supported `uip` CLI commands; `instance` and `incident` are the diagnostic surface.
@@ -36,6 +37,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | Need | Read |
 | --- | --- |
 | Triage a failed flow run | [troubleshooting-guide.md](troubleshooting-guide.md) |
+| Read the cause out of a faulted `flow debug` response | [troubleshooting-guide.md — Step 0](troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have) |
 | Find the error message and faulting element | [troubleshooting-guide.md — Step 2 Fetch incidents](troubleshooting-guide.md#step-2--fetch-incidents) |
 | See data state at failure time | [troubleshooting-guide.md — Step 3 Fetch runtime variable state](troubleshooting-guide.md#step-3--fetch-runtime-variable-state) |
 | Map a faulting element ID to a `.flow` node | [troubleshooting-guide.md — Step 4 Correlate with the flow definition](troubleshooting-guide.md#step-4--correlate-with-the-flow-definition) |

@@ -54,6 +54,16 @@ Instance ID: <instanceId>
 
 If either value is missing from the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
 
+### When the run faults
+
+`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there, never by re-running. Apply this filter on the debug call itself so the cause prints alongside the report fields:
+
+```bash
+uip maestro flow debug <PROJECT_DIR> --output json --output-filter '{studioWebUrl: studioWebUrl, instanceId: instanceId, jobKey: jobKey, finalStatus: finalStatus, incidents: incidents[].{elementId: elementId, errorCode: errorCode, fault: dependentFaultCode, details: errorDetails}, faults: variables.elements[?outputs.Error].{elementId: elementId, code: outputs.Error.code, detail: outputs.Error.detail}}'
+```
+
+Fault-code lookup and the file-based extraction path: [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
+
 See [shared/cli-commands.md — uip maestro flow debug](../shared/cli-commands.md#uip-maestro-flow-debug) for additional options.
 
 ## Process run — trigger a deployed process
@@ -97,6 +107,6 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 ## Anti-patterns
 
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
-- **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run re-uploads the solution and executes the flow again for real. Extract the report fields from the payload the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user).
+- **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run re-uploads the solution and executes the flow again for real. Extract the report fields from the payload the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user). For a faulted run, read the cause first — see [When the run faults](#when-the-run-faults).
 - **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
 - **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
