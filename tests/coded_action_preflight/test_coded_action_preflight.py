@@ -210,14 +210,34 @@ class CodedActionPreflightTests(unittest.TestCase):
         payload = self.assert_only_gate_fails(workdir, "input-strictness")
         self.assertIn("additionalProperties", payload["errors"]["input-strictness"][0])
 
-    def test_type_t_idiom_passes_input_strictness_with_a_note(self):
+    def test_type_t_idiom_passes_strictness_by_lowering_the_contract(self):
+        """The gate derives the manifest rather than assuming the SDK will. A type<T>() contract
+        is inert on its own, so the derivation is the only thing that can supply
+        additionalProperties:false, and running it is the only honest way to check."""
         code, payload = run_preflight(self.workdir(), "--skip-typecheck")
         self.assertEqual(code, 0, payload)
         self.assertEqual(gate(payload, "input-strictness")["status"], "passed", payload)
-        self.assertTrue(
-            any("input-strictness" in warning and "type<T>()" in warning for warning in payload["warnings"]),
+        # No reassuring warning: the gate proved it, so it has nothing to hedge about.
+        self.assertFalse(
+            [w for w in payload["warnings"] if "input-strictness" in w],
             payload["warnings"],
         )
+
+    def test_unlowerable_type_t_contract_fails_strictness(self):
+        """A contract the deriver cannot lower would fail at pack time with nothing written, so it
+        has to fail here instead."""
+        workdir = self.workdir()
+        self.edit(workdir / "jobs" / f"{ACTION}.ts", "  CreatedAt: string;", "  CreatedAt: Date;")
+        payload = self.assert_only_gate_fails(workdir, "input-strictness")
+        self.assertIn("cannot be lowered", payload["errors"]["input-strictness"][0])
+
+    def test_undeclared_interface_in_input_fails_strictness(self):
+        workdir = self.workdir()
+        self.edit(
+            workdir / "jobs" / f"{ACTION}.ts", "  ticket: TicketRow[];", "  ticket: Mystery[];"
+        )
+        payload = self.assert_only_gate_fails(workdir, "input-strictness")
+        self.assertIn("cannot lower type", payload["errors"]["input-strictness"][0])
 
     # ---- discovery -------------------------------------------------------------------
 

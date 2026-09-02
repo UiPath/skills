@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -915,28 +916,71 @@ def check_input(log: GateLog, name: str, marker_args: list[str], fields: list[st
         log.add("input-matches-marker", "passed")
 
 
-def check_strictness(log: GateLog, name: str, idiom: str, zod: dict | None, warnings: list[str]) -> None:
+def check_strictness(log: GateLog, name: str, idiom: str, zod: dict | None,
+                     warnings: list[str], job_path=None) -> None:
     """input-strictness: additionalProperties:false is what faults a drifted Input before the
-    handler runs. A zod contract only emits it when the top-level input object carries .strict();
-    a type<T>() contract gets it from the SDK's own schema derivation."""
-    if idiom != "zod":
-        log.add("input-strictness", "passed")
-        warnings.append(
-            f"{name}: input-strictness: type<T>() contract; the SDK derivation supplies additionalProperties:false"
-        )
+    handler runs, so every contract has to end up carrying it.
+
+    A type<T>() contract is inert on its own; the manifest is derived from its interfaces at stage
+    time, and that derivation is what supplies additionalProperties:false. Running the deriver
+    here is therefore the real check: it fails on exactly the contracts that could not produce a
+    manifest, and a job that cannot be lowered would otherwise fail at pack time with nothing
+    written. A zod contract carries its own schema and needs .strict() on the top-level object.
+    """
+    if idiom == "zod":
+        if zod is None or not zod["found"]:
+            log.add("input-strictness", "skipped", f"{name}: no z.object input schema to check")
+        elif zod["strict"]:
+            log.add("input-strictness", "passed")
+        else:
+            log.add(
+                "input-strictness",
+                "failed",
+                f"{name}: the top-level input z.object does not carry .strict(); .strict() is "
+                f"what emits additionalProperties:false, which faults a drifted Input before the "
+                f"handler runs, and a bare z.object() packs without it",
+            )
         return
-    if zod is None or not zod["found"]:
-        log.add("input-strictness", "skipped", f"{name}: no z.object input schema to check")
-    elif zod["strict"]:
+
+    module = _entry_points_module()
+    if module is None:
+        log.add("input-strictness", "skipped",
+                f"{name}: tools/entry_points.py not found, cannot lower the type<T>() contract")
+        return
+    try:
+        input_schema, _ = module.derive(job_path)
+    except Exception as exc:
+        log.add("input-strictness", "failed",
+                f"{name}: the type<T>() contract cannot be lowered to a manifest, so the deploy "
+                f"step could not derive entry-points.json and pack would fail: {exc}")
+        return
+    if input_schema.get("additionalProperties") is False:
         log.add("input-strictness", "passed")
     else:
-        log.add(
-            "input-strictness",
-            "failed",
-            f"{name}: the top-level input z.object does not carry .strict(); .strict() is what "
-            f"emits additionalProperties:false, which faults a drifted Input before the handler "
-            f"runs, and a bare z.object() packs without it",
-        )
+        log.add("input-strictness", "failed",
+                f"{name}: the derived input schema does not carry additionalProperties:false, so "
+                f"a drifted Input would reach the handler instead of faulting")
+
+
+_ENTRY_POINTS_CACHE: list = []
+
+
+def _entry_points_module():
+    """Load tools/entry_points.py, the shared contract deriver, or None when it is absent."""
+    if _ENTRY_POINTS_CACHE:
+        return _ENTRY_POINTS_CACHE[0]
+    import importlib.util
+    override = os.environ.get("ENTRY_POINTS_TOOL")
+    candidates = [pathlib.Path(override)] if override else [
+        pathlib.Path(__file__).resolve().parent / "entry_points.py"]
+    found = next((c for c in candidates if c.is_file()), None)
+    module = None
+    if found:
+        spec = importlib.util.spec_from_file_location("ontology_entry_points", found)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    _ENTRY_POINTS_CACHE.append(module)
+    return module
 
 
 def check_writes(log: GateLog, name: str, action: dict, edits: dict) -> None:
@@ -1124,7 +1168,7 @@ def main(argv: list[str] | None = None) -> int:
                 log.add("input-matches-marker", "skipped", f"{name}: no marker arguments to compare Input against")
             else:
                 check_input(log, name, marker_args, fields, missing_msg)
-            check_strictness(log, name, idiom, zod, warnings)
+            check_strictness(log, name, idiom, zod, warnings, job)
             check_writes(log, name, action, edits)
 
         check_fields(log, name, action, edits, schema, schema_reason)
