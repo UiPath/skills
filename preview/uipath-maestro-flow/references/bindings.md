@@ -49,11 +49,15 @@ the resource kind and emitted binding purpose explicit.
 Reach for the manual route below only when you are authoring bindings without
 running `prepare`.
 
-If you are doing it by hand: `uip is connections list` returns the connection id
-**and its folder key** on the same record, so one call answers both:
+If you are doing it by hand: `uip is connections list --all-folders` returns the
+connection id **and its folder key** on the same record, so one call answers both.
+Always pass `--all-folders`: the default listing is your own folder only, and a
+connection shared from another folder (the usual case on a team tenant) is
+invisible without it — an empty or unrelated default listing is not evidence
+that the connection does not exist.
 
 ```bash
-uip is connections list --output json
+uip is connections list --all-folders --output json
 ```
 
 ```text
@@ -68,8 +72,9 @@ uip is connections list --output json
 ```
 
 `Id` is the connection binding's `resourceKey`; **`FolderKey` is the folder
-binding's**. Add `--all-folders` if the connection you want is not in the
-default listing.
+binding's**. Never fill either with a made-up GUID or with the binding's own
+name: `compile` refuses a binding whose `resourceKey` is its own name, and a
+plausible GUID compiles and then faults at run time.
 
 **Do not go looking in Orchestrator for the folder.** `uip or folders list` is a
 different resource with different keys, and a folder binding wants the one the
