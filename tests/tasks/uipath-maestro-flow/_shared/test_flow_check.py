@@ -883,6 +883,67 @@ def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
 
 
+# ── run_debug: a faulted run carries the backend's incident details ──────────
+
+_FAULTED_102003 = (
+    '{\n  "Result": "Failure",\n  "Code": "FlowDebug",\n'
+    '  "Message": "Debug session Faulted. [102003] Integration Services bad request (element createIssue)",\n'
+    '  "Context": {"ErrorCode": "102003"},\n'
+    '  "Data": {"instanceId": "d007648d-8341-460c-92f8-c0fe4b8bde59", "finalStatus": "Faulted"}\n}'
+)
+_INCIDENTS = (
+    '{\n  "Result": "Success",\n  "Code": "DebugInstanceIncidents",\n  "Data": [{\n'
+    '    "ElementId": "createIssue", "ErrorCode": "102003",\n'
+    '    "ErrorMessage": "Integration Services bad request",\n'
+    '    "ErrorDetails": "Request to Integration Services failed with status code \'400\', message:  '
+    '{\\"providerMessage\\":\\"errors - {reporter=Specify a valid value for Reporter}\\"}"\n  }]\n}'
+)
+
+
+def test_run_debug_fault_appends_incident_details(monkeypatch):
+    """2026-09-01 escalation-jira-ticket: the CLI said `[102003]` and deferred the
+    provider's message to `debug-instance incidents`; the criterion output never
+    carried it. Now the failure text does, fetched while the instance still exists."""
+    calls = _stub_debug(monkeypatch, [_cp(1, _FAULTED_102003), _cp(0, _INCIDENTS)])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    text = str(exc.value)
+    assert "flow debug exit 1" in text
+    assert "incidents (uip maestro flow debug-instance incidents):" in text
+    assert "element=createIssue code=102003" in text
+    assert "reporter=Specify a valid value for Reporter" in text
+    assert calls["n"] == 2
+    assert calls["cmd"][:5] == ["uip", "maestro", "flow", "debug-instance", "incidents"]
+    assert calls["cmd"][5] == "d007648d-8341-460c-92f8-c0fe4b8bde59"
+
+
+def test_run_debug_fault_without_instance_id_is_unchanged(monkeypatch):
+    bad = '{\n  "Result": "Failure",\n  "ErrorCode": "invalid_argument",\n  "Retry": "RetryWillNotFix"\n}'
+    calls = _stub_debug(monkeypatch, [_cp(1, bad)])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert "incidents" not in str(exc.value)
+    assert calls["n"] == 1  # no incidents call without an instance to ask about
+
+
+def test_run_debug_fault_incidents_read_failure_never_masks_the_fault(monkeypatch):
+    calls = _stub_debug(monkeypatch, [_cp(1, _FAULTED_102003), _cp(1, "", "Not logged in")])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert "flow debug exit 1" in str(exc.value)
+    assert "incidents (" not in str(exc.value)
+    assert calls["n"] == 2
+
+
+def test_run_debug_exit0_faulted_appends_incident_details(monkeypatch):
+    faulted = '{\n  "Result": "Success",\n  "Data": {"finalStatus": "Faulted", "instanceId": "abc"}\n}'
+    _stub_debug(monkeypatch, [_cp(0, faulted), _cp(0, _INCIDENTS)])
+    with pytest.raises(SystemExit) as exc:
+        run_debug()
+    assert "Flow did not complete (finalStatus=Faulted)" in str(exc.value)
+    assert "reporter=Specify a valid value for Reporter" in str(exc.value)
+
+
 # ── run_debug: completed but outputs unreadable (variables fetch failed) ─────
 
 # Verbatim shape of the 2026-09-01 move-node/v2 payload: every element
