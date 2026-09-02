@@ -19,8 +19,10 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -189,30 +191,38 @@ def task_watermark() -> int:
     return max(ids) if ids else 0
 
 
-def own_package_mark() -> str:
-    """The project name, as it appears in a case instance's `PackageId`.
+_GUID_RE = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I)
 
-    Read off the project the run just built rather than pinned, so renaming the project in
-    the fixture cannot leave this matching a name nothing produces any more.
+
+def instance_from_debug_output(text: str) -> str:
+    """The instance id `case debug` names in its own output, if it has named one yet.
+
+    Preferred over anything read off the instance list. A debug instance carries no field
+    that says which case it is — the create call writes `PackageKey`, `ProcessKey` and
+    `PackageVersion` as `Guid.Empty`, an empty display name, and `PackageId` as the Studio
+    Web project's own guid — so a shared tenant running two debug sessions at once cannot
+    be told apart from the list. Asking the command that started it is the only direct answer.
     """
-    return Path(find_project_dir()).name
+    empty = "00000000-0000-0000-0000-000000000000"
+    for guid in _GUID_RE.findall(text):
+        if guid.lower() != empty:
+            return guid
+    return ""
 
 
-def newest_instance(after_iso: str):
-    """The instance this run started.
+def newest_instance(after_iso: str, known: set = frozenset()):
+    """The newest case instance created since this run began, excluding ones already seen.
 
-    "Newest since I started" is not enough on a shared tenant: one run drove a stranger's
-    ProjectEuler RPA case for a whole route. The candidate must also carry this project's
-    name in its `PackageId`, which the create call sets immediately — checking a case
-    variable instead loses the race, because the namespace is empty until the case runs.
+    A fallback for when `case debug` has not named the instance itself. It cannot tell one
+    debug case from another, so a route that lands here may be driving a stranger — the
+    caller reports which path it took.
     """
-    mark = own_package_mark().lower()
     rows = run_list(["uip", "maestro", "case", "instance", "list", "--output", "json"])
     rows = [
         r for r in rows
-        if r.get("InstanceId")
+        if r.get("InstanceId") not in known
+        and r.get("InstanceId")
         and (r.get("CreatedTimeUtc") or "") >= after_iso
-        and mark in str(r.get("PackageId") or "").lower()
     ]
     rows.sort(key=lambda r: r.get("CreatedTimeUtc") or "", reverse=True)
     if not rows:
@@ -556,14 +566,36 @@ def main() -> int:
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
     )
 
+    # Read the debug command's own output for the id it started, and fall back to the
+    # instance list. The list cannot tell one debug case from another, so which path this
+    # took is printed: a run that fell back may be driving a stranger's case.
+    def drain_debug(sink: list) -> None:
+        for line in iter(debug.stdout.readline, ""):
+            sink.append(line)
+
+    debug_lines: list = []
+    threading.Thread(target=drain_debug, args=(debug_lines,), daemon=True).start()
+
     instance_id = None
+    source = ""
     while instance_id is None and time.time() - started < INSTANCE_TIMEOUT:
         time.sleep(POLL_SLEEP)
+        instance_id = instance_from_debug_output("".join(debug_lines))
+        if instance_id:
+            source = "named by `case debug`"
+            rows = run_list(["uip", "maestro", "case", "instance", "list", "--output", "json"])
+            match = next((r for r in rows if r.get("InstanceId") == instance_id), None)
+            if match:
+                CASE_FOLDER_KEY = match.get("FolderKey") or ""
+            break
         instance_id = newest_instance(started_iso)
+        if instance_id:
+            source = "newest in the list — may not be this case"
     if instance_id is None:
         debug.kill()
-        fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug")
-    print(f"instance {instance_id}")
+        fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
+             f"debug output so far:\n{''.join(debug_lines)[:1500]}")
+    print(f"instance {instance_id} ({source})")
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
     # fresh process, so the id is handed over on disk. It goes in the sandbox working directory,
     # not beside this script: the harness mounts the task directory read-only.
