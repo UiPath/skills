@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import secrets
 import signal
@@ -37,31 +38,45 @@ EXPECTED_LIVE_TARGET = {
     "Tenant": "DefaultTenant",
 }
 RUN_NONCE = secrets.token_hex(6)
-LIVE_RUN_DEADLINE_SECONDS = 6000
-LIVE_CLEANUP_DEADLINE_SECONDS = 10000
+# Every UpdateExisting scenario seeds a real Jira issue first, and main
+# overwrites duplicateIssueKey with that issue's key (padded, to prove the
+# process trims it). The table carries this sentinel so nobody reads a fake
+# key like "JIRA-42" as the value actually sent.
+SEEDED_DUPLICATE_KEY = "__SEEDED_JIRA_KEY_SET_AT_RUNTIME__"
+# Durable cleanup journal, relative to the sandbox CWD. The in-band leases
+# free resources from a `finally` block, which a SIGKILL on the graded command
+# skips entirely. Every created id is therefore appended here the moment it
+# exists, so the task's post_run sweep can delete it even if this process is
+# killed. See cleanup_customer_escalation.py.
+CLEANUP_JOURNAL = Path(".customer-escalation-cleanup.jsonl")
+# Timeout budget. The single load-bearing number is the run_command
+# `timeout: 10800` in customer_escalation_triage.yaml — coder_eval SIGKILLs
+# this process there, and nothing below can outlive it. Everything else is
+# derived from the observed worst case for one scenario:
+#
+#   debug (DEBUG_TIMEOUT_SECONDS)                             480s
+#   + Jira seed, variables-all, incidents, up to 3 Drive gets,
+#     one Jira get, and per-scenario side-effect cleanup        180s
+#   = SCENARIO_BUDGET_SECONDS                                   660s
+#
+# 14 scenarios x 660s = 9240s, which fits inside the 9800s
+# LIVE_RUN_DEADLINE_SECONDS below. The matrix stops at a clean scenario
+# boundary rather than mid-scenario, and the remaining window is reserved
+# for cleanup so an overrun never leaks live resources.
+DEBUG_TIMEOUT_SECONDS = 480
+SCENARIO_BUDGET_SECONDS = 660
+LIVE_CLEANUP_RESERVE_SECONDS = 1400
+# MUST match the run_command timeout in customer_escalation_triage.yaml.
+GRADER_TIMEOUT_SECONDS = 12000
+LIVE_CLEANUP_DEADLINE_SECONDS = GRADER_TIMEOUT_SECONDS - 800
+LIVE_RUN_DEADLINE_SECONDS = (
+    LIVE_CLEANUP_DEADLINE_SECONDS - LIVE_CLEANUP_RESERVE_SECONDS
+)
 # Set only while main owns live resources. Every CLI subprocess is capped by
 # this absolute monotonic deadline so coder_eval's outer shell timeout cannot
 # cut off the final cleanup phase.
 ACTIVE_CLI_DEADLINE: float | None = None
 
-INPUT_TYPES = {
-    "customerTier": "string",
-    "crmMatchCount": "integer",
-    "serviceState": "string",
-    "workaroundAvailable": "boolean",
-    "duplicateIssueKey": "string",
-    "attachments": "array",
-    "agentOutputValid": "boolean",
-    "jiraAvailable": "boolean",
-    "autoSendEnabled": "boolean",
-    "businessImpact": "string",
-    "correlationId": "string",
-    "jiraProjectKey": "string",
-    "jiraIssueTypeId": "string",
-    "jiraReporterAccountId": "string",
-    "slackChannelId": "string",
-    "driveDestinationFolderId": "string",
-}
 OUTPUT_TYPES = {
     "route": "string",
     "severity": "string",
@@ -74,37 +89,18 @@ OUTPUT_TYPES = {
     "lastAttachmentName": "string",
     "failureReason": "string",
 }
-CONNECTOR_INPUTS = {
-    ("uipath-atlassian-jira", "/curated_create_issue"): {
-        ("body", "body"),
-    },
+REQUIRED_CONNECTORS = {
+    ("uipath-atlassian-jira", "/curated_create_issue"): "jira_create_id",
     (
         "uipath-atlassian-jira",
         "/curated_edit_issue/{issueIdOrKey}",
-    ): {
-        ("path", "issueIdOrKey"),
-        ("query", "project"),
-        ("query", "issuetype"),
-        ("body", "body"),
-    },
-    ("uipath-google-drive", "/copyFile"): {
-        ("query", "fileId"),
-        ("body", "body"),
-    },
+    ): "jira_update_id",
+    ("uipath-google-drive", "/copyFile"): "drive_copy_id",
     (
         "uipath-salesforce-slack",
         "/send_message_to_channel_v2",
-    ): {
-        ("query", "send_as"),
-        ("body", "body"),
-    },
+    ): "slack_send_id",
 }
-OPTIONAL_CONNECTOR_INPUTS = {
-    ("uipath-google-drive", "/copyFile"): {
-        ("query", "alreadyExists"),
-    },
-}
-
 
 class CheckFailure(RuntimeError):
     pass
@@ -119,7 +115,42 @@ def local(tag: str) -> str:
 
 
 def normalized_identifier(value: object) -> str:
+    """Loose id key used only as a fallback after an exact match fails.
+
+    The runtime has been observed to re-case and re-punctuate variable ids
+    between the BPMN source and the PIMS globals map, so lookups fall back to
+    this form. It is intentionally lossy — `caseKey` and `case_key` collapse
+    to the same key — so every caller must try the exact id first and treat a
+    fallback hit that is ambiguous as a failure rather than a match.
+    """
+
     return re.sub(r"[^a-z0-9]", "", str(value).casefold())
+
+
+def resolve_runtime_key(
+    mapping: dict[str, Any],
+    identifier: str,
+    label: str,
+) -> Any:
+    """Read `identifier` out of a runtime map, exactly where possible."""
+
+    if identifier in mapping:
+        return mapping[identifier]
+    wanted = normalized_identifier(identifier)
+    matches = [
+        key for key in mapping if normalized_identifier(key) == wanted
+    ]
+    if not matches:
+        raise CheckFailure(
+            f"runtime map is missing {identifier!r} ({label})"
+        )
+    if len(matches) > 1:
+        raise CheckFailure(
+            f"{identifier!r} ({label}) matches multiple runtime ids "
+            f"{sorted(matches)}; ids must be distinct beyond casing and "
+            "punctuation so the graded value is unambiguous"
+        )
+    return mapping[matches[0]]
 
 
 def get_ci(value: Any, key: str, default: Any = None) -> Any:
@@ -270,7 +301,11 @@ SCENARIOS = (
     scenario(
         "existing-sev3-jira-unavailable",
         service_state="AVAILABLE",
-        duplicate_key="  JIRA-42  ",
+        duplicate_key=SEEDED_DUPLICATE_KEY,
+        # jiraAvailable=false only raises JiraUnavailable for Sev1/Sev2. A Sev3
+        # still updates its duplicate, so this scenario is the deliberate
+        # "degraded but not faulted" case: the flag must not short-circuit the
+        # Jira write, and the graded outcome is one real update call.
         jira_available=False,
         auto_send=True,
         expected={
@@ -290,7 +325,7 @@ SCENARIOS = (
         customer_tier="Enterprise",
         service_state="Unavailable",
         workaround=False,
-        duplicate_key="  EXISTING-SEV1  ",
+        duplicate_key=SEEDED_DUPLICATE_KEY,
         expected={
             "route": "ExistingIssue",
             "severity": "Sev1",
@@ -492,31 +527,24 @@ SCENARIOS = (
 
 @dataclass(frozen=True)
 class RuntimeContract:
+    """Element and variable ids needed to read runtime outcomes.
+
+    This is discovery, not grading. It resolves the handful of ids the live
+    assertions must address (public outputs, the four connector activities,
+    the attachment marker collection, the typed error path) and fails only
+    when an id the scenarios depend on cannot be resolved unambiguously.
+    Process topology is deliberately not asserted here: a differently shaped
+    process that produces the right runtime outcomes still scores.
+    """
+
     public_output_ids: dict[str, str]
-    root_end_id: str
-    parallel_split_id: str
-    parallel_join_id: str
-    marker_id: str
     marker_collection_id: str
-    error_end_id: str
-    error_boundary_id: str
     jira_create_id: str
     jira_update_id: str
     drive_copy_id: str
     slack_send_id: str
-
-
-def direct_flow_counts(
-    process: ET.Element,
-) -> tuple[dict[str, int], dict[str, int]]:
-    incoming: dict[str, int] = {}
-    outgoing: dict[str, int] = {}
-    for flow in process.findall(f"./{q(BPMN_NS, 'sequenceFlow')}"):
-        source = flow.attrib["sourceRef"]
-        target = flow.attrib["targetRef"]
-        outgoing[source] = outgoing.get(source, 0) + 1
-        incoming[target] = incoming.get(target, 0) + 1
-    return incoming, outgoing
+    error_end_id: str | None = None
+    error_boundary_id: str | None = None
 
 
 def connector_context(element: ET.Element) -> dict[str, str]:
@@ -537,8 +565,18 @@ def connector_context(element: ET.Element) -> dict[str, str]:
 def index_runtime_connectors(
     process: ET.Element,
 ) -> dict[tuple[str, str], str]:
+    """Index every connector-bearing node by (connectorKey, path).
+
+    Scans all descendants rather than a fixed tag list: registry templates
+    may emit a connector activity as sendTask, serviceTask, or a plain task,
+    and the runtime correlates on the element id either way.
+    """
+
     connectors: dict[tuple[str, str], str] = {}
-    for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
+    for node in process.iter():
+        identifier = node.attrib.get("id")
+        if not identifier:
+            continue
         context = connector_context(node)
         key = (context.get("connectorKey", ""), context.get("path", ""))
         if not all(key):
@@ -547,81 +585,8 @@ def index_runtime_connectors(
             raise CheckFailure(
                 f"live contract contains duplicate connector key {key}"
             )
-        connectors[key] = node.attrib["id"]
+        connectors[key] = identifier
     return connectors
-
-
-def validate_connector_inputs(
-    element: ET.Element,
-    key: tuple[str, str],
-) -> None:
-    activity = element.find(
-        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'activity')}"
-    )
-    if activity is None:
-        raise CheckFailure(f"connector {key} has no activity extension")
-    inputs = {
-        (item.attrib.get("target", ""), item.attrib.get("name", "")): item
-        for item in activity.findall(f"./{q(UIPATH_NS, 'input')}")
-    }
-    required = CONNECTOR_INPUTS[key]
-    allowed = required | OPTIONAL_CONNECTOR_INPUTS.get(key, set())
-    if not required <= set(inputs) or not set(inputs) <= allowed:
-        raise CheckFailure(
-            f"connector {key} does not use exact registry input targets and "
-            f"names: {sorted(inputs)}"
-        )
-    body_element = inputs[("body", "body")]
-    raw_body = body_element.attrib.get("value")
-    if raw_body is None:
-        raw_body = body_element.text or ""
-    try:
-        body = json.loads(raw_body)
-    except json.JSONDecodeError as exc:
-        raise CheckFailure(f"connector {key} body is not JSON: {exc}") from exc
-    if not isinstance(body, dict):
-        raise CheckFailure(f"connector {key} body is not a JSON object")
-    if key == ("uipath-atlassian-jira", "/curated_create_issue"):
-        fields = body.get("fields")
-        if not isinstance(fields, dict) or set(fields) != {
-            "project",
-            "issuetype",
-            "reporter",
-            "summary",
-            "description",
-        }:
-            raise CheckFailure("Jira create body does not match registry fields")
-        summary = fields.get("summary")
-        normalized_summary = normalized_identifier(summary)
-        if (
-            not isinstance(summary, str)
-            or "correlation" not in normalized_summary
-            or "customer" not in summary.casefold()
-            or "escalation" not in summary.casefold()
-        ):
-            raise CheckFailure(
-                "Jira create summary must contain a dynamic correlation "
-                "reference plus customer and escalation"
-            )
-    elif key[1] == "/curated_edit_issue/{issueIdOrKey}":
-        fields = body.get("fields")
-        if not isinstance(fields, dict) or set(fields) != {"description"}:
-            raise CheckFailure("Jira update body does not match registry fields")
-    elif key == ("uipath-google-drive", "/copyFile") and set(body) != {
-        "destinationFolder",
-        "name",
-    }:
-        raise CheckFailure("Drive copy body does not match registry fields")
-    elif key[0] == "uipath-salesforce-slack" and set(body) != {
-        "channel",
-        "messageToSend",
-    }:
-        raise CheckFailure("Slack send body does not match registry fields")
-    if (
-        key[0] == "uipath-salesforce-slack"
-        and inputs[("query", "send_as")].attrib.get("value") != "bot"
-    ):
-        raise CheckFailure("Slack send_as query input must be bot")
 
 
 def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
@@ -630,60 +595,32 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
     if process is None:
         raise CheckFailure("BPMN must contain one root process")
 
-    root_ends = process.findall(f"./{q(BPMN_NS, 'endEvent')}")
-    if len(root_ends) != 1:
-        raise CheckFailure("live contract requires exactly one root end event")
-    root_end_id = root_ends[0].attrib["id"]
-
     variables = process.find(
         f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}"
     )
     if variables is None:
         raise CheckFailure("root process is missing uipath:variables")
-    public_inputs: dict[str, tuple[str, str]] = {}
-    public_outputs: dict[str, tuple[str, str]] = {}
+
+    public_output_ids: dict[str, str] = {}
     for variable in variables:
+        if local(variable.tag) != "output":
+            continue
         name = variable.attrib.get("name")
         identifier = variable.attrib.get("id")
-        value_type = variable.attrib.get("type")
-        element_id = variable.attrib.get("elementId")
-        if not name or not identifier or not value_type:
+        if not name or not identifier or name not in OUTPUT_TYPES:
             continue
-        if local(variable.tag) == "input":
-            public_inputs[name] = (value_type, element_id or "")
-        elif local(variable.tag) == "output":
-            public_outputs[name] = (value_type, element_id or "")
-
-    if {
-        name: item[0] for name, item in public_inputs.items()
-    } != INPUT_TYPES:
-        raise CheckFailure("public input declarations do not match the contract")
-    if {
-        name: item[0] for name, item in public_outputs.items()
-    } != OUTPUT_TYPES:
-        raise CheckFailure("public output declarations do not match the contract")
-    if any(item[1] != root_end_id for item in public_outputs.values()):
+        if name in public_output_ids:
+            raise CheckFailure(
+                f"public output {name!r} is declared more than once, so its "
+                "runtime value cannot be addressed"
+            )
+        public_output_ids[name] = identifier
+    missing_outputs = sorted(set(OUTPUT_TYPES) - set(public_output_ids))
+    if missing_outputs:
         raise CheckFailure(
-            "every public output must bind to the sole root completion end"
+            "public outputs the scenarios read are not declared: "
+            f"{missing_outputs}"
         )
-
-    public_output_ids = {
-        variable.attrib["name"]: variable.attrib["id"]
-        for variable in variables
-        if local(variable.tag) == "output"
-        and variable.attrib.get("name") in OUTPUT_TYPES
-    }
-
-    incoming, outgoing = direct_flow_counts(process)
-    parallels = process.findall(f"./{q(BPMN_NS, 'parallelGateway')}")
-    splits = [
-        item for item in parallels if outgoing.get(item.attrib["id"], 0) == 3
-    ]
-    joins = [
-        item for item in parallels if incoming.get(item.attrib["id"], 0) == 3
-    ]
-    if len(splits) != 1 or len(joins) != 1:
-        raise CheckFailure("expected one three-way parallel split and join")
 
     markers = [
         node
@@ -691,114 +628,55 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
         if node.find(f"./{q(BPMN_NS, 'multiInstanceLoopCharacteristics')}")
         is not None
     ]
-    if len(markers) != 1:
-        raise CheckFailure(
-            "expected one sequential multi-instance attachment subprocess"
-        )
-    marker_outputs = markers[0].findall(
-        f"./{q(BPMN_NS, 'extensionElements')}/"
-        f"{q(UIPATH_NS, 'mapping')}/{q(UIPATH_NS, 'output')}"
-    )
     marker_collection_ids = {
         item.attrib["var"]
-        for item in marker_outputs
+        for node in markers
+        for item in node.findall(
+            f"./{q(BPMN_NS, 'extensionElements')}/"
+            f"{q(UIPATH_NS, 'mapping')}/{q(UIPATH_NS, 'output')}"
+        )
         if item.attrib.get("custom") == "true"
         and item.attrib.get("type") == "string"
         and item.attrib.get("var")
     }
     if len(marker_collection_ids) != 1:
         raise CheckFailure(
-            "attachment subprocess must expose one custom marker collection"
+            "expected exactly one per-attachment marker collection to read "
+            f"at runtime, found {sorted(marker_collection_ids)}"
         )
     marker_collection_id = next(iter(marker_collection_ids))
-    collection_declarations = [
-        variable
-        for variable in variables
-        if variable.attrib.get("id") == marker_collection_id
-        and variable.attrib.get("type") == "Collection{string}"
-        and variable.attrib.get("elementId") == markers[0].attrib["id"]
-    ]
-    if len(collection_declarations) != 1:
-        raise CheckFailure(
-            "attachment marker must target its scoped Collection{string}"
-        )
 
     connectors = index_runtime_connectors(process)
-    required_connectors = {
-        (
-            "uipath-atlassian-jira",
-            "/curated_create_issue",
-        ): "curated_create_issue",
-        (
-            "uipath-atlassian-jira",
-            "/curated_edit_issue/{issueIdOrKey}",
-        ): "curated_edit_issue",
-        ("uipath-google-drive", "/copyFile"): "copyFile",
-        (
-            "uipath-salesforce-slack",
-            "/send_message_to_channel_v2",
-        ): "send_message_to_channel_v2",
-    }
-    if set(connectors) != set(required_connectors):
+    missing_connectors = sorted(set(REQUIRED_CONNECTORS) - set(connectors))
+    if missing_connectors:
         raise CheckFailure(
-            "live contract does not contain the exact Jira create/update, "
-            "Drive copy, and Slack send activities"
+            "connector activities the scenarios read are absent: "
+            f"{missing_connectors}"
         )
-    for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
-        context = connector_context(node)
-        key = (context.get("connectorKey", ""), context.get("path", ""))
-        if key in required_connectors:
-            if not context.get("operation"):
-                raise CheckFailure(
-                    f"connector {key} is missing runtime operation"
-                )
-            if context.get("objectName") != required_connectors[key]:
-                raise CheckFailure(
-                    f"connector {key} must use objectName "
-                    f"{required_connectors[key]!r}"
-                )
-            validate_connector_inputs(node, key)
 
     error_ends = [
-        node
+        node.attrib["id"]
         for node in process.findall(f".//{q(BPMN_NS, 'endEvent')}")
         if node.find(f"./{q(BPMN_NS, 'errorEventDefinition')}") is not None
     ]
     boundaries = [
-        node
-        for node in process.findall(f"./{q(BPMN_NS, 'boundaryEvent')}")
+        node.attrib["id"]
+        for node in process.findall(f".//{q(BPMN_NS, 'boundaryEvent')}")
         if node.find(f"./{q(BPMN_NS, 'errorEventDefinition')}") is not None
     ]
-    if len(error_ends) != 1 or len(boundaries) != 1:
-        raise CheckFailure("expected one typed error end and boundary")
 
     return RuntimeContract(
         public_output_ids=public_output_ids,
-        root_end_id=root_end_id,
-        parallel_split_id=splits[0].attrib["id"],
-        parallel_join_id=joins[0].attrib["id"],
-        marker_id=markers[0].attrib["id"],
         marker_collection_id=marker_collection_id,
-        error_end_id=error_ends[0].attrib["id"],
-        error_boundary_id=boundaries[0].attrib["id"],
-        jira_create_id=connectors[
-            ("uipath-atlassian-jira", "/curated_create_issue")
-        ],
-        jira_update_id=connectors[
-            (
-                "uipath-atlassian-jira",
-                "/curated_edit_issue/{issueIdOrKey}",
-            )
-        ],
-        drive_copy_id=connectors[
-            ("uipath-google-drive", "/copyFile")
-        ],
-        slack_send_id=connectors[
-            (
-                "uipath-salesforce-slack",
-                "/send_message_to_channel_v2",
-            )
-        ],
+        # The typed error path is optional here: scenarios that raise
+        # JiraUnavailable already assert it through the failureReason output,
+        # so a process that models the fault differently is not penalised.
+        error_end_id=error_ends[0] if len(error_ends) == 1 else None,
+        error_boundary_id=boundaries[0] if len(boundaries) == 1 else None,
+        **{
+            attribute: connectors[key]
+            for key, attribute in REQUIRED_CONNECTORS.items()
+        },
     )
 
 
@@ -925,10 +803,36 @@ def assert_live_target() -> dict[str, str]:
     return expected
 
 
+class JournaledSet(set):
+    """Set that durably records every addition to the cleanup journal."""
+
+    def __init__(self, kind: str, journal: Path | None = None):
+        super().__init__()
+        self.kind = kind
+        # Resolved per append so a test (or the post_run sweep) can redirect
+        # the journal by patching the module constant.
+        self.journal = journal
+
+    def add(self, value: Any) -> None:
+        super().add(value)
+        journal = self.journal if self.journal is not None else CLEANUP_JOURNAL
+        try:
+            with journal.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    json.dumps({"kind": self.kind, "value": value}) + "\n"
+                )
+                handle.flush()
+                os.fsync(handle.fileno())
+        except OSError:
+            # Cleanup journalling is a backstop; never fail a live scenario
+            # because the sandbox filesystem rejected the append.
+            pass
+
+
 class AlphaSolutionLease:
     def __init__(self, solution_file: Path):
         self.solution_file = solution_file
-        self.solution_ids: set[str] = set()
+        self.solution_ids: set[str] = JournaledSet("solution")
         self.removed_solution_ids: set[str] = set()
         self.cleaned = False
 
@@ -1108,6 +1012,11 @@ def scenario_inputs(
         attachment["driveFileId"] = environment.drive_source_file_ids[index]
     if duplicate_key is not None:
         inputs["duplicateIssueKey"] = duplicate_key
+    if inputs["duplicateIssueKey"] == SEEDED_DUPLICATE_KEY:
+        raise CheckFailure(
+            f"{case.name}: duplicateIssueKey is still the seed sentinel, so "
+            "the seeded Jira key was never substituted"
+        )
     return inputs
 
 
@@ -1189,9 +1098,11 @@ def delete_target_is_absent(
 class ConnectorSideEffectLease:
     def __init__(self, environment: LiveEnvironment):
         self.environment = environment
-        self.jira_issue_ids: set[str] = set()
-        self.drive_file_ids: set[str] = set()
-        self.slack_messages: set[tuple[str, str]] = set()
+        self.jira_issue_ids: set[str] = JournaledSet("jira_issue")
+        self.drive_file_ids: set[str] = JournaledSet("drive_file")
+        self.slack_messages: set[tuple[str, str]] = JournaledSet(
+            "slack_message"
+        )
         self.pending_jira_seeds: dict[str, str] = {}
 
     def begin_jira_seed(self, case_name: str, summary: str) -> None:
@@ -1523,6 +1434,25 @@ def recover_seed_jira_issues(
     return tuple(sorted(exact.values()))
 
 
+def incident_records(incidents_data: Any) -> list[Any] | None:
+    """Normalise `debug-instance incidents` into a list of records.
+
+    The CLI has returned both a bare list and a paged `{"Items": [...]}`
+    envelope for this endpoint; either is accepted so a shape change does not
+    read as a scenario failure. Returns None when the payload is neither.
+    """
+
+    if isinstance(incidents_data, list):
+        return incidents_data
+    for key in ("Items", "Incidents", "Results", "Value"):
+        items = get_ci(incidents_data, key)
+        if isinstance(items, list):
+            return items
+    if isinstance(incidents_data, dict) and not incidents_data:
+        return []
+    return None
+
+
 def root_scope(variables_data: Any) -> dict[str, Any]:
     scopes = get_ci(variables_data, "Variables", [])
     roots = [
@@ -1542,20 +1472,14 @@ def root_public_outputs(
     contract: RuntimeContract,
 ) -> dict[str, Any]:
     globals_map = get_ci(scope, "Globals", {})
-    by_id = {
-        normalized_identifier(key): value
-        for key, value in globals_map.items()
+    if not isinstance(globals_map, dict):
+        raise CheckFailure(
+            f"runtime root scope Globals is not a map: {globals_map!r}"
+        )
+    return {
+        name: resolve_runtime_key(globals_map, identifier, name)
+        for name, identifier in contract.public_output_ids.items()
     }
-    results: dict[str, Any] = {}
-    for name, identifier in contract.public_output_ids.items():
-        key = normalized_identifier(identifier)
-        if key not in by_id:
-            raise CheckFailure(
-                f"runtime root globals are missing public output id "
-                f"{identifier!r} ({name})"
-            )
-        results[name] = by_id[key]
-    return results
 
 
 def element_output_records(
@@ -1851,12 +1775,19 @@ def attachment_marker_order(
         variables_data, contract.marker_collection_id
     )
     expected = list(case.attachment_iterations)
-    if marker_values != [expected]:
+    # A subprocess-scoped collection can surface in both the subprocess scope
+    # and the root scope, so accept repeats as long as every copy agrees.
+    distinct = [
+        value
+        for index, value in enumerate(marker_values)
+        if value not in marker_values[:index]
+    ]
+    if distinct != [expected]:
         raise CheckFailure(
             f"{case.name}: live attachment marker collection expected "
             f"{expected!r}, got {marker_values!r}"
         )
-    return tuple(marker_values[0])
+    return tuple(expected)
 
 
 def assert_ordered_drive_copies(
@@ -2020,12 +1951,12 @@ def assert_scenario(
         raise CheckFailure(
             f"{case.name}: Alpha final status was {final_status!r}"
         )
-    if not isinstance(incidents_data, list):
+    incidents = incident_records(incidents_data)
+    if incidents is None:
         raise CheckFailure(
-            f"{case.name}: incidents response is not a list: "
-            f"{incidents_data!r}"
+            f"{case.name}: incidents response is neither a list nor an "
+            f"item envelope: {incidents_data!r}"
         )
-    incidents = incidents_data
     if incidents:
         raise CheckFailure(f"{case.name}: unexpected incidents: {incidents}")
 
@@ -2052,25 +1983,21 @@ def assert_scenario(
         if isinstance(item, dict)
     ]
     executed_set = set(executed_ids)
-    required = {
-        contract.parallel_split_id,
-        contract.parallel_join_id,
-        contract.root_end_id,
+    # Reaching a terminal Completed status with the expected public outputs
+    # already proves the process ran end to end, so no root-node execution
+    # trace is required here.
+    error_nodes = {
+        identifier
+        for identifier in (contract.error_end_id, contract.error_boundary_id)
+        if identifier
     }
-    missing = required - executed_set
-    if missing:
-        raise CheckFailure(
-            f"{case.name}: live execution missed required root nodes "
-            f"{sorted(missing)}"
-        )
-    error_nodes = {contract.error_end_id, contract.error_boundary_id}
-    if case.uses_error_boundary:
+    if error_nodes and case.uses_error_boundary:
         if not error_nodes <= executed_set:
             raise CheckFailure(
                 f"{case.name}: typed JiraUnavailable path did not execute "
                 f"{sorted(error_nodes - executed_set)}"
             )
-    elif error_nodes & executed_set:
+    elif error_nodes and error_nodes & executed_set:
         raise CheckFailure(
             f"{case.name}: unexpectedly executed JiraUnavailable error path"
         )
@@ -2355,20 +2282,6 @@ def best_effort_capture_instance_outputs(
     return failures
 
 
-def read_instance_id_journal(path: Path) -> str | None:
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    instance_id = get_ci(payload, "InstanceId")
-    if (
-        not isinstance(instance_id, str)
-        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{2,}", instance_id)
-        is None
-    ):
-        return None
-    return instance_id
-
 
 class LiveRunLease:
     """Tracks debug instances and nonce-bearing effects until cleanup."""
@@ -2385,19 +2298,11 @@ class LiveRunLease:
         self.environment = environment
         self.solution_lease = solution_lease
         self.side_effects = side_effects
-        self.pending_correlations: dict[str, tuple[str, Path]] = {}
+        self.pending_correlations: dict[str, str] = {}
         self.active_instances: dict[str, tuple[str, str]] = {}
 
-    def begin(
-        self,
-        case_name: str,
-        correlation: str,
-        instance_id_file: Path,
-    ) -> None:
-        self.pending_correlations[correlation] = (
-            case_name,
-            instance_id_file,
-        )
+    def begin(self, case_name: str, correlation: str) -> None:
+        self.pending_correlations[correlation] = case_name
 
     def register(
         self,
@@ -2413,15 +2318,6 @@ class LiveRunLease:
 
     def cleanup(self) -> list[str]:
         failures: list[str] = []
-        for correlation, (case_name, journal) in list(
-            self.pending_correlations.items()
-        ):
-            instance_id = read_instance_id_journal(journal)
-            if instance_id is not None:
-                self.active_instances.setdefault(
-                    instance_id,
-                    (case_name, correlation),
-                )
 
         for instance_id, (case_name, _correlation) in list(
             self.active_instances.items()
@@ -2444,11 +2340,9 @@ class LiveRunLease:
                 for _case_name, active_correlation
                 in self.active_instances.values()
             ):
-                # --instance-id-file journals the server-assigned jobKey
-                # before the gated PIMS create call. If no journal and no
-                # diagnostic ID exist, the instance never reached the point
-                # where its StartEvent could be continued, so no connector
-                # search is necessary (or trustworthy on this tenant).
+                # No logged instance id means the run never reached the point
+                # where its StartEvent could be continued, so there is no
+                # instance to inspect or clean up.
                 self.pending_correlations.pop(correlation, None)
         return failures
 
@@ -2464,13 +2358,12 @@ def run_debug_with_cleanup_recovery(
     side_effects: ConnectorSideEffectLease,
     live_run_lease: LiveRunLease,
     correlation: str,
-    instance_id_file: Path,
 ) -> tuple[subprocess.CompletedProcess[str], Any, Any, str]:
     solution_lease.capture_manifest()
     try:
         completed = run_cli(
             arguments,
-            timeout=480,
+            timeout=DEBUG_TIMEOUT_SECONDS,
             log_file=log_file,
         )
     except subprocess.TimeoutExpired as exc:
@@ -2479,18 +2372,7 @@ def run_debug_with_cleanup_recovery(
             exc.stderr,
             read_debug_log(log_file),
         )
-        journal_id = read_instance_id_journal(instance_id_file)
-        instance_id = journal_id or diagnostic_id
-        if (
-            journal_id is not None
-            and diagnostic_id is not None
-            and journal_id != diagnostic_id
-        ):
-            live_run_lease.register(
-                diagnostic_id,
-                case_name,
-                correlation,
-            )
+        instance_id = diagnostic_id
         if instance_id is not None:
             live_run_lease.register(
                 instance_id,
@@ -2521,18 +2403,7 @@ def run_debug_with_cleanup_recovery(
             completed.stderr,
             read_debug_log(log_file),
         )
-        journal_id = read_instance_id_journal(instance_id_file)
-        instance_id = journal_id or diagnostic_id
-        if (
-            journal_id is not None
-            and diagnostic_id is not None
-            and journal_id != diagnostic_id
-        ):
-            live_run_lease.register(
-                diagnostic_id,
-                case_name,
-                correlation,
-            )
+        instance_id = diagnostic_id
         if instance_id is not None:
             live_run_lease.register(
                 instance_id,
@@ -2562,18 +2433,7 @@ def run_debug_with_cleanup_recovery(
             completed.stderr,
             read_debug_log(log_file),
         )
-        journal_id = read_instance_id_journal(instance_id_file)
-        recovered_id = journal_id or diagnostic_id
-        if (
-            journal_id is not None
-            and diagnostic_id is not None
-            and journal_id != diagnostic_id
-        ):
-            live_run_lease.register(
-                diagnostic_id,
-                case_name,
-                correlation,
-            )
+        recovered_id = diagnostic_id
         if recovered_id is not None:
             live_run_lease.register(
                 recovered_id,
@@ -2598,25 +2458,6 @@ def run_debug_with_cleanup_recovery(
             f"(exit {completed.returncode}); log: {tail_log(log_file)}"
         )
     live_run_lease.register(instance_id, case_name, correlation)
-    journal_id = read_instance_id_journal(instance_id_file)
-    if journal_id != instance_id:
-        recovery_failures = best_effort_capture_instance_outputs(
-            instance_id,
-            case_name,
-            contract,
-            environment,
-            solution_lease,
-            side_effects,
-        )
-        detail = (
-            f"; cleanup recovery failed: {'; '.join(recovery_failures)}"
-            if recovery_failures
-            else ""
-        )
-        raise CheckFailure(
-            f"{case_name}: debug instance journal expected {instance_id!r}, "
-            f"got {journal_id!r}{detail}"
-        )
     return completed, payload, debug_data, instance_id
 
 
@@ -2731,16 +2572,25 @@ def main() -> int:
 
             for index, case in enumerate(SCENARIOS, start=1):
                 scenario_started = time.monotonic()
-                if time.monotonic() >= execution_deadline:
+                # Stop before a scenario that cannot finish inside the
+                # budget rather than after it has already overrun: a
+                # part-run scenario is indistinguishable from a real
+                # failure in the score.
+                remaining = execution_deadline - time.monotonic()
+                if remaining < SCENARIO_BUDGET_SECONDS:
                     raise CheckFailure(
-                        "live Alpha evaluation reached its internal "
-                        f"{LIVE_RUN_DEADLINE_SECONDS}s deadline before "
-                        f"scenario {index}; entering graceful cleanup"
+                        "BUDGET OVERRUN, NOT A SCENARIO FAILURE: only "
+                        f"{remaining:.0f}s of the {LIVE_RUN_DEADLINE_SECONDS}s "
+                        f"run budget remained before scenario {index}/"
+                        f"{len(SCENARIOS)} ({case.name}), under the "
+                        f"{SCENARIO_BUDGET_SECONDS}s per-scenario budget. "
+                        f"Scenarios 1-{index - 1} passed. Raise the "
+                        "run_command timeout in "
+                        "customer_escalation_triage.yaml (and the derived "
+                        "deadlines here) or shorten the matrix; entering "
+                        "graceful cleanup."
                     )
                 log_file = root / f"{index:02d}-{case.name}.log"
-                instance_id_file = (
-                    root / f"{index:02d}-{case.name}.instance.json"
-                )
                 update_issue_key = None
                 if case.outputs["jiraAction"] == "UpdateExisting":
                     seed_started = time.monotonic()
@@ -2764,11 +2614,7 @@ def main() -> int:
                     ),
                 )
                 correlation = case.inputs["correlationId"]
-                live_runs.begin(
-                    case.name,
-                    correlation,
-                    instance_id_file,
-                )
+                live_runs.begin(case.name, correlation)
                 debug_started = time.monotonic()
                 (
                     debug,
@@ -2786,8 +2632,6 @@ def main() -> int:
                         "500",
                         "--inputs",
                         json.dumps(inputs, separators=(",", ":")),
-                        "--instance-id-file",
-                        str(instance_id_file),
                     ],
                     log_file=log_file,
                     case_name=case.name,
@@ -2797,7 +2641,6 @@ def main() -> int:
                     side_effects=side_effects,
                     live_run_lease=live_runs,
                     correlation=correlation,
-                    instance_id_file=instance_id_file,
                 )
                 print(
                     f"BENCHMARK scenario={case.name} stage=debug "

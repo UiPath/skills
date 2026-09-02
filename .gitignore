@@ -92,3 +92,8 @@ tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
 # Node (package.json lives at the repo root for the @uipath/skills package)
 node_modules/
 package-lock.json
+
+# Durable cleanup journal written by the live BPMN escalation grader. Holds
+# live Alpha solution/Jira/Drive/Slack ids; the post_run sweep consumes and
+# removes it. Never committed.
+.customer-escalation-cleanup.jsonl

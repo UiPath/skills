@@ -15,9 +15,25 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:setup, shape:multi-node, node:decision, node:subflow, node:loop, connector, feature:connections, feature:activities, feature:registry, feature:transform, feature:escalation, feature:conversational, feature:approval-gate, path-to-ga]
 
 run_limits:
+  # Timeout headroom, largest number first. task_timeout is the only ceiling
+  # coder_eval enforces on the whole task; everything else must fit under it:
+  #
+  #   task_timeout                                        18000s
+  #   - live Alpha grader (run_command timeout below)     12000s
+  #   - validate + pack graders (180s each)                 360s
+  #   = agent authoring + interview window                 5640s
+  #
+  # The live grader is the load-bearing number: it runs 14 hidden scenarios
+  # against Alpha at a 660s worst case each, then sweeps every created Jira
+  # issue, Drive copy, Slack message, and ephemeral solution. Its internal
+  # deadlines are derived from that same 12000s in
+  # check_customer_escalation_behavior.py — change the two together.
+  #
+  # turn_timeout caps one pathological turn so it cannot eat the authoring
+  # window; it is not a per-turn budget (interview turns use far less).
   expected_turns: 100
   max_turns: 180
-  turn_timeout: 2400
+  turn_timeout: 900
   task_timeout: 18000
 
 agent:
@@ -276,7 +292,15 @@ success_criteria:
   - type: command_not_executed
     description: "Agent left BPMN cloud execution and mutation to the grader"
     tool_name: "Bash"
-    command_pattern: '(?:(?:^|[\n;&|])[ \t]*(?:(?:then|do|else)[ \t]+)?|\$\([ \t]*|`[ \t]*)(?:(?:[\(\{][ \t]*)|(?:[A-Za-z_][A-Za-z0-9_]*=(?:(?:"(?:\\.|[^"\\])*")|(?:\x27[^\x27\r\n]*\x27)|(?:[^\s;&|(){}]+))[ \t]+)|(?:(?:command|exec|!)(?:[ \t]+-[^\s;&|(){}]+)*[ \t]+)|(?:time(?:[ \t]+-[^\s;&|(){}]+)*[ \t]+)|(?:(?:[^\s;&|(){}]+/)?env(?:[ \t]+[^\s;&|(){}]+)*[ \t]+)|(?:(?:[^\s;&|(){}]+/)?(?:sh|bash|zsh)[ \t]+-c[ \t]+["\x27][ \t]*)|(?:eval[ \t]+["\x27][ \t]*))*(?:(?:[^\s;&|(){}]+/)?uip|"(?:[^"\s;&|(){}]+/)?uip"|\x27(?:[^\x27\s;&|(){}]+/)?uip\x27|\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})|"\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})"|"?\$\((?:which|command[ \t]+-v)[ \t]+(?:[^\s)]+/)?uip\)"?)(?=[^\r\n;&|]*?(?:\bmaestro\b[^\r\n;&|]*?\bbpmn\b[^\r\n;&|]*?(?:\bdebug(?=\s|$)|\bdebug-instance\b[^\r\n;&|]*?\b(?:breakpoints|cancel|continue|create|variables-set)\b|\bprocess\b[^\r\n;&|]*?\b(?:publish|run)\b|\bprocess\b[^\r\n;&|]*?\b(?:settings|variable-tags)\b[^\r\n;&|]*?\bset\b|\binstance\b[^\r\n;&|]*?\b(?:cancel|goto|migrate|pause|resume|retry|variables-set)\b|\binstance\b[^\r\n;&|]*?\belement\b[^\r\n;&|]*?\b(?:cancel|retry)\b|\binstance\b[^\r\n;&|]*?\bmessage\b[^\r\n;&|]*?\bsend\b)|\bsolution\b[^\r\n;&|]*?(?:\b(?:upload|publish|delete)\b|\bdeploy\b[^\r\n;&|]*?\b(?:activate|run|uninstall)\b|\bpackages\b[^\r\n;&|]*?\bdelete\b|\bprojects?\b[^\r\n;&|]*?\b(?:publish|resync)\b)|\bis\b[^\r\n;&|]*?(?:\bconnections\b[^\r\n;&|]*?\b(?:create|delete|edit|rename|set-default|update-polling-interval)\b|\bresources\b[^\r\n;&|]*?\brun\b[^\r\n;&|]*?\b(?:create|update|delete|replace)\b|\bconnectors\b[^\r\n;&|]*?\b(?:import|publish)\b)))'
+    # Matches a forbidden verb anywhere on the same command as a uip token,
+    # so it also catches indirect invocations the previous shell-anchored
+    # pattern walked past (python3 -c "subprocess.run(['uip',...])").
+    # Read-only verbs the task needs stay unmatched: init, validate, format,
+    # refresh, pack, registry, debug-instance/instance variables-all,
+    # solution deploy list|status, packages|projects list, is *list|ping|
+    # describe, is resources run get. Pure-print builtins are excluded so an
+    # echoed command is not graded as an executed one.
+    command_pattern: '^(?![ \t]*(?:echo|printf)\b)[\s\S]*?(?:\buip\b|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)[^\r\n;&|]{0,60}?(?:maestro[^\r\n;&|]{0,60}?bpmn[^\r\n;&|]{0,60}?(?:debug(?![\w-])|debug-instance[^\r\n;&|]{0,60}?(?:breakpoints|cancel|continue|create|variables-set)|process[^\r\n;&|]{0,60}?(?:publish|run|settings|variable-tags)|instance[^\r\n;&|]{0,60}?(?:cancel|element|goto|message|migrate|pause|resume|retry|variables-set))|solution[^\r\n;&|]{0,60}?(?:upload|publish|delete|deploy\b(?![^\r\n;&|]{0,60}?\b(?:list|status)\b)|packages[^\r\n;&|]{0,60}?delete|projects?[^\r\n;&|]{0,60}?(?:publish|resync))|is[^\r\n;&|]{0,60}?(?:connections[^\r\n;&|]{0,60}?(?:create|delete|edit|rename|set-default|update-polling-interval)|connectors[^\r\n;&|]{0,60}?(?:import|publish)|resources[^\r\n;&|]{0,60}?run[^\r\n;&|]{0,60}?(?:create|update|delete|replace)))'
     weight: 1.0
     pass_threshold: 1.0
 
@@ -304,7 +328,17 @@ success_criteria:
   - type: run_command
     description: "The exact submitted project executes hidden scenarios in live Alpha and produces the expected business outputs and real connector side effects"
     command: "python3 $TASK_DIR/check_customer_escalation_behavior.py"
-    timeout: 10800
+    # Must match GRADER_TIMEOUT_SECONDS in check_customer_escalation_behavior.py.
+    timeout: 12000
     expected_exit_code: 0
     weight: 12.0
     pass_threshold: 1.0
+
+# Backstop sweep, per the convention in tests/experiments/default.yaml. The
+# grader frees its own resources in a finally block; that block is skipped if
+# coder_eval SIGKILLs the graded command on its timeout, so this replays the
+# durable cleanup journal the grader appends to as each resource is created.
+# Best-effort and always exits 0 — post_run must not fail a task over cleanup.
+post_run:
+  - command: "python3 $TASK_DIR/cleanup_customer_escalation.py"
+    timeout: 600

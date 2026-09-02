@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import importlib.util
 import json
 from pathlib import Path
@@ -21,6 +22,14 @@ checker = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = checker
 SPEC.loader.exec_module(checker)
 
+# Leases journal every created id to CLEANUP_JOURNAL, which is relative to the
+# CWD by design (the sandbox root in a real run). Redirect the default for the
+# whole test session so unit tests never drop a journal in the repo. Tests that
+# assert journal contents patch this to their own temp path.
+_JOURNAL_DIR = tempfile.TemporaryDirectory()
+atexit.register(_JOURNAL_DIR.cleanup)
+checker.CLEANUP_JOURNAL = Path(_JOURNAL_DIR.name) / "cleanup.jsonl"
+
 
 class BehaviorCheckerTests(unittest.TestCase):
     @staticmethod
@@ -35,10 +44,6 @@ class BehaviorCheckerTests(unittest.TestCase):
     def contract() -> checker.RuntimeContract:
         return checker.RuntimeContract(
             public_output_ids={"route": "output_route"},
-            root_end_id="End",
-            parallel_split_id="Split",
-            parallel_join_id="Join",
-            marker_id="Marker",
             marker_collection_id="MarkerCollection",
             error_end_id="ErrorEnd",
             error_boundary_id="Boundary",
@@ -47,35 +52,6 @@ class BehaviorCheckerTests(unittest.TestCase):
             drive_copy_id="DriveCopy",
             slack_send_id="SlackSend",
         )
-
-    @staticmethod
-    def jira_create_element(summary: str) -> ET.Element:
-        node = ET.Element(checker.q(checker.BPMN_NS, "sendTask"), id="Jira")
-        extensions = ET.SubElement(
-            node,
-            checker.q(checker.BPMN_NS, "extensionElements"),
-        )
-        activity = ET.SubElement(
-            extensions,
-            checker.q(checker.UIPATH_NS, "activity"),
-        )
-        body = {
-            "fields": {
-                "project": {"key": "=vars.JiraProjectKey"},
-                "issuetype": {"id": "=vars.JiraIssueTypeId"},
-                "reporter": {"id": "=vars.JiraReporterAccountId"},
-                "summary": summary,
-                "description": "=vars.CorrelationId",
-            }
-        }
-        ET.SubElement(
-            activity,
-            checker.q(checker.UIPATH_NS, "input"),
-            target="body",
-            name="body",
-            value=json.dumps(body),
-        )
-        return node
 
     def test_hidden_live_matrix_covers_all_required_outcome_families(self) -> None:
         self.assertEqual(len(checker.SCENARIOS), 14)
@@ -194,10 +170,6 @@ class BehaviorCheckerTests(unittest.TestCase):
                 "route": "output_route",
                 "engineeringNeeded": "output_engineeringNeeded",
             },
-            root_end_id="End",
-            parallel_split_id="Split",
-            parallel_join_id="Join",
-            marker_id="Marker",
             marker_collection_id="MarkerCollection",
             error_end_id="ErrorEnd",
             error_boundary_id="Boundary",
@@ -689,33 +661,6 @@ class BehaviorCheckerTests(unittest.TestCase):
                 environment,
                 require_summary=True,
             )
-
-    def test_static_jira_summary_requires_all_business_tokens(self) -> None:
-        invalid_summaries = {
-            "customer": "=js:'Escalation ' + vars.CorrelationId",
-            "escalation": "=js:'Customer ' + vars.CorrelationId",
-            "correlation": "Customer escalation without runtime id",
-        }
-        key = ("uipath-atlassian-jira", "/curated_create_issue")
-        for missing_term, summary in invalid_summaries.items():
-            with (
-                self.subTest(missing_term=missing_term),
-                self.assertRaisesRegex(
-                    checker.CheckFailure,
-                    "summary must contain",
-                ),
-            ):
-                checker.validate_connector_inputs(
-                    self.jira_create_element(summary),
-                    key,
-                )
-
-        checker.validate_connector_inputs(
-            self.jira_create_element(
-                "=js:'Customer escalation ' + vars.CorrelationId"
-            ),
-            key,
-        )
 
     def test_remote_jira_summary_requires_customer_and_escalation(self) -> None:
         environment = self.environment()
@@ -1273,6 +1218,53 @@ class BehaviorCheckerTests(unittest.TestCase):
                 self.contract(),
             )
 
+    def test_attachment_marker_tolerates_the_same_collection_in_two_scopes(
+        self,
+    ) -> None:
+        """PIMS may surface a subprocess-scoped collection in both scopes."""
+
+        case = checker.SCENARIOS[0]
+        expected = list(case.attachment_iterations)
+        variables_data = {
+            "Variables": [
+                {"Globals": {"MarkerCollection": expected}},
+                {"Globals": {"MarkerCollection": list(expected)}},
+            ]
+        }
+
+        self.assertEqual(
+            checker.attachment_marker_order(
+                case,
+                variables_data,
+                self.contract(),
+            ),
+            tuple(expected),
+        )
+
+    def test_attachment_marker_rejects_disagreeing_scopes(self) -> None:
+        case = checker.SCENARIOS[0]
+        variables_data = {
+            "Variables": [
+                {"Globals": {"MarkerCollection": list(case.attachment_iterations)}},
+                {
+                    "Globals": {
+                        "MarkerCollection": list(
+                            reversed(case.attachment_iterations)
+                        )
+                    }
+                },
+            ]
+        }
+
+        with self.assertRaisesRegex(
+            checker.CheckFailure, "marker collection expected"
+        ):
+            checker.attachment_marker_order(
+                case,
+                variables_data,
+                self.contract(),
+            )
+
     def test_slack_send_requires_exact_live_message_content(self) -> None:
         case = checker.SCENARIOS[0]
         environment = self.environment()
@@ -1736,37 +1728,13 @@ class BehaviorCheckerTests(unittest.TestCase):
 
         variables.assert_not_called()
 
-    def test_instance_journal_reads_only_top_level_id(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            journal = Path(directory) / "instance.json"
-            journal.write_text(
-                json.dumps(
-                    {
-                        "InstanceId": "instance-owned",
-                        "Diagnostic": {
-                            "InstanceId": "instance-shared-decoy"
-                        },
-                    }
-                ),
-                encoding="utf-8",
-            )
-            self.assertEqual(
-                checker.read_instance_id_journal(journal),
-                "instance-owned",
-            )
-
-    def test_live_run_lease_recovers_exact_journal_before_search(
+    def test_pending_correlation_without_logged_instance_is_dropped(
         self,
     ) -> None:
         environment = self.environment()
         side_effects = checker.ConnectorSideEffectLease(environment)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            journal = root / "instance.json"
-            journal.write_text(
-                json.dumps({"InstanceId": "instance-owned"}),
-                encoding="utf-8",
-            )
             solution_lease = checker.AlphaSolutionLease(root / "Eval.uipx")
             lease = checker.LiveRunLease(
                 contract=self.contract(),
@@ -1774,21 +1742,15 @@ class BehaviorCheckerTests(unittest.TestCase):
                 solution_lease=solution_lease,
                 side_effects=side_effects,
             )
-            lease.begin("scenario", "correlation", journal)
-            with (
-                patch.object(
-                    checker,
-                    "best_effort_capture_instance_outputs",
-                    return_value=[],
-                ) as recover_instance,
-            ):
+            lease.begin("scenario", "correlation")
+            with patch.object(
+                checker,
+                "best_effort_capture_instance_outputs",
+                return_value=[],
+            ) as recover_instance:
                 self.assertEqual(lease.cleanup(), [])
 
-        recover_instance.assert_called_once()
-        self.assertEqual(
-            recover_instance.call_args.args[0],
-            "instance-owned",
-        )
+        recover_instance.assert_not_called()
         self.assertFalse(lease.pending_correlations)
         self.assertFalse(lease.active_instances)
 
@@ -1799,7 +1761,6 @@ class BehaviorCheckerTests(unittest.TestCase):
         side_effects = checker.ConnectorSideEffectLease(environment)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            missing_journal = root / "instance.json"
             lease = checker.LiveRunLease(
                 contract=self.contract(),
                 environment=environment,
@@ -1808,7 +1769,7 @@ class BehaviorCheckerTests(unittest.TestCase):
                 ),
                 side_effects=side_effects,
             )
-            lease.begin("scenario", "correlation", missing_journal)
+            lease.begin("scenario", "correlation")
             with patch.object(checker, "run_cli") as run:
                 self.assertEqual(lease.cleanup(), [])
 
@@ -1836,11 +1797,6 @@ class BehaviorCheckerTests(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            journal = root / "instance.json"
-            journal.write_text(
-                json.dumps({"InstanceId": "instance-owned"}),
-                encoding="utf-8",
-            )
             solution_lease = checker.AlphaSolutionLease(root / "Eval.uipx")
             live_runs = checker.LiveRunLease(
                 contract=self.contract(),
@@ -1848,7 +1804,7 @@ class BehaviorCheckerTests(unittest.TestCase):
                 solution_lease=solution_lease,
                 side_effects=side_effects,
             )
-            live_runs.begin("scenario", "correlation", journal)
+            live_runs.begin("scenario", "correlation")
             with patch.object(
                 checker,
                 "run_cli",
@@ -1864,7 +1820,6 @@ class BehaviorCheckerTests(unittest.TestCase):
                     side_effects=side_effects,
                     live_run_lease=live_runs,
                     correlation="correlation",
-                    instance_id_file=journal,
                 )
 
         self.assertEqual(result[-1], "instance-owned")
@@ -1952,7 +1907,6 @@ class BehaviorCheckerTests(unittest.TestCase):
                     side_effects=side_effects,
                     live_run_lease=live_run_lease,
                     correlation="correlation-timeout",
-                    instance_id_file=root / "instance.json",
                 )
 
         self.assertEqual(run.call_count, 4)
@@ -2082,7 +2036,6 @@ class BehaviorCheckerTests(unittest.TestCase):
                     side_effects=side_effects,
                     live_run_lease=live_run_lease,
                     correlation="correlation-malformed",
-                    instance_id_file=root / "instance.json",
                 )
 
         self.assertEqual(run.call_count, 6)
@@ -2195,6 +2148,476 @@ class BehaviorCheckerTests(unittest.TestCase):
 
             with patch.object(checker, "run_cli", return_value=completed):
                 self.assertEqual(lease.cleanup(), [])
+
+
+
+class RuntimeContractTests(unittest.TestCase):
+    """Coverage for the id-resolution preflight that gates the live matrix."""
+
+    @staticmethod
+    def build_bpmn(
+        *,
+        connector_tag: str = "sendTask",
+        extra_end_events: int = 0,
+        gateway_fanout: int = 3,
+        omit_output: str | None = None,
+        duplicate_output: str | None = None,
+        marker_collections: int = 1,
+        drop_connector: tuple[str, str] | None = None,
+        with_error_path: bool = True,
+    ) -> ET.Element:
+        def b(tag: str) -> str:
+            return checker.q(checker.BPMN_NS, tag)
+
+        def u(tag: str) -> str:
+            return checker.q(checker.UIPATH_NS, tag)
+
+        definitions = ET.Element(b("definitions"))
+        process = ET.SubElement(definitions, b("process"), id="Process")
+        extensions = ET.SubElement(process, b("extensionElements"))
+        variables = ET.SubElement(extensions, u("variables"))
+        for name, value_type in checker.OUTPUT_TYPES.items():
+            if name == omit_output:
+                continue
+            ET.SubElement(
+                variables,
+                u("output"),
+                name=name,
+                id=f"output_{name}",
+                type=value_type,
+                elementId="End",
+            )
+        if duplicate_output:
+            ET.SubElement(
+                variables,
+                u("output"),
+                name=duplicate_output,
+                id=f"other_{duplicate_output}",
+                type=checker.OUTPUT_TYPES[duplicate_output],
+                elementId="End",
+            )
+
+        gateway = ET.SubElement(
+            process, b("parallelGateway"), id="Split"
+        )
+        for index in range(gateway_fanout):
+            ET.SubElement(
+                process,
+                b("sequenceFlow"),
+                id=f"flow-{index}",
+                sourceRef=gateway.attrib["id"],
+                targetRef=f"branch-{index}",
+            )
+
+        for index in range(1 + extra_end_events):
+            ET.SubElement(process, b("endEvent"), id=f"End{index or ''}")
+
+        for index in range(marker_collections):
+            subprocess = ET.SubElement(
+                process, b("subProcess"), id=f"Attachments{index or ''}"
+            )
+            ET.SubElement(subprocess, b("multiInstanceLoopCharacteristics"))
+            marker_extensions = ET.SubElement(
+                subprocess, b("extensionElements")
+            )
+            mapping = ET.SubElement(marker_extensions, u("mapping"))
+            ET.SubElement(
+                mapping,
+                u("output"),
+                custom="true",
+                type="string",
+                var=f"MarkerCollection{index or ''}",
+            )
+
+        for key in checker.REQUIRED_CONNECTORS:
+            if key == drop_connector:
+                continue
+            node = ET.SubElement(
+                process,
+                b(connector_tag),
+                id=f"connector-{key[0]}-{key[1]}",
+            )
+            node_extensions = ET.SubElement(node, b("extensionElements"))
+            activity = ET.SubElement(node_extensions, u("activity"))
+            context = ET.SubElement(activity, u("context"))
+            ET.SubElement(context, u("input"), name="connectorKey", value=key[0])
+            ET.SubElement(context, u("input"), name="path", value=key[1])
+
+        if with_error_path:
+            error_end = ET.SubElement(process, b("endEvent"), id="ErrorEnd")
+            ET.SubElement(error_end, b("errorEventDefinition"))
+            boundary = ET.SubElement(process, b("boundaryEvent"), id="Boundary")
+            ET.SubElement(boundary, b("errorEventDefinition"))
+        return definitions
+
+    def load(self, definitions: ET.Element) -> checker.RuntimeContract:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "Process.bpmn"
+            ET.ElementTree(definitions).write(path, encoding="utf-8")
+            return checker.load_runtime_contract(path)
+
+    def test_contract_resolves_every_id_the_scenarios_read(self) -> None:
+        contract = self.load(self.build_bpmn())
+        self.assertEqual(
+            set(contract.public_output_ids), set(checker.OUTPUT_TYPES)
+        )
+        self.assertEqual(contract.marker_collection_id, "MarkerCollection")
+        self.assertEqual(contract.error_end_id, "ErrorEnd")
+        self.assertEqual(contract.error_boundary_id, "Boundary")
+        for key, attribute in checker.REQUIRED_CONNECTORS.items():
+            self.assertEqual(
+                getattr(contract, attribute),
+                f"connector-{key[0]}-{key[1]}",
+            )
+
+    def test_contract_does_not_grade_process_topology(self) -> None:
+        """A differently shaped process must still reach the live scenarios."""
+
+        contract = self.load(
+            self.build_bpmn(
+                extra_end_events=2,
+                gateway_fanout=5,
+                with_error_path=False,
+            )
+        )
+        self.assertEqual(
+            set(contract.public_output_ids), set(checker.OUTPUT_TYPES)
+        )
+        self.assertIsNone(contract.error_end_id)
+        self.assertIsNone(contract.error_boundary_id)
+
+    def test_connectors_are_found_when_emitted_as_service_tasks(self) -> None:
+        contract = self.load(self.build_bpmn(connector_tag="serviceTask"))
+        self.assertEqual(
+            contract.slack_send_id,
+            "connector-uipath-salesforce-slack-/send_message_to_channel_v2",
+        )
+
+    def test_missing_connector_fails_with_the_absent_key(self) -> None:
+        dropped = ("uipath-google-drive", "/copyFile")
+        with self.assertRaisesRegex(checker.CheckFailure, "copyFile"):
+            self.load(self.build_bpmn(drop_connector=dropped))
+
+    def test_missing_public_output_names_the_output(self) -> None:
+        with self.assertRaisesRegex(checker.CheckFailure, "caseKey"):
+            self.load(self.build_bpmn(omit_output="caseKey"))
+
+    def test_duplicate_public_output_is_rejected_as_unaddressable(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            checker.CheckFailure, "declared more than once"
+        ):
+            self.load(self.build_bpmn(duplicate_output="route"))
+
+    def test_ambiguous_marker_collection_is_rejected(self) -> None:
+        with self.assertRaisesRegex(
+            checker.CheckFailure, "marker collection"
+        ):
+            self.load(self.build_bpmn(marker_collections=2))
+
+    def test_duplicate_connector_key_is_rejected(self) -> None:
+        definitions = self.build_bpmn()
+        process = definitions.find(checker.q(checker.BPMN_NS, "process"))
+        assert process is not None
+        clone = ET.SubElement(
+            process,
+            checker.q(checker.BPMN_NS, "sendTask"),
+            id="duplicate-copyFile",
+        )
+        extensions = ET.SubElement(
+            clone, checker.q(checker.BPMN_NS, "extensionElements")
+        )
+        activity = ET.SubElement(
+            extensions, checker.q(checker.UIPATH_NS, "activity")
+        )
+        context = ET.SubElement(
+            activity, checker.q(checker.UIPATH_NS, "context")
+        )
+        ET.SubElement(
+            context,
+            checker.q(checker.UIPATH_NS, "input"),
+            name="connectorKey",
+            value="uipath-google-drive",
+        )
+        ET.SubElement(
+            context,
+            checker.q(checker.UIPATH_NS, "input"),
+            name="path",
+            value="/copyFile",
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "duplicate"):
+            self.load(definitions)
+
+
+class RuntimeEnvelopeTests(unittest.TestCase):
+    """Coverage for the runtime payload shapes the live matrix reads."""
+
+    def test_incidents_accepts_a_bare_list(self) -> None:
+        self.assertEqual(checker.incident_records([]), [])
+        self.assertEqual(checker.incident_records([{"Id": "a"}]), [{"Id": "a"}])
+
+    def test_incidents_accepts_an_item_envelope(self) -> None:
+        for key in ("Items", "items", "Incidents", "Results", "Value"):
+            with self.subTest(key=key):
+                self.assertEqual(
+                    checker.incident_records({key: [{"Id": "a"}]}),
+                    [{"Id": "a"}],
+                )
+
+    def test_incidents_rejects_an_unknown_shape(self) -> None:
+        self.assertIsNone(checker.incident_records("nope"))
+        self.assertIsNone(checker.incident_records({"Total": 3}))
+
+    def test_runtime_key_prefers_the_exact_id(self) -> None:
+        globals_map = {"case_key": "wrong", "caseKey": "right"}
+        self.assertEqual(
+            checker.resolve_runtime_key(globals_map, "caseKey", "caseKey"),
+            "right",
+        )
+
+    def test_runtime_key_falls_back_to_a_single_loose_match(self) -> None:
+        self.assertEqual(
+            checker.resolve_runtime_key({"Case_Key": "value"}, "caseKey", "x"),
+            "value",
+        )
+
+    def test_runtime_key_rejects_an_ambiguous_loose_match(self) -> None:
+        with self.assertRaisesRegex(checker.CheckFailure, "multiple"):
+            checker.resolve_runtime_key(
+                {"case_key": "a", "Case-Key": "b"}, "caseKey", "caseKey"
+            )
+
+    def test_runtime_key_reports_a_missing_id(self) -> None:
+        with self.assertRaisesRegex(checker.CheckFailure, "missing"):
+            checker.resolve_runtime_key({}, "caseKey", "caseKey")
+
+
+class CleanupJournalTests(unittest.TestCase):
+    """The post_run backstop must survive a SIGKILL of the graded command."""
+
+    def test_every_created_id_is_journalled_when_added(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            issues = checker.JournaledSet("jira_issue", journal)
+            messages = checker.JournaledSet("slack_message", journal)
+            issues.add("10001")
+            messages.add(("C123", "1.2"))
+
+            records = [
+                json.loads(line)
+                for line in journal.read_text(encoding="utf-8").splitlines()
+            ]
+
+        self.assertEqual(
+            records,
+            [
+                {"kind": "jira_issue", "value": "10001"},
+                {"kind": "slack_message", "value": ["C123", "1.2"]},
+            ],
+        )
+
+    def test_journal_failure_never_breaks_a_live_scenario(self) -> None:
+        unwritable = Path("/dev/null/nope/cleanup.jsonl")
+        issues = checker.JournaledSet("jira_issue", unwritable)
+        issues.add("10001")
+        self.assertEqual(issues, {"10001"})
+
+    def test_leases_journal_through_to_disk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            with patch.object(checker, "CLEANUP_JOURNAL", journal):
+                solutions = checker.AlphaSolutionLease(
+                    Path(directory) / "Eval.uipx"
+                )
+                side_effects = checker.ConnectorSideEffectLease(
+                    self.environment()
+                )
+                solutions.solution_ids.add(
+                    "11111111-1111-1111-1111-111111111111"
+                )
+                side_effects.drive_file_ids.add("drive-copy")
+
+            kinds = [
+                json.loads(line)["kind"]
+                for line in journal.read_text(encoding="utf-8").splitlines()
+            ]
+
+        self.assertEqual(kinds, ["solution", "drive_file"])
+
+    @staticmethod
+    def environment() -> checker.LiveEnvironment:
+        return BehaviorCheckerTests.environment()
+
+
+class CleanupSweepTests(unittest.TestCase):
+    """The replay script must be safe when there is nothing to free."""
+
+    def sweep(self):
+        """Load the post_run script.
+
+        It imports the grader under its own module name, so these tests patch
+        `sweep.grader` rather than the test module's `checker` alias.
+        """
+
+        path = Path(__file__).resolve().parent / "cleanup_customer_escalation.py"
+        spec = importlib.util.spec_from_file_location("sweep", path)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_absent_journal_does_no_cli_work(self) -> None:
+        sweep = self.sweep()
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "absent.jsonl"
+            with (
+                patch.object(sweep.grader, "CLEANUP_JOURNAL", missing),
+                patch.object(sweep.grader, "run_cli") as run_cli,
+                patch.object(sweep.grader, "discover_live_environment") as discover,
+            ):
+                self.assertEqual(sweep.main(), 0)
+        run_cli.assert_not_called()
+        discover.assert_not_called()
+
+    def test_malformed_journal_lines_are_skipped(self) -> None:
+        sweep = self.sweep()
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            journal.write_text(
+                "\n".join(
+                    [
+                        "not json",
+                        json.dumps({"kind": "jira_issue", "value": "10001"}),
+                        json.dumps({"value": "no kind"}),
+                        "",
+                        json.dumps({"kind": "drive_file", "value": "file-1"}),
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                sweep.read_journal(journal),
+                {"jira_issue": ["10001"], "drive_file": ["file-1"]},
+            )
+
+    def test_sweep_frees_journalled_resources_and_exits_zero(self) -> None:
+        sweep = self.sweep()
+        environment = sweep.grader.LiveEnvironment(
+            jira_connection_id="jira-connection",
+            drive_connection_id="drive-connection",
+            slack_connection_id="slack-connection",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            journal.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "kind": "solution",
+                                "value": (
+                                    "11111111-1111-1111-1111-111111111111"
+                                ),
+                            }
+                        ),
+                        json.dumps({"kind": "jira_issue", "value": "10001"}),
+                        json.dumps(
+                            {"kind": "slack_message", "value": ["C1", "1.2"]}
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
+                patch.object(
+                    sweep.grader,
+                    "discover_live_environment",
+                    return_value=environment,
+                ),
+                patch.object(
+                    sweep.grader.AlphaSolutionLease, "cleanup", return_value=[]
+                ) as solution_cleanup,
+                patch.object(
+                    sweep.grader.ConnectorSideEffectLease,
+                    "cleanup",
+                    return_value=[],
+                ) as connector_cleanup,
+            ):
+                self.assertEqual(sweep.main(), 0)
+            solution_cleanup.assert_called_once()
+            connector_cleanup.assert_called_once()
+            self.assertFalse(journal.exists())
+
+    def test_sweep_never_deletes_the_shared_drive_fixtures(self) -> None:
+        sweep = self.sweep()
+        environment = sweep.grader.LiveEnvironment(
+            jira_connection_id="jira-connection",
+            drive_connection_id="drive-connection",
+            slack_connection_id="slack-connection",
+        )
+        protected = environment.drive_source_file_ids[0]
+        captured: list[set[str]] = []
+
+        def capture(self) -> list[str]:
+            captured.append(set(self.drive_file_ids))
+            return []
+
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            journal.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {"kind": "drive_file", "value": protected}
+                        ),
+                        json.dumps({"kind": "drive_file", "value": "copy-1"}),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
+                patch.object(
+                    sweep.grader,
+                    "discover_live_environment",
+                    return_value=environment,
+                ),
+                patch.object(
+                    sweep.grader.ConnectorSideEffectLease, "cleanup", capture
+                ),
+            ):
+                self.assertEqual(sweep.main(), 0)
+
+        self.assertEqual(captured, [{"copy-1"}])
+
+    def test_sweep_exits_zero_when_cleanup_raises(self) -> None:
+        sweep = self.sweep()
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            journal.write_text(
+                json.dumps(
+                    {
+                        "kind": "solution",
+                        "value": "11111111-1111-1111-1111-111111111111",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
+                patch.object(
+                    sweep.grader.AlphaSolutionLease,
+                    "cleanup",
+                    side_effect=RuntimeError("alpha is down"),
+                ),
+            ):
+                self.assertEqual(sweep.main(), 0)
+            self.assertTrue(journal.exists())
 
 
 if __name__ == "__main__":
