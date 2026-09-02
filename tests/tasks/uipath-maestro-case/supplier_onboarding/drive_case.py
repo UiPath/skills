@@ -552,9 +552,13 @@ def main() -> int:
     started = time.time()
     started_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
+    # stderr folded into stdout: two pipes with one reader leaves the other to fill, and
+    # a 64 KB buffer is enough for `case debug` to block before it ever creates the
+    # instance. Two routes waited out the full 600s timeout that way while the first,
+    # quieter one succeeded.
     debug = subprocess.Popen(
         ["uip", "maestro", "case", "debug", project_dir, "--output", "json"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
 
     instance_id = None
