@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Verify smoke_create_all_types: single .flow with a DF Create node whose
-bodyParameters cover all 8 supported field types on FlowCodeEvalEntity, each
+bodyParameters cover all 8 UI-compatible field types on FlowCodeEvalEntity, each
 carrying either the correct JSON literal shape or a `=js:` expression binding.
+
+The vocabulary here must match the one entity-schema.md sanctions. INTEGER,
+DATETIME and UUID are on its "never emit" list, so viewCount is DECIMAL
+(decimalPrecision 0), lastUpdated is DATETIME_WITH_TZ and externalId is a plain
+STRING. Grading the forbidden spellings taught the agent to emit types the CLI
+now refuses outright at `entities create`.
 
 Any value starting with `=js:` is accepted for the type-check (agent may be
 binding the value to a workflow variable — grade wiring, not literal choice)."""
@@ -11,9 +17,10 @@ import re
 import sys
 
 ENTITY = "FlowCodeEvalEntity"
-UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?")
+# DATETIME_WITH_TZ is the only UI-compatible timestamp, and the offset is the point of it:
+# accept Z or +/-HH:MM, reject a naive local timestamp.
+DATETIME_TZ_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})$")
 
 
 def _is_expression(v):
@@ -29,10 +36,6 @@ def _check_number(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
-def _check_int(v):
-    return isinstance(v, int) and not isinstance(v, bool)
-
-
 def _check_bool(v):
     return isinstance(v, bool)
 
@@ -41,23 +44,19 @@ def _check_date(v):
     return isinstance(v, str) and bool(DATE_RE.match(v))
 
 
-def _check_datetime(v):
-    return isinstance(v, str) and bool(DATETIME_RE.match(v))
-
-
-def _check_uuid(v):
-    return isinstance(v, str) and bool(UUID_RE.match(v))
+def _check_datetime_tz(v):
+    return isinstance(v, str) and bool(DATETIME_TZ_RE.match(v))
 
 
 EXPECTED = {
     "title":        ("STRING",         _check_str),
     "description":  ("MULTILINE_TEXT", _check_str),
     "score":        ("DECIMAL",        _check_number),
-    "viewCount":    ("INTEGER",        _check_int),
+    "viewCount":    ("DECIMAL",        _check_number),
     "active":       ("BOOLEAN",        _check_bool),
     "releaseDate":  ("DATE",           _check_date),
-    "lastUpdated":  ("DATETIME",       _check_datetime),
-    "externalId":   ("UUID",           _check_uuid),
+    "lastUpdated":  ("DATETIME_WITH_TZ", _check_datetime_tz),
+    "externalId":   ("STRING",         _check_str),
 }
 
 

@@ -4,7 +4,7 @@
   "fields": [
     {"name": "contractTitle", "type": "STRING",  "lengthLimit": 200},
     {"name": "status",        "type": "STRING",  "lengthLimit": 100},
-    {"name": "priority",      "type": "INTEGER"},
+    {"name": "priority",      "type": "DECIMAL", "decimalPrecision": 0},
     {"name": "dueDate",       "type": "DATE"},
     {"name": "value",         "type": "DECIMAL"},
     {"name": "isUrgent",      "type": "BOOLEAN"}

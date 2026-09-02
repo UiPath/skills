@@ -1,7 +1,7 @@
 task_id: skill-flow-datafabric-smoke-query
 description: >
   Smoke: read-only record queries against FlowCodeEvalEntity covering boolean,
-  numeric, text, date, datetime, UUID, and null filters, ordered pages, and
+  numeric, text, date, datetime, string-id, and null filters, ordered pages, and
   offset pagination. FILE attachments are not filterable.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice]
 
@@ -26,12 +26,12 @@ initial_prompt: |
   one query activity:
   - active equals true (boolean)
   - score is greater than or equal to 8.5 (decimal)
-  - viewCount is greater than or equal to 1000 (integer)
+  - viewCount is greater than or equal to 1000 (decimal, whole)
   - title equals "FilterFixture-Matrix" (string)
   - description contains "sci-fi" (multiline text)
   - releaseDate is less than 2025-01-01 (date)
-  - lastUpdated is greater than or equal to 2024-01-01T00:00:00 (datetime)
-  - externalId equals "11111111-1111-1111-1111-111111111111" (UUID)
+  - lastUpdated is greater than or equal to 2024-01-01T00:00:00Z (datetime with tz)
+  - externalId equals "11111111-1111-1111-1111-111111111111" (string)
   - description is null
 
   Query 1 must retrieve the first 2 records sorted by score ascending, with

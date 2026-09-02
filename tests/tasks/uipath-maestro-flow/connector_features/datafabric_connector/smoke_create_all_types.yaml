@@ -1,8 +1,8 @@
 task_id: skill-flow-datafabric-smoke-create-all-types
 description: >
   Smoke: DF Create node on FlowCodeEvalEntity binds all 8 supported field
-  types (STRING, MULTILINE_TEXT, DECIMAL, INTEGER, BOOLEAN, DATE, DATETIME,
-  UUID) with correct JSON literal shapes. Static-validate only; runtime
+  types (STRING, MULTILINE_TEXT, DECIMAL, BOOLEAN, DATE, DATETIME_WITH_TZ)
+  with correct JSON literal shapes. Static-validate only; runtime
   `flow debug` skipped to avoid live tenant side effects. Full CRUD /
   negative-path coverage lives in e2e_contract_intake_pipeline.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice]
@@ -24,11 +24,11 @@ initial_prompt: |
   * title: "AllTypesTest-Smoke" (STRING)
   * description: "A sci-fi smoke test record covering all supported field types. A must-watch film." (MULTILINE_TEXT)
   * score: 7.25 (DECIMAL)
-  * viewCount: 350 (INTEGER)
+  * viewCount: 350 (DECIMAL, decimalPrecision 0)
   * active: true (BOOLEAN)
   * releaseDate: "2024-03-10" (DATE)
-  * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
-  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (UUID)
+  * lastUpdated: "2024-03-10T09:00:00Z" (DATETIME_WITH_TZ)
+  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (STRING)
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a
