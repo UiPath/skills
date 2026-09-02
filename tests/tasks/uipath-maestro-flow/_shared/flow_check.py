@@ -202,7 +202,8 @@ def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
         uipx = sorted(glob.glob(os.path.join(glob.escape(here), "*.uipx")))
         if len(uipx) == 1:
             try:
-                text = open(uipx[0], encoding="utf-8").read()
+                with open(uipx[0], encoding="utf-8") as handle:
+                    text = handle.read()
             except OSError:
                 return None
             match = _SOLUTION_ID_RE.search(text)
