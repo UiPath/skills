@@ -35,7 +35,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [PublishedFunctionInputs](#publishedfunctioninputs-interface) · [SendMessageInputs](#sendmessageinputs-interface) · [WaitForMessageInputs](#waitformessageinputs-interface) · [ConversationContextInputs](#conversationcontextinputs-interface) · [CreateOutgoingCallInputs](#createoutgoingcallinputs-interface) · [EndCallInputs](#endcallinputs-interface) · [VoiceAgentInputs](#voiceagentinputs-interface) · [ConversationalAgentInputs](#conversationalagentinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
 
-**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [RawReference](#rawreference-type) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [RawReference](#rawreference-type) · [EventFilter](#eventfilter-type) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -1041,6 +1041,17 @@ export interface TriggerOptions<W = Record<string, string>> {
      * `{ parentFolderId: '<mail folder id>' }`.
      */
     where?: W;
+    /**
+     * The OBJECT a GENERIC event watches — the one thing its node type does not
+     * say. `record-created` / `record-updated` on Data Fabric, Salesforce,
+     * ServiceNow, Jira and some sixty other connectors fire for ONE object of the
+     * connection (an entity, a table, a custom object), and the library carries no
+     * default for it: `uip is triggers objects <key> <EVENT> --connection-id <id>`
+     * lists the choices. REQUIRED for such an event, refused for a curated one whose
+     * object is built in (Outlook `email-received` is always `Message`). It is not
+     * an event parameter, so it does not go in `where`.
+     */
+    object?: string;
     /** Optional filters on the payload. Omit to take every event in scope. */
     filters?: EventFilter[];
     /** bindings.json id for the connection (defaults to the flow's single binding). */
@@ -1069,6 +1080,12 @@ export interface EventSubscription {
      * --connection-id <id>`).
      */
     where?: Record<string, string>;
+    /**
+     * The OBJECT a GENERIC event watches (a Data Fabric entity, a Salesforce or
+     * ServiceNow object, a Jira record type). Required for such an event, refused
+     * for a curated one; see `TriggerOptions.object`.
+     */
+    object?: string;
     /** Optional filters on the payload. Omit to take every event in scope. */
     filters?: EventFilter[];
     /** bindings.json id for the connection (defaults to the flow's single binding). */
@@ -2449,13 +2466,30 @@ type RawReference = {
 } | undefined;
 ````
 
-## EventFilter (interface)
+## EventFilter (type)
 
 ````ts
-export interface EventFilter {
+export type EventFilter = {
     field: string;
+} & ({
     contains: string;
-}
+} | {
+    startsWith: string;
+} | {
+    endsWith: string;
+} | {
+    equals: string | number | boolean;
+} | {
+    notEquals: string | number | boolean;
+} | {
+    lessThan: string | number;
+} | {
+    lessThanOrEqual: string | number;
+} | {
+    greaterThan: string | number;
+} | {
+    greaterThanOrEqual: string | number;
+});
 ````
 
 ## ScheduleEvery (type)
