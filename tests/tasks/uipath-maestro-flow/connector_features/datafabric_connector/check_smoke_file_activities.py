@@ -122,7 +122,7 @@ def main() -> int:
         if not REQUIRED.issubset(seen.keys()):
             continue
         unconfigured_note = (
-            f" Unconfigured connector node(s) with no inputs.detail: {unconfigured} — "
+            f" Unconfigured connector node(s) with no inputs.detail: {', '.join(unconfigured)} — "
             f"the platform reads entity, body and connection from detail, so these can never run."
             if unconfigured else ""
         )
