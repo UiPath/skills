@@ -127,7 +127,24 @@ DEBUG_TIMEOUT = 2100
 _DEBUG_SESSION: list = []
 
 
+# The instance this route started, so it can be cancelled however the route ends. A case
+# left `Running` holds the project: the next route's `case debug` then produced no instance
+# and no output at all, and waited out its whole timeout. Killing the debug process is not
+# enough, because the instance outlives it.
+_OWN_INSTANCE: list = []
+
+
 def _end_debug_session() -> None:
+    for instance_id, folder in _OWN_INSTANCE:
+        try:
+            subprocess.run(
+                ["uip", "maestro", "case", "instance", "cancel", instance_id,
+                 "-f", folder, "--comment", "route finished", "--output", "json"],
+                capture_output=True, text=True, timeout=60,
+            )
+        except (OSError, subprocess.SubprocessError):
+            pass
+    _OWN_INSTANCE.clear()
     for proc in _DEBUG_SESSION:
         if proc.poll() is None:
             proc.kill()
@@ -603,6 +620,7 @@ def main() -> int:
         fail(f"no case instance appeared within {INSTANCE_TIMEOUT}s of starting debug\n"
              f"debug output so far:\n{''.join(debug_lines)[:1500]}")
     print(f"instance {instance_id}")
+    _OWN_INSTANCE.append((instance_id, CASE_FOLDER_KEY))
     # The outcome probe grades the mailbox for this instance and runs as its own criterion in a
     # fresh process, so the id is handed over on disk. It goes in the sandbox working directory,
     # not beside this script: the harness mounts the task directory read-only.
