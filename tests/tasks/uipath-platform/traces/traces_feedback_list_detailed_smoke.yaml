@@ -35,7 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Last-24-hours pass used the relative lookback (--since 24h)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--since[\s=]["'']?24h)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--before)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--since[\s=]["'']?24h)(?!(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--before)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Second pass bounded by the requested explicit --after/--before window"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--after[\s=]["'']?2026-07-01)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--before[\s=]["'']?2026-07-08)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--since)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--after[\s=]["'']?2026-07-01)(?=(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--before[\s=]["'']?2026-07-08)(?!(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--since)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Second pass filtered to the requested category and not explicitly re-ordered oldest-first (`desc` is the CLI default)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category-id[\s=]["'']?3f9a2b71)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--sort-order[\s=]["'']?asc)'
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--category-id[\s=]["'']?3f9a2b71)(?!(?:(?!&&|\|\||;|\||\s(?:uip|\$UIP)\s)[\s\S])*--sort-order[\s=]["'']?asc)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

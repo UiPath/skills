@@ -8,6 +8,7 @@ on:
       - 'tests/tasks/uipath-planner/**'
       - 'tests/tasks/uipath-agents/**'
       - 'tests/tasks/uipath-admin/**'
+      - 'tests/tasks/uipath-platform/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
@@ -139,6 +140,26 @@ jobs:
       # (see #1203).
       - name: Run catalog guard tests
         run: pytest tests/scripts/test_catalog_build_guards.py -v
+
+  command-pattern-guard:
+    runs-on: uipath-ubuntu-latest
+    name: command_pattern segment-guard controls
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest pyyaml
+
+      # Replays a 7-control matrix through a copy of coder_eval's haystack
+      # matching. Fails red if a segment guard stops at a newline again — that
+      # zeroes every backslash-continued command, which is how most agents
+      # write a long `uip` call (see #2836).
+      - name: Run segment-guard controls
+        run: pytest tests/scripts/test_command_pattern_segment_guard.py -v
 
   telemetry-hook-tests:
     runs-on: uipath-ubuntu-latest
