@@ -396,8 +396,14 @@ it reports the candidates rather than guessing, because connections for one
 connector are not interchangeable.
 
 `check` names the exact command when a lookup is unresolved, and warns when a
-lookup field is given a literal id. Run it before compiling: it finds everything
-else that is wrong first, so the one expensive call is spent last.
+lookup field is given a literal id. It also speaks up when a lookup field is
+bound to a runtime expression (`LOOKUP_RUNTIME_VALUE`): a warning that states
+the id the field sends (`reporter.accountId`, not a name), and an error when
+the expression reads an e-mail field — an address is never that id, and the
+provider refuses it only once the flow runs. A required lookup field you have no
+value for is resolved with its helper, not filled from a look-alike input. Run
+`check` before compiling: it finds everything else that is wrong first, so the
+one expensive call is spent last.
 
 Each operation's markdown page lists its lookup fields, the helper for each, and
 what it can be searched by. The generated descriptor carries the same facts as a
