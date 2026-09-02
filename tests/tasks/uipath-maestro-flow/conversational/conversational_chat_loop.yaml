@@ -74,7 +74,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Conversation trigger replaced the manual one, and the agent loops back on its success port"
+    description: "Conversation trigger replaced the manual one, and the agent loops back to the wait node on its continuation port"
     command: "python3 $TASK_DIR/check_conversational_flow.py loop"
     timeout: 30
     expected_exit_code: 0

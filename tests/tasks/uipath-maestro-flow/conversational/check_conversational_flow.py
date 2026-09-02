@@ -212,7 +212,11 @@ def check_settings(flow: dict) -> int:
 
 
 def check_loop(flow: dict) -> int:
-    """A conversation trigger starts it, and the agent continues on `success`."""
+    """A conversation trigger starts it, and the agent loops back to the wait node.
+
+    The continuation port depends on the flavor: inline agents have no `output`
+    and continue on `success`; in-solution and published ones are the reverse.
+    """
     problems: list[str] = []
 
     if not _nodes_of(flow, CONV_TRIGGER):
@@ -233,27 +237,35 @@ def check_loop(flow: dict) -> int:
         n.get("id"): ("success" if _is_inline(n) else "output")
         for n in _conversational_agents(flow)
     }
-    outgoing = [
-        e for e in flow.get("edges") or [] if e.get("sourceNodeId") in ports_by_id
-    ]
-    if not outgoing:
-        problems.append("the conversational agent has no outgoing edge")
-    for edge in outgoing:
-        expected = ports_by_id[edge.get("sourceNodeId")]
-        port = edge.get("sourcePort")
-        if port != expected:
+    wait_ids = {n.get("id") for n in _nodes_of(flow, WAIT_FOR_MESSAGE)}
+    edges = flow.get("edges") or []
+
+    # Only the continuation edge is graded. `escalation`, `context` and `tool`
+    # are legitimate wires to somewhere else.
+    for agent_id, expected in ports_by_id.items():
+        outgoing = [e for e in edges if e.get("sourceNodeId") == agent_id]
+        continuation = [e for e in outgoing if e.get("sourcePort") == expected]
+        if not continuation:
             flavor = "inline" if expected == "success" else "in-solution/published"
+            ports = sorted(
+                {str(e.get("sourcePort")) for e in outgoing} or {"(no outgoing edge)"}
+            )
             problems.append(
-                f"edge {edge.get('sourceNodeId')} -> {edge.get('targetNodeId')} "
-                f"leaves on {port!r}; an {flavor} conversational agent continues "
-                f"on {expected!r}"
+                f"{agent_id} has no edge on {expected!r}, which is how an "
+                f"{flavor} conversational agent continues; it leaves on {ports}"
+            )
+            continue
+        # The chat only takes a second turn if that edge returns to the wait node.
+        if not any(e.get("targetNodeId") in wait_ids for e in continuation):
+            targets = sorted({str(e.get("targetNodeId")) for e in continuation})
+            problems.append(
+                f"{agent_id}'s {expected!r} edge goes to {targets}, not back to a "
+                f"{WAIT_FOR_MESSAGE} node — the chat would not take another turn"
             )
 
     if problems:
         return _fail("; ".join(problems))
-    print(
-        "OK: conversation trigger present and each agent continues on its own port"
-    )
+    print("OK: conversation trigger present and each agent loops back to the wait node")
     return 0
 
 
