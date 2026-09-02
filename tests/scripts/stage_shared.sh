@@ -19,7 +19,8 @@
 # mutates the checked-out tree, not the committed repo.
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$(git -C "$script_dir" rev-parse --show-toplevel)"
 
 count=0
 while IFS= read -r f; do
