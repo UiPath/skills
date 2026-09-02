@@ -238,6 +238,8 @@ Then pick the first match down this ladder:
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../SKILL.md#critical-rules-universal).
 
+**Branching is a node, not a Script.** A requirement phrased as *if … otherwise …* (two outcomes) is a `core.logic.decision` node with both `true`/`false` ports wired ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`. Do not fold the branch into a Script ternary — the branch must exist as a node in the graph.
+
 ### Document-extraction step — route it to IxP (runs even when full planning is skipped)
 
 Pulling **named fields out of documents** (PDFs, scans, receipts, invoices, contracts, forms) is a document-extraction step — its node is an **IxP node** (`uipath.ixp.*`). It's easy to miss because the fetch/post steps around it are ordinary nodes, but the extraction in between is its own node. **Always land a node for it — never leave it out:**

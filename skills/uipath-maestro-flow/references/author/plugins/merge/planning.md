@@ -14,6 +14,7 @@ Use a Merge node to synchronize parallel branches before continuing. It waits fo
 | --- | --- |
 | Two or more parallel branches need to join before continuing | Yes |
 | Sequential pipeline (no parallel branches) | No — wire nodes directly |
+| Joining the `true`/`false` branches of ONE Decision (or the cases of one Switch) | **No** — wire both ports straight into the next node (a node accepts several incoming edges). A Merge waits for ALL inputs and a Decision emits exactly one, so the run would hang forever; `flow validate` refuses this shape |
 
 ## Ports
 
