@@ -341,4 +341,7 @@ success_criteria:
 # Best-effort and always exits 0 — post_run must not fail a task over cleanup.
 post_run:
   - command: "python3 $TASK_DIR/cleanup_customer_escalation.py"
-    timeout: 600
+    # 300 is the coder_eval schema maximum for a post_run step. The sweep caps
+    # its own CLI calls just inside that so it reports what it could not free
+    # instead of being killed mid-delete.
+    timeout: 300

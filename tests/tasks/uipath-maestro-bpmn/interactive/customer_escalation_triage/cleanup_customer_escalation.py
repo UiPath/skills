@@ -18,11 +18,15 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_customer_escalation_behavior as grader
+
+# Must stay under the post_run timeout in customer_escalation_triage.yaml.
+POST_RUN_BUDGET_SECONDS = 280
 
 
 def read_journal(path: Path) -> dict[str, list]:
@@ -54,7 +58,9 @@ def main() -> int:
 
     # Deletions issued here must not be journalled again.
     grader.CLEANUP_JOURNAL = Path("/dev/null")
-    grader.ACTIVE_CLI_DEADLINE = None
+    # coder_eval caps a post_run step at 300s. Cap every CLI call just inside
+    # that so an overrun reports what is left rather than dying mid-delete.
+    grader.ACTIVE_CLI_DEADLINE = time.monotonic() + POST_RUN_BUDGET_SECONDS
     print(
         "cleanup: replaying journal "
         + ", ".join(f"{kind}={len(items)}" for kind, items in records.items())
