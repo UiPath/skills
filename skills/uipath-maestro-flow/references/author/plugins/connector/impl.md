@@ -33,7 +33,7 @@ Definitions in `definitions[]` are CLI-owned. `uip maestro flow node add` copies
 
 ## 4.0.0 Activities
 
-An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`. Author it through the Configuration workflow below like any other connector activity. Four deltas:
+An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`. Author it through the Configuration workflow below like any other connector activity; `describe`/version mechanics are in [/uipath:uipath-platform — resources.md § `--activity-version`](../../../../../uipath-platform/references/integration-service/resources.md#--activity-version). Four deltas:
 
 1. **No `objectName` in `--detail`** — resolved from the configuration's `activityName` (`model.context.objectName` is empty).
 2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <activity-name> --activity-version 4.0.0`).
@@ -223,6 +223,25 @@ uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json
 #### Step 6c — Populate api-type custom fields
 
 Inspect both `objectActions[]` and `connectorMethodInfo.design.actions[]`. Supported actions use top-level `ActionType: "Api"` or nested `actionType: "api"`. If no applicable api action exists, omit `customFieldsRequestDetails`; the CLI emits `null`.
+
+Illustrative supported activities (confirm against `registry get` for the specific connector/object/activity — the set evolves):
+
+| Connector key | Object | Activity / Action | HTTP | Source |
+|---|---|---|---|---|
+| `uipath-microsoft-azureapplicationinsights` | `executeQuery` | `generateSchema` | — | field |
+| `uipath-salesforce-sfdc` | `curated_soqlQuery` | `generateSchema` | — | field |
+| `uipath-workday-workdayrest` | `wql` | `generateSchema` | — | field |
+| `uipath-oracle-netsuite` | `executeSuiteQL` | `generateSchema` | — | field |
+| `uipath-snowflake-snowflake` | `executeQuery` | `generateSchema` | — | field |
+| `uipath-atlassian-jira` | `curated_create_issue` | Create Issue | POST | method |
+| `uipath-atlassian-jira` | `curated_edit_issue` | Update Issue | PUT | method |
+| `uipath-atlassian-jira` | `curated_get_issue` | Get Issue | GETBYID | method |
+| `uipath-uipath-dataservice` | `CreateEntityRecordCurated` | Create Entity Record | POST | method |
+| `uipath-uipath-dataservice` | `QueryEntityRecordsCurated` | Query Entity Records | POST | method |
+| `uipath-mailchimp-mailchimp` | `list_members_curated_dynamic::members` | Add Subscriber | POST | method |
+| `uipath-microsoft-onedrive` | `AddListItem` | Add List Item | POST | method |
+| `uipath-sap-s4hanacloud` | `Entity` | Create Entity | POST | method |
+| `uipath-google-bigquery` | `projects::table` | List All Records | GET | method |
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 
