@@ -90,6 +90,19 @@ whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
 
+Two findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …` (and `--strict` turns the first into an error):
+
+- A node **no trigger reaches** — no edge leads to it, as when a designer or
+  `node add` left it unconnected. The builder has no detached-node construct,
+  so the source omits it and marks the spot with `// TODO: node "<id>" … is not
+  reachable`; recompiling drops that node. If it is your edit target, connect
+  it in the `.flow` first or edit that node's JSON directly.
+- A core `(type, typeVersion)` **this SDK does not bundle** — the registry
+  serves `core.trigger.manual@1.0`, the SDK ships `1.0.0`, and versions resolve
+  exactly. The source keeps the file's pair, so `compile` refuses it until you
+  drop that `{ version }`; the node then takes the SDK's pinned version.
+
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
 to it, then validate the canonical project path again.
