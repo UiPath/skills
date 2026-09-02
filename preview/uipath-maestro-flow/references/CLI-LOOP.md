@@ -30,14 +30,16 @@ artifact can establish.
 
 ## Local authoring hard gates
 
-Use this section only when emit-only mode is disabled. Source and compiled
-checks are separate commands: use the source check as the fast no-output inner
-loop, compile to emit, then run the deep checker on the artifact.
+Use this section only when emit-only mode is disabled. Use the source check as
+the fast no-output inner loop (with a library and a `bindings.json` beside the
+source it reports every connector-input and binding refusal `compile` would
+raise), compile to emit, then run the product's static check on the artifact.
+There is no compiled-artifact `check`; `validate` is that rung.
 
 ```bash
 uip maestro flow check <Name>.flow.ts --source
 uip maestro flow compile <Name> -o <Name>.flow
-uip maestro flow check <Name>.flow --compiled
+uip maestro flow validate <Name>.flow --output json
 ```
 
 Warnings require deliberate review; whether one blocks a release comes from the
