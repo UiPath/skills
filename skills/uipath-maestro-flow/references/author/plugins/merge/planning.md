@@ -19,5 +19,5 @@ Use a Merge node to synchronize two or more parallel branches before continuing.
 
 ## Wiring Rules
 
-- Connect each parallel branch’s terminal node to the Merge node’s `input` port; multiple incoming edges may use the same port.
+- Connect each parallel branch's terminal node to the Merge node's `input` port; multiple incoming edges may use the same port.
 - Execution continues from `output` only after all incoming paths complete.

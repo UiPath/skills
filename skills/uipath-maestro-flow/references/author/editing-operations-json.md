@@ -2,7 +2,7 @@
 
 Modify `.flow` files with `Edit` and `Write` (read-modify-write). This requires manual management of definitions, variables, bindings, and edges.
 
-> Use `Edit` by default; use `Write` only when ≥70% of nodes change. Recipes show the JSON for an `Edit` call’s `new_string`. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are last-resort mutation tools and require explicit user approval after surfacing trade-offs; see the SKILL.md rule on scripted mutations and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
+> Use `Edit` by default; use `Write` only when ≥70% of nodes change. Recipes show the JSON for an `Edit` call's `new_string`. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are last-resort mutation tools and require explicit user approval after surfacing trade-offs; see the SKILL.md rule on scripted mutations and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
 >
 > Use this strategy for all non-carve-out `.flow` edits. Use Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs documented by their plugins. Inline-agent lifecycle uses `uip agent init --inline-in-flow`, `uip agent refresh --inline-in-flow`, and `uip agent validate --inline-in-flow`; author the `uipath.agent.autonomous` node and edges with this guide. See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
 
@@ -42,7 +42,7 @@ Before editing, complete all applicable items:
 | Nested replacement, field insertion, idempotent splice | `Edit` / `Write`; `python3` heredoc only after explicit user approval | Prefer direct authoring; scripts bypass safeguards and require diff review. |
 | One-shot extraction/single-field CLI JSON mutation | `jq` | Use only when `--output-filter` cannot express it. |
 
-The CLI has no `node update`; directly author node `inputs`, definition swaps, and array splices. For several same-file `Edit`s, anchor each on its target array’s opening key, never top-level key order; beware recurring `"nodes": [` / `"edges": [` inside `definitions[]` and `subflows.<id>`. See [editing-operations.md — Parallel same-file Edits](editing-operations.md#parallel-same-file-edits).
+The CLI has no `node update`; directly author node `inputs`, definition swaps, and array splices. For several same-file `Edit`s, anchor each on its target array's opening key, never top-level key order; beware recurring `"nodes": [` / `"edges": [` inside `definitions[]` and `subflows.<id>`. See [editing-operations.md — Parallel same-file Edits](editing-operations.md#parallel-same-file-edits).
 
 ### Scripted structural rewrite
 
@@ -66,7 +66,7 @@ Preserve canonical 2-space indent. `flow format` normalizes layout but does not 
 
 ### `--output-filter` for CLI JSON
 
-Run the CLI’s JMESPath filter for read-only extraction; expressions start at the `Data` envelope and omit `Data.`. See [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
+Run the CLI's JMESPath filter for read-only extraction; expressions start at the `Data` envelope and omit `Data.`. See [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
 
 ```bash
 uip solution upload --output json --output-filter "DesignerUrl"

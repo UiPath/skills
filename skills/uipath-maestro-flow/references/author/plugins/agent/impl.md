@@ -99,7 +99,7 @@ The `model` block belongs on the `definitions[]` manifest, not the instance. The
 }
 ```
 
-Declare `error` only; `output` is derived. Hand-authoring it makes the converter copy `source` verbatim, so `"=result.response"` resolves to null at runtime even when `flow validate` passes. `output` is allowed only with exactly `source: "=this"` and the agent’s output schema. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
+Declare `error` only; `output` is derived. Hand-authoring it makes the converter copy `source` verbatim, so `"=result.response"` resolves to null at runtime even when `flow validate` passes. `output` is allowed only with exactly `source: "=this"` and the agent's output schema. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
 
 Set `display.icon` by inspecting the sibling project root: use `"autonomous-agent"` when `agent.json` exists, otherwise `"coded-agent"`. Do not copy `.display.icon` from `uip maestro flow registry get --local`; that manifest reports `"coded-agent"` for every in-solution agent.
 
@@ -166,7 +166,7 @@ or:
 }
 ```
 
-`literal` may mix static text and `{{ }}` interpolation. Never use a plain `"=js:..."` string; it is sent verbatim to the activity and fails with `Cannot find name '<identifier>'`. Set `<FIELD_TYPE>` to the property’s JSON-schema type (`string`, `boolean`, `number`, etc.) from `inputDefinition.properties`; do not invent it.
+`literal` may mix static text and `{{ }}` interpolation. Never use a plain `"=js:..."` string; it is sent verbatim to the activity and fails with `Cannot find name '<identifier>'`. Set `<FIELD_TYPE>` to the property's JSON-schema type (`string`, `boolean`, `number`, etc.) from `inputDefinition.properties`; do not invent it.
 
 For a trigger-to-agent flow, surface a flow input as a trigger-bound global:
 
@@ -209,12 +209,12 @@ Create it before wiring:
 
 ## Using an Agent as a Tool Resource
 
-To use a published coded or low-code agent as another agent’s tool, add a `uipath.agent.resource.tool.agent` resource node inside the parent agent’s canvas and wire it to the parent agent’s `tool` handle. Do not add it at the top level of the flow.
+To use a published coded or low-code agent as another agent's tool, add a `uipath.agent.resource.tool.agent` resource node inside the parent agent's canvas and wire it to the parent agent's `tool` handle. Do not add it at the top level of the flow.
 
 For format and wiring details, see the `uipath-agents` skill:
 
 - Coded agents: [coded/flow-integration.md § Pattern 3](../../../../../uipath-agents/references/coded/flow-integration.md#pattern-3-tool-resource-for-another-agent)
-- Low-code agents: the `uipath-agents` skill’s low-code references.
+- Low-code agents: the `uipath-agents` skill's low-code references.
 
 ## Debug
 

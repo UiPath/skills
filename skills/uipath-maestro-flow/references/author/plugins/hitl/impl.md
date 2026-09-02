@@ -6,7 +6,7 @@ Choose one checkpoint: an inline QuickForm or an existing deployed Action Center
 
 Preferred: no registry pull, app publishing, or tenant dependency. Write the node directly into the `.flow` file as JSON.
 
-For implementation guide, JSON examples, and schema conversion rules, see [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md). Use that skill for HITL implementation; this guide covers implementation-phase topology resolution, not schema design or node writing.
+For schema design, node writing, JSON examples, and schema conversion rules, see [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md). Skills are self-contained: this cross-skill reference is for documentation context only — per Critical Rule 4, offer the handoff and let the user choose. This guide covers implementation-phase topology resolution only, not schema design or node writing.
 
 For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `outcome-completed` port after adding the node.
 
