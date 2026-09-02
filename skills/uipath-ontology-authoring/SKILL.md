@@ -37,7 +37,7 @@ Runtime delegation to `uipath-ontology-modeler` is intentional and is the only s
 ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
-CLASS_MAP: class -> entityName, entityId, folderId, readOnly (federated only)
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly (optional, rare)
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
@@ -217,16 +217,16 @@ Identify each entity's type from the response: `externalFields: []` → **Native
 | SDD class | Suggested entity | Type | Match | Entity ID | Folder ID | Action |
 |---|---|---|---|---|---|---|
 | `Doctor` | `Doctor` | Native | exact | `b5b4bd01-...` | `751e18c5-...` | Use existing |
-| `Contact` | `Contact` | Federated | exact | `9f1a2c44-...` | `751e18c5-...` | Use existing (read-only) |
+| `Contact` | `Contact` | Federated | exact | `9f1a2c44-...` | `751e18c5-...` | Use existing |
 | `Prescription` | — | — | none | — | — | **Create new (native)** |
 
 **Matching rules:** exact name match first; then case-insensitive match; then present candidates if partial match. If no match at all, mark as **Create new (native)**.
 
 **Federated entity rules:**
 - **Use existing only** — federated entities connect to external systems (SQL Server, Salesforce, SAP, etc.) via UiPath Integration Service. New federated entities cannot be created via CLI or API — the connection must be set up through the Data Fabric UI. If an SDD class needs a federated entity that doesn't exist yet, stop and tell the user to create it in the portal first.
-- **Read-only** — federated entity data is managed by the external system. Mark these classes as `readOnly: true` in CLASS_MAP. SHACL constraints will apply structurally but violations cannot be fixed by writing through the platform.
-- **No write actions** — SQL write actions (`{name}-{actionName}.ttl`) cannot target federated entities. If the SDD describes write operations on a federated class, flag this to the author — those writes must go through the external system directly.
-- **YARRRML mapping is identical** — the mapping syntax for a federated entity (`access: datafabric`, `entityId`, `folderId`) is the same as native. The FQS runtime handles the federation transparently. Functions (SPARQL reads) work with federated entities.
+- **Readable and writable** — a federated class is a first-class target for both. Reads and writes traverse FQS, which resolves the external connection and routes the statement to the source system. Treat native and federated classes the same when planning operations; do not mark a class `readOnly` merely because it is federated.
+- **Write actions are allowed** — both SQL write actions (`{name}-{actionName}.ttl`) and coded actions may target a federated class. The write is compiled to bounded DML and executed against the source through its connector, so the source system remains the authority on whether a given write succeeds: a rejection (permissions, a type mismatch, a constraint, a connection configured read-only) surfaces as an upstream error on the failing step, not as a refusal by the platform. Set `readOnly: true` in CLASS_MAP only when the author states a specific source rejects writes — never inferred from federation.
+- **YARRRML mapping is identical** — the mapping syntax for a federated entity (`access: datafabric`, `entityId`, `folderId`) is the same as native. The FQS runtime handles the federation transparently, for reads and writes alike. Functions (SPARQL reads) work with federated entities.
 
 **How federated entity connections work:**
 A federated entity is backed by an external data source configured in the Data Fabric UI:
@@ -248,7 +248,7 @@ A federated entity is backed by an external data source configured in the Data F
 Record the completed mapping — all entities must be in `PRIMARY_FOLDER_KEY`:
 ```
 CLASS_MAP:
-  {ClassName}: entityId={uuid}  folderId={PRIMARY_FOLDER_KEY}  [readOnly: true]  ← federated only
+  {ClassName}: entityId={uuid}  folderId={PRIMARY_FOLDER_KEY}  [readOnly: true]  ← only if the source rejects writes
 ```
 
 > **Wait for CLASS_MAP confirmation before moving to Phase 3.**

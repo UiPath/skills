@@ -224,9 +224,9 @@ A federated entity maps exactly like a native entity — same `access: datafabri
       - $({columnName})
 ```
 
-**Restrictions when a mapping includes federated classes:**
-- Add a `READONLY` note in the USAGE POLICY for any federated class: `# {FederatedClass}: FEDERATED (read-only) — data is managed by the external system`
-- SQL write actions (`ont:statements`) must not reference `{{FederatedClass}}` entity tables — write operations are rejected by the external system at runtime
+**What changes when a mapping includes federated classes:**
+- Note the federation in the USAGE POLICY so a reader knows where the data lives: `# {FederatedClass}: FEDERATED — backed by an external system through Integration Service`
+- SQL write actions (`ont:statements`) and coded actions may both reference `{{FederatedClass}}` entity tables. The DML is routed to the source system through its connector, which remains the authority on whether the write succeeds; a rejection surfaces as an upstream error. Add the `READONLY` note only for a source the author says rejects writes
 - SPARQL read functions work normally — FQS queries federated and native entities in the same traversal
 
 ---

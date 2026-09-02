@@ -31,7 +31,7 @@ When called by ontology authoring, require one complete handoff object. Do not r
 ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
-CLASS_MAP: class -> entityName, entityId, folderId, readOnly (federated only)
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly (optional, rare)
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
@@ -85,7 +85,7 @@ ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
 WORKDIR      = {base directory}/{name}/
 ```
 
-All artifacts go in `WORKDIR`. In standalone mode, perform login, folder selection, collision checking, and entity matching/creation before artifact generation. Do not create the ontology stub until the supplied mapping is validated or the mapping is generated from handoff metadata, and local preflight passes. Exclude the default folder, confirm the target folder, and record native versus federated entities. Federated entities are read-only.
+All artifacts go in `WORKDIR`. In standalone mode, perform login, folder selection, collision checking, and entity matching/creation before artifact generation. Do not create the ontology stub until the supplied mapping is validated or the mapping is generated from handoff metadata, and local preflight passes. Exclude the default folder, confirm the target folder, and record native versus federated entities. Federated entities are readable and writable through FQS, the same as native ones; treat `readOnly` as an explicit per-source exception, not a property of federation.
 
 Show the structured domain model and wait for confirmation before writing. Derive artifact filenames from the slug; do not use fixed names.
 
