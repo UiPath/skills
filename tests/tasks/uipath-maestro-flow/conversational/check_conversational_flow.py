@@ -53,6 +53,23 @@ SETTINGS_KEYS = {
     "userSettings": "userSettings",
 }
 
+# The generic fillers a model emits when it is not following the instruction.
+# Same idea as voice/check_voice_flow.py, but graded on the text rather than its
+# length: a short prompt can follow the instruction perfectly ("Support bot. Two
+# sentences max."), so a length bar rejects good answers.
+PLACEHOLDER_PROMPTS = {
+    "",
+    "you are an agentic assistant.",
+    "you are an assistant.",
+    "you are a helpful assistant.",
+    "you are a chat agent.",
+    "you are a chatbot.",
+    "system prompt",
+    "todo",
+}
+# Only to catch one-word junk; the filler set above does the real work.
+MIN_PROMPT_LEN = 15
+
 # Generated/staging trees the CLI writes beside the sources. Same exclusion set
 # the other maestro-flow checkers use.
 EXCLUDED_PARTS = {".cli-stage", ".v1stage", ".agent-builder", "_outputs", "v1stage"}
@@ -281,6 +298,23 @@ def check_loop(flow: dict) -> int:
     wait_ids = {n.get("id") for n in _nodes_of(flow, WAIT_FOR_MESSAGE)}
     edges = flow.get("edges") or []
 
+    # Forward path: the trigger has to reach a wait node, and a wait node has to
+    # reach each agent. Without this a set of disconnected nodes plus a
+    # loop-back edge would score full marks.
+    trigger_ids = {n.get("id") for n in _nodes_of(flow, CONV_TRIGGER)}
+    if trigger_ids and wait_ids and not _reaches(trigger_ids, wait_ids, edges):
+        problems.append(
+            f"no {WAIT_FOR_MESSAGE} node is reachable from the conversation "
+            "trigger — the flow never waits for the user's first message"
+        )
+    for agent in agents:
+        agent_id = agent.get("id")
+        if wait_ids and not _reaches(wait_ids, {agent_id}, edges):
+            problems.append(
+                f"{agent_id} is not reachable from a {WAIT_FOR_MESSAGE} node — "
+                "a user message would never reach the agent"
+            )
+
     # Only the continuation edge is graded. `escalation`, `context` and `tool`
     # are legitimate wires to somewhere else.
     for agent_id, expected in ports_by_id.items():
@@ -374,10 +408,12 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
         ),
         "",
     )
-    if not isinstance(system, str) or len(system.strip()) < 20:
+    prompt = system.strip() if isinstance(system, str) else ""
+    if prompt.lower() in PLACEHOLDER_PROMPTS or len(prompt) < MIN_PROMPT_LEN:
         problems.append(
-            f"{label}: the system prompt is empty or a stub — the scaffold ships "
-            "it blank and it has to be written"
+            f"{label} has no real system prompt (got {prompt[:60]!r}) — the "
+            "scaffold ships it blank, and a generic filler leaves the chat with "
+            "no persona the task asked for"
         )
     return True
 
