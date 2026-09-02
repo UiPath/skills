@@ -90,16 +90,22 @@ the tenant, so it needs a live Integration Service connection and a logged-in
 `uip`; without one, fall back to the curated operation in the markdown library.
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> \
-  --connection-id <connection-id>
+npx flow-sdk registry prepare <connector-key> <action>
 # Generic operation: materialize the one connected object the task uses.
-npx flow-sdk registry prepare <connector-key> <action> \
-  --connection-id <connection-id> --object <api-object-name>
+npx flow-sdk registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
 The result lands in `./connectors-local/`, which the compilers union over the
 library. Calls accumulate, so preparing a second operation keeps the first.
+
+`prepare` picks the connection itself (see below). Pass `--connection-id <id>`
+only to pin a specific one, and expect it to be checked: a connection whose
+`State` is not `Enabled` is refused, naming the enabled alternatives. A `Failed`
+connection answers field discovery with an empty schema, so preparing through
+it would write an overlay with no fields and the next compile would still
+reject every input as unknown — the refusal is the only signal that says
+"connection", not "field".
 
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
@@ -267,6 +273,25 @@ uip is resources describe <connector-key> <object> \
 That placeholder is also the **ordering**: resolve `fields.project.key` before
 you can resolve `fields.issuetype.id`.
 
+**A second declaration shape has no placeholder.** Data Service
+(`uipath-uipath-dataservice`) operations such as `create-entity-record`,
+`update-entity-record` and the file-record-field operations declare their parent
+through the registry's schema action (`GenerateSchema` over `entityName`), not
+through a reference path. Their describe with no values returns only the static
+inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
+`compile` refuses `title`, `description`, … as unknown. `prepare` names the
+parent when you omit it; the fix is always the entity name:
+
+```bash
+npx flow-sdk registry prepare uipath-uipath-dataservice create-entity-record \
+  -f entityName=FlowCodeEvalEntity
+# → 8 input field(s): entityName, expansionLevel + the entity's own fields
+```
+
+Do not work around the refusal — not with `rawNode`, not by editing the emitted
+`.flow`, not by hand-writing a `connectors-local/` overlay. Each produces a node
+the platform cannot run.
+
 Parent-field names are operation-specific. Copy each `Name` exactly from this
 operation's describe response; do not reuse the dotted names from the
 `create-issue` example for another action (for example, Jira `get-issue` uses
@@ -291,7 +316,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-npx flow-sdk registry prepare <connector-key> <action> --connection-id <connection-id> \
+npx flow-sdk registry prepare <connector-key> <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -359,12 +384,33 @@ channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 
 ```bash
 npx flow-sdk registry prepare uipath-salesforce-slack send-message-to-user \
-  --connection-id <id> --resolve channel:profile.email=dustin@example.com
+  --resolve channel:profile.email=dustin@example.com
 ```
 
+**You do not need to find the connection first.** `prepare` discovers it from
+`uip is connections list` — your own folder first, the tenant second — and writes
+both the connection id AND its folder key into `bindings.json`. So one command
+covers the lookup, the connection binding and the folder binding. Pass
+`--connection <name>` only when several connections match the same connector;
+it reports the candidates rather than guessing, because connections for one
+connector are not interchangeable. When the candidates share a name, pick one
+by the `--connection-id <id>` each candidate line prints; `bindings.json` is
+written on that route too. The entries are named `<connector's last segment>`
+(`slack`) and `shared` unless you pass `--bind-connection` / `--bind-folder`;
+`connection:` and `folder:` in source must use those names, and `compile` warns
+`CONNECTION_STUB` when they do not resolve to a tenant id.
+
 `check` names the exact command when a lookup is unresolved, and warns when a
-lookup field is given a literal id. Run it before compiling: it finds everything
-else that is wrong first, so the one expensive call is spent last.
+lookup field is given a literal id. It also speaks up when a lookup field is
+bound to a runtime expression (`LOOKUP_RUNTIME_VALUE`): a warning that states
+the id the field sends (`reporter.accountId`, not a name), and an error when
+the expression reads an e-mail field into a lookup that neither sends nor
+searches by e-mail — there an address is never that id, and the provider
+refuses it only once the flow runs. (A field that sends an e-mail, such as
+SendGrid's `from`, takes one silently.) A required lookup field you have no
+value for is resolved with its helper, not filled from a look-alike input. Run
+`check` before compiling: it finds everything else that is wrong first, so the
+one expensive call is spent last.
 
 Each operation's markdown page lists its lookup fields, the helper for each, and
 what it can be searched by. The generated descriptor carries the same facts as a

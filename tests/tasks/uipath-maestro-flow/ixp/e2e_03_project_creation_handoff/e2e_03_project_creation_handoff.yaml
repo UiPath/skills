@@ -1,0 +1,166 @@
+task_id: skill-flow-ixp-e2e-project-creation-handoff
+description: >
+  E2E (Flow → IXP design-time handoff, RE-12982): the user is in a Flow context,
+  has documents in hand, and asks for a flow that extracts fields from them —
+  without knowing that a separate IXP design-time project must be built first.
+  The agent must recognise the gap, hand off to the `uipath-ixp` skill, create a
+  project from the supplied documents, deploy a trained version to an
+  Orchestrator folder (what puts it in the Maestro flow registry — `projects
+  publish` is not required), then resume the flow and wire the resulting node.
+
+  The prompt never says "IXP", "project" or "publish": recognising the
+  prerequisite is the behaviour under test. Grading is scoped to this run's
+  artifacts via a seed-created run folder plus a tenant snapshot-diff;
+  handoff.py (seed / check / teardown)
+  holds the full design rationale — read it before treating a failure as a
+  skill regression. Key properties: the scenario only measures the redirect
+  while no published extractor covers the fixture domain (currently falconry
+  licences; documents/README.md records how four prior domains were burned and
+  how to rotate); seed creates the run-scoped Orchestrator folder the prompt
+  names and teardown deletes it, which removes the deployment and
+  its registry node, so a passing run restores its own preconditions; and the
+  primary gate accepts a wired node OR — only while the registry does not serve
+  this run's node (check probes) — the documented degraded fallback, because
+  registry indexing latency is org-scoped weather (~25s healthy, hours
+  observed) — a "created + deployed + not wired" failure is labelled
+  PROPAGATION SIGNATURE, not a regression.
+
+  Validate-only: no `uip maestro flow debug`. An outcome-graded live extraction
+  would be a genuine strengthening but needs a `fileRef` bound to a real
+  document source and a larger budget; the check subcommand instead
+  cross-checks the authored node against live tenant state, catching a
+  schema-valid flow wired to the wrong extractor.
+
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp]
+
+# driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
+# @uipath/ixp-tool plugin, pre-baked only into skills-image:latest (see
+# tests/docker/Dockerfile). Under tempdir every `uip ixp` is "unknown command",
+# so the handoff cannot happen and the run thrashes to MAX_TURNS.
+#
+# `uip ixp deployments create` landed in the CLI on 2026-08-19 (UiPath/cli#3575)
+# and rides the `dev` tool dist-tag, which is what the image installs by default.
+sandbox:
+  driver: docker
+  template_sources:
+    # Task-local fixtures, not the uipath-ixp shared set: the domain has to be
+    # one no published extractor covers (see documents/README.md), and keeping
+    # them here also drops a cross-skill dependency on another team's _shared.
+    - type: template_dir
+      path: documents
+      mount_point: documents
+
+# The whole chain runs in ONE agent turn; its long poles are `projects create`
+# (~50s) and registry propagation after deploy — handoff.py's module docstring
+# holds the measured distribution; the ~8-minute observed case is what 1500
+# budgets for, leaving room to build the flow after a slow propagation.
+run_limits:
+  max_turns: 100
+  turn_timeout: 1500
+  # Caps end-to-end wall clock (hooks + turn + criteria). Omitting it inherits
+  # the experiment's 1200s, which is below turn_timeout alone — the pdd_to_sdd
+  # trap. The harness's "cannot extend the agent's single iteration" warning is
+  # about iteration extension, not this cap.
+  task_timeout: 3000
+
+# Hook and criterion timeouts must exceed handoff.UIP_TIMEOUT_SECONDS (45), or
+# the harness kills the wrapper mid-`uip` call and the failure reads as a skill
+# defect. 300 is the harness's hard cap for hook timeouts; seed's worst case
+# (~12 uip calls) fits under it even with four calls hung at the 45s cap plus
+# ~45s of self-heal retry / re-probe sleeps — the arithmetic is in handoff.py
+# at UIP_TIMEOUT_SECONDS.
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py seed"
+    timeout: 300
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/handoff.py teardown"
+    timeout: 300
+
+# The folder name below is handoff.py's RUN_FOLDER_NAME — seed creates it,
+# teardown deletes it, and the two literals MUST stay in sync. Naming the
+# folder in the prompt (an admin-assigned sandbox folder is ordinary user
+# language) is what makes folder attribution exact; the name deliberately
+# avoids the words the prompt must never say (IXP / project / publish). The
+# fixed name makes the task single-flight per tenant (handoff.py has the
+# guard and the rationale).
+initial_prompt: |
+  I've got a batch of scanned falconry licences in ./documents/ — have a look
+  at them. Build me a UiPath Maestro Flow that reads licences like these and
+  pulls out the licence number, ring number, species, falconer and the date the
+  licence expires, then logs the ring number and expiry.
+
+  Trigger it manually. Anything this needs set up in Orchestrator goes in the
+  folder `flow-e2e-e9fbf2d0` (it already exists) — don't touch any other
+  folder.
+
+  - The `uip` CLI is already available and the runner is logged in.
+  - Use `--output json` on all uip commands.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+  - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+    planning and implementation. Build it end-to-end in a single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The redirect itself — the one behaviour RE-12982 is about, and the only part
+  # of the chain that leaves no trace in the artifact or on the tenant. An agent
+  # can improvise `uip ixp` from its own knowledge without ever loading the
+  # skill; that would satisfy the tenant-state gate while failing the thing the
+  # ticket asks for, so this is asserted separately.
+  - type: skill_triggered
+    description: "Agent handed off to the uipath-ixp Skill to build the missing project"
+    skill_name: "uipath-ixp"
+    expected_skill: "uipath-ixp"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold 0), NOT gates: the primary gate already proves both
+  # of these happened — a new project cannot exist without `projects create`, and
+  # a deployment cannot exist without `deployments create`. They are kept only to
+  # separate "never attempted" from "attempted and errored" when the outcome
+  # check fails, which is the difference between a skill-routing defect and a
+  # CLI/tenant problem. Advisories always pass, so their 2.0 combined weight is
+  # a ~0.13 floor under every failing run's score — not partial credit.
+  - type: command_executed
+    description: "advisory: agent ran `uip ixp projects create`"
+    tool_name: "Bash"
+    command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+projects\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "advisory: agent ran `uip ixp deployments create --folder-key`"
+    tool_name: "Bash"
+    command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+deployments\s+create\b[^\n]*--folder-key'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  # Primary gate: project created + folder-deployed this run, then EITHER the
+  # .flow wires the real node OR — only while check's own registry probe finds
+  # this run's node not served — the documented degraded shape: a
+  # core.logic.mock placeholder with the DeploymentName recorded in the built
+  # artifacts. The fallback exists because registry indexing latency is
+  # environment weather (seconds when healthy, hours observed).
+  - type: run_command
+    description: "This run's deployment is wired in the .flow, or (registry not serving it) mock-landed with the DeploymentName recorded"
+    command: "python3 $TASK_DIR/handoff.py check"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

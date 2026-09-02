@@ -1,243 +1,152 @@
 ---
 name: uipath-admin
-description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit via `uip admin audit` — the organization/tenant audit trail: event sources, paginated event queries, day-wise-JSON-folder or single-CSV exports. Troubleshoot: diagnose access-denied, investigate login failures, role misconfiguration, IP lockout, PAT/app auth issues. This skill owns ALL org/tenant/identity audit — use `uip admin audit` (NOT `uip or audit-logs`) for any audit logs / audit trail / audit events / export / login history / who-did-what request. For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
+description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets, PATs, SMTP), Authorization (custom roles, role assignments, permission catalog, effective-access check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async op polling), IP Restriction (allowlist, enforcement, bypass rules, lockout safety), and Audit via `uip admin audit` (event sources, paginated queries, JSON-folder or CSV export). Troubleshoot access-denied, login failures, role misconfig, IP lockout, PAT/app auth. Owns ALL org/tenant/identity audit — use `uip admin audit`, NOT `uip or audit-logs`, for any audit logs / audit trail / audit events / export / login history / who-did-what request. Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Admin
 
-Administrative operations on UiPath via `uip admin` — Identity Server, Authorization, OMS, IP Restriction, Audit. Per-area workflows, command references, and procedures are in the linked files below — this file is the entry contract.
+Administrative operations through `uip admin` for Identity Server, Authorization, OMS, IP Restriction, and Audit.
 
-## When to Use This Skill
+## When to Use
 
-### Identity
+- **Identity:** Users, groups and membership, robot accounts, external apps and credentials, PATs, SMTP, OAuth2 scope discovery, and human or robot onboarding.
+- **Authz:** Custom roles, assignments, permission catalogs, effective access, and ad-hoc grants. Role scopes are `Organization`, `TenantGlobal`, `Tenant`, and `Project`; assignments may also use `Folder` or `App`.
+- **OMS:** Current organization, tenant lifecycle, service provisioning, operation polling, and region discovery. The CLI cannot create or delete organizations.
+- **IP Restriction:** Allowlist entries, enforcement, bypass rules, and `ip-restriction my-ip` for public-IP questions and safety checks.
+- **Audit:** Use `uip admin audit`, never `uip or audit-logs`, for organization or tenant audit events, sources, targets, types, queries, login history, membership/license activity, tenant activity, investigations, and exports. `uip or audit-logs` is Orchestrator-operational audit and belongs to `uipath-platform`.
+- **Troubleshooting:** Use the [diagnose capability index](references/diagnose/CAPABILITY.md) and [identity troubleshooting guide](references/identity-troubleshoot-guide.md) for access, authentication, identity, tenant operations, provisioning, robot authentication, SMTP, PAT, external-app, or IP-lockout symptoms.
 
-- **Manage identity users** — list, create, invite, update, delete
-- **Manage groups** — CRUD + add/remove members
-- **Manage robot accounts** — create, update, delete unattended robot identities
-- **Manage external apps** — OAuth2 clients, secrets, federated credentials
-- **Manage personal access tokens (PATs)** — create, list, revoke, regenerate
-- **Configure SMTP** — get, update, test, delete email settings
-- **Browse OAuth2 scopes** — list available scopes for external apps and PATs
-- **Onboard human user** — invite, assign to groups
-- **Onboard robot account** — create account, assign to groups
+For audit availability, run `uip admin audit <scope> sources`; discover live catalogs instead of relying on memory. Route `org` versus `tenant` with [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#scope-selection) and Rule 23. Natural-language investigations may cover resource changes/deletions, sign-ins, tenant changes, compliance windows, and cross-scope requests; run once per requested scope and combine results.
 
-### Authz
-
-- **Manage custom roles** — CRUD on Authorization service role definitions (scope shapes: `Organization`, `TenantGlobal`, `Tenant`, `Project`)
-- **Manage role assignments** — assign roles to users/groups/robot accounts at `Organization`, `Tenant`, `TenantGlobal`, `Project`, `Folder`, or `App` scope
-- **List permission definitions** — read-only catalog of permissions across services
-- **Check effective access** — compute what a principal can actually do at a given scope (Policy Decision Point)
-- **Grant permission(s) to a principal** — ad-hoc "grant me X" / "give <user> Y, Z" requests resolved via the scope/service intersection flow
-
-### OMS
-
-- **Inspect / update the current organization** — `uip admin organizations` (read + update only; no CLI create/delete)
-- **Manage tenant lifecycle** — create, enable, disable, delete tenants in the caller's org
-- **Provision org-level or tenant-level services** — `services list`, `list-available`, `add`, `enable`, `disable`, `remove`
-- **Poll async OMS operations** — `tenants` mutations return `operationId`; poll via `organizations operation get <id>` (the canonical poll endpoint)
-- **List available regions** — discover provisioning regions before `tenants create`
-
-### IP Restriction
-
-- **Manage IP allowlisting** — add / update / delete CIDR entries that gate inbound access
-- **Toggle IP-restriction enforcement** — turn the org-wide allowlist switch on or off (with lockout safety)
-- **Manage bypass rules** — URL-pattern exceptions to IP allowlisting
-- **Look up the caller's public IP** — answer "what's my IP?" / "what public IP does the platform see for me?" directly with `ip-restriction my-ip`; also the safety pre-flight before enabling enforcement
-
-### Audit
-
-Activate on both **explicit audit requests** and **natural-language investigation intent** — users rarely say "audit events" by name.
-
-> **Surface boundary — this is `uip admin audit`, not `uip or audit-logs`.** Every org/tenant audit ask below — including bare "audit logs", "audit history", "export the audit trail", "login history", "who did what" — is served by `uip admin audit <scope>`. Do **not** fall back to `uip or audit-logs` (Orchestrator-operational audit, a different schema; that's the `uipath-platform` skill), even when the user's wording is generic. When the user asks **what** audit events / sources are available or visible, answer by **running** `uip admin audit <scope> sources` — discover live, never describe from memory or the docs.
-
-- **Explicit** — `uip admin audit` commands; list sources / targets / types; query, filter, paginate, or export events; CSV or per-day-JSON dump of audit history for a window.
-- **Query audit events** — list event sources, filter events by source / target / type / user / status / time window at org or tenant scope
-- **Export audit events** — chunked download from the long-term store (one call per UTC day, atomic abort on any chunk failure) as a folder of day-wise JSON files (default) or a single merged CSV via `--file-format csv`
-- **Membership / license phrasings** — "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit"
-- **Sign-in / authentication phrasings** — "failed/successful logins", "login history for user X", "who's been signing in"
-- **Tenant-activity phrasings** — "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity"
-- **Cross-scope phrasings** — "everything everywhere" (run the flow once per scope and present combined)
-- **Investigation intent** (full-sentence form) — "Who deleted the X folder last Tuesday?", "Show me failed logins for user Y this month.", "What changed on tenant Z between Jan 1 and Feb 1?", "Give me the audit log for the last 30 days.", "Was the API key rotated by someone in our org?", "Export everything for compliance for Q4."
-
-> **Scope routing** (which phrasing → `org` vs `tenant`, and why) lives in [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing). Critical Rule 23 governs the stop-and-ask requirement when scope is ambiguous.
-
-### Troubleshoot
-
-Activate on **access/auth/identity troubleshooting** — users report symptoms, not audit verbs.
-
-- **Diagnose access denied** — "user can't access X", "403 on API", "new hire has no permissions" → resolve principal, check-access, inspect role assignments. Playbook: [identity-troubleshoot-guide.md → Playbook 1](references/identity-troubleshoot-guide.md#playbook-1--user-cant-access-resource-x)
-- **Investigate login failures** — "failed login attempts", "account compromised?", "suspicious sign-ins" → org-scoped audit login-history investigation. Playbook: [identity-troubleshoot-guide.md → Playbook 2](references/identity-troubleshoot-guide.md#playbook-2--suspicious-login-activity)
-- **Diagnose role misconfiguration** — "custom role doesn't work", "user has role but can't do X" → inspect role actions, verify scope alignment. Playbook: [identity-troubleshoot-guide.md → Playbook 3](references/identity-troubleshoot-guide.md#playbook-3--role-misconfiguration)
-- **Diagnose IP restriction lockout** — "can't access platform from new office", "all users blocked" → my-ip + ip-ranges list + enforcement get. Playbook: [identity-troubleshoot-guide.md → Playbook 4](references/identity-troubleshoot-guide.md#playbook-4--ip-restriction-lockout)
-- **Diagnose PAT / external app failures** — "API returns 401", "PAT stopped working", "external app can't authenticate" → check expiry, scopes, audit for revocation. Playbook: [identity-troubleshoot-guide.md → Playbook 5](references/identity-troubleshoot-guide.md#playbook-5--pat-or-external-app-not-working)
-- **Diagnose SMTP email delivery failures** — "invitations not sending", "SMTP broken" → smtp get + smtp test
-- **Investigate stuck tenant operations** — "tenant create not completing", "operation stuck" → poll operation status
-- **Identify service provisioning no-ops** — "service still enabled after remove" → platform-pinned services
-- **Triage robot account authentication issues** — "robot not authenticating" → identity vs credential model confusion
-
-> **Structured diagnose capability index** with failure-mode lookup and diagnostic priority ladder: [diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md). Quick investigation playbooks: [identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md).
+Troubleshooting routes: access denied → resolve the principal, check access, and inspect assignments ([Playbook 1](references/identity-troubleshoot-guide.md#playbook-1--user-cant-access-resource-x)); suspicious logins → organization audit ([Playbook 2](references/identity-troubleshoot-guide.md#playbook-2--suspicious-login-activity)); role misconfiguration → actions and scope ([Playbook 3](references/identity-troubleshoot-guide.md#playbook-3--role-misconfiguration)); IP lockout → `my-ip`, ranges, and enforcement ([Playbook 4](references/identity-troubleshoot-guide.md#playbook-4--ip-restriction-lockout)); PAT/external-app failure → expiry, scopes, and revocation audit ([Playbook 5](references/identity-troubleshoot-guide.md#playbook-5--pat-or-external-app-not-working)). SMTP uses `smtp get` and `smtp test`; poll stuck tenant operations; for provisioning no-ops check platform-pinned services; distinguish robot identity issues from credential-model issues.
 
 ## Critical Rules
 
-Each rule is the agent contract. Per-area detail is in the linked reference files.
+Each rule is part of the agent contract.
 
 ### Universal
 
-1. **Route Orchestrator-specific role/permission requests to `uip or roles`** (`uipath-platform` skill). `uip admin authorization` does NOT own Orchestrator's role catalog. **Conversely, all organization/tenant audit is owned HERE and served by `uip admin audit <scope>` (`sources` / `events` / `export`) — NEVER use `uip or audit-logs` for audit events, audit history, audit export, login history, compliance dumps, or "who did what/where" requests.** `uip or audit-logs` is a *different* surface (Orchestrator-operational audit — `Component,User,Action,Operation,Time` columns, `--export` returns a CSV; the `uipath-platform` skill). If you reach for `uip or audit-logs` on any org/tenant audit ask, stop and switch to `uip admin audit`.
-2. **Verify login first.** `uip login status --output json`. If not logged in, stop and ask the user to run `uip login` — it opens an interactive browser flow, so never launch it yourself in an automated or non-interactive session (sessions authenticated via env vars are already logged in). Org id is resolved from the active session.
-3. **Use `--output json` on every command.** Parse programmatically; present conversationally.
-4. **Stop on error.** Show the error verbatim. Never retry auth failures — ask the user to `uip login`.
-5. **Resolve every named principal before high-risk ops.** Any command that touches a named user / group / robot account / external app — `roles assignments create/delete`, `users delete`, `groups delete`, `groups members add/revoke`, `robot-accounts delete`, `external-apps delete`, `external-apps generate-secret` — MUST first search the directory and echo `Principal: <displayName> (<userName>) — <id>` back before the mutation runs. Zero matches → stop and ask; never fall back to the current login user. Multiple matches → numbered list, wait for a digit. Procedure: [role-assignment-management.md → Resolving Principal IDs](references/authorization/role-assignment-management.md#resolving-principal-ids).
+1. **Route correctly:** Orchestrator-specific role/permission requests go to `uip or roles` (`uipath-platform`), not `uip admin authorization`. Organization/tenant audit always uses `uip admin audit <scope>` (`sources`, `events`, or `export`), never `uip or audit-logs`, including audit history, exports, login history, compliance dumps, and “who did what/where.”
+2. **Verify login first:** Run `uip login status --output json`. If unauthenticated, stop and ask the user to run `uip login`; it opens an interactive browser flow and must not run in automated/non-interactive sessions. Environment-authenticated sessions are already logged in. Resolve the organization from the active session.
+3. **Use `--output json` on every command.** Parse programmatically and present conversationally.
+4. **Stop on error and show it verbatim.** Never retry authentication failures; ask the user to run `uip login`.
+5. **Resolve named principals before high-risk operations:** users, groups, robot accounts, and external apps, including assignment create/delete, user/group deletion, membership changes, robot deletion, external-app deletion, and secret generation. Search first and echo `Principal: <displayName> (<userName>) — <id>`. Zero matches: stop and ask. Multiple matches: show a numbered list and wait for a digit. Never substitute the current login user. See [Resolving Principal IDs](references/authorization/role-assignment-management.md#resolve-principals-before-mutation).
 
 ### Identity
 
-6. **Discover before creating.** `list` before `create` to avoid duplicates (robot accounts, groups, external apps — `users invite` excepted).
-7. **Secrets shown only once** on external-app create and `generate-secret` — warn the user to save immediately.
-8. **External apps require scopes at creation** — `--app-scope` or `--user-scope` is required (e.g., `--app-scope "OR.Folders"`).
-9. **Group membership uses user IDs.** Resolve via `users list` per Rule 5, then `groups members add/revoke`.
-10. **Confirm before delete** on users / groups / robot accounts / external apps — after resolving the named target per Rule 5.
+6. **Discover before creating:** List robot accounts, groups, and external apps first; user invites are excepted.
+7. **Show secrets once only** for external-app creation and `generate-secret`; tell the user to save them immediately.
+8. **External apps require creation scopes:** `--app-scope` or `--user-scope`, such as `--app-scope "OR.Folders"`.
+9. **Group membership uses user IDs:** Resolve users under Rule 5, then use `groups members add/revoke`.
+10. **Confirm deletion** of users, groups, robot accounts, and external apps after resolving the target. Built-in groups (`type: "BuiltIn"`) cannot be deleted; only `Custom` groups can.
 
 ### Authz
 
-11. **Built-in roles are read-only.** Only `Custom` roles can be created / updated / deleted. CLI also rejects authoring against service-managed and platform-level services. Service lists: [role-management.md → Services That Manage Their Own Roles](references/authorization/role-management.md#services-that-manage-their-own-roles).
-12. **`roles create` / `roles update` are PUT-style upserts.** Body is assembled from inline flags + `--file ./actions.json`. Always `roles get` first before updating — omitted flags overwrite that field.
-13. **`--service` infers scope** (e.g., `--service studio` → `Tenant`; `--service apps` → `Organization`). Combine with `--scope` only to override. **Never guess a `serviceName`** — the valid values and the command that re-derives them: [permission-catalog.md → `--service` serviceNames](references/authorization/permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
-14. **Listing works for every service; authoring is what's blocked.** `roles list --service <svc>` and `roles assignments list --service <svc>` accept every service. For effective access on a principal use `check-access` (PDP).
-15. **Scope vocab differs across verbs.** `roles create --scope`: `Organization|TenantGlobal|Tenant|Project`. `roles assignments create --scope`: those + `Folder|App`. `roles assignments list --scope`: excludes `TenantGlobal`. `check-access --scope`: only `Tenant|Folder`.
-16. **`roles assignments create/delete` MUST resolve the principal first** per Rule 5 — `--identity-id` is a raw UUID the CLI does not name-check.
-17. **`roles assignments create` MUST match the role's `ownerServiceName` to the scope-path service segment.** `CentralizedAccess` → no service segment (`/` or `/tenant/<tid>`); anything else → path must include `lowercase(ownerServiceName)`. Display-name mapping (e.g., `Reinfer` → "IXP") + full procedure: [role-assignment-management.md → Validate Role's Owning Service](references/authorization/role-assignment-management.md#validate-roles-owning-service-vs-assignment-scope-path).
+11. **Built-in roles are read-only.** Create/update/delete only `Custom` roles. The CLI rejects service-managed or platform-level authoring; see [Services That Manage Their Own Roles](references/authorization/role-management.md#services-and-role-ownership).
+12. **`roles create/update` are PUT-style upserts.** Build the body from flags and `--file ./actions.json`; always `roles get` before update because omitted flags overwrite fields.
+13. **`--service` infers scope** (for example, `studio` → `Tenant`, `apps` → `Organization`); use `--scope` only to override. **Never guess a `serviceName`** — valid values and the re-derive command: [permission-catalog.md → serviceNames](references/authorization/permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
+14. **Listing supports every service; authoring does not.** `roles list --service <svc>` and `roles assignments list --service <svc>` accept every service. Use `check-access` for effective access.
+15. **Scope vocabularies differ:** `roles create --scope` = `Organization|TenantGlobal|Tenant|Project`; assignment create adds `Folder|App`; assignment list excludes `TenantGlobal`; `check-access --scope` supports only `Tenant|Folder`.
+16. **Assignment create/delete requires principal resolution** under Rule 5; `--identity-id` is an unchecked raw UUID.
+17. **Assignment ownership must match the scope path:** `ownerServiceName` must match the path service segment. `CentralizedAccess` has no service segment (`/` or `/tenant/<tid>`); others require lowercase `ownerServiceName` in the path. Apply display-name mappings such as `Reinfer` → `IXP`. See [Validate Role's Owning Service](references/authorization/role-assignment-management.md#validate-role-service-binding-and-scope-path).
 
 ### OMS
 
-18. **Async lifecycle: auto-poll, then hand off.** `tenants create/update/delete/enable/disable` return `operationId`. Auto-poll `organizations operation get <OP_ID>` 3× at 5 s; on terminal status stop and report; still in-progress after 3 polls → numbered menu, never indefinite loop. **`organizations create` and `organizations delete` are not exposed by the CLI** — Portal / support flow only. Procedure: [organization-management.md → Polling procedure](references/organization-management.md#polling-procedure-auto-poll-then-hand-off).
-19. **`tenants delete` is soft-only.** No hard-delete flag; restoration is via support.
-20. **Tenant commands default to the login tenant.** Always pass an explicit `<TENANT_ID>` for destructive ops (`tenants delete`, `tenants disable`, `tenants services remove`).
-21. **Resolve region before tenant create.** `--region` is required on `tenants create` — run `organizations regions list` first. Tenant service catalog is region-aware.
-22. **`services disable` / `remove` may no-op despite Success** on certain services. Always re-list after mutating. Gap list: [tenants-commands.md → Concepts](references/tenants-commands.md#concepts).
+18. **Async lifecycle: auto-poll, then hand off.** Tenant create/update/delete/enable/disable return `operationId`; poll `organizations operation get <OP_ID>` three times at five-second intervals, stop on terminal status, then, if still in progress, present a numbered menu. Never loop indefinitely. Organizations create/delete are unavailable in the CLI and require Portal/support. See [Polling procedure](references/organization-management.md#polling-procedure-auto-poll-then-hand-off).
+19. **`tenants delete` is soft-only.** Restoration requires support; no hard-delete flag exists.
+20. **Tenant commands default to the login tenant.** Always provide explicit `<TENANT_ID>` for tenant delete/disable and `tenants services remove`.
+21. **Resolve region before tenant creation:** Run `organizations regions list` first because `--region` is required and region-aware.
+22. **Service disable/remove can falsely report Success.** Always re-list afterward. See [Tenants concepts](references/tenants-commands.md#concepts-and-safety-rules).
 
 ### Audit
 
-23. **Disambiguate `org` vs `tenant` scope before querying.** If the prompt is vague AND no prior turn fixed the scope, **stop and ask once** (a single clarifying question — use AskUserQuestion when available) — never silently default to `tenant` or any single scope. If you genuinely cannot get an answer (non-interactive run) and must proceed, query **both** scopes and combine the results rather than guessing one — silently picking a single scope is the failure mode. **Scope is a positional subgroup, NOT a flag:** write `uip admin audit org sources` / `uip admin audit tenant events` — there is no `--scope` option (`audit sources --scope organization` is invalid). Routing table (user-phrasing → scope + why it lives where) and investigation playbooks: [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing).
-24. **`audit <scope> events` returns an object, not a bare array.** Shape is `{auditEvents, next, previous}`. Do not index `Data[0]`; read `Data.auditEvents[]`. **Cursor semantics are chronological**: `next` = newer events, `previous` = older events. The default newest-backward walk follows `previous`.
-25. **`--limit` paginates internally — never loop on `--from-date` / `--to-date` to "paginate".** The server clamps `maxCount` to `[10, 200]` per request; when the user wants more than 200, the CLI fetches `ceil(N/200)` pages under the hood. Pass `--limit 500` (or larger, **up to the 10000 maximum**) — do NOT re-implement pagination in the agent. `--limit` must be in `[1, 10000]`; a bigger value is rejected up front with `Result: "ValidationError"`, so never pass an arbitrarily huge number to mean "everything" — for that, omit `--limit` or stay within the range.
-26. **Discover via `audit <scope> sources` first — never invent source / target / type GUIDs.** The catalog response gives the GUIDs you pass to `events --source / --target / --type`. This is also the answer to "what audit events / sources can I see?" — **run `audit <scope> sources` and report the live catalog; do not answer conceptually from memory or the reference docs.**
-27. **Bound the time window, ISO 8601 in UTC.** Don't call `audit <scope> events` without `--from-date` and `--to-date` on a noisy tenant. Accepted formats: date-only (`2026-04-01`) or with time (`2026-04-01T14:30:00Z`). **`--to-date` is inclusive of the exact instant** — to capture a full final day, pass the start of the next day or `T23:59:59.999Z`. This next-day trick is for `events` only — `export` bounds are whole days (Rule 30). Resolve relative phrases ("yesterday", "last 7 days") against the actual current UTC date (e.g. `date -u`) — never guess dates — and echo the resolved window in your reply.
-27b. **"No matching event" is a complete answer — never name an actor the evidence does not support.** An audit trail is evidence, so attributing an action to the wrong person is worse than returning nothing. If the targeted query comes back empty, say so plainly, state what you searched (scope, source/target/type, window), and offer a next step (widen the window, try the other scope, check the resource ever existed). **Never** promote an actor from an adjacent event — a different resource, a different event type, or a broad `--search` hit — into the answer, and do not keep loosening filters until something returns and then present that as the culprit. Only name an actor when the cited event matches both the resource and the verb asked about, quoting `createdOn` plus the identifying `eventDetails` field so the user can verify it. Detail: [audit-workflow-guide.md → Step 5](references/audit-workflow-guide.md#step-5--when-nothing-matches-say-so).
-28. **`--tenant-id` is silently ignored on `org`-scoped audit commands.** If you find yourself reaching for it on `audit org events`, switch to `audit tenant` instead.
-29. **On 401 from audit, do NOT retry.** The token is missing the `Audit.Read` scope; tell the user to `uip logout && uip login`.
-29b. **On a 5xx from audit, DO retry — the envelope tells you so.** `ErrorCode: server_error` / `Retry: RetryLater` (e.g. `HTTP 503: no healthy upstream`, `HTTP 504`) is a transient, not a bad request. Re-run the **same** query up to two more times with a few seconds of backoff before reporting failure — changing `--limit` or the window between attempts is not a fix and only obscures the cause. Retry immediately-and-once is usually not enough; wait between attempts. **Never write or present an error envelope as if it were the result** — if the user asked you to save the JSON, saving `{"Result":"Failure",...}` to that file is a failed retrieval, not a result. Report the failure explicitly instead.
-30. **`audit <scope> export` writes into a base directory (`--output-path`): a uniquely-named folder of day-wise JSON files (default) or a single merged CSV.** `--from-date`, `--to-date`, and `--output-path` are all required. **Export dates are whole UTC days, inclusive on both ends** (the server truncates times to the calendar day): `--from-date 2026-01-01 --to-date 2026-01-31` exports all of January; a single day is `--from-date X --to-date X` with the same date. Do **not** apply the `events` next-day trick here — a next-day `--to-date` exports an extra full day. `--output-path` is a **base directory** (created if missing) — **pass a directory only, never a filename or extension**; the CLI creates a uniquely-named `audit_<from>_<to>_<generated-at>` output inside it (folder for `json`, `.csv` for `csv`), so repeated exports of the same window never collide. **Do not hand-craft the per-export name.** **`--file-format <json|csv>`** selects the shape: `json` (default) = a folder of `<YYYY-MM-DD>.json` files; `csv` = one merged CSV — pick `csv` for a flat spreadsheet/Excel-friendly dump, `json` for per-day files. If the user named a destination folder, pass it verbatim as `--output-path` — no confirmation needed; confirm first only when you had to pick a default (e.g. `./audit-exports`) yourself. Then report the generated `Path` (and `GeneratedAt`) from the result.
+23. **Disambiguate `org` versus `tenant` before querying.** If vague and no prior turn fixes scope, ask one clarifying question, using AskUserQuestion when available; do not silently default. If non-interactive clarification is impossible, query both and combine. Scope is positional: `uip admin audit org sources` or `uip admin audit tenant events`; `--scope` is invalid. See [Audit scope disambiguation](references/audit-workflow-guide.md#scope-selection).
+24. **Events return `{auditEvents, next, previous}`**, not a bare array. Read `Data.auditEvents[]`; `next` is newer, `previous` older, and newest-backward traversal follows `previous`.
+25. **`--limit` paginates internally.** Do not date-loop for pagination. Each server request is clamped to `[10, 200]`; CLI limits are up to 10000. `--limit` must be `[1, 10000]`; above 10000 returns `Result: "ValidationError"`. Omit it or stay within range for “everything.”
+26. **Run `audit <scope> sources` first.** Never invent source, target, or type GUIDs; use live catalog GUIDs. The response also answers availability questions.
+27. **Bound event windows in UTC ISO 8601.** Do not query noisy tenants without `--from-date` and `--to-date`. Accept date-only or timestamp forms such as `2026-04-01T14:30:00Z`. `--to-date` includes the exact instant; use the next day’s start or `T23:59:59.999Z` for a full final day. Resolve relative dates using actual UTC (`date -u`), never guessing, and echo the window.
+27b. **An empty targeted query is complete.** State that no matching event was found, with scope, filters, and window; offer widening, the other scope, or checking resource existence. Never infer an actor from adjacent resources, event types, or broad searches, and never loosen filters merely to find a culprit. Name an actor only when the matching event supports both requested resource and verb; quote `createdOn` and identifying `eventDetails`. See [Step 5](references/audit-workflow-guide.md#step-5--report-no-match-safely).
+28. **`--tenant-id` is ignored for org audit.** Use `audit tenant` instead.
+29. **On audit 401, do not retry.** The token lacks `Audit.Read`; tell the user to run `uip logout && uip login`.
+29b. **Retry transient audit 5xx errors** (`ErrorCode: server_error` / `Retry: RetryLater`, such as 503/504) up to two more times with several seconds of backoff, using the identical query. Do not change limit or window. Never present or save an error envelope as data; report failed retrieval.
+30. **Exports use a base directory and whole UTC days.** Require `--from-date`, `--to-date`, and `--output-path`. Dates are inclusive calendar days; do not use the events next-day trick. `--output-path` is a directory, never a filename/extension; the CLI creates `audit_<from>_<to>_<generated-at>` inside it. Default JSON creates per-day `<YYYY-MM-DD>.json`; `--file-format csv` creates one merged CSV. Use CSV for flat spreadsheets and JSON for day-wise files. Pass a user-named destination verbatim without confirmation; confirm only a selected default such as `./audit-exports`. Report `Path` and `GeneratedAt`.
 
 ### IP Restriction
 
-31. **`enforcement enable` is lockout-sensitive — prompt + impact statement required.** Run `ip-restriction my-ip` and verify the caller's IP is covered by an entry in `ip-ranges list`. **Then prompt the user with the impact** before flipping: *"After enabling IP restriction, any caller (Portal, CLI, robot, external app) whose source IP is not in `ip-ranges list` will be blocked from this org. Misconfiguration locks you out and requires platform-side recovery. Proceed?"* `--confirm` is required; `ip-ranges delete` while enforcement is on also requires `--confirm`. Procedure: [enforcement-management.md](references/ip-restriction/enforcement-management.md).
-32. **Recovery from IP lockout requires platform-side action.** No CLI bypass — either access from an in-allowlist IP and `enforcement disable`, or use the Portal recovery flow.
-33. **"APMS" is internal — never expose to the user.** "APMS" (Access Policy Management Service) is the platform's internal name for IP Restriction. Use "IP Restriction" in every user-facing surface.
+31. **Enforcement enable requires a safety check and confirmation:** Run `ip-restriction my-ip`, verify the caller IP is covered by `ip-ranges list`, then state: “After enabling IP restriction, any caller (Portal, CLI, robot, external app) whose source IP is not in `ip-ranges list` will be blocked from this org. Misconfiguration locks you out and requires platform-side recovery. Proceed?” Require `--confirm`. Deleting a range while enforcement is enabled also requires `--confirm`. See [enforcement management](references/ip-restriction/enforcement-management.md).
+32. **IP-lockout recovery is platform-side:** use an allowlisted IP to disable enforcement or Portal recovery; there is no CLI bypass.
+33. **Never expose “APMS.”** Say “IP Restriction” in user-facing output.
 
-## What NOT to Do
+## What Not to Do
 
-1. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
-2. **Never pass IDs as flags.** Resource IDs and names are positional arguments: `groups members add <GROUP_ID> --user-ids ...`, NOT `--group-id <GROUP_ID>`. Same for all `get`, `update`, `delete`, `create` subcommands.
-3. **Do NOT assume audit `events` returns a bare array.** It's `{auditEvents, next, previous}`.
-4. **Do NOT loop on `--from-date`/`--to-date` to "paginate".** Bump `--limit` and the CLI handles cursor pagination internally.
-5. **Do NOT silently default audit scope** to `tenant` or `org` when the prompt is ambiguous. Ask once, then proceed.
-6. **Do NOT invent audit source/target/type GUIDs.** Always discover via `sources` first.
-7. **Do NOT call audit `events` with no time bound** on a noisy tenant — default to a bounded window.
-8. **Do NOT pass `--tenant-id` to `org`-scoped audit commands** — it's silently ignored.
-9. **Do NOT retry on 401 auth errors.** The token is missing the required scope (`Audit.Read` for audit). Tell the user to `uip logout && uip login`.
-9a. **Do NOT save or report an audit error envelope as data.** A `{"Result":"Failure"|"ValidationError", ...}` payload is a failed call — retry a 5xx (Rule 29b), fix a `ValidationError`, and never leave it in a file the user asked you to fill with results.
-9b. **Do NOT name a culprit an audit query did not return.** If the targeted search is empty, report "no matching event found" — never borrow an actor from an adjacent or broader-search event (Rule 27b).
-10. **Do NOT call `roles update` with only the flag you want to change.** Re-fetch first; the upsert body overwrites omitted fields (Rule 12).
-11. **Do NOT present authz results without provenance** — role name, `scopeType`, `ownerServiceName`, tenant-binding (names not UUIDs). Detail: [authorization-commands.md → Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output).
-12. **Do NOT conflate provisioned services with the available catalog.** `services list` returns provisioned with status; `services list-available` is the catalog. Present them as separate sections.
-13. **Do NOT run an OMS mutation without naming the target.** Echo org name / tenant name + UUID / service type + region before running.
-14. **Do NOT pass the next day as `--to-date` on audit `export`** to "include the final day" — export bounds are already whole-day inclusive (Rule 30); the next-day trick is for `events` only and would export an extra day.
+1. **Never pass resource IDs as flags.** IDs and names are positional, for example `groups members add <GROUP_ID> --user-ids ...`; apply this to get/update/delete/create commands.
+2. **Never present authz results without provenance:** role name, `scopeType`, `ownerServiceName`, and tenant binding using names rather than UUIDs. See [Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output).
+
+The rest are the inverse of the Critical Rules — never:
+- use `uip or audit-logs` for org/tenant audit (R1), or default the audit scope when ambiguous (R23);
+- treat `audit events` as a bare array (R24), hand-loop dates to paginate (R25), invent source/target/type GUIDs (R26), or query events unbounded on a noisy tenant (R27);
+- name an actor the query didn't return (R27b), pass `--tenant-id` to `org` audit (R28), retry a 401 (R29), or save/report an error envelope as data (R29b);
+- use the next-day `--to-date` trick on `export` (R30), or `roles update` with only the changed flag (R12);
+- confuse provisioned `services list` with the `list-available` catalog (R22), or run an OMS mutation without echoing the resolved target (Output Etiquette).
 
 ## Quick Start
 
-One row per common goal. Per-area workflows are in the reference files.
-
-| Goal | Entry command(s) |
+| Goal | Entry point |
 |---|---|
-| **Invite a user → assign to group** | [user-management.md](references/user-management.md) + [group-management.md](references/group-management.md) |
-| **Create a custom role** | `uip admin authorization roles create --scope <Organization\|TenantGlobal\|Tenant\|Project> --name "<NAME>" --file ./actions.json --output json` (actions.json = `["STUDIO.X.Y", ...]`) |
-| **Grant permission(s) to a principal** ("grant me X", "give alice Y, Z") | [grant-permissions.md](references/authorization/grant-permissions.md) — intersection-and-menu flow |
-| **Assign a role to a principal** | (1) Resolve principal per Rule 5. (2) `roles get <ROLE_ID>` → echo `ownerServiceName` + verify scope-path service segment matches (Rule 17). (3) `roles assignments create --role-id <ROLE_ID> --identity-id <ID> --identity-type <User\|Group\|Robot\|ExternalApplication> --output json` |
-| **See what a principal can do** | `uip admin authorization check-access <USER_GUID_OR_EMAIL> --scope <Tenant\|Folder> --output json` (Rule 15) |
-| **Create a tenant** | [tenant-management.md](references/tenant-management.md) — region + default-services resolution, file-body shape, operation polling (Rule 18) |
-| **Add a tenant service** | `tenants services list-available --region <R>` → `tenants services add --tenant-id <TID> --service <SVC>` (verify post-state per Rule 22) |
-| **Look up my public IP** ("what's my IP?", "what public IP does the platform see for me?") | `ip-restriction my-ip --output json` → return `Data.ipAddress`. Standalone — no enforcement context required |
-| **Enable IP allowlist enforcement** | `ip-restriction my-ip` → verify covered by `ip-ranges list` → `ip-restriction enforcement enable --confirm` (Rule 31) |
-| **Query audit events / export** | [audit-workflow-guide.md](references/audit-workflow-guide.md) — scope disambiguation + 4 investigation playbooks (who-did-X, login history, date-range dump, overview) |
+| Invite user and assign group | [user-management.md](references/user-management.md), [group-management.md](references/group-management.md) |
+| Create custom role | `uip admin authorization roles create --scope <Organization\|TenantGlobal\|Tenant\|Project> --name "<NAME>" --file ./actions.json --output json` |
+| Grant permissions | [grant-permissions.md](references/authorization/grant-permissions.md) |
+| Assign a role | Resolve principal; `roles get`; validate owner service/path; create assignment |
+| Check effective access | `uip admin authorization check-access <USER_GUID_OR_EMAIL> --scope <Tenant\|Folder> --output json` |
+| Create tenant | [tenant-management.md](references/tenant-management.md) |
+| Add tenant service | `tenants services list-available --region <R>`; add; verify post-state |
+| Find public IP | `ip-restriction my-ip --output json`; return `Data.ipAddress` |
+| Enable IP enforcement | `my-ip` → verify range → `enforcement enable --confirm` |
+| Query/export audit | [audit-workflow-guide.md](references/audit-workflow-guide.md) |
 
 ## Key Concepts
 
-### Organization hierarchy
+See [key-concepts.md](references/key-concepts.md) for organization hierarchy and distinctions among users, groups, robot accounts, robot credentials, and external apps.
 
-```
-Organization (org)
-  └── Partition (= org in most cases)
-        ├── Users           ← human identities
-        ├── Groups          ← role containers (BuiltIn + Custom)
-        ├── Robot Accounts  ← unattended automation identities
-        └── External Apps   ← OAuth2 clients (Client ID + Secret)
-```
+## Output Etiquette and Report Contract
 
-### Robot accounts vs external apps
-
-| Concept | Purpose | Managed by |
-|---|---|---|
-| **Robot account** | Identity — who the robot is | Identity Server (`uip admin`) |
-| **Robot credentials** | Per-robot Client ID + Secret for machine auth | Orchestrator (machine connection) |
-| **External app** | OAuth2 client for API integrations, CI/CD | Identity Server (`uip admin`) |
-
-Robot credentials are provisioned automatically by Orchestrator on machine connect — not by creating external apps.
-
-## Output Etiquette
-
-What to surface after each verb. Per-area detail in the reference files; this is the contract.
-
-| Area | Always surface |
+| Area | Required output |
 |---|---|
-| **Identity** mutations | Result + new resource id; for external-app create / `generate-secret`, **highlight the secret + warn to save**; offer a next step (assign to group, generate another secret, etc.). |
-| **Authz** reads + mutations | Provenance: role name, `scopeType`, `ownerServiceName` (read directly from response — translate to display name per Rule 17, e.g., `Reinfer`→"IXP"), tenant binding (resolve UUID → name). **`check-access`: label each row as `direct` or `inherited from <Group name>`** by inspecting the nested `roleAssignments[].securityPrincipalType`. Full contract: [authorization-commands.md → Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output). |
-| **OMS** reads | Separate **provisioned** (with status) from **available catalog** (no status). Lead with `Organization: <ORG_NAME>` (and tenant name + UUID + lifecycle status for tenant reads). |
-| **OMS** mutations | Echo the resolved target before running (Anti-pattern 13). Async: auto-poll 3× at 5 s, then numbered menu (Rule 18). Sync services: re-list to verify post-state (Rule 22). |
-| **Audit** queries | Disambiguate `org` vs `tenant` first (Rule 23). Discover via `sources` (Rule 26). Bound the window (Rule 27). Operation summary (count, scope, time window, filters, cursor state). Wait for the user's next-step choice; do not chain mutations. Investigation playbooks: [audit-workflow-guide.md](references/audit-workflow-guide.md). |
-| **IP Restriction** mutations | Before `enforcement enable`: state the impact, require explicit user confirmation (Rule 31). After: confirm caller's IP is still covered (re-run `my-ip` + `ip-ranges list`). Never use the internal name "APMS" in user-facing output. |
-
-For per-area full checklists, follow the table's inline links: Identity → [identity-commands.md](references/identity-commands.md#output-etiquette--after-any-identity-mutation); Authz → [authorization-commands.md](references/authorization/authorization-commands.md#provenance-contract-for-completion-output); Audit → [audit-workflow-guide.md](references/audit-workflow-guide.md#output-etiquette--after-an-audit-query-or-export).
+| Identity mutations | Result and new resource ID; highlight one-time external-app secrets, warn to save them, and offer a relevant next step. |
+| Authz reads/mutations | Role name, `scopeType`, `ownerServiceName` from the response, translated display name where applicable, and tenant binding resolved to a name. For `check-access`, label each row `direct` or `inherited from <Group name>` using nested `roleAssignments[].securityPrincipalType`. See [Provenance contract](references/authorization/authorization-commands.md#provenance-contract-for-completion-output). |
+| OMS reads | Lead with `Organization: <ORG_NAME>`; separate provisioned services with status from the available catalog without status. Tenant reads also show name, UUID, and lifecycle status. |
+| OMS mutations | Echo resolved target; auto-poll async operations three times at five-second intervals, then offer a numbered menu; re-list synchronous services to verify state. |
+| Audit queries/exports | State scope, count, resolved UTC window, filters, and cursor state; obey Rules 23, 26, and 27. After reporting, wait for the user's next-step choice and do not chain mutations. For exports report `Path` and `GeneratedAt`. See [audit output etiquette](references/audit-workflow-guide.md#output-etiquette--after-every-audit-query-or-export). |
+| IP Restriction mutations | Before enabling, state impact and obtain explicit confirmation; afterward rerun `my-ip` and `ip-ranges list` to confirm coverage; never say APMS. |
 
 ## Task Navigation
 
-| I need to... | Read first |
+| Need | Reference |
 |---|---|
-| Identity CLI reference | [references/identity-commands.md](references/identity-commands.md) |
-| Manage users (list / create / invite / update / delete) | [references/user-management.md](references/user-management.md) |
-| Manage groups (CRUD + membership) | [references/group-management.md](references/group-management.md) |
-| Manage robot accounts | [references/robot-account-management.md](references/robot-account-management.md) |
-| Manage external apps (OAuth2 + secrets + federated credentials) | [references/external-app-management.md](references/external-app-management.md) |
-| Manage personal access tokens (PATs) | [references/pat-management.md](references/pat-management.md) |
-| Configure SMTP email settings | [references/smtp-management.md](references/smtp-management.md) |
-| Authorization CLI reference | [references/authorization/authorization-commands.md](references/authorization/authorization-commands.md) |
-| Manage custom roles | [references/authorization/role-management.md](references/authorization/role-management.md) |
-| Grant permission(s) to a principal — scope/service intersection flow | [references/authorization/grant-permissions.md](references/authorization/grant-permissions.md) |
-| Manage role assignments (incl. role-service vs scope-path validation, Rule 17) | [references/authorization/role-assignment-management.md](references/authorization/role-assignment-management.md) |
-| List permission definitions | [references/authorization/permission-catalog.md](references/authorization/permission-catalog.md) |
-| Check effective access for a principal | [references/authorization/check-access.md](references/authorization/check-access.md) |
-| Organizations CLI reference | [references/organizations-commands.md](references/organizations-commands.md) |
-| Tenants CLI reference | [references/tenants-commands.md](references/tenants-commands.md) |
-| Manage the organization (read + update, polling, regions, org services read-only) | [references/organization-management.md](references/organization-management.md) |
-| Manage tenants (CRUD, enable/disable, tenant services) | [references/tenant-management.md](references/tenant-management.md) |
-| IP-restriction CLI reference | [references/ip-restriction/ip-restriction-commands.md](references/ip-restriction/ip-restriction-commands.md) |
-| Manage IP allowlist entries | [references/ip-restriction/ip-range-management.md](references/ip-restriction/ip-range-management.md) |
-| Toggle enforcement (+ `my-ip` safety check) | [references/ip-restriction/enforcement-management.md](references/ip-restriction/enforcement-management.md) |
-| Manage bypass rules | [references/ip-restriction/bypass-rule-management.md](references/ip-restriction/bypass-rule-management.md) |
-| Audit CLI reference | [references/audit-commands.md](references/audit-commands.md) |
-| Audit investigation workflows (scope disambiguation, who-did-X, login history, date-range dump, overview) | [references/audit-workflow-guide.md](references/audit-workflow-guide.md) |
-| Paginate audit events beyond 200 | [references/audit-commands.md](references/audit-commands.md) + Rule 25 |
-| Troubleshoot access denied, login failures, role misconfig, IP lockout, PAT/app auth | [references/identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
-| Diagnose capability index (structured) | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
-| Failure mode lookup (12 named patterns) | [references/diagnose/failure-modes.md](references/diagnose/failure-modes.md) |
-| Diagnostic priority ladder (sequential triage) | [references/diagnose/troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md) |
+| Identity CLI | [identity-commands.md](references/identity-commands.md) |
+| Users | [user-management.md](references/user-management.md) |
+| Groups and membership | [group-management.md](references/group-management.md) |
+| Robot accounts | [robot-account-management.md](references/robot-account-management.md) |
+| External apps | [external-app-management.md](references/external-app-management.md) |
+| PATs | [pat-management.md](references/pat-management.md) |
+| SMTP | [smtp-management.md](references/smtp-management.md) |
+| Authorization CLI | [authorization-commands.md](references/authorization/authorization-commands.md) |
+| Custom roles | [role-management.md](references/authorization/role-management.md) |
+| Grant permissions | [grant-permissions.md](references/authorization/grant-permissions.md) |
+| Role assignments | [role-assignment-management.md](references/authorization/role-assignment-management.md) |
+| Permission catalog | [permission-catalog.md](references/authorization/permission-catalog.md) |
+| Effective access | [check-access.md](references/authorization/check-access.md) |
+| Organizations | [organizations-commands.md](references/organizations-commands.md), [organization-management.md](references/organization-management.md) |
+| Tenants and services | [tenants-commands.md](references/tenants-commands.md), [tenant-management.md](references/tenant-management.md) |
+| IP Restriction CLI | [ip-restriction-commands.md](references/ip-restriction/ip-restriction-commands.md) |
+| IP ranges | [ip-range-management.md](references/ip-restriction/ip-range-management.md) |
+| Enforcement | [enforcement-management.md](references/ip-restriction/enforcement-management.md) |
+| Bypass rules | [bypass-rule-management.md](references/ip-restriction/bypass-rule-management.md) |
+| Audit CLI | [audit-commands.md](references/audit-commands.md) |
+| Audit investigations | [audit-workflow-guide.md](references/audit-workflow-guide.md) |
+| Audit pagination | [audit-commands.md](references/audit-commands.md) plus Rule 25 |
+| Troubleshooting | [identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
+| Diagnostic capability index | [diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
+| Failure modes | [failure-modes.md](references/diagnose/failure-modes.md) |
+| Diagnostic priority ladder | [troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md) |

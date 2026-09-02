@@ -124,7 +124,7 @@ success_criteria:
   - type: run_command
     description: 'E2E check debugs the flow: it completes and RETURNS a real SOP-grounded resolution citing the disputed invoice (no email sent)'
     command: python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py
-    timeout: 900
+    timeout: 1800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

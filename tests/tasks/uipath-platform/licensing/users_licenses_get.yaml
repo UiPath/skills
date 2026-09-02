@@ -4,8 +4,8 @@ description: >
   user currently leases and reports the result using the friendly-name format
   from the docs. Verifies (1) `uip platform users licenses get <user>
   --output json` shape, (2) docs page fetch for code resolution, and
-  (3) final reply uses `<Friendly Name> (<CODE>)` format. CLI auth failure
-  is expected in this offline environment.
+  (3) the written answer reports bundles as `<Friendly Name> (<CODE>)`.
+  CLI auth failure is expected in this offline environment.
 tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:discover]
 
 agent:
@@ -23,9 +23,10 @@ sandbox:
     - .cmdlog-bin
 
 initial_prompt: |
-  What license bundles does user `dan.dinu@uipath.com` currently hold? Tell me
-  each bundle and whether it was assigned directly or inherited from a group.
-  When you reply, refer to each bundle using its friendly name AND its code.
+  What license bundles does user `dan.dinu@uipath.com` currently hold? For
+  each bundle, say whether it was assigned directly or inherited from a group.
+  Refer to each bundle using its friendly name AND its code. Write the answer
+  to `bundles.md` in the current directory.
 
   Use the `uipath-platform` skill and its User & Group License Allocations
   workflow for this request.
@@ -39,8 +40,9 @@ initial_prompt: |
     environment. Commands may fail with auth errors — that is expected. Run
     each command once and move on. Do NOT retry or attempt to login.
   - If the CLI fails, still resolve the most common user-bundle name → code
-    mappings from the UiPath docs license-codes page so you can demonstrate
-    the required reporting format.
+    mappings from the UiPath docs license-codes page, and list them in
+    `bundles.md` in the same friendly-name-plus-code form, so the reporting
+    format is demonstrated whether or not the lookup returns bundles.
   - Use `--output json` on every uip command.
 
 success_criteria:
@@ -70,15 +72,20 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: llm_judge
-    description: "Agent's final reply uses `<Friendly Name> (<CODE>)` format"
-    include_agent_output: true
-    prompt: |
-      Evaluate ONLY the agent's final reply. Score 1.0 if it references one
-      or more license bundles in the form `<Friendly Name> (<CODE>)` — e.g.,
-      `Automation Developer Named User (RPADEVPRONU)` or `Attended Named User
-      (ATTUNU)`. Score 0.0 if the reply shows only raw codes without friendly
-      names, or only friendly names without codes. Ignore whether the CLI
-      call succeeded — the rubric is solely about reporting format.
+  - type: file_exists
+    description: "Answer written to bundles.md"
+    path: "bundles.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Pairing, not typography: a friendly name followed by its parenthesised
+  # code, tolerating markdown (backticks, bold, list bullets) around either
+  # half. Rejects the two failure modes that matter — bare codes with no
+  # friendly name, and friendly names with no code.
+  - type: run_command
+    description: "bundles.md reports at least one bundle as `<Friendly Name> (<CODE>)`"
+    command: "grep -Eq '(Attended|Unattended|Developer|Tester|Named User|Citizen|Automation)[A-Za-z .*`-]{0,40}\\( *[`*]* *[A-Z][A-Z0-9]{3,} *[`*]* *\\)' bundles.md"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

@@ -173,6 +173,7 @@ Load each applicable catalog fully and apply every rule's `detection_method` to 
 | `agent.json.type == lowCode` | `references/agents/agents-lowcode-rules.md` |
 | Python coded-agent or `agent.json.type == coded` | `references/agents/agents-coded-rules.md` |
 | `pyproject.toml` + `main.py` + `uipath.json[functions]` without framework config | coded catalog |
+| `package.json` + `uipath.json[functions]` (no `pyproject.toml`) — Coded Function (JS/TS) | phase 2; no agent catalog |
 | RPA, Flow, Coded App | phase 2; no agent catalog |
 
 For guardrails, running the guardrail workflow is **mandatory** whenever `guardrails[]` is non-empty or the use case calls for guardrails — do not eyeball `agent.json`:
