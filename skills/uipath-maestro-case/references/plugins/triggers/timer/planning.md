@@ -65,8 +65,10 @@ When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat coun
 
 ## Fields to Resolve
 
+A timer trigger has no registry dependency, so it produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
 ```text
-# timer trigger "<display-name>"
+timer trigger "<display-name>"
 - timeCycle: R12/2026-04-21T22:00:00.000-07:00/PT10M
 - displayName: "<optional — defaults to Trigger N>"
 - sdd-intent: "<prose restatement for reviewer — e.g. Every 10 min, starting 2026-04-21 22:00 PDT, 12 times>"

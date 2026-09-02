@@ -58,8 +58,10 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 
 ## Fields to Resolve
 
+Timers are a built-in type with no registry dependency, so a wait-for-timer task produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
 ```text
-# wait-for-timer task "<display-name>" in stage "<stage>"
+wait-for-timer task "<display-name>" in stage "<stage>"
 - every: 1h
 - at: 2026-04-26T09:00:00.000Z   # optional
 - repeat: 5                       # optional

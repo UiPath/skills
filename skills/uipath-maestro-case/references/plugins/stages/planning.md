@@ -71,8 +71,10 @@ Stages are created **after** the root case (T01) and **before** any tasks or con
 
 ## Fields to Resolve
 
+Stages have no registry lookup, so a stage produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads every one of them from `sdd.md` ([planning.md § Step 4](../../planning.md)).
+
 ```text
-# stage "<label>"
+stage "<label>"
 - type: stage
 - rationale: "<why this is a primary stage and how it is reached/exited>"
 - description: "<description from sdd.md>"
@@ -83,7 +85,7 @@ Stages are created **after** the root case (T01) and **before** any tasks or con
 Secondary variant:
 
 ```text
-# secondary stage "<label>"
+secondary stage "<label>"
 - type: secondary
 - rationale: "<why this is interrupting and which global/conditional event it handles>"
 - description: "<description from sdd.md>"

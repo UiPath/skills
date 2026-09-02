@@ -24,27 +24,32 @@ Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../.
 
 ## Fields to Resolve
 
-Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list).
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
 
-```text
-# connector-trigger task "<display-name>" in stage "<stage>"
-- type-id: <uiPathActivityTypeId>
-- connection-id: <connection-uuid>
-- connector-key: <connectorKey>
-- object-name: <objectName>
-- event-operation: <eventOperation>
-- event-mode: <polling|webhooks>
-- input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
-- outputs:                            # optional; omit only when the SDD declares none
-  - <SDD output row, copied verbatim>
-- isRequired: true
-- runOnlyOnce: false
-- activation-mode: event-triggered   # required; normally event-triggered for a connector event wait
-- entry-rule: wait-for-connector   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- lane: <n>
-- verify: Confirm task created with correct event parameters
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "connector-trigger",
+  "cacheFile": "typecache-triggers-index.json",
+  "searchQuery": "<trigger display name>",
+  "matches": [],
+  "selected": {},
+  "type-id": "<uiPathActivityTypeId>",
+  "connection-id": "<connection-uuid>",
+  "connector-key": "<connectorKey>",
+  "object-name": "<objectName>",
+  "event-operation": "<eventOperation>",
+  "event-mode": "polling",
+  "input-values": { "eventParameters": { "parentFolderId": "AAMkADNm..." } },
+  "filter": { "groupOperator": "And", "index": 0, "uuId": null, "filters": [{ "id": "subject", "operator": "Contains", "value": { "isLiteral": true, "rawString": "\"urgent\"", "value": "urgent" }, "uiId": null }] },
+  "rationale": "<why this trigger and connection were selected>"
+}
 ```
+
+`event-mode` is `polling` or `webhooks`; `input-values` and `filter` are real JSON objects, not strings.
+
+Output bindings are **not** recorded here: they come from the SDD Outputs table through the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list), which is a reasoning form and never written to disk. Required, run-only-once, activation mode (`event-triggered`), entry rule (`wait-for-connector`), and lane likewise stay in `sdd.md` ([planning.md § Step 4](../../../planning.md)).
 
 ## Unresolved Fallback
 

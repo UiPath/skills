@@ -6,8 +6,8 @@ How to wire values into task inputs — expression prefixes, cross-task output r
 
 Every task input is wired using one of two modes. Pick based on the source of the value.
 
-| Mode | Tasks.md syntax | Implementation |
-|------|-----------------|----------------|
+| Mode | Canonical form | Implementation |
+|------|----------------|----------------|
 | **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
 | **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve the source's output reference ID → write `"=vars.<outputReferenceId>"` to target input's `value` |
 
@@ -179,10 +179,12 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ## Examples
 
+The blocks below are the **canonical reasoning form** described in [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) — a normalized reading of the SDD Inputs/Outputs rows, never written to disk. `registry-resolved.json` records registry lookups only.
+
 ### Literal and expression inputs
 
 ```text
-# api-workflow task "Fetch Inbox" in stage "Triage"
+api-workflow task "Fetch Inbox" in stage "Triage"
 - inputs:
   - inbox_config = "=vars.inbox_config"
   - po_patterns  = "=vars.po_patterns"
@@ -193,7 +195,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 ### Cross-task reference
 
 ```text
-# agent task "Classify Emails" in stage "Triage"
+agent task "Classify Emails" in stage "Triage"
 - inputs:
   - emails <- "Triage"."Fetch Inbox".emails
   - customer_id <- "Triage"."Fetch Inbox".customer_id
@@ -205,7 +207,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 ### Mixed inputs (HITL/action)
 
 ```text
-# action task "Review Classification" in stage "Triage"
+action task "Review Classification" in stage "Triage"
 - recipient: approver@corp.com
 - priority: High
 - inputs:

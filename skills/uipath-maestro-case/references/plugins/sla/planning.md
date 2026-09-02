@@ -143,10 +143,12 @@ SLA is the **last** element class written, after conditions. For each target, or
 
 ## Fields to Resolve
 
+SLA rules and escalations produce **no `tasks/registry-resolved.json` entry** — that ledger holds registry lookups. Resolved recipient identities go to `tasks/recipients-resolved.json` instead; everything below is a reasoning field Phase 2 reads from `sdd.md` ([planning.md § Step 4](../../planning.md)).
+
 ### Default SLA
 
 ```text
-# default SLA on "<target>" — <duration>
+default SLA on "<target>" — <duration>
 - target: "<root>" | "<stage-name>"
 - display-name: "SLA Rule 1"              # required; use authored title or SLA Rule {N}
 - rationale: "<why this SLA target and duration fit>"
@@ -158,7 +160,7 @@ SLA is the **last** element class written, after conditions. For each target, or
 ### Conditional SLA rule
 
 ```text
-# conditional SLA rule on "<target>" — <condition summary>
+conditional SLA rule on "<target>" — <condition summary>
 - target: "root" | "<stage-name>"
 - display-name: "Urgent SLA"              # required; target-unique, no ':'
 - rationale: "<why this condition changes the SLA>"
@@ -171,7 +173,7 @@ SLA is the **last** element class written, after conditions. For each target, or
 ### Escalation rule
 
 ```text
-# escalation rule on "<target>" — <trigger summary>
+escalation rule on "<target>" — <trigger summary>
 - target: "<root>" | "<stage-name>"
 - attach-to: default | T<m>
 - rationale: "<why this threshold/recipient/action fits; name any interrupting secondary stage>"

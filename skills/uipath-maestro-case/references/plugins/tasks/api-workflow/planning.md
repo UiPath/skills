@@ -41,7 +41,7 @@ Same pre-gate check as agents — [agent/planning.md § No tenant-index match](.
 
 > **Build it inline first (creatable kind).** At the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) the user may pick **Create** to build the missing API workflow as an in-solution sibling — see [§ Creating an API workflow inline](#creating-an-api-workflow-inline). This fallback applies only when the user declines/skips Create, the build fails, or the CLI lacks `registry --local`.
 
-Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
+Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array. Execution creates a placeholder task — see [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Creating an API workflow inline
 
@@ -118,21 +118,26 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
 
 ## Fields to Resolve
 
-```text
-# api-workflow task "<display-name>" in stage "<stage>"
-- name: "<resource-name>"
-- taskTypeId: <entityKey>
-- folder-path: "<folder>"
-- inputs:
-  - <input_name> = "<value>"
-- outputs:
-  - <SDD output row, copied verbatim>
-- runOnlyOnce: false
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "api-workflow",
+  "cacheFile": "api-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<resource-name>",
+  "taskTypeId": "<entityKey>",
+  "folder-path": "<folder>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object (or `null` after a genuine empty lookup — see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape)).
+
+Everything else the SDD declares — inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. The ledger holds only what the registry lookup produced; Phase 2 reads the contract straight from the SDD ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

@@ -44,8 +44,10 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 
 ## Fields to Resolve
 
+The case file has no registry lookup, so T01 produces **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../planning.md)).
+
 ```text
-# case file "<name>"
+case file "<name>"
 - file: "<SolutionDir>/<ProjectName>/caseplan.json"
 - case-identifier: "<identifier>"
 - identifier-type: constant

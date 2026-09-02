@@ -51,24 +51,26 @@ Phase 3 (implementation) catches spec-dependent issues — see [`impl-json.md`](
 
 ## Fields to Resolve
 
+Case variables have no registry lookup, so they produce **no `tasks/registry-resolved.json` entry**. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
 One caseplan variable per Case Variables row. Place after the case file (T01) and all trigger rows (T02+), before stages. T-number for the first variable depends on trigger count.
 
 ```text
-# In-argument "applicantName"
+In-argument "applicantName"
 - category: In
 - type: string
 - sourceTriggers: T03            # single T-number; omit to bind the primary trigger (T02)
 - default: ""
 - verify: inputs[] formal slot + inputOutputs[] companion (elementId = id-map[T03].id) + that trigger node's outputs[] bridge written.
 
-# Variable "subject"
+Variable "subject"
 - category: Variable
 - type: string
 - sourceTrigger: T02
 - sourceField: response.subject
 - verify: inputOutputs[] entry (id=subject, elementId="root"); trigger T02's outputs[] carries Pattern C wire (source="=response.subject", var=id="subject"); no inputs[] entry.
 
-# Variable "caseStarter"
+Variable "caseStarter"
 - category: Variable
 - type: string
 - sourceTriggers: T02, T03
@@ -77,13 +79,13 @@ One caseplan variable per Case Variables row. Place after the case file (T01) an
     T03: response.initiator
 - verify: one inputOutputs[] companion (elementId="root") shared across triggers; each listed trigger's outputs[] has its own Pattern C wire targeting the companion.
 
-# Variable "caseStatus"
+Variable "caseStatus"
 - category: Variable
 - type: string
 - default: "Open"
 - verify: inputOutputs[] entry (id=caseStatus, elementId="root", default="Open"); no trigger output entries.
 
-# Out-argument "finalDecision"
+Out-argument "finalDecision"
 - category: Out
 - type: string
 - producedBy: T15.outputs.finalDecision   # informational reference to the producing task

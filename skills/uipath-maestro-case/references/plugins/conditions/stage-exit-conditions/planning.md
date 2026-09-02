@@ -63,8 +63,10 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 
 ## Fields to Resolve
 
+A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector` (see the note below the block). These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
 ```text
-# stage-exit condition on "<stage>" — <summary>
+stage-exit condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - display-name: "<name>"                        # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-stage-complete
 - type: exit-only

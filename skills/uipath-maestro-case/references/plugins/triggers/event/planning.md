@@ -26,18 +26,30 @@ Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../.
 
 T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in multi-trigger cases — see [planning.md Case Triggers](../../../planning.md).
 
-```text
-# event trigger "<display-name>"
-- type-id: <uiPathActivityTypeId>
-- connection-id: <connection-uuid>
-- connector-key: <connectorKey>
-- object-name: <objectName>
-- event-operation: <eventOperation>
-- event-mode: <polling|webhooks>
-- input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
-- verify: Confirm trigger configured with correct event parameters
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
+
+```json
+{
+  "stage": null,
+  "task": "<display-name>",
+  "taskType": "event-trigger",
+  "cacheFile": "typecache-triggers-index.json",
+  "searchQuery": "<trigger display name>",
+  "matches": [],
+  "selected": {},
+  "type-id": "<uiPathActivityTypeId>",
+  "connection-id": "<connection-uuid>",
+  "connector-key": "<connectorKey>",
+  "object-name": "<objectName>",
+  "event-operation": "<eventOperation>",
+  "event-mode": "polling",
+  "input-values": { "eventParameters": { "parentFolderId": "AAMkADNm..." } },
+  "filter": { "groupOperator": "And", "index": 0, "uuId": null, "filters": [{ "id": "subject", "operator": "Contains", "value": { "isLiteral": true, "rawString": "\"urgent\"", "value": "urgent" }, "uiId": null }] },
+  "rationale": "<why this trigger and connection were selected>"
+}
 ```
+
+A case-level trigger has no stage, so `stage` is `null`. `event-mode` is `polling` or `webhooks`; `input-values` and `filter` are real JSON objects, not strings. The display name and description stay in `sdd.md` ([planning.md § Step 4](../../../planning.md)).
 
 ## Unresolved Fallback
 

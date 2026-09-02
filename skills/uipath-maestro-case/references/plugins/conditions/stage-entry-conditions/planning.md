@@ -54,8 +54,10 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 
 ## Fields to Resolve
 
+A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector` (see the note below the block). These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
 ```text
-# stage-entry condition on "<stage>" — <summary>
+stage-entry condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - rationale: "<why this entry rule belongs on this stage>"
 - display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
@@ -71,7 +73,7 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 `sla-status-change` example:
 
 ```text
-# stage-entry condition on "SLA Escalation" — case SLA breached
+stage-entry condition on "SLA Escalation" — case SLA breached
 - target-stage: "SLA Escalation"
 - rationale: "The case SLA can breach during any active stage, so one interrupting entry replaces per-stage exits."
 - is-interrupting: true

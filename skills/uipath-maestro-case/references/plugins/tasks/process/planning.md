@@ -40,28 +40,32 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 If no match is found across both cache files after `registry pull`:
 
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
-- Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
+- Omit the resolved-schema keys `inputs` / `outputs`; capture the intended wiring in the entry's `wiringNotes` string array.
 - Continue planning for remaining tasks.
 - Execution creates a placeholder task (empty `data: {}`, no bindings). See [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 ## Fields to Resolve
 
-```text
-# process task "<display-name>" in stage "<stage>"
-- name: "<resource-name>"
-- taskTypeId: <entityKey>
-- folder-path: "<folder>"
-- inputs:
-  - <input_name> = "<literal-or-expression>"
-  - <input_name> <- "<Stage>"."<Task>".<output>
-- outputs:
-  - <SDD output row, copied verbatim>
-- runOnlyOnce: false
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus this type's lookup output:
+
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "process",
+  "cacheFile": "processOrchestration-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<resource-name>",
+  "taskTypeId": "<entityKey>",
+  "folder-path": "<folder>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object (or `null` after a genuine empty lookup — see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape)).
+
+Everything else the SDD declares — inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. The ledger holds only what the registry lookup produced; Phase 2 reads the contract straight from the SDD ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

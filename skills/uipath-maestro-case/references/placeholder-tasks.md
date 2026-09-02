@@ -81,27 +81,33 @@ When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit
 
 ## `registry-resolved.json` Entry Shape
 
-A placeholder-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
+A placeholder-bound entry is an ordinary ledger object — Rule 9's keys with `selected: null`, the unresolved reason in the identity slot, and the wiring that had no schema to bind against captured in `wiringNotes`:
 
-````markdown
-# process task "Validate Submission Completeness" in stage "Submission Review"
-- taskTypeId: <UNRESOLVED: processOrchestration-index.json empty in tenant>
-- folder-path: <UNRESOLVED>
-- runOnlyOnce: false
-- isRequired: true
-- verify: Confirm Result: Success, capture TaskId (placeholder — user to attach process + bindings)
-```text
-wiring notes (user must attach after publishing the process):
-  lob = =metadata.lob
-  sourceDocs <- "Submission Review"."Fetch Submission from U Submit".submissionData
-  outputs expected: submissionComplete, missingItems, tier
+```json
+{
+  "stage": "Submission Review",
+  "task": "Validate Submission Completeness",
+  "taskType": "process",
+  "cacheFile": "processOrchestration-index.json",
+  "searchQuery": "Validate Submission Completeness",
+  "matches": [],
+  "selected": null,
+  "taskTypeId": "<UNRESOLVED: processOrchestration-index.json empty in tenant>",
+  "folder-path": "<UNRESOLVED>",
+  "rationale": "Empty exact-name lookup after a successful registry pull; user declined the Rule 17 create gate.",
+  "wiringNotes": [
+    "lob = =metadata.lob",
+    "sourceDocs <- \"Submission Review\".\"Fetch Submission from U Submit\".submissionData",
+    "outputs expected: submissionComplete, missingItems, tier"
+  ]
+}
 ```
-````
 
 Rules:
-- **Omit `inputs:` and `outputs:` lines** — no schema to wire against.
-- **Capture the intended wiring in a fenced ```` ```text ```` code block** so the user sees the mapping when they upgrade. **Do not start wiring lines with `#`** — they would render as markdown H1 headings; the fenced code block renders as preformatted text.
-- **Keep every other field** — order, verify, is-required, run-only-once, display-name.
+- **Omit the resolved-schema keys `inputs` / `outputs`** — no schema to wire against.
+- **Put the intended wiring in `wiringNotes`, one string per mapping.** Phase 2 reads it back into the completion report so the user knows what to attach after registering the resource.
+- **Keep every Rule 9 key.** `matches` is `[]` and `selected` is `null` after a genuine empty lookup; the `<UNRESOLVED: <reason>>` text goes in the identity slot — `taskTypeId` / `typeId` / `connectionId`.
+- **Do not restate the SDD contract** — display name, required, run-only-once, activation mode, entry rule, lane, and verify text stay in `sdd.md`. See [planning.md § Step 4](planning.md).
 
 ## What Validation Catches
 

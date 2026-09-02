@@ -87,8 +87,10 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 
 ## Fields to Resolve
 
+A condition produces **no `tasks/registry-resolved.json` entry** unless its `rule-type` is `wait-for-connector`. These are reasoning fields only — Phase 2 reads them from `sdd.md` ([planning.md § Step 4](../../../planning.md)).
+
 ```text
-# task-entry condition on task "<task>" in stage "<stage>" — <summary>
+task-entry condition on task "<task>" in stage "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
 - activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate

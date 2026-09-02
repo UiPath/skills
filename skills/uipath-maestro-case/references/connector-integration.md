@@ -56,7 +56,7 @@ Output: `{ Entry, Config, Connections }` where:
    - **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option** (an existing connection may not fit the intent).
    - **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
 3. **Create chosen** → create the connection, then continue to Step 3 with the returned `ConnectionId`. Procedure — background `is connections create`, capture `ConnectionId`, headless fallback: [§ Creating a Connection](#creating-a-connection).
-4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `input-values:`. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
+4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks/registry-resolved.json` and omit its `input-values` key. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
 
 #### Creating a Connection
 
@@ -167,20 +167,29 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ---
 
-## Output Contract to Tasks.md
+## Output Contract to `registry-resolved.json`
 
-Record the resolved values in `registry-resolved.json` under the task entry:
+Record the resolved values on the task's ledger entry, alongside Rule 9's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
-```text
-# connector-activity task "Create Jira Issue" in stage "Triage"
-- type-id: 718fdc36-73a8-3607-8604-ddef95bb9967
-- connection-id: 7622a703-5d85-4b55-849b-6c02315b9e6e
-- connector-key: uipath-atlassian-jira
-- object-name: issue
-- input-values: {"bodyParameters":{"fields.project.key":"PROJ","fields.issuetype.id":"10004"}}
-- filter: {"groupOperator":"And","filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Open\"","value":"Open"},"uiId":null}]}
+```json
+{
+  "stage": "Triage",
+  "task": "Create Jira Issue",
+  "taskType": "connector-activity",
+  "type-id": "718fdc36-73a8-3607-8604-ddef95bb9967",
+  "connection-id": "7622a703-5d85-4b55-849b-6c02315b9e6e",
+  "connector-key": "uipath-atlassian-jira",
+  "object-name": "issue",
+  "input-values": { "bodyParameters": { "fields.project.key": "PROJ", "fields.issuetype.id": "10004" } },
+  "filter": {
+    "groupOperator": "And",
+    "filters": [
+      { "id": "Status", "operator": "Equals", "value": { "isLiteral": true, "rawString": "\"Open\"", "value": "Open" }, "uiId": null }
+    ]
+  }
+}
 ```
 
-Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
+`input-values` and `filter` are real JSON objects, not strings — Phase 2 reads them back verbatim into `--input-details` ([connector-activity/impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)). Also record the selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
 
 <!-- END: connector-integration.md -->

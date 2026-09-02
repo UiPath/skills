@@ -67,28 +67,28 @@ Mark `<UNRESOLVED: action-app "<resource-name>" in folder "<folder>" not found i
 
 ## Fields to Resolve
 
-Resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
+Ledger entry in `tasks/registry-resolved.json` for a resolved action task. For the unresolved placeholder shape, see [placeholder-tasks.md § `registry-resolved.json` Entry Shape](../../../placeholder-tasks.md#registry-resolvedjson-entry-shape).
 
-```text
-# action task "<display-name>" in stage "<stage>"
-- taskTypeId: <action-app-id>
-- name: "<selected-deployment-title>"
-- folder-path: "<selected-deployment-folder>"
-- task-title: "<title-shown-to-user>"
-- priority: Medium
-- recipient: user@company.com   # or UserGroup: <group name>; omit when Skip or no answer
-- assignment-note: "<why the task is unassigned, or the group that needs folder access>"   # optional
-- runOnlyOnce: false   # from sdd.md "Run Only Once" column
-- inputs:
-  - <input_name> <- "<Stage>"."<Task>".<output>
-  - <input_name> = "<literal-or-expression>"
-- outputs:
-  - <SDD output row, copied verbatim>
-- isRequired: true
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
-- verify: Confirm Result: Success, capture TaskId
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "action",
+  "cacheFile": "action-apps-index.json",
+  "searchQuery": "<name the SDD used to seed the lookup>",
+  "matches": [],
+  "selected": {},
+  "name": "<selected-deployment-title>",
+  "taskTypeId": "<action-app-id>",
+  "folder-path": "<selected-deployment-folder>",
+  "recipient": "user@company.com",
+  "assignment-note": "<why the task is unassigned, or the group that needs folder access>",
+  "rationale": "<why this match was selected>"
+}
 ```
+
+`recipient` carries the resolved assignee — `UserGroup: <group name>` for a group, omitted on Skip or no answer; `assignment-note` is optional. `matches` is the complete exact-name set from the refreshed cache and `selected` is the chosen match object.
+
+Everything else the SDD declares — task title, priority, inputs, outputs, required, run-only-once, activation mode, entry rule, lane, and verify text — stays in `sdd.md`. Phase 2 reads it straight from there ([planning.md § Step 4](../../../planning.md)).
 
 <!-- END: planning.md -->

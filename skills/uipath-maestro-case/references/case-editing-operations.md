@@ -214,7 +214,7 @@ Procedure per section:
 
 **Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `sdd.md`, then resume at the first element of the in-progress class that has no matching `displayName` (stage `data.label`, task `displayName`, variable `name`) in `caseplan.json`. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
 
-**Scope.** This contract applies to **`caseplan.json`**. Phase 1's `registry-resolved.json` follows the mirror section-batched contract in [planning.md Step 4](planning.md) — same one-Read-per-section + N-Edit-appends shape, with markdown Edit-append as the primitive (no whole-section Write needed; markdown appends are cheap regardless of count).
+**Scope.** This contract applies to **`caseplan.json`**. Phase 1's `registry-resolved.json` follows the mirror section-batched contract in [planning.md Step 4](planning.md) — same one-Read-per-section + N-Edit-appends shape, with a single Edit splicing each entry object into the ledger array as the primitive (no whole-section Write needed; one-object appends are cheap regardless of count).
 
 **Whole-file Write outside the initial scaffold.** Permitted only at section boundaries for sections with ≥10 elements, per the procedure above. Forbidden mid-section (between elements within the same section) — that bypasses the Read snapshot and risks field drops.
 

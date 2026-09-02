@@ -273,25 +273,28 @@ The expression is duplicated in two non-config sinks because both have load-bear
 
 ## registry-resolved.json fields (resolution)
 
-A connector-bound rule's condition element records these (alongside the scope's normal fields):
+A connector-bound rule's condition element records these on its ledger entry (alongside the scope's normal fields):
 
-```markdown
-- rule-type: wait-for-connector
-- type-id: "<uiPathActivityTypeId>"
-- connection-id: "<connection-id>"
-- connector-key: "<connector-key>"
-- object-name: "<object>"
-- event-operation: "<EVENT_OP>"
-- event-mode: "polling"               # or "webhooks"
-- input-values: { "eventParameters": { ... } }   # resolved IDs; omit when none
-- filter: { ... }                     # optional FilterTree; omit when none
-- condition-expression: "=js:vars.X..."  # optional gate on case state — NOT the event payload
-- outputs:                            # optional — bind rule outputs to case variables
-  - "<schemaField> -> <caseVar>"      # extract — rule's response field to case variable
-  - "<caseVar> = <expression>"        # assign — literal / =js: expression / =vars.X
+```jsonc
+{
+  "rule-type": "wait-for-connector",
+  "type-id": "<uiPathActivityTypeId>",
+  "connection-id": "<connection-id>",
+  "connector-key": "<connector-key>",
+  "object-name": "<object>",
+  "event-operation": "<EVENT_OP>",
+  "event-mode": "polling",                          // or "webhooks"
+  "input-values": { "eventParameters": {} },        // resolved IDs; omit key when none
+  "filter": {},                                     // optional FilterTree object; omit key when none
+  "condition-expression": "=js:vars.X...",          // optional gate on case state — NOT the event payload
+  "outputs": [                                      // optional — bind rule outputs to case variables
+    "<schemaField> -> <caseVar>",                   // extract — rule's response field to case variable
+    "<caseVar> = <expression>"                      // assign — literal / =js: expression / =vars.X
+  ]
+}
 ```
 
-The `outputs:` block (optional) binds the rule's `response` / `Error` to case variables — same `->` / `=` operator semantics as a connector task. Full shapes + dispatcher: [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules).
+`input-values` and `filter` are real JSON objects, not strings. The `outputs` array (optional) binds the rule's `response` / `Error` to case variables — same `->` / `=` operator semantics as a connector task. Full shapes + dispatcher: [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules).
 
 ---
 

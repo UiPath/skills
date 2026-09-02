@@ -180,25 +180,30 @@ Resolution emits to `input-values.bodyParameters`:
 
 ## Fields to Resolve
 
-Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list).
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
 
-```text
-# connector-activity task "<display-name>" in stage "<stage>"
-- type-id: <uiPathActivityTypeId>
-- connection-id: <connection-uuid>
-- connector-key: <connectorKey>
-- object-name: <objectName>
-- input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
-- outputs:                            # optional; omit only when the SDD declares none
-  - <SDD output row, copied verbatim>
-- isRequired: true
-- runOnlyOnce: false
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- lane: <n>
-- verify: the resolved `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "connector-activity",
+  "cacheFile": "typecache-activities-index.json",
+  "searchQuery": "<activity display name>",
+  "matches": [],
+  "selected": {},
+  "type-id": "<uiPathActivityTypeId>",
+  "connection-id": "<connection-uuid>",
+  "connector-key": "<connectorKey>",
+  "object-name": "<objectName>",
+  "input-values": { "bodyParameters": {}, "queryParameters": {}, "pathParameters": {} },
+  "filter": { "groupOperator": "And", "index": 0, "uuId": null, "filters": [{ "id": "Status", "operator": "Equals", "value": { "isLiteral": true, "rawString": "\"Active\"", "value": "Active" }, "uiId": null }] },
+  "rationale": "<why this activity and connection were selected>"
+}
 ```
+
+`input-values` and `filter` are real JSON objects, not strings — Phase 2 reads them back verbatim into `--input-details`. Before leaving this step, confirm the resolved `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, and `pathParameters` (Step 5 above).
+
+Output bindings are **not** recorded here: they come from the SDD Outputs table through the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list), which is a reasoning form and never written to disk. Required, run-only-once, activation mode, entry rule, and lane likewise stay in `sdd.md` ([planning.md § Step 4](../../../planning.md)).
 
 `filter:` is optional and present only when the operation supports CEQL (i.e. `spec.filter` was non-null in step 7).
 
