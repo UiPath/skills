@@ -353,7 +353,6 @@ def model_findings(text: str, facts: dict, carried_names: frozenset[str] = froze
     return findings
 
 
-
 EXIT_TYPES_YES = {"exit-only", "return-to-origin", "wait-for-user"}
 EXIT_TYPES_NO = {"exit-only", "wait-for-user"}
 RECIPIENT_PREFIX = re.compile(r"^(Role|User|UserGroup|Email|Expression):")
@@ -437,7 +436,6 @@ def declared_sla_titles(text: str) -> dict[str, set[str]]:
         if found:
             titles[stage_name.casefold()] = found
     return titles
-
 
 
 AMBIGUOUS_PERSONA = re.compile(r"^[A-Z][A-Za-z/ ]{2,40}\s+or\s+[A-Za-z][A-Za-z/ ]{2,40}$")

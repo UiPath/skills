@@ -216,7 +216,6 @@ Never write `sdd.md` AND `<case>-sdd.md` for the same design. Report the path in
 
 **Free-text corrections stay first-class after the terminal step:** treat one as a targeted edit to the affected artifact (model + file + downstream), narrate it in one line, continue.
 
-
 ## Resolution ledger
 
 One record per resolved or attempted registry lookup, kept in-memory; the SDD cells carry identities for

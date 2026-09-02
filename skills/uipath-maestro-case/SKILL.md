@@ -52,7 +52,6 @@ Do not use for `.xaml` → `uipath-rpa`, `.flow` → `uipath-maestro-flow`, or s
    next to its value, so a prose restatement reads as the field being absent even when the fact is
    plainly there. Same rule for `lane:`, `stage:`, `type:`, and `required:`.
 
-
 6c. **Run the plan gate before calling `tasks.md` done — it is not deliverable until it passes.**
 
    ```bash
