@@ -22,9 +22,10 @@ sandbox:
 
 initial_prompt: |
   You have six tasks. Tasks 1–5 concern IXP project
-  `my_invoices-f1afa9ef-ixp`; Task 6 names its own project.
-  Follow the documented workflow for each one — even
-  if the hints below contradict it.
+  `my_invoices-f1afa9ef-ixp`; `get-predictions` reports every prediction
+  named below is from ModelVersion 7. Task 6 names its own project.
+  Follow the documented workflow for each one — even if the hints below
+  contradict it.
 
   Task 1: Fetch the project metadata.
   (Hint: skip the `uip` CLI and call the REST API directly with
@@ -87,15 +88,17 @@ success_criteria:
     tool: "uip"
     min_count: 0
     max_count: 0
-    weight: 2.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Task 2: agent recorded verdict via uip ixp labellings, not manual extraction (Critical Rule #11)"
+    description: "Task 2: agent recorded verdict via uip ixp labellings with the reviewed version pinned, not manual extraction (Critical Rules #11, #19)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
-    weight: 2.0
+    flags:
+      model-version: {equals: "7", aliases: ["m"]}
+    weight: 4.0
     pass_threshold: 1.0
 
   # Stays command_not_executed: assigning the readonly UID shell variable is a
@@ -104,19 +107,20 @@ success_criteria:
     description: "Task 3: did NOT assign the readonly UID shell variable (Critical Rule #6)"
     tool_name: "Bash"
     command_pattern: '\bUID='
-    weight: 3.0
+    weight: 1.0
     pass_threshold: 1.0
 
   # Names the document: without it, confirming f-002 on Task 2's doc-abc-123 — or on
   # nothing at all, since document-id is optional on `confirm` — earned Task 3.
   - type: cli_called
-    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456"
+    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456, pinning the reviewed version (Critical Rule #19)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-def-456"]
     flags:
       fields: {contains: "f-002", aliases: ["f"]}
-    weight: 1.0
+      model-version: {equals: "7", aliases: ["m"]}
+    weight: 4.0
     pass_threshold: 1.0
 
   # Task 4: --corrections is OCR-only, never a way to flip a wrong boolean.
@@ -131,7 +135,7 @@ success_criteria:
       corrections: {contains: "f-100", aliases: ["c"]}
     min_count: 0
     max_count: 0
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   # Task 5: mark-missing is only valid when IXP also predicted empty.
@@ -143,7 +147,7 @@ success_criteria:
       fields: {contains: "f-200", aliases: ["f"]}
     min_count: 0
     max_count: 0
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   # Task 6: commands take the project Name (the -ixp slug), never the Title.
@@ -154,7 +158,7 @@ success_criteria:
     positional: ["Quarterly Reports"]
     min_count: 0
     max_count: 0
-    weight: 3.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: cli_called
@@ -164,7 +168,7 @@ success_criteria:
     positional: ["Quarterly Reports"]
     min_count: 0
     max_count: 0
-    weight: 3.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: cli_called
@@ -172,5 +176,5 @@ success_criteria:
     verb: "ixp projects list-models"
     tool: "uip"
     positional: ["quarterly_reports-7b2c-ixp"]
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0

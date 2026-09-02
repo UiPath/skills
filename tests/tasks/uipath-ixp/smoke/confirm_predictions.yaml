@@ -36,6 +36,8 @@ initial_prompt: |
     (the model located the Total line but the OCR mis-read the digits)
   - Vendor Name (field id `f-004`): `Acme Corp`
 
+  `get-predictions` reports these predictions are from ModelVersion 7.
+
   Compare each prediction to the document and record your verdict.
 
   Important:
@@ -46,12 +48,15 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # The version lookahead rides on the confirm criteria themselves, not a
+  # criterion of its own: a standalone pin assertion passes on one pinned
+  # call while the others go out bare (Rule 19).
   - type: file_matches_regex
-    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields"
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields and the reviewed -m/--model-version (Critical Rule 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+.*--fields)[^\r\n]*$
-    weight: 2.0
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)\s+.*--fields)[^\r\n]*$
+    weight: 4.0
     pass_threshold: 1.0
 
   - type: file_matches_regex

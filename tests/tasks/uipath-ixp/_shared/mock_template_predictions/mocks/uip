@@ -1,0 +1,62 @@
+#!/bin/sh
+# Predictions-serving `uip` mock for uipath-ixp smoke tasks that must PIN the
+# model version they reviewed. Overlays the base mock_template (list it SECOND
+# in template_sources so this file wins).
+#
+# Why this exists: Rule 19 requires `confirm -m <N>`, and the ONLY place the
+# labelling flow surfaces that number is the `get-predictions` response
+# (`Data.Predictions[].ModelVersion`). The base mock fails every invocation, so
+# a task graded on the pin is unwinnable there — the read yields no version and
+# an agent that declines to invent one correctly stops. Every other task works
+# around that by naming the version in the prompt (see confirm_all_predictions,
+# no_blind_confirm_all), which exercises Rule 19's FIRST branch. This overlay
+# exists for the second, and far more common, branch: the version was never
+# given, so the agent has to read it.
+#
+# Fixture — project my_invoices-f1afa9ef-ixp: ModelVersion 7 and one "Invoice
+# Header" occurrence carrying Invoice Number and Total Amount, for whichever
+# document id is asked for (it is echoed back, so a run that reads several
+# documents sees several distinct responses). Field ids match
+# mock_template_taxonomy's fixture so the two overlays describe one coherent
+# project.
+#
+# `confirm` also succeeds here: an auth error on the graded write would leave a
+# correct agent unsure whether to carry on, which is the very confound this
+# overlay removes. Response shapes follow the skill's cli-reference envelope.
+#
+# Logging matches the base mock exactly — same `uip ` prefix, same newline
+# normalization — so anchored `^uip\s+ixp …` criteria keep matching. Per
+# ../mock_template/README.md an sh overlay writes calls.log ONLY, so grade this
+# task from calls.log, never calls.jsonl.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+F_INVOICE_NUMBER='{"FieldId":"9a3f5d2c81b7e604","FieldName":"Invoice Number","FormattedValue":"INV-2025-0042"}'
+F_TOTAL_AMOUNT='{"FieldId":"6e0b74a1f83c2d95","FieldName":"Total Amount","FormattedValue":"12000.00 USD"}'
+
+case "$1 $2 $3" in
+"ixp labellings get-predictions")
+    # $4 = project name, $5 = document id. Echo the id back so an agent that
+    # reads three documents sees three distinct responses.
+    printf '{"Result":"Success","Code":"IxpLabellingsGetPredictions","Data":{"ProjectName":"%s","TotalDocuments":1,"DocumentsWithPredictions":1,"Predictions":[{"DocumentId":"%s","ModelVersion":7,"Labels":[{"Name":"Invoice Header","Occurrence":0,"Fields":[%s,%s]}]}]}}\n' \
+        "$4" "$5" "$F_INVOICE_NUMBER" "$F_TOTAL_AMOUNT"
+    exit 0
+;;
+"ixp labellings confirm")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpLabellingsConfirm","Data":{"PredictionsConfirmed":2,"Unmatched":[],"ModelVersion":7}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","Description":"Supplier invoices","CreatedTime":"2026-06-11T08:42:19Z"}}
+EOF
+exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1
