@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ 122da6a. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ 66c7651. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 

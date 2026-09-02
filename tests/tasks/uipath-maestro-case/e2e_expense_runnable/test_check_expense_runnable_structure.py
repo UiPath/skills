@@ -94,8 +94,8 @@ def _valid_resources() -> list[dict]:
             "value": {"name": {"defaultValue": "ProcurementProcess"}},
         },
         {
-            "key": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
-            "value": {"name": {"defaultValue": "RPA Workflow"}},
+            "key": "Shared/uipath-maestro-flow/HelpDeskLookup RPA.HelpDeskLookup",
+            "value": {"name": {"defaultValue": "HelpDeskLookup"}},
         },
         {
             "key": "Shared/uipath-maestro-case/CaseTest.Maestro Case",
@@ -109,8 +109,8 @@ class ResourceBindingTests(unittest.TestCase):
         _assert_required_external_bindings({"resources": _valid_resources()})
 
     def test_rejects_resource_alias_in_place_of_display_name(self) -> None:
-        # The SDD alias "ProjectEuler" is not the deployed name "RPA Workflow".
+        # The SDD alias "CaseTest" is not the deployed name "Maestro Case".
         resources = _valid_resources()
-        resources[3]["value"]["name"]["defaultValue"] = "ProjectEuler"
-        with self.assertRaisesRegex(SystemExit, "RPA Workflow"):
+        resources[4]["value"]["name"]["defaultValue"] = "CaseTest"
+        with self.assertRaisesRegex(SystemExit, "Maestro Case"):
             _assert_required_external_bindings({"resources": resources})

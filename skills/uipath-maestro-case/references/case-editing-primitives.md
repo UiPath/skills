@@ -11,11 +11,11 @@
 All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
 
 - **Read** to load the file.
-- **Edit** for narrowly-scoped, unambiguous in-place replacements — default for all mutations after T01, and required for sections with <10 T-entries.
+- **Edit** for narrowly-scoped, unambiguous in-place replacements — default for every mutation after the T01 scaffold and the Step 7 stage skeleton, at any element count.
 - **Write** (whole-file) for exactly two things: the T01 scaffold (initial empty-file creation by the `case` plugin) and the Step 7 stage skeleton. Never for a populated `caseplan.json`.
 - **Edit — or a single-hunk `apply_patch` on a harness with no `Edit` tool** — for every mutation after the skeleton. See § Skeleton-then-Edit for the tool table.
 
-**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
+**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. The one exception is the skill's own bundled read-only `scripts/audit_caseplan.py` completeness gate (SKILL.md Rule 6 and Rule 13), which reads `caseplan.json` and `sdd.md` and writes nothing. No other helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
 This is a hard constraint — it keeps every mutation reviewable in the tool-call transcript and prevents silent state changes the user cannot audit.
 
@@ -35,12 +35,12 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 ### Per-section batch write contract — canonical
 
-`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one `tasks.md` section (e.g., §4.4 stages, §4.6 task-shapes, §4.7 conditions, §4.8 SLA), not one T-entry.
+`caseplan.json` mutations follow a **per-section batched Edit** contract. The unit is one SDD element class (variables, triggers, stages, task-shapes, conditions, SLA), not one element.
 
 Procedure per section:
 
 1. **One Read** of `caseplan.json` at section entry — authoritative state.
-2. **N Edits in sequence, one per T-entry** — regardless of how many T-entries the section holds. Edit targets the smallest unambiguous slice of JSON the T-entry mutates (one node, one array field, one task's `data.inputs`). There is no large-section branch: a section with 40 T-entries is 40 Edits, not one big write. See § Skeleton-then-Edit for why.
+2. **N Edits in sequence, one per SDD element** — regardless of how many elements the section holds. Edit targets the smallest unambiguous slice of JSON the element mutates (one node, one array field, one task's `data.inputs`). There is no large-section branch: a section with 40 elements is 40 Edits, not one big write. See § Skeleton-then-Edit for why.
 3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
 4. **One `validate`** at section boundary (Pre-flight Item 12 above).
 5. **Repair preservation.** Repair a validation error with a targeted Edit on the node or binding the error names — never by rewriting the file. If the error location is unclear, re-Read `caseplan.json` first and locate it, then Edit. A repair may not remove or replace unrelated topology, bindings, or a resolved task merely to make `validate` pass.
@@ -77,23 +77,23 @@ The correctness argument points the same way. Write rebuilds the file from agent
 
 **Repairs are Edits too.** When `validate` reports an error, Edit the specific node or binding it names. Re-Read first if the error location is unclear. Never rewrite the file to fix one field.
 
-**Status text bundling.** Any progress text the agent emits before a section's first Edit/Write MUST share the same assistant turn as the tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference latency + full prompt cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. Per-T-entry audit lives in TaskUpdate, NOT in narration.
+**Status text bundling.** Any progress text the agent emits before a section's first Edit/Write MUST share the same assistant turn as the tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference latency + full prompt cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. Per-element audit lives in TaskUpdate, NOT in narration.
 
-**Planning monologues forbidden.** Pre-Write/pre-Edit text turns that announce intent ("Caveman push:", "Approach:", "Strategy:", "Big single Write:", "Writing full caseplan.json structurally", "Now I'll batch all stages") are forbidden, whether bundled or standalone. The tool call itself IS the announcement — TaskUpdate carries the T-by-T narrative, the Edit/Write tool input is self-describing. If the status text the agent wants to emit exceeds one short sentence, the correct action is to cut it, not to bundle it. Multi-paragraph status text is always a violation.
+**Planning monologues forbidden.** Pre-Write/pre-Edit text turns that announce intent ("Caveman push:", "Approach:", "Strategy:", "Big single Write:", "Writing full caseplan.json structurally", "Now I'll batch all stages") are forbidden, whether bundled or standalone. The tool call itself IS the announcement — TaskUpdate carries the element-by-element narrative, the Edit/Write tool input is self-describing. If the status text the agent wants to emit exceeds one short sentence, the correct action is to cut it, not to bundle it. Multi-paragraph status text is always a violation.
 
 **Hard token cap on any single text block.** Outside the allow-list below, no text block may exceed **200 tokens**. Inside the allow-list, no text block may exceed **500 tokens**, ever. A text block >200 tokens outside the allow-list, or >500 inside it, is by definition a planning monologue regardless of content or framing. Allow-list (and only this list): the once-per-run kickoff flow overview, hard-stop AskUserQuestion preambles, Phase 5/6 completion reports, `Publish for review` DesignerUrl print, post-validate result summaries.
 
 **Forbidden announcement verbs.** Text blocks (bundled or standalone) starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Next step:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call are FORBIDDEN regardless of length. Restating the upcoming tool_use in prose is pure cost. Allowed exceptions remain: the once-per-run kickoff flow overview, AskUserQuestion preambles, completion reports (Phase 5/6 exit), `Publish for review` DesignerUrl print, and post-validate result summaries (`N errors, M warnings — fixing X` is fine; `Composing fix for ...` is not).
 
-**Audit trail via TaskUpdate.** Reviewers see T-by-T progress in the todo log, not in the file diff. Each plugin seeds TaskCreate items keyed by T-number; mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit/Write returns success. The transcript shows one or N writes per section — what changes is the dropped re-Read between siblings and the dropped standalone narration turns.
+**Audit trail via TaskUpdate.** Reviewers see element-by-element progress in the todo log, not in the file diff. Each plugin seeds TaskCreate items keyed by T-number; mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit/Write returns success. The transcript shows one or N writes per section — what changes is the dropped re-Read between siblings and the dropped standalone narration turns.
 
-**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+**CLI-gated sections — gather-then-write.** Where each element needs its own CLI call before its JSON shape is known (Phase 2 non-connector `tasks describe`; Phase 3 Step 9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
 
-**Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `tasks.md`, scan for next un-applied T-entry, resume from there. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
+**Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `sdd.md`, then resume at the first element of the in-progress class that has no matching `displayName` (stage `data.label`, task `displayName`, variable `name`) in `caseplan.json`. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
 
-**Scope.** This contract applies to **`caseplan.json`**. `tasks.md` (Phase 1) and `registry-resolved.json` follow the mirror section-batched contract in [planning.md §4.0a](planning.md) — same one-Read-per-section + N-Edit-appends shape, with markdown Edit-append as the primitive (no whole-section Write needed; markdown appends are cheap regardless of count).
+**Scope.** This contract applies to **`caseplan.json`**. Phase 1's `registry-resolved.json` follows the mirror section-batched contract in [planning.md Step 4](planning.md) — same one-Read-per-section + N-Edit-appends shape, with a single Edit splicing each entry object into the ledger array as the primitive (no whole-section Write needed; one-object appends are cheap regardless of count).
 
-**Whole-file Write outside T01.** Permitted only for the Step 7 stage skeleton. Forbidden everywhere else, at every size — see § Skeleton-then-Edit.
+**Whole-file Write outside the initial scaffold.** Permitted only for the Step 7 stage skeleton. Forbidden everywhere else, at every size — see § Skeleton-then-Edit.
 
 **No size threshold changes the cadence.** Because every post-skeleton mutation is an Edit, output cost scales with the change rather than the file, and there is no case size at which a bigger write becomes necessary or a helper script becomes justified. Phase 2 Edits in root, nodes, variables, task shapes, SLA/escalations, and conditions (connector-backed rules use the canonical stub); Phase 3 Edits connector context/input/output and other task values, then upgrades resolved connector-rule stubs.
 

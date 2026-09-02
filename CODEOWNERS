@@ -31,12 +31,13 @@
 /tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 
 # Platform skill
-/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent
+/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime
 /skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /skills/uipath-platform/references/data-fabric/ @UiPath/DatafabricCodingAgent
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
-/tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent
+/skills/uipath-platform/references/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
+/tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime
 /tests/tasks/uipath-platform/orchestrator/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/resources/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
@@ -44,6 +45,7 @@
 /tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/data-fabric/ @UiPath/DatafabricCodingAgent
+/tests/tasks/uipath-platform/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
@@ -188,8 +190,8 @@
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
-/skills/uipath-insights/ @suranabhavya @rliuup
-/tests/tasks/uipath-insights/ @suranabhavya @rliuup
+/skills/uipath-insights/ @UiPath/insights
+/tests/tasks/uipath-insights/ @UiPath/insights
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif

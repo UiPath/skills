@@ -66,7 +66,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 11. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each `tasks.md` section batch completes (per § Per-section batch write contract below). One validate per section, not one per T-entry. Fixing errors at the section boundary is cheaper than chasing a cascade.
+12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each element-class section batch completes (per § Per-section batch write contract below). One validate per section, not one per element. Fixing errors at the section boundary is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
     - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no entry conditions yet). The plugin's validation parity is captured in the fixture instead.
 
@@ -123,7 +123,7 @@ Every skill run generates fresh IDs — no determinism.
 2. **Downstream plugins** read the file, append entries for generated IDs (stage, task, condition, etc.), write back. Each plugin writes the map before handing off to the next so cross-plugin references can resolve via the on-disk file.
 3. **End of run:** the file is complete and lives alongside `caseplan.json`.
 
-Mapping T-entries from `tasks.md` to generated IDs:
+Mapping build steps to generated IDs (`T<n>` is the execution-order label, not a file reference):
 
 ```json
 {
@@ -152,7 +152,7 @@ Full sink-to-form table, the lookup-vs-JS-eval dispatch, and connector-trigger f
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after each `tasks.md` section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
+Run `uip maestro case validate <file> --output json` after each element-class section's batch completes — not after every Edit. Intermediate states can be invalid (e.g., a stage whose entry condition references a stage that will be added next); validate is authoritative at the section boundary.
 
 On failure: fix the reported issue (usually a missing field, malformed ID, or orphan reference) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 
@@ -167,9 +167,9 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 - **Do NOT initialize empty `entryConditions`/`exitConditions` arrays on primary Stages.** The condition plugins add authored arrays in Step 10; secondary stages (`data.stageType: "secondary"`) initialize both arrays when created.
 - **Do NOT auto-inject a task `entryCondition` at task-creation time based on task type.** Entry conditions come from the SDD via the task-entry-conditions plugin (Step 10), uniformly across task types. Injecting one early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
-- **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.
-- **Do NOT use whole-file Write on a populated `caseplan.json`.** It bypasses the section-entry Read snapshot, risks silently dropping fields, and costs output tokens proportional to the whole file. Patch per T-entry, always — `Edit`, or a single-hunk `apply_patch` on a harness with no `Edit` tool. The only whole-file Writes in a build are the T01 scaffold and the Step 7 stage skeleton (per § Per-section batch write contract).
-- **Do NOT skip TaskUpdate per T-entry.** TaskUpdate is the audit trail under the per-section batched contract — reviewers track T-by-T progress there.
+- **Do NOT run validation after every single Edit.** Validate at section boundaries, not per element.
+- **Do NOT use whole-file Write mid-section.** Whole-file Write between sibling elements inside a section bypasses the section-entry Read snapshot and risks silently dropping fields. Use Edit per element, OR collapse the entire section into one whole-section Write at section boundary when element count ≥10 (per § Per-section batch write contract).
+- **Do NOT skip TaskUpdate per element.** TaskUpdate is the audit trail under the per-section batched contract — reviewers track element-by-element progress there, not in per-element file diffs. The audit trail must remain T-by-T even when the file diff collapses to one whole-section write.
 - **Do NOT emit standalone text-only assistant turns between Edits.** Each costs ~5s inference + ~250K cache replay for zero work. Bundle status text into the same turn as the next tool_use (text block + tool_use block in one content array), or omit entirely — TaskUpdate already shows progress.
 
 ---

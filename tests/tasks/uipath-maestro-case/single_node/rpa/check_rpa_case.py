@@ -17,7 +17,7 @@ def main():
     if task_is_skeleton(task):
         sys.exit(
             "FAIL: rpa task is a skeleton — debug requires a resolved "
-            "ProjectEuler registry entry with a real taskTypeId"
+            "HelpDeskLookup registry entry with a real taskTypeId"
         )
     run_debug(timeout=720)
     print(

@@ -10,7 +10,7 @@ Case knowledge is split three ways. Read all three to begin, in parallel, **at m
 | [case-design-layers-guide.md](case-design-layers-guide.md) | the case model and every design **Default** — skeleton, gates, data, SLAs, naming, the closure checklist |
 | [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
 
-That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (tasks.md, caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
+That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
 
 **Draft finalization reads less (hard):** this file's §Resumption + §Terminal step, `sdd.draft.md`, and the template (its validation footer is the gate) — once each. NOT the layers guide: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists.
 

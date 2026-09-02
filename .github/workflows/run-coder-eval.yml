@@ -1,5 +1,10 @@
 name: Run Coder Eval
 
+# Every historical run is titled "Run Coder Eval", so the run list is a wall of
+# identical rows. Keep that prefix (it is how the workflow is recognised) and
+# append the three fields anyone actually scans for.
+run-name: Run Coder Eval · ${{ inputs.task_globs }} · ${{ inputs.agent }} · @${{ github.actor }}
+
 # GH-hosted runner for coder-eval against the skills task tree. Use cases:
 # single task ad-hoc, a folder, or (with explicit confirmation) the full
 # suite that the VM cron runs nightly. Long-term replacement for the
@@ -119,6 +124,7 @@ jobs:
       windows_count:  ${{ steps.split.outputs.windows_count }}
       coder_eval_version:    ${{ steps.ceref.outputs.version }}
       coder_eval_uipath_ref: ${{ steps.ceref.outputs.ref }}
+      image_tag:             ${{ steps.ceref.outputs.image_tag }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
@@ -128,11 +134,14 @@ jobs:
       # the nightly VM also read, overridable to dry-run a candidate release)
       # and the coder_eval_uipath plugin ref (delegate-sdk only). Mirrors the
       # version resolution in daily.sh.
+      # The image tag is resolved here, not in the Linux job: that step is now the
+      # composite action and no longer runs before the docker pull.
       - name: Resolve coder-eval version + coder_eval_uipath ref
         id: ceref
         env:
           CE_VERSION_INPUT:    ${{ inputs.coder_eval_version }}
           CE_UIPATH_REF_INPUT: ${{ inputs.coder_eval_uipath_ref }}
+          CE_IMAGE_TAG_INPUT:  ${{ inputs.coder_eval_image_tag }}
         run: |
           set -euo pipefail
           version="$CE_VERSION_INPUT"
@@ -144,8 +153,12 @@ jobs:
             exit 1
           fi
           echo "coder-eval pinned to $version; coder_eval_uipath ref ${CE_UIPATH_REF_INPUT:-main}"
-          echo "version=$version"                  >> "$GITHUB_OUTPUT"
-          echo "ref=${CE_UIPATH_REF_INPUT:-main}"  >> "$GITHUB_OUTPUT"
+          echo "agent image tag ${CE_IMAGE_TAG_INPUT:-$version}"
+          {
+            echo "version=$version"
+            echo "ref=${CE_UIPATH_REF_INPUT:-main}"
+            echo "image_tag=${CE_IMAGE_TAG_INPUT:-$version}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
@@ -207,25 +220,48 @@ jobs:
     # hiccups, etc.).
     timeout-minutes: 330
     name: Run coder-eval (Linux)
+    # JOB-level, not workflow-level: a `permissions:` block makes every omitted
+    # permission `none` for every job it covers, so a workflow-level one would
+    # silently strip the Windows job's token. `contents: read` is for checkout.
+    permissions:
+      contents: read
     # Disable uip CLI version-sync: a task's `uip login status` re-pins
     # ~/.uipath/config.json to a stale line and, via nightly.yaml's shared
     # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
+      # The `secrets` context is NOT available in any `if:`, so the gate is
+      # laundered through the job env. A boolean, not the secret, so the
+      # credential stays in the one step that uploads.
+      EVALBOARD_UPLOAD_ENABLED: ${{ secrets.AZURE_STORAGE_KEY != '' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
       # The coder_eval_uipath plugin (private repo): registers the delegate-sdk
       # agent via the `coder_eval.plugins` entry point and carries the delegate
-      # docker-overlay build context. delegate-sdk ONLY (same gate as daily.sh):
-      # its register() monkeypatches core apply_overrides and mutates the pricing
-      # table, and the other agents must not depend on this private checkout
-      # succeeding. Needs a repo-read token — GH_PACKAGES_TOKEN is packages-only,
-      # so this is the one step that requires GH_PAT. persist-credentials: false
-      # keeps that PAT out of .git/config: this checkout doubles as the overlay
-      # docker build context below.
+      # docker-overlay build context. Its register() monkeypatches core
+      # apply_overrides and mutates the pricing table, so it is still INSTALLED
+      # for delegate-sdk only (same gate as daily.sh) and no other agent depends
+      # on that code path.
+      #
+      # The CHECKOUT is now wider than the install: the repo also ships
+      # `eval_runner/`, a separate package (`coder-eval-uipath-eval-runner`) that
+      # is the blob uploader behind the evalboard link. Installing that one
+      # touches nothing the agents use — it lands in its own uv tool environment
+      # and imports no coder-eval code.
+      #
+      # Non-fatal on purpose. This puts GH_PAT on the happy path of every
+      # dispatch where it used to be delegate-only, and a stale PAT must cost the
+      # evalboard link, not the eval. delegate-sdk still fails loudly: the prep
+      # step below asserts the checkout is present before the plugin is needed.
+      #
+      # Needs a repo-read token — GH_PACKAGES_TOKEN is packages-only, so this is
+      # the one step that requires GH_PAT. persist-credentials: false keeps that
+      # PAT out of .git/config: this checkout doubles as the overlay docker build
+      # context below.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
-        if: inputs.agent == 'delegate-sdk'
+        if: inputs.agent == 'delegate-sdk' || env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        continue-on-error: true
         with:
           repository: UiPath/coder_eval_uipath
           ref: ${{ needs.partition.outputs.coder_eval_uipath_ref }}
@@ -239,53 +275,47 @@ jobs:
 
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      # Host coder-eval CLI at the version the partition job resolved, plus — for
-      # delegate-sdk only — the coder_eval_uipath plugin from the checkout above.
-      # ONE uv invocation so the `==` pin and the local plugin co-resolve: `uv pip
-      # install <path>` ignores the plugin's lockfile and its dependency range is
-      # an open `0.9.x`, so the pin is what keeps this run on the same framework
-      # version as smoke-skills.yml and the nightly VM. Agent extras stay
-      # unpinned — they ride the same resolve. The Linux docker driver still
-      # imports the selected agent class on the host before dispatching work, so
-      # the plugin and the extras must be installed here as well as in the
-      # container image. The pinned version doubles as the default agent image
-      # tag (a non-blank coder_eval_image_tag input overrides it for ad-hoc /
-      # unreleased images).
-      #
-      # Coupling this creates, on purpose: the pin must sit INSIDE the plugin's
-      # declared coder-eval range (currently `>=0.9.5,<0.10.0`). If a
-      # tests/.coder-eval-version bump lands before coder_eval_uipath widens its
-      # range, this step fails at resolve time with uv's "requirements are
-      # unsatisfiable" — loudly, before any task runs, and only on delegate-sdk.
-      # That is the point: the alternative (resolving through the plugin's open
-      # range) silently drifts. Fix by widening the plugin's range, or pass an
-      # in-range coder_eval_version for the delegate run.
-      - name: Install coder-eval
-        env:
-          AGENT: ${{ inputs.agent }}
-          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
-          CE_IMAGE_TAG_INPUT: ${{ inputs.coder_eval_image_tag }}
+      # coder-eval is installed by the composite action below, not here, via
+      # `uv tool install` at the pin the partition job resolved; its `extras` and
+      # `extra-packages` inputs carry what this step used to compose by hand.
+      # The old coupling holds: the pin must sit inside the plugin's declared
+      # coder-eval range, or the install fails at resolve time (delegate-sdk
+      # only) because `--with` requirements co-resolve with the tool's own.
+
+      # Both the action's `coder-eval` and the uploader's `eval-runner` are uv
+      # tool shims, found only if uv's tool bin dir is on PATH. It is on the
+      # GitHub-hosted images; do not assume it on `uipath-ubuntu-latest`.
+      - name: Ensure the uv tool bin dir is on PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # The blob uploader behind the evalboard link — a SEPARATE package from the
+      # plugin above (`coder-eval-uipath-eval-runner`, under eval_runner/), so it
+      # gets its own tool environment and cannot perturb the action's. Skipped
+      # until AZURE_STORAGE_KEY is set, and non-fatal: a missing uploader costs
+      # the link, never the run.
+      - name: Install the evalboard uploader
+        if: env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        continue-on-error: true
         run: |
           set -euo pipefail
-          case "$AGENT" in
-            codex)        pkgs=("coder-eval[codex,litellm]==$CE_VERSION") ;;
-            antigravity)  pkgs=("coder-eval[antigravity,litellm]==$CE_VERSION") ;;
-            delegate-sdk) pkgs=("coder-eval[litellm]==$CE_VERSION" ./coder_eval_uipath) ;;
-            *)            pkgs=("coder-eval[litellm]==$CE_VERSION") ;;
-          esac
-          uv pip install --system "${pkgs[@]}"
-          python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
-          echo "CE_IMAGE_TAG=${CE_IMAGE_TAG_INPUT:-$CE_VERSION}" >> "$GITHUB_ENV"
+          if [ ! -d coder_eval_uipath/eval_runner ]; then
+            echo "::warning::coder_eval_uipath checkout missing — skipping the evalboard upload for this run"
+            exit 0
+          fi
+          uv tool install ./coder_eval_uipath/eval_runner
+          eval-runner --help > /dev/null
 
       # Pull the agent image from GHCR (never built from source); the skills
       # image extends it below. Tag defaults to the pinned coder-eval version
-      # (CE_IMAGE_TAG from the install step) but can be overridden
+      # (resolved by the partition job) but can be overridden
       # (coder_eval_image_tag) for ad-hoc / unreleased images.
       # Needs read:packages only — GH_PACKAGES_TOKEN, never the repo-write PAT.
       # This workflow is `workflow_dispatch`-triggered, so it is not exposed to
       # the fork/branch-push reader that motivates the split in smoke-skills.yml
       # and smoke-rpa-skills.yml; the narrower token is least-privilege here.
       - name: Pull coder-eval-agent image
+        env:
+          CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
         run: |
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
@@ -296,6 +326,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+          CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" \
@@ -359,9 +390,14 @@ jobs:
       - name: Stage _shared grader helpers
         run: bash tests/scripts/stage_shared.sh
 
-      # TASK_GLOBS here is the partition-resolved list of *file paths* (not
-      # globs). Word-splitting is intentional — do not quote.
-      - name: Run coder-eval
+      # Two-step split: this step COMPUTES, the composite action below EXECUTES.
+      # `working-directory:` is illegal on a `uses:` step and a job-level
+      # `defaults.run` does not reach inside a composite, so everything
+      # conditional has to be resolved into plain inputs first. The body is the
+      # head of the old single `Run coder-eval` step, moved rather than
+      # rewritten — review it as a diff against that step.
+      - name: Prepare the coder-eval invocation
+        id: prep
         env:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
           API_BACKEND:              bedrock
@@ -404,25 +440,55 @@ jobs:
           DELEGATE_STDIO_LOG_MAX_CHARS_VAR:  ${{ vars.DELEGATE_STDIO_LOG_MAX_CHARS }}
           USE_LLM_GATEWAY_FOR_FIREWORKS_VAR: ${{ vars.USE_LLM_GATEWAY_FOR_FIREWORKS }}
         working-directory: tests
-        id: eval
         run: |
+          set -uo pipefail
+
           # Guard the empty case (e.g. a future non-dispatch trigger): the
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
-          # Agent selection. claude is the default; codex authenticates via
-          # CODEX_API_KEY/CODEX_BASE_URL, antigravity via GEMINI_API_KEY (SDK baked into
-          # the agent image), delegate-sdk via the ROPC user token minted above. The
-          # model always comes from the harness's own variable above, with the
-          # agent_model input overriding any of them for a one-off run. Passed
-          # explicitly because the experiment YAML pins no model (it is shared by all
-          # harnesses). Driver is unchanged (docker here).
-          delegate_overrides=()
+
+          # Forwarded to coder-eval via the action's `env` input, which exports
+          # these for that process only. A name list, so it cannot drift from the
+          # `env:` block above. Deliberately EVERY non-_VAR entry of that block,
+          # including ones only this shell reads: the docker driver forwards
+          # CODEX_MODEL / ANTIGRAVITY_MODEL into task containers, where they pick
+          # the model if agent.model is unset. Values must be single-line.
+          env_lines=()
+          for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
+                      BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
+                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
+                      CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
+                      CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
+            env_lines+=("$name=${!name}")
+          done
+
+          # Args appended to `coder-eval run`, ONE PER LINE, each verbatim — no
+          # word splitting, no pathname expansion. That is what the delegate `-D`
+          # override needs: to bash its `[...]` list is a character class.
+          args=(-e experiments/nightly.yaml)
+
+          # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
+          # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
+          # delegate-sdk via the ROPC user token minted above. The model always
+          # comes from the harness's own variable above, with the agent_model input
+          # overriding any of them for a one-off run. Passed explicitly because the
+          # experiment YAML pins no model (it is shared by all harnesses). Driver
+          # is unchanged (docker here).
+          #
+          # `extras` are the agent's host-side SDK plus the litellm judge
+          # transport. They go into the install requirement, not a second
+          # install: the action's tool environment shadows every other
+          # coder-eval on PATH.
+          extras="litellm"
+          extra_packages=""
           if [ "$AGENT" = "codex" ]; then
             model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
-            agent_flags="--type codex --model $model"
+            args+=(--type codex)
+            extras="codex,litellm"
           elif [ "$AGENT" = "antigravity" ]; then
             model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
-            agent_flags="--type antigravity --model $model"
+            args+=(--type antigravity)
+            extras="antigravity,litellm"
           elif [ "$AGENT" = "delegate-sdk" ]; then
             # Default kimi-k2-7-code (hyphenated id — the delegate host converts
             # it to the backend's underscored form); the optional DELEGATE_MODEL
@@ -430,7 +496,18 @@ jobs:
             # claude default is rejected by the alpha Delegate backend, so a
             # model must always be passed.
             model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
-            agent_flags="--type delegate-sdk --model $model"
+            args+=(--type delegate-sdk)
+            # The plugin must share coder-eval's environment for its
+            # `coder_eval.plugins` entry point to be found, which is what
+            # `extra-packages` does. Path is relative to tests/.
+            extra_packages="../coder_eval_uipath"
+            # That checkout is best-effort now (it also feeds the evalboard
+            # uploader), so assert it here: for delegate-sdk it is mandatory, and
+            # this fails with a readable message instead of a uv resolve error.
+            if [ ! -d ../coder_eval_uipath ]; then
+              echo "::error::coder_eval_uipath checkout is missing — delegate-sdk needs it for the plugin. Check the GH_PAT secret."
+              exit 1
+            fi
             # Alpha backend rate limits: the reference pipeline caps delegate-sdk
             # at -j 6 (eval_runner cli.py HARNESS_CONCURRENCY — at -j 20 retry
             # backoff blew task timeouts into TIMEOUT waves, build 12599458).
@@ -443,8 +520,8 @@ jobs:
             fi
             # Cloud env slug for the Delegate backend + first-response stall
             # recovery budget (mirrors daily.sh in coder_eval_uipath).
-            export DELEGATE_SDK_ENV="${DELEGATE_SDK_ENV:-alpha}"
-            export DELEGATE_STALL_TIMEOUT_S="${DELEGATE_STALL_TIMEOUT_S:-240}"
+            env_lines+=("DELEGATE_SDK_ENV=${DELEGATE_SDK_ENV:-alpha}")
+            env_lines+=("DELEGATE_STALL_TIMEOUT_S=${DELEGATE_STALL_TIMEOUT_S:-240}")
             # Delegate auth: reuse the ROPC USER token refresh-auth.sh wrote —
             # the Delegate backend rejects client_credentials tokens. The host
             # reads auth + org/tenant identity (GUIDs AND slugs — slugs build the
@@ -465,7 +542,12 @@ jobs:
                 echo "::error::no $key in $AUTH_FILE — the ROPC login did not complete"
                 exit 1
               fi
-              export "$out=$val"
+              # Already masked at mint time, and the file is readable job-wide,
+              # so a step output adds no exposure. Re-masking survives a reorder.
+              if [ "$out" = "AUTH_TOKEN" ]; then
+                echo "::add-mask::$val"
+              fi
+              env_lines+=("$out=$val")
             done
             # Re-export the debugging knobs above only when the repo variable is
             # actually set, so a blank one leaves the host on its own default.
@@ -473,7 +555,7 @@ jobs:
                         USE_LLM_GATEWAY_FOR_FIREWORKS; do
               src="${knob}_VAR"
               if [ -n "${!src:-}" ]; then
-                export "$knob=${!src}"
+                env_lines+=("$knob=${!src}")
                 echo "delegate knob: $knob=${!src}"
               fi
             done
@@ -483,7 +565,7 @@ jobs:
             # PROVIDED the file stays fresh. This workflow mints the token once
             # (no refresher loop like the nightly's), so runs longer than ~1h can
             # still hit token expiry on late tasks.
-            export DELEGATE_AUTH_TOKEN_FILE="/.uipath/.auth:$AUTH_FILE"
+            env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
             # Docker forwards only an env allowlist into the container; append
             # the delegate auth/env vars to nightly.yaml's own list (MergeField
             # append-semantics). Same list as run.py in coder_eval_uipath:
@@ -491,28 +573,67 @@ jobs:
             # the environment provides one, and it is simply unset (harmless)
             # here. DELEGATE_STDIO_PATH is deliberately NOT forwarded: the
             # overlay image bakes its own, and the host path would not resolve
-            # in-container. Built as an ARRAY and quoted at the call site: to bash
-            # the `[...]` list is a glob character class, so an unquoted expansion
-            # silently collapses the whole flag to `...extra=<char>` if a file of
-            # that name ever exists in the tests/ cwd. Unlikely, but an array
-            # costs nothing and removes the class of bug outright.
-
+            # in-container.
             delegate_env="AUTH_TOKEN,DELEGATE_AUTH_TOKEN_FILE,TENANT_ID,ORG_ID,USER_ID"
             delegate_env="$delegate_env,ORG_LOGICAL_NAME,TENANT_NAME,DELEGATE_SDK_ENV"
             delegate_env="$delegate_env,DELEGATE_STALL_TIMEOUT_S,USE_LLM_GATEWAY_FOR_FIREWORKS"
             delegate_env="$delegate_env,DELEGATE_STDIO_VERBOSE,DELEGATE_STDIO_LOG_MAX_CHARS"
-            delegate_overrides=(-D "sandbox.docker.env_passthrough_extra=[$delegate_env]")
+            args+=(-D "sandbox.docker.env_passthrough_extra=[$delegate_env]")
           else
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
-            agent_flags="--model $model"
           fi
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags ${delegate_overrides[*]} -j $j ($TASK_COUNT task files)"
-          coder-eval run $TASK_GLOBS \
-            -e experiments/nightly.yaml \
-            $agent_flags \
-            "${delegate_overrides[@]}" \
-            -j "$j" -v \
-            --run-dir /tmp/runs
+
+          # After the clamp, so a delegate run reports the -j it will actually use.
+          args+=(-j "$j" -v --model "$model")
+
+          # Task globs are `args` entries like everything else: the action
+          # promotes none of the CLI's flags to named inputs, so there is no
+          # `tasks:` or `model:` to pass separately. Word-split on purpose here
+          # (TASK_GLOBS is a space-separated list from the partition job) so each
+          # glob becomes its own argv entry; NOT pathname-expanded, because the
+          # CLI expands them itself and handles `**` without globstar.
+          # shellcheck disable=SC2206
+          args+=($TASK_GLOBS)
+
+          echo "Running: coder-eval run ${args[*]} ($TASK_COUNT task files)"
+
+          # Multi-line step outputs need the heredoc form. The delimiter is
+          # randomised because a value that happened to equal it, alone on a
+          # line, would truncate the block.
+          delim="ghaout$RANDOM$RANDOM$RANDOM"
+          {
+            echo "extras=$extras"
+            echo "extra_packages=$extra_packages"
+            echo "args<<$delim"
+            printf '%s\n' "${args[@]}"
+            echo "$delim"
+            echo "env_block<<$delim"
+            printf '%s\n' "${env_lines[@]}"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
+
+      # The published composite action, consumed as a real dependent. Everything
+      # the CLI takes is in the single `args` block the prep step composed: the
+      # action promotes none of its flags to named inputs. That is also why there
+      # is no job-summary switch here — the action writes none, so the report is
+      # appended below, after redaction. JUnit lands at /tmp/runs/junit.xml and
+      # travels with the run into the artifact and the blob.
+      - name: Run coder-eval
+        id: eval
+        # A moving major tag, not a SHA like the third-party actions above.
+        # First-party and in this org: `v0` is the contract coder_eval's release
+        # promotes, and pinning a SHA here would freeze the input surface while
+        # `version:` below keeps moving, which is the mismatch that makes GitHub
+        # silently ignore inputs. Breaking input changes land as `v1`.
+        uses: UiPath/coder_eval@v0
+        with:
+          version: ${{ needs.partition.outputs.coder_eval_version }}
+          working-directory: tests
+          extras: ${{ steps.prep.outputs.extras }}
+          extra-packages: ${{ steps.prep.outputs.extra_packages }}
+          args: ${{ steps.prep.outputs.args }}
+          env: ${{ steps.prep.outputs.env_block }}
+          run-dir: /tmp/runs
 
       - name: Fix permissions on /tmp/runs
         if: always()
@@ -525,21 +646,220 @@ jobs:
         run: |
           find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
 
+      # Ported from smoke-skills.yml, which has had this since the reports
+      # started carrying agent transcripts. This workflow never had it, so its
+      # artifact has been shipping unredacted transcripts all along. Runs BEFORE
+      # anything that publishes the tree — the artifact upload, the job summary,
+      # and the evalboard blob — and AFTER the cleanup above, which removes tens
+      # of thousands of files this walk would otherwise scan for nothing.
+      - name: Redact secrets from the eval report
+        if: always()
+        env:
+          AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
+          CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
+          GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
+          E2E_PROCESS_KEY:           ${{ secrets.E2E_PROCESS_KEY }}
+          E2E_LONG_PROCESS_KEY:      ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+
+          # Every secret this job forwards into the run, not just the three
+          # smoke-skills.yml strips. It matters more here than there: this report
+          # is uploaded twice (a GitHub artifact and, when the identity is wired,
+          # an evalboard blob) and its run.md is echoed into the job summary.
+          names = (
+              "AWS_BEARER_TOKEN_BEDROCK",
+              "ANTHROPIC_API_KEY",
+              "CODEX_API_KEY",
+              "GEMINI_API_KEY",
+              "E2E_PROCESS_KEY",
+              "E2E_LONG_PROCESS_KEY",
+              "UIPATH_ROPC_CLIENT_SECRET",
+              "UIPATH_BOT_PASSWORD",
+              # The ROPC user token, which the delegate host and the in-container
+              # uip CLI both use. Read from the file rather than the environment:
+              # this workflow mints it at runtime, so no secret carries it.
+              "UIPATH_CLI_AUTH_TOKEN",
+          )
+          values = [os.environ[n] for n in names if len(os.environ.get(n, "")) >= 8]
+
+          auth = pathlib.Path(os.path.expanduser("~/.uipath/.auth"))
+          if auth.is_file():
+              for line in auth.read_text(encoding="utf-8", errors="ignore").splitlines():
+                  # Token only. Redacting the org/tenant SLUGS as well would
+                  # garble every report that legitimately names the tenant.
+                  if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
+                      values.append(line.split("=", 1)[1])
+
+          if not values:
+              raise SystemExit(0)
+
+          suffixes = {".html", ".json", ".log", ".md", ".xml"}
+          for path in pathlib.Path("/tmp/runs").rglob("*"):
+              if not path.is_file() or path.suffix not in suffixes:
+                  continue
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              redacted = text
+              for value in values:
+                  redacted = redacted.replace(value, "***")
+              if redacted != text:
+                  path.write_text(redacted, encoding="utf-8")
+          PY
+      # ==================================================================
+      # Evalboard publish. Entirely additive and entirely best-effort: every
+      # step here warns and returns 0 rather than reddening a run, because a
+      # missing dashboard link must never be mistaken for a failed eval.
+      #
+      # Inert until `AZURE_STORAGE_KEY` is set as a repo secret, so this merges
+      # and behaves exactly as before while the credential is being provisioned.
+      #
+      # Authenticated with the SAME credential the ADO pipelines already use for
+      # this storage account (`AZURE_STORAGE_KEY` / `AZURE_STORAGE_ACCOUNT` out of
+      # `coder-eval-athena-{secrets,config}`), rather than a second, GitHub-only
+      # Entra app + federated credential. eval-runner passes the value straight to
+      # `BlobServiceClient(credential=...)`, and the Azure SDK sniffs the string,
+      # so the secret can hold either the account key or a container-scoped SAS
+      # token with no change here. Prefer the SAS: an account key is authority
+      # over the WHOLE account, including the `runs` container holding months of
+      # nightly history, and this workflow runs its definition from whatever
+      # branch the dispatcher picks.
+      # ==================================================================
+
+      - name: Publish the run to evalboard
+        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        continue-on-error: true
+        env:
+          # The only step in the job that sees the credential. Mirrors how the ADO
+          # pipelines scope it ("upload in its own step so AZURE_STORAGE_KEY is
+          # never in the eval step's env"): a task-driven agent with shell access
+          # runs in those other steps.
+          AZURE_STORAGE_KEY:          ${{ secrets.AZURE_STORAGE_KEY }}
+          AZURE_STORAGE_ACCOUNT:      ${{ vars.AZURE_STORAGE_ACCOUNT || 'coderevaltests' }}
+          # Hardcoded, with no variable override on purpose. Everything about this
+          # feature — the unlisted evalboard source, the 14-day expiry rule — is
+          # predicated on ad-hoc runs never landing in `runs`, and ADO already uses
+          # the name `AZURE_BLOB_CONTAINER` for `runs` itself.
+          AZURE_BLOB_CONTAINER:       runs-gha
+          EVALBOARD_BASE:             ${{ vars.EVALBOARD_BASE_URL || 'https://coder-evalboard.uipath-dev.com' }}
+          AGENT:                      ${{ inputs.agent }}
+          TASK_COUNT:                 ${{ needs.partition.outputs.linux_count }}
+          TASK_GLOBS_INPUT:           ${{ inputs.task_globs }}
+        run: |
+          set -uo pipefail
+          if ! command -v eval-runner > /dev/null 2>&1; then
+            echo "::warning::eval-runner is not installed — no evalboard link for this run"
+            exit 0
+          fi
+          if [ ! -f /tmp/runs/run.json ]; then
+            echo "::warning::/tmp/runs/run.json is missing — nothing to publish"
+            exit 0
+          fi
+
+          # `eval-runner upload` derives the blob id from the run directory's
+          # NAME, so the rename is how the id is chosen. Timestamp first to keep
+          # runs chronologically sortable, then the GitHub run id and attempt:
+          # uniqueness is the point, since two dispatches landing in the same
+          # second would otherwise share an id and silently overwrite each other.
+          # A COPY, not a move: this step now runs BEFORE the artifact upload and
+          # the verdict, which both read /tmp/runs, so the original has to survive.
+          # The tree is already stripped of .venv/node_modules by the cleanup step
+          # above, so the copy is cheap.
+          # All-hyphen after the timestamp: a `.` before the attempt number reads
+          # as a file extension in the URL path.
+          blob_id="$(date -u +%Y-%m-%d_%H-%M-%S)-gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cp -a /tmp/runs "/tmp/$blob_id" || {
+            echo "::warning::could not stage /tmp/runs for upload — no evalboard link for this run"
+            exit 0
+          }
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          if ! eval-runner upload "/tmp/$blob_id" \
+              --adhoc \
+              --title "gha #${GITHUB_RUN_NUMBER}: ${AGENT} x ${TASK_COUNT} linux task(s) by @${GITHUB_ACTOR} - ${TASK_GLOBS_INPUT}" \
+              --description "$run_url"; then
+            echo "::warning::evalboard upload failed — see the log above. The GitHub artifact is unaffected."
+            exit 0
+          fi
+
+          # ?src=gha is required: sourceById COERCES an absent src to the default
+          # source, so a stripped link 404s against the nightly container.
+          url="${EVALBOARD_BASE}/runs/${blob_id}?src=gha"
+          # Azure evaluates lifecycle rules once a day and can lag a day or two
+          # past the threshold, so the date is a floor rather than a promise.
+          expires="$(date -u -d '+14 days' +%Y-%m-%d 2> /dev/null || true)"
+          if [ -n "$expires" ]; then
+            when="on or after \`$expires\`"
+          else
+            when="about 14 days from now"
+          fi
+          # $GITHUB_STEP_SUMMARY is a SEPARATE file per step, and GitHub renders the
+          # job summary by concatenating them in step order. So the only way to put
+          # this block first is for the step itself to run before the one that
+          # appends run.md, which is why the publish moved above it and copies the
+          # run dir rather than moving it. Rewriting the file in place cannot work:
+          # a step only ever sees its own.
+          {
+            echo "### Evalboard"
+            echo ""
+            echo "[$url]($url)"
+            echo ""
+            echo "Covers the **Linux** tasks of this dispatch only. Deleted $when by the 14-day lifecycle rule on the \`$AZURE_BLOB_CONTAINER\` container."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Annotations render at the top of the run page, above the job list, so
+          # the link is reachable without opening the summary at all.
+          echo "::notice title=Evalboard::$url"
+          echo "Evalboard: $url"
+
+
+      # The action reports where run.md is and leaves the writing to the consumer,
+      # which is what lets this land AFTER the redaction above. Capped at 1 MB:
+      # GitHub rejects a job summary over 1 MiB outright, losing the verdict too.
+      #
+      # Read from the action's `run-md-path` output rather than rebuilding the
+      # path, with the literal as a fallback: a composite action's outputs may not
+      # propagate from a step that exited non-zero, and this step runs on failure.
+      - name: Append the run report to the job summary
+        if: always()
+        env:
+          RUN_MD: ${{ steps.eval.outputs.run-md-path }}
+        run: |
+          set -uo pipefail
+          run_md="${RUN_MD:-/tmp/runs/run.md}"
+          if [ -f "$run_md" ]; then
+            head -c 1000000 "$run_md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No run.md produced._" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload eval report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: coder-eval-linux-${{ github.run_id }}
-          # ** so the pattern matches the replicate-index segment that
-          # coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
+          # These were off by one directory level and so uploaded NO
+          # experiment-level or variant-level report, only the per-task files the
+          # `**` patterns caught. `--run-dir /tmp/runs` makes /tmp/runs itself the
+          # run dir: reports land at /tmp/runs/{run,experiment}.* and
+          # /tmp/runs/<variant>/variant.*, and per-task dirs at
+          # /tmp/runs/<variant>/<task>/<NN>/ (hence `**`, for the replicate
+          # segment). The Windows job's copies are correct as written because it
+          # passes no --run-dir and so gets a timestamped subdirectory.
           path: |
-            /tmp/runs/*/experiment.html
-            /tmp/runs/*/experiment.md
-            /tmp/runs/*/experiment.json
-            /tmp/runs/*/experiment.log
-            /tmp/runs/*/*/variant.html
-            /tmp/runs/*/*/variant.md
-            /tmp/runs/*/*/variant.json
+            /tmp/runs/run.json
+            /tmp/runs/run.md
+            /tmp/runs/experiment.html
+            /tmp/runs/experiment.md
+            /tmp/runs/experiment.json
+            /tmp/runs/experiment.log
+            /tmp/runs/*/variant.html
+            /tmp/runs/*/variant.md
+            /tmp/runs/*/variant.json
             /tmp/runs/**/task.html
             /tmp/runs/**/task.json
             /tmp/runs/**/task.log
@@ -551,8 +871,13 @@ jobs:
         if: always()
         run: |
           set -uo pipefail
-          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1 || true)
-          if [ -z "$run_dir" ]; then
+          # /tmp/runs IS the run dir (--run-dir above), so its subdirectories are
+          # VARIANTS. `ls -td */ | head -n 1` picked one of them: correct only
+          # while nightly.yaml declares a single variant, and a second variant
+          # would silently grade one arm and could turn a red run green. Same
+          # off-by-one the artifact globs carry a fix for.
+          run_dir=/tmp/runs
+          if [ ! -d "$run_dir" ] || [ -z "$(ls -A "$run_dir" 2>/dev/null)" ]; then
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -1018,6 +1343,66 @@ jobs:
             tail -n 100 "$log" || true
           fi
 
+      # Same redaction as the Linux job, on this job's own run tree. Ported to
+      # BOTH jobs deliberately: leaving it Linux-only would mean the Windows
+      # artifact kept shipping unredacted transcripts, which is the status quo but
+      # becomes a visible inconsistency once one job strips them.
+      - name: Redact secrets from the eval report
+        if: always()
+        shell: bash
+        env:
+          AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
+          CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
+          GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
+          E2E_PROCESS_KEY:           ${{ secrets.E2E_PROCESS_KEY }}
+          E2E_LONG_PROCESS_KEY:      ${{ secrets.E2E_LONG_PROCESS_KEY }}
+          UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
+          # This job mints its own ROPC token to a workspace file rather than
+          # ~/.uipath/.auth (that path is the uip CLI's own browser-OAuth login).
+          DELEGATE_AUTH_FILE:        ${{ github.workspace }}/.delegate-sdk-auth
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+
+          names = (
+              "AWS_BEARER_TOKEN_BEDROCK",
+              "ANTHROPIC_API_KEY",
+              "CODEX_API_KEY",
+              "GEMINI_API_KEY",
+              "E2E_PROCESS_KEY",
+              "E2E_LONG_PROCESS_KEY",
+              "UIPATH_ROPC_CLIENT_SECRET",
+              "UIPATH_BOT_PASSWORD",
+              "UIPATH_CLI_AUTH_TOKEN",
+          )
+          values = [os.environ[n] for n in names if len(os.environ.get(n, "")) >= 8]
+
+          auth = pathlib.Path(os.environ.get("DELEGATE_AUTH_FILE", ""))
+          if auth.name and auth.is_file():
+              for line in auth.read_text(encoding="utf-8", errors="ignore").splitlines():
+                  # Token only — redacting the org/tenant SLUGS would garble every
+                  # report that legitimately names the tenant.
+                  if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
+                      values.append(line.split("=", 1)[1])
+
+          if not values:
+              raise SystemExit(0)
+
+          suffixes = {".html", ".json", ".log", ".md", ".xml"}
+          for path in pathlib.Path("tests/runs").rglob("*"):
+              if not path.is_file() or path.suffix not in suffixes:
+                  continue
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              redacted = text
+              for value in values:
+                  redacted = redacted.replace(value, "***")
+              if redacted != text:
+                  path.write_text(redacted, encoding="utf-8")
+          PY
+
       - name: Upload eval report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
@@ -1057,3 +1442,17 @@ jobs:
           print(f"\n{ok}/{len(rows)} PASS (windows)")
           sys.exit(0 if rows and ok == len(rows) else 1)
           PY
+
+      # A single dispatch can start both jobs, and only the Linux one publishes an
+      # evalboard link. Said out loud so its absence here reads as "not
+      # applicable" rather than as an upload that failed.
+      #
+      # Its own step, deliberately, so the verdict above stays byte-identical: an
+      # echo appended after that `python | tee` pipeline would become the step's
+      # exit status and silently turn every red Windows run green.
+      - name: Note the absent evalboard link
+        if: always()
+        shell: bash
+        run: |
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Windows tasks are reported through the \`coder-eval-windows-${{ github.run_id }}\` artifact only. The evalboard link, if any, covers the Linux half of this dispatch._" >> "$GITHUB_STEP_SUMMARY"

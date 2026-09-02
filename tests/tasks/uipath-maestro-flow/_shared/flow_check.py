@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import glob
 import json
+import math
 import os
 import re
 import subprocess
@@ -68,14 +69,22 @@ _LAST_DEBUG_INPUT_IDS: set[str] = set()
 _LAST_DEBUG_PROJECT_DIR: str | None = None
 
 
-# The CLI polls for `--timeout` seconds (default 600) before giving up, while
-# call sites here cap the subprocess at 180-300s. Without an explicit
-# `--timeout` we SIGKILL the CLI mid-poll and keep nothing — no payload, no
-# instanceId, no incidents. The headroom covers the phases `--timeout` does not
-# bound (upload, provisioning, begin-session, create-instance), so the CLI
-# always self-terminates first, with a parseable envelope.
+# Without an explicit `--timeout` (CLI default 600s) we SIGKILL the CLI
+# mid-poll and keep nothing. The headroom covers the phases `--timeout` does
+# not bound (upload, provisioning, begin-session, create-instance), so the CLI
+# self-terminates first, with a parseable envelope.
 _CLI_TIMEOUT_HEADROOM_SECONDS = 60
 _MIN_CLI_TIMEOUT_SECONDS = 30
+
+# Below this a retry cannot fund the CLI floor plus headroom, so it would be
+# killed mid-run and yield nothing.
+_MIN_RETRY_BUDGET_SECONDS = _MIN_CLI_TIMEOUT_SECONDS + _CLI_TIMEOUT_HEADROOM_SECONDS
+
+# What a check spends outside `run_debug`: interpreter start, static asserts,
+# teardown. A CHOSEN floor, not a measured one — it matches the gap the suite
+# already used most often (240s debug under a 300s criterion). Public alongside
+# `debug_budget`; test_criterion_budgets.py enforces the pair.
+CRITERION_MARGIN_SECONDS = 60
 
 # `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL` — the CLI never reads the latter. At
 # `info` it narrates jobKey / instanceId / Studio Web URL to stderr, the only
@@ -86,9 +95,19 @@ _DEBUG_LOG_LEVEL = "info"
 # which is wrong for a poll timeout.
 _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 
-# Each attempt costs the full subprocess budget, so cap below `retries`:
-# 3 x 300s would exceed the 600s criterion budget in the task YAMLs.
+# A poll timeout burns a whole attempt for no new information, so it caps
+# tighter than `retries`, which still governs cheap transients. Independent of
+# the `retries` default.
 _POLL_TIMEOUT_ATTEMPTS = 2
+
+# Named so `debug_budget` and the criterion guard cannot drift from the
+# function they price. `_DEFAULT_RETRIES` was 3 until the budget started funding
+# every attempt it promises; 2 is a deliberate narrowing (one retry for a fast
+# 5xx, matching the CLI's own "retry once before reporting") that keeps a third
+# full-length attempt out of every criterion ceiling. `retries=3` still works.
+_DEFAULT_RETRIES_TIMEOUT = 240
+_DEFAULT_RETRIES = 2
+_DEFAULT_BACKOFF_SECONDS = 5.0
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -148,37 +167,55 @@ def _as_text(raw: bytes | str | None) -> str:
 # ── Public helpers ──────────────────────────────────────────────────────────
 
 
+def debug_budget(
+    timeout: int = _DEFAULT_RETRIES_TIMEOUT,
+    retries: int = _DEFAULT_RETRIES,
+    backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
+) -> int:
+    """Worst-case wall clock for one :func:`run_debug` call.
+
+    Sized on ``retries``, not :data:`_POLL_TIMEOUT_ATTEMPTS`: the poll cap binds
+    only the poll-timeout path, while a slow 5xx can consume every attempt
+    ``retries`` allows, and funding fewer would let the deadline cancel a retry
+    the caller asked for. Public so test_criterion_budgets.py holds every task
+    YAML to the same arithmetic."""
+    attempts = max(1, retries)
+    return timeout * attempts + math.ceil(backoff_seconds) * (attempts - 1)
+
+
 def run_debug(
     *,
     inputs: dict | None = None,
     attachments: dict[str, str] | None = None,
-    timeout: int = 240,
+    timeout: int = _DEFAULT_RETRIES_TIMEOUT,
+    budget: int | None = None,
     project_glob: str = "**/project.uiproj",
-    retries: int = 3,
-    backoff_seconds: float = 5.0,
+    retries: int = _DEFAULT_RETRIES,
+    backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
 
-    ``timeout`` is the hard subprocess cap; the CLI gets a strictly smaller
-    ``--timeout`` so an overrun ends with its own diagnosable envelope instead
-    of a SIGKILL.
+    ``timeout`` caps ONE attempt; the CLI gets a strictly smaller ``--timeout``
+    so an overrun ends with its own diagnosable envelope instead of a SIGKILL.
+    ``budget`` is the deadline for the whole call, defaulting to
+    :func:`debug_budget`. They are separate because a flow needs the attempt it
+    needs (an Orchestrator job is not a Script node) while the criterion bounds
+    the check as a whole; the deadline is what stops a retry outliving the
+    ``timeout:`` the task YAML granted and dying with nothing to diagnose.
 
     Transient server-side errors (5xx / ``RetryLater``, or the CLI's own
     poll-budget expiry — see :func:`_is_transient_debug_error`) are retried up
     to ``retries`` times with ``backoff_seconds`` between attempts; poll
-    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS`. A real flow fault
-    (non-transient failure, or a run that completes with the wrong
-    ``finalStatus``) fails immediately without burning retries.
+    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS`, and any retry is skipped once
+    the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
+    fault fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
     ``id`` must match a ``variables.globals[]`` entry with ``direction:"in"`` and
     ``type:"file"`` — see :func:`read_flow_file_input_vars`."""
     project_dir = _find_project(project_glob)
-    cli_timeout = max(
-        _MIN_CLI_TIMEOUT_SECONDS, timeout - _CLI_TIMEOUT_HEADROOM_SECONDS
-    )
     cmd = [
         "uip",
         "maestro",
@@ -187,8 +224,6 @@ def run_debug(
         project_dir,
         "--output",
         "json",
-        "--timeout",
-        str(cli_timeout),
     ]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
@@ -203,17 +238,62 @@ def run_debug(
         str(k) for k in (attachments or {})
     }
     _LAST_DEBUG_PROJECT_DIR = project_dir
-    for attempt in range(retries):
+
+    # One deadline for the whole call: an attempt gets `timeout`, or the
+    # remainder when that is smaller.
+    derived = budget is None
+    if derived:
+        budget = debug_budget(timeout, retries, backoff_seconds)
+    # Both floors, because they guard different quantities: the aggregate keeps
+    # a retry fundable, the per-attempt one keeps the subprocess cap above the
+    # CLI's own `--timeout` minimum. `timeout=20, retries=10` clears the first
+    # and still SIGKILLs the CLI before it can return an envelope.
+    if timeout <= _MIN_CLI_TIMEOUT_SECONDS:
+        _fail(
+            f"run_debug timeout of {timeout}s is at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the subprocess "
+            "cap could not outlive it; raise `timeout`"
+        )
+    # Floored at the CLI minimum, not at _MIN_RETRY_BUDGET_SECONDS: that is the
+    # threshold for funding ANOTHER attempt, and `retries=1` never wants one.
+    # `budget - 1`: the deadline is read microseconds after it is set, so an
+    # integer budget always floors one second short. The first attempt's cap has
+    # to STRICTLY outlive `cli_timeout`, or the CLI loses the race to report.
+    if min(timeout, budget - 1) <= _MIN_CLI_TIMEOUT_SECONDS:
+        _fail(
+            f"run_debug would cap its first attempt at "
+            f"{min(timeout, budget - 1)}s, at or below the CLI's "
+            f"{_MIN_CLI_TIMEOUT_SECONDS}s `--timeout` minimum, so the CLI could "
+            "not self-terminate first; "
+            + ("raise `timeout`" if derived else "raise `budget`, or omit it so "
+               "debug_budget(timeout, ...) derives the deadline")
+        )
+
+    deadline = time.monotonic() + budget
+    out_of_budget = False
+
+    # Mirrors debug_budget: pricing an attempt the loop never makes left `r` unbound.
+    attempts = max(1, retries)
+
+    for attempt in range(attempts):
+        attempt_cap = min(timeout, int(deadline - time.monotonic()))
+        cli_timeout = max(
+            _MIN_CLI_TIMEOUT_SECONDS, attempt_cap - _CLI_TIMEOUT_HEADROOM_SECONDS
+        )
         try:
             r = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=timeout, env=env
+                [*cmd, "--timeout", str(cli_timeout)],
+                capture_output=True,
+                text=True,
+                timeout=attempt_cap,
+                env=env,
             )
         except subprocess.TimeoutExpired as exc:
             # The CLI's own --timeout never fired, so the stall is upstream of
             # polling. Keep the partial output rather than dying on a traceback.
             _LAST_DEBUG_RAW = _as_text(exc.stdout)
             _fail_with_capture(
-                f"flow debug exceeded the {timeout}s subprocess cap without returning "
+                f"flow debug exceeded the {attempt_cap}s subprocess cap without returning "
                 f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
                 "polling: solution upload, Studio Web debug provisioning, "
                 "begin-session, or create-instance).\n"
@@ -224,10 +304,24 @@ def run_debug(
             break
         if _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
-        if attempt + 1 < retries:
+        if attempt + 1 < attempts:
+            left = deadline - time.monotonic() - backoff_seconds
+            if left < _MIN_RETRY_BUDGET_SECONDS:
+                out_of_budget = True
+                break
             time.sleep(backoff_seconds)
+
     if r.returncode != 0:
-        _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
+        spent = (
+            f" (stopped after {attempt + 1} attempt(s): the remaining budget "
+            "could not fund another)"
+            if out_of_budget
+            else ""
+        )
+        _fail(
+            f"flow debug exit {r.returncode}{spent}\n"
+            f"stdout: {r.stdout}\nstderr: {r.stderr}"
+        )
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout}")

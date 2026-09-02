@@ -8,6 +8,8 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl"]
 
 run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 28
   max_turns: 70
 

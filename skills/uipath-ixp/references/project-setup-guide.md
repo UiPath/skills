@@ -1,6 +1,6 @@
 # Project Setup Guide
 
-Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically. Deployment is a separate, optional final step — [Deployment Guide](deployment-guide.md).
 
 > **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
@@ -87,4 +87,11 @@ Skip this step if the user already provided a meaningful name in Step 1.
 
 ## Step 4 — Label All Documents
 
-Follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
+**Default:** follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
+
+Labelling is optional — it produces the **project score** (`get-metrics` reports nothing until documents are confirmed) and is not required for a callable model (a trained version appears on its own within seconds of `projects create`). Skip it only when:
+
+- **The model unblocks a larger build in this session** — the deliverable is something else (a flow, an automation) waiting on a callable model, and no score, metrics, or accuracy target was named. Deploy per the [Deployment Guide](deployment-guide.md) and resume the build. Canonical case: the inbound `uipath-maestro-flow` handoff (see *When NOT to Use This Skill* in [SKILL.md](../SKILL.md)).
+- **The user opts out** — says to skip labelling, or that somebody else will handle labelling. Stop after Step 3 and hand over the project name; labelling can happen later, in-product or via the [Label Documents Guide](label-documents-guide.md).
+
+Skipping is never silent: state that the model is unscored and that labelling is the fix if fields come back wrong.

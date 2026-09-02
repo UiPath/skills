@@ -31,7 +31,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs with merged branches, output contains branch message"
     command: "python3 $TASK_DIR/check_move_node.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

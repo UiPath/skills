@@ -8,7 +8,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 ## Purpose
 
-Create the full project on disk in a single plugin invocation — 5 scaffold files + `caseplan.json`. Runs exactly once per project as T01 in every `tasks.md`. Two sections:
+Create the full project on disk in a single plugin invocation — 5 scaffold files + `caseplan.json`. Runs exactly once per project, as the first build step. Two sections:
 
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
@@ -17,7 +17,7 @@ Solution setup (`uip solution init`) and project registration (`uip solution pro
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
-## Input spec (from `tasks.md`)
+## Input spec (from `sdd.md`)
 
 | Field | Required | Notes |
 |---|---|---|
@@ -141,7 +141,7 @@ If any check fails, halt and report.
 ## § Write caseplan.json — Pre-write checks
 
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
-2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule 6, so a collision here means a genuine re-run and overwriting is correct.
+2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `caseplan.json` from scratch per SKILL.md Rule 6, so a collision here means a genuine re-run and overwriting is correct.
 
 ## ID generation
 

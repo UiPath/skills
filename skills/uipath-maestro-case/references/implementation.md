@@ -1,12 +1,16 @@
-# Phases 2–7 — Execution: tasks.md → caseplan.json
+# Phases 2–7 — Execution: sdd.md → caseplan.json
 
-Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally publish, debug, and publish to Orchestrator. Six phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Publish** → **Phase 6 Debug** → **Phase 7 Publish to Orchestrator**.
+Build `caseplan.json` from `sdd.md` via direct JSON edits per plugin, using `tasks/registry-resolved.json` for tenant identities. Validate, then optionally publish, debug, and publish to Orchestrator. Six phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Publish** → **Phase 6 Debug** → **Phase 7 Publish to Orchestrator**.
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this execution pipeline — see [brownfield.md](brownfield.md).
 
-> **Prerequisite:** [Phase 1 Planning](planning.md) produced `tasks.md`. Phase 1 auto-proceeds into execution (plan treated as approved) — it stops before Phase 2 only when the request explicitly asked for a plan-only / review-first run.
+> **Prerequisite:** [Phase 1 Resolution](planning.md) produced `tasks/registry-resolved.json`. Phase 1 auto-proceeds into execution — it stops before Phase 2 only when the request explicitly asked to stop before the build.
 >
-> **Input:** `tasks/tasks.md` — the complete handoff artifact.
+> **Inputs:** `sdd.md` — the design contract, and the sole source of structure, activation modes, entry rules, inputs, outputs, and rationale. `tasks/registry-resolved.json` — tenant identities only. There is no intermediate plan file; never author one.
+
+> **Element classes.** Execution walks the SDD in six classes, in this order: **variables** (Case Variables table) → **triggers** (Case Triggers table) → **stages** (Section 2 stage headings) → **tasks** (per-stage Tasks tables + their `##### Task N.M` detail blocks) → **conditions** (Stage Entry / Stage Exit / Task Entry / Case Exit tables) → **SLA** (Case-Level SLA + per-stage Stage SLA + per-action Task SLA). Each class is one write section.
+
+> **Completeness principle — no omissions.** Every declaration in `sdd.md` becomes an element in `caseplan.json`; the mapping is 1-to-1. **Never filter** a row because a default rule-type or "implicit behavior" would cover it. **Never merge** two SDD rows "because they're similar." **Never drop** defaults-looking items (`is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`) — the explicit declaration is the signal. **Never drop design rationale**: copy each stage/task/SLA `Design Rationale` into the element's `description` where the schema has one, and into `tasks/build-issues.md` where it does not. **When in doubt, emit.** **When a row is ambiguous or unrecognized** (a variable whose category is unclear, a task type outside the closed enum, an aggregate trigger mapping phrase), invoke **AskUserQuestion** with the row content, the specific ambiguity, and bounded options — silent omission is a defect. Step 12's `audit_caseplan.py` gate enforces this against the finished artifact.
 
 > **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Publish to Orchestrator** (optional `case pack` + `solution pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
 
@@ -14,16 +18,16 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 
 Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops, the canonical write contract) are in [case-editing-operations.md](case-editing-operations.md).
 
-> **Read each `impl-json.md` once per plugin type, not per T-entry.** Group the section's T-entries by plugin, read that plugin's `impl-json.md` a single time, then execute every T-entry of that type from the one read (this is what the per-section batch write contract already assumes). Re-opening a plugin reference per T-entry is a read-budget defect — observed at up to 26 re-reads of one `impl-json.md` in a single build, each costing a full inference round-trip. After context compaction, re-read only the plugin for the section in progress.
+> **Read each `impl-json.md` once per plugin type, not per element.** Group the section's SDD rows by plugin, read that plugin's `impl-json.md` a single time, then execute every row of that type from the one read (this is what the per-section batch write contract already assumes). Re-opening a plugin reference per element is a read-budget defect — observed at up to 26 re-reads of one `impl-json.md` in a single build, each costing a full inference round-trip. After context compaction, re-read only the plugin for the section in progress.
 
-**Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (Phase 2: §4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §4.8 SLA, §4.7 conditions; Phase 3: §9.7 connector schema, §9.8 I/O binding, §10.5 connector-rule upgrades):
+**Per-section batched writes — mandatory.** Process the SDD one **element class** at a time (Phase 2: variables, triggers, stages, task-shapes, SLA, conditions; Phase 3: connector schema at Step 9.7, I/O binding at Step 9.8, connector-rule upgrades at Step 10.5):
 
 1. **One Read** of `caseplan.json` at section entry.
-2. **N targeted patches in sequence, one per T-entry** — however many the section holds. Skip the re-Read between siblings. Anchor each on the target node's unique `"id"`. Use the `Edit` tool, or a single-hunk `apply_patch` if your harness has no `Edit` ([tool table](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson)). There is no whole-section-write branch: after the Step 7 skeleton, `caseplan.json` grows only by targeted patch.
+2. **N targeted patches in sequence, one per SDD element** — however many the section holds. Skip the re-Read between siblings. Anchor each on the target node's unique `"id"`. Use the `Edit` tool, or a single-hunk `apply_patch` if your harness has no `Edit` ([tool table](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson)). There is no whole-section-write branch: after the Step 7 skeleton, `caseplan.json` grows only by targeted patch.
 3. **One validate** at section boundary.
 4. **One issue-log flush** at the same boundary — append the section's buffered issues to `tasks/build-issues.md` per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md), then clear the buffer. The first flush creates the file; later flushes append to its Journal table. **Flush even when the section produced zero issues** — after the first section the file must exist, and its existence is what proves the log survived the build.
 
-TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the Edit returns success.
+TaskUpdate items keyed by SDD element (stage name, task name, variable name) are the audit trail — mark each `in_progress` before composing the element's mutation, `completed` after the patch returns success.
 
 **Bundle status text with tool_use.** Any progress text emitted alongside writes MUST share the same assistant turn as the next tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference + full cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. **Hard token cap:** any single text block >200 tokens (or >500 tokens for allow-listed exceptions — completion reports, AskUserQuestion preambles, validate result summaries) is a planning monologue, forbidden regardless of content. **Forbidden announcement verbs** at any length: text blocks starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call. The tool_use input IS the announcement.
 
@@ -33,9 +37,9 @@ An Edit costs output tokens proportional to the change; a whole-file Write costs
 
 Full cadence: [case-editing-primitives.md § Skeleton-then-Edit](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson).
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+For CLI-gated sections (non-connector task schema at Step 9, connector schema at Step 9.7), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
 
-Full contract — recovery, tool primitive selection (skeleton Write, then Edit only), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
+Full contract — recovery, tool primitive selection (skeleton Write, then Edit only), audit trail, scope — in [case-editing-primitives.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical). Phase 1's `registry-resolved.json` uses the same section-batched contract per [planning.md Step 4](planning.md).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
 > - Root case → `plugins/case/impl-json.md`
@@ -83,7 +87,7 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 
 (No edge step — Rule 20; see Step 8.)
 
-**Per-T-entry sub-items.** Inside each section, also seed one TodoWrite item per T-entry the section will Edit (e.g., `T04 stage "Intake"`, `T05 stage "Review"`). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. These per-T-entry items are the audit trail — section-level Edits collapse the file diff, but the todo log preserves T-by-T progress for reviewers (per [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical)).
+**Per-element sub-items.** Inside each section, also seed one TodoWrite item per SDD element the section will Edit, named for the element (e.g., `stage "Intake"`, `stage "Review"`). Mark each `in_progress` before composing the element's mutation in reasoning, `completed` after the Edit returns success. These per-element items are the audit trail — section-level Edits collapse the file diff, but the todo log preserves element-by-element progress for reviewers (per [case-editing-operations.md § Per-section batch write contract](case-editing-primitives.md#per-section-batch-write-contract--canonical)).
 
 ---
 
@@ -105,8 +109,6 @@ Derive the complete list of references this build needs from `sdd.md`, then read
 | 4. Whether any SLA or escalation exists | any SLA row on a stage or task |
 
 The SDD is present from the first turn of the build and is what every later step is graded against, so the manifest is derivable before any other artifact exists.
-
-**If `tasks/tasks.md` is present, read it too and take the union.** It is a convenience, never the authority: a plan can be stale, partial, or written after the artifact it was meant to drive. Where the two disagree, the SDD wins and the discrepancy goes in the completion report. **Do not stop or backtrack because `tasks.md` is missing** — a missing plan file never blocks Phase 2.
 
 **Step 2 — build the manifest.** The read list is the fixed core plus one file per distinct value found in Step 1.
 
@@ -133,7 +135,7 @@ Per distinct task `type` — the plan's `type` value is the schema name, not the
 | `wait-for-connector` | [`plugins/tasks/connector-trigger/impl-json.md`](plugins/tasks/connector-trigger/impl-json.md) |
 | `wait-for-timer` | [`plugins/tasks/wait-for-timer/impl-json.md`](plugins/tasks/wait-for-timer/impl-json.md) |
 
-Per distinct trigger type, add `plugins/triggers/<manual|timer|event>/impl-json.md`. Per distinct condition scope, add `plugins/conditions/<stage-entry-conditions|stage-exit-conditions|task-entry-conditions|case-exit-conditions>/impl-json.md`. If §4.8 declares any SLA or escalation, add [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+Per distinct trigger type, add `plugins/triggers/<manual|timer|event>/impl-json.md`. Per distinct condition scope, add `plugins/conditions/<stage-entry-conditions|stage-exit-conditions|task-entry-conditions|case-exit-conditions>/impl-json.md`. If the SDD declares any SLA or escalation rule, add [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 **Step 3 — read.** Read every manifest file in full, to its `<!-- END: … -->` marker, per Rule 24 of `SKILL.md`. Read them as one batch before Step 6; do not interleave manifest reads with writes. Read each file once — the per-plugin single-read rule above still applies, and the manifest is that single read.
 
@@ -165,7 +167,7 @@ The case file must live inside a solution + project. The case plugin owns projec
 
 ## Step 6.1 — Add triggers
 
-For each trigger T-entry in `tasks.md §4.3`, open the matching plugin's `impl-json.md`:
+For each row of the SDD's Case Triggers table, open the matching plugin's `impl-json.md`:
 
 - Manual / Timer / Event (resolved) → `plugins/triggers/<type>/impl-json.md` §3
 - Event (UNRESOLVED) → [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) — node still written; case stays reachable
@@ -174,21 +176,25 @@ Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to 
 
 ## Step 6.2 — Declare global variables and arguments
 
-For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
+For each row of the SDD's Case Variables table, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
 
 ## Step 6.3 — Refresh entry-points.json input/output
 
 After Step 6.2, project the declared In/Out arguments onto every `entry-points.json` entry's `input`/`output` schema per [entry-points-sync.md](entry-points-sync.md). Triggers (Step 6.1) scaffold each entry with empty `input`/`output` because variables don't exist yet; this back-fills them. Prerequisites — all entries (Step 6.1) + all In/Out args (Step 6.2) — are complete here, and In/Out formal args never change in Phase 3, so the file is correct from the Phase-2 publish branch onward. Idempotent — re-run on regenerate. Verified by Step 12 Check 6.
 
+> **Execution order.** Always: variables → triggers → stages → tasks → conditions → SLA. Within a class, follow SDD document order: stages in Section 2 heading order, tasks in their stage's Tasks-table row order. Ordering carries no execution semantics on its own — `activation-mode` and the entry rule do.
+
+## Step 7 — Add stages
+
 ## Step 7 — Add stages (the skeleton Write)
 
-For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json`) — downstream tasks, conditions, and SLA all reference it.
+For each stage heading in SDD Section 2 (primary and `Secondary Stage`), execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json`) — downstream tasks, conditions, and SLA all reference it.
 
 **This step is the one skeleton Write.** Emit every stage node with its `id`, `data.label`, and empty containers — `data.tasks: []`, empty condition arrays — plus `layout: {}` and `schema.edges: []`. Write nothing else: no task nodes, no conditions, no SLA objects, no bindings. Even for a large case this stays a few KB, so it is safe to emit in one call.
 
 From here `caseplan.json` is **append-only by targeted patch** (`Edit`, or single-hunk `apply_patch`). Step 9 patches task nodes into each stage's `data.tasks`, Steps 10/11 patch conditions and SLA, and Phase 3 patches connector shapes and I/O values. Do not rewrite the whole file again at any point — see [case-editing-primitives.md § Skeleton-then-Edit](case-editing-primitives.md#skeleton-then-edit--the-only-cadence-for-caseplanjson).
 
-`isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
+The SDD's **Required for Case Completion** is planning-only metadata; it is not written into the stage node. It is consumed by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
 ## Step 8 — (RETIRED — no edges)
 
@@ -200,9 +206,9 @@ No edge-building step (Rule 20) — stage transitions are entry/exit conditions,
 
 The SDD says so itself: tasks that feed downstream purely by direct reference **self-declare their outputs** and carry no Outputs row. Those outputs exist nowhere in the SDD — an `Action` output referenced only as `vars.$xref('Stage','Task','Action')` is discoverable **only** here. Skip the gather and it is never minted, every `$xref` through it dangles, and the gate that depends on it silently never fires. Observed: three consecutive builds made **zero** `tasks describe` calls and produced, respectively, invented output ids, output ids copied from names, and no outputs at all.
 
-**For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning.** Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
+**For each non-connector task in the SDD's per-stage Tasks tables, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning.** Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — Phase 2 conditions and Phase 3 cross-task references need it. Skip the re-Read between sibling Edits. One validate at section end.
+**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in SDD order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — Phase 2 conditions and Phase 3 cross-task references need it. Skip the re-Read between sibling Edits. One validate at section end.
 
 Per-class shape inside each Edit:
 
@@ -214,9 +220,21 @@ Per-class shape inside each Edit:
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks not yet appended, re-run Phase A for those only.
+On context-compaction mid-gather: re-Read `caseplan.json`, scan for SDD tasks not yet appended, re-run Phase A for those only.
 
-**Task placement contract.** Placement is determined by `activation-mode` + `entry-rule` from `tasks.md`; `lane` is only the planned task-set index after the mode decision. If the values conflict, task mode wins and the completion report must mention the lane correction.
+**Task placement contract.** Placement is determined by the SDD's **Activation Mode** column plus the task's **Entry Condition** table; the `data.tasks` task-set index is derived from them, never the reverse.
+
+**Activation-mode audit — before writing any task node.** Scan every stage's task list and fix the mode/rule pairing first; an explicit rule in the SDD always wins, and this audit verifies the handoff rather than redesigning it.
+
+- Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, or an upstream prerequisite) → `sequential` + `runs-sequentially` on every task in the ordered run, including the first, unless the SDD declares another legal rule.
+- Independent work that starts with the stage → `parallel` + `current-stage-entered`. A single-task stage or list position never makes a task sequential.
+- Connector/event callback wait → `event-triggered`, usually `wait-for-connector`.
+- User-launched optional work → `adhoc` + `adhoc` + `isRequired: false`.
+- Branch convergence, fan-in, decision-result routing, or a non-immediate dependency → `fan-in` or `conditional-gate` + `selected-tasks-completed`, with the selected tasks named.
+
+Preserve each explicit `selected-tasks-completed` row and selector only after confirming every selected task is a non-adhoc sibling in the same stage; stop and repair an invalid selector before writing. Never map a valid selected-task gate to `sequential`.
+
+**Lane grouping.** `lane` is the zero-based `data.tasks` task-set index — a number, never a descriptive label. Tasks that run as one task set share the **same** number: `parallel-after-predecessor` siblings after one predecessor share a lane, and a strict sequential chain uses consecutive single-task lanes (`[[A], [B], [C]]`) and never reuses one. Giving two parallel siblings different lanes emits them as separate task sets — the defect the mode exists to prevent. If mode and lane conflict, the mode wins and the completion report must mention the lane correction.
 
 - `activation-mode: sequential` or `entry-rule: runs-sequentially` → append according to the planned task-set order. Strict chains use new single-task inner arrays in declaration order (`[[A], [B], [C]]`); `parallel-after-predecessor` siblings share the same later inner array (`[[A], [B, C], [D]]`).
 - `activation-mode: adhoc`, `event-triggered`, `fan-in`, `conditional-gate`, or any standalone non-parallel task → append as its own single-task inner array.
@@ -228,7 +246,7 @@ On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks 
 
 **Pass `lane: <n>` on every task** only when required by the artifact contract. Default: increment per task within a stage starting at 0; lane is a `data.tasks` task-set index. A strict sequential chain is represented as consecutive single-task sets (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Reuse the same lane only for intentionally parallel siblings, including stage-start siblings (`[[A, B], [C]]`) and siblings after a predecessor (`[[A], [B, C], [D]]`). Sequencing comes from the task's `entryConditions` and the order of task sets in `data.tasks`, not from lane-sharing alone.
 
-**Task envelope fields.** Write `isRequired` and `shouldRunOnlyOnce` from `tasks.md`. If `runOnlyOnce` is omitted, default `shouldRunOnlyOnce` to `false` to match frontend new-task behavior. Do not infer `true` from task type; re-entry semantics from the SDD are the source of truth.
+**Task envelope fields.** Write `isRequired` and `shouldRunOnlyOnce` from the SDD's **Task envelope** table (`Required` / `Run Only Once`). If `runOnlyOnce` is omitted, default `shouldRunOnlyOnce` to `false` to match frontend new-task behavior. Do not infer `true` from task type; re-entry semantics from the SDD are the source of truth.
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
@@ -236,7 +254,7 @@ When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tas
 
 For every task class (process / agent / rpa / action / api-workflow / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
 
-**Skip all input binding for placeholder tasks** — they have no input schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip all input binding for placeholder tasks** — they have no input schema. Capture the intended wiring from the entry's `wiringNotes` in `tasks/registry-resolved.json` into the completion report so the user knows what to hook up after registering the resource.
 
 Placeholder tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured placeholder `TaskId` normally.
@@ -249,13 +267,13 @@ After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json
 
 ## Step 11 — Write SLA and escalation objects (per-target Edit batch)
 
-One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, compose and write the complete `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+One Read of `caseplan.json` at Step 11 entry. Group the SDD's SLA rows (Case-Level SLA Escalation Rules, per-stage Stage SLA, per-action Task SLA) by target (root or stage). For each target, compose and write the complete `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 Mint each stable `sla_` / `esc_` ID while composing its object, write the object and its `id-map.json` entry in the same section, and reject collisions before the Edit. An escalation-only target still receives the documented synthetic default SLA object. There is no separate ID-preallocation pass: Step 10 resolves `sla-status-change` references against the objects already present in `caseplan.json`, with `id-map.json` as a cross-check. One validate at section end.
 
 ## Step 10 — Add conditions (per (scope, target) Edit batch)
 
-One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by `(scope, target)` pair: each pair becomes one Edit replacing the relevant conditions array on its target node.
+One Read of `caseplan.json` at Step 10 entry. Group the SDD's condition rows (Stage Entry / Stage Exit / Task Entry / Case Exit) by `(scope, target)` pair: each pair becomes one Edit replacing the relevant conditions array on its target node.
 
 | Scope | Target | Edit replaces |
 |---|---|---|
@@ -266,7 +284,7 @@ One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by 
 
 Per-scope composition rules live in the matching plugin's `impl-json.md`. Skip the re-Read between sibling Edits; run one validate at section end.
 
-For every `wait-for-connector` rule, write the canonical stub `uipath` from [`connector-trigger-impl.md § Placeholder fallback`](connector-trigger-impl.md#placeholder-fallback) in Phase 2 **even when its connector resolved in planning**. Do not call `case spec` and do not add Connection/Folder bindings here. Its T-entry's `id-map.json` value must include `{kind:"condition", id:"<conditionId>", ruleId:"<ruleId>", scope:"<scope>", targetId:"<containerId>"}` so Phase 3 can locate the exact stub without matching display text (`targetId` is the stage ID, task ID, or `root`; task-entry entries also retain `stageId`). Phase 3 Step 10.5 upgrades only `rule.uipath`; a truly unresolved connector keeps the same stub and is reported at completion.
+For every `wait-for-connector` rule, write the canonical stub `uipath` from [`connector-trigger-impl.md § Placeholder fallback`](connector-trigger-impl.md#placeholder-fallback) in Phase 2 **even when its connector resolved in planning**. Do not call `case spec` and do not add Connection/Folder bindings here. Its `id-map.json` value must include `{kind:"condition", id:"<conditionId>", ruleId:"<ruleId>", scope:"<scope>", targetId:"<containerId>"}` so Phase 3 can locate the exact stub without matching display text (`targetId` is the stage ID, task ID, or `root`; task-entry entries also retain `stageId`). Phase 3 Step 10.5 upgrades only `rule.uipath`; a truly unresolved connector keeps the same stub and is reported at completion.
 
 ## Step 11.9 — Preview validate + Phase 2 boundary
 

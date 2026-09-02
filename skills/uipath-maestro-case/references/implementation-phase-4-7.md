@@ -4,8 +4,19 @@
 
 Authoritative validation. Full contract — command, retry policy, AskUserQuestion options — in [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). This section is a bridge — do NOT duplicate contract here.
 
-## Step 12 — Full validate
+## Step 12 — Completeness gate, then full validate
 
+**Run the completeness gate first — mandatory, read-only:**
+
+```bash
+python3 "<this skill's folder>/scripts/audit_caseplan.py" <SolutionDir>/<ProjectName>/caseplan.json --sdd sdd.md --registry tasks/registry-resolved.json
+```
+
+It diffs `caseplan.json` against every declaration in `sdd.md` and exits non-zero on any `MISSING IN CASEPLAN` finding. This is the backstop for the completeness principle: `uip maestro case validate` cannot see a stage, task, variable, condition, or SLA row that was simply never written, and it only *warns* about a task with no entry rules — which hangs `case debug` indefinitely rather than faulting.
+
+On `AUDIT FAIL`, repair each MISSING finding with a targeted Edit and re-run; max 3 rounds, then **AskUserQuestion** with the remaining findings. `WARN:` lines (extra caseplan elements, placeholder tasks, surviving `<UNRESOLVED>` markers) do not block — carry them into the completion report's Open Items. Quote the final `AUDIT OK` line as evidence. If `python3` is unavailable, walk the SDD's six element classes against `caseplan.json` by hand and report that the gate could not run.
+
+**Then run validate**
 Run validate per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On success: proceed to Step 12.1. On 3rd failure: hard-stop prompt per the same section.
 
 ## Step 12.1 — Summarize the issue log
