@@ -169,7 +169,7 @@ Trigger filters narrow which events fire the trigger (e.g. only emails from a sp
 These steps assume the consuming skill has already loaded the trigger's `filterFields.fields` array (the source command varies by surface — e.g. maestro-flow uses `flow registry get`).
 
 1. For each user-intent condition, pick a matching `name` from `filterFields.fields` — using an unknown field name will be rejected by the CLI at configure time.
-2. Choose an operator based on the user's intent and the field type (see the operator table in the consuming skill — e.g. [uipath-maestro-flow > connector-trigger](../../../uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md#supported-operators)).
+2. Choose an operator based on the user's intent and the field type (see the operator table in the consuming skill — e.g. [uipath-maestro-flow > connector-trigger](../../../uipath-maestro-flow/references/author/plugins/connector-trigger/impl.md#supported-operators)).
 3. Build one leaf per condition; place multiple conditions under the same `groupOperator` (`0` for AND, `1` for OR).
 4. If you need mixed AND/OR logic, use nested `groups` (same shape as the root tree).
 5. **Wrap string values in a `value` object** with `value`, `rawString` (verbatim user-entered text including quotes for strings), and `isLiteral: true` — passing a bare string fails validation. Expression values (`isLiteral: false`) are not yet supported by the CLI port.

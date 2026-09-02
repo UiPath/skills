@@ -8,10 +8,21 @@
 uip gov compliance-packs catalog list --output json
 ```
 
-Parse `Data.packs[]`. Present each pack:
-- `packName` / `packLongName`
-- `packVersion`
-- `summary.clauseCount`, `summary.controlCount`, `summary.deploymentPolicyCount`
+Parse `Data.Packs[]` (PascalCase, like every other compliance-packs response). Each entry has:
+`PackId`, `PackName`, `PackLongName`, `PackVersion`, `Description`, `Available` (bool), `PublishedAt`, `Summary`.
+
+**`Available` decides whether a pack can be used at all.** The catalog lists standards that are announced but not yet shipped — they come back `Available: false` with `PublishedAt: null` and `Summary: null`. Running `catalog get` or any `state` command on one fails; there is no bundle behind it.
+
+Treat it as a three-state field, because the response shape varies by service version:
+
+| `Available` | Treat as | Why |
+|---|---|---|
+| `true` | Usable | Shipped, has a bundle. |
+| `false` | Not usable | Announced only. Never offer to apply, check, or query it. |
+| **absent** | Usable | Older services omit the field entirely. Requiring `Available == true` would reject every pack and break the whole flow. Only an explicit `false` blocks. |
+
+- Present usable packs with `PackName`, `PackVersion`, and `Summary.ClauseCount` / `Summary.ControlCount` / `Summary.DeploymentPolicyCount`. When `Summary` is null, omit the counts rather than printing zeros.
+- Mention `Available: false` entries, if at all, only as "announced, not yet available".
 
 ## Get full pack detail
 
@@ -59,12 +70,19 @@ TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 uip gov compliance-packs state list tenant $TENANT_ID --output json
 ```
 
-Parse `Data[]` — each entry has `packId`, `packVersion`, `active` (bool), `lastToggledAt`. Present active packs to the user:
+Parse `Data[]` — each entry has `packId`, `packVersion`, `active` (bool), `lastToggledAt`.
+
+**Multiple standards can be active on one tenant simultaneously.** Enabling a second standard adds to the first, it does not replace it — so this array can legitimately hold several `active: true` entries, and every pack-scoped operation (coverage, disable, restore) applies to the one standard it names and leaves the others alone.
+
+`state list` does NOT return a display name. Get `<packName>` by joining each `packId` to `catalog list` → `Data.Packs[].PackName`; run `catalog list` first if it has not been fetched this session. If the join finds no match (pack configured but no longer in the catalog), print the `packId` alone and say so — never invent a display name.
+
+Present active packs to the user:
 
 ```
 Compliance standards configured on <tenantName>:
 
-  ISO 42001 (iso-42001-2023 v3.0.0) — Active since <lastToggledAt>
+  <packName> (<packId> v<packVersion>) — Active since <lastToggledAt>
+  [repeat per active entry]
 
 No other compliance standards are currently active.
 ```
@@ -73,7 +91,17 @@ If the array is empty: "No compliance standards are currently configured on this
 
 ## Pack ID lookup
 
-| User says | packId |
+**Resolve every standard name against `catalog list` — never hardcode a packId.** Match the user's wording case-insensitively against `Data.Packs[].PackName` and `PackLongName`, ignoring `ISO`/`IEC`/`ISO/IEC` prefixes and punctuation, so "27001", "ISO 27001" and "ISO/IEC 27001:2022" all hit the same entry.
+
+**Then check `Available` before doing anything with the match.** A name resolving to a packId is NOT the same as that pack being usable — announced-but-unshipped standards are in the catalog with `Available: false`. Resolving one and passing it to `catalog get` or `state enable` produces a failure the user cannot act on. Check `Available` first, every time.
+
+`PackLongName` is not reliably descriptive (ISO 27001's is literally "ISO 27001 compliance pack"), so common domain phrasings will NOT be found by name-matching alone. The alias table below carries them; it is a supplement to the catalog match, not a replacement for it.
+
+| User says | Resolution |
 |---|---|
 | "ISO 42001" / "ISO/IEC 42001" / "AI Management System" | `iso-42001-2023` |
-| Any other standard | ISO 42001 is the only available standard at this time. Inform the user and offer to proceed with ISO 42001. |
+| "ISO 27001" / "ISO/IEC 27001" / "Information Security Management System" / "ISMS" | `iso-27001-2022` |
+| A name matching a pack with an explicit `Available: false` (on cloud today: GDPR, HIPAA, SOC 2, EU AI Act — the set differs by environment, so read it from the response, never from this list) | Say that standard is announced but not yet available, name the ones that are, and stop. Do NOT run `catalog get` or any `state` command on it. |
+| A standard name with no match at all | Tell the user that standard is not available, list the `Available: true` packs, and offer to proceed with one. |
+| No standard named at all (e.g. "check my compliance posture") | Run `catalog list` and ask which standard. Never assume — more than one pack is available. |
+| Two or more `Available: true` packs match the wording | Ask which one, listing the matches by `PackName`. |

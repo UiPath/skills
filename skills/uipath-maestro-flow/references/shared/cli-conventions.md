@@ -103,7 +103,7 @@ Most agent-side retry loops on `uip --output json` parsing come from guessing th
 
 ### Cross-references
 
-The broad-discovery recipe above is used in [author/references/plugins/connector/planning.md](../author/references/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/references/plugins/connector/impl.md](../author/references/plugins/connector/impl.md) for connection-resource lookup. Keep the three in sync on the **preference** (always `--output-filter`) and the **shape pin** (`registry search` Data is a flat array of PascalCase objects); each file may pick a projection appropriate to its task.
+The broad-discovery recipe above is used in [author/plugins/connector/planning.md](../author/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/plugins/connector/impl.md](../author/plugins/connector/impl.md) for connection-resource lookup. Keep the three in sync on the **preference** (always `--output-filter`) and the **shape pin** (`registry search` Data is a flat array of PascalCase objects); each file may pick a projection appropriate to its task.
 
 ## 4. CLI output JSON shape
 

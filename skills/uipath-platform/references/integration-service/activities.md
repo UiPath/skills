@@ -209,7 +209,7 @@ Logical operators between siblings:
 
 Connectors with extensible/custom fields (Jira project+issuetype → custom Jira fields, Mailchimp list_id → audience merge fields, Salesforce custom objects) expose `Api`-type entries under `objectActions[]`. Each entry's `apiConfiguration.url`/`body` carries `{token}` placeholders naming the parent fields. The runtime replays the ObjectAction with cached parent values to fetch the connector-specific custom-field schema.
 
-**For Maestro flows**, this lives on the activity node as `essentialConfiguration.customFieldsRequestDetails`. Authoring contract → [uipath-maestro-flow connector/impl.md Step 6c](../../../uipath-maestro-flow/references/author/references/plugins/connector/impl.md).
+**For Maestro flows**, this lives on the activity node as `essentialConfiguration.customFieldsRequestDetails`. Authoring contract → [uipath-maestro-flow connector/impl.md Step 6c](../../../uipath-maestro-flow/references/author/plugins/connector/impl.md).
 
 Shape:
 

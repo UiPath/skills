@@ -102,7 +102,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **mode** | `mode:X`, required | Coding Agents Scorecard mode | `build` (creating, designing, editing, deploying), `operate` (running, triggering, managing live instances/connectors/integrations), `diagnose` (investigating faults, inspecting traces, debugging) |
 | **lifecycle** | `lifecycle:X`, required | Coding Agents Scorecard lifecycle phase | `discover` (read-only exploration: list/get/inspect existing state), `generate` (produce a new local artifact: pack, scaffold, render), `setup` (mutate tenant state: create/edit/delete resources, deploy, configure) |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
-| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
+| **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl`, `ixp` (omit `script`/`http` — ubiquitous) |
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
@@ -237,6 +237,29 @@ sandbox:
 initial_prompt: |
   ...
 ```
+
+## Checker Context
+
+`checker_context.api_route` overrides which backend grades `llm_judge` criteria, decoupled from the agent's own route. Requires a coder_eval version with the simulator decoupled from this override (`Orchestrator.simulator_route`, unreleased as of `tests/.coder-eval-version` — bump the pin once released). This repo's experiment defaults (`default`/`smoke`/`smoke-windows`/`nightly`/`activation`) route `llm_judge` through `litellm` → `gpt-5.6-luna` (the model behind `CODEX_BASE_URL`/`CODEX_API_KEY`) instead of the built-in judge (Bedrock/Anthropic):
+
+```yaml
+checker_context:
+  api_route:
+    route: litellm
+    model: azure/gpt-5.6-luna
+    params:
+      api_version: "2024-05-01"
+    env_params:
+      api_base: CODEX_BASE_URL
+      api_key: CODEX_API_KEY
+```
+
+`route: litellm` is `llm_judge`-only and safe as an experiment default even when `simulation.enabled: true`: the simulator resolves its own route independently of `checker_context.api_route` (coder_eval `_resolve_routes`/`simulator_route`), so it's unaffected by this override. It is **not** safe combined with an enabled `agent_judge` criterion — coder_eval still rejects that combination at setup, since `agent_judge` shares `eval_route` with `llm_judge`. This repo has no `agent_judge` criteria today; if one is added, override `checker_context.api_route` back to `bedrock`/`direct` on that specific task.
+
+Running these tasks (locally, or a docker-driven experiment) requires:
+
+- The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
+- `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
 
 ## Lifecycle E2E tests (uipath-platform pattern)
 
@@ -413,6 +436,13 @@ Verify the agent ran a specific CLI command (matched by regex). From `init_valid
   min_count: 1          # minimum times the command must appear
   weight: 1.5           # scoring weight
   pass_threshold: 1.0   # fraction of min_count required to pass
+```
+
+**Scope lookaheads and excludes to ONE command segment.** The grader runs one `pattern.search()` per Bash tool call (`re.DOTALL`) and also matches a normalized haystack with newlines collapsed to spaces — so `(?=[\s\S]*--flag)` and `exclude_pattern` see every command batched into that call (codex chains `a && b` or stacks lines; a call-wide exclude then vetoes a correct command). Use the segment idiom `S = (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*` ("rest of THIS command", stops at newline, `&&`, `||`, `;`, `|`, or the next `uip`) and inline negatives instead of `exclude_pattern`:
+
+```yaml
+# S expanded inline — YAML single quotes, no escaping needed
+command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)'
 ```
 
 ### `file_exists`

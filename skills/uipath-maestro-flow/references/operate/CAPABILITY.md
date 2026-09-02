@@ -36,30 +36,30 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | Journey | Read |
 | --- | --- |
 <!--skill-flavor:ship-journey-row:start-->
-| Publish a flow (Studio Web default, Orchestrator on request) | [ship.md](references/ship.md) |
+| Publish a flow (Studio Web default, Orchestrator on request) | [ship.md](ship.md) |
 <!--skill-flavor:ship-journey-row:end-->
-| Run a flow on demand or check progress | [run.md](references/run.md) |
-| Intervene in a running instance | [manage.md](references/manage.md) |
+| Run a flow on demand or check progress | [run.md](run.md) |
+| Intervene in a running instance | [manage.md](manage.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
 <!--skill-flavor:ship-common-tasks-rows:start-->
-| **Publish a flow to Studio Web** | [ship.md — Path 1](references/ship.md#path-1--studio-web-upload-default) |
-| **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](references/ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-solution](/uipath:uipath-solution) |
-| **Sync solution resource declarations** | [ship.md — Pre-flight](references/ship.md#pre-flight) (the `uip solution resources refresh` step) |
+| **Publish a flow to Studio Web** | [ship.md — Path 1](ship.md#path-1--studio-web-upload-default) |
+| **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-solution](/uipath:uipath-solution) |
+| **Sync solution resource declarations** | [ship.md — Pre-flight](ship.md#pre-flight) (the `uip solution resources refresh` step) |
 <!--skill-flavor:ship-common-tasks-rows:end-->
-| **Debug a flow end-to-end** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) |
-| **Pass input arguments to `flow debug`** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
-| **Bind local files to file-typed inputs** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) and [run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
-| **Trigger a deployed process** | [run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) |
-| **Check status of a running job** | [run.md — Job inspection](references/run.md#job-inspection--status-and-traces) |
-| **Stream verbose execution traces** | [run.md — Job inspection](references/run.md#job-inspection--status-and-traces) (use sparingly — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
-| **Pause a running instance** | [manage.md](references/manage.md) |
-| **Resume a paused instance** | [manage.md](references/manage.md) |
-| **Cancel an instance** | [manage.md](references/manage.md) |
-| **Retry a faulted instance** | [manage.md](references/manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
+| **Debug a flow end-to-end** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) |
+| **Pass input arguments to `flow debug`** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
+| **Bind local files to file-typed inputs** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) and [run.md — Process run](run.md#process-run--trigger-a-deployed-process) (same `--attachment <variableId>=<localPath>` flag on both, repeatable; `--attachment` overrides `--inputs` on key collisions) |
+| **Trigger a deployed process** | [run.md — Process run](run.md#process-run--trigger-a-deployed-process) |
+| **Check status of a running job** | [run.md — Job inspection](run.md#job-inspection--status-and-traces) |
+| **Stream verbose execution traces** | [run.md — Job inspection](run.md#job-inspection--status-and-traces) (use sparingly — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
+| **Pause a running instance** | [manage.md](manage.md) |
+| **Resume a paused instance** | [manage.md](manage.md) |
+| **Cancel an instance** | [manage.md](manage.md) |
+| **Retry a faulted instance** | [manage.md](manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
 | **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
 | **My flow run failed** | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
@@ -69,7 +69,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 - **Never run `solution upload` without `solution resources refresh` first.** Stale resource declarations cause runtime binding failures.
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
 <!--skill-flavor:upload-antipatterns:end-->
-- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution against real systems.
+- **Never run `flow debug` as a validation step, and never re-run a completed one to reshape its output.** Each run re-uploads the solution and executes the flow again against real systems; extract report fields from the payload the completed run already returned. Use `uip maestro flow validate` for correctness checking.
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
 
@@ -78,10 +78,10 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 ### Operate-scoped
 
 <!--skill-flavor:ship-reference-entry:start-->
-- [ship.md](references/ship.md) — Studio Web upload (default) and Orchestrator deploy (explicit)
+- [ship.md](ship.md) — Studio Web upload (default) and Orchestrator deploy (explicit)
 <!--skill-flavor:ship-reference-entry:end-->
-- [run.md](references/run.md) — debug, process run, job status/traces
-- [manage.md](references/manage.md) — instance lifecycle (pause, resume, cancel, retry)
+- [run.md](run.md) — debug, process run, job status/traces
+- [manage.md](manage.md) — instance lifecycle (pause, resume, cancel, retry)
 
 ### Cross-capability (shared)
 

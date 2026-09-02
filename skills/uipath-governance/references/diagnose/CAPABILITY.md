@@ -32,21 +32,21 @@ Capability index for diagnosing AOps product-policy and Access tool-use-policy f
 
 | Journey | Read |
 |---------|------|
-| Triage a governance failure (sequential ladder) | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
-| Recognize a known failure pattern (lookup) | [references/failure-modes.md](references/failure-modes.md) |
+| Triage a governance failure (sequential ladder) | [references/troubleshooting-guide.md](troubleshooting-guide.md) |
+| Recognize a known failure pattern (lookup) | [references/failure-modes.md](failure-modes.md) |
 
 ## Common tasks
 
 | I need to... | Read |
 |---|---|
-| Investigate why a deployed AOps policy isn't enforced | [troubleshooting guide → Step 2](references/troubleshooting-guide.md#step-2-check-whats-deployed) |
-| Debug deployment precedence (user > group > tenant) | [troubleshooting guide → Step 3](references/troubleshooting-guide.md#step-3-check-precedence) |
-| Diagnose wrong policy applied | [failure modes → Wrong policy applied](references/failure-modes.md#wrong-policy-applied-license-type-mismatch) |
-| Investigate blocked tool invocation | [failure modes → Access policy blocking legitimate invocation](references/failure-modes.md#access-policy-blocking-legitimate-tool-invocation) |
-| Investigate access policy not blocking | [failure modes → Access policy not blocking](references/failure-modes.md#access-policy-not-blocking) |
-| Diagnose empty deployed-policy result | [failure modes → Deployed policy returns empty](references/failure-modes.md#deployed-policy-returns-empty) |
-| Troubleshoot policy create/update rejection | [failure modes → Policy create/update rejected](references/failure-modes.md#policy-createupdate-rejected) |
-| Evaluate access-policy rules against test inputs | [troubleshooting guide → Step 4](references/troubleshooting-guide.md#step-4-for-access-evaluate-with-test-inputs) |
+| Investigate why a deployed AOps policy isn't enforced | [troubleshooting guide → Step 2](troubleshooting-guide.md#step-2-check-whats-deployed) |
+| Debug deployment precedence (user > group > tenant) | [troubleshooting guide → Step 3](troubleshooting-guide.md#step-3-check-precedence) |
+| Diagnose wrong policy applied | [failure modes → Wrong policy applied](failure-modes.md#wrong-policy-applied-license-type-mismatch) |
+| Investigate blocked tool invocation | [failure modes → Access policy blocking legitimate invocation](failure-modes.md#access-policy-blocking-legitimate-tool-invocation) |
+| Investigate access policy not blocking | [failure modes → Access policy not blocking](failure-modes.md#access-policy-not-blocking) |
+| Diagnose empty deployed-policy result | [failure modes → Deployed policy returns empty](failure-modes.md#deployed-policy-returns-empty) |
+| Troubleshoot policy create/update rejection | [failure modes → Policy create/update rejected](failure-modes.md#policy-createupdate-rejected) |
+| Evaluate access-policy rules against test inputs | [troubleshooting guide → Step 4](troubleshooting-guide.md#step-4-for-access-evaluate-with-test-inputs) |
 
 ## Anti-patterns
 
@@ -60,8 +60,8 @@ Capability index for diagnosing AOps product-policy and Access tool-use-policy f
 
 ### Diagnose-scoped
 
-- [troubleshooting-guide.md](references/troubleshooting-guide.md) — diagnostic priority ladder
-- [failure-modes.md](references/failure-modes.md) — recurring failure patterns
+- [troubleshooting-guide.md](troubleshooting-guide.md) — diagnostic priority ladder
+- [failure-modes.md](failure-modes.md) — recurring failure patterns
 
 ### Cross-capability
 

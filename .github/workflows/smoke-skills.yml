@@ -356,7 +356,7 @@ jobs:
       # agent itself runs inside the container: the docker driver imports the selected
       # agent class on the HOST before dispatching work.
       - name: Install coder-eval
-        run: uv pip install --system --prerelease=allow "coder-eval[codex]==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system --prerelease=allow "coder-eval[codex,litellm]==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
       # skills smoke image extends it below. Needs read:packages only —
@@ -718,7 +718,7 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). `coder-eval plan` validates schemas on the runner -- no image.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system "coder-eval[litellm]==${{ steps.ceref.outputs.version }}"
 
       - name: Validate every task YAML against the pinned coder_eval schema
         # `coder-eval plan` exits non-zero if any file fails to load under the

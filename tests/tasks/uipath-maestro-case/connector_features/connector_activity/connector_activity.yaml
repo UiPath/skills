@@ -108,7 +108,7 @@ initial_prompt: |
   ```
 
   Resolve the connector activity against the Integration Service registry and a
-  live Slack connection on the tenant. Treat the generated tasks.md plan as
+  live Slack connection on the tenant. Treat all build gates as
   pre-approved — do NOT block on the HARD STOP / AskUserQuestion approval steps.
   Do NOT run `uip maestro case debug` (a connector activity executes for real).
   Do NOT ask for approval, confirmation, or feedback. Build end-to-end in a

@@ -27,7 +27,7 @@ Write the Phase 2 stage-entry condition directly to the target stage's `data.ent
 
 Rules use DNF — outer array is OR, inner array is AND.
 
-> **One row = one condition object.** Each entry-condition row in tasks.md/SDD maps to a **separate** object in `entryConditions[]`. Never merge multiple rows into a single condition's `rules` AND group.
+> **One row = one condition object.** Each entry-condition row in the SDD maps to a **separate** object in `entryConditions[]`. Never merge multiple rows into a single condition's `rules` AND group.
 
 ## Procedure
 
@@ -35,8 +35,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
-5. Read `rule-type` and `is-interrupting` from tasks.md; pick the recipe below
-6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+5. Read the rule type and interrupting flag from the SDD's Stage Entry Conditions row; pick the recipe below
+6. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.entryConditions[]`. **When the table has multiple rows, repeat steps 1–7 once per row** — append one condition object per row. Never fold multiple rows into a single condition's `rules` group.
 
 ## Rule Types
@@ -71,7 +71,7 @@ Fires when an upstream stage exits via a `wait-for-user` exit condition and the 
 
 ### sla-status-change — case/stage SLA at-risk or breach
 
-Resolve the T-entry's `(sla-target, sla-display-name)` against the SLA object already written in Phase 2 Step 11, then cross-check the same ID in `id-map.json`. `slaId` is always required; never match by array index. Resolve `(sla-target, escalation-display-name)` **only when the T-entry carries one** — an at-risk response. A breach T-entry has no escalation field, and none is invented.
+Resolve the element's `(sla-target, sla-display-name)` against the SLA object already written in Phase 2 Step 11, then cross-check the same ID in `id-map.json`. `slaId` is always required; never match by array index. Resolve `(sla-target, escalation-display-name)` **only when the row carries one** — an at-risk response. A breach element has no escalation field, and none is invented.
 
 Breach — `slaId` alone:
 
@@ -98,7 +98,7 @@ At-risk — adds a concrete escalation declared on that same SLA:
 ]]
 ```
 
-Escalation presence carries the status: `slaId` alone is a **breach** rule (an absent `escalationId` is the persisted representation of Breached); `slaId` plus a concrete **at-risk** `escalationId` on that SLA is an at-risk rule. Never emit the Case Designer's `"any"` escalation sentinel — released `validate` rejects it as a missing escalation. Use separate entry-condition rows when the same stage handles both statuses. Set the containing condition's `isInterrupting` from the T-entry, not from the SLA's scope. The referenced SLA may live on `root` or on any stage; `validate` passes with `isInterrupting` either value.
+Escalation presence carries the status: `slaId` alone is a **breach** rule (an absent `escalationId` is the persisted representation of Breached); `slaId` plus a concrete **at-risk** `escalationId` on that SLA is an at-risk rule. Never emit the Case Designer's `"any"` escalation sentinel — released `validate` rejects it as a missing escalation. Use separate entry-condition rows when the same stage handles both statuses. Set the containing condition's `isInterrupting` from the SDD row, not from the SLA's scope. The referenced SLA may live on `root` or on any stage; `validate` passes with `isInterrupting` either value.
 
 **This scope is the `enter-stage` response — a stage takes the case.** A `start-task` response puts the same rule on the follow-up **task's** `entryConditions` instead ([task-entry-conditions/impl-json.md](../task-entry-conditions/impl-json.md)). Do **not** author `start-task` as a stage-entry rule on the breached stage: `validate` accepts it, but re-entering the stage re-runs every task in it whose `shouldRunOnlyOnce` is `false` (the default), not just the intended follow-up. Response choice, status shape, interrupting semantics, and the defects `validate` cannot see: [sla-response-shapes.md](../../../sla-response-shapes.md). Non-interrupting lanes keep `data.stageType: "secondary"` and `isRequired: false` — never demote them to a regular stage.
 
@@ -125,6 +125,6 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 ## Post-Write Verification
 
-Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `sla-status-change`, verify `slaId` resolves to an object on the declared SLA target and `isInterrupting` matches the declared response. Check `escalationId` **against the T-entry's status, not for its presence**: an at-risk T-entry must carry one that resolves on that same SLA; a breach T-entry must carry **none**. A missing `escalationId` on a breach rule is correct and complete — do **not** "repair" it by adding one, which silently converts the rule to at-risk ([sla-response-shapes.md § defects `validate` cannot see](../../../sla-response-shapes.md)). For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. For `sla-status-change`, verify `slaId` resolves to an object on the declared SLA target and `isInterrupting` matches the declared response. Check `escalationId` **against the row's status, not for its presence**: an at-risk element must carry one that resolves on that same SLA; a breach row must carry **none**. A missing `escalationId` on a breach rule is correct and complete — do **not** "repair" it by adding one, which silently converts the rule to at-risk ([sla-response-shapes.md § defects `validate` cannot see](../../../sla-response-shapes.md)). For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
 
 <!-- END: impl-json.md -->

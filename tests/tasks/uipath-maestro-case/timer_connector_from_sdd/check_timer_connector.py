@@ -24,8 +24,8 @@ real emitted plan, not inferred:
   * task ENVELOPE fields are top-level siblings of `data` — `shouldRunOnlyOnce`,
     `isRequired`, `entryConditions`. case-schema.md warns an envelope field misplaced
     inside `data` passes `validate` silently and is dead config.
-  * the emitted run-once field is `shouldRunOnlyOnce`; `runOnlyOnce` is the sdd.md /
-    tasks.md spelling and never appears in the plan.
+  * the emitted run-once field is `shouldRunOnlyOnce`; `runOnlyOnce` is the sdd.md
+    spelling and never appears in caseplan.json.
 
 Read-only. Exit 0 clean, 1 on findings.
 """

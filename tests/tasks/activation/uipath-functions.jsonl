@@ -23,3 +23,28 @@
 {"id": "uipath-functions-023", "prompt": "Why does uip function new without -l py give me a TypeScript project?", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-024", "prompt": "Use sdk.assets.retrieve_credential from inside a Python function to fetch an ERP API token", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-025", "prompt": "Set up a Python Coded Function that runs as the Service Task implementation in a Maestro Flow", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-026", "prompt": "Scaffold a new TypeScript coded function with uip function new and explain the generated project layout", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-027", "prompt": "How do I declare input and output contracts with defineSchema<T>() in my UiPath function?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-028", "prompt": "Write a defineFunction handler that exposes POST /invoice and validates the JSON body", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-029", "prompt": "My coded app frontend gets Failed to fetch from the JS function after exactly 25 seconds — why?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-030", "prompt": "uip function serve runs on port 7070 but ctx.user is null in my handler — how do I test with a token locally?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-031", "prompt": "Migrate this zod contract in my TypeScript function to a schema-first one Studio Web can extract", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-032", "prompt": "Should my JS function handler throw FunctionError or return badRequest for invalid input?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-033", "prompt": "Deployed function fails every route with errorCode 4801 after I added an npm dependency", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-034", "prompt": "How do I call Orchestrator with @uipath/uipath-typescript from inside a coded function?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-035", "prompt": "Add a storage bucket resource to bindings_v2.json in my TypeScript function project", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-036", "prompt": "Wire my React coded app to a JS function backend on localhost:7070 without adding a Vite proxy", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-037", "prompt": "My TS function works under serve but every route hangs after deploying — imports look fine locally", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-038", "prompt": "What does uip function pack put in the nupkg for a TypeScript project and does the lockfile ship?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-039", "prompt": "Start my JavaScript coded function as an Orchestrator job instead of calling its HTTP endpoint", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-040", "prompt": "Difference between ctx.user.accessToken and ctx.robot.accessToken in a JS coded function?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-041", "prompt": "logger versus console.log in a TypeScript coded function — which one reaches Orchestrator job logs?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-042", "prompt": "Build a TS function that reads a Secret credential asset using its robot identity, not the caller token", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-043", "prompt": "POST to my deployed JS function returns 400 errorCode 4804 whenever the request body is empty", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-044", "prompt": "Register my JS function project in a solution — uip function init says it is Python only", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-045", "prompt": "Which packages go in dependencies versus devDependencies for a coded function that imports axios at runtime?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-046", "prompt": "Add a path parameter like /invoices/:id to my defineFunction route and read it in the handler", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-047", "prompt": "What is the HTTPS invoke URL for my deployed TypeScript function and where does the folder key come from?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-048", "prompt": "How does uip function serve discover handlers in functions/*.ts and sync the uipath.json map?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-049", "prompt": "TypeScript function or Python function — which should back my coded app's REST endpoints?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-050", "prompt": "Call a Coupa connection through Integration Service from inside my TypeScript coded function", "expected_skill": "uipath-functions"}

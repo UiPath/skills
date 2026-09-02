@@ -4,6 +4,8 @@
 
 Compares the compliance standard's recommended settings against what is currently deployed on the tenant. Does NOT require the standard to be enabled first. Does NOT certify compliance — it identifies which settings from the standard are not yet configured.
 
+`<packId>` / `<packName>` below = the standard being checked, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup). Coverage is per standard — if the user asked about posture without naming one, resolve it there first; do not default to whichever pack is listed first.
+
 ## Command
 
 **Pre-condition:** `$SESSION_TEMP/catalog.json` must exist — run `catalog get` first (see `catalog/impl.md`). The coverage response does NOT carry display names for clauses (`ClauseName` comes back null) — the plain-English clause names the template requires come from joining coverage `Clauses[].ClauseId` to catalog `Clauses[].ClauseId` → `ClauseName` in `catalog.json`.
@@ -109,11 +111,11 @@ Coverage compares the pack against **whatever policies the tenant already has**,
 
 Evaluate IN THIS ORDER (first match wins):
 
-1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply ISO 42001 settings'`, `'Apply High impact ISO 42001 settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good.
+1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good.
 2. **Pack active, everything covered** (`Data.Active == true` and `PartiallyDeployedCount == 0 && NotDeployedCount == 0`): render the [All settings applied](#all-settings-applied) block. Nothing to apply.
 3. **Pack active, gaps remain** (`Data.Active == true`, otherwise): do NOT suggest reapplying the standard or applying a subset. Point the user at the residual settings, checking the drift case FIRST:
-   - **3a. If `Summary.DriftedControlCount > 0` OR any product is `unverifiable`:** offer `'Reset the changed ISO 42001 settings back to the standard'` — the ⟳ items ARE that list, and restore also RECREATES the missing policy behind any Cannot-Be-Checked product (it resets every live pack policy to the bundle's suggested values and recreates deleted ones). Hand off to [`../restore/impl.md`](../restore/impl.md), which owns the confirmation gate — including the warning that restore also resets any ⚙ manual values an admin has already configured. Do NOT tell the user to hand-edit a ⟳ setting, and do NOT route ⟳ items into the AOps handoff below — that is the remedy for ⚙, not for drift.
-   - If any ⚙ `manual` controls exist: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). When 3a also applies, sequence restore FIRST, then the manual values — restore would overwrite manual values configured before it.
+   - **3a. If `Summary.DriftedControlCount > 0` OR any product is `unverifiable`:** offer `'Reset the changed <packName> settings back to the standard'` — the ⟳ items ARE that list, and restore also RECREATES the missing policy behind any Cannot-Be-Checked product (it resets every live pack policy to the bundle's suggested values and recreates deleted ones). Hand off to [`../restore/impl.md`](../restore/impl.md), which owns the confirmation gate — including the warning that restore also resets any ⚙ manual values an admin has already configured. Do NOT tell the user to hand-edit a ⟳ setting, and do NOT route ⟳ items into the AOps handoff below — that is the remedy for ⚙, not for drift.
+   - If any ⚙ `manual` controls exist: `'Configure the manual <packName> settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). When 3a also applies, sequence restore FIRST, then the manual values — restore would overwrite manual values configured before it.
    - On an active pack there is no third remedy: a plain ✗ (not-deployed, not drifted) only occurs under a Cannot-Be-Checked product whose policy is missing — restore recreates it (3a). Never tell the user to configure an active pack's settings in the product's own UI. (Exception: an older server that doesn't return drift fields at all — then ✗ under an active pack is indistinguishable drift, and restore is still the remedy.)
    - Fallback, if that ever fails to hold — ✗ settings on an active pack with no drift and no Cannot-Be-Checked product: do NOT leave them unexplained. Offer restore anyway (it re-asserts the standard's values on every live policy) and say the settings are not in place for a reason the posture data doesn't explain.
 
@@ -151,7 +153,7 @@ Terminology rules:
 Render this gap template ONLY for cases 1 and 3 above (pack not applied, or applied with gaps). For case 2 (active and fully covered) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps.
 
 ```
-ISO 42001 Posture — <tenantName>  ·  <date>
+<packName> Posture — <tenantName>  ·  <date>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SUMMARY
@@ -168,7 +170,7 @@ SUMMARY
 │ Quickest win            │ <clauseName with fewest gaps AND ≥1 High setting>│
 └─────────────────────────┴──────────────────────────────────────┘
 
-<call-to-action per Next-action suggestion (this template renders for cases 1 and 3): case 1 (pack not applied) → 'Apply ISO 42001 settings' / 'Apply High impact ISO 42001 settings' / 'Apply only <specific area> settings'; case 3 (applied, gaps remain) → in order: 'Reset the changed ISO 42001 settings back to the standard' (when ⟳ settings or a Cannot-Be-Checked product exist), then 'Configure the manual ISO 42001 settings' (when ⚙ settings exist)>
+<call-to-action per Next-action suggestion (this template renders for cases 1 and 3): case 1 (pack not applied) → 'Apply <packName> settings' / 'Apply High impact <packName> settings' / 'Apply only <specific area> settings'; case 3 (applied, gaps remain) → in order: 'Reset the changed <packName> settings back to the standard' (when ⟳ settings or a Cannot-Be-Checked product exist), then 'Configure the manual <packName> settings' (when ⚙ settings exist)>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DETAILS
@@ -225,9 +227,9 @@ Applied  (<N> of <total>)  ✓
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Next action (state-aware — see "Next-action suggestion"):
-  · any ⟳ settings or Cannot-Be-Checked → 'Reset the changed ISO 42001 settings back to the standard'
-  · Active == true, partial gaps        → 'Configure the manual ISO 42001 settings'   ·   'What does [clause name] require?'
-  · nothing applied yet                 → 'Apply ISO 42001 settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
+  · any ⟳ settings or Cannot-Be-Checked → 'Reset the changed <packName> settings back to the standard'
+  · Active == true, partial gaps        → 'Configure the manual <packName> settings'   ·   'What does [clause name] require?'
+  · nothing applied yet                 → 'Apply <packName> settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
 ```
 
 ## All settings applied
@@ -235,10 +237,10 @@ Next action (state-aware — see "Next-action suggestion"):
 Next-action case 2 only: `state get` says `Data.Active == true` **AND** `Summary.ClauseSummary.PartiallyDeployedCount == 0 && NotDeployedCount == 0` (every clause fully deployed). Do NOT use `Summary.NewCount == 0` for this — with disjoint product counts a `needs-manual-config` product leaves `NewCount == 0` while settings still need manual setup:
 
 ```
-All ISO 42001 recommended settings are Applied on <tenantName>.
+All <packName> recommended settings are Applied on <tenantName>.
 <fullyDeployedCount> / <totalClauses> clauses fully deployed  ·  all settings Applied ✓
 
-To remove them: 'Remove ISO 42001 settings'
+To remove them: 'Remove <packName> settings'
 ```
 
 Do NOT call `state enable` in this case.
@@ -247,7 +249,7 @@ Do NOT call `state enable` in this case.
 
 ## Configuring manual settings — AOps handoff
 
-When the user accepts `'Configure the manual ISO 42001 settings'` (offered ONLY in the already-applied / partial state), hand off to this skill's AOps policy mechanic to update the EXISTING deployed policy. Do NOT re-enable the pack (`state enable`) and do NOT create a new policy — the pack already deployed one policy per product; a `manual` setting is just an org-specific formData key on that policy that automation could not fill. This mutation happens on the **AOps branch** (Critical Rule 3: one branch per mutation).
+When the user accepts `'Configure the manual <packName> settings'` (offered ONLY in the already-applied / partial state), hand off to this skill's AOps policy mechanic to update the EXISTING deployed policy. Do NOT re-enable the pack (`state enable`) and do NOT create a new policy — the pack already deployed one policy per product; a `manual` setting is just an org-specific formData key on that policy that automation could not fill. This mutation happens on the **AOps branch** (Critical Rule 3: one branch per mutation).
 
 Each ⚙ setting is a `Data.Clauses[].ManualConfigChecks[]` entry: `{ ProductIdentifier, Key, Expected, Actual }`. Group them by `ProductIdentifier` — one policy per product, updated once.
 
@@ -264,7 +266,7 @@ Graceful degrade: if the AOps guides are unavailable, present the ⚙ list (sett
 Ask for values — known recommended value → offer to confirm it; org-specific gate → ask for the value. Never show policy ids or CLI:
 
 ```
-3 settings need a value only you can set — I'll update the existing ISO 42001 policies in place.
+3 settings need a value only you can set — I'll update the existing <packName> policies in place.
 
 1. Studio Web — Publish Outside Personal Workspace  (AI system deployment · High)
    Recommended: Development only · currently: Anywhere        → set to recommended? (yes / other)

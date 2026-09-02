@@ -54,10 +54,10 @@ def carries_unresolved(root: Path) -> tuple[bool, str]:
     """Does this build have anything the operator must be told about?"""
     reasons = []
 
-    tasks_md = find_one(root, "tasks.md")
-    if tasks_md is not None:
+    audit = find_one(root, "registry-resolved.json")
+    if audit is not None:
         try:
-            n = len(re.findall(r"<UNRESOLVED", tasks_md.read_text()))
+            n = len(re.findall(r"<UNRESOLVED", audit.read_text()))
             if n:
                 reasons.append(f"{n} <UNRESOLVED> marker(s)")
         except OSError:
