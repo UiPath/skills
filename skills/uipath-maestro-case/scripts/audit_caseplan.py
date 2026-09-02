@@ -32,6 +32,7 @@ with `did not parse cleanly` -- repair the SDD for those, not the caseplan.
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -42,7 +43,7 @@ STAGE_HEADING = re.compile(r"^(?:\w+\s+)?Stage(?:\s+\d+)?\s*[:.]\s*(.+)$", re.I)
 TASK_HEADING = re.compile(r"^Task\s+[A-Z]?[\d.]+\s*[:.]\s*(.+)$", re.I)
 SEPARATOR_CELL = re.compile(r"^:?-{2,}:?$")
 PLACEHOLDER_CELLS = {"", "-", "—", "–", "n/a", "na", "none", "tbd"}
-STAGE_NODE_TYPES = {"case-management:Stage", "case-management:ExceptionStage"}
+STAGE_NODE_TYPES = {"case-management:Stage"}
 TRIGGER_NODE_TYPES = {"uipath.case.trigger", "case-management:Trigger"}
 UNRESOLVED = re.compile(r"<UNRESOLVED[^>]*>", re.I)
 
@@ -652,22 +653,19 @@ def census(sdd: dict) -> str:
 
 
 def main() -> None:
-    args = list(sys.argv[1:])
-    sdd_path: Path | None = None
-    registry_path: Path | None = None
-    for flag, setter in (("--sdd", "sdd"), ("--registry", "registry")):
-        if flag in args:
-            index = args.index(flag)
-            value = Path(args[index + 1])
-            del args[index:index + 2]
-            if setter == "sdd":
-                sdd_path = value
-            else:
-                registry_path = value
-    if len(args) != 1 or sdd_path is None:
-        sys.exit(__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("caseplan", type=Path, help="Path to the caseplan.json to audit")
+    parser.add_argument("--sdd", type=Path, required=True,
+                        help="Path to the sdd.md the caseplan was built from")
+    parser.add_argument("--registry", type=Path,
+                        help="Path to tasks/registry-resolved.json; scanned for surviving <UNRESOLVED> markers")
+    args = parser.parse_args()
+    sdd_path = args.sdd
+    registry_path = args.registry
 
-    doc = json.loads(Path(args[0]).read_text(encoding="utf-8"))
+    doc = json.loads(args.caseplan.read_text(encoding="utf-8"))
     sdd_text = sdd_path.read_text(encoding="utf-8")
 
     sdd = parse_sdd(sdd_text)

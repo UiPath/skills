@@ -63,7 +63,11 @@ RECONSTRUCTED = GOOD.replace(
 
 
 CLEAN_AUDIT = '[{"task": "Hold", "selected": {"name": "X"}}]'
-UNRESOLVED_AUDIT = '[{"task": "Hold", "selected": "<UNRESOLVED: process>"}]'
+# Rule 9 shape for an unresolved entry: matches [], selected null, and the
+# <UNRESOLVED: reason> text in the identity slot — see
+# skills/uipath-maestro-case/references/placeholder-tasks.md § registry-resolved.json Entry Shape.
+UNRESOLVED_AUDIT = ('[{"task": "Hold", "taskType": "process", "matches": [], "selected": null, '
+                    '"taskTypeId": "<UNRESOLVED: process not found in registry>"}]')
 
 
 def caseplan(placeholder=True):
