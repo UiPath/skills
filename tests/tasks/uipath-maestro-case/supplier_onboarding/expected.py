@@ -354,10 +354,15 @@ _VARS_RE = re.compile(r"vars\.([A-Za-z_]\w*)")
 
 
 # A task's `**Inputs:**` table, keyed by the task display name its detail block sits under.
-# Only rows whose Binding cell carries an expression count: a literal or a `—` placeholder
-# is not something the build can drop.
+# Both binding kinds count. An expression is the obvious one; a literal is not safer — the
+# escalation task's `stageName | String | Checking the application` came out `""` in the
+# same build that dropped the expressions, so a delay note would have named no phase.
+# `—` is the only cell that means there is nothing to bind.
 _TASK_HEADING_RE = re.compile(r"^#{5}\s+Task\s+\S+:\s+(.+?)\s*$", re.M)
-_INPUT_ROW_RE = re.compile(r"^\|\s*([A-Za-z][\w.]*)\s*\|[^|]*\|\s*(=[^|]+?)\s*\|", re.M)
+_INPUT_ROW_RE = re.compile(
+    r"^\|\s*([A-Za-z][\w.]*)\s*\|\s*[A-Za-z][\w\[\] ]*\s*\|\s*([^|]*?)\s*\|", re.M
+)
+_NO_BINDING = {"", "—", "-", "n/a"}
 
 
 def _bound_inputs(sdd: str) -> dict[str, set[str]]:
@@ -367,10 +372,37 @@ def _bound_inputs(sdd: str) -> dict[str, set[str]]:
     for index, (start, name) in enumerate(headings):
         end = headings[index + 1][0] if index + 1 < len(headings) else len(sdd)
         block = sdd[start:end]
-        marker = block.find("**Inputs:**")
+        # Two spellings, by task class: a process/agent/api-workflow block writes
+        # `**Inputs:**`, an action block writes `**Input Schema:**`. The escalation task
+        # is an action, and reading only the first spelling skipped it entirely.
+        marker = -1
+        for label in ("**Inputs:**", "**Input Schema:**"):
+            found = block.find(label)
+            if found >= 0 and (marker < 0 or found < marker):
+                marker = found
         if marker < 0:
             continue
-        fields = {field for field, _expr in _INPUT_ROW_RE.findall(block[marker:])}
+        # Only the run of table lines that follows the marker. Reading to the end of the
+        # block swallows the next table — a persona roster and a connector roll-up both
+        # follow — and every header cell then reads as a field name.
+        fields: set[str] = set()
+        seen_row = False
+        for line in block[marker:].splitlines()[1:]:
+            stripped = line.strip()
+            if not stripped.startswith("|"):
+                if seen_row:
+                    break
+                continue
+            seen_row = True
+            match = _INPUT_ROW_RE.match(stripped)
+            if not match:
+                continue
+            field, binding = match.group(1), match.group(2)
+            if field in {"Field", "Name"}:
+                continue
+            if binding.strip().strip("`").lower() in _NO_BINDING:
+                continue
+            fields.add(field)
         if fields:
             bound.setdefault(name, set()).update(fields)
     return bound
@@ -434,9 +466,9 @@ def sdd_facts() -> dict:
     # A floor, not a count. An agent shipped this case with all three of its agent task's
     # inputs emitted as "", the job faulted on `Field required [input_value={}]`, and every
     # grader stayed green — nothing was reading the input side at all.
-    if len(bound_inputs) < 6:
+    if len(bound_inputs) < 10:
         _fail(
-            "fixture parse error: expected >=6 tasks with an `**Inputs:**` table binding an "
+            "fixture parse error: expected >=10 tasks with an `**Inputs:**` table binding an "
             f"expression; got {sorted(bound_inputs)}"
         )
 
