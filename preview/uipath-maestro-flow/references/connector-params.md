@@ -273,6 +273,25 @@ uip is resources describe <connector-key> <object> \
 That placeholder is also the **ordering**: resolve `fields.project.key` before
 you can resolve `fields.issuetype.id`.
 
+**A second declaration shape has no placeholder.** Data Service
+(`uipath-uipath-dataservice`) operations such as `create-entity-record`,
+`update-entity-record` and the file-record-field operations declare their parent
+through the registry's schema action (`GenerateSchema` over `entityName`), not
+through a reference path. Their describe with no values returns only the static
+inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
+`compile` refuses `title`, `description`, … as unknown. `prepare` names the
+parent when you omit it; the fix is always the entity name:
+
+```bash
+npx flow-sdk registry prepare uipath-uipath-dataservice create-entity-record \
+  -f entityName=FlowCodeEvalEntity
+# → 8 input field(s): entityName, expansionLevel + the entity's own fields
+```
+
+Do not work around the refusal — not with `rawNode`, not by editing the emitted
+`.flow`, not by hand-writing a `connectors-local/` overlay. Each produces a node
+the platform cannot run.
+
 Parent-field names are operation-specific. Copy each `Name` exactly from this
 operation's describe response; do not reuse the dotted names from the
 `create-issue` example for another action (for example, Jira `get-issue` uses

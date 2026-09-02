@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ b570962. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ c30ff64. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -630,6 +630,14 @@ Signature: `rawNode({ nodeType, version, manifest, inputs?, outputs? })`.
 wrote. Prefer a typed factory when one exists: it carries the family's checks,
 defaults and output contract. `decompile` emits this for a node type it cannot
 name, so an unknown node keeps its type and version through a round trip.
+
+**Never for a connector.** `check` and `compile` refuse a `uipath.connector.*`
+node type here: a raw node keeps its inputs verbatim, so the emitted node has no
+`inputs.detail` and no connection binding — `validate` only warns and the run
+never reaches Integration Service. When `compile` refuses a connector input as
+unknown, the answer is `npx flow-sdk registry prepare <key> <action>` (see
+[connector-params.md](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop)),
+not `rawNode`.
 
 **Reference: [`references/placeholder.md`](references/placeholder.md#unknown-node-types)**
 
