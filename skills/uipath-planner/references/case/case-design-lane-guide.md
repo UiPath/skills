@@ -10,7 +10,7 @@ Case knowledge is split three ways. Read all three to begin, in parallel, **at m
 | [case-design-layers-guide.md](case-design-layers-guide.md) | the case model and every design **Default** — skeleton, gates, data, SLAs, naming, the closure checklist |
 | [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md) | the render contract — skeleton, cell rules inline, validation footer |
 
-That is the COMPLETE design reading set. NEVER read `scripts/case/audit_sdd.py` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (tasks.md, caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
+That is the COMPLETE design reading set. NEVER read `scripts/case/audit-case-sdd.mjs` — scripts are RUN, and their findings are the interface. Do NOT read the generic Phase D references (pdd-analysis, product-selection beyond the Constraint Gate): scope is already decided. Reference paths resolve against this skill's base directory, given at invocation — never hunt with `find` / global `ls`. Everything after the SDD (tasks.md, caseplan.json, validate, publish) belongs to `uipath-maestro-case`.
 
 **Draft finalization reads less (hard):** this file's §Resumption + §Terminal step, `sdd.draft.md`, and the template (its validation footer is the gate) — once each. NOT the layers guide: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists.
 
@@ -116,7 +116,7 @@ Every non-verbatim value gets a source-ledger entry AND a line in the confirmati
 
 1. **Shape never relaxes.** The template's heading skeleton, the per-stage Entry/Exit Conditions TABLES (rule syntax included), the per-task detail blocks with `**Task envelope**`, and the Planner Handoff header all hold. A freeform outline (`## 1. Case Metadata…`, `## Decisions I Made` as a body section) is a blocking render failure in this mode too.
 2. **Concision lives only in prose depth.** One rationale sentence per stage/task/SLA/exception choice; no expanded examples, provenance prose, or registry audit detail.
-3. **The gate is the script.** Run `audit_sdd.py` on the written file plus a reachability spot-check — not the full closure checklist, and no polish iterations; the later build run re-validates everything.
+3. **The gate is the script.** Run `audit-case-sdd.mjs` on the written file plus a reachability spot-check — not the full closure checklist, and no polish iterations; the later build run re-validates everything.
 4. **In PROSE reference the rule as bare `sla-status-change`** — never a partial call form with placeholder args; build-side checkers reject wrong arity anywhere.
 
 **Other-path sweep — mandatory before confirmation.** Run [layers § Other-path sweep](case-design-layers-guide.md#other-path-sweep--mandatory-before-confirmation) and disclose every outcome in the confirmation's **Other Paths Considered**. No source signal at all → spend the one clarifying call.
@@ -129,7 +129,7 @@ Every non-verbatim value gets a source-ledger entry AND a line in the confirmati
 
 ### Confirm — the single checkpoint
 
-Walk [case-design-layers-guide.md § Layer closure](case-design-layers-guide.md#layer-closure--the-design-checklist) against the in-memory model FIRST — fix failures silently (they are authoring defects, not user decisions); anything unfixable becomes a Review Flags row (§Review items). The mechanical shape/contract checks run later, on the written file (`audit_sdd.py` — template § Validation). Then present the Case Review. The §Tenant grounding resolution gate (when it has items) rides this same turn. The confirmation IS the plan-first approval surface — never substitute a generic build plan, and never create files on a "Yes" to one.
+Walk [case-design-layers-guide.md § Layer closure](case-design-layers-guide.md#layer-closure--the-design-checklist) against the in-memory model FIRST — fix failures silently (they are authoring defects, not user decisions); anything unfixable becomes a Review Flags row (§Review items). The mechanical shape/contract checks run later, on the written file (`audit-case-sdd.mjs` — template § Validation). Then present the Case Review. The §Tenant grounding resolution gate (when it has items) rides this same turn. The confirmation IS the plan-first approval surface — never substitute a generic build plan, and never create files on a "Yes" to one.
 
 **The Case Review — eight sections, one question.** A decision-first business approval surface, complete enough to approve the case behavior without opening any SDD file — never a generic build plan and never a compressed SDD copy. Coverage: SDD §1 → sections 1/4/5; §2 → sections 2/3/4/5; §3 → sections 1/6; §4 → section 6. Each business decision appears ONCE. The review omits the data contract, variables, task inputs/outputs, a second stages list, and per-stage detail cards — that detail stays complete in the SDD. Anything carrying a high review item also appears in Review Flags.
 
@@ -193,14 +193,14 @@ Structured gap escalations — a field could not be fully resolved but the build
 
 ### Template conformance gate — before `sdd.md` is written
 
-Mechanized by `audit_sdd.py` — the template's § Validation footer is the contract (document skeleton, per-block markers, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode; one structural Read is allowed to repair findings. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
+Mechanized by `audit-case-sdd.mjs` — the template's § Validation footer is the contract (document skeleton, per-block markers, forbidden summary-only sections). Skeleton head: `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows. Run it against the **written file, before the `Status: ready` flip** — every mode; one structural Read is allowed to repair findings. This is a render check, not a second design review; on failure, rewrite from the model and template — never a summary SDD, even if a later `caseplan.json` would validate.
 
 ### Terminal step — write the SDD
 
 On the accept answer: write the SDD to disk in batches, gate it, flip it. The mode decides only the filename and whether the turn ends.
 
 1. **Seed Write, then Edit-append per section.** Seed Write: title + `## Document History` + the Planner Handoff header stamped `Status: draft`, `Template validation: pending` + `## Table of Contents`. Then Edit-append in template order — Section 1 → Section 2 one stage block at a time (every primary and secondary stage in source order) → Section 3 → Section 4 → `## Next Steps` — composing each section just before its append, not the whole document up front; no re-Read between sibling appends. The partial file on disk is the recovery point for a mid-turn failure or compaction (§Failure modes). Never `cp`/`mv`/`rsync` an artifact into place.
-2. **Gate the written file:** run the §Template conformance gate (`audit_sdd.py`). Repair findings with targeted Edits and re-run — max 3 rounds, then stop and present what remains. One structural Read is allowed here.
+2. **Gate the written file:** run the §Template conformance gate (`audit-case-sdd.mjs`). Repair findings with targeted Edits and re-run — max 3 rounds, then stop and present what remains. One structural Read is allowed here.
 3. **Ready flip is the LAST Edit:** `Status: ready`, `Template validation: passed`. Drafts keep `Status: draft`. An interrupted run leaves a resumable `draft` on disk.
 4. **Filename by mode** — a user-specified output path always wins:
 
@@ -262,7 +262,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 1. Read exactly these inputs, once each: the draft, this section + §Terminal step + §Template conformance gate, and the template (the finalization read budget at the top of this file: not the layers guide). Do not read planning references, inspect tenant resources, or spawn subagents or background tasks.
 2. The draft is the design source: its stages, tasks, variables, conditions, SLAs, personas, and integration intent are settled. Normalize structure and repair mechanically required rule pairings only — a schema-required companion rule is not a redesign. Never add, drop, or rename a business element; preserve exact stage and task display names (including punctuation), task types, variables, conditions, connector placeholders, and domain rules.
 3. `user-selected-stage` repair: retain the authored lane and give every eligible upstream primary stage a completing `required-tasks-completed` / `wait-for-user` / `Marks Stage Complete: Yes` exit; wording such as "any active case" means every primary stage. **This repair replaces that stage's existing `required-tasks-completed | exit-only | Yes` row; it never adds a second completion row or a `Marks Stage Complete: No` row.** `wait-for-user` is picker exposure, not automatic event/SLA/decision routing — add no such trigger.
-4. Inventory the draft's ordered stage and task headings in memory and render one complete block per entry — **the shape contract is the template's § Validation footer** (`--draft` mode included), enforced by `audit_sdd.py`; it is not restated here. Never `cp`, `mv`, `install`, or `rsync` an artifact into place, and never delete or rename the draft — it stays beside the finalized document.
+4. Inventory the draft's ordered stage and task headings in memory and render one complete block per entry — **the shape contract is the template's § Validation footer** (`--draft` mode included), enforced by `audit-case-sdd.mjs`; it is not restated here. Never `cp`, `mv`, `install`, or `rsync` an artifact into place, and never delete or rename the draft — it stays beside the finalized document.
 5. A task the draft left as a summary still gets its full detail block, per that same footer.
 6. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block, with its field names, variable references, and output mapping intact — an equivalent-looking shorthand that drops an input, predicate, or intermediate field is a failure, not a simplification.
 7. Threshold-policy conversion — MANDATORY scan, not optional polish. Scan the draft (descriptions, personas table, rationale) for comparator + amount phrases: `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to an amount (`$5M`, `100000`, `L4`). EVERY such policy must also appear in an executable cell of the owning task or stage in the final — prose-only is a render failure:
@@ -274,8 +274,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 10. Write, gate, flip per §Terminal step (the draft on disk is also a recovery point, so a compaction means re-finalizing from it), then the audit with the draft comparison:
 
     ```bash
-    python3 "<this skill's folder>/scripts/case/audit_sdd.py" <final SDD path> --draft <draft path>
-    # python3 absent (common on Windows) → retry the same line with `python`, then `py`
+    node "<this skill's folder>/scripts/case/audit-case-sdd.mjs" <final SDD path> --draft <draft path>
     ```
 
     The `ready` flip is forbidden until this prints `AUDIT OK`; repair each finding with Edit and re-run, max 3 rounds, then stop and present what remains. All three of `python3` / `python` / `py` unavailable → verify by hand against the template's § Validation footer, every item. Quote the final `AUDIT OK` line as evidence, then stop.
