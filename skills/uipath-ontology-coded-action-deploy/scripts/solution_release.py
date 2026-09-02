@@ -25,11 +25,13 @@ WHY STAGING EXISTS
 ------------------
 SOLUTION_SRC holds the Solution source, but its function projects have no committed job source:
 the source is the job that lives beside the action TTL that invokes it, per jobs.map.json.
-Staging copies the tree to a temp dir, writes each mapped job in as that project's
-functions/{actionName}.ts, and packs the copy. The source tree is never mutated, and a job has
-exactly one home. functions/ is the only place `uip functions pack` looks: it rebuilds the
-uipath.json functions map from a directory scan of functions/*.ts and silently discards
-hand-written entries, so a job staged anywhere else (a root main.ts included) is invisible.
+Staging copies the tree to a temp dir, writes each mapped job in as that project's root
+main.ts, derives that project's entry-points.json from the job's interfaces, and packs the copy.
+The source tree is never mutated, and a job has exactly one home. main.ts at the project root is
+the layout the verified Studio Web export shipped, and what uipath.json's functions map and the
+manifest's `content/main.ts` both name. `uip solution pack` requires the manifest and never
+produces one; `uip functions pack` would, but cannot lower the type<T>() contract idiom at all,
+so the manifest is derived here instead.
 
 The guard in stage() is load-bearing, not decorative: `uip solution pack` reports Status: Valid
 for a project whose job source is MISSING OR EMPTY. It will happily build a package containing an
@@ -54,6 +56,7 @@ identifies one is REQUIRED and the caller supplies it per run. Only the conventi
 """
 
 import argparse
+import importlib.util
 import json
 import os
 import pathlib
@@ -198,6 +201,49 @@ def manifest_projects(src):
     return [p["ProjectRelativePath"].rsplit("/", 1)[0] for p in entries], uipx[0].name
 
 
+def entry_points_module():
+    """Load tools/entry_points.py, the shared contract deriver.
+
+    `uip solution pack` requires each project's entry-points.json and never produces one. Studio
+    Web's packer derives it; `uip functions pack` cannot, and fails outright on the type<T>()
+    idiom the contract guide mandates. So we derive it here from the job's own interfaces, which
+    keeps them the single source of truth and keeps this pipeline on `uip solution pack` alone.
+    """
+    override = os.environ.get("ENTRY_POINTS_TOOL")
+    candidates = [pathlib.Path(override)] if override else [
+        parent / "tools" / "entry_points.py" for parent in pathlib.Path(__file__).resolve().parents
+    ]
+    found = next((c for c in candidates if c.is_file()), None)
+    if not found:
+        die("cannot find tools/entry_points.py above %s; set ENTRY_POINTS_TOOL to its path"
+            % pathlib.Path(__file__).resolve().parent)
+    spec = importlib.util.spec_from_file_location("ontology_entry_points", found)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def write_entry_points(project_dir, job_source):
+    """Derive the project's entry-points.json from the staged job. Returns a status string.
+
+    An existing manifest is honoured when the contract cannot be lowered: a job whose contract is
+    declared some other way already carries a schema the platform can read, and overwriting it
+    with a guess would be worse than leaving it. Only the case with neither is fatal.
+    """
+    module = entry_points_module()
+    target = project_dir / "entry-points.json"
+    existing = json.loads(target.read_text()) if target.is_file() else None
+    try:
+        doc = module.manifest(job_source, existing, "content/main.ts")
+    except module.Unlowerable as exc:
+        if existing and (existing.get("entryPoints") or [{}])[0].get("input"):
+            return "kept existing manifest (%s)" % exc
+        die("cannot derive entry-points.json for %s and none is committed: %s"
+            % (project_dir.name, exc))
+    target.write_text(json.dumps(doc, indent=2) + "\n")
+    return "derived"
+
+
 def stage(src):
     """Build the staging tree and validate every entry point. Returns the staging path."""
     staging = pathlib.Path(tempfile.mkdtemp(prefix="ontology-solution-"))
@@ -230,28 +276,29 @@ def stage(src):
         if source.stat().st_size == 0:
             shutil.rmtree(staging, ignore_errors=True)
             die("mapped job source is empty: %s (for %s)" % (rel, project))
-        # Into functions/, never the project root: `uip functions pack` rebuilds the functions map
-        # from a scan of functions/*.ts and a root-level source is invisible to it.
-        target = staging / project / "functions" / (source.stem + ".ts")
+        # main.ts at the project root, which is the layout the verified Studio Web export used
+        # and what uipath.json's functions map and the manifest's `content/main.ts` both name.
+        target = staging / project / "main.ts"
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
-        staged.append({"project": project, "from": rel,
-                       "to": "functions/%s" % target.name, "bytes": source.stat().st_size})
+        manifest_status = write_entry_points(staging / project, target)
+        staged.append({"project": project, "from": rel, "to": "main.ts",
+                       "bytes": source.stat().st_size, "entryPoints": manifest_status})
 
-    # Belt and braces: check EVERY project, not just the mapped ones. An unmapped project with no
-    # non-empty functions/*.ts is the same silent failure, and pack will not catch it.
+    # Belt and braces: check EVERY project, not just the mapped ones. An unmapped project with a
+    # missing or empty main.ts is the same silent failure, and pack will not catch it.
     for project in projects:
-        sources = sorted((staging / project / "functions").glob("*.ts")) \
-            if (staging / project / "functions").is_dir() else []
-        if not sources:
+        entry = staging / project / "main.ts"
+        if not entry.is_file():
             shutil.rmtree(staging, ignore_errors=True)
-            die("%s/functions holds no .ts source and the project is not in jobs.map.json; "
+            die("%s/main.ts is missing and the project is not in jobs.map.json; "
                 "pack would publish an empty function" % project)
-        for entry in sources:
-            if entry.stat().st_size == 0:
-                shutil.rmtree(staging, ignore_errors=True)
-                die("%s/functions/%s is empty; pack would publish an empty function"
-                    % (project, entry.name))
+        if entry.stat().st_size == 0:
+            shutil.rmtree(staging, ignore_errors=True)
+            die("%s/main.ts is empty; pack would publish an empty function" % project)
+        if not (staging / project / "entry-points.json").is_file():
+            shutil.rmtree(staging, ignore_errors=True)
+            die("%s has no entry-points.json; solution pack requires one per project" % project)
 
     return staging, {"projects": projects, "authority": authority, "staged": staged}
 
@@ -262,14 +309,12 @@ def stage(src):
 def pack(src, name, version, outdir):
     staging, report = stage(src)
     try:
-        # `uip functions pack` per project FIRST: it alone generates entry-points.json, which
-        # `uip solution pack` requires but never produces. It also rebuilds the uipath.json
-        # functions map from the staged functions/*.ts. (Its absence fails solution pack with an
-        # error naming 'uipath-functions pack', a binary that does not exist.)
-        for project in report["projects"]:
-            uip_plain(["functions", "pack"], cwd=staging / project)
-            if not (staging / project / "entry-points.json").is_file():
-                die("uip functions pack produced no entry-points.json for %s" % project)
+        # No `uip functions pack` here. It exists to derive entry-points.json, which stage has
+        # already written from the job's interfaces, and it cannot lower the type<T>() contract
+        # idiom at all. `uip solution pack` only zips the tree and reads no TypeScript, so a
+        # manifest supplied alongside main.ts is exactly what the verified pipeline shipped.
+        # (A project with no entry-points.json fails solution pack with an error naming
+        # 'uipath-functions pack', a binary that does not exist. stage guards against that.)
         # -n is mandatory. Without it the package is named after the staging directory, which
         # would publish a package the deployment does not recognise.
         result = uip_json(["solution", "pack", str(staging), str(outdir), "-n", name,

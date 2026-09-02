@@ -23,7 +23,8 @@ Two modes, same output shape.
 Both modes write each project's .npmrc: the @uipath npm scope resolves from GitHub Packages, not
 npmjs, and `uip functions new`/`uip functions pack` shell out to an installer that 404s without
 it. The file references the token as ${GH_NPM_REGISTRY_TOKEN}; no literal token is ever written.
-Export GH_NPM_REGISTRY_TOKEN before running with --execute.
+Export GH_NPM_REGISTRY_TOKEN only if the CLI installs dependencies during
+scaffolding; nothing in the pack, publish or deploy path needs it.
 
 Re-running is safe: an existing solution directory is reused, an existing project directory is
 left alone, and only the missing pieces are created.
@@ -179,20 +180,20 @@ def write_jobs_map(solution_dir, projects):
 
     Paths are resolved by solution_release.py against this file's own directory, so a job that
     lives beside its action TTL is written as a relative path and one outside the tree is written
-    absolute. A project with no job source keeps whatever functions/*.ts it has and is packed
-    as-is.
+    absolute. A project with no job source keeps whatever main.ts it has and is packed as-is.
     """
     mapping = {name: source for name, source in projects if source}
     path = solution_dir / "jobs.map.json"
     write_json(path, {
         "$comment": [
-            "Maps a Solution function project to the job source staged in as",
-            "functions/{actionName}.ts at pack time. Relative paths resolve against this",
-            "file's directory. solution_release.py copies each one into a staging tree, so",
-            "the job source stays the single source of truth and keeps living next to the",
-            "action that invokes it. A project listed here MUST NOT have a committed",
-            "functions/*.ts: the staged copy supplies it, and a committed one would be a",
-            "second copy free to drift.",
+            "Maps a Solution function project to the job source staged in as that",
+            "project's root main.ts at pack time, alongside an entry-points.json derived",
+            "from the job's own interfaces. Relative paths resolve against this file's",
+            "directory. solution_release.py copies each one into a staging tree, so the job",
+            "source stays the single source of truth and keeps living next to the action",
+            "that invokes it. A project listed here MUST NOT have a committed main.ts: the",
+            "staged copy supplies it, and a committed one would be a second copy free to",
+            "drift.",
         ],
         "projects": mapping,
     })
@@ -227,23 +228,30 @@ def instantiate_project(skeleton, solution_dir, name, action_name):
     uipath["name"] = name
     uipath["projectId"] = project_id
     uipath["id"] = project_id
-    # `uip functions pack` rebuilds this map by scanning functions/, so the value here only has
-    # to agree with what the stage step will place there; the exemplar's own entry would not.
-    uipath["functions"] = {action_name: "functions/%s.ts:default" % action_name}
+    # main.ts at the project root: the layout the verified Studio Web export shipped, and what
+    # the staged manifest's `content/main.ts` names. Nothing rebuilds this map, so it has to be
+    # right here.
+    uipath["functions"] = {"main": "main.ts:default"}
     write_json(dst / "uipath.json", uipath)
 
     package = read_json(dst / "package.json")
     package["name"] = name.lower().replace(" ", "-")
-    # The skeleton predates the zod contract idiom; the staged jobs import zod for real, and
-    # `uip functions pack` installs from this manifest.
-    package.setdefault("dependencies", {}).setdefault("zod", "^4.2.0")
+    # The SDK is a devDependency and stays one: type<T>() is erased at compile time and
+    # defineFunction is supplied by the runtime, so nothing installs it in this pipeline. It is
+    # declared for local typechecking only, which is how the verified export had it.
+    package.pop("dependencies", None)
+    package.setdefault("devDependencies", {}).setdefault(
+        "@uipath/coded-functions-js-sdk", "^0.5.0")
     write_json(dst / "package.json", package)
 
+    # The schemas here are the exemplar's. The stage step overwrites them with the ones derived
+    # from this project's own job, preserving the uniqueId minted now because the bindings
+    # reference it.
     entry_id = str(uuid.uuid4())
     entries = read_json(dst / "entry-points.json")
     for entry in entries.get("entryPoints", []):
         entry["uniqueId"] = entry_id
-        entry["filePath"] = "content/functions/%s.ts" % action_name
+        entry["filePath"] = "content/main.ts"
     write_json(dst / "entry-points.json", entries)
 
     bindings = read_json(dst / "bindings_v2.json")

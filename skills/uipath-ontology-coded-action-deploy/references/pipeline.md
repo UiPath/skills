@@ -73,20 +73,28 @@ Relative paths resolve against that file's own directory, so a job beside its ac
 relative and one outside the tree is written absolute.
 
 `solution_release.py` copies the tree to a temp staging dir, writes each mapped source in as that
-project's `functions/<actionName>.ts`, and packs the copy. Into `functions/`, never the project
-root: `uip functions pack` rebuilds the `uipath.json` functions map from a directory scan of
-`functions/*.ts` on every run and silently discards hand-written entries, so a root-level source
-is invisible and packs to nothing. The source tree is never mutated, and a job is edited in
+project's `main.ts`, derives that project's `entry-points.json` from the job's interfaces, and
+packs the copy. `main.ts` at the project root is the layout the verified Studio Web export shipped
+and what `uipath.json`'s functions map (`main: main.ts:default`) and the manifest's
+`filePath: content/main.ts` both name. The source tree is never mutated, and a job is edited in
 exactly one place. The consequence: **the source tree is not directly packable**, so always go
 through the script.
 
-At pack time the script runs `uip functions pack` inside every staged project before
-`uip solution pack`: only the functions pass generates `entry-points.json`, and solution pack
-without it fails with `entry-points.json not found. Run 'uipath-functions pack' to generate it.`
-(the error names a binary that does not exist; the working command is `uip functions pack`).
+`uip solution pack` requires each project's `entry-points.json` and never produces one; without it
+pack fails with `entry-points.json not found. Run 'uipath-functions pack' to generate it.` (an
+error naming a binary that does not exist). The command that would generate it, `uip functions
+pack`, **cannot lower the `type<T>()` contract idiom** on any SDK version, so the script derives
+the manifest itself with `tools/entry_points.py`. That deriver reproduces byte-for-byte what
+Studio Web's own packer produced for both verified jobs, which is the only evidence of what the
+platform accepts. `uip solution pack` reads no TypeScript and only zips the tree, so a manifest
+supplied alongside `main.ts` is all it needs.
 
-A project listed in `jobs.map.json` must not also have a committed `functions/*.ts`: the staged
-copy supplies it, and a committed one would be a second copy free to drift.
+Deriving on every stage is what keeps the interfaces and the manifest from drifting. A contract
+the deriver cannot read is refused rather than approximated, because a wrong manifest faults the
+job before its handler runs.
+
+A project listed in `jobs.map.json` must not also have a committed `main.ts`: the staged copy
+supplies it, and a committed one would be a second copy free to drift.
 
 ## Publish and deploy
 
@@ -173,11 +181,10 @@ and invoking against one is what produced three consecutive `JsCodedFunction.Val
 faults.
 
 `stage` writes only to a temp directory and is the fastest proof that a job change reaches the
-staging tree; `pack` also only writes there, but runs `uip functions pack` per project, which
-installs dependencies and so needs the network and `GH_NPM_REGISTRY_TOKEN`. Check the nupkg if in
+staging tree and that its contract lowers to a manifest; `pack` also only writes there, and runs
+no installer, so it needs neither the network nor `GH_NPM_REGISTRY_TOKEN`. Check the nupkg if in
 doubt. A correct pack contains `<SolutionName>.Function.<ProjectName>.<version>.nupkg` with the
-job at `content/functions/<actionName>.ts`, which is what `entry-points.json`'s `filePath` refers
-to.
+job at `content/main.ts`, which is what `entry-points.json`'s `filePath` refers to.
 
 ### Two dead ends, so nobody re-walks them
 

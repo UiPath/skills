@@ -10,6 +10,6 @@
     "language": "typescript"
   },
   "functions": {
-    "tagOverdueTicket": "functions/tagOverdueTicket.ts:default"
+    "main": "main.ts:default"
   }
 }

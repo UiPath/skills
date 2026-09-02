@@ -63,9 +63,9 @@ to a live tenant and move every job in the Solution onto one version line, so th
 transition (`1.0.2` to `1.0.3`, and which processes move) is what to show.
 
 `version`, `stage`, `pack`, `folder-id` and `await` are read-only or temp-directory-only. Run them
-freely; `stage` is the cheapest proof that a job change reaches the staging tree. `pack` runs
-`uip functions pack` inside each staged project, which installs dependencies, so it needs network
-access and `GH_NPM_REGISTRY_TOKEN`; it still writes nothing outside the temp directory.
+freely; `stage` is the cheapest proof that a job change reaches the staging tree and that its
+contract lowers to a manifest. `pack` needs no installer and no token: it zips the staging tree
+and writes nothing outside the temp directory.
 
 ## Service dependency
 
@@ -96,10 +96,12 @@ job is a second copy of the entry point, free to drift from the job source phase
 real job-capable release: `ProcessType=Function`, `ProcessKey={Solution}.Function.{Name}`, the same
 kind a Studio Web export produces. It emits no `SolutionStorage.json` and needs none.
 
-**Export `GH_NPM_REGISTRY_TOKEN` before phase 1.** The `@uipath` npm scope
-(`@uipath/coded-functions-js-sdk` and its dependencies) resolves from GitHub Packages, not npmjs,
-and both `uip functions new` and `uip functions pack` shell out to an installer that 404s without
-it. The scaffold writes each project's `.npmrc` for that scope, referencing the token as
+**`GH_NPM_REGISTRY_TOKEN` is only needed if scaffolding installs.** The `@uipath` npm scope
+(`@uipath/coded-functions-js-sdk`) resolves from GitHub Packages rather than npmjs, so
+`uip functions new` may shell out to an installer that 404s without the token. Nothing in the
+stage, pack, publish or deploy path installs anything: the SDK is a devDependency for local
+typechecking, `type<T>()` is erased at compile time, and `defineFunction` is supplied by the
+runtime. The scaffold writes each project's `.npmrc` for that scope, referencing the token as
 `${GH_NPM_REGISTRY_TOKEN}`; a literal token never goes in the file.
 
 The template fallback remains for the one case CLI mode does not serve:
@@ -115,35 +117,42 @@ id and no new one is minted, which matters only if the solution ever has to reac
 
 Both modes write `jobs.map.json`, which is what phase 2 stages from.
 
-## Phase 2: Stage each job source into its project's functions/ directory
+## Phase 2: Stage each job as its project's main.ts, with a derived manifest
 
 The job source lives beside the action TTL that invokes it, because they are one contract. Staging
 copies the solution tree to a temp directory, writes each mapped source in as that project's
-`functions/{actionName}.ts`, and packs the copy. The source tree is never mutated and a job has
-exactly one home. The consequence: the solution directory is not directly packable, so always go
-through the script.
+`main.ts`, and derives that project's `entry-points.json` from the job's own interfaces. The
+source tree is never mutated and a job has exactly one home. The consequence: the solution
+directory is not directly packable, so always go through the script.
 
 ```bash
 SOLUTION_SRC={workdir}/{name}-jobs scripts/solution_release.py stage
 ```
 
-**`functions/` is the only place a job is visible.** `uip functions pack` rebuilds the
-`uipath.json` functions map from a directory scan of `functions/*.ts` on every run and silently
-discards hand-written entries: a job staged as the project's root `main.ts` produces
-`No functions defined in uipath.json`, exit 0, and an empty package. Never stage to the project
-root.
+**`main.ts` at the project root is the verified layout.** It is what the Studio Web export that
+deployed and ran on a live tenant shipped, what `uipath.json`'s functions map names
+(`main: main.ts:default`), and what the manifest's `filePath: content/main.ts` refers to. The
+three have to agree; the scaffold writes the first two and stage writes the third.
 
-**`uip functions pack` must run per project before `uip solution pack`.** Solution pack does not
-generate `entry-points.json`; without the functions pass it fails with `entry-points.json not
-found. Run 'uipath-functions pack' to generate it.` That error names a binary that does not exist
-on PATH; the working invocation is `uip functions pack`. The release script runs it inside every
-project of the staging tree at pack time, so this is automatic when you go through the script.
+**`uip solution pack` requires each project's `entry-points.json` and never produces one.**
+Without it, pack fails with `entry-points.json not found. Run 'uipath-functions pack' to generate
+it.` (an error naming a binary that does not exist). `uip functions pack` is the command that
+would generate it, and it **cannot lower the `type<T>()` contract idiom at all**, on any SDK
+version. So stage derives the manifest instead, with `tools/entry_points.py`, whose output is
+byte-identical to what Studio Web's own packer produced for the two verified jobs. `uip solution
+pack` only zips a directory and reads no TypeScript, which is why supplying the manifest alongside
+`main.ts` is enough. Nothing in this phase runs an installer.
 
-**A project whose `functions/` holds no non-empty `.ts` source must refuse to pack.**
-`uip solution pack` reports `Status: Valid` for exactly that case and publishes an empty function
-which faults only at invoke time. `stage` refuses a missing and an empty source alike, for mapped
-and unmapped projects. A refusal here is the finding; do not work around it by writing a
-placeholder source.
+**The job's interfaces are the contract.** The manifest is derived from them on every stage, so
+the two cannot drift. A contract the deriver cannot read is refused rather than approximated: a
+wrong manifest faults the job before its handler runs. Run `coded_action_preflight.py` to catch
+that at authoring time instead of at pack time.
+
+**A project with a missing or empty `main.ts` must refuse to pack.** `uip solution pack` reports
+`Status: Valid` for exactly that case and publishes an empty function which faults only at invoke
+time. `stage` refuses a missing and an empty source alike, for mapped and unmapped projects, and
+refuses a project with no manifest. A refusal here is the finding; do not work around it by
+writing a placeholder source.
 
 Which projects the package contains comes from the manifest and never from a directory listing.
 `SolutionStorage.json` is authoritative when present, which is the case for a Studio Web export;

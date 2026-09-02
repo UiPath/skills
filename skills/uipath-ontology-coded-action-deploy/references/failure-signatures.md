@@ -41,45 +41,57 @@ fails until invoke time. A Studio Web export shipped exactly that: a 0-byte entr
 
 `solution_release.py stage` refuses both cases, so prefer it over `uip solution pack` and never
 pack the solution directory directly. To confirm after the fact, unzip the package and look inside
-the per-project nupkg. The job belongs at `content/functions/<actionName>.ts`:
+the per-project nupkg. The job belongs at `content/main.ts`:
 
 ```bash
 scripts/solution_release.py pack <version> /tmp/pk
 cd /tmp/pk && unzip -q <SolutionName>_<version>.zip
-unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/functions/*.ts' | head
+unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/main.ts' | head
 ```
 
-## `uip functions pack` reported `No functions defined in uipath.json`
+## `No functions defined in uipath.json`
 
-The job source is not in the project's `functions/` directory. `uip functions pack` rebuilds the
-`uipath.json` functions map from a directory scan of `functions/*.ts` on every run and **silently
-discards hand-written map entries**: with the source at the project root (the old skeleton layout)
-it wipes the entry, reports `No functions defined`, exits 0, and produces nothing. Move the source
-to `functions/` and re-run. `solution_release.py stage` already stages to
-`functions/<actionName>.ts`, so seeing this means something packed a tree the script did not stage.
+The project's `uipath.json` functions map does not name the staged source. It has to read
+`{"main": "main.ts:default"}`, matching the `main.ts` that `stage` writes and the
+`filePath: content/main.ts` in the derived manifest; those three have to agree. `stage` writes the
+source and the manifest, and `solution_scaffold.py` writes the map, so seeing this means the map
+was edited or the project came from somewhere other than the scaffold.
+
+Note this error belongs to `uip functions pack`, which this pipeline does not run. Reaching it
+means something invoked that command directly.
 
 ## `entry-points.json not found. Run 'uipath-functions pack' to generate it.`
 
 `uip solution pack` was run without the per-project functions pass. `uip solution pack` never
-generates `entry-points.json`; only `uip functions pack` does, run inside each Function project
-first. The error's suggested command names a binary (`uipath-functions`) that does not exist on
-PATH; the working invocation is `uip functions pack`. `solution_release.py pack` runs it for every
-staged project, so seeing this error means something called `uip solution pack` directly.
+generates `entry-points.json`, and the error's suggested command names a binary
+(`uipath-functions`) that does not exist on PATH. `solution_release.py stage` derives the manifest
+for every staged project with `tools/entry_points.py`, so seeing this error means something called
+`uip solution pack` on a tree that did not go through `stage`. Go through the script.
 
 ## `Manifest extraction failed. A function declares a type<T>() contract ...`
 
-The job declares its contract with the SDK's `type<T>()` idiom, which only Studio Web can pack:
-`uip functions pack` cannot lower it to a JSON Schema on any tested SDK version (0.4.4, 0.5.0,
-0.6.4), and pinning a different SDK version does not help. Rewrite the contract in zod, with
-`.strict()` on the top-level input object (a bare `z.object()` packs without
-`additionalProperties: false` and loses the input drift guard).
+Something ran `uip functions pack`. It cannot lower the `type<T>()` idiom to a JSON Schema on any
+tested SDK version (0.4.4, 0.5.0, 0.6.4), and pinning a different version does not help; only
+Studio Web's packer carries that derivation walker. This pipeline does not run `uip functions
+pack` for exactly this reason. `stage` derives the manifest from the job's interfaces instead, so
+the fix is to go through the script rather than to rewrite the contract.
 
-## `GET https://registry.npmjs.org/@uipath%2f... - 404` during new or pack
+If the deriver itself refuses a contract (`cannot lower type ...`), that is the same wall reached
+earlier and on purpose: the type is outside the grammar the contract guide mandates. Narrow the
+interface to that grammar rather than hand-writing a manifest, because a manifest that disagrees
+with the interfaces faults the job before its handler runs.
+
+## `GET https://registry.npmjs.org/@uipath%2f... - 404` during scaffolding
 
 The `@uipath` npm scope is on GitHub Packages, not npmjs. The project needs an `.npmrc` mapping
 the scope to `https://npm.pkg.github.com/` with `${GH_NPM_REGISTRY_TOKEN}` as the token reference,
 and the environment needs `GH_NPM_REGISTRY_TOKEN` exported. `solution_scaffold.py` writes the
 `.npmrc`; a 404 after scaffolding means the token is missing from the environment.
+
+This can only happen during scaffolding, when `uip functions new` installs. Stage, pack, publish
+and deploy run no installer: the SDK is a devDependency for local typechecking, `type<T>()` is
+erased at compile time, and `defineFunction` comes from the runtime. A 404 from those phases means
+something is running a command this pipeline does not.
 
 ## `stage` refused and the run reports as clean
 
@@ -126,7 +138,7 @@ uip solution packages download <SolutionName> <version> -d /tmp/p.zip
 ```
 
 `LatestVersion` plus a `PublishDate` matching your attempt is the tell. Downloading and diffing the
-nupkg's `content/functions/<actionName>.ts` against the job source is the proof.
+nupkg's `content/main.ts` against the job source is the proof.
 
 ## A publish and a deploy both reported success and nothing changed
 

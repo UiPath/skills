@@ -3,7 +3,7 @@
   "$id": "entry-points.json",
   "entryPoints": [
     {
-      "filePath": "content/functions/tagOverdueTicket.ts",
+      "filePath": "content/main.ts",
       "uniqueId": "13b9c07a-abd3-4983-a3ff-de56e6c2021e",
       "type": "function",
       "input": {
