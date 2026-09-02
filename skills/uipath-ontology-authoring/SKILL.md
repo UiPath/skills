@@ -14,6 +14,7 @@ user-invocable: true
 - Artifact folder intended for a new deployment or clone → this skill.
 - Plain-language domain description with no files → `uipath-ontology-modeler`.
 - Existing ontology CRUD, API, SDK, or artifact operations → `uipath-ontologies`.
+- Business rules that require computation route through this skill's classification of write operations; the coded leg's Orchestrator work belongs to `uipath-ontology-coded-action-deploy`.
 
 The words **new**, **clone**, **publish**, **deploy**, **mapping missing**, or **artifact folder** indicate authoring when the request concerns a new ontology. Do not hand such requests to existing-ontology CRUD.
 
@@ -41,10 +42,12 @@ CLASS_MAP: class -> entityName, entityId, folderId, readOnly (optional, rare)
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
-OPERATIONS: grouped query operations and structured write actions, if any
+OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and every CODED action also carries its reads, its writes union, and its process name
 DEPLOYMENT_MODE: delegated; modeler returns local-preflighted artifacts; authoring validates and uploads the inventory, with mapping as the final deploy trigger
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
+
+The modeler emits CODED actions per its coded-action contract guide, with the TTL carrying `ont:language "IMPERATIVE"` and `ont:processFolderId "PENDING_DEPLOY"`.
 
 `MAPPING_STATUS: supplied` means validate the provided mapping. `MAPPING_STATUS: generate` means generate it from handoff metadata; it is valid only with a machine-readable handoff JSON containing confirmed OFN classes/properties, `CLASS_MAP` entityName/entityId/folderId values, field metadata with exactly one identifier for every class, and explicit `RELATIONSHIPS` metadata (`[]` when none). The modeler must return `MAPPING_PATH`, `MAPPING_STATUS`, `MAPPING_GATE`, `UNRESOLVED_AMBIGUITIES`, and the exact preflight `artifact_inventory`. If a class, field, identifier, or relationship cannot be inferred uniquely, require a user decision and stop as `BLOCKED_AMBIGUITY`.
 
@@ -72,7 +75,8 @@ Trigger: user points to a folder of already-generated artifact files (`{oldName}
 2. If cloning from a different ontology: copy each file into `{workdir}`, renaming `{oldName}` → `{name}` in the filename and, inside every file, every occurrence of the old slug — schema/constraints/functions/mapping IRIs, SPARQL `PREFIX ont:` lines, and (for `functions`/`actions`) the `ont:statement`/`ont:statements` bodies. If mapping is absent, set `MAPPING_STATUS: generate` and provide the modeler with the schema/entity metadata needed to create it. If deploying files as originally authored, use `MAPPING_STATUS: supplied` when present.
 3. **A rename (or "it already exists") is not sufficient.** Run the preflight command above against the exact files before uploading anything. It catches IRI drift, undeclared terms, missing object properties for FK joins, action output-contract failures, and non-global namespaces. Fix every failed gate locally and rerun preflight. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere.
 4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>`, not a per-ontology path.
-5. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
+5. If the folder holds already-generated coded pairs (a `jobs/{actionName}.ts` beside its coded `{name}-{actionName}.ttl`), run Step 2b's deploy-then-patch delegation before any upload, exactly as a generated inventory does.
+6. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
 
 ---
 
@@ -95,6 +99,26 @@ While reading the SDD, also scan for:
 **Query operations (functions — zero or more files):** natural-language questions the SDD says the system or an AI agent should answer (e.g. "how many X in state Y", "list X with their Y", dashboards, summaries, counts). If found, record the described operations and identify natural groupings by functional area (querying, analytics, validation, etc.). Pass one `.ttl` file per functional area to the delegated modeler — there is no limit on the number of function files.
 
 **Write operations (actions — zero or more files, one per action):** mutations the SDD describes (e.g. "update status", "create record", "delete entry"). For each, record: action name, target entity, SQL operation (UPDATE / INSERT / DELETE), fields affected, identifier field, and input parameters. Pass one `{name}-{actionName}.ttl` per action to the delegated modeler — there is no limit on the number of action files.
+
+Classify each recorded write operation as `kind: SQL` or `kind: CODED`. Apply these tests in order; first match wins:
+
+1. CODED if the new value must be computed from stored data, the clock, or arithmetic/string construction. The SQL surface is literals-only: no `GETDATE`, no expressions, enforced by Data Fabric's own parser (`SET x = x + 0` and `SET x = CASE...` are both rejected with "Only literal values supported").
+2. CODED if the operation reads before writing, branches on what it finds, iterates over rows or items (any per-row loop), may write several rows or several entities, or may legitimately write nothing (converged no-op).
+3. CODED if a rule depends on a fact the caller must not be trusted to assert. Values derived from data are computed from declared reads, never from caller parameters: a caller can lie about any fact concerning the data.
+4. Otherwise SQL: single entity, single record, caller-supplied literal values. Ambiguous cases default to SQL. Declarative by default; a job in a high-level language (currently supported: TypeScript) only when the edit cannot be expressed before it is computed.
+
+Worked classifications:
+
+| Operation | Verdict | Why |
+|---|---|---|
+| `updateAccountDescription(id, text)` | SQL | one row, caller supplies the value |
+| `setStatus(id, status)` | SQL | same |
+| `tagOverdueTicket(ticketId)` | CODED | clock arithmetic, list append, converged no-op |
+| `flagBigOrder(invoiceIds)` | CODED | per-row loop over lines, multi-row write |
+| `setInvoiceDecision(id, decision, approver)` | CODED | boundary case: looks like a parameter write, but composes a rationale string and screens caller-asserted facts |
+| `approveIfUnderLimit(id, amount)` | CODED | rule 3: the amount must come from a read, not the caller |
+
+For every CODED operation additionally record: its **reads** (one bind name plus the SELECT intent per read), its **writes union** (every field any branch could touch, not one predicted run), and its **process name** (`PascalCase(actionName)` + `Process`).
 
 If neither is present in the SDD, note that explicitly — no functions or action files will be generated.
 
@@ -416,7 +440,10 @@ The modeler generates each artifact following its canonical pattern file:
 | `{name}-constraints.ttl` | Modeler's SHACL guide | 1 (always) | Tier 2 (parallel with functions + actions) |
 | `{name}-[area-]functions.ttl` | Modeler's functions guide | 0 or more — one per functional area | Tier 2 (each file uploaded in parallel) |
 | `{name}-{actionName}.ttl` | Modeler's action guide | 0 or more — one per write action | Tier 2 (each file uploaded in parallel) |
+| `{workdir}/jobs/{actionName}.ts` | Modeler's coded-action guide | 0 or more, one per coded action | None, jobs are never ontology artifacts |
 | `{name}-mapping.yarrrml.yml` | Modeler's mapping guide | 1 (always) | Tier 3 — upload last as deploy trigger |
+
+Row note: coded `{name}-{actionName}.ttl` files are held out of Tier 2 until Step 2b below returns them patched.
 
 Gate ownership and execution:
 
@@ -443,9 +470,32 @@ UNRESOLVED_AMBIGUITIES: none
 
 ---
 
+## Step 2b — Deploy coded action jobs (delegate to `uipath-ontology-coded-action-deploy`)
+
+A SQL-only inventory skips this step untouched and goes straight to Step 3. Run it only when the returned inventory contains coded actions.
+
+**Delegate to the `uipath-ontology-coded-action-deploy` skill** and pass it:
+- `{workdir}` from Step 1
+- the ontology name `{name}`
+- every coded pair: `{workdir}/jobs/{actionName}.ts` with its `{workdir}/{name}-{actionName}.ttl`
+
+That skill publishes the `{name}-jobs` Solution, awaits the releases, patches the real `ont:processFolderId` into each coded TTL in place of `PENDING_DEPLOY`, and returns the patched TTL paths.
+
+> If the `uipath-ontology-coded-action-deploy` skill is not available, stop before upload and return: "Coded actions require the uipath-ontology-coded-action-deploy sibling skill. The artifacts are generated and locally preflighted, but every coded TTL still carries the PENDING_DEPLOY placeholder; activate that skill and retry the delegation."
+
+Then rerun the coded preflight against the patched files:
+
+```bash
+python3 tools/coded_action_preflight.py --workdir {workdir} --ontology-name {name}
+```
+
+Require that no `PENDING_DEPLOY` placeholder remains anywhere in the inventory before proceeding to Step 3.
+
+---
+
 ## Step 3 — Validate and deploy
 
-> **Trigger:** The modeler returned a passing preflight inventory. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
+> **Trigger:** The modeler returned a passing preflight inventory, and any coded actions came back patched from Step 2b. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
 
 ### 3a — Create the ontology stub
 
@@ -461,7 +511,7 @@ Proceed only on `Code: OntologyCreated`. The modeler has not called the backend 
 
 ### 3b — Backend-validate the exact inventory
 
-Authoring backend-validates every artifact in `artifact_inventory` and requires `Data.valid: true` for each response before uploading anything:
+Authoring backend-validates every artifact in `artifact_inventory`, the patched coded action TTLs returned by Step 2b included, and requires `Data.valid: true` for each response before uploading anything:
 
 ```bash
 uip ont artifact validate {name} \
@@ -482,7 +532,7 @@ uip ont artifact upsert {name} {name}.ofn \
   --file {workdir}/{name}.ofn --output json
 ```
 
-Tier 2 — constraints, functions, and actions (parallel where present):
+Tier 2 — constraints, functions, and actions, the patched coded action TTLs from Step 2b included; they ride Tier 2 exactly like declarative action files, media type `text/turtle`, `--type actions` (parallel where present):
 
 ```bash
 uip ont artifact upsert {name} {artifact-name} \
@@ -531,6 +581,7 @@ After `DEPLOYED`, run `uip ont artifact list {name} --output json`. Confirm that
 | `{name}-constraints.ttl` | `constraints` | `text/turtle` | delegated modeler | 1 | Yes |
 | `{name}-[area-]functions.ttl` | `functions` | `text/turtle` | delegated modeler | 0 or more — one per functional area | No — freely add/removable without breaking a deployed ontology |
 | `{name}-{actionName}.ttl` | `actions` | `text/turtle` | delegated modeler | 0 or more — one per write action | No — freely add/removable |
+| `{workdir}/jobs/{actionName}.ts` | never uploaded | n/a | delegated modeler (coded-action guide) | 0 or more — one per coded action | No — deployed to Orchestrator by `uipath-ontology-coded-action-deploy` in Step 2b |
 | `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | delegated modeler | 1 | Yes — upload last, triggers `DRAFT → DEPLOYED` |
 
 ---
