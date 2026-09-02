@@ -97,5 +97,6 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 ## Anti-patterns
 
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
+- **Never re-run a completed `flow debug` to re-read or reshape its output.** Each run re-uploads the solution and executes the flow again for real. Extract the report fields from the payload the completed run already returned — see [Reporting debug runs](#reporting-debug-runs-to-the-user).
 - **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
 - **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
