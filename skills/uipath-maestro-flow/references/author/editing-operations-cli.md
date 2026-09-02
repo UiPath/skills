@@ -107,13 +107,13 @@ The `--detail` JSON schema differs between connector activity nodes, connector t
 **Shell quoting — write the JSON to a file first.** Never hand-escape quotes inside the shell command. `--detail` takes inline JSON only; there is no file flag. Write the payload with a quoted heredoc, then substitute the file:
 
 ```bash
-cat > detail.json <<'EOF'
+cat > /tmp/detail.json <<'EOF'
 {"connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>", "method": "POST", "endpoint": "/Account"}
 EOF
-uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat detail.json)" --output json
+uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat /tmp/detail.json)" --output json
 ```
 
-`<<'EOF'` (quoted delimiter) stops the shell from touching the body, so `=js:` expressions, backticks, `${...}`, and nested quotes reach the CLI byte for byte. Nesting an `=js:` expression inside `--detail '<json>'` instead doubles its backslashes; the saved expression then faults at runtime with `[400300] Error evaluating expression … Invalid or unexpected token`, and a stray quote aborts the command with `zsh: parse error`.
+`<<'EOF'` (quoted delimiter) stops the shell from touching the body, so `=js:` expressions, backticks, `${...}`, and nested quotes reach the CLI byte for byte. Nesting an `=js:` expression inside `--detail '<json>'` instead doubles its backslashes; the saved expression then faults at runtime with `[400300] Error evaluating expression … Invalid or unexpected token`, and a stray quote aborts the command with a shell parse error (`zsh: parse error`, `bash: syntax error near unexpected token`).
 
 ### Configure a managed HTTP node
 

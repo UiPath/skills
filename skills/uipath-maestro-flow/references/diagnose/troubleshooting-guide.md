@@ -18,7 +18,7 @@ Investigate in this order — each step adds context, stop when you have enough 
 
 A faulted `uip maestro flow debug` response already carries the incident and the fault detail. **Do not re-run `flow debug` before you read them.** An unchanged re-run re-uploads the solution and repeats the same fault against real systems.
 
-The response can exceed 200,000 characters. `"Result": "Failure"` and the numeric `ErrorCode` sit in the first 1,000 characters; the cause sits tens of thousands of characters deeper. Reading the head of the output and stopping tells you that the run failed, not why. A faulted run is a fault, never an "incomplete" run.
+The response can exceed 200,000 characters. `"Result": "Failure"` and `Context.ErrorCode` (the numeric incident code) sit in the first 1,000 characters; the cause sits tens of thousands of characters deeper. Reading the head of the output and stopping tells you that the run failed, not why. Never report a faulted run as "incomplete" — report the fault code and the detail.
 
 Two fields hold the cause:
 
@@ -29,37 +29,37 @@ Two fields hold the cause:
 
 ### Redirect stdout to a file, then extract
 
-Logs go to stderr and JSON to stdout, so redirect stdout to keep the full response:
+Logs go to stderr and JSON to stdout, so redirect stdout to keep the full response. Keep stderr visible — on a poll-budget overrun it carries the only instanceId (see [cli-conventions.md §7](../shared/cli-conventions.md#7-use-uip_log_levelinfo-for-debug-runs)).
 
 ```bash
-uip maestro flow debug <PROJECT_DIR> --output json > debug.json
+UIP_LOG_LEVEL=info uip maestro flow debug <PROJECT_DIR> --output json > /tmp/flow-debug.json
 ```
 
-Wait for the process to exit before reading the file. `flow debug` prints its JSON only at the end of a 1–5 minute run, so an empty file means the run is still going — see [operate/run.md — Debug](../operate/run.md#debug--controlled-end-to-end-run).
+Wait for the process to exit before reading the file. `flow debug` prints its JSON only when it exits, so an empty file means the run is still going — see [operate/run.md — Debug](../operate/run.md#debug--controlled-end-to-end-run).
 
 Extract both fields:
 
 ```bash
-jq -r '.Data.incidents[] | "\(.elementId) \(.errorCode) \(.dependentFaultCode) \(.errorDetails)"' debug.json
-jq -r '.Data.variables.elements[] | select(.outputs.Error) | "\(.elementId) \(.outputs.Error.code) \(.outputs.Error.detail)"' debug.json
+jq -r '.Data.incidents[] | "\(.elementId) \(.errorCode) \(.dependentFaultCode) \(.errorDetails)"' /tmp/flow-debug.json
+jq -r '.Data.variables.elements[] | select(.outputs.Error) | "\(.elementId) \(.outputs.Error.code) \(.outputs.Error.detail)"' /tmp/flow-debug.json
 ```
 
 Without `jq`:
 
 ```bash
-python3 - debug.json <<'EOF'
+python3 - /tmp/flow-debug.json <<'EOF'
 import json, sys
 data = json.load(open(sys.argv[1]))["Data"]
 for incident in data.get("incidents", []):
     print(incident["elementId"], incident["errorCode"], incident["dependentFaultCode"], incident["errorDetails"])
-for element in data["variables"]["elements"]:
+for element in data.get("variables", {}).get("elements", []):
     error = element.get("outputs", {}).get("Error")
     if error:
         print(element["elementId"], error["code"], error["detail"])
 EOF
 ```
 
-Do not rely on `--output-filter` to shrink this response: the CLI applies it only when the run succeeds. On a faulted run it prints the full envelope, 200 KB and more.
+The CLI applies `--output-filter` only when a command succeeds; a faulted run prints the whole envelope.
 
 ### Match the fault code
 
@@ -67,9 +67,9 @@ Match `dependentFaultCode` to a known cause:
 
 | `dependentFaultCode` | Cause and fix |
 |---|---|
-| `AGENT_STARTUP.INPUT_VALIDATION_ERROR` | Declared `type` does not match the bound node's real output shape — the runtime strict-validates agent inputs. `detail` names the failing key and the real type (for example `input_type=list`). See [author/plugins/inline-agent/impl.md](../author/plugins/inline-agent/impl.md). |
+| `AGENT_STARTUP.INPUT_VALIDATION_ERROR` | Declared `type` does not match the bound node's real output shape — the runtime strict-validates agent inputs. `detail` names the failing key and the real type (for example `input_type=list`). See [author/plugins/inline-agent/impl.md — Anti-patterns](../author/plugins/inline-agent/impl.md#anti-patterns). |
 
-No match, or `detail` is not enough → continue with Step 1.
+No match, or `detail` is not enough → `uip maestro flow debug-instance incidents <INSTANCE_ID> --output json` returns the full backend payload (incidentId, errorDetails, AI summary). For a deployed process run, continue with Step 1.
 
 ## Step 1 — Get the instance ID
 
