@@ -21,7 +21,7 @@ initial_prompt: |
   Web round-trip.
 
   Create the solution and the Flow project, keeping the Flow inside a solution
-  of the same name.
+  of the same name; the flow file is `SmokeEval.flow`.
 
   Declare a string input variable named `name` before adding data points. The
   eval data point below uses `{"name":"Alice"}`, so its input must be declared
