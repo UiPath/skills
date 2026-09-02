@@ -124,49 +124,49 @@ The job makes no network calls, reads no database, and holds no credentials. Inp
 
 ## Supported languages: TypeScript
 
-TypeScript is currently the only supported language for coded-action jobs. Contracts are declared with zod: `uip functions pack` compiles a zod schema into the JSON Schema the platform validates against, and zod is the only contract idiom the CLI packer can lower.
+TypeScript is currently the only supported language for coded-action jobs. Contracts are declared as plain interfaces behind the SDK's `type<T>()` marker, which is what the verified jobs use.
 
 ```typescript
-import { defineFunction } from '@uipath/coded-functions-js-sdk';
-import { z } from 'zod';
+import { defineFunction, type } from '@uipath/coded-functions-js-sdk';
 
-const {Entity}Row = z.object({
+interface {Entity}Row {
   // physical column names, exactly as the read's SELECT * returns them
-}).passthrough();
+  [column: string]: unknown;
+}
 
-const Input = z.object({
-  {p1}: z.string(),
-  {bind1}: z.array({Entity}Row),
-}).strict();
+interface Input {
+  {p1}: string;
+  {bind1}: {Entity}Row[];
+}
 
-const DeclaredEdit = z.object({
-  op: z.enum(['CREATE', 'UPDATE', 'DELETE']),
-  entity: z.string(),
-  properties: z.record(z.string(), z.unknown()),
-}).strict();
+interface DeclaredEdit {
+  op: 'CREATE' | 'UPDATE' | 'DELETE';
+  entity: string;
+  properties: Record<string, unknown>;
+}
 
-const Output = z.object({
-  edits: z.array(DeclaredEdit),
-}).strict();
-
-type Input = z.infer<typeof Input>;
-type DeclaredEdit = z.infer<typeof DeclaredEdit>;
-type Output = z.infer<typeof Output>;
+interface Output {
+  edits: DeclaredEdit[];
+}
 
 export default defineFunction({
   name: '{actionName}',
   description: '{one sentence, mirrors the action rdfs:comment}',
   method: 'POST',
   path: '/{actionName}',
-  input: Input,
-  output: Output,
+  input: type<Input>(),
+  output: type<Output>(),
   handler: async (input) => { /* ... */ },
 });
 ```
 
-The `Input` schema is the TypeScript restatement of the marker: its top-level keys must name exactly the marker's arguments. Derive the static types from the schemas with `z.infer`; do not maintain a parallel set of interfaces.
+`Input` is the TypeScript restatement of the marker: its top-level keys must name exactly the marker's arguments.
 
-**Strictness is load-bearing, and it points in two directions.** The top-level `Input` object must carry `.strict()`: that is what emits `additionalProperties: false` into the packed schema, and that flag is what faults a drifted, renamed, or extra input field before the handler runs. A bare `z.object()` packs without it (verified both ways), and the drift guard silently disappears. Row objects are the opposite case: reads are `SELECT *`, so rows carry arbitrary extra physical columns, and those columns are legal. A row schema therefore ends with `.passthrough()`, which admits undeclared keys, while the `Input` object containing the row array stays `.strict()`. Strict at the top is the drift detection; passthrough on rows is what makes the extra columns legal.
+**`type<T>()` is inert on its own, and something has to lower it.** The marker carries no runtime schema; the JSON Schema the platform validates against lives in the project's `entry-points.json`. Studio Web's packer derives that file from the interfaces, and `uip functions pack` cannot (it refuses with `A function declares a type<T>() contract that was not lowered to a JSON Schema`, on every tested SDK version). So the deploy skill derives it instead, with `tools/entry_points.py`, whose output is byte-identical to Studio Web's for both verified jobs. `uip solution pack` reads no TypeScript, so the derived manifest alongside the job is all it needs. **The interfaces are therefore the contract, and the manifest is generated from them on every stage** rather than being written by hand.
+
+**The interfaces must stay inside the grammar the deriver can lower**: `string`, `number`, `boolean`, a union of string literals, `Record<string, unknown>`, an array of any of those, or another interface declared in the same file. Anything else (a `Date`, an inline object type, a generic, an undeclared name, a recursive interface) is refused rather than approximated, because a manifest that disagrees with the interfaces faults the job before its handler runs. `coded_action_preflight.py` runs the deriver as its `input-strictness` gate, so an unlowerable contract fails at authoring time instead of at pack time.
+
+**The index signature is load-bearing, and it points in two directions.** A row interface ends with `[column: string]: unknown`, which lowers to a permissive `additionalProperties` on that object: reads are `SELECT *`, so rows carry arbitrary extra physical columns, and those columns are legal. `Input` itself has no index signature, and lowers to `additionalProperties: false`, which is what faults a drifted, renamed, or extra input field before the handler runs. Open on rows makes the extra columns legal; closed at the top is the drift detection.
 
 Build edits through an annotated array, not an inline object literal:
 
@@ -179,13 +179,13 @@ Returning an edit as an inline literal widens `op` from the `'UPDATE'` literal t
 
 ### Where the job lives, and what it depends on
 
-Generation writes the job to `{workdir}/jobs/{actionName}.ts`, beside the artifacts. At deploy time the deploy skill stages it to `<Project>/functions/{actionName}.ts` inside the Solution project: `uip functions pack` discovers jobs by scanning the project's `functions/` directory, and a source file anywhere else is invisible to it. `zod` and `@uipath/coded-functions-js-sdk` are dependencies of that project, and the `@uipath` npm scope resolves from GitHub Packages, not npmjs; the deploy skill's scaffold owns the project's `.npmrc`, so generation declares nothing about registries.
+Generation writes the job to `{workdir}/jobs/{actionName}.ts`, beside the artifacts. At deploy time the deploy skill stages it as the Solution project's root `main.ts`, which is the layout the verified export shipped and what `uipath.json`'s functions map and the derived manifest's `filePath: content/main.ts` both name. `@uipath/coded-functions-js-sdk` is a devDependency of that project, for local typechecking only: `type<T>()` is erased at compile time and `defineFunction` is supplied by the runtime, so nothing in the deploy path installs it. The `@uipath` npm scope resolves from GitHub Packages rather than npmjs, and the deploy skill's scaffold owns the project's `.npmrc`, so generation declares nothing about registries.
 
-Typechecking is the `typecheck` gate of `tools/coded_action_preflight.py`, which compiles the job against a stub of the SDK. The job imports `zod` for real, so the gate is skipped with a reason when zod is not resolvable near the workdir.
+Typechecking is the `typecheck` gate of `tools/coded_action_preflight.py`, which compiles the job against a stub of the SDK, and is skipped with a reason when no TypeScript compiler is reachable. The job imports nothing beyond the SDK, so no package needs installing for the gate to run.
 
-### type<T>(), the idiom generation must not emit
+### zod, the idiom generation does not emit
 
-The SDK also offers `input: type<Input>()` / `output: type<Output>()` over plain interfaces. That idiom packs only in Studio Web: `uip functions pack` cannot lower it to a JSON Schema on any tested SDK version (0.4.4, 0.5.0, 0.6.4) and refuses with `A function declares a type<T>() contract that was not lowered to a JSON Schema`. It exists and is recognized when found in existing sources, but it is never what generation produces.
+The SDK also accepts a Standard Schema (zod 4.2 and above, arktype, valibot) or a JSON Schema literal in place of the marker. Such a contract carries its own schema, so it needs nothing derived, and `coded_action_preflight.py` recognizes it: a zod job is validated with `.strict()` required on the top-level input object, which is what supplies the `additionalProperties: false` the marker gets from the derivation. It is accepted when found in an existing source, but generation emits `type<T>()`, matching the verified jobs and keeping one idiom across the family.
 
 ## Validation rules
 
@@ -226,7 +226,7 @@ Complete pairs, `tagOverdueTicket` (single row, corrective no-op) and `flagBigOr
 | Declaring only the fields the happy path writes | Declare the union over every branch |
 | A real folder id in a generated artifact | `ont:processFolderId "PENDING_DEPLOY"`; the deploy skill patches it |
 | `ont:language "SQL"` on a coded action | `ont:language "IMPERATIVE"` |
-| `type<T>()` contract in a generated job | zod schemas; `uip functions pack` cannot lower `type<T>()` |
+| A type outside the lowerable grammar | keep to the grammar above; `tools/entry_points.py` refuses the rest, and it runs as a preflight gate |
 | Bare `z.object()` for the input schema | `.strict()` on the top-level `Input` object; without it `additionalProperties: false` is lost from the packed schema |
 | Row schema without `.passthrough()` | End row objects with `.passthrough()`; reads are `SELECT *` and rows carry undeclared physical columns |
 | Edits returned as inline object literals | Build them through `const edits: DeclaredEdit[] = [...]` |

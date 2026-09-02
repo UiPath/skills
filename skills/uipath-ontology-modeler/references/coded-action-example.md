@@ -2,7 +2,7 @@
 
 Read this only if a gate or contract check fails and you need a concrete reference, or you judge [`coded-action-contract-guide.md`](coded-action-contract-guide.md) alone is not enough for this request. These are full worked pairs, not templates to copy verbatim: the names, fields, and rules below are specific to the Support and Classification domains.
 
-Both pairs were verified end to end against a real tenant. Each shows a TTL definition and its job side by side, because the two are one contract. The contracts are written in the zod idiom, the only one `uip functions pack` can lower to a JSON Schema.
+Both pairs were verified end to end against a real tenant, and the job listings below are those sources verbatim. Each shows a TTL definition and its job side by side, because the two are one contract. The contracts are plain interfaces behind the SDK's `type<T>()` marker; the JSON Schema the platform validates against is derived from those interfaces at deploy time by `tools/entry_points.py`.
 
 ---
 
@@ -63,36 +63,34 @@ Why the notable lines look like this:
 ### jobs/tagOverdueTicket.ts
 
 ```typescript
-import { defineFunction } from '@uipath/coded-functions-js-sdk';
-import { z } from 'zod';
+import { defineFunction, type } from '@uipath/coded-functions-js-sdk';
 
-const TicketRow = z.object({
-  TicketId: z.string(),
-  TicketNumber: z.string(),
-  Subject: z.string(),
-  Sev: z.string(),
-  Status: z.string(),
-  CreatedAt: z.string(),
-  DueAt: z.string(),
-  Labels: z.string(),
-}).passthrough();
+interface TicketRow {
+  TicketId: string;
+  TicketNumber: string;
+  Subject: string;
+  Sev: string;
+  Status: string;
+  CreatedAt: string;
+  DueAt: string;
+  Labels: string;
+  [column: string]: unknown;
+}
 
-const Input = z.object({
-  ticketId: z.string(),
-  ticket: z.array(TicketRow),
-}).strict();
+interface Input {
+  ticketId: string;
+  ticket: TicketRow[];
+}
 
-const DeclaredEdit = z.object({
-  op: z.enum(['CREATE', 'UPDATE', 'DELETE']),
-  entity: z.string(),
-  properties: z.record(z.string(), z.unknown()),
-}).strict();
+interface DeclaredEdit {
+  op: 'CREATE' | 'UPDATE' | 'DELETE';
+  entity: string;
+  properties: Record<string, unknown>;
+}
 
-const Output = z.object({
-  edits: z.array(DeclaredEdit),
-}).strict();
-
-type DeclaredEdit = z.infer<typeof DeclaredEdit>;
+interface Output {
+  edits: DeclaredEdit[];
+}
 
 const SLA_HOURS: Record<string, number> = {
   sev1: 4,
@@ -111,8 +109,8 @@ export default defineFunction({
     'Recomputes a ticket due date from its severity and appends TICKET_OVERDUE once that deadline has passed. Closed tickets are left alone.',
   method: 'POST',
   path: '/tagOverdueTicket',
-  input: Input,
-  output: Output,
+  input: type<Input>(),
+  output: type<Output>(),
   handler: async (input) => {
     const row = input.ticket[0];
     if (row.Status === 'closed') {
@@ -143,10 +141,10 @@ export default defineFunction({
 
 Why the notable lines look like this:
 
-- The `Input` schema names `ticketId` and `ticket` as its top-level keys, matching the marker exactly, and carries `.strict()`. That is what emits `additionalProperties: false` into the packed schema, so a rename on either side faults the job before the handler body runs, with no user log line to explain it. A bare `z.object()` would pack without the guard.
-- `ticket` is `z.array(TicketRow)`, an array, because a read returns rows. This action expects one, and `input.ticket[0]` takes it.
+- `Input` names `ticketId` and `ticket` as its fields, matching the marker exactly, and declares no index signature. It therefore lowers to `additionalProperties: false`, so a rename on either side faults the job before the handler body runs, with no user log line to explain it.
+- `ticket` is `TicketRow[]`, an array, because a read returns rows. This action expects one, and `input.ticket[0]` takes it.
 - `TicketRow` lists physical column names, not the ontology's logical field names. Two of them diverge outright: the federated entity exposes the logical `priority` as the column `Sev` and `tags` as `Labels`. The mapping reconciles the pair, and the edit the job returns is written in the logical names.
-- `.passthrough()` closes the row schema because `SELECT *` also carries extra physical columns the schema does not name, and those columns are legal. The strictness points in two directions on purpose: `.strict()` on the top-level `Input` is the drift detection, `.passthrough()` on the row is what admits the columns the contract never promised to name.
+- `TicketRow` ends with `[column: string]: unknown` because `SELECT *` also carries extra physical columns the interface does not name, and those columns are legal. The index signature lowers to a permissive `additionalProperties` on the row object. It points in two directions on purpose: closed at the top-level `Input` is the drift detection, open on the row is what admits the columns the contract never promised to name.
 - Both early returns produce `{ edits: [] }`. Zero edits is a first-class outcome: `rowsAffected` comes back 0 with no failed step, which is a no-op and not a refusal.
 - `properties` starts holding only `id`, and the `Object.keys(properties).length === 1` test is how the job detects that neither branch added anything. `id` is always present because every edit carries the primary key, and it is exempt from `ont:writes` since it targets the WHERE clause.
 - The writes are absolute values (`iso(dueAt)`, the whole recomputed tag string), never increments. The runtime's generated SQL is `UPDATE SET col = literal WHERE pk = literal` with no read-modify-write available, and absolute values plus the no-op branch make repeat invocation idempotent.
@@ -212,8 +210,7 @@ Why the notable lines look like this:
 ### jobs/flagBigOrder.ts
 
 ```typescript
-import { defineFunction } from '@uipath/coded-functions-js-sdk';
-import { z } from 'zod';
+import { defineFunction, type } from '@uipath/coded-functions-js-sdk';
 
 /**
  * One whole ErpInvoiceLine row, exactly as Ontology's read hands it over.
@@ -221,42 +218,40 @@ import { z } from 'zod';
  * Ontology's declared read is a bare `SELECT * FROM ErpInvoiceLine WHERE InvoiceId IN (...)`, so
  * these are the real physical Data Fabric column names, not the ontology's logical field names
  * (`quantity`, `lineId`). The SQL stays a plain `SELECT *`; adapting to the physical shape is this
- * file's job. `.passthrough()` covers the extra columns `SELECT *` carries along: rows arrive with
- * whatever else the source table holds, and those columns are legal.
+ * file's job. The index signature covers the extra system columns `SELECT *` carries along — the
+ * SDK validates input against this interface with `additionalProperties: false`, so an undeclared
+ * column would otherwise fault the job before the handler runs.
  */
-const InvoiceLine = z.object({
-  ErpInvoiceLineId: z.string(),
-  InvoiceId: z.string(),
-  Sku: z.string(),
-  Description: z.string(),
-  Quantity: z.number(),
-  UnitPrice: z.number(),
-  PoUnitPrice: z.number(),
-}).passthrough();
+interface InvoiceLine {
+  ErpInvoiceLineId: string;
+  InvoiceId: string;
+  Sku: string;
+  Description: string;
+  Quantity: number;
+  UnitPrice: number;
+  PoUnitPrice: number;
+  [column: string]: unknown;
+}
 
 /**
- * The job's input, declared by flagBigOrder's `func:flagBigOrder(invoiceIds, lines)` marker: the
+ * The job's input, declared by flagBigOrder's `func:bigOrder(invoiceIds, lines)` marker: the
  * caller's own parameter first, then the rows of the action's one read statement. The marker is the
- * whole signature, and nothing it does not name arrives here. `.strict()` emits
- * `additionalProperties: false` into the packed schema, so a drifted field faults the job before
- * the handler runs.
+ * whole signature — nothing it does not name arrives here.
  */
-const Input = z.object({
-  invoiceIds: z.array(z.string()),
-  lines: z.array(InvoiceLine),
-}).strict();
+interface Input {
+  invoiceIds: string[];
+  lines: InvoiceLine[];
+}
 
-const DeclaredEdit = z.object({
-  op: z.enum(['CREATE', 'UPDATE', 'DELETE']),
-  entity: z.string(),
-  properties: z.record(z.string(), z.unknown()),
-}).strict();
+interface DeclaredEdit {
+  op: 'CREATE' | 'UPDATE' | 'DELETE';
+  entity: string;
+  properties: Record<string, unknown>;
+}
 
-const Output = z.object({
-  edits: z.array(DeclaredEdit),
-}).strict();
-
-type DeclaredEdit = z.infer<typeof DeclaredEdit>;
+interface Output {
+  edits: DeclaredEdit[];
+}
 
 const BIG_ORDER_THRESHOLD = 100;
 
@@ -266,8 +261,8 @@ const BIG_ORDER_THRESHOLD = 100;
  * The read fetches every line of every requested invoice in one query, so this function groups the
  * rows by invoice itself, sums each invoice's quantity, and classifies it: over the threshold is a
  * 'Big Order', at or under it a 'Small Order'. Every requested invoice therefore gets exactly one
- * edit, a batch rather than a single write. Ontology compiles each edit to its own single-row
- * primary-key UPDATE.
+ * edit — a batch, not a single write. Ontology compiles each edit to its own single-row primary-key
+ * UPDATE.
  *
  * An invoice with no lines at all totals zero, so it classifies as 'Small Order' rather than being
  * skipped. Both outcomes write the same field, which is why ont:writes "ErpInvoice.status" still
@@ -282,8 +277,8 @@ export default defineFunction({
     "Classifies each given invoice's status as 'Big Order' or 'Small Order' by whether its total line quantity exceeds 100.",
   method: 'POST',
   path: '/flagBigOrder',
-  input: Input,
-  output: Output,
+  input: type<Input>(),
+  output: type<Output>(),
   handler: async (input) => {
     // Total quantity per invoice, from the flat row set the one read returned.
     const totalByInvoice = new Map<string, number>();
@@ -317,7 +312,7 @@ export default defineFunction({
 
 Why the notable lines look like this:
 
-- `invoiceIds: z.array(z.string())` mirrors the multi-valued param; `lines: z.array(InvoiceLine)` is the flat row set the one read returned, not a per-invoice grouping. The regrouping is the first thing the handler does.
+- `invoiceIds: string[]` mirrors the multi-valued param; `lines: InvoiceLine[]` is the flat row set the one read returned, not a per-invoice grouping. The regrouping is the first thing the handler does.
 - The map is seeded from `input.invoiceIds` before any line is summed. That is what makes an invoice with zero lines classify as 'Small Order' instead of vanishing from the output, and it is why the action's row count matches the caller's request count.
 - Lines whose invoice was not requested are skipped rather than classified, because the read's `IN` clause is the only thing scoping the row set and a widened read should not widen the writes.
 - Each edit carries `id` alongside `status`. The id becomes the WHERE clause of that edit's own `UPDATE SET col = literal WHERE pk = literal`, and it is exempt from `ont:writes`.
