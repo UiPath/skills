@@ -189,16 +189,38 @@ def task_watermark() -> int:
     return max(ids) if ids else 0
 
 
+# A variable only this case declares. Debug instances all look alike in the list — empty
+# display name, `Guid.Empty` process key, the same debug folder — so the case's own
+# namespace is what tells one from another.
+OWN_VARIABLE = "companyName"
+
+
+def is_ours(instance_id: str, folder_key: str) -> bool:
+    """Whether this instance is the case we just started, not a stranger's."""
+    data = run(["uip", "maestro", "case", "instance", "variables", instance_id,
+                "-f", folder_key, "--output", "json"])
+    names = {k.lower() for k in (data.get("Globals") or {})}
+    return OWN_VARIABLE.lower() in names
+
+
 def newest_instance(after_iso: str):
-    """The instance this run started. Instances from earlier runs are still listed, so the creation time is the only thing that tells them apart."""
+    """The instance this run started.
+
+    The tenant is shared and other suites debug their own cases into the same folder at the
+    same time, so "newest since I started" is not enough — one earlier run drove a stranger's
+    ProjectEuler RPA case for its whole route. Every candidate is checked against this case's
+    own variable namespace before it is accepted.
+    """
     rows = run_list(["uip", "maestro", "case", "instance", "list", "--output", "json"])
     rows = [r for r in rows if r.get("InstanceId") and (r.get("CreatedTimeUtc") or "") >= after_iso]
     rows.sort(key=lambda r: r.get("CreatedTimeUtc") or "", reverse=True)
-    if not rows:
-        return None
     global CASE_FOLDER_KEY
-    CASE_FOLDER_KEY = rows[0].get("FolderKey") or ""
-    return rows[0]["InstanceId"]
+    for row in rows:
+        folder = row.get("FolderKey") or ""
+        if folder and is_ours(row["InstanceId"], folder):
+            CASE_FOLDER_KEY = folder
+            return row["InstanceId"]
+    return None
 
 
 def pending_task(watermark: int, title: str, done: set = frozenset(), instance_id: str = ""):

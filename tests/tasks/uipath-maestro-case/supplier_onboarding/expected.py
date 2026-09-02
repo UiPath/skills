@@ -353,6 +353,29 @@ _CONNECTOR_EXTRACT_RE = re.compile(r"^\|\s*(response\.status)\s*\|\s*->\s*(\w+)\
 _VARS_RE = re.compile(r"vars\.([A-Za-z_]\w*)")
 
 
+# A task's `**Inputs:**` table, keyed by the task display name its detail block sits under.
+# Only rows whose Binding cell carries an expression count: a literal or a `—` placeholder
+# is not something the build can drop.
+_TASK_HEADING_RE = re.compile(r"^#{5}\s+Task\s+\S+:\s+(.+?)\s*$", re.M)
+_INPUT_ROW_RE = re.compile(r"^\|\s*([A-Za-z][\w.]*)\s*\|[^|]*\|\s*(=[^|]+?)\s*\|", re.M)
+
+
+def _bound_inputs(sdd: str) -> dict[str, set[str]]:
+    """Which inputs each task binds to an expression, read off the fixture's own tables."""
+    headings = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
+    bound: dict[str, set[str]] = {}
+    for index, (start, name) in enumerate(headings):
+        end = headings[index + 1][0] if index + 1 < len(headings) else len(sdd)
+        block = sdd[start:end]
+        marker = block.find("**Inputs:**")
+        if marker < 0:
+            continue
+        fields = {field for field, _expr in _INPUT_ROW_RE.findall(block[marker:])}
+        if fields:
+            bound.setdefault(name, set()).update(fields)
+    return bound
+
+
 def sdd_facts() -> dict:
     """Re-derive the volatile facts from the fixture, and refuse a thin parse.
 
@@ -407,9 +430,20 @@ def sdd_facts() -> dict:
             f"anywhere in the fixture: {missing_dates}"
         )
 
+    bound_inputs = _bound_inputs(sdd)
+    # A floor, not a count. An agent shipped this case with all three of its agent task's
+    # inputs emitted as "", the job faulted on `Field required [input_value={}]`, and every
+    # grader stayed green — nothing was reading the input side at all.
+    if len(bound_inputs) < 6:
+        _fail(
+            "fixture parse error: expected >=6 tasks with an `**Inputs:**` table binding an "
+            f"expression; got {sorted(bound_inputs)}"
+        )
+
     return {
         "xrefs": xrefs,
         "guard_literals": literals,
         "connector_extracts": extracts,
         "var_reads": var_reads,
+        "bound_inputs": bound_inputs,
     }
