@@ -397,8 +397,8 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
     iterations = settings.get("maxIterations")
     if not isinstance(iterations, int) or not 1 <= iterations <= 8:
         problems.append(
-            f"{label}: settings.maxIterations is {iterations!r}; the "
-            "conversational node caps it at 1-8"
+            f"{label}: settings.maxIterations is {iterations!r}; conversational "
+            "expects 1-8"
         )
     system = next(
         (

@@ -58,7 +58,7 @@ Settings that matter for a conversational agent:
 | --- | --- | --- |
 | `settings.engine` | `conversational-v1` | What makes it a chat agent rather than autonomous |
 | `metadata.isConversational` | `true` | Read by the registry to pick the icon and keep the agent out of the agent-as-tool picker |
-| `settings.maxIterations` | `8` | Read by the engine, and the conversational node's manifest caps it at 8 — the autonomous default of 25 is out of range. `flow validate` does not check it; the designer rejects it. |
+| `settings.maxIterations` | `8` | keep what the scaffold wrote |
 
 `uip agent init --conversational` writes all three. Do not remove them.
 
