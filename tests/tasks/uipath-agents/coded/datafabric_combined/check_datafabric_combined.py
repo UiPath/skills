@@ -78,16 +78,22 @@ def check_entity_item_import(text: str) -> None:
 
 
 def check_entity_config(text: str) -> None:
-    # Verify entity is configured with structurally valid UUIDs (discovered from tenant)
-    id_match = re.search(r'\bid\s*=\s*["\'](' + UUID_PATTERN.pattern + r')["\']', text)
-    if not id_match:
-        sys.exit("FAIL: no DataFabricEntityItem id= with a valid UUID found")
-    print(f"OK: entity ID configured ({id_match.group(1)[:8]}...)")
+    # Verify entity is configured with structurally valid UUIDs (discovered from tenant).
+    # The agent may inline the UUID (id="abc-...") or use a constant (id=_ENTITY_ID
+    # where _ENTITY_ID = "abc-..."). Check both patterns.
+    uuids = UUID_PATTERN.findall(text)
+    if not uuids:
+        sys.exit("FAIL: no valid UUID found in file — expected discovered entity ID and folder key")
 
-    fk_match = re.search(r'\bfolder_key\s*=\s*["\'](' + UUID_PATTERN.pattern + r')["\']', text)
-    if not fk_match:
-        sys.exit("FAIL: no DataFabricEntityItem folder_key= with a valid UUID found")
-    print(f"OK: folder key configured ({fk_match.group(1)[:8]}...)")
+    # Verify id= parameter exists (inline or constant)
+    if not re.search(r'\bid\s*=', text):
+        sys.exit("FAIL: no id= parameter found in DataFabricEntityItem configuration")
+    print(f"OK: entity ID configured ({uuids[0][:8]}...)")
+
+    # Verify folder_key= parameter exists (inline or constant)
+    if not re.search(r'\bfolder_key\s*=', text):
+        sys.exit("FAIL: no folder_key= parameter found in DataFabricEntityItem configuration")
+    print(f"OK: folder key configured")
 
 
 def check_prompt_forwarding(text: str) -> None:

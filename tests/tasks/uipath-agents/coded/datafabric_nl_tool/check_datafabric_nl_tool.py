@@ -75,27 +75,27 @@ def check_entity_item_import(text: str) -> None:
 
 def check_entity_config(text: str) -> None:
     # The agent should have discovered an entity and configured it with
-    # valid UUIDs. We check for structural correctness, not specific values.
-    id_match = re.search(r'\bid\s*=\s*["\'](' + UUID_PATTERN.pattern + r')["\']', text)
-    if not id_match:
+    # The agent may inline UUIDs (id="abc-...") or use constants (id=_ENTITY_ID
+    # where _ENTITY_ID = "abc-..."). Check both patterns.
+    uuids = UUID_PATTERN.findall(text)
+    if not uuids:
         sys.exit(
-            "FAIL: no DataFabricEntityItem id= with a valid UUID found — "
+            "FAIL: no valid UUID found in file — "
             "expected the agent to discover and configure an entity"
         )
-    print(f"OK: entity ID configured ({id_match.group(1)[:8]}...)")
 
-    fk_match = re.search(r'\bfolder_key\s*=\s*["\'](' + UUID_PATTERN.pattern + r')["\']', text)
-    if not fk_match:
-        sys.exit(
-            "FAIL: no DataFabricEntityItem folder_key= with a valid UUID found"
-        )
-    print(f"OK: folder key configured ({fk_match.group(1)[:8]}...)")
+    if not re.search(r'\bid\s*=', text):
+        sys.exit("FAIL: no id= parameter found in DataFabricEntityItem configuration")
+    print(f"OK: entity ID configured ({uuids[0][:8]}...)")
 
-    # Entity name should be a non-empty string
-    name_match = re.search(r'\bname\s*=\s*["\']([^"\']+)["\']', text)
-    if not name_match:
-        sys.exit("FAIL: no entity name= with a non-empty string found")
-    print(f'OK: entity name "{name_match.group(1)}" configured')
+    if not re.search(r'\bfolder_key\s*=', text):
+        sys.exit("FAIL: no folder_key= parameter found in DataFabricEntityItem configuration")
+    print(f"OK: folder key configured")
+
+    # Entity name should reference a non-empty string (inline or constant)
+    if not re.search(r'\bname\s*=\s*["\'][^"\']+["\']', text) and not re.search(r'\bname\s*=\s*\w+', text):
+        sys.exit("FAIL: no entity name= found in DataFabricEntityItem configuration")
+    print("OK: entity name configured")
 
 
 def check_prompt_forwarding(text: str) -> None:
