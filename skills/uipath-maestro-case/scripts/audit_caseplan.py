@@ -10,8 +10,9 @@ until clean (max 3 loops, then AskUserQuestion).
 
 This gate runs against the FINAL artifact. `uip maestro case validate` only
 warns `Task has no entry rules`, and a missing entry rule hangs `case debug`
-indefinitely -- so entry-rule presence, placeholder honesty, and binding
-resource-key shape are checked here, per task, against what the SDD declared.
+indefinitely -- so entry-rule presence, placeholder honesty, binding
+resource-key shape, and Category -> `variables` group placement are checked
+here, against what the SDD declared.
 
 WARN findings (EXTRA caseplan elements, placeholder tasks, surviving
 `<UNRESOLVED>` markers) are reported but do not fail the run.
@@ -46,6 +47,17 @@ PLACEHOLDER_CELLS = {"", "-", "—", "–", "n/a", "na", "none", "tbd"}
 STAGE_NODE_TYPES = {"case-management:Stage"}
 TRIGGER_NODE_TYPES = {"uipath.case.trigger", "case-management:Trigger"}
 UNRESOLVED = re.compile(r"<UNRESOLVED[^>]*>", re.I)
+
+# A Case Variables row's Category decides which `variables` groups it must
+# reach (Loop B of global-vars/impl-json.md): In and Out need their formal slot
+# AND the root companion, a pure-state Variable is companion-only. Keys are the
+# `norm`-ed Category cell; `InOut` is unsupported in v1 and stays unchecked.
+VARIABLE_PLACEMENT = {
+    "in": ("inputs", "inputOutputs"),
+    "out": ("outputs", "inputOutputs"),
+    "variable": ("inputOutputs",),
+}
+VARIABLE_GROUPS = ("inputs", "outputs", "inputOutputs")
 
 
 # SDD headings often carry a trailing slug -- `Intake and completeness (`stage-intake`)`
@@ -169,6 +181,14 @@ def no_name_column_note(title: str, wanted: tuple[str, ...], header: list[str]) 
     )
 
 
+def no_category_column_note(title: str, header: list[str]) -> str:
+    return (
+        f"section {title!r}: the table has rows but no Category column "
+        f"(header: {' | '.join(header) or '<none>'}) -- no row can be checked for "
+        f"`variables` group placement, so a formal argument missing half its pair passes"
+    )
+
+
 def unrecognized_heading_note(title: str, level: int) -> str:
     return (
         f"heading {title!r} (level {level}) reads like an audited section but matches no "
@@ -190,7 +210,7 @@ def parse_sdd(text: str) -> dict:
     heads = section_blocks(text)
     sdd: dict = {
         "stages": [], "case_exit_rows": 0, "triggers": 0, "variables": [],
-        "sla_case": False, "parse_notes": [],
+        "variable_categories": {}, "sla_case": False, "parse_notes": [],
     }
     notes: list[str] = sdd["parse_notes"]
     lookalikes: list[tuple[str, str]] = []
@@ -212,12 +232,18 @@ def parse_sdd(text: str) -> dict:
             header, rows = first_table(body)
             wanted = ("Name", "Variable", "Variable Name")
             name_at = column(header, *wanted)
+            category_at = column(header, "Category")
             if rows and name_at is None:
                 notes.append(no_name_column_note(title, wanted, header))
+            elif rows and category_at is None:
+                notes.append(no_category_column_note(title, header))
             for row in rows:
                 name = cell(row, name_at)
                 if name and not is_blank(name):
                     sdd["variables"].append(name.strip("`"))
+                    category = norm(cell(row, category_at))
+                    if category in VARIABLE_PLACEMENT:
+                        sdd["variable_categories"][norm(name)] = category
         elif STAGE_HEADING.match(title):
             sdd["stages"].append(parse_stage(STAGE_HEADING.match(title).group(1), head["body"], notes))
         else:
@@ -344,9 +370,11 @@ def parse_caseplan(doc: dict) -> dict:
     plan["case_sla"] = bool(metadata.get("slaRules"))
 
     variables = doc.get("variables") or {}
-    for group in ("inputs", "outputs", "inputOutputs"):
-        for variable in variables.get(group) or []:
-            plan["variables"].append(variable.get("name"))
+    plan["variable_groups"] = {}
+    for group in VARIABLE_GROUPS:
+        names = [variable.get("name") for variable in variables.get(group) or []]
+        plan["variable_groups"][group] = {norm(name) for name in names if name}
+        plan["variables"].extend(names)
 
     for node in doc.get("nodes") or []:
         node_type = node.get("type")
@@ -583,8 +611,21 @@ def compare(sdd: dict, plan: dict) -> tuple[list[str], list[str]]:
 
     plan_variables = {norm(v) for v in plan["variables"] if v}
     for name in sdd["variables"]:
-        if norm(name) not in plan_variables:
+        key = norm(name)
+        if key not in plan_variables:
             missing.append(f"variable {name!r}: declared in the SDD Case Variables table, absent from caseplan.json")
+            continue
+        category = sdd["variable_categories"].get(key)
+        for group in VARIABLE_PLACEMENT.get(category, ()):
+            if key in plan["variable_groups"][group]:
+                continue
+            found = [g for g in VARIABLE_GROUPS if key in plan["variable_groups"][g]]
+            missing.append(
+                f"variable {name!r}: SDD Category={category.capitalize()} needs an entry in "
+                f"caseplan variables.{group}[], found only in {', '.join(found)} -- "
+                f"`validate` accepts half the pair and the argument then drops out of "
+                f"entry-points.json"
+            )
 
     return missing, warn
 

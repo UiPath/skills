@@ -99,7 +99,13 @@ CASEPLAN = {
         {"id": "bFp", "resource": "process", "resourceSubType": "Api",
          "resourceKey": "Shared/widgets/Order Check.API Workflow"},
     ],
-    "variables": {"inputs": [{"name": "orderId", "type": "string"}], "outputs": [], "inputOutputs": []},
+    "variables": {
+        "inputs": [{"id": "vK3mNp9Qx", "name": "orderId", "type": "string"}],
+        "outputs": [],
+        # An In-arg is a formal slot AND a root companion (Loop B of
+        # global-vars/impl-json.md); the companion is what `=vars.orderId` resolves.
+        "inputOutputs": [{"id": "orderId", "name": "orderId", "type": "string"}],
+    },
     "nodes": [
         {"id": "trigger1", "type": "uipath.case.trigger", "data": {}},
         {
@@ -190,6 +196,100 @@ def test_dropped_variable_fails():
     plan["variables"]["inputs"] = []
     missing, _ = run(plan)
     assert any("variable 'orderId'" in f for f in missing)
+
+
+# --------------------------------------------------------------------------
+# Category -> `variables` group placement
+#
+# A row's Category decides which arrays it must reach: In and Out need their
+# formal slot AND the root companion, a pure-state Variable is companion-only.
+# Half a pair passes `uip maestro case validate` and then drops the argument
+# from the entry-point contract, so presence-anywhere is not enough.
+# --------------------------------------------------------------------------
+
+VARIABLE_ROW = "| orderId | In | string | | Order identifier |"
+
+
+def _with_variable_row(row):
+    return SDD.replace(VARIABLE_ROW, f"{VARIABLE_ROW}\n{row}")
+
+
+def _companion(name, var_type):
+    return {"id": name, "name": name, "type": var_type, "elementId": "root"}
+
+
+def test_out_variable_without_its_formal_outputs_entry_fails():
+    """The io-binding-matrix miss: the companion is written, the formal Out-arg
+    slot is not, so the argument never reaches `entry-points.json`."""
+    sdd = _with_variable_row("| totalPaid | Out | number | | Amount paid |")
+    plan = copy.deepcopy(CASEPLAN)
+    plan["variables"]["inputOutputs"].append(_companion("totalPaid", "number"))
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(sdd), audit_caseplan.parse_caseplan(plan)
+    )
+    assert any("'totalPaid'" in f and "variables.outputs[]" in f for f in missing)
+
+
+def test_out_variable_with_both_entries_is_clean():
+    sdd = _with_variable_row("| totalPaid | Out | number | | Amount paid |")
+    plan = copy.deepcopy(CASEPLAN)
+    plan["variables"]["outputs"].append(
+        {"id": "vQ7rTz2Wb", "name": "totalPaid", "type": "number", "var": "totalPaid"}
+    )
+    plan["variables"]["inputOutputs"].append(_companion("totalPaid", "number"))
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(sdd), audit_caseplan.parse_caseplan(plan)
+    )
+    assert missing == []
+
+
+def test_in_variable_without_its_companion_fails():
+    plan = copy.deepcopy(CASEPLAN)
+    plan["variables"]["inputOutputs"] = []
+    missing, _ = run(plan)
+    assert any("'orderId'" in f and "variables.inputOutputs[]" in f for f in missing)
+
+
+def test_pure_state_variable_in_the_wrong_group_fails():
+    sdd = _with_variable_row("| caseStatus | Variable | string | Open | Current state |")
+    plan = copy.deepcopy(CASEPLAN)
+    plan["variables"]["outputs"].append(
+        {"id": "vB4hLm6Cd", "name": "caseStatus", "type": "string", "var": "caseStatus"}
+    )
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(sdd), audit_caseplan.parse_caseplan(plan)
+    )
+    assert any("'caseStatus'" in f and "variables.inputOutputs[]" in f for f in missing)
+
+
+def test_a_variable_absent_everywhere_is_reported_once():
+    """Absent is the presence finding, not one placement finding per group."""
+    plan = copy.deepcopy(CASEPLAN)
+    plan["variables"]["inputs"] = []
+    plan["variables"]["inputOutputs"] = []
+    missing, _ = run(plan)
+    assert [f for f in missing if "'orderId'" in f] == [
+        "variable 'orderId': declared in the SDD Case Variables table, absent from caseplan.json"
+    ]
+
+
+def test_case_variables_table_without_a_category_column_is_reported():
+    """Without Category the placement class empties silently while the gate
+    keeps printing AUDIT OK."""
+    parsed = audit_caseplan.parse_sdd(SDD.replace("| Name | Category |", "| Name | Kind |"))
+    assert parsed["variables"] == ["orderId"]
+    assert any("no Category column" in n for n in parsed["parse_notes"])
+
+
+def test_unsupported_category_is_not_placement_checked():
+    """`InOut` is not supported in v1; the row still has to exist somewhere."""
+    sdd = _with_variable_row("| bothWays | InOut | string | | Unsupported |")
+    plan = copy.deepcopy(CASEPLAN)
+    plan["variables"]["inputOutputs"].append(_companion("bothWays", "string"))
+    missing, _ = audit_caseplan.compare(
+        audit_caseplan.parse_sdd(sdd), audit_caseplan.parse_caseplan(plan)
+    )
+    assert missing == []
 
 
 def test_dropped_case_exit_rules_fail():
