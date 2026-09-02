@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 049d5bd. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 66c7651. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -26,12 +26,14 @@ To author a Flow, create a root-level `<Name>.flow.ts` and import the package di
 
 **The source lives at the root; the compiled artifact does not.** Scaffold the project
 before authoring, then emit into it — `compile -o` is the authority over where the
-emitted file is written:
+emitted file is written. `<Solution>` and `<Name>` are the request's own names, used
+verbatim: a request that gives one name for both ("inside a solution of the same
+name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
 
 ```bash
-uip solution init <Name>Sol
-( cd <Name>Sol && uip maestro flow init <Name> )
-uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
+uip solution init <Solution>
+( cd <Solution> && uip maestro flow init <Name> )
+uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 ```
 
 Exactly one emitted `<Name>.flow` may exist, at that path. Never leave a second copy
