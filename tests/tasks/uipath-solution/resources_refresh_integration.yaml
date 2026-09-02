@@ -58,19 +58,15 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: llm_judge
-    description: "Final reply confirms resources are synced and the solution is ready to pack"
-    include_agent_output: true
-    prompt: |
-      Evaluate ONLY the agent's final reply. The task asked the agent to
-      sync a solution's bundled resources/bindings and confirm readiness
-      to pack.
-
-      Score 1.0 if the reply states the resources/bindings are refreshed
-      or in sync and the solution is ready to pack (English or Romanian).
-
-      Score 0.0 if the reply skips the refresh, claims readiness without
-      having synced, reports an unresolved error, or only dumps raw output
-      with no interpretation.
+  # Behavioural stand-in for "confirm the resources are in sync": refresh's
+  # observable effect is the generated solution_folder artefacts, so assert
+  # those instead of the agent's own claim that it synced. Project name is
+  # agent-chosen (the prompt lets it scaffold one), so glob rather than
+  # naming a file. Replaced an llm_judge that graded the final reply's
+  # wording — a self-report, and redundant with the two criteria above.
+  - type: run_command
+    description: "refresh materialised solution_folder artefacts (resources actually in sync, not just claimed)"
+    command: "python3 -c \"import pathlib,sys; sys.exit(0 if list(pathlib.Path('BillingSuite/resources/solution_folder').rglob('*.json')) else 1)\""
+    timeout: 30
     weight: 1.5
     pass_threshold: 1.0
