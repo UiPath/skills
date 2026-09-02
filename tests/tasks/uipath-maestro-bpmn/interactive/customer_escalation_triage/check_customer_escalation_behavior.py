@@ -50,31 +50,38 @@ SEEDED_DUPLICATE_KEY = "__SEEDED_JIRA_KEY_SET_AT_RUNTIME__"
 # killed. See cleanup_customer_escalation.py.
 CLEANUP_JOURNAL = Path(".customer-escalation-cleanup.jsonl")
 # Timeout budget. The single load-bearing number is the run_command
-# `timeout: 10800` in customer_escalation_triage.yaml — coder_eval SIGKILLs
-# this process there, and nothing below can outlive it. Everything else is
-# derived from the observed worst case for one scenario:
+# `timeout` in customer_escalation_triage.yaml, mirrored here as
+# GRADER_TIMEOUT_SECONDS — coder_eval SIGKILLs this process there, and nothing
+# below can outlive it. Everything else is derived from the observed worst case
+# for one scenario:
 #
 #   debug (DEBUG_TIMEOUT_SECONDS)                             480s
 #   + Jira seed, variables-all, incidents, up to 3 Drive gets,
 #     one Jira get, and per-scenario side-effect cleanup        180s
 #   = SCENARIO_BUDGET_SECONDS                                   660s
 #
-# 14 scenarios x 660s = 9240s, which fits inside the 9800s
-# LIVE_RUN_DEADLINE_SECONDS below. The matrix stops at a clean scenario
-# boundary rather than mid-scenario, and the remaining window is reserved
-# for cleanup so an overrun never leaks live resources.
+# 12 scenarios x 660s = 7920s, inside the 8200s LIVE_RUN_DEADLINE_SECONDS
+# below (683s per scenario). The matrix stops at a clean scenario boundary
+# rather than mid-scenario, and the remaining window is reserved for the final
+# cleanup sweep so an overrun never leaks live resources. The sweep normally
+# has almost nothing to do because each scenario cleans up after itself, and
+# post_run backstops whatever it still cannot reach.
+#
+# Adding scenarios means raising GRADER_TIMEOUT_SECONDS and the YAML timeout
+# together, which eats into the agent's authoring window — see the arithmetic
+# in the task YAML's run_limits.
 DEBUG_TIMEOUT_SECONDS = 480
 SCENARIO_BUDGET_SECONDS = 660
-LIVE_CLEANUP_RESERVE_SECONDS = 1400
 # MUST match the run_command timeout in customer_escalation_triage.yaml.
-GRADER_TIMEOUT_SECONDS = 12000
-LIVE_CLEANUP_DEADLINE_SECONDS = GRADER_TIMEOUT_SECONDS - 800
+GRADER_TIMEOUT_SECONDS = 9600
+# 600s of slack under the hard SIGKILL, enforced by
+# test_live_checker_keeps_outer_timeout_cleanup_reserve.
+LIVE_CLEANUP_DEADLINE_SECONDS = GRADER_TIMEOUT_SECONDS - 600
+LIVE_CLEANUP_RESERVE_SECONDS = 800
 LIVE_RUN_DEADLINE_SECONDS = (
     LIVE_CLEANUP_DEADLINE_SECONDS - LIVE_CLEANUP_RESERVE_SECONDS
 )
-# Set only while main owns live resources. Every CLI subprocess is capped by
-# this absolute monotonic deadline so coder_eval's outer shell timeout cannot
-# cut off the final cleanup phase.
+
 ACTIVE_CLI_DEADLINE: float | None = None
 
 OUTPUT_TYPES = {
@@ -410,50 +417,10 @@ SCENARIOS = (
         uses_error_boundary=True,
     ),
     scenario(
-        "jira-unavailable-sev2-new-typed-boundary",
-        service_state="Unavailable",
-        workaround=True,
-        jira_available=False,
-        attachments=("should-not-run.txt",),
-        expected={
-            "route": "ManualReview",
-            "severity": "Sev2",
-            "engineeringNeeded": True,
-            "jiraAction": "NoAction",
-            "attachmentAction": "HoldForReview",
-            "slackAction": "NoAlert",
-            "responseMode": "Draft",
-            "lastAttachmentName": "",
-            "failureReason": "JiraUnavailable",
-        },
-        uses_error_boundary=True,
-    ),
-    scenario(
         "jira-unavailable-sev1-typed-boundary",
         customer_tier="Enterprise",
         service_state="Unavailable",
         workaround=False,
-        jira_available=False,
-        attachments=("should-not-run.txt",),
-        expected={
-            "route": "ManualReview",
-            "severity": "Sev1",
-            "engineeringNeeded": True,
-            "jiraAction": "NoAction",
-            "attachmentAction": "HoldForReview",
-            "slackAction": "NoAlert",
-            "responseMode": "Draft",
-            "lastAttachmentName": "",
-            "failureReason": "JiraUnavailable",
-        },
-        uses_error_boundary=True,
-    ),
-    scenario(
-        "jira-unavailable-sev1-existing-typed-boundary",
-        customer_tier="Enterprise",
-        service_state="Unavailable",
-        workaround=False,
-        duplicate_key="  SHOULD-NOT-BE-UPDATED  ",
         jira_available=False,
         attachments=("should-not-run.txt",),
         expected={

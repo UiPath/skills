@@ -53,8 +53,83 @@ class BehaviorCheckerTests(unittest.TestCase):
             slack_send_id="SlackSend",
         )
 
+    def test_matrix_fits_the_live_run_budget(self) -> None:
+        """Adding a scenario must not silently overrun the graded timeout.
+
+        The grader stops at a clean scenario boundary when the remaining
+        window is under one scenario budget, which scores as a budget overrun
+        rather than a failure. This keeps that from happening by construction:
+        grow the matrix and you must raise GRADER_TIMEOUT_SECONDS and the
+        run_command timeout in the task YAML together.
+        """
+
+        needed = len(checker.SCENARIOS) * checker.SCENARIO_BUDGET_SECONDS
+        self.assertLessEqual(needed, checker.LIVE_RUN_DEADLINE_SECONDS)
+        self.assertLess(
+            checker.LIVE_CLEANUP_DEADLINE_SECONDS,
+            checker.GRADER_TIMEOUT_SECONDS,
+        )
+        self.assertLess(
+            checker.LIVE_RUN_DEADLINE_SECONDS,
+            checker.LIVE_CLEANUP_DEADLINE_SECONDS,
+        )
+        self.assertGreater(
+            checker.SCENARIO_BUDGET_SECONDS,
+            checker.DEBUG_TIMEOUT_SECONDS,
+        )
+
+    def test_grader_timeout_matches_the_task_yaml(self) -> None:
+        task_text = Path(__file__).with_name(
+            "customer_escalation_triage.yaml"
+        ).read_text(encoding="utf-8")
+        match = re.search(
+            r"check_customer_escalation_behavior\.py\"[\s\S]*?timeout: (\d+)",
+            task_text,
+        )
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(
+            int(match.group(1)), checker.GRADER_TIMEOUT_SECONDS
+        )
+
+    def test_no_scenario_is_fully_redundant(self) -> None:
+        """Every scenario must buy a distinct outcome, bar one documented pair.
+
+        Four typed-boundary scenarios once produced byte-identical outputs
+        (a Sev1/Sev2 x new/existing matrix collapsing to one outcome); two
+        were dropped. The surviving duplicate is deliberate: the two
+        businessImpact scenarios exist precisely to prove that a high-impact
+        free-text field does not alter routing, so they must agree.
+        """
+
+        deliberate = {
+            "informational-auto-disabled-high-impact-context",
+            "informational-auto-disabled-low-impact-context",
+        }
+        signatures: dict[tuple, set[str]] = {}
+        for case in checker.SCENARIOS:
+            signature = (
+                tuple(
+                    sorted(
+                        (name, value)
+                        for name, value in case.outputs.items()
+                        # caseKey echoes the per-scenario correlation id, so
+                        # it would make every signature trivially unique.
+                        if name != "caseKey"
+                    )
+                ),
+                len(case.attachment_iterations),
+                case.uses_error_boundary,
+            )
+            signatures.setdefault(signature, set()).add(case.name)
+
+        collisions = [
+            names for names in signatures.values() if len(names) > 1
+        ]
+        self.assertEqual(collisions, [deliberate])
+
     def test_hidden_live_matrix_covers_all_required_outcome_families(self) -> None:
-        self.assertEqual(len(checker.SCENARIOS), 14)
+        self.assertEqual(len(checker.SCENARIOS), 12)
         self.assertRegex(checker.RUN_NONCE, r"^[0-9a-f]{12}$")
         correlations = {
             case.inputs["correlationId"] for case in checker.SCENARIOS
@@ -91,7 +166,7 @@ class BehaviorCheckerTests(unittest.TestCase):
         )
         self.assertEqual(
             sum(case.uses_error_boundary for case in checker.SCENARIOS),
-            4,
+            2,
         )
         self.assertEqual(
             {
@@ -101,6 +176,12 @@ class BehaviorCheckerTests(unittest.TestCase):
             },
             {"Sev1", "Sev2"},
         )
+        # Both severities that can raise JiraUnavailable, one with a duplicate
+        # key present and one without. This was a full Sev1/Sev2 x
+        # new/existing matrix, but `route` is ManualReview in all four and
+        # every other output is identical too, so the pre-fault route is not
+        # observable in the graded outcome and the extra two scenarios bought
+        # nothing. See test_no_scenario_is_fully_redundant.
         self.assertEqual(
             {
                 (
@@ -110,12 +191,7 @@ class BehaviorCheckerTests(unittest.TestCase):
                 for case in checker.SCENARIOS
                 if case.uses_error_boundary
             },
-            {
-                ("Sev1", False),
-                ("Sev1", True),
-                ("Sev2", False),
-                ("Sev2", True),
-            },
+            {("Sev1", False), ("Sev2", True)},
         )
         self.assertTrue(
             any(

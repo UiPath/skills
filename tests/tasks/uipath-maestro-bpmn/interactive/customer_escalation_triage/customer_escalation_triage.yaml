@@ -18,23 +18,26 @@ run_limits:
   # Timeout headroom, largest number first. task_timeout is the only ceiling
   # coder_eval enforces on the whole task; everything else must fit under it:
   #
-  #   task_timeout                                        18000s
-  #   - live Alpha grader (run_command timeout below)     12000s
+  #   task_timeout                                        14400s
+  #   - live Alpha grader (run_command timeout below)      9600s
   #   - validate + pack graders (180s each)                 360s
-  #   = agent authoring + interview window                 5640s
+  #   = agent authoring + interview window                 4440s
   #
-  # The live grader is the load-bearing number: it runs 14 hidden scenarios
-  # against Alpha at a 660s worst case each, then sweeps every created Jira
-  # issue, Drive copy, Slack message, and ephemeral solution. Its internal
-  # deadlines are derived from that same 12000s in
-  # check_customer_escalation_behavior.py — change the two together.
+  # 14400 matches the largest peer e2e in the repo (uipath-maestro-case
+  # cm_golden_expense). The live grader is the load-bearing number: it runs 12
+  # hidden scenarios against Alpha at a 660s worst case each, then sweeps every
+  # created Jira issue, Drive copy, Slack message, and ephemeral solution. Its
+  # internal deadlines are derived from the same 9600s in
+  # check_customer_escalation_behavior.py — change the two together, and note
+  # that adding scenarios spends the agent's authoring window.
   #
   # turn_timeout caps one pathological turn so it cannot eat the authoring
-  # window; it is not a per-turn budget (interview turns use far less).
+  # window; it is not a per-turn budget (interview turns use far less) and 900
+  # is the value every experiment config in tests/experiments/ uses.
   expected_turns: 100
   max_turns: 180
   turn_timeout: 900
-  task_timeout: 18000
+  task_timeout: 14400
 
 agent:
   # allowed_tools uses replace semantics. Preserve normal authoring tools and
@@ -329,7 +332,7 @@ success_criteria:
     description: "The exact submitted project executes hidden scenarios in live Alpha and produces the expected business outputs and real connector side effects"
     command: "python3 $TASK_DIR/check_customer_escalation_behavior.py"
     # Must match GRADER_TIMEOUT_SECONDS in check_customer_escalation_behavior.py.
-    timeout: 12000
+    timeout: 9600
     expected_exit_code: 0
     weight: 12.0
     pass_threshold: 1.0
