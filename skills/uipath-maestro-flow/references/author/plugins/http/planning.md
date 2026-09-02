@@ -12,11 +12,15 @@
 
 | Situation | Use Managed HTTP? |
 | --- | --- |
-| Connector exists but lacks the specific curated activity | Yes — connector mode ([impl-connector.md](impl-connector.md)), **if the connector supports HTTP request activity** (verify `HasHttpRequest` — see [Prerequisites](#prerequisites)) |
+| Connector exists but lacks the specific curated activity, and does **not** report `SupportsV4Activity` | Yes — connector mode ([impl-connector.md](impl-connector.md)), **if the connector supports HTTP request activity** (verify `HasHttpRequest` — see [Prerequisites](#prerequisites)) |
+| Connector exists but lacks the specific curated activity, and **does** report `SupportsV4Activity` | No — generate a non-catalog activity instead ([connector/planning.md](../connector/planning.md#decision-order)) |
 | No connector exists, but service has a REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
 | Quick prototyping against any REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
 | Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
 | Target system has no API (desktop app) | No — use [RPA Workflow](../rpa/planning.md) |
+
+Both flags come from the same call: `uip is connectors metadata <key> --output json`
+→ `Data[0].Flags.SupportsV4Activity` and `Data[0].HasHttpRequest`.
 
 For the two-mode concept (connector vs. manual) and the `url` / auth rules per mode, see the platform doc linked at the top.
 
