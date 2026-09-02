@@ -78,7 +78,7 @@ ERROR: bodyParameters key '<key>' contains literal '[*]'.
 
 The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #12.
 
-#### Step 1.c: Re-escape backslashes when a value crosses into JSON (MANDATORY)
+#### Step 1.c — Re-escape backslashes when a value crosses into JSON (MANDATORY)
 
 `sdd.md` and `registry-resolved.json` hold an `=js:` value as JavaScript **source**, so a line break inside it is already written as the two characters `\` and `n`. `--input-details` is JSON, so that backslash needs one more level: write `\\n`.
 
@@ -193,7 +193,7 @@ For each entry in `caseShape.inputs[]`:
 - `elementId` = the task's elementId
 
 For each entry in `caseShape.outputs[]`:
-- `var` = the output's own `name` in camelCase, NOT the `v` + 8 form the inputs use above; `id` = same as `var`; `elementId` = the task's elementId. Plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
+- `id` = `camelCase(name)` and `var` = same as `id` — the auto-mint shape in [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes), NOT the `v` + 8 form the inputs use above. `elementId` = the task's elementId. Plus the **dedup rule**: `caseShape.outputs[]` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 
