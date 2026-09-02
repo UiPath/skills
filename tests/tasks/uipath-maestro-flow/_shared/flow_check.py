@@ -148,6 +148,77 @@ def _output_blob(result: subprocess.CompletedProcess) -> str:
     return f"{result.stdout}\n{result.stderr}".lower()
 
 
+# INTERIM — Studio Web `Solution/{id}/Overwrite` regression (UiPath/cli#3938).
+#
+# Since 2026-09-02 (last known good: 2026-09-01 07:30Z) Studio Web answers
+# `400 {"code":"1001","message":"An argument had an invalid value."}` when a
+# solution that EXISTS is overwritten. `uip maestro flow debug` imports the
+# project on its first run and writes the server's solution id back into the
+# `.uipx`, so every LATER debug of the same project is an overwrite — and the
+# CLI treats any non-404 Overwrite as fatal. Result: the second seeded case of
+# every multi-case checker died at solution upload, in all three arms
+# (orchestrator_paths, escalation_slack_alert, billing_invoice_lookup,
+# decision, wiki_pageviews, canary). Reproduced on the host with two CLI
+# vintages and with `uip solution upload --force`; a fresh bundled SolutionId
+# imports as new and Completes (Slack message posted), so ONLY overwrite is
+# broken. The only earlier archived Overwrite 400 (2026-08-26) was code 20001, a
+# content error that must still fail.
+#
+# So: on exactly that signature, rotate the bundled SolutionId to a fresh uuid4
+# and retry ONCE — the retry is a new import. Self-limiting: once Overwrite
+# recovers the signature never fires and nothing here runs. Cost while it does:
+# one extra tenant solution per affected case, which `cleanup_solutions.py`
+# cannot see (it reads the `.uipx`'s CURRENT id) — the ids are printed so they
+# are not lost. The platform fix and a CLI-side fallback are asked for in the
+# issue above; delete this block when Overwrite works again.
+_OVERWRITE_STUCK_ISSUE = "UiPath/cli#3938"
+_OVERWRITE_STUCK_MARKER = "overwrite failed (400)"
+_OVERWRITE_STUCK_CODE = re.compile(r'\\?"code\\?":\s*\\?"1001\\?"')
+_OVERWRITE_STUCK_ATTEMPTS = 2  # the failed overwrite + one import-as-new retry
+_SOLUTION_ID_RE = re.compile(r'("SolutionId"\s*:\s*")([0-9a-fA-F-]{36})(")')
+
+
+def _is_overwrite_stuck(result: subprocess.CompletedProcess) -> bool:
+    """True iff ``flow debug`` died on the Studio Web Overwrite 400/1001 regression
+    (see :data:`_OVERWRITE_STUCK_ISSUE`) — never on any other overwrite failure."""
+    if result.returncode == 0:
+        return False
+    blob = _output_blob(result)
+    return _OVERWRITE_STUCK_MARKER in blob and _OVERWRITE_STUCK_CODE.search(blob) is not None
+
+
+def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
+    """Give the project's solution a fresh bundled ``SolutionId`` so the next
+    ``flow debug`` imports it as a NEW Studio Web solution instead of overwriting.
+
+    Walks up from ``project_dir`` to the nearest ancestor holding exactly one
+    ``*.uipx`` (a JSON text file; ``uip solution init`` writes it beside the
+    project directory). Returns ``(old, new)``, or ``None`` when no unambiguous
+    ``.uipx`` is found — the caller then fails the plain way."""
+    import uuid
+
+    here = os.path.abspath(project_dir)
+    for _ in range(4):
+        uipx = sorted(glob.glob(os.path.join(glob.escape(here), "*.uipx")))
+        if len(uipx) == 1:
+            try:
+                text = open(uipx[0], encoding="utf-8").read()
+            except OSError:
+                return None
+            match = _SOLUTION_ID_RE.search(text)
+            if match is None:
+                return None
+            new = str(uuid.uuid4())
+            with open(uipx[0], "w", encoding="utf-8") as handle:
+                handle.write(text[: match.start(2)] + new + text[match.end(2):])
+            return match.group(2), new
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    return None
+
+
 def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
     server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
@@ -326,6 +397,8 @@ def run_debug(
 
     unreadable: str | None = None
     unreadable_attempts = 0
+    overwrite_rotations = 0
+    rotated_solution_ids: list[str] = []
     # `max_attempts` starts at the transient allowance and is extended by one
     # for an unreadable-outputs retry (see _VARIABLES_UNREADABLE_ATTEMPTS): that
     # retry has its own allowance, never the 5xx/RetryLater one. The deadline
@@ -370,6 +443,23 @@ def run_debug(
             if unreadable_attempts >= _VARIABLES_UNREADABLE_ATTEMPTS:
                 break
             max_attempts = max(max_attempts, attempt + 2)
+        elif _is_overwrite_stuck(r) and overwrite_rotations < _OVERWRITE_STUCK_ATTEMPTS - 1:
+            # INTERIM (see _OVERWRITE_STUCK_ISSUE): its own single allowance, like
+            # the unreadable-outputs retry; the deadline below still bounds it.
+            rotated = _rotate_solution_id(project_dir)
+            if rotated is None:
+                break
+            overwrite_rotations += 1
+            rotated_solution_ids.append(rotated[0])
+            print(
+                f"INTERIM ({_OVERWRITE_STUCK_ISSUE}: Studio Web Overwrite → 400/1001 for an "
+                f"existing solution since 2026-09-02): rotated the bundled SolutionId "
+                f"{rotated[0]} → {rotated[1]}; retrying as a new import. The solution "
+                f"{rotated[0]} stays on the tenant (cleanup reads only the current id).",
+                file=sys.stderr,
+                flush=True,
+            )
+            max_attempts = max(max_attempts, attempt + 2)
         elif not _is_transient_debug_error(r):
             break
         elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
@@ -398,6 +488,14 @@ def run_debug(
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
     payload = _get_ci(data, "Data") or {}
+    if rotated_solution_ids:
+        print(
+            f"INTERIM ({_OVERWRITE_STUCK_ISSUE}): debug ran as a new import; Studio Web "
+            f"solution {_get_ci(payload, 'solutionId', 'SolutionId')} (previous: "
+            f"{', '.join(rotated_solution_ids)}).",
+            file=sys.stderr,
+            flush=True,
+        )
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}" + _incident_details(data))

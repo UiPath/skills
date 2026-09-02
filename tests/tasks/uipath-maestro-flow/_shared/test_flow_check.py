@@ -788,6 +788,23 @@ _POLL_TIMEOUT = (
 )
 
 
+# Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
+# Overwrite answering 400/1001 for an EXISTING solution (UiPath/cli#3938).
+_OVERWRITE_400_1001 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Overwrite failed (400): {\\"code\\":\\"1001\\",\\"message\\":'
+    '\\"An argument had an invalid value.\\",\\"translatedMessage\\":null}",\n'
+    '  "Instructions": "Check that the flow project is valid, the selected folder '
+    'is accessible, and Studio Web debug is available, then retry.",\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
+# The 2026-08-26 shape: a real content error that must NOT be rotated around.
+_OVERWRITE_400_20001 = _OVERWRITE_400_1001.replace('1001', '20001').replace(
+    'An argument had an invalid value.',
+    'Archive is missing project directories referenced by solution metadata: [X/temp/project.uiproj].',
+)
+
+
 def _cp(returncode, stdout="", stderr=""):
     return subprocess.CompletedProcess(
         args=["uip", "maestro", "flow", "debug"], returncode=returncode, stdout=stdout, stderr=stderr
@@ -1027,6 +1044,80 @@ def test_run_debug_does_not_retry_present_but_empty_variables(monkeypatch):
     payload = run_debug()
     assert calls["n"] == 1
     assert flow_check.collect_outputs(payload) == []
+
+
+def _uipx_project(tmp_path, solution_id="79cda3cb-5a10-4f37-e091-08df08c2afbe"):
+    """`uip solution init` layout: `<Sol>/<Sol>.uipx` beside `<Sol>/<Proj>/`."""
+    sol = tmp_path / "Sol"
+    proj = sol / "Proj"
+    proj.mkdir(parents=True)
+    (sol / "Sol.uipx").write_text(
+        '{\n  "SolutionId": "%s",\n  "Name": "Sol",\n  "Projects": []\n}\n' % solution_id
+    )
+    return sol, proj
+
+
+def test_run_debug_rotates_the_solution_id_on_overwrite_1001_then_imports(monkeypatch, tmp_path, capsys):
+    """INTERIM (UiPath/cli#3938): the Studio Web Overwrite 400/1001 regression is
+    met with ONE retry as a new import — the bundled SolutionId is rotated first."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001), _cp(0, _COMPLETED)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    payload = run_debug(retries=1)
+    assert calls["n"] == 2
+    assert flow_check.collect_outputs(payload) == ["Sev1"]
+    text = (sol / "Sol.uipx").read_text()
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" not in text
+    assert flow_check._SOLUTION_ID_RE.search(text) is not None
+    err = capsys.readouterr().err
+    assert "INTERIM (UiPath/cli#3938" in err
+    assert "rotated the bundled SolutionId 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+    # The orphaned server id is named, because cleanup reads only the current one.
+    assert "previous: 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+
+
+def test_run_debug_rotates_only_once(monkeypatch, tmp_path):
+    _, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001), _cp(1, _OVERWRITE_400_1001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit) as exc:
+        run_debug(retries=1)
+    assert calls["n"] == 2
+    assert "Overwrite failed (400)" in str(exc.value)
+
+
+def test_run_debug_does_not_rotate_on_a_content_overwrite_error(monkeypatch, tmp_path):
+    """Code 20001 (2026-08-26) is the archive being wrong; rotating would hide it."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_20001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit):
+        run_debug(retries=1)
+    assert calls["n"] == 1
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" in (sol / "Sol.uipx").read_text()
+
+
+def test_run_debug_overwrite_1001_without_a_uipx_fails_plainly(monkeypatch, tmp_path):
+    proj = tmp_path / "Proj"
+    proj.mkdir()
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit):
+        run_debug(retries=1)
+    assert calls["n"] == 1
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _OVERWRITE_400_1001), True),
+        (_cp(1, _OVERWRITE_400_20001), False),
+        (_cp(0, _OVERWRITE_400_1001), False),
+        (_cp(1, _TRANSIENT_504), False),
+    ],
+)
+def test_is_overwrite_stuck(cp, expected):
+    assert flow_check._is_overwrite_stuck(cp) is expected
 
 
 def test_run_debug_unreadable_retry_does_not_burn_the_transient_budget(monkeypatch):
