@@ -58,4 +58,8 @@ def delete_issue(conn_id: str, key: str) -> None:
     _run(
         "is", "resources", "run", "delete", CONNECTOR, "issue",
         "--connection-id", conn_id, "--query", f"issueId={key}",
+        # The CLI never prompts and REFUSES an irreversible delete without this
+        # flag ("Confirmation required … Re-run with --yes"). Without it every
+        # teardown since 08-19 printed WARN and left its ticket in the CE project.
+        "--yes",
     )
