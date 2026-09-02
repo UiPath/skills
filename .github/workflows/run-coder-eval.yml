@@ -320,8 +320,9 @@ jobs:
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
 
-      # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
-      # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
+      # Build the skills extension image (`@uipath/cli`, its tool plugins, and
+      # `@uipath/flow-sdk` on top of coder-eval-agent). Matches
+      # smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         env:
           DOCKER_BUILDKIT: "1"
