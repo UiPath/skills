@@ -39,7 +39,7 @@ initial_prompt: |
   5. Add a `Static` child simulation on the `search-test` data point targeting
      child tool `Web_Search` on parent agent node `agent-1`. Use
      `--mock-value '{"results":[{"title":"NYC Weather","snippet":"Sunny, 72°F"}]}'`.
-     Do NOT add a parent simulation first — `--parent` auto-creates it.
+     Do NOT add a separate parent simulation first.
 
   6. Add an `Llm` child simulation on the `search-test` data point targeting
      child tool `Send_Email` on the same parent `agent-1`. Supply
@@ -56,8 +56,8 @@ initial_prompt: |
   - Use `--parent agent-1` on every child simulation command (add/list/remove).
   - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
     `uip maestro flow eval run *` — this task tests local CRUD only.
-  - Do NOT add a separate parent simulation for `agent-1` before adding children.
-    The `--parent` flag auto-creates the parent.
+  - Do NOT add a separate parent simulation for `agent-1` before adding children —
+    use the child simulation workflow from the skill.
 
 success_criteria:
   - type: command_executed
