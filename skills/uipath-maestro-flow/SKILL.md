@@ -4,6 +4,21 @@ description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build or edi
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
+# Reasoning budget
+
+- Match reasoning to step difficulty; bias toward acting. For mechanical / IO / format steps, if a `uip` verb covers the task, run it — never hand-derive what the CLI emits (`node configure` detail and `bindings[]`, `format` layout, `registry get` node shapes).
+- Save deep reasoning for the judgments no verb can make for you: node-type selection (the external-service ladder), topology, and how data moves from one node's output into the next node's input.
+
+# Working style
+
+- **Understand first, then decide.** Read this file and the capability index for the work at hand, then plan against what the CLI verbs do — not a guess. `uip maestro flow <verb> --help` and `registry get <node-type>` are ground truth for flags and node shapes.
+- **Plan the whole path up front, then chain.** Outline the sequence before running anything, batch independent steps into one turn, pipeline the rest. A greenfield build is three turns (rule #10), not ten.
+- **Inspect an input ONCE.** To learn a shape — a node type's schema, a connector's fields, an existing `.flow`'s nodes — dump it once and search that output. Never re-read a file field-by-field or re-query the registry once per field.
+- **Don't repeat work.** Never rerun a command whose inputs and relevant state are unchanged, or re-read an unchanged file already in context. After a command may have rewritten a file (`node configure`, `format`), re-read it before relying on its contents.
+- **Prefer the CLI to ad-hoc code.** Scripting languages are a last resort for `.flow` edits and need user approval first (rule #9). When code is warranted, write it once with paths as arguments; no near-duplicate inline snippets across turns.
+- **Keep outputs small.** Extract with `--output json --output-filter` (rule #1) so a large envelope never lands in context whole. When a payload must be kept, write it to a file and inspect the file.
+- **Don't do anything unnecessary.** No tool call, file read, or result pulled into context before it is needed.
+
 # UiPath Flow Skill
 
 Comprehensive guide for creating, editing, validating, debugging, publishing, diagnosing, and evaluating UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into four capabilities — **Author**, **Operate**, **Diagnose**, **Evaluate** — each with its own index doc.
