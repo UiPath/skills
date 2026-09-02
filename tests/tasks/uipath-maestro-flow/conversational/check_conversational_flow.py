@@ -149,6 +149,12 @@ def _expression(value: object) -> tuple[str | None, str | None]:
     return None, f"binding is {type(value).__name__}, expected a jsExpression object"
 
 
+def _root_node_id(expression: str) -> str | None:
+    """The node id in a `$vars.<id>.output…` expression."""
+    parts = expression.lstrip("=").lstrip("$").split(".")
+    return parts[1] if len(parts) > 2 and parts[0] == "vars" else None
+
+
 def check_settings(flow: dict) -> int:
     """All five settings keys bound, and all off the same wait node's context."""
     agents = _conversational_agents(flow)
@@ -204,6 +210,15 @@ def check_settings(flow: dict) -> int:
                 f"{node_id}: settings read from more than one source {sorted(roots)} "
                 "— every key derives from the same wait node's context"
             )
+        wait_ids = {n.get("id") for n in _nodes_of(flow, WAIT_FOR_MESSAGE)}
+        for root in roots:
+            root_id = _root_node_id(root)
+            if root_id not in wait_ids:
+                problems.append(
+                    f"{node_id}: settings are rooted at {root_id!r}, which is not a "
+                    f"{WAIT_FOR_MESSAGE} node in this flow — `flow validate` accepts "
+                    "invented $vars paths, so this has to be checked here"
+                )
 
     if problems:
         return _fail("; ".join(problems))

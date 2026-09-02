@@ -10,7 +10,9 @@ description: >
   trigger, which is the only thing that marks the packed flow conversational —
   an agent on a manual trigger packs clean and is never listed. Also catches
   the `=js:` string form, which renders as literal text rather than a binding.
-  Fully offline — init / author / validate need no login.
+  Needs a login: flow-core emits inline agent nodes only for an authenticated
+  client, so `uipath.agent.conversational` cannot be resolved — and therefore
+  the flow cannot be validated — without one.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:conversational]
 
 run_limits:
@@ -31,9 +33,8 @@ initial_prompt: |
   give it a system prompt telling it to act as a friendly support assistant and
   keep answers short.
 
-  This sandbox has no UiPath tenant and is not logged in, so:
-  - Do NOT run anything that needs a live connection, and do NOT pack, deploy,
-    or upload. In particular, do not run `uip maestro flow debug`.
+  Registry reads are fine, but do NOT pack, deploy, or upload, and do not run
+  `uip maestro flow debug`.
 
   The task is NOT complete until `uip maestro flow validate` passes on the
   generated flow.
