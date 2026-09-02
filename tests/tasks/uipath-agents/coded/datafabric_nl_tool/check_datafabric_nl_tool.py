@@ -5,12 +5,11 @@ Asserts:
   1. `main.py` (or `graph.py`) imports `create_datafabric_tool` from
      `uipath_langchain.agent.tools`.
   2. Imports `DataFabricEntityItem` from `uipath.platform.entities`.
-  3. The entity ID and folder key from the prompt appear in the file.
-  4. The tool name "query_products" appears in the file.
-  5. `base_system_prompt` is passed to `create_datafabric_tool`.
-  6. No module-level UiPath/LLM construction.
-  7. `bindings.json` exists with valid envelope (entity bindings not yet
-     supported in schema — see bindings.schema.json and EntityResourceOverwrite).
+  3. A `DataFabricEntityItem` is configured with a valid UUID `id` and
+     `folder_key`.
+  4. `base_system_prompt` is passed to `create_datafabric_tool`.
+  5. No module-level UiPath/LLM construction.
+  6. `bindings.json` exists with valid envelope.
 """
 
 from __future__ import annotations
@@ -29,6 +28,11 @@ from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E
 from _shared.bindings_assertions import load_bindings  # noqa: E402
 
 ROOT = find_project_root("product-explorer")
+
+UUID_PATTERN = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    re.IGNORECASE,
+)
 
 
 def _read_text(path: Path) -> str:
@@ -70,23 +74,28 @@ def check_entity_item_import(text: str) -> None:
 
 
 def check_entity_config(text: str) -> None:
-    if not re.search(r'a1b2c3d4-5678-90ab-cdef-1234567890ab', text):
-        sys.exit('FAIL: entity ID "a1b2c3d4-5678-90ab-cdef-1234567890ab" not found')
-    print("OK: entity ID configured")
+    # The agent should have discovered an entity and configured it with
+    # valid UUIDs. We check for structural correctness, not specific values.
+    id_match = re.search(r'\bid\s*=\s*["\'](' + UUID_PATTERN.pattern + r')["\']', text)
+    if not id_match:
+        sys.exit(
+            "FAIL: no DataFabricEntityItem id= with a valid UUID found — "
+            "expected the agent to discover and configure an entity"
+        )
+    print(f"OK: entity ID configured ({id_match.group(1)[:8]}...)")
 
-    if not re.search(r'379fec63-62b1-41ec-b2fc-718f8f7dda3c', text):
-        sys.exit('FAIL: folder key "379fec63-62b1-41ec-b2fc-718f8f7dda3c" not found')
-    print("OK: folder key configured")
+    fk_match = re.search(r'\bfolder_key\s*=\s*["\'](' + UUID_PATTERN.pattern + r')["\']', text)
+    if not fk_match:
+        sys.exit(
+            "FAIL: no DataFabricEntityItem folder_key= with a valid UUID found"
+        )
+    print(f"OK: folder key configured ({fk_match.group(1)[:8]}...)")
 
-    if not re.search(r'["\']Products["\']', text):
-        sys.exit('FAIL: entity name "Products" not found')
-    print('OK: entity name "Products" referenced')
-
-
-def check_tool_name(text: str) -> None:
-    if not re.search(r'["\']query_products["\']', text):
-        sys.exit('FAIL: tool name "query_products" not found')
-    print('OK: tool named "query_products"')
+    # Entity name should be a non-empty string
+    name_match = re.search(r'\bname\s*=\s*["\']([^"\']+)["\']', text)
+    if not name_match:
+        sys.exit("FAIL: no entity name= with a non-empty string found")
+    print(f'OK: entity name "{name_match.group(1)}" configured')
 
 
 def check_prompt_forwarding(text: str) -> None:
@@ -95,16 +104,12 @@ def check_prompt_forwarding(text: str) -> None:
             "FAIL: base_system_prompt parameter not found — "
             "must pass system prompt to create_datafabric_tool"
         )
-    print("OK: base_system_prompt passed to create_datafabric_tool")
+    print("OK: base_system_prompt forwarded to create_datafabric_tool")
 
 
 def check_bindings() -> None:
-    # Entity bindings are not yet supported:
-    #   - bindings.schema.json enum: asset, process, bucket, index, app, connection (no "entity")
-    #   - uip codedagent init: generate_bindings_content() always returns resources=[]
-    #   - EntityResourceOverwrite exists at runtime but isn't wired into schema validation
-    # When entity binding support lands, upgrade to:
-    #   find_resource(doc, resource="entity", key="Products.<folder_key>")
+    # Entity bindings are not yet supported in bindings.schema.json.
+    # Verify the envelope is valid.
     load_bindings(ROOT / "bindings.json")
 
 
@@ -116,7 +121,6 @@ def main() -> None:
     check_tool_factory_import(text)
     check_entity_item_import(text)
     check_entity_config(text)
-    check_tool_name(text)
     check_prompt_forwarding(text)
     violations = find_module_level_llm_clients(module)
     if violations:

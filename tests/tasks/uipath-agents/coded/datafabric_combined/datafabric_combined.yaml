@@ -1,10 +1,9 @@
 task_id: skill-agent-coded-datafabric-combined
 description: >
-  Coded-agent Data Fabric integration combining both paths: a
-  create_datafabric_tool for NL-to-SQL exploration and a @tool-wrapped
-  SDK call for deterministic writes. Verifies the agent uses the right
-  path for each concern, forwards system prompt consistently, and
-  produces a valid bindings.json envelope.
+  Coded-agent Data Fabric integration combining both paths. Agent
+  discovers entities, selects the right one, then wires both an
+  NL-to-SQL tool for freeform queries and an SDK write tool for a
+  fixed operation — with prompt forwarding and lazy init.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
 
 run_limits:
@@ -12,35 +11,25 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a LangGraph UiPath coded agent named `order-manager` that
-  manages customer orders stored in a Data Fabric entity named
-  `Orders` (entity ID `1312e893-8295-f111-9b33-0022482a9eea`,
-  folder key `379fec63-62b1-41ec-b2fc-718f8f7dda3c`).
+  Build me a coded agent called `order-manager` that works with our
+  order data in Data Fabric — find the right entity by listing what's
+  available. It needs to handle two things:
+  1. Users asking freeform questions about orders — anything from
+     totals to customer lookups. I can't predict these ahead of time.
+  2. Closing a specific order by setting its Status to "Closed" —
+     this is always the same operation.
 
-  The agent needs two tools:
-
-  1. An NL-to-SQL exploration tool named `query_orders` for answering
-     freeform questions about order data. Use exactly this import:
-     `from uipath_langchain.agent.tools import create_datafabric_tool`
-     (do NOT use `create_datafabric_query_tool` or any other internal
-     function). Pass the same system prompt to both `create_agent` and
-     `create_datafabric_tool` via `base_system_prompt`.
-
-  2. A deterministic SDK write tool named `close_order` that accepts
-     an `order_id` and marks the order's Status as "Closed" using
-     `sdk.entities`. Use the UiPath Python SDK — do NOT use
-     `create_datafabric_tool` for writes.
-
-  Use `UiPathChat` for the LLM — never instantiate `UiPathChat()` at
-  module level; wrap it in a lazy factory function. The system prompt
-  should instruct the agent to use query_orders for data questions
-  and close_order when asked to close a specific order.
-
-  Take the agent through scaffold → init — make sure bindings are
-  in sync before running init. Do NOT run, publish, upload, or
-  deploy. Complete end-to-end in a single pass.
+  The agent's instructions should apply consistently everywhere.
+  Scaffold and init only — don't run or deploy.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran uip codedagent init"
     tool_name: "Bash"

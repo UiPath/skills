@@ -1,15 +1,49 @@
 # Data Fabric Integration for Coded Agents
 
-How to query and manage UiPath Data Fabric entities from coded agents. Two integration paths exist — choose based on whether the query shape is known at build time.
+How to query and manage UiPath Data Fabric entities from coded agents. Two integration paths exist — choose based on the use case.
 
-## When to Use Which Path
+## Step 1: Discover Available Entities
 
-| Path | Import | Best for | Trade-off |
-|------|--------|----------|-----------|
-| **SDK direct** (`sdk.entities`) | `from uipath.platform import UiPath` | Deterministic queries — agent knows the exact filter, fields, and entity at build time | Reliable, no LLM cost, but requires you to code every query shape |
-| **DataFabric tool** (`create_datafabric_tool`) | `from uipath_langchain.agent.tools import create_datafabric_tool` | Exploratory NL questions — end-user asks freeform questions the agent can't anticipate | Flexible, but adds an inner LLM call for SQL generation |
+Before choosing a path, discover what entities exist. Start with folder-scoped listing — most entities live in a specific folder (commonly `Shared`):
 
-**Rule of thumb:** If you can write the filter/query in code, use the SDK. If the user's question determines the query shape at runtime, use the tool.
+```bash
+# List entities in the default Shared folder
+uip df entities list --folder-path "Shared" --output table
+
+# If the user specifies a different folder
+uip df entities list --folder-path "<FolderName>" --output table
+
+# Get full details for a specific entity (fields, types, IDs)
+uip df entities get --name "<EntityName>" --folder-path "Shared"
+```
+
+Only fall back to `--include-folders` if the entity isn't found in the expected folder:
+
+```bash
+# Search across all folders (can return many results)
+uip df entities list --include-folders --output table
+```
+
+Each entity in the output has:
+- **`Id`** (UUID) — the entity identifier needed for `DataFabricEntityItem`
+- **`Name`** — the entity name used in SDK calls (`entity_key`)
+- **`FolderId`** (UUID) — the folder key needed for `DataFabricEntityItem`
+- **`Fields`** — column names, types, and relationships
+
+**Recommend an entity to the user** based on their use case. For example, if they ask about "customer orders," look for entities with names like `Orders`, `SalesOrder`, or similar. Show them the matching entities and their fields before proceeding.
+
+## Step 2: Choose the Integration Path
+
+| Path | Best for | Trade-off |
+|------|----------|-----------|
+| **SDK direct** (`sdk.entities`) | The query shape is known at build time — same filter, same fields every time | Reliable, no LLM cost, but you code every query |
+| **`create_datafabric_tool`** | Users ask freeform questions the agent can't anticipate | Flexible, but adds an inner LLM call for SQL generation |
+
+**Rule of thumb:** If the user describes a fixed operation (e.g. "look up orders by customer name"), use the SDK. If they say "users can ask anything" or "I can't predict the questions," use `create_datafabric_tool`.
+
+**CRITICAL: For freeform/unpredictable queries, always use `create_datafabric_tool` from `uipath_langchain.agent.tools`.** Do NOT build a custom NL-to-SQL solution, do NOT use internal functions like `create_datafabric_query_tool`, and do NOT wrap raw SDK calls to handle freeform questions. The `create_datafabric_tool` factory handles schema resolution, SQL generation, error correction, and caching — reimplementing this is fragile and unsupported.
+
+Both paths can coexist in a single agent — use SDK for known operations and `create_datafabric_tool` for open-ended exploration.
 
 ---
 
@@ -223,25 +257,25 @@ graph = create_agent(_make_llm(), tools=[get_open_orders, close_order], system_p
 
 ## Path 2: DataFabric Tool (`create_datafabric_tool`)
 
-Use the pre-built NL-to-SQL tool when end-users ask freeform questions that the agent can't anticipate at build time. The tool runs an inner LLM sub-graph that translates natural language to SQL, executes it against Data Fabric, and returns results.
+Use `create_datafabric_tool` when end-users ask freeform questions that the agent can't anticipate at build time. This is the **only supported way** to add NL-to-SQL querying to a coded agent. The tool runs an inner LLM sub-graph that translates natural language to SQL, executes it against Data Fabric, and returns results.
+
+### Required Import
+
+```python
+# This is the ONLY correct import. Do NOT use create_datafabric_query_tool
+# or any other function from internal submodules.
+from uipath_langchain.agent.tools import create_datafabric_tool
+```
 
 ### Setup
 
-You need the entity UUID, name, and folder key. Discover them via CLI:
-
-```bash
-# List entities in a folder
-uip df entities list --folder-path "Shared"
-
-# Get entity details (shows ID, fields, types)
-uip df entities get --name "agentTest" --folder-path "Shared"
-```
+Use the entity ID, name, and folder key from Step 1 discovery.
 
 ### Usage
 
 ```python
 from uipath.platform.entities import DataFabricEntityItem
-from uipath_langchain.agent import create_agent
+from uipath_langchain.agent.react.agent import create_agent
 from uipath_langchain.agent.tools import create_datafabric_tool
 from uipath_langchain.chat import UiPathChat
 
@@ -375,15 +409,17 @@ graph = create_agent(llm, tools=[query_tool, close_order], system_prompt=system_
 
 ## Gotchas
 
-1. **Never instantiate `UiPath()` at module level** — it reads auth credentials at construction time. `uip codedagent init` imports your module to introspect it, and module-level `UiPath()` will fail.
+1. **Never instantiate `UiPath()` or `UiPathChat()` at module level** — they read auth credentials at construction time. `uip codedagent init` imports your module to introspect it, and module-level construction will fail. Wrap in a lazy factory function.
 
-2. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
+2. **For freeform queries, use `create_datafabric_tool` — not a custom solution.** Import it from `uipath_langchain.agent.tools`. Do NOT use `create_datafabric_query_tool` or any other internal function — those are implementation details and may change without notice.
 
-3. **SQL query constraints** — `query_entity_records` only accepts SELECT statements. Queries without WHERE must include LIMIT. Subqueries, UNION, WITH, and DML/DDL are forbidden.
+3. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
 
-4. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
+4. **SQL query constraints** — `query_entity_records` only accepts SELECT statements. Queries without WHERE must include LIMIT. Subqueries, UNION, WITH, and DML/DDL are forbidden.
 
-5. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
+5. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
+
+6. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
 
 ## Comparison with Low-Code DataFabric Context
 

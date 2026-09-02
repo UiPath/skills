@@ -1,11 +1,9 @@
 task_id: skill-agent-coded-datafabric-nl-tool
 description: >
-  Coded-agent Data Fabric integration via create_datafabric_tool.
-  Verifies the agent imports `create_datafabric_tool` from
-  `uipath_langchain.agent.tools`, configures it with
-  `DataFabricEntityItem` references, passes the same system prompt to
-  both create_agent and create_datafabric_tool, and produces a valid
-  bindings.json envelope.
+  Coded-agent Data Fabric integration via NL-to-SQL tool. Agent discovers
+  entities from the tenant, selects the right one, and wires
+  create_datafabric_tool with entity config, prompt forwarding, and
+  lazy init.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
 
 run_limits:
@@ -13,31 +11,22 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a LangGraph UiPath coded agent named `product-explorer` that
-  answers freeform natural-language questions about products stored in
-  a Data Fabric entity named `Products` (entity ID
-  `a1b2c3d4-5678-90ab-cdef-1234567890ab`, folder key
-  `379fec63-62b1-41ec-b2fc-718f8f7dda3c`).
+  Build me a coded agent called `product-explorer` that lets users
+  ask any question they want about our product catalog. The data is
+  in Data Fabric — find the right entity by listing what's available.
+  I can't predict what users will ask ahead of time. The agent's
+  instructions should apply consistently everywhere.
 
-  Create an NL-to-SQL tool named `query_products` with a description
-  that explains it queries product data. Use exactly this import:
-  `from uipath_langchain.agent.tools import create_datafabric_tool`
-  (do NOT use `create_datafabric_query_tool` or any other internal
-  function).
-
-  Important: pass the same system prompt to both `create_agent` and
-  `create_datafabric_tool` via the `base_system_prompt` parameter.
-
-  Use `DataFabricEntityItem` from `uipath.platform.entities` for
-  entity references. Use `UiPathChat` for the LLM — but never
-  instantiate `UiPathChat()` at module level; wrap it in a lazy
-  factory function and call that from inside graph construction.
-
-  Take the agent through scaffold → init — make sure bindings are
-  in sync before running init. Do NOT run, publish, upload, or
-  deploy. Complete end-to-end in a single pass.
+  Scaffold and init only — don't run or deploy.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran uip codedagent init"
     tool_name: "Bash"
