@@ -68,3 +68,22 @@ def test_invalid_json_does_not_echo_cli_output(monkeypatch: pytest.MonkeyPatch) 
     assert "invalid JSON" in message
     assert "exit 1" in message
     assert "must-not-appear" not in message
+
+
+def test_delete_issue_confirms_the_irreversible_delete(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`uip is resources run delete` never prompts and refuses without `--yes`
+    ("Confirmation required: this will delete resource 'issue' …"). Every
+    teardown in the 08-19 → 09-01 run archive omitted it and leaked its ticket."""
+    jira_is = _load_module()
+    seen: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(list(cmd))
+        return Result({"Result": "Success", "Data": {"Value": ""}})
+
+    monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    jira_is.delete_issue("conn", "CE-1")
+    (cmd,) = seen
+    assert cmd[:5] == ["uip", "is", "resources", "run", "delete"]
+    assert "--yes" in cmd
+    assert "issueId=CE-1" in cmd
