@@ -11,7 +11,10 @@ description: >
   SDD. The staged SDD must never be rewritten, renamed, or regenerated.
   Its legacy `| Tasks file |` handoff row is deliberate bait for the Lane A
   hijack — do not modernize it to the template's `Build handoff` row.
-  Offline — no tenant work is permitted or graded.
+  Because every artifact check here is a negation, the positive signal is
+  graded on the run itself: the maestro-case skill must fire, and the final
+  reply must name both unresolved resource identities as deferred until a
+  tenant session exists. Offline — no tenant work is permitted or graded.
 tags:
   - uipath-maestro-case
   - integration
@@ -50,6 +53,43 @@ initial_prompt: |
   list from the handoff header.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill (not planner Lane A)"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Final reply names both unresolved resource identities as deferred to the build machine"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. The user staged an approved
+      PlannerReturnedInvoiceCase SDD on an offline machine, told the agent to
+      stop before any tenant work, and asked it to report what stays
+      unresolved until the build machine is online.
+
+      Ground truth from the SDD: two resources carry `<UNRESOLVED>` folder
+      paths and resource identities — the API workflow `FinancialPostingFunction`
+      (task "Post Invoice") and the agent `EmailDrafter` (task "Draft
+      Notification"). Both resolve only against a live tenant.
+
+      Score 1.0 when the reply names BOTH `FinancialPostingFunction` and
+      `EmailDrafter` and states that their tenant identities (folder path /
+      resource ID / version, or equivalent wording such as "resolve at build")
+      remain unresolved until a tenant session is available. Naming other
+      deferred items as well is fine.
+
+      Score 0.5 when only one of the two resources is named, or when the reply
+      says identities are unresolved generically without naming either
+      resource.
+
+      Score 0.0 when the reply reports the resources as resolved, invents
+      concrete folder paths or resource IDs, reports nothing deferred, or
+      declines the request without saying what remains.
+    weight: 4.0
+    pass_threshold: 0.8
+
   - type: run_command
     description: "Staged sdd.md is byte-identical — never rewritten, regenerated, or normalized"
     command: "cmp -s sdd.md $TASK_DIR/fixtures/sdd.md"
