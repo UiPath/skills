@@ -29,7 +29,7 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 ### Missing `WorkflowStart`
 - **Symptom:** Variables not initialized; `$context.variables` is undefined
 - **Cause:** `WorkflowStart` activity removed or not included as first activity in `Sequence_1`
-- **Fix:** Always include `WorkflowStart` as the first activity with `isTransparent: true`. See [workflow-file-format.md](workflow-file-format.md#workflowstart-system-activity).
+- **Fix:** Always include `WorkflowStart` as the first activity with `isTransparent: true`. See [workflow-file-format.md](workflow-file-format.md#workflowstart--system-activity).
 
 ### Missing `evaluate` block
 - **Symptom:** Expressions not evaluated; workflow behaves unexpectedly
@@ -314,7 +314,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 <!--skill-flavor:connection-remediation:start-->
 - **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
 <!--skill-flavor:connection-remediation:end-->
-- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2-verify-a-vendor-connection-intsvc-only) for the full discovery+fallback flow.
+- **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`
 
@@ -373,7 +373,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     "saveToSentItems": true
   }
   ```
-- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a-flat-dotted-keys).
+- **Same rule** applies to `queryParameters` and `pathParameters`. The IS proxy unflattens the dotted keys into a nested wire payload before calling the vendor — so the over-the-wire JSON ends up identical, but the on-disk shape must be flat. See [connector-activity-discovery.md#rule-a--bodyparameters--queryparameters--pathparameters-use-flat-dotted-keys](connector-activity-discovery.md#rule-a--flat-dotted-keys).
 
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
@@ -395,7 +395,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     "message.subject": "this is a claude skill test"
   }
   ```
-  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b-bare-connector-literals).
+  References (`${$context.variables.X}`, `${$workflow.input.Y}`) stay wrapped because they're real expressions — the rule applies to literal *values*, not to references. See [connector-activity-discovery.md#rule-b--literals-in-connector-params-are-bare-not-literal-wrapped](connector-activity-discovery.md#rule-b--bare-connector-literals).
 
 ### Connector slot key and export-bucket key can differ — use the stub's values
 
@@ -420,7 +420,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
   "response": "${{ subject: $context.outputs.getNewestEmail_1.content.subject }}"
   ```
-- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c-preserve-both-computed-keys).
+- **Rule:** Read `Data.SlotKey` and `Data.ExportBucketKey` from `uip api-workflow registry stub` output. Use both verbatim. Never derive either from `objectName` by hand. See [connector-activity-discovery.md — Rule (c)](connector-activity-discovery.md#rule-c--preserve-both-computed-keys).
 
 ### `400 "Unable to parse multipart body"` from a curated send-email-style endpoint
 
@@ -499,7 +499,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```
   Place it at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. Reuse the `solution_folder` name from any existing `Solution/resources/<folder>/package/<workflow>.json` (`folders[0].fullyQualifiedName`); default is `"solution_folder"`. One file per unique connection UUID — if the workflow has two activities reusing one connection, write one file; two distinct connections → two files.
 - **Note on the user-profile debug overwrite.** StudioWeb additionally writes `Solution/userProfile/<guid>/debug_overwrites.json` mapping `solutionResourceKey` to a concrete folder + connection at debug time. That file is per-user state, written by the designer the first time you assign a debug connection. The agent does not author it; if it's missing, debug runs from the StudioWeb UI will prompt for a connection but won't 401.
-- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5-solutions-mode-intsvc-connection-synchronization) for the full flow, including where each field value comes from.
+- **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5--solutions-mode-intsvc-connection-synchronization) for the full flow, including where each field value comes from.
 <!--skill-flavor:solution-resource-diagnostics:end-->
 
 ### Required request field dropped by `registry stub`
