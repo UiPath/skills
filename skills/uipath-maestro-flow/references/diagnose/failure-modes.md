@@ -338,10 +338,12 @@ A prior successful `flow debug` or `solution upload` stamped the cloud `Solution
 Overwriting is the normal, working path — a rejection is the exception, so do not reach past step 1 on a first failure.
 
 1. **Rule out a transient.** A retryable envelope (`Retry` says so, or the message is a 5xx or a timeout) needs nothing but the command again.
-2. **Preferred: delete the cloud solution the stale id names, then re-run.** With that id gone, the next debug gets "not found" and the CLI's own import fallback takes over — nothing is left orphaned and the local `.uipx` is rewritten for you. Deleting a Studio Web solution is destructive and irreversible, so confirm with the user first (destructive operations are a consent gate — see [SKILL.md](../../SKILL.md)).
-3. **Only if the delete is refused as well, reset the local id.** Replace `SolutionId` in `<Solution>/<Solution>.uipx` with a fresh GUID and re-run: Studio Web imports a new solution and the run proceeds. Replace the value — deleting the field fails `.uipx` validation. This orphans the solution the old id named, and the next successful upload stamps the new cloud id back, so a persistently refused overwrite needs the reset before every run.
+2. **Reset the local id.** Replace `SolutionId` in `<Solution>/<Solution>.uipx` with a fresh GUID and re-run: the id is now unknown to Studio Web, so the CLI's import fallback takes over and the run proceeds. Replace the value — deleting the field fails `.uipx` validation. This is a local, reversible edit, but it does leave the earlier cloud solution behind and the next successful upload stamps the new id back, so a persistently refused overwrite needs the reset before every run.
+3. **If that does not clear it, stop and report the upload rejection.** It is a defect in the upload path, not something the project can be re-authored around.
 
-**Do not scaffold a second solution or project to route around this, and do not re-author the flow.** Cloning the Flow project into a new solution does produce a green run, but it leaves two `project.uiproj` in the tree, and every tool that resolves *the* Flow project by discovery then has nothing to pick between. If the reset does not clear the failure, stop and report the upload error.
+**Never delete the cloud solution to get a debug through.** A Studio Web solution can be shared, deployed, referenced by other projects, and carry version history that a debug run knows nothing about. Trading that for one green run is not a fix.
+
+**Never scaffold a second solution or project either, and do not re-author the flow.** Cloning the Flow project into a new solution does produce a green run, but it leaves two `project.uiproj` in the tree, and every tool that resolves *the* Flow project by discovery then has nothing to pick between.
 
 ### Reference
 
