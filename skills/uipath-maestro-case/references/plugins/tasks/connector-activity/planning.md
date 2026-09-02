@@ -14,7 +14,7 @@ For **case-level event triggers** (outside any stage), use [`plugins/triggers/ev
 
 ## Resolution Pipeline
 
-Run these steps during planning. Each step feeds into the `tasks.md` entry.
+Run these steps during planning. Each step feeds into the resolved entry.
 
 ### 1. Find the connector in TypeCache
 
@@ -87,7 +87,7 @@ Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a 
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing the resolved entry. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -95,7 +95,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ### 5. Validate required fields (HARD GATE)
 
-This is a hard gate — do NOT proceed to writing tasks.md until every required field has a value.
+This is a hard gate — do NOT proceed to writing the resolved entry until every required field has a value.
 
 1. Collect every `inputs.*[?required]` entry from the spec output (across `bodyFields`, `pathParameters`, `queryParameters`).
 2. For each, check whether sdd.md names a value (literal, variable reference, or cross-task output).
@@ -121,7 +121,7 @@ Values can be:
 - **Pre-wrapped operator expressions** — `=js:(vars.amount > 5000)` (already canonical — pass-through)
 - **Cross-task refs** — `<- "Stage"."Task".output` (impl resolves through the common [output-reference-ID algorithm](../../variables/io-binding/impl-json.md#output-reference-id-authoritative) to `=vars.<outputReferenceId>`, then wraps)
 
-> **tasks.md carries SDD-natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+> **The SDD carries natural form.** The implementation step (Step 9.7 of connector-activity impl) rewrites every reference to its canonical sink form when constructing `--input-details`. Connector body sinks use `=js:(<expr>)`. Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### 7. Optional — author a server-side filter
 
@@ -129,7 +129,7 @@ If `spec.filter` exists, author a FilterTree. Otherwise map an SDD filter only t
 
 Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
 
-The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
+The filter tree goes into `registry-resolved.json` under `filter` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
 
 ### 8. Build input-values
 
@@ -151,7 +151,7 @@ When `inputs.bodyFields[].name` contains `[*]` (e.g. `toRecipients[*].emailAddre
 
 **Translation algorithm.** Group spec body fields by parent (the prefix before `[*]`). For each parent:
 
-| Spec — fields with `[*]` for this parent | SDD value form | Planner output (wire shape into `tasks.md input-values.bodyParameters[<parent>]`) |
+| Spec — fields with `[*]` for this parent | SDD value form | Planner output (wire shape into `input-values.bodyParameters[<parent>]`) |
 |---|---|---|
 | Exactly one sub-field `<parent>[*].<leaf>` of `dataType: <T>` | List of scalars matching `<T>` (e.g. `["a@x", "b@y"]`) | `[nestUnder(<leaf>, v) for v in sdd_value]` — each scalar becomes `{<leaf nested>: v}` |
 | One or more sub-fields | List of objects already matching the element shape (e.g. `[{"emailAddress":{"address":"a@x"}}]`) | Pass through unchanged |
@@ -167,7 +167,7 @@ Spec exposes `toRecipients[*].emailAddress.address` (one sub-field, dataType `st
 | bccRecipients | Array of string | ["b@x", "c@x"]    |
 ```
 
-Planner emits to `tasks.md input-values.bodyParameters`:
+Resolution emits to `input-values.bodyParameters`:
 
 ```json
 {
@@ -178,28 +178,32 @@ Planner emits to `tasks.md input-values.bodyParameters`:
 
 **Never** emit a key with literal `[*]` in `bodyParameters`. The CLI accepts it (well-formed JSON) and validate passes; runtime APIs (Microsoft Graph, Slack, etc.) reject with HTTP 400 `UnableToDeserializePostBody`. Pre-input scan in [`impl-json.md` § Step 1.b](impl-json.md#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
 
-## tasks.md Entry Format
+## Fields to Resolve
 
-Populate `outputs:` using the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list).
+Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
 
-```markdown
-## T<n>: Add connector-activity task "<display-name>" to "<stage>"
-- type-id: <uiPathActivityTypeId>
-- connection-id: <connection-uuid>
-- connector-key: <connectorKey>
-- object-name: <objectName>
-- input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
-- outputs:                            # optional; omit only when the SDD declares none
-  - <SDD output row, copied verbatim>
-- isRequired: true
-- runOnlyOnce: false
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
-- order: after T<m>
-- lane: <n>
-- verify: tasks.md `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
+```json
+{
+  "stage": "<stage>",
+  "task": "<display-name>",
+  "taskType": "connector-activity",
+  "cacheFile": "typecache-activities-index.json",
+  "searchQuery": "<activity display name>",
+  "matches": [],
+  "selected": {},
+  "type-id": "<uiPathActivityTypeId>",
+  "connection-id": "<connection-uuid>",
+  "connector-key": "<connectorKey>",
+  "object-name": "<objectName>",
+  "input-values": { "bodyParameters": {}, "queryParameters": {}, "pathParameters": {} },
+  "filter": { "groupOperator": "And", "index": 0, "uuId": null, "filters": [{ "id": "Status", "operator": "Equals", "value": { "isLiteral": true, "rawString": "\"Active\"", "value": "Active" }, "uiId": null }] },
+  "rationale": "<why this activity and connection were selected>"
+}
 ```
+
+`input-values` and `filter` are real JSON objects, not strings — Phase 2 reads them back verbatim into `--input-details`. Before leaving this step, confirm the resolved `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, and `pathParameters` (Step 5 above).
+
+Output bindings are **not** recorded here: they come from the SDD Outputs table through the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list), which is a reasoning form and never written to disk. Required, run-only-once, activation mode, entry rule, and lane likewise stay in `sdd.md` ([planning.md § Step 4](../../../planning.md)).
 
 `filter:` is optional and present only when the operation supports CEQL (i.e. `spec.filter` was non-null in step 7).
 

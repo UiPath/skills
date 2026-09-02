@@ -165,7 +165,7 @@ simulation:
     - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items, unresolved/tenant-default connector IDs, or unresolved agent identities, approve anyway — the unresolved identities are intentional for this design spec, but the concrete agent resource names must remain."
     - "Do not request design changes or add new requirements — the draft is settled. Do not ask the agent to re-run the interview."
     - "Decline or skip any optional HTML-preview offer."
-    - "Keep the agent at design/finalization only. If it offers to plan tasks.md, build a caseplan, or move to a later phase, tell it to stop at the approved sdd.md."
+    - "Keep the agent at design/finalization only. If it offers to build a caseplan or move to a later phase, tell it to stop at the approved sdd.md."
     - "Once sdd.md is approved, the task is done — end the conversation; do not open new topics."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 10

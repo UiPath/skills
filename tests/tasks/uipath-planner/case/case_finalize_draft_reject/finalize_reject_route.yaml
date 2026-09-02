@@ -83,6 +83,6 @@ simulation:
     - "Approve the finalized sdd.md on the first pass. Approve anyway if it warns about the unresolved api-workflow identities or raises review items."
     - "Confirm that choosing Reject on the Reviewer Decision routes to Application Rejected automatically, and that nobody picks that lane by hand."
     - "Do not request design changes or add requirements."
-    - "Keep the agent at design/finalization only. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
+    - "Keep the agent at design/finalization only. If it offers to build a caseplan, tell it to stop at the approved sdd.md."
     - "Keep replies to one sentence."
   max_turns: 8
