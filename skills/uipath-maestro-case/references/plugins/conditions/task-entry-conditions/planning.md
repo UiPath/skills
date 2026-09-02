@@ -94,7 +94,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 task-entry condition on task "<task>" in stage "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
-- activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate
+- activation-mode: sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate
 - rationale: "<why this activation/sequencing mode fits>"
 - display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - rule-type: selected-tasks-completed
