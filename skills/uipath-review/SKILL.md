@@ -269,23 +269,14 @@ The CLI runs the deterministic static checks its registry ships — structural/s
 
 #### 2.5b — Apply the judgment catalog (reasoning the CLI cannot do)
 
-<<<<<<< HEAD
 1. **Identify which catalog files apply** for the current project type:
-=======
-| Signal | Catalog |
-|---|---|
-| `agent.json.type == lowCode` | `references/agents/agents-lowcode-rules.md` |
-| Python coded-agent or `agent.json.type == coded` | `references/agents/agents-coded-rules.md` |
-| `pyproject.toml` + `main.py` + `uipath.json[functions]` without framework config | coded catalog |
-| `package.json` + `uipath.json[functions]` (no `pyproject.toml`) — Coded Function (JS/TS) | phase 2; no agent catalog |
-| RPA, Flow, Coded App | phase 2; no agent catalog |
->>>>>>> f77e198bb (feat(uipath-functions): teach JS/TS Coded Functions in the one functions skill (references/js + references/python) (#2951))
 
 | Signals present | Project type | Catalog files |
 |---|---|---|
 | `agent.json.type == "lowCode"` | Agent (low-code) | `references/agents/agents-lowcode-rules.md` |
 | Python coded-agent signals or `agent.json.type == "coded"` | Agent (coded) | `references/agents/agents-coded-rules.md` |
 | `pyproject.toml` + `main.py` + `uipath.json[functions]` only (no framework config) | Agent (coded — Simple Function) | same as Agent (coded) |
+| `package.json` + `uipath.json[functions]` (no `pyproject.toml`) | Coded Function (JS/TS) | *(phase 2)* |
 | `project.json` + `.xaml` / `.cs` | RPA | *(phase 2)* |
 | `*.flow` | Flow | *(phase 2)* |
 | `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |
