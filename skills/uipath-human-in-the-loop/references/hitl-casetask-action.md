@@ -165,7 +165,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
   "entryConditions": [
     {
       "id": "Condition_EnTk1",
-      "displayName": "Entry Rule 1",
+      "displayName": "Entry rule 1",
       "rules": [ [ { "id": "Rule_EnTk1", "rule": "current-stage-entered" } ] ]
     }
   ],
@@ -342,7 +342,7 @@ For the full binding procedure, see [bindings/impl-json.md](../../uipath-maestro
   "entryConditions": [
     {
       "id": "Condition_EnTk1",
-      "displayName": "Entry Rule 1",
+      "displayName": "Entry rule 1",
       "rules": [ [ { "id": "Rule_EnTk1", "rule": "current-stage-entered" } ] ]
     }
   ],

@@ -34,7 +34,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 4. Locate the target task inside `stageNode.data.tasks[lane][index]` (search every lane until the task ID is found)
 5. Initialize `task.entryConditions = []` if absent
 6. Read the rule type from the SDD's Entry Condition table; pick the recipe below
-7. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+7. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
 8. Append the condition object to `task.entryConditions[]`
 
 ## Rule Types
@@ -149,7 +149,7 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of Entry Condition rows the SDD declares for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+Confirm target task's `entryConditions[]` length equals the number of Entry Condition rows the SDD declares for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
 
 **This count-parity check is not a safety net on its own** — it only confirms Step 10 wrote what the SDD's condition rows asked for; if the write was skipped entirely (a Phase 1 planning gap), parity holds at zero and the task silently ends up with no entry rule, which hangs `case debug` indefinitely instead of failing any build-time check. [`implementation.md § Step 12 Check 15`](../../../implementation.md#step-12--end-of-phase-3-validator-pass) is the mandatory backstop that re-derives the expected rule from the source SDD independent of whether Step 10 ran.
 

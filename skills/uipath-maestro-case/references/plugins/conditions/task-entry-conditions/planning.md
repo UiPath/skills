@@ -18,7 +18,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 |-------|--------|-------|
 | `<stage-id>`, `<task-id>` | Captured from prior steps | |
 | `rationale` | sdd.md task Design Rationale | Required reviewer context for the activation/sequencing choice. Not emitted into caseplan JSON. |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry rule {N}`. |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
 | `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
@@ -95,7 +95,7 @@ task-entry condition on task "<task>" in stage "<stage>" — <summary>
 - target-task: "<task-name>"
 - activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate
 - rationale: "<why this activation/sequencing mode fits>"
-- display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
+- display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry rule {N}"
 - rule-type: selected-tasks-completed
 - selected-tasks: "<Task A>, <Task B>"
 - condition-expression: "=js:vars.X..."   # optional gate on case state, NOT the event payload

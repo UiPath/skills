@@ -177,7 +177,7 @@ Configuration cell = user intent in business terms (`Record created`, `Email rec
 selected-stage rules are for non-completing exits (alternate dispositions: Withdrawn / Rejected /
 Cancelled — required when the case has ≥1 secondary stage, else high review item `Alt-disposition exits
 missing`). ≥1 Yes row always. Display Name defaulting (every condition table in this SDD): carry the
-author's value verbatim; blank → `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` by table kind,
+author's value verbatim; blank → `Entry rule {N}` / `Completion rule {N}` / `Exit rule {N}` by table kind,
 N 1-based per label kind — never invent a label otherwise. -->
 
 | WHEN | IF | THEN | Marks Case Complete | Display Name |

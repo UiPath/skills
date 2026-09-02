@@ -31,7 +31,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.exitConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
 5. Read the exit type, exit-to-stage, marks-stage-complete, and rule type from the SDD's Stage Exit Conditions row; pick the recipe below. `exit-to-stage` is a stage **name** — resolve it to `exitToStageId` through `tasks/id-map.json`; never derive the id from the label (`Stage_<name>`).
-6. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-stage-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `stageNode.data.exitConditions[]` whose `marksStageComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
+6. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-stage-complete`: `true` → `Completion rule {N}`, `false` → `Exit rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `stageNode.data.exitConditions[]` whose `marksStageComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.exitConditions[]`
 
 ## Exit Types
@@ -109,7 +109,7 @@ To route the **origin** stage into a decision/signal-routed exception lane (the 
     "conditionExpression": "=js:(vars.<signal> === <exception-value>)" } ]] }
 
 // origin completion (normal path) — gated by the inverse IF
-{ "id": "Condition_yyyyyy", "displayName": "Complete Rule 1", "type": "exit-only",
+{ "id": "Condition_yyyyyy", "displayName": "Completion rule 1", "type": "exit-only",
   "marksStageComplete": true,
   "rules": [[ { "id": "Rule_yyyyyy", "rule": "required-tasks-completed",
     "conditionExpression": "=js:(vars.<signal> !== <exception-value>)" } ]] }
@@ -130,6 +130,6 @@ The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.
 
 ## Post-Write Verification
 
-Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Completion rule {N}` / `Exit rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
 
 <!-- END: impl-json.md -->

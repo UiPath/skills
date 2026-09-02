@@ -17,7 +17,7 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | Captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Complete Rule {N}` (marks-stage-complete `true`) / `Exit Rule {N}` (`false`). |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-stage-complete `true`) / `Exit rule {N}` (`false`). |
 | `type` | sdd.md exit style | `exit-only` / `wait-for-user` / `return-to-origin` |
 | `exit-to-stage-id` | sdd.md routing target (optional) | Required when routing to a specific stage |
 | `marks-stage-complete` | sdd.md (default depends on type) | `true` for completion exits, `false` for diverging routes |
@@ -68,7 +68,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 ```text
 stage-exit condition on "<stage>" — <summary>
 - target-stage: "<stage-name>"
-- display-name: "<name>"                        # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-stage-complete
+- display-name: "<name>"                        # optional — omit when blank; impl defaults to "Completion rule {N}"/"Exit rule {N}" per marks-stage-complete
 - type: exit-only
 - exit-to-stage: "<target-stage-name>"          # optional
 - marks-stage-complete: true

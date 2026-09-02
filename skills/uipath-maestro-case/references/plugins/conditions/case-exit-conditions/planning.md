@@ -16,7 +16,7 @@ Every case-exit condition declared in sdd.md gets its own caseplan element — *
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Complete Rule {N}` (marks-case-complete `true`) / `Exit Rule {N}` (`false`). e.g., "Case resolved", "Closed — escalation path" |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Case completion rule {N}` (marks-case-complete `true`) / `Case exit {N}` (`false`). e.g., "Case resolved", "Closed — escalation path" |
 | `marks-case-complete` | sdd.md | `true` for normal completion, `false` for non-completing exits |
 | `rule-type` | From catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | Resolved from stage capture map |
