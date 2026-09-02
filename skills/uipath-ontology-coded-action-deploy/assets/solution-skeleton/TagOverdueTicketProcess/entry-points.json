@@ -1,0 +1,105 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "content/functions/tagOverdueTicket.ts",
+      "uniqueId": "13b9c07a-abd3-4983-a3ff-de56e6c2021e",
+      "type": "function",
+      "input": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string"
+          },
+          "ticket": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "TicketId": {
+                  "type": "string"
+                },
+                "TicketNumber": {
+                  "type": "string"
+                },
+                "Subject": {
+                  "type": "string"
+                },
+                "Sev": {
+                  "type": "string"
+                },
+                "Status": {
+                  "type": "string"
+                },
+                "CreatedAt": {
+                  "type": "string"
+                },
+                "DueAt": {
+                  "type": "string"
+                },
+                "Labels": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "TicketId",
+                "TicketNumber",
+                "Subject",
+                "Sev",
+                "Status",
+                "CreatedAt",
+                "DueAt",
+                "Labels"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "ticketId",
+          "ticket"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "edits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "CREATE",
+                    "UPDATE",
+                    "DELETE"
+                  ]
+                },
+                "entity": {
+                  "type": "string"
+                },
+                "properties": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "op",
+                "entity",
+                "properties"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "edits"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

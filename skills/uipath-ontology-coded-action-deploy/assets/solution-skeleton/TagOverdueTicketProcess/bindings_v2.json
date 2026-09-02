@@ -1,0 +1,25 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/bindings",
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "HttpTrigger",
+      "key": "a30a4756-412d-4368-bd1d-f4a8a4e22d43",
+      "id": "6fadafac-47fa-43d8-8562-d02f2c913e44",
+      "value": {
+        "EntryPointUniqueId": {
+          "DefaultValue": "13b9c07a-abd3-4983-a3ff-de56e6c2021e",
+          "IsExpression": false
+        }
+      },
+      "metadata": {
+        "BindingsVersion": "2.1",
+        "Name": "tagOverdueTicket",
+        "Method": "POST",
+        "Slug": "/tagOverdueTicket",
+        "CallingMode": "LongPolling",
+        "Description": "Recomputes a ticket due date from its severity and appends TICKET_OVERDUE once that deadline has passed. Closed tickets are left alone."
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "projectVersion": "1.0.0",
+  "projectId": "98f311d7-a993-4c6d-ae4a-6026e1957c06",
+  "id": "98f311d7-a993-4c6d-ae4a-6026e1957c06",
+  "name": "TagOverdueTicketProcess",
+  "description": "A sample function project",
+  "author": "UiPath",
+  "runtimeOptions": {
+    "type": "function",
+    "language": "typescript"
+  },
+  "functions": {
+    "tagOverdueTicket": "functions/tagOverdueTicket.ts:default"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TagOverdueTicketProcess",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8d4f7fe2-82a8-400f-abaf-81e5af571ef2",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "TagOverdueTicketProcess",
+      "description": null
+    },
+    "locks": [],
+    "key": "941a7341-22bf-4995-b5ab-a9d63f9db521"
+  }
+}

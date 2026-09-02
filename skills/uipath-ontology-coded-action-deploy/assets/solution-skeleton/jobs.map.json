@@ -1,0 +1,13 @@
+{
+  "$comment": [
+    "Maps a Solution function project to the job source that supplies its code. Paths are",
+    "relative to this file. The stage step copies each source into the project as",
+    "functions/<jobName>.ts in a temporary staging tree; this directory is never mutated,",
+    "and `uip functions pack` rebuilds each project's functions map from that directory.",
+    "solution_scaffold.py rewrites this file at instantiation; the entry below is the",
+    "skeleton's own exemplar."
+  ],
+  "projects": {
+    "TagOverdueTicketProcess": "../jobs/tagOverdueTicket.ts"
+  }
+}
