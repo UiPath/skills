@@ -190,8 +190,8 @@
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
-/skills/uipath-insights/ @suranabhavya @rliuup
-/tests/tasks/uipath-insights/ @suranabhavya @rliuup
+/skills/uipath-insights/ @UiPath/insights
+/tests/tasks/uipath-insights/ @UiPath/insights
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif
