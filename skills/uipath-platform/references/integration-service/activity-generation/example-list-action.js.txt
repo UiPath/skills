@@ -1,0 +1,57 @@
+// listUserGroups — lists Slack user groups. Also the design-time lookup for
+// user-group ID fields: run it and filter the output; it does no matching itself.
+//
+// ONE invocation = ONE page; the consumer loops by echoing the
+// `elements-next-page-token` header back. Never walk the cursor here.
+async function execute(context) {
+  const { include_disabled, team_id } = context.request.body ?? {};
+  const query = { include_disabled, team_id };
+
+  // INBOUND — decode the previous page's token straight into the vendor's paging
+  // params. `undefined` on page one, so `?? {}` needs no branching. Because the
+  // token envelope is keyed by the VENDOR's own paging parameter, whatever comes
+  // back is already the params to merge: no per-vendor branching here.
+  Object.assign(query, intsvc.decodePageToken(context.request.headers) ?? {});
+
+  const listed = await intsvc.http({
+    method: 'GET',
+    url: '/usergroups.list',
+    query,
+    headers: context.request.headers,
+  });
+
+  // FAILURE CHECK — vendor-specific, and this one is SLACK's: it fails in-band
+  // with HTTP 200 + { ok: false }, which a status check would miss. `intsvc.http`
+  // never throws on a vendor 4xx/5xx either.
+  //
+  // DO NOT copy this line for another vendor — against an API with no `ok` field
+  // it throws on every SUCCESSFUL call. Use `resp.status >= 400` for a
+  // REST-conventional vendor, `resp?.body?.error` for Graph-style, or both.
+  if (!listed?.body?.ok) {
+    throw new Error('Failed to retrieve user groups' + JSON.stringify(listed?.body ?? listed?.raw));
+  }
+
+  // OUTBOUND — a LIST action returns the RELEVANT RECORDS ARRAY, so the vendor's
+  // envelope (`{ ok, usergroups: [] }`) is unwrapped here; the consumer gets the
+  // array and nothing else, which is why the list activity's Standard resource
+  // declares only that array as its output.
+  //
+  // handlePagination stamps the next-page token onto that reshaped response. The
+  // middle two arguments come from the VENDOR's docs: where its token lives in
+  // the response, and the name of its paging PARAMETER. It returns the response
+  // UNCHANGED when there is no next page — an absent header is exactly how the
+  // consumer learns the list is exhausted, so an empty token is never stamped.
+  //
+  // The 4th argument is MANDATORY here and forgetting it fails SILENTLY: we just
+  // unwrapped the envelope to return the records array, and the token lived in
+  // that envelope. Without it the path resolves against the reshaped response,
+  // finds nothing, and emits no header — so the consumer stops early and the
+  // list is truncated with no error anywhere. A MAIN action that returns the
+  // intsvc.http result untouched can omit it; a LIST action essentially cannot.
+  return intsvc.handlePagination(
+    { status: 200, headers: [], body: listed.body.usergroups ?? [] },  // stamp this
+    'body.response_metadata.next_cursor',                              // token lives here…
+    'cursor',                                                          // vendor's paging param
+    listed,                                                            // …in THIS response
+  );
+}

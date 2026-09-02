@@ -87,6 +87,16 @@ uip is resources list "<connector-key>" \
   --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --output json
 ```
 
+The resource surface is much larger than the activity list — a connector with 22
+activities routinely exposes 187 resources — so an operation with no activity is
+usually still reachable here. Search the full list, not just exact name matches.
+
+| Outcome | Action |
+|---|---|
+| A resource covers the operation | Proceed to Step 4c. |
+| No resource covers it | **Generate the activity, then execute it** — see [activity-generation.md](activity-generation.md). It checks first whether the connector can host a generated activity, and stops if it cannot. |
+| The vendor has no such operation at all | Tell the user. Do not synthesise one. |
+
 **4c. Describe the target resource** — get field metadata for the matched object:
 
 ```bash
