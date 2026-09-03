@@ -22,7 +22,6 @@ import contextlib
 import os
 import re
 import secrets
-import signal
 import subprocess
 import sys
 import time
@@ -88,27 +87,34 @@ SCENARIO_BUNDLES = {
         "informational-auto-disabled-high-impact-context",
     ),
 }
-# Solution cleanup policy. Deleting is the DEFAULT and the unset behaviour:
-# an eval run must not leave tenant clutter behind. Set
-# BPMN_E2E_CLEANUP=never only for a deliberate manual inspection, when someone
-# has asked for the Alpha link; the run then prints the surviving solution ids
-# and it is that person's job to delete them. Connector side effects (Jira
-# issues, Drive copies, Slack messages) are ALWAYS cleaned regardless: they
-# live in shared external sandboxes, not in the solution under inspection.
-CLEANUP_POLICY_ENV = "BPMN_E2E_CLEANUP"
-
-
-def solution_cleanup_policy() -> str:
-    """Return `always` (delete, the default) or `never` (preserve)."""
-
-    policy = os.environ.get(CLEANUP_POLICY_ENV, "always").strip().casefold()
-    if policy not in {"always", "never"}:
-        print(
-            f"WARNING {CLEANUP_POLICY_ENV}={policy!r} is not always|never; "
-            "falling back to always (delete)"
-        )
-        return "always"
-    return policy
+SCENARIO_RESULTS = Path(".customer-escalation-results.json")
+# Working directory for the ephemeral solution and per-scenario debug logs.
+# Under the sandbox CWD so the standard post_run sweep can glob the .uipx.
+LIVE_RUN_DIR = Path(".customer-escalation-live")
+# Outcome families. Each is graded as its own criterion so a submission that
+# gets, say, classification right but attachments wrong scores accordingly.
+SCENARIO_BUNDLES = {
+    "classification": (
+        "mixed-case-sev1-new-two-attachments",
+        "whitespace-duplicate-degraded",
+        "standard-tier-unavailable-no-workaround-sev2",
+        "existing-sev1-jira-available",
+    ),
+    "precedence": (
+        "crm-zero-precedes-agent-and-jira",
+        "crm-ambiguous-precedes-agent",
+        "invalid-agent-single-match",
+    ),
+    "fault_recovery": (
+        "existing-sev3-jira-unavailable",
+        "jira-unavailable-sev2-typed-boundary",
+        "jira-unavailable-sev1-typed-boundary",
+    ),
+    "attachments_and_comms": (
+        "informational-auto-send-one-attachment",
+        "informational-auto-disabled-high-impact-context",
+    ),
+}
 # Timeout budget. The single load-bearing number is the run_command
 # `timeout` in customer_escalation_triage.yaml, mirrored here as
 # GRADER_TIMEOUT_SECONDS — coder_eval SIGKILLs this process there, and nothing
@@ -749,58 +755,6 @@ def run_cli(
     )
 
 
-@dataclass
-class CleanupSignalState:
-    termination_requested: bool = False
-    cleanup_started: bool = False
-
-    def begin_cleanup(self) -> None:
-        self.cleanup_started = True
-
-    def handle(self, _signum: int, _frame: Any) -> None:
-        if self.cleanup_started or self.termination_requested:
-            self.termination_requested = True
-            return
-        self.termination_requested = True
-        raise KeyboardInterrupt("terminated during live Alpha evaluation")
-
-
-def collect_cleanup_failures(
-    stages: tuple[tuple[str, Any], ...],
-    *,
-    emit_benchmarks: bool = False,
-) -> list[str]:
-    failures: list[str] = []
-    for label, cleanup in stages:
-        started = time.monotonic()
-        interrupted = False
-        try:
-            while True:
-                try:
-                    failures.extend(cleanup())
-                    break
-                except KeyboardInterrupt as exc:
-                    deadline_expired = (
-                        ACTIVE_CLI_DEADLINE is not None
-                        and time.monotonic() >= ACTIVE_CLI_DEADLINE
-                    )
-                    if interrupted or deadline_expired:
-                        failures.append(
-                            f"{label} cleanup raised unexpectedly: {exc}"
-                        )
-                        break
-                    interrupted = True
-        except BaseException as exc:
-            failures.append(f"{label} cleanup raised unexpectedly: {exc}")
-        finally:
-            if emit_benchmarks:
-                print(
-                    f"BENCHMARK stage=cleanup-{label.replace(' ', '-')} "
-                    f"duration_seconds={time.monotonic() - started:.3f}"
-                )
-    return failures
-
-
 def payload_data(
     completed: subprocess.CompletedProcess[str],
     label: str,
@@ -846,131 +800,35 @@ def assert_live_target() -> dict[str, str]:
     return expected
 
 
-class JournaledSet(set):
-    """Set that durably records every addition to the cleanup journal."""
+def record_created_id(kind: str, value: Any) -> None:
+    """Append a created resource id to the cleanup journal, immediately.
 
-    def __init__(self, kind: str, journal: Path | None = None):
+    The task's post_run connector sweep replays this file. It is a plain
+    append rather than the fsynced set subclass it replaced: the write happens
+    the moment the resource exists, so there is no kill window worth an fsync,
+    and the standard `_shared/cleanup_solutions.py` handles solutions from the
+    `.uipx` instead. Follows the `.created_keys` flat-file precedent in the
+    flow suite's Jira teardown.
+    """
+
+    try:
+        with CLEANUP_JOURNAL.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"kind": kind, "value": value}) + "\n")
+    except OSError:
+        # Journalling is a cleanup backstop; never fail a live scenario over it.
+        pass
+
+
+class RecordingSet(set):
+    """Set that appends every addition to the cleanup journal."""
+
+    def __init__(self, kind: str):
         super().__init__()
         self.kind = kind
-        # Resolved per append so a test (or the post_run sweep) can redirect
-        # the journal by patching the module constant.
-        self.journal = journal
 
     def add(self, value: Any) -> None:
         super().add(value)
-        journal = self.journal if self.journal is not None else CLEANUP_JOURNAL
-        try:
-            with journal.open("a", encoding="utf-8") as handle:
-                handle.write(
-                    json.dumps({"kind": self.kind, "value": value}) + "\n"
-                )
-                handle.flush()
-                os.fsync(handle.fileno())
-        except OSError:
-            # Cleanup journalling is a backstop; never fail a live scenario
-            # because the sandbox filesystem rejected the append.
-            pass
-
-
-class AlphaSolutionLease:
-    def __init__(self, solution_file: Path):
-        self.solution_file = solution_file
-        self.solution_ids: set[str] = JournaledSet("solution")
-        self.removed_solution_ids: set[str] = set()
-        self.cleaned = False
-
-    def capture_manifest(self) -> None:
-        if not self.solution_file.is_file():
-            return
-        try:
-            payload = json.loads(
-                self.solution_file.read_text(encoding="utf-8")
-            )
-        except (OSError, json.JSONDecodeError):
-            return
-        solution_id = get_ci(payload, "SolutionId")
-        if not isinstance(solution_id, str) or not re.fullmatch(
-            r"[0-9a-fA-F]{8}-"
-            r"[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{12}",
-            solution_id,
-        ):
-            return
-        self.solution_ids.add(solution_id)
-        if solution_id not in self.removed_solution_ids:
-            self.cleaned = False
-
-    def cleanup(self) -> list[str]:
-        self.capture_manifest()
-        if solution_cleanup_policy() == "never":
-            for solution_id in sorted(self.solution_ids):
-                print(
-                    f"PRESERVED Alpha solution {solution_id} "
-                    f"({EXPECTED_LIVE_TARGET['BaseUrl']}/"
-                    f"{EXPECTED_LIVE_TARGET['Organization']}/"
-                    f"{EXPECTED_LIVE_TARGET['Tenant']}) — "
-                    f"{CLEANUP_POLICY_ENV}=never was set, so delete it by hand"
-                )
-            if not self.solution_ids:
-                print(
-                    f"{CLEANUP_POLICY_ENV}=never was set but no solution id "
-                    "was captured, so nothing was preserved"
-                )
-            self.cleaned = True
-            return []
-        failures: dict[str, str] = {}
-        for _attempt in range(2):
-            pending = self.solution_ids - self.removed_solution_ids
-            if not pending:
-                break
-            for solution_id in sorted(pending):
-                completed: subprocess.CompletedProcess[str] | None = None
-                try:
-                    completed = run_cli(
-                        [
-                            "uip",
-                            "solution",
-                            "delete",
-                            solution_id,
-                            "--yes",
-                        ],
-                        timeout=180,
-                    )
-                    _payload, _data = payload_data(
-                        completed,
-                        f"delete Alpha solution {solution_id}",
-                    )
-                except Exception as exc:
-                    # A local SolutionId exists immediately after
-                    # `solution init`. If import/upload fails before Alpha sees
-                    # it, deletion returns 404 because no remote resource
-                    # exists. Treat that as an idempotent cleanup success.
-                    if (
-                        completed is not None
-                        and delete_target_is_absent(
-                            completed,
-                            "solution",
-                            solution_id,
-                        )
-                    ):
-                        self.removed_solution_ids.add(solution_id)
-                        failures.pop(solution_id, None)
-                    else:
-                        failures[solution_id] = str(exc)
-                else:
-                    self.removed_solution_ids.add(solution_id)
-                    failures.pop(solution_id, None)
-        pending = self.solution_ids - self.removed_solution_ids
-        self.cleaned = not pending
-        return [
-            failures.get(
-                solution_id,
-                f"delete Alpha solution {solution_id} did not complete",
-            )
-            for solution_id in sorted(pending)
-        ]
+        record_created_id(self.kind, value)
 
 
 @dataclass(frozen=True)
@@ -1157,11 +1015,9 @@ def delete_target_is_absent(
 class ConnectorSideEffectLease:
     def __init__(self, environment: LiveEnvironment):
         self.environment = environment
-        self.jira_issue_ids: set[str] = JournaledSet("jira_issue")
-        self.drive_file_ids: set[str] = JournaledSet("drive_file")
-        self.slack_messages: set[tuple[str, str]] = JournaledSet(
-            "slack_message"
-        )
+        self.jira_issue_ids: set[str] = RecordingSet("jira_issue")
+        self.drive_file_ids: set[str] = RecordingSet("drive_file")
+        self.slack_messages: set[tuple[str, str]] = RecordingSet("slack_message")
         self.pending_jira_seeds: dict[str, str] = {}
 
     def begin_jira_seed(self, case_name: str, summary: str) -> None:
@@ -1645,14 +1501,21 @@ def capture_connector_outputs_for_cleanup(
 
 
 
-def variables_all_with_cleanup_recovery(
+def read_variables_all(
     instance_id: str,
     case_name: str,
     contract: RuntimeContract,
     environment: LiveEnvironment,
-    solution_lease: AlphaSolutionLease,
     side_effects: ConnectorSideEffectLease,
 ) -> tuple[Any, Any]:
+    """Read runtime variables, recording connector ids as a side effect.
+
+    The capture-on-read is the one piece of the old recovery machinery worth
+    keeping: a debug run creates real Jira/Drive/Slack records, and this is
+    the only place their ids appear, so they must be journalled even when the
+    read then fails. Hence the single retry below.
+    """
+
     def read_and_capture(label: str) -> tuple[Any, Any]:
         completed = run_cli(
             [
@@ -2183,365 +2046,32 @@ def tail_log(path: Path, limit: int = 5000) -> str:
     return text[-limit:]
 
 
-def diagnostic_text(value: Any) -> str:
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    return value if isinstance(value, str) else ""
-
-
-def logged_instance_id(*diagnostics: Any) -> str | None:
-    texts = [diagnostic_text(value) for value in diagnostics]
-    structured_ids: list[str] = []
-    fallback_texts: list[str] = []
-    for text in texts:
-        if not text.strip():
-            continue
-        try:
-            payload = parse_json_output(text, "debug diagnostic")
-        except CheckFailure:
-            fallback_texts.append(text)
-            continue
-        data = get_ci(payload, "Data")
-        instance_id = get_ci(data, "InstanceId")
-        if isinstance(instance_id, str) and instance_id:
-            structured_ids.append(instance_id)
-        for field in ("Message", "Instructions"):
-            trusted_diagnostic = get_ci(payload, field)
-            if isinstance(trusted_diagnostic, str):
-                fallback_texts.append(trusted_diagnostic)
-    unique_structured = list(dict.fromkeys(structured_ids))
-    if unique_structured:
-        return (
-            unique_structured[0]
-            if len(unique_structured) == 1
-            else None
-        )
-
-    matches: list[str] = []
-    pattern = re.compile(
-        r"""(?ix)
-        (?<![A-Za-z0-9_])
-        instance(?:[\s_-]*id)
-        ["']?\s*[:=]\s*["']?
-        ([A-Za-z0-9][A-Za-z0-9._:-]{2,})
-        """
-    )
-    for text in fallback_texts:
-        matches.extend(match.group(1) for match in pattern.finditer(text))
-    unique = list(dict.fromkeys(matches))
-    return unique[-1] if len(unique) == 1 else None
-
-
-def read_debug_log(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-
-
-def debug_instance_terminal_or_absent_state(
-    completed: subprocess.CompletedProcess[str],
-    instance_id: str,
-) -> str | None:
-    detail = f"{completed.stdout}\n{completed.stderr}".casefold()
-    try:
-        payload = parse_json_output(
-            completed.stdout or completed.stderr,
-            "cancel debug instance response",
-        )
-    except CheckFailure:
-        payload = None
-    data = get_ci(payload, "Data")
-    returned_id = get_ci(data, "InstanceId")
-    returned_status = str(get_ci(data, "Status", "")).casefold()
-    if (
-        returned_id == instance_id
-        and returned_status
-        in {"completed", "faulted", "cancelled", "canceled", "failed"}
-    ):
-        return "terminal"
-    match = re.search(
-        r"\b(?:debug\s+)?instance\b[^\r\n]{0,100}"
-        rf"{re.escape(instance_id.casefold())}[^\r\n]{{0,100}}"
-        r"(?P<state>not found|does not exist|already completed|"
-        r"has completed|already cance(?:led|lled)|not active)",
-        detail,
-    )
-    if match is None:
-        return None
-    return (
-        "absent"
-        if match.group("state") in {"not found", "does not exist"}
-        else "terminal"
-    )
-
-
-def debug_instance_is_terminal_or_absent(
-    completed: subprocess.CompletedProcess[str],
-    instance_id: str,
-) -> bool:
-    return (
-        debug_instance_terminal_or_absent_state(
-            completed,
-            instance_id,
-        )
-        is not None
-    )
-
-
-def cancel_debug_instance_for_recovery(
-    instance_id: str,
-    case_name: str,
-) -> tuple[list[str], bool]:
-    last_failure = ""
-    for _attempt in range(2):
-        completed: subprocess.CompletedProcess[str] | None = None
-        try:
-            completed = run_cli(
-                [
-                    "uip",
-                    "maestro",
-                    "bpmn",
-                    "debug-instance",
-                    "cancel",
-                    instance_id,
-                ],
-                timeout=180,
-            )
-            payload_data(
-                completed,
-                f"{case_name} cancel debug instance {instance_id}",
-            )
-        except Exception as exc:
-            if completed is not None:
-                state = debug_instance_terminal_or_absent_state(
-                    completed,
-                    instance_id,
-                )
-                if state is not None:
-                    return [], state == "absent"
-            last_failure = str(exc)
-        else:
-            return [], False
-    return (
-        [
-            last_failure
-            or f"{case_name}: could not cancel debug instance {instance_id}"
-        ],
-        False,
-    )
-
-
-def best_effort_capture_instance_outputs(
-    instance_id: str,
-    case_name: str,
-    contract: RuntimeContract,
-    environment: LiveEnvironment,
-    solution_lease: AlphaSolutionLease,
-    side_effects: ConnectorSideEffectLease,
-) -> list[str]:
-    failures, instance_absent = cancel_debug_instance_for_recovery(
-        instance_id,
-        case_name,
-    )
-    if instance_absent:
-        return failures
-    try:
-        variables_all_with_cleanup_recovery(
-            instance_id,
-            f"{case_name} debug recovery",
-            contract,
-            environment,
-            solution_lease,
-            side_effects,
-        )
-    except BaseException as exc:
-        failures.append(str(exc))
-    # Successful deletes are removed from the lease; failed ones stay pending
-    # for the outer-finally retry.
-    try:
-        failures.extend(side_effects.cleanup())
-    except BaseException as exc:
-        failures.append(str(exc))
-    return failures
-
-
-
-class LiveRunLease:
-    """Tracks debug instances and nonce-bearing effects until cleanup."""
-
-    def __init__(
-        self,
-        *,
-        contract: RuntimeContract,
-        environment: LiveEnvironment,
-        solution_lease: AlphaSolutionLease,
-        side_effects: ConnectorSideEffectLease,
-    ):
-        self.contract = contract
-        self.environment = environment
-        self.solution_lease = solution_lease
-        self.side_effects = side_effects
-        self.pending_correlations: dict[str, str] = {}
-        self.active_instances: dict[str, tuple[str, str]] = {}
-
-    def begin(self, case_name: str, correlation: str) -> None:
-        self.pending_correlations[correlation] = case_name
-
-    def register(
-        self,
-        instance_id: str,
-        case_name: str,
-        correlation: str,
-    ) -> None:
-        self.active_instances[instance_id] = (case_name, correlation)
-
-    def complete(self, instance_id: str, correlation: str) -> None:
-        self.active_instances.pop(instance_id, None)
-        self.pending_correlations.pop(correlation, None)
-
-    def cleanup(self) -> list[str]:
-        failures: list[str] = []
-
-        for instance_id, (case_name, _correlation) in list(
-            self.active_instances.items()
-        ):
-            instance_failures = best_effort_capture_instance_outputs(
-                instance_id,
-                case_name,
-                self.contract,
-                self.environment,
-                self.solution_lease,
-                self.side_effects,
-            )
-            failures.extend(instance_failures)
-            if not instance_failures:
-                self.active_instances.pop(instance_id, None)
-
-        for correlation in list(self.pending_correlations):
-            if not any(
-                active_correlation == correlation
-                for _case_name, active_correlation
-                in self.active_instances.values()
-            ):
-                # No logged instance id means the run never reached the point
-                # where its StartEvent could be continued, so there is no
-                # instance to inspect or clean up.
-                self.pending_correlations.pop(correlation, None)
-        return failures
-
-
-def run_debug_with_cleanup_recovery(
+def run_debug(
     arguments: list[str],
     *,
     log_file: Path,
     case_name: str,
-    contract: RuntimeContract,
-    environment: LiveEnvironment,
-    solution_lease: AlphaSolutionLease,
-    side_effects: ConnectorSideEffectLease,
-    live_run_lease: LiveRunLease,
-    correlation: str,
 ) -> tuple[subprocess.CompletedProcess[str], Any, Any, str]:
-    solution_lease.capture_manifest()
-    try:
-        completed = run_cli(
-            arguments,
-            timeout=DEBUG_TIMEOUT_SECONDS,
-            log_file=log_file,
-        )
-    except subprocess.TimeoutExpired as exc:
-        diagnostic_id = logged_instance_id(
-            exc.stdout,
-            exc.stderr,
-            read_debug_log(log_file),
-        )
-        instance_id = diagnostic_id
-        if instance_id is not None:
-            live_run_lease.register(
-                instance_id,
-                case_name,
-                correlation,
-            )
-            recovery_failures = best_effort_capture_instance_outputs(
-                instance_id,
-                case_name,
-                contract,
-                environment,
-                solution_lease,
-                side_effects,
-            )
-            if recovery_failures:
-                raise CheckFailure(
-                    f"{case_name}: debug timed out and cleanup recovery "
-                    f"failed: {'; '.join(recovery_failures)}"
-                ) from exc
-        raise
+    """Run one `uip maestro bpmn debug` and return its instance id.
 
+    Deliberately plain. This replaced a 114-line wrapper that, on every
+    failure path, scraped an instance id out of the debug log, registered it
+    with an in-band lease, and best-effort cancelled and harvested it. All of
+    that existed to clean up a run the grader was about to abandon; cleanup
+    now happens in post_run, which is the only place that survives coder_eval
+    SIGKILLing this process, so the failure paths just report and raise.
+    """
+
+    completed = run_cli(arguments, timeout=DEBUG_TIMEOUT_SECONDS, log_file=log_file)
     raw_output = completed.stdout or completed.stderr
-    try:
-        payload = parse_json_output(raw_output, f"{case_name} debug")
-    except CheckFailure as parse_error:
-        diagnostic_id = logged_instance_id(
-            completed.stdout,
-            completed.stderr,
-            read_debug_log(log_file),
-        )
-        instance_id = diagnostic_id
-        if instance_id is not None:
-            live_run_lease.register(
-                instance_id,
-                case_name,
-                correlation,
-            )
-            recovery_failures = best_effort_capture_instance_outputs(
-                instance_id,
-                case_name,
-                contract,
-                environment,
-                solution_lease,
-                side_effects,
-            )
-            if recovery_failures:
-                raise CheckFailure(
-                    f"{parse_error}; cleanup recovery failed: "
-                    f"{'; '.join(recovery_failures)}"
-                ) from parse_error
-        raise
-
+    payload = parse_json_output(raw_output, f"{case_name} debug")
     debug_data = get_ci(payload, "Data", {})
     instance_id = get_ci(debug_data, "InstanceId")
     if not isinstance(instance_id, str) or not instance_id:
-        diagnostic_id = logged_instance_id(
-            completed.stdout,
-            completed.stderr,
-            read_debug_log(log_file),
-        )
-        recovered_id = diagnostic_id
-        if recovered_id is not None:
-            live_run_lease.register(
-                recovered_id,
-                case_name,
-                correlation,
-            )
-            recovery_failures = best_effort_capture_instance_outputs(
-                recovered_id,
-                case_name,
-                contract,
-                environment,
-                solution_lease,
-                side_effects,
-            )
-            if recovery_failures:
-                raise CheckFailure(
-                    f"{case_name}: debug returned no instance id and cleanup "
-                    f"recovery failed: {'; '.join(recovery_failures)}"
-                )
         raise CheckFailure(
             f"{case_name}: debug returned no instance id "
             f"(exit {completed.returncode}); log: {tail_log(log_file)}"
         )
-    live_run_lease.register(instance_id, case_name, correlation)
     return completed, payload, debug_data, instance_id
 
 
@@ -2636,6 +2166,8 @@ def main() -> int:
     # what lets this task use `_shared/cleanup_solutions.py` like every other
     # cloud task instead of hand-rolling solution cleanup. Debug logs land
     # beside it, which also makes them available after a failed run.
+    # nullcontext keeps the original `with` block intact now that there is no
+    # TemporaryDirectory to manage, rather than re-indenting the whole matrix.
     with contextlib.nullcontext(LIVE_RUN_DIR) as directory:
         root = Path(directory)
         root.mkdir(parents=True, exist_ok=True)
@@ -2654,27 +2186,14 @@ def main() -> int:
         if len(solution_files) != 1:
             raise CheckFailure("solution init did not create exactly one .uipx")
         solution_file = solution_files[0]
-        lease = AlphaSolutionLease(solution_file)
-        live_runs = LiveRunLease(
-            contract=contract,
-            environment=environment,
-            solution_lease=lease,
-            side_effects=side_effects,
-        )
+        # The solution id is journalled for symmetry with the connector ids,
+        # but the .uipx under the sandbox CWD is what the standard post_run
+        # sweep actually reads, so nothing here deletes the solution.
+        record_created_id("solution_file", str(solution_file))
         cleanup_failures: list[str] = []
         scenario_results: dict[str, dict[str, Any]] = {}
         pending_error: BaseException | None = None
-
-        previous_signal_handlers = {
-            signum: signal.getsignal(signum)
-            for signum in (signal.SIGTERM, signal.SIGINT)
-        }
-        cleanup_signal_state = CleanupSignalState()
-
-        for signum in previous_signal_handlers:
-            signal.signal(signum, cleanup_signal_state.handle)
         try:
-            ACTIVE_CLI_DEADLINE = execution_deadline
             stage_started = time.monotonic()
             imported = run_cli(
                 [
@@ -2744,14 +2263,13 @@ def main() -> int:
                     ),
                 )
                 correlation = case.inputs["correlationId"]
-                live_runs.begin(case.name, correlation)
                 debug_started = time.monotonic()
                 (
                     debug,
                     debug_payload,
                     debug_data,
                     instance_id,
-                ) = run_debug_with_cleanup_recovery(
+                ) = run_debug(
                     [
                         "uip",
                         "maestro",
@@ -2765,12 +2283,6 @@ def main() -> int:
                     ],
                     log_file=log_file,
                     case_name=case.name,
-                    contract=contract,
-                    environment=environment,
-                    solution_lease=lease,
-                    side_effects=side_effects,
-                    live_run_lease=live_runs,
-                    correlation=correlation,
                 )
                 print(
                     f"BENCHMARK scenario={case.name} stage=debug "
@@ -2779,15 +2291,12 @@ def main() -> int:
                 )
 
                 evidence_started = time.monotonic()
-                _variables_payload, variables_data = (
-                    variables_all_with_cleanup_recovery(
-                        instance_id,
-                        case.name,
-                        contract,
-                        environment,
-                        lease,
-                        side_effects,
-                    )
+                _variables_payload, variables_data = read_variables_all(
+                    instance_id,
+                    case.name,
+                    contract,
+                    environment,
+                    side_effects,
                 )
 
                 incidents = run_cli(
@@ -2848,7 +2357,6 @@ def main() -> int:
                         f"{case.name}: connector cleanup failed: "
                         f"{'; '.join(side_effect_cleanup)}"
                     )
-                live_runs.complete(instance_id, correlation)
                 print(
                     f"BENCHMARK scenario={case.name} "
                     "stage=assert-and-cleanup "
@@ -2867,40 +2375,30 @@ def main() -> int:
         except BaseException as exc:
             pending_error = exc
         finally:
-            cleanup_signal_state.begin_cleanup()
-            ACTIVE_CLI_DEADLINE = cleanup_deadline
-            cleanup_stages = (
-                ("debug instance", live_runs.cleanup),
-                ("connector side effect", side_effects.cleanup),
-                ("Alpha solution", lease.cleanup),
-            )
+            # One best-effort connector sweep. Solutions are post_run's job
+            # (`_shared/cleanup_solutions.py` globs the .uipx), and debug
+            # instances terminate server-side on their own, so neither is
+            # chased here. A failure to clean is reported, never raised over
+            # a scenario verdict -- post_run replays the journal regardless,
+            # and it is the only sweep that survives a SIGKILL.
+            stage_started = time.monotonic()
             try:
-                cleanup_failures.extend(
-                    collect_cleanup_failures(
-                        cleanup_stages,
-                        emit_benchmarks=True,
-                    )
-                )
-            finally:
-                for signum, previous in previous_signal_handlers.items():
-                    signal.signal(signum, previous)
-                ACTIVE_CLI_DEADLINE = None
-
-        if (
-            cleanup_signal_state.termination_requested
-            and pending_error is None
-        ):
-            pending_error = KeyboardInterrupt(
-                "terminated during live Alpha evaluation"
+                cleanup_failures.extend(side_effects.cleanup())
+            except BaseException as exc:
+                cleanup_failures.append(f"connector side effect: {exc}")
+            print(
+                "BENCHMARK stage=connector-cleanup "
+                f"duration_seconds={time.monotonic() - stage_started:.3f}"
             )
+
         write_scenario_results(scenario_results)
         if cleanup_failures:
-            detail = "; ".join(cleanup_failures)
-            if pending_error is not None:
-                raise CheckFailure(
-                    f"{pending_error}; Alpha cleanup also failed: {detail}"
-                ) from pending_error
-            raise CheckFailure(f"Alpha cleanup failed: {detail}")
+            # Reported, not fatal: post_run sweeps whatever is left, so a
+            # cleanup hiccup must not mask or manufacture a scenario verdict.
+            print(
+                "WARNING connector cleanup left work for post_run: "
+                + "; ".join(cleanup_failures)
+            )
         if pending_error is not None:
             raise pending_error
 

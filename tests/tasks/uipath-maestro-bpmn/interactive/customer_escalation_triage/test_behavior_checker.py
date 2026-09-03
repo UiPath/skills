@@ -710,141 +710,6 @@ class BehaviorCheckerTests(unittest.TestCase):
             600,
         )
 
-    def test_cleanup_signal_is_record_only_for_every_cleanup_stage(self) -> None:
-        for signum in (checker.signal.SIGTERM, checker.signal.SIGINT):
-            for interrupted_index in range(3):
-                with self.subTest(
-                    signum=signum,
-                    interrupted_index=interrupted_index,
-                ):
-                    self.assert_cleanup_signal_is_record_only(
-                        signum,
-                        interrupted_index,
-                    )
-
-    def assert_cleanup_signal_is_record_only(
-        self,
-        signum: int,
-        interrupted_index: int,
-    ) -> None:
-        signal_state = checker.CleanupSignalState()
-        signal_state.begin_cleanup()
-        calls: list[str] = []
-
-        def cleanup_stage(index: int) -> list[str]:
-            calls.append(f"{index}:start")
-            if index == interrupted_index:
-                signal_state.handle(signum, None)
-            calls.append(f"{index}:complete")
-            return []
-
-        failures = checker.collect_cleanup_failures(
-            tuple(
-                (
-                    f"stage {index}",
-                    lambda index=index: cleanup_stage(index),
-                )
-                for index in range(3)
-            )
-        )
-
-        self.assertEqual(
-            calls,
-            [
-                "0:start",
-                "0:complete",
-                "1:start",
-                "1:complete",
-                "2:start",
-                "2:complete",
-            ],
-        )
-        self.assertEqual(failures, [])
-        self.assertTrue(signal_state.termination_requested)
-
-    def test_every_interrupted_cleanup_stage_is_retried_and_completed(
-        self,
-    ) -> None:
-        for interrupted_index in range(3):
-            with self.subTest(interrupted_index=interrupted_index):
-                attempts = [0, 0, 0]
-                completed: list[int] = []
-
-                def cleanup_stage(index: int) -> list[str]:
-                    attempts[index] += 1
-                    if (
-                        index == interrupted_index
-                        and attempts[index] == 1
-                    ):
-                        raise KeyboardInterrupt("cancel interrupted")
-                    completed.append(index)
-                    return []
-
-                failures = checker.collect_cleanup_failures(
-                    tuple(
-                        (
-                            f"stage {index}",
-                            lambda index=index: cleanup_stage(index),
-                        )
-                        for index in range(3)
-                    )
-                )
-
-                self.assertEqual(failures, [])
-                self.assertEqual(completed, [0, 1, 2])
-                self.assertEqual(attempts[interrupted_index], 2)
-                self.assertEqual(
-                    sum(attempts),
-                    4,
-                    "only the interrupted stage should be retried",
-                )
-
-    def test_cleanup_interrupt_at_deadline_is_not_retried_but_later_stages_run(
-        self,
-    ) -> None:
-        calls: list[str] = []
-
-        def interrupted() -> list[str]:
-            calls.append("interrupted")
-            raise KeyboardInterrupt("deadline interrupt")
-
-        def later_stage() -> list[str]:
-            calls.append("later")
-            return []
-
-        with (
-            patch.object(checker, "ACTIVE_CLI_DEADLINE", 99.0),
-            patch.object(checker.time, "monotonic", return_value=100.0),
-        ):
-            failures = checker.collect_cleanup_failures(
-                (
-                    ("interrupted stage", interrupted),
-                    ("later stage", later_stage),
-                )
-            )
-
-        self.assertEqual(calls, ["interrupted", "later"])
-        self.assertEqual(
-            failures,
-            [
-                "interrupted stage cleanup raised unexpectedly: "
-                "deadline interrupt"
-            ],
-        )
-
-    def test_cleanup_signal_preserves_second_signal_safety(self) -> None:
-        signal_state = checker.CleanupSignalState()
-
-        with self.assertRaisesRegex(
-            KeyboardInterrupt,
-            "terminated during live Alpha evaluation",
-        ):
-            signal_state.handle(checker.signal.SIGTERM, None)
-
-        signal_state.handle(checker.signal.SIGINT, None)
-        signal_state.begin_cleanup()
-        signal_state.handle(checker.signal.SIGTERM, None)
-
     def test_jira_create_requires_correlation_in_each_remote_field(self) -> None:
         environment = self.environment()
         correlation = "EVAL-correlation"
@@ -1683,9 +1548,6 @@ class BehaviorCheckerTests(unittest.TestCase):
         environment = self.environment()
         side_effects = checker.ConnectorSideEffectLease(environment)
         with tempfile.TemporaryDirectory() as directory:
-            solution_lease = checker.AlphaSolutionLease(
-                Path(directory) / "Eval.uipx"
-            )
             failed = subprocess.CompletedProcess(
                 args=[],
                 returncode=1,
@@ -1757,12 +1619,11 @@ class BehaviorCheckerTests(unittest.TestCase):
                     "transient variables failure",
                 ),
             ):
-                checker.variables_all_with_cleanup_recovery(
+                checker.read_variables_all(
                     "instance-id",
                     "scenario",
                     self.contract(),
                     environment,
-                    solution_lease,
                     side_effects,
                 )
 
@@ -1773,7 +1634,6 @@ class BehaviorCheckerTests(unittest.TestCase):
             side_effects.slack_messages,
             {(environment.slack_channel_id, "123.456")},
         )
-        self.assertFalse(solution_lease.solution_ids)
 
     def test_cleanup_harvest_never_queues_protected_drive_ids(self) -> None:
         environment = self.environment()
@@ -1808,559 +1668,6 @@ class BehaviorCheckerTests(unittest.TestCase):
             side_effects.drive_file_ids,
             {"generated-copy-id"},
         )
-
-    def test_logged_instance_id_trusts_only_exact_envelope_field(
-        self,
-    ) -> None:
-        payload = json.dumps(
-            {
-                "Result": "Success",
-                "Data": {
-                    "InstanceId": "instance-owned",
-                    "Diagnostic": {
-                        "InstanceId": "instance-shared-decoy"
-                    },
-                },
-            }
-        )
-        self.assertEqual(
-            checker.logged_instance_id(payload),
-            "instance-owned",
-        )
-
-    def test_logged_instance_id_uses_trusted_failure_message_fallback(
-        self,
-    ) -> None:
-        payload = json.dumps(
-            {
-                "Result": "Failure",
-                "Data": None,
-                "Message": "Created InstanceId: instance-from-message",
-                "Diagnostic": {
-                    "InstanceId": "instance-shared-decoy"
-                },
-            }
-        )
-        self.assertEqual(
-            checker.logged_instance_id(payload),
-            "instance-from-message",
-        )
-
-    def test_logged_instance_id_rejects_conflicting_exact_ids(self) -> None:
-        first = json.dumps(
-            {
-                "Result": "Success",
-                "Data": {"InstanceId": "instance-one"},
-            }
-        )
-        second = json.dumps(
-            {
-                "Result": "Success",
-                "Data": {"InstanceId": "instance-two"},
-            }
-        )
-        self.assertIsNone(checker.logged_instance_id(first, second))
-
-    def test_debug_cancel_absence_must_be_tied_to_exact_instance(
-        self,
-    ) -> None:
-        wrong_absence = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout=json.dumps(
-                {
-                    "Result": "Failure",
-                    "Message": (
-                        "404 tenant endpoint not found; request path "
-                        "/debug-instances/instance-owned/cancel"
-                    ),
-                }
-            ),
-            stderr="",
-        )
-        exact_terminal = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout=json.dumps(
-                {
-                    "Result": "Failure",
-                    "Data": {
-                        "InstanceId": "instance-owned",
-                        "Status": "Completed",
-                    },
-                }
-            ),
-            stderr="",
-        )
-
-        self.assertFalse(
-            checker.debug_instance_is_terminal_or_absent(
-                wrong_absence,
-                "instance-owned",
-            )
-        )
-        self.assertTrue(
-            checker.debug_instance_is_terminal_or_absent(
-                exact_terminal,
-                "instance-owned",
-            )
-        )
-
-    def test_precreate_journal_id_absence_skips_variable_harvest(
-        self,
-    ) -> None:
-        environment = self.environment()
-        side_effects = checker.ConnectorSideEffectLease(environment)
-        with tempfile.TemporaryDirectory() as directory:
-            solution_lease = checker.AlphaSolutionLease(
-                Path(directory) / "Eval.uipx"
-            )
-            with (
-                patch.object(
-                    checker,
-                    "cancel_debug_instance_for_recovery",
-                    return_value=([], True),
-                ),
-                patch.object(
-                    checker,
-                    "variables_all_with_cleanup_recovery",
-                ) as variables,
-            ):
-                self.assertEqual(
-                    checker.best_effort_capture_instance_outputs(
-                        "allocated-before-create",
-                        "scenario",
-                        self.contract(),
-                        environment,
-                        solution_lease,
-                        side_effects,
-                    ),
-                    [],
-                )
-
-        variables.assert_not_called()
-
-    def test_pending_correlation_without_logged_instance_is_dropped(
-        self,
-    ) -> None:
-        environment = self.environment()
-        side_effects = checker.ConnectorSideEffectLease(environment)
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            solution_lease = checker.AlphaSolutionLease(root / "Eval.uipx")
-            lease = checker.LiveRunLease(
-                contract=self.contract(),
-                environment=environment,
-                solution_lease=solution_lease,
-                side_effects=side_effects,
-            )
-            lease.begin("scenario", "correlation")
-            with patch.object(
-                checker,
-                "best_effort_capture_instance_outputs",
-                return_value=[],
-            ) as recover_instance:
-                self.assertEqual(lease.cleanup(), [])
-
-        recover_instance.assert_not_called()
-        self.assertFalse(lease.pending_correlations)
-        self.assertFalse(lease.active_instances)
-
-    def test_missing_journal_never_attempts_unreliable_connector_search(
-        self,
-    ) -> None:
-        environment = self.environment()
-        side_effects = checker.ConnectorSideEffectLease(environment)
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            lease = checker.LiveRunLease(
-                contract=self.contract(),
-                environment=environment,
-                solution_lease=checker.AlphaSolutionLease(
-                    root / "Eval.uipx"
-                ),
-                side_effects=side_effects,
-            )
-            lease.begin("scenario", "correlation")
-            with patch.object(checker, "run_cli") as run:
-                self.assertEqual(lease.cleanup(), [])
-
-        run.assert_not_called()
-        self.assertFalse(lease.pending_correlations)
-
-    def test_successful_debug_registers_the_durable_instance_journal(
-        self,
-    ) -> None:
-        environment = self.environment()
-        side_effects = checker.ConnectorSideEffectLease(environment)
-        completed = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=json.dumps(
-                {
-                    "Result": "Success",
-                    "Data": {
-                        "InstanceId": "instance-owned",
-                        "FinalStatus": "Completed",
-                    },
-                }
-            ),
-            stderr="",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            solution_lease = checker.AlphaSolutionLease(root / "Eval.uipx")
-            live_runs = checker.LiveRunLease(
-                contract=self.contract(),
-                environment=environment,
-                solution_lease=solution_lease,
-                side_effects=side_effects,
-            )
-            live_runs.begin("scenario", "correlation")
-            with patch.object(
-                checker,
-                "run_cli",
-                return_value=completed,
-            ):
-                result = checker.run_debug_with_cleanup_recovery(
-                    ["uip", "maestro", "bpmn", "debug", "Project"],
-                    log_file=root / "debug.log",
-                    case_name="scenario",
-                    contract=self.contract(),
-                    environment=environment,
-                    solution_lease=solution_lease,
-                    side_effects=side_effects,
-                    live_run_lease=live_runs,
-                    correlation="correlation",
-                )
-
-        self.assertEqual(result[-1], "instance-owned")
-        self.assertEqual(
-            live_runs.active_instances,
-            {"instance-owned": ("scenario", "correlation")},
-        )
-
-    def test_debug_timeout_recovers_from_partial_instance_id(self) -> None:
-        environment = self.environment()
-        side_effects = checker.ConnectorSideEffectLease(environment)
-        timed_out = subprocess.TimeoutExpired(
-            cmd=["uip", "maestro", "bpmn", "debug"],
-            timeout=480,
-            output=b'partial output InstanceId: "instance-timeout"',
-            stderr=b"",
-        )
-        recovered = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=json.dumps(
-                {
-                    "Result": "Success",
-                    "Data": {
-                        "Variables": [
-                            {
-                                "Elements": [
-                                    {
-                                        "ElementId": "DriveCopy",
-                                        "Outputs": {
-                                            "response": {
-                                                "id": "drive-timeout"
-                                            }
-                                        },
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                }
-            ),
-            stderr="",
-        )
-        deleted = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=json.dumps(
-                {"Result": "Success", "Data": {"Deleted": True}}
-            ),
-            stderr="",
-        )
-        canceled = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=json.dumps(
-                {"Result": "Success", "Data": {"Canceled": True}}
-            ),
-            stderr="",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            solution_lease = checker.AlphaSolutionLease(root / "Eval.uipx")
-            contract = self.contract()
-            live_run_lease = checker.LiveRunLease(
-                contract=contract,
-                environment=environment,
-                solution_lease=solution_lease,
-                side_effects=side_effects,
-            )
-            with (
-                patch.object(
-                    checker,
-                    "run_cli",
-                    side_effect=[timed_out, canceled, recovered, deleted],
-                ) as run,
-                self.assertRaises(subprocess.TimeoutExpired),
-            ):
-                checker.run_debug_with_cleanup_recovery(
-                    ["uip", "maestro", "bpmn", "debug", "Project"],
-                    log_file=root / "debug.log",
-                    case_name="scenario",
-                    contract=contract,
-                    environment=environment,
-                    solution_lease=solution_lease,
-                    side_effects=side_effects,
-                    live_run_lease=live_run_lease,
-                    correlation="correlation-timeout",
-                )
-
-        self.assertEqual(run.call_count, 4)
-        self.assertIn(
-            "cancel",
-            run.call_args_list[1].args[0],
-        )
-        self.assertIn(
-            "drive-timeout",
-            json.dumps(run.call_args_list[-1].args[0]),
-        )
-        self.assertFalse(side_effects.drive_file_ids)
-
-    def test_malformed_debug_uses_log_and_harvests_failure_data(self) -> None:
-        environment = self.environment()
-        side_effects = checker.ConnectorSideEffectLease(environment)
-        malformed = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout="not a JSON response",
-            stderr="",
-        )
-        failed_with_data = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout=json.dumps(
-                {
-                    "Result": "Failure",
-                    "Message": "instance query was incomplete",
-                    "Data": {
-                        "Variables": [
-                            {
-                                "Elements": [
-                                    {
-                                        "ElementId": "JiraCreate",
-                                        "Outputs": {
-                                            "response": {"id": "jira-log"}
-                                        },
-                                    },
-                                        {
-                                            "ElementId": "SlackSend",
-                                            "Outputs": {
-                                                "response": {
-                                                    "channel": (
-                                                        environment
-                                                        .slack_channel_id
-                                                    ),
-                                                    "ts": "123.789",
-                                                }
-                                            },
-                                        },
-                                ]
-                            }
-                        ]
-                    },
-                }
-            ),
-            stderr="",
-        )
-        failed_retry = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout=json.dumps(
-                {
-                    "Result": "Failure",
-                    "Message": "still unavailable",
-                }
-            ),
-            stderr="",
-        )
-        deleted = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=json.dumps(
-                {"Result": "Success", "Data": {"Deleted": True}}
-            ),
-            stderr="",
-        )
-        canceled = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=json.dumps(
-                {"Result": "Success", "Data": {"Canceled": True}}
-            ),
-            stderr="",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            log_file = root / "debug.log"
-            log_file.write_text(
-                "runtime started; Instance ID: instance-from-log",
-                encoding="utf-8",
-            )
-            solution_lease = checker.AlphaSolutionLease(root / "Eval.uipx")
-            contract = self.contract()
-            live_run_lease = checker.LiveRunLease(
-                contract=contract,
-                environment=environment,
-                solution_lease=solution_lease,
-                side_effects=side_effects,
-            )
-            with (
-                patch.object(
-                    checker,
-                    "run_cli",
-                    side_effect=[
-                        malformed,
-                        canceled,
-                        failed_with_data,
-                        failed_retry,
-                        deleted,
-                        deleted,
-                    ],
-                ) as run,
-                self.assertRaisesRegex(
-                    checker.CheckFailure,
-                    "invalid JSON",
-                ),
-            ):
-                checker.run_debug_with_cleanup_recovery(
-                    ["uip", "maestro", "bpmn", "debug", "Project"],
-                    log_file=log_file,
-                    case_name="scenario",
-                    contract=contract,
-                    environment=environment,
-                    solution_lease=solution_lease,
-                    side_effects=side_effects,
-                    live_run_lease=live_run_lease,
-                    correlation="correlation-malformed",
-                )
-
-        self.assertEqual(run.call_count, 6)
-        self.assertIn("cancel", run.call_args_list[1].args[0])
-        cleanup_commands = json.dumps(
-            [call.args[0] for call in run.call_args_list[4:]]
-        )
-        self.assertIn("jira-log", cleanup_commands)
-        self.assertIn("123.789", cleanup_commands)
-        self.assertFalse(side_effects.jira_issue_ids)
-        self.assertFalse(side_effects.slack_messages)
-
-    def test_solution_lease_deletes_only_the_manifest_id(self) -> None:
-        solution_id = "22222222-2222-2222-2222-222222222222"
-        with tempfile.TemporaryDirectory() as directory:
-            manifest = Path(directory) / "Eval.uipx"
-            manifest.write_text(
-                json.dumps({"SolutionId": solution_id}),
-                encoding="utf-8",
-            )
-            lease = checker.AlphaSolutionLease(manifest)
-            completed = subprocess.CompletedProcess(
-                args=[],
-                returncode=0,
-                stdout=json.dumps(
-                    {"Result": "Success", "Data": {"Deleted": True}}
-                ),
-                stderr="",
-            )
-            with patch.object(checker, "run_cli", return_value=completed) as run:
-                self.assertEqual(lease.cleanup(), [])
-
-            deleted = {
-                call.args[0][3]
-                for call in run.call_args_list
-            }
-            self.assertEqual(deleted, {solution_id})
-            self.assertEqual(lease.cleanup(), [])
-
-    def test_solution_lease_retries_a_failed_delete(self) -> None:
-        solution_id = "11111111-1111-1111-1111-111111111111"
-        with tempfile.TemporaryDirectory() as directory:
-            manifest = Path(directory) / "Eval.uipx"
-            manifest.write_text(
-                json.dumps({"SolutionId": solution_id}),
-                encoding="utf-8",
-            )
-            lease = checker.AlphaSolutionLease(manifest)
-            failed = subprocess.CompletedProcess(
-                args=[],
-                returncode=1,
-                stdout=json.dumps(
-                    {
-                        "Result": "Failure",
-                        "Message": "transient delete failure",
-                    }
-                ),
-                stderr="",
-            )
-            succeeded = subprocess.CompletedProcess(
-                args=[],
-                returncode=0,
-                stdout=json.dumps(
-                    {"Result": "Success", "Data": {"Deleted": True}}
-                ),
-                stderr="",
-            )
-            with patch.object(
-                checker,
-                "run_cli",
-                side_effect=[failed, succeeded],
-            ) as run:
-                self.assertEqual(lease.cleanup(), [])
-                self.assertEqual(run.call_count, 2)
-                self.assertTrue(lease.cleaned)
-                self.assertEqual(
-                    lease.removed_solution_ids,
-                    {solution_id},
-                )
-                self.assertEqual(lease.cleanup(), [])
-                self.assertEqual(run.call_count, 2)
-
-    def test_solution_lease_accepts_id_that_never_reached_alpha(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            manifest = Path(directory) / "Eval.uipx"
-            manifest.write_text(
-                json.dumps(
-                    {
-                        "SolutionId": "11111111-1111-1111-1111-111111111111"
-                    }
-                ),
-                encoding="utf-8",
-            )
-            lease = checker.AlphaSolutionLease(manifest)
-            completed = subprocess.CompletedProcess(
-                args=[],
-                returncode=1,
-                stdout=json.dumps(
-                    {
-                        "Result": "Failure",
-                        "Message": (
-                            "Solution "
-                            "11111111-1111-1111-1111-111111111111 "
-                            "not found (404)"
-                        ),
-                    }
-                ),
-                stderr="",
-            )
-
-            with patch.object(checker, "run_cli", return_value=completed):
-                self.assertEqual(lease.cleanup(), [])
-
 
 
 class RuntimeContractTests(unittest.TestCase):
@@ -2774,10 +2081,11 @@ class CleanupJournalTests(unittest.TestCase):
     def test_every_created_id_is_journalled_when_added(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             journal = Path(directory) / "cleanup.jsonl"
-            issues = checker.JournaledSet("jira_issue", journal)
-            messages = checker.JournaledSet("slack_message", journal)
-            issues.add("10001")
-            messages.add(("C123", "1.2"))
+            with patch.object(checker, "CLEANUP_JOURNAL", journal):
+                issues = checker.RecordingSet("jira_issue")
+                messages = checker.RecordingSet("slack_message")
+                issues.add("10001")
+                messages.add(("C123", "1.2"))
 
             records = [
                 json.loads(line)
@@ -2794,23 +2102,19 @@ class CleanupJournalTests(unittest.TestCase):
 
     def test_journal_failure_never_breaks_a_live_scenario(self) -> None:
         unwritable = Path("/dev/null/nope/cleanup.jsonl")
-        issues = checker.JournaledSet("jira_issue", unwritable)
-        issues.add("10001")
+        with patch.object(checker, "CLEANUP_JOURNAL", unwritable):
+            issues = checker.RecordingSet("jira_issue")
+            issues.add("10001")
         self.assertEqual(issues, {"10001"})
 
     def test_leases_journal_through_to_disk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             journal = Path(directory) / "cleanup.jsonl"
             with patch.object(checker, "CLEANUP_JOURNAL", journal):
-                solutions = checker.AlphaSolutionLease(
-                    Path(directory) / "Eval.uipx"
-                )
                 side_effects = checker.ConnectorSideEffectLease(
                     self.environment()
                 )
-                solutions.solution_ids.add(
-                    "11111111-1111-1111-1111-111111111111"
-                )
+                checker.record_created_id("solution_file", "Sol/Eval.uipx")
                 side_effects.drive_file_ids.add("drive-copy")
 
             kinds = [
@@ -2818,102 +2122,17 @@ class CleanupJournalTests(unittest.TestCase):
                 for line in journal.read_text(encoding="utf-8").splitlines()
             ]
 
-        self.assertEqual(kinds, ["solution", "drive_file"])
+        self.assertEqual(kinds, ["solution_file", "drive_file"])
 
     @staticmethod
     def environment() -> checker.LiveEnvironment:
         return BehaviorCheckerTests.environment()
 
 
-class SolutionCleanupPolicyTests(unittest.TestCase):
-    """Deleting is the default; preserving is an explicit, opt-in override."""
-
-    def test_default_is_delete(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(checker.solution_cleanup_policy(), "always")
-
-    def test_unknown_value_falls_back_to_delete(self) -> None:
-        for value in ("", "yes", "true", "keep", "0"):
-            with self.subTest(value=value):
-                with patch.dict(
-                    os.environ, {checker.CLEANUP_POLICY_ENV: value}
-                ):
-                    self.assertEqual(
-                        checker.solution_cleanup_policy(), "always"
-                    )
-
-    def test_never_is_honoured_case_insensitively(self) -> None:
-        for value in ("never", "NEVER", " Never "):
-            with self.subTest(value=value):
-                with patch.dict(
-                    os.environ, {checker.CLEANUP_POLICY_ENV: value}
-                ):
-                    self.assertEqual(
-                        checker.solution_cleanup_policy(), "never"
-                    )
-
-    def test_default_policy_deletes_the_solution(self) -> None:
-        completed = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=json.dumps({"Result": "Success"}),
-            stderr="",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            lease = checker.AlphaSolutionLease(Path(directory) / "Eval.uipx")
-            lease.solution_ids.add("11111111-1111-1111-1111-111111111111")
-            with (
-                patch.dict(os.environ, {}, clear=True),
-                patch.object(
-                    checker, "run_cli", return_value=completed
-                ) as run_cli,
-            ):
-                self.assertEqual(lease.cleanup(), [])
-        self.assertIn("delete", run_cli.call_args.args[0])
-        self.assertTrue(lease.cleaned)
-
-    def test_never_preserves_and_issues_no_delete(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            lease = checker.AlphaSolutionLease(Path(directory) / "Eval.uipx")
-            lease.solution_ids.add("11111111-1111-1111-1111-111111111111")
-            with (
-                patch.dict(
-                    os.environ, {checker.CLEANUP_POLICY_ENV: "never"}
-                ),
-                patch.object(checker, "run_cli") as run_cli,
-            ):
-                self.assertEqual(lease.cleanup(), [])
-        run_cli.assert_not_called()
-        self.assertTrue(lease.cleaned)
-
-    def test_never_does_not_affect_connector_side_effects(self) -> None:
-        """External sandbox resources are cleaned whatever the policy."""
-
-        environment = BehaviorCheckerTests.environment()
-        lease = checker.ConnectorSideEffectLease(environment)
-        lease.jira_issue_ids.add("10001")
-        completed = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=json.dumps({"Result": "Success"}),
-            stderr="",
-        )
-        with (
-            patch.dict(os.environ, {checker.CLEANUP_POLICY_ENV: "never"}),
-            patch.object(
-                checker, "run_cli", return_value=completed
-            ) as run_cli,
-        ):
-            self.assertEqual(lease.cleanup(), [])
-        run_cli.assert_called()
-
-
 class CleanupSweepTests(unittest.TestCase):
-    """The replay script must be safe when there is nothing to free."""
+    """The post_run connector sweep. Solutions are the shared sweep's job."""
 
     def sweep(self):
-        """Load the post_run script.
-
-        It imports the grader under its own module name, so these tests patch
-        `sweep.grader` rather than the test module's `checker` alias.
-        """
-
         path = Path(__file__).resolve().parent / "cleanup_customer_escalation.py"
         spec = importlib.util.spec_from_file_location("sweep", path)
         assert spec is not None and spec.loader is not None
@@ -2928,7 +2147,9 @@ class CleanupSweepTests(unittest.TestCase):
             with (
                 patch.object(sweep.grader, "CLEANUP_JOURNAL", missing),
                 patch.object(sweep.grader, "run_cli") as run_cli,
-                patch.object(sweep.grader, "discover_live_environment") as discover,
+                patch.object(
+                    sweep.grader, "discover_live_environment"
+                ) as discover,
             ):
                 self.assertEqual(sweep.main(), 0)
         run_cli.assert_not_called()
@@ -2955,26 +2176,38 @@ class CleanupSweepTests(unittest.TestCase):
                 {"jira_issue": ["10001"], "drive_file": ["file-1"]},
             )
 
-    def test_sweep_frees_journalled_resources_and_exits_zero(self) -> None:
+    def test_solution_files_are_left_to_the_shared_sweep(self) -> None:
+        """This script must never delete a solution itself."""
+
         sweep = self.sweep()
-        environment = sweep.grader.LiveEnvironment(
-            jira_connection_id="jira-connection",
-            drive_connection_id="drive-connection",
-            slack_connection_id="slack-connection",
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            journal.write_text(
+                json.dumps(
+                    {"kind": "solution_file", "value": "Sol/Eval.uipx"}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
+                patch.object(sweep.grader, "run_cli") as run_cli,
+                patch.object(
+                    sweep.grader, "discover_live_environment"
+                ) as discover,
+            ):
+                self.assertEqual(sweep.main(), 0)
+        run_cli.assert_not_called()
+        discover.assert_not_called()
+
+    def test_connector_records_are_swept(self) -> None:
+        sweep = self.sweep()
+        environment = BehaviorCheckerTests.environment()
         with tempfile.TemporaryDirectory() as directory:
             journal = Path(directory) / "cleanup.jsonl"
             journal.write_text(
                 "\n".join(
                     [
-                        json.dumps(
-                            {
-                                "kind": "solution",
-                                "value": (
-                                    "11111111-1111-1111-1111-111111111111"
-                                ),
-                            }
-                        ),
                         json.dumps({"kind": "jira_issue", "value": "10001"}),
                         json.dumps(
                             {"kind": "slack_message", "value": ["C1", "1.2"]}
@@ -2992,56 +2225,18 @@ class CleanupSweepTests(unittest.TestCase):
                     return_value=environment,
                 ),
                 patch.object(
-                    sweep.grader.AlphaSolutionLease, "cleanup", return_value=[]
-                ) as solution_cleanup,
-                patch.object(
                     sweep.grader.ConnectorSideEffectLease,
                     "cleanup",
                     return_value=[],
                 ) as connector_cleanup,
             ):
                 self.assertEqual(sweep.main(), 0)
-            solution_cleanup.assert_called_once()
             connector_cleanup.assert_called_once()
             self.assertFalse(journal.exists())
 
-    def test_sweep_preserves_the_solution_when_policy_is_never(self) -> None:
-        """The backstop must not delete what the run deliberately kept."""
-
-        sweep = self.sweep()
-        with tempfile.TemporaryDirectory() as directory:
-            journal = Path(directory) / "cleanup.jsonl"
-            journal.write_text(
-                json.dumps(
-                    {
-                        "kind": "solution",
-                        "value": "11111111-1111-1111-1111-111111111111",
-                    }
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-            with (
-                patch.dict(
-                    os.environ, {sweep.grader.CLEANUP_POLICY_ENV: "never"}
-                ),
-                patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
-                patch.object(
-                    sweep.grader.AlphaSolutionLease, "cleanup"
-                ) as solution_cleanup,
-            ):
-                self.assertEqual(sweep.main(), 0)
-            solution_cleanup.assert_not_called()
-            # journal survives so the preserved id stays recoverable
-            self.assertTrue(journal.exists())
-
     def test_sweep_never_deletes_the_shared_drive_fixtures(self) -> None:
         sweep = self.sweep()
-        environment = sweep.grader.LiveEnvironment(
-            jira_connection_id="jira-connection",
-            drive_connection_id="drive-connection",
-            slack_connection_id="slack-connection",
-        )
+        environment = BehaviorCheckerTests.environment()
         protected = environment.drive_source_file_ids[0]
         captured: list[set[str]] = []
 
@@ -3054,9 +2249,7 @@ class CleanupSweepTests(unittest.TestCase):
             journal.write_text(
                 "\n".join(
                     [
-                        json.dumps(
-                            {"kind": "drive_file", "value": protected}
-                        ),
+                        json.dumps({"kind": "drive_file", "value": protected}),
                         json.dumps({"kind": "drive_file", "value": "copy-1"}),
                     ]
                 )
@@ -3080,29 +2273,28 @@ class CleanupSweepTests(unittest.TestCase):
 
     def test_sweep_exits_zero_when_cleanup_raises(self) -> None:
         sweep = self.sweep()
+        environment = BehaviorCheckerTests.environment()
         with tempfile.TemporaryDirectory() as directory:
             journal = Path(directory) / "cleanup.jsonl"
             journal.write_text(
-                json.dumps(
-                    {
-                        "kind": "solution",
-                        "value": "11111111-1111-1111-1111-111111111111",
-                    }
-                )
-                + "\n",
+                json.dumps({"kind": "jira_issue", "value": "10001"}) + "\n",
                 encoding="utf-8",
             )
             with (
                 patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
                 patch.object(
-                    sweep.grader.AlphaSolutionLease,
+                    sweep.grader,
+                    "discover_live_environment",
+                    return_value=environment,
+                ),
+                patch.object(
+                    sweep.grader.ConnectorSideEffectLease,
                     "cleanup",
-                    side_effect=RuntimeError("alpha is down"),
+                    side_effect=RuntimeError("jira is down"),
                 ),
             ):
                 self.assertEqual(sweep.main(), 0)
             self.assertTrue(journal.exists())
-
 
 if __name__ == "__main__":
     unittest.main()

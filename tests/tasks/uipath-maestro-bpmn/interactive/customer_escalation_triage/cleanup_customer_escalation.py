@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """post_run backstop: delete anything the live grader created but could not free.
 
-check_customer_escalation_behavior.py frees every live resource from a
-``finally`` block. That block does not run if coder_eval SIGKILLs the graded
-command on its timeout, which would leak Jira issues, Drive copies, Slack
-messages, and an ephemeral Alpha solution with no second chance.
+check_customer_escalation_behavior.py makes one best-effort connector sweep in
+a ``finally`` block. That block does not run if coder_eval SIGKILLs the graded
+command on its timeout, which would leave Jira issues, Drive copies, and Slack
+messages behind in shared third-party sandboxes with no second chance.
 
 The grader therefore appends every created id to ``CLEANUP_JOURNAL`` the moment
 the resource exists. This script replays that journal through the grader's own
@@ -68,20 +68,17 @@ def main() -> int:
 
     failures: list[str] = []
 
-    solution_ids = records.get("solution", [])
-    if solution_ids and grader.solution_cleanup_policy() == "never":
-        # The run was told to preserve the solution for manual inspection;
-        # replaying the journal here would delete it anyway.
-        for solution_id in sorted(set(solution_ids)):
-            print(f"cleanup: PRESERVED Alpha solution {solution_id}")
-        solution_ids = []
-    if solution_ids:
-        solution_lease = grader.AlphaSolutionLease(Path("unused.uipx"))
-        solution_lease.solution_ids = set(solution_ids)
-        try:
-            failures.extend(solution_lease.cleanup())
-        except BaseException as exc:
-            failures.append(f"solution sweep: {exc}")
+    # Solutions are NOT swept here. `_shared/cleanup_solutions.py` runs as the
+    # first post_run step and deletes them from the `.uipx` under the sandbox
+    # CWD, the same way every other cloud task in the repo does it. This script
+    # exists only for what that glob cannot reach: records in third-party
+    # sandboxes.
+    solution_files = records.get("solution_file", [])
+    if solution_files:
+        print(
+            f"cleanup: {len(solution_files)} solution file(s) left to "
+            "_shared/cleanup_solutions.py"
+        )
 
     connector_kinds = {"jira_issue", "drive_file", "slack_message"}
     if connector_kinds & set(records):
@@ -111,11 +108,6 @@ def main() -> int:
         print(f"cleanup: {len(failures)} resource(s) could not be freed:")
         for failure in failures:
             print(f"  - {failure}")
-    elif grader.solution_cleanup_policy() == "never" and records.get("solution"):
-        print(
-            "cleanup: journal kept so the preserved solution id stays "
-            "recoverable"
-        )
     else:
         print("cleanup: every journalled resource is gone")
         try:
