@@ -535,21 +535,36 @@ Re-check after any edit:
 
 ## Validation
 
-Validate with the CLI — it runs the full PO.Frontend canvas rule set offline
-(the same Node/Edge/CanvasState reconstruction and every canvas rule), plus the
-deploy-readiness checks:
+Generate the diagram with `uip maestro bpmn format <file.bpmn>`, then validate.
+Do not hand-author the diagram when the command is available.
+
+Validation is only meaningful once coherent diagram interchange exists:
+complete `BPMNDiagram` coverage, a finite-bounds `BPMNShape` with positive
+width and height for every rendered node, and a `BPMNEdge` with at least two
+finite waypoints for every rendered sequence flow. `validate` rejects a file
+with no `BPMNDiagram` outright (`BPMN_PARSE_ERROR: No diagrams found`), but it
+still reports `Valid` for *degenerate* geometry — 0x0 bounds and single-waypoint
+edges pass — so a clean validate does not prove the canvas will render. Do not
+invoke `validate` until DI is complete.
+
+<!-- Delete this degenerate-geometry caveat once the CLI rejects 0x0 bounds and
+     single-waypoint edges; verified still accepted on uip 1.202.0. -->
+
+After DI is complete, validate with the CLI. It runs the canvas rules offline,
+plus the deploy-readiness checks:
 
 ```bash
 uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
-each with its rule code (gateway/condition, fake-join, superfluous-gateway,
-error end/boundary event, timer-duration/required-field, single-blank-start,
-single-conditional-outgoing-flow, variable-reference, method-parentheses,
-input-type, event-object, and IS-connector checks). Warnings are reported but do
-not block. If `validate` is unknown or runs only deploy-readiness checks, update
-the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
+Exit 0 means the post-layout document passes the reported rules. Exit 1 lists
+the blocking errors, each with its rule code (gateway/condition, fake-join,
+superfluous-gateway, error end/boundary event, timer-duration/required-field,
+single-blank-start, single-conditional-outgoing-flow, variable-reference,
+method-parentheses, input-type, event-object, and IS-connector checks). Warnings
+are reported but do not block. If `validate` is unknown or runs only
+deploy-readiness checks, update the CLI — see
+[cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
 If the CLI is unavailable, fall back to a well-formed-XML parse plus the
 structural checklist below — it mirrors the same blocking rules:
