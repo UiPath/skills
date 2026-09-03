@@ -1,12 +1,15 @@
 task_id: skill-ixp-confirm-all-predictions-smoke
 description: >
   Smoke: agent confirms all predictions on a document as ground truth — the
-  no-`--fields` form bulk-confirms every predicted field — and pins the reviewed
-  ModelVersion via `-m/--model-version` so a mid-review retrain can't stamp
-  drifted values (Rule 19).
+  no-`--fields` form bulk-confirms every predicted field, licensed here by the
+  user attesting the review (Rule 15) — and pins the reviewed ModelVersion via
+  `-m/--model-version` so a mid-review retrain can't stamp drifted values
+  (Rule 19).
 
-  The prompt never names the version, so this exercises the branch of Rule 19
-  that production actually hits: the agent has to READ it, and
+  The attestation covers the review, NOT the version — Rule 19 is explicit
+  that a user-supplied review is no exemption from the pin. So the prompt
+  still never names the version, and this task exercises the branch of Rule
+  19 that production actually hits: the agent has to READ it, and
   `get-predictions` is the only place the labelling flow surfaces it. Reads
   therefore SUCCEED here (mock_template_predictions overlay, ModelVersion 7) —
   on the all-failing base mock a pin-graded task is unwinnable, because the
@@ -25,7 +28,8 @@ sandbox:
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, confirm all predictions on
-  document doc-abc-123 as ground truth.
+  document doc-abc-123 as ground truth. I have reviewed every predicted
+  field on it and they are all correct.
 
   Important:
   - Run each command once and move on. Do NOT retry or attempt to login.
