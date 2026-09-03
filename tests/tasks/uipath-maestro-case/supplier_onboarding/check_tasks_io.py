@@ -303,6 +303,21 @@ def main() -> int:
                 f"assignment a success, so the run waits on a person who was never asked"
             )
 
+        # `impl-json.md`'s own table maps `Role:` to Type 1, the group id. The engine reads
+        # Type to pick the assignment criteria (`AppTasksFacade.cs:779-788`): Type 1 gives
+        # `AllUsers` and the whole group can act, Type 0 or 2 gives `SingleUser` and the task
+        # lands on one person, or on nobody when the value resolves to no user. All three
+        # shapes have shipped from this same SDD across runs.
+        if routed_to.startswith("Role:") and isinstance(recipient, dict):
+            rtype = recipient.get("Type", recipient.get("type"))
+            if rtype != 1:
+                problems.append(
+                    f"task {name!r} recipient is Type {rtype!r}; the SDD routes it to "
+                    f"{routed_to!r} and a `Role:` prefix is Type 1, the group id. Type 0 and 2 "
+                    f"make the engine pick the SingleUser criteria, so the task reaches one "
+                    f"person or nobody instead of the role"
+                )
+
     # ---- 9. every task carries an entry rule -------------------------------
     # An empty `entryConditions` means the runtime never tells the task to start. The
     # stage's exit condition can then never be satisfied, so `case debug` sits there until

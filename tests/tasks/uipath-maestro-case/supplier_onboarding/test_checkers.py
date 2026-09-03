@@ -990,6 +990,22 @@ class TasksIoTests(CheckerBase):
         task(plan, "Record buyer review decision")["data"].pop("recipient", None)
         self.rejects(plan, "reaches nobody")
 
+    def test_rejects_a_role_recipient_emitted_as_a_single_user(self):
+        # The shape that shipped 69 times: `Role:` written as Type 0 or 2, so the engine
+        # picks SingleUser and one person holds the task instead of the role.
+        plan = baseline_plan()
+        task(plan, "Validate application details")["data"]["recipient"] = {
+            "Type": 2, "Value": "someone@example.com"
+        }
+        self.rejects(plan, "is Type 2")
+
+    def test_accepts_a_role_recipient_as_a_group(self):
+        plan = baseline_plan()
+        task(plan, "Validate application details")["data"]["recipient"] = {
+            "Type": 1, "Value": "Procurement Operations Lead"
+        }
+        self.accepts(plan)
+
     def test_rejects_a_placeholder_recipient(self):
         # The engine logged `ConfiguredAssignee=---` and `Recipient=---`, called the
         # assignment a success, and the task sat in nobody's queue for the whole run.
@@ -1056,13 +1072,6 @@ class TasksIoTests(CheckerBase):
         task(plan, "Obtain legal opinion")["data"]["recipient"] = {
             "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "Legal Counsel"}
         self.rejects(plan, "never as a mailbox")
-
-    def test_accepts_a_real_address_in_the_email_recipient_type(self):
-        # The same slot with an actual address is exactly what Type 2 is for.
-        plan = baseline_plan()
-        task(plan, "Obtain legal opinion")["data"]["recipient"] = {
-            "Type": E.EMAIL_RECIPIENT_TYPE, "Value": "legal@uipath.com"}
-        self.accepts(plan)
 
     def test_rejects_dropped_output(self):
         plan = baseline_plan()
