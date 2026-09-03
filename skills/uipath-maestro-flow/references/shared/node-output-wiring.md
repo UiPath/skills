@@ -1,101 +1,58 @@
 # Wiring Node Outputs to Downstream Inputs
 
-How to reference one node's output (or any `$vars.*` value) from another node's input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
+Use this reference whenever a `.flow` JSON field references a previous node output, workflow variable, or `$metadata.*` / `$self.*`. It is the source of truth for `=js:` expressions; node-type plugins defer to it.
 
-> **Read this before** writing any field that needs to reference a previous node's output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of "the value at runtime was the literal string `vars.X.output.Id`" failures.
+## Core rule
 
----
+In value-typed fields, every `$vars.*`, `$metadata.*`, or `$self.*` reference must start with `=js:`. Otherwise, runtime treats the rewritten value as a literal. A missing prefix is silent: the serializer rewrites `$vars`→`vars` with or without `=js:`, so `flow validate` passes and the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
 
-## The Rule (one sentence)
+Use `$vars.<sourceNodeId>.output.<field>`—never `nodes.X.output.Y`. `<sourceNodeId>` is the producing node's `id`; `output` is the standard output port (`error` is the error port); `<field>` is the output path.
 
-**Any string that references `$vars.*`, `$metadata.*`, or `$self.*` MUST start with `=js:`. Otherwise it is a literal string at runtime.**
-
----
-
-## What Goes Wrong Without `=js:`
-
-The Flow runtime serializes string fields into BPMN. The serializer rewrites the canvas-form tokens (`$vars` → `vars`) **whether or not the `=js:` prefix is present**. This means a missing prefix is silent — `flow validate` passes, the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
-
-Three failure modes observed in agent-generated `.flow` files:
-
-| What the agent wrote | What ships to runtime | Result |
-|---|---|---|
-| `"nodes.createEntityRecord1.output.Id"` | `"nodes.createEntityRecord1.output.Id"` | Literal string — invented `nodes.` prefix has no meaning. |
-| `"$vars.createEntityRecord1.output.Id"` | `"vars.createEntityRecord1.output.Id"` | Literal string — `$vars` rewritten to `vars` but no `=js:` so never evaluated. |
-| `"=js:$vars.createEntityRecord1.output.Id"` | `"=js:vars.createEntityRecord1.output.Id"` | Evaluates correctly. |
-
-**There is no "nodes.X.output.Y" syntax.** Variable references always use `$vars.*`.
-
----
-
-## The Canonical Pattern
-
-```
-"=js:$vars.<sourceNodeId>.output.<field>"
+```text
+=js:$vars.fetchUser1.output
+=js:$vars.createRecord1.output.Id
+=js:$vars.queryRecords1.output[0].Id
+=js:$vars.fetchUser1.output.id === $vars.input.userId
+=js:$metadata.instanceId
+=js:`Hello ${$vars.userName}`
 ```
 
-- `<sourceNodeId>` — the `id` value of the node that produces the output
-- `output` — the literal string `output` (the standard output port; use `error` for errors)
-- `<field>` — the field path within the output object
+Static values do not need `=js:`. For mixed strings, use `=js:` with JavaScript template literals and `${}`.
 
-### Examples
+## Where `=js:` applies
 
-| What you want | Expression |
-|---|---|
-| The whole output object | `=js:$vars.fetchUser1.output` |
-| One field from a single-record output | `=js:$vars.createEntityRecord1.output.Id` |
-| A field from the first record of a query result (array) | `=js:$vars.queryEntityRecords1.output[0].Id` |
-| Filter on a value from a previous node | `=js:$vars.fetchUser1.output.id === $vars.input.userId` |
-| A static value (no variables) | `"HDFC Bank"` (no prefix needed) |
-| A built-in metadata value | `=js:$metadata.instanceId` |
-| A literal that contains a variable | `` =js:`Hello ${$vars.userName}` `` |
-
----
-
-## Where the Rule Applies
-
-`=js:` is **required** in every field below when the value references `$vars`, `$metadata`, or `$self`:
-
-| Node / context | Field | Required `=js:`? |
+| Context | Field | Rule |
 |---|---|---|
-| **Connector activity nodes** (`uipath.connector.<connector-key>.<activity>`) | `inputs.detail.bodyParameters.*` (all values) | **YES** |
-| | `inputs.detail.queryParameters.*` (all values) | **YES** |
-| | `inputs.detail.pathParameters.*` (all values) | **YES** |
-| **Managed HTTP** (`core.action.http.v2`) | `inputs.detail.bodyParameters.url` / `headers` / `query` / `body` — both manual and connector mode store dynamic fields here in the `.flow` JSON, regardless of how the CLI's `--detail` flag accepts them at the top level | **YES** |
-| **Custom HTTP** (`core.action.http`) | `inputs.url` / `headers` / `body` / `queryParams` (deprecated; prefer `core.action.http.v2`) | **YES** |
-| **HTTP branches** | `inputs.branches[].conditionExpression` | **NO** — already JS, do not prefix |
-| **Decision** (`core.logic.decision`) | `inputs.expression` | **NO** — already JS, do not prefix |
-| **Switch** (`core.logic.switch`) | `inputs.cases[].expression` | **NO** — already JS, do not prefix |
-| **End nodes** (`core.control.end`) | `outputs.<varId>.source` | **YES** |
-| **Variable updates** | `variables.variableUpdates.<nodeId>[].expression` | **NO** — not a string field. Write the object form `{ "type": "jsExpression", "expression": "<bare JS>", "fieldType": "<target variable type>" }`. A `=js:` string fails `flow validate` at the 1.9→1.10 migration. See [variables-and-expressions.md § Variable Updates](variables-and-expressions.md#variable-updates-variableupdates). |
-| **Loop nodes** (`core.logic.loop`) | `inputs.collection` | **YES** |
-| **Subflow nodes** (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
-| **Script nodes** (`core.action.script`) | `inputs.script` body — `$vars.*` is read inside JS, no `=js:` wrapping | **NO** — the body is already JS |
+| Connector activity nodes (`uipath.connector.<connector-key>.<activity>`) | `inputs.detail.bodyParameters.*`, `queryParameters.*`, `pathParameters.*` | **YES** |
+| Managed HTTP (`core.action.http.v2`) | `inputs.detail.bodyParameters.url`, `headers`, `query`, `body` | **YES**; dynamic fields are stored here in `.flow` JSON in both manual and connector mode, regardless of how the CLI `--detail` flag accepts them at the top level |
+| Custom HTTP (`core.action.http`) | `inputs.url`, `headers`, `body`, `queryParams` | **YES**; deprecated, prefer `core.action.http.v2` |
+| HTTP branches | `inputs.branches[].conditionExpression` | **NO**; already JS |
+| Decision (`core.logic.decision`) | `inputs.expression` | **NO**; already JS |
+| Switch (`core.logic.switch`) | `inputs.cases[].expression` | **NO**; already JS |
+| End nodes (`core.control.end`) | `outputs.<varId>.source` | **YES** |
+| Variable updates | `variables.variableUpdates.<nodeId>[].expression` | **NO**; use `{ "type": "jsExpression", "expression": "<bare JS>", "fieldType": "<target variable type>" }`. A `=js:` string fails `flow validate` at the 1.9→1.10 migration. See [variables-and-expressions.md § Variable Updates](variables-and-expressions.md#variable-updates-variableupdates). |
+| Loop nodes (`core.logic.loop`) | `inputs.collection` | **YES** |
+| Subflow nodes (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
+| Script nodes (`core.action.script`) | `inputs.script` body | **NO**; the body is already JS and reads `$vars.*` directly |
 | **Voice `callContext`** (`uipath.agent.voice`, `uipath.conversational.voice.end-call`) | `inputs.callContext` — a structured binding object `{ "type": "jsExpression", "expression": "$vars.<originNodeId>.output.callContext", "fieldType": ... }`, never a bare string. `fieldType` is `"object"` on the voice agent and `"string"` on the end-call node. | **NO** — the expression sits unprefixed inside the object's `expression` field. See [author/plugins/inline-voice-agent/impl.md § The `callContext` wiring rule](../author/plugins/inline-voice-agent/impl.md#the-callcontext-wiring-rule). |
 | **Inline-agent prompt** (`uipath.agent.autonomous` / `uipath.agent.voice` `agent.json` `messages[].content`) | Tokens use the flattened delivery key, never the flow expression: `{{input.<flowNodeId>__output__<field>}}`. The key is delivered by the node's `inputs.agentInputVariables[]` binding (`=$vars.<flowNodeId>.output.<field>`) and declared in `inputSchema.properties`. Mirror in `contentTokens[]` as `{ "type": "variable", "rawString": "input.<flowNodeId>__output__<field>" }` — `rawString` is brace-free with no added spaces, and `uip agent refresh` regenerates it, so never hand-author it. **Never a raw `{{ $vars.… }}`** (nothing rewrites agent.json prompt text — the model receives it literally) and never a bare `{{name}}`. | **NO** — `{{ ... }}` tokens, not `=js:`. See [author/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts). Encoding note: a read `agent.json` may use the flat `__` input keys or a newer nested (dotted-key) form — author flat, read both (see the impl.md encoding note). |
 
-**Rule of thumb:** If the field is *value-typed* (anything other than a hardcoded condition), `=js:` is required for `$vars`/`$metadata`/`$self` references. The two condition fields (Decision, Switch) and the script body are the only exceptions — they are always parsed as JS regardless.
+Do not add `=js:` to Decision, Switch, or HTTP branch conditions, script bodies, variable-update expressions, or inline-agent tokens; these formats are parsed separately.
 
----
-
-## Connector Node Wiring — Quick Reference
-
-For connector nodes (`uipath.connector.*`), the most common wiring patterns:
+## Connector and HTTP wiring
 
 ```jsonc
 "inputs": {
   "detail": {
     "method": "POST",
     "endpoint": "/v2/{entityName}/UpdateEntityRecord",
-    "pathParameters": {
-      "entityName": "BankDetails"
-    },
+    "pathParameters": { "entityName": "Entity" },
     "queryParameters": {
-      "recordId": "=js:$vars.createEntityRecord1.output.Id",
+      "recordId": "=js:$vars.createRecord1.output.Id",
       "expansionLevel": "3"
     },
     "bodyParameters": {
-      "BankName": "HDFC Bank",
+      "Name": "static-value",
       "AccountId": "=js:$vars.queryAccounts1.output[0].Id",
       "Notes": "=js:`Created from flow run ${$metadata.instanceId}`"
     }
@@ -103,37 +60,25 @@ For connector nodes (`uipath.connector.*`), the most common wiring patterns:
 }
 ```
 
-- **Static values** (`"HDFC Bank"`, `"3"`) — no prefix, written as plain JSON values.
-- **Variable references** (`$vars.X.output.Y`) — **always** wrap with `=js:`.
-- **Mixed strings** (template literals) — wrap the whole expression in `=js:` and use JS template literal syntax with `${ }`.
+Plugin-specific path fields are not value fields; follow the plugin reference. In particular, Transform `inputs.collection` must be a path such as `"$vars.orders.output.items"`, without `=js:`.
 
-Plugin-specific path fields are not value fields. **Always** follow the plugin reference when it says a field stores a path string. Notable exception: Transform `inputs.collection` must be a path such as `"$vars.orders.output.items"`, without `=js:`.
+## Never do this
 
----
+1. **Never invent `nodes.X.output.Y`;** use `$vars` references.
+2. **Never write `$vars.X.output.Y` without `=js:`** in an expression value field. The `$vars→vars` rewrite still occurs, producing a literal. Use the plugin-specific format for path fields such as Transform `inputs.collection`.
+3. **Never wrap Decision, Switch, or HTTP branch conditions in `=js:`.** They already parse JS.
+4. **Never use `{ }` template interpolation in connector or HTTP activity inputs.** The flow-layer template runner skips these fields; the `$` is stripped and `{vars.X}` ships literally to the IS runtime. Use `=js:` with JS template literals instead.
+5. **Never quote `=js:` itself in an expression.** `"=js:$vars.X"` is correct; `"\"=js:$vars.X\""` is a string containing the prefix.
 
-## Anti-Patterns (Never Write These)
+## Runtime and migration behavior
 
-1. **Never invent a `nodes.X.output.Y` syntax.** It does not exist. All variable references use `$vars`.
-2. **Never write `$vars.X.output.Y` without `=js:`** in an expression value field. The `$vars→vars` rewrite happens regardless of prefix, leaving you with a literal string `"vars.X.output.Y"` at runtime — looks like an expression, isn't one. For plugin path fields such as Transform `inputs.collection`, use the plugin-specific path format instead.
-3. **Never wrap conditions** (Decision, Switch, HTTP branch) in `=js:`. Those are parsed as JS automatically.
-4. **Never use `{ }` template interpolation in connector or HTTP activity inputs.** The flow-layer template runner skips these fields. The `$` is stripped and `{vars.X}` ships literally to the IS runtime. Use `=js:` and JS template literals (`` `…${$vars.X}…` ``) instead.
-5. **Never quote `=js:` itself in an expression.** `"=js:$vars.X"` is correct. `"\"=js:$vars.X\""` is a string containing the prefix.
+`expression-transform.ts` rewrites `$vars` → `vars` in every node-data string, whether or not `=js:` is present. The prefix tells the BPMN engine to evaluate the result; without it, the rewritten value remains literal. `bpmn-moddle.ts` has an `ensureJsPrefix` fallback only for variable updates. Connector and HTTP activity inputs have no equivalent fallback, so write `=js:` explicitly.
 
----
+## Validation
 
-## Why The Engine Works This Way
+When a flow outputs literal `vars.X.output.Y`, `nodes.X.output.Y`, or another unevaluated expression:
 
-The flow-workbench serializer (`expression-transform.ts`) walks every string in node data and rewrites `$vars` → `vars` so the BPMN runtime sees engine-form tokens. It does **not** check for the `=js:` prefix when doing this rewrite — the prefix is what tells the BPMN engine to actually evaluate the result as JavaScript. Without it, the BPMN engine treats the string as a literal value and binds it to the activity input as-is.
-
-For variable updates only, `bpmn-moddle.ts` has a fallback (`ensureJsPrefix`) that warns and auto-prefixes. There is **no equivalent fallback for connector/HTTP activity inputs** — values pass through verbatim. Always include `=js:` explicitly.
-
----
-
-## Validation Tip
-
-When debugging a flow whose output is the literal string `vars.X.output.Y` (or `nodes.X.output.Y`, or any other unevaluated expression) instead of the expected value:
-
-1. Open the `.flow` file
-2. Search for the literal token in the failed field — `grep '"vars\.' <project>.flow` or `grep '"\$vars\.' <project>.flow`
-3. For each match in `bodyParameters`, `queryParameters`, `pathParameters`, end-node `source`, or any value field, prepend `=js:`
-4. Re-run `uip maestro flow validate` and re-debug
+1. Open the `.flow` file.
+2. Search for the token: `grep '"vars\.' <project>.flow` or `grep '"\$vars\.' <project>.flow`.
+3. In `bodyParameters`, `queryParameters`, `pathParameters`, end-node `source`, and other value fields, prepend `=js:` to each variable reference.
+4. Run `uip maestro flow validate` and re-debug.
