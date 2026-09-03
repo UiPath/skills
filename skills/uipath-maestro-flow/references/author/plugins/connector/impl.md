@@ -410,6 +410,7 @@ Never hardcode connection IDs; fetch them from IS at authoring time. Connector-t
 - **CEQL `[102003]` `Unsupported value expression 'Column'`:** single-quote values inside the `=js:` concatenation; do not double-quote them.
 - **CEQL `[102003]` with `eq`, `ne`, `gt`, `ge`, `lt`, or `le`:** replace aliases with `=`, `!=`, `>`, `>=`, `<`, or `<=`.
 - **`parameterValues` object-map error:** use `[key, value]` tuples.
+- **`[400300] Error evaluating expression … Invalid or unexpected token`, or the command itself dies with a shell parse error (`zsh: parse error`, `bash: syntax error near unexpected token`):** the `=js:` expression was hand-escaped through nested shell quotes inside `--detail '<json>'`. Write the detail JSON to a file with a quoted heredoc and pass `--detail "$(cat /tmp/detail.json)"`. See [editing-operations-cli.md — Configure a connector node](../../editing-operations-cli.md#configure-a-connector-node).
 - **Custom-field token unresolved:** reread `apiConfiguration.url` and `body` and add every encoded token.
 - **Unknown `ObjectActionName` or `ParameterValues`:** use camelCase `objectActionName` and `parameterValues`.
 - **Array field rejected as unknown:** strip trailing `[*]`, use a `=js:` array expression, and reconfigure. Names containing `[*].` are not authorable.

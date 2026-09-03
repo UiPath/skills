@@ -69,7 +69,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 - **Never run `solution upload` without `solution resources refresh` first.** Stale resource declarations cause runtime binding failures.
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
 <!--skill-flavor:upload-antipatterns:end-->
-- **Never run `flow debug` as a validation step, and never re-run a completed one to reshape its output.** Each run re-uploads the solution and executes the flow again against real systems; extract report fields from the payload the completed run already returned. Use `uip maestro flow validate` for correctness checking.
+- **Never run `flow debug` as a validation step, and never re-run a completed one to reshape its output.** Each run re-uploads the solution and executes the flow again against real systems; extract report fields from the payload the completed run already returned, and when that run faulted, read the cause from it first — see [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have). Use `uip maestro flow validate` for correctness checking.
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
 
