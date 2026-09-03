@@ -42,7 +42,7 @@ namespace, at least one `<bpmn:process>`, and (to render) a
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="Process_1">
     <!-- variables, flow nodes, sequence flows -->
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_1">
@@ -68,12 +68,14 @@ file will fail to parse. Never paste CLI commands or flags
 
 ## A complete minimal file (author from this, not from examples)
 
-This is the whole shape — variables, an entry point, one node, a branch, and
-the diagram — in one valid file. Author from this skeleton plus the registry
-templates for your nodes. **Do not reverse-engineer the pattern from full
-example BPMN files** — it is the main reason authoring runs out of time. Swap
-the `scriptTask` payload for the registry `xmlTemplate` of whatever node you
-need.
+This is a minimal CLI-compatible authoring scaffold with a stable manual entry
+point, one structural task, and complete diagram interchange. The CLI
+initializer omits `isExecutable`; preserve that shape. If existing source
+includes the equivalent default `isExecutable="false"`, preserve it. Do not
+force `isExecutable="true"`. Author from this skeleton plus the registry
+templates for the nodes your process needs. **Do not
+reverse-engineer the pattern from full example BPMN files** — it is the main
+reason authoring runs out of time.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -85,52 +87,34 @@ need.
     xmlns:uipath="http://uipath.org/schema/bpmn"
     id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
     exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="Process_1">
     <bpmn:extensionElements>
-      <uipath:migrationVersion version="11.5" />
-      <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
-        <uipath:inputOutput id="Var_Tier" name="Tier" type="string" />
-      </uipath:variables>
+      <uipath:variables version="v1" />
+      <uipath:bindings version="v1" />
     </bpmn:extensionElements>
-    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>
-    <bpmn:scriptTask id="Task_Tier" name="Classify" scriptFormat="JavaScript">
+    <bpmn:startEvent id="Start_1" name="Start">
       <bpmn:extensionElements>
-        <uipath:scriptVersion value="v3" />
-        <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
-          <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
-        </uipath:mapping>
+        <uipath:entryPointId value="00000000-0000-4000-8000-000000000001" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: amount > 1000 ? "high" : "low" };]]></bpmn:script>
-    </bpmn:scriptTask>
-    <bpmn:exclusiveGateway id="Gw_1" name="Tier?" default="Flow_Low">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_1" name="Work">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_1" name="Complete">
       <bpmn:incoming>Flow_2</bpmn:incoming>
-      <bpmn:outgoing>Flow_High</bpmn:outgoing><bpmn:outgoing>Flow_Low</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="End_High" name="High"><bpmn:incoming>Flow_High</bpmn:incoming></bpmn:endEvent>
-    <bpmn:endEvent id="End_Low" name="Low"><bpmn:incoming>Flow_Low</bpmn:incoming></bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_Tier" />
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Tier" targetRef="Gw_1" />
-    <bpmn:sequenceFlow id="Flow_High" sourceRef="Gw_1" targetRef="End_High">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.Var_Tier == "high"</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_Low" sourceRef="Gw_1" targetRef="End_Low" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="End_1" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Diagram_1">
     <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
       <bpmndi:BPMNShape id="S_Start" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Task" bpmnElement="Task_Tier"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Gw" bpmnElement="Gw_1"><dc:Bounds x="410" y="93" width="50" height="50" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_High" bpmnElement="End_High"><dc:Bounds x="520" y="40" width="36" height="36" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="S_Low" bpmnElement="End_Low"><dc:Bounds x="520" y="160" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task" bpmnElement="Task_1"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End" bpmnElement="End_1"><dc:Bounds x="430" y="100" width="36" height="36" /></bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="E_1" bpmnElement="Flow_1"><di:waypoint x="196" y="118" /><di:waypoint x="250" y="118" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="E_2" bpmnElement="Flow_2"><di:waypoint x="350" y="118" /><di:waypoint x="410" y="118" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="E_High" bpmnElement="Flow_High"><di:waypoint x="435" y="93" /><di:waypoint x="435" y="58" /><di:waypoint x="520" y="58" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="E_Low" bpmnElement="Flow_Low"><di:waypoint x="435" y="143" /><di:waypoint x="435" y="178" /><di:waypoint x="520" y="178" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_2" bpmnElement="Flow_2"><di:waypoint x="350" y="118" /><di:waypoint x="430" y="118" /></bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
@@ -140,12 +124,25 @@ need.
 
 Declare root variables with the `BPMN.Variables` registry template attached to
 the process via `extensionElements`, or use the canvas `<uipath:variables>`
-block directly. Variable bodies are CDATA. Reference variables in expressions as
-`vars.<id>` — see [expression-authoring.md](expression-authoring.md).
+block directly. Every declaration needs a stable, unique `id`, a non-empty
+user-facing `name`, and its documented `type`; do not use the name as a
+substitute for the id. Expressions reference the id as `vars.<id>`. Public or
+node-scoped declarations also carry the owning node's `elementId`. Variable
+schema bodies are JSON text or CDATA.
+
+```xml
+<uipath:variables version="v1">
+  <uipath:input id="input_ExpenseId" name="expenseId" type="string" elementId="Start_1" />
+  <uipath:inputOutput id="Var_Decision" name="decision" type="string" />
+</uipath:variables>
+```
+
+If a migration marker is present, its supported shape is
+`<uipath:migrationVersion version="11.5" />`; the attribute is `version`, not
+`value`. The CLI initializer may omit that optional marker.
+
+See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
-For a value produced only by a task output, prefer root
-`<uipath:output id="..." name="..." type="..." />`; preserve the exact id and
-target that same id from `uipath:output var="..."`.
 
 ## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
 
@@ -515,9 +512,9 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 - **Move logic into a subprocess**: move only elements that share a valid scope,
   re-scope their variables, recreate legal subprocess flow boundaries, and add a
   second diagram plane for the subprocess so nested content renders.
-- **Add an entry point**: use a root-level start event, add a stable unique
-  `uipath:entryPointId`, and declare input/output variables whose `elementId`
-  matches that start event.
+- **Add an entry point**: use a root-level start event and generate a stable,
+  unique UUID for its serializer-owned `uipath:entryPointId`. Do not copy the
+  example UUID; this scaffold field is not a registry-owned node payload.
 
 Do not patch generated JSON to fix source behavior — change the `.bpmn` and
 regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.

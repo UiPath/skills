@@ -2,14 +2,15 @@ task_id: skill-bpmn-simple-approval-bpmn
 description: >
   Authoring eval: agent composes a model-authored simple approval BPMN that
   combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task,
-  declared root variables, numeric migration metadata, and BPMN DI. Mirrors the
-  manual smoke "simple approval" scenario.
-tags: [uipath-maestro-bpmn, integration, "mode:build", lifecycle:generate, shape:multi-node, node:gateway, node:script, node:service-task, resource]
+  declared root variables, the supported local project scaffold, numeric
+  migration metadata, and BPMN DI. Mirrors the manual smoke "simple approval"
+  scenario.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", resource]
 
 run_limits:
   task_timeout: 2400
   turn_timeout: 1800
-  expected_turns: 24
+  expected_turns: 55
   max_turns: 90
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
@@ -52,7 +53,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Simple approval BPMN combines StartAgentJob, gateway, CreateQueueItem, script, variables, migration, and DI"
+    description: "Simple approval BPMN has the requested nodes, supported local project scaffold, migration metadata, and complete DI"
     command: "python3 $TASK_DIR/check_simple_approval_bpmn.py"
     timeout: 30
     expected_exit_code: 0

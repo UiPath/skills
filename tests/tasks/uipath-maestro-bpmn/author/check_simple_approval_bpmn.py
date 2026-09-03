@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import sys
+from pathlib import Path
+from uuid import UUID
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
@@ -20,6 +23,20 @@ from _shared.bpmn_check import (  # noqa: E402
 
 def main() -> None:
     path, root = parse_bpmn("ExpenseApprovalBpmn")
+    bpmn_path = Path(path)
+    project_path = bpmn_path.parent / "project.uiproj"
+    if not project_path.is_file():
+        fail(f"missing project descriptor beside BPMN: {project_path}")
+    try:
+        project = json.loads(project_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"project.uiproj is not valid JSON: {exc}")
+    if project.get("Name") != "ExpenseApprovalBpmn":
+        fail("project.uiproj Name must be ExpenseApprovalBpmn")
+    if project.get("ProjectType") != "ProcessOrchestration":
+        fail("project.uiproj ProjectType must be ProcessOrchestration")
+    if "main" in project:
+        fail("project.uiproj must not duplicate the runtime main path")
 
     agent_jobs = [
         task
@@ -57,6 +74,82 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process element")
+    # `isExecutable` is deliberately not graded: nothing in the CLI reads it
+    # (no reference in maestro-sdk/maestro-tool outside the spec), so pack,
+    # validate, and the canvas all tolerate any value. The skill documents the
+    # scaffold default; failing an agent over an inert attribute would grade
+    # style, not behaviour -- see .claude/rules/test-writing.md.
+
+    starts = process.findall("bpmn:startEvent", NS)
+    if len(starts) != 1:
+        fail("expected exactly one root start event")
+    entry_point = starts[0].find(
+        "bpmn:extensionElements/uipath:entryPointId",
+        NS,
+    )
+    if entry_point is None or not entry_point.attrib.get("value"):
+        fail("manual start must declare a stable uipath:entryPointId")
+    entry_point_id = entry_point.attrib["value"]
+    try:
+        UUID(entry_point_id)
+    except ValueError:
+        fail("manual-start uipath:entryPointId must be a UUID")
+    if entry_point_id == "00000000-0000-4000-8000-000000000001":
+        fail("manual-start uipath:entryPointId copied the documentation example")
+
+    operate_path = bpmn_path.parent / "operate.json"
+    if not operate_path.is_file():
+        fail(f"missing generated runtime descriptor beside BPMN: {operate_path}")
+    try:
+        operate = json.loads(operate_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"operate.json is not valid JSON: {exc}")
+    expected_main = f"/content/{bpmn_path.name}#{starts[0].attrib['id']}"
+    if operate.get("main") != expected_main:
+        fail(f"operate.json main must be {expected_main}")
+    if operate.get("contentType") != "ProcessOrchestration":
+        fail("operate.json contentType must be ProcessOrchestration")
+
+    entry_points_path = bpmn_path.parent / "entry-points.json"
+    if not entry_points_path.is_file():
+        fail(f"missing generated entry-point descriptor: {entry_points_path}")
+    try:
+        entry_points = json.loads(entry_points_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"entry-points.json is not valid JSON: {exc}")
+    entries = entry_points.get("entryPoints")
+    if not isinstance(entries, list) or len(entries) != 1:
+        fail("entry-points.json must contain exactly one manual entry point")
+    entry = entries[0]
+    if entry.get("uniqueId") != entry_point_id:
+        fail("entry-points.json uniqueId must match uipath:entryPointId")
+    if entry.get("filePath") != expected_main:
+        fail(f"entry-points.json filePath must be {expected_main}")
+    if entry.get("type") != "ProcessOrchestration":
+        fail("entry-points.json type must be ProcessOrchestration")
+
+    descriptor_path = bpmn_path.parent / "package-descriptor.json"
+    if not descriptor_path.is_file():
+        fail(f"missing generated package descriptor: {descriptor_path}")
+    try:
+        descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"package-descriptor.json is not valid JSON: {exc}")
+    # Subset, not equality: this map is CLI-generated, so pinning it exactly
+    # turns any future CLI addition into an eval failure.
+    required_files = {
+        "operate.json": "operate.json",
+        "entry-points.json": "entry-points.json",
+        "bindings.json": "bindings_v2.json",
+        bpmn_path.name: bpmn_path.name,
+    }
+    files = descriptor.get("files")
+    if not isinstance(files, dict):
+        fail("package-descriptor.json has no files map")
+    missing = {k: v for k, v in required_files.items() if files.get(k) != v}
+    if missing:
+        fail(f"package-descriptor.json files map is missing entries: {missing}")
+
     variable_names = {
         var.attrib.get("name")
         for var in process.findall("bpmn:extensionElements/uipath:variables/*", NS)

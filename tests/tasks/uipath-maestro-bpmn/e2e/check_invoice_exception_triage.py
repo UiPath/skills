@@ -57,9 +57,6 @@ def main() -> int:
     process = root.find(f"{{{BPMN_NS}}}process")
     if process is None:
         fail("BPMN process is missing")
-    if process.attrib.get("isExecutable") != "true":
-        fail("BPMN process must be executable")
-
     elements = list(process)
     element_types = {local(elem.tag) for elem in elements}
     for expected in ["startEvent", "scriptTask", "exclusiveGateway", "userTask", "endEvent"]:
