@@ -15,7 +15,8 @@ Two checks:
 A `flow debug` check is intentionally omitted from this task — see the task
 YAML description for the infrastructure rationale.
 
-Privacy: never logs folder display names. Only counts + truncated IDs.
+Privacy: never logs folder display names, nor the configured reference value
+(which may itself be a name). Only counts and lengths.
 """
 
 import glob
@@ -43,17 +44,33 @@ def _connection_is_dead(blob: str) -> bool:
     return any(marker in lowered for marker in _CONNECTION_DEAD_MARKERS)
 
 
+def _dead_credential_remedy(args: list[str]) -> str:
+    """Which credential to reauthorize. The MailFolder resolve runs on the
+    Outlook connection's grant; every other call in this checker (`or folders
+    get`, `is connections list`) runs on the CLI's own session. Both are
+    environment failures, but they are fixed in different places, so a dead CLI
+    login must not be reported as a dead Outlook connection."""
+    if "resources" in args:
+        return (
+            "The tenant's Outlook connection cannot authenticate, so no MailFolder ID "
+            "can be resolved and this task's assertion never ran. Reauthorize the "
+            f"connection in {TEST_FOLDER_PATH} and re-run"
+        )
+    return (
+        "The CLI's own session cannot authenticate, so this checker never reached the "
+        "MailFolder resolve. Re-run `uip login` and re-run this task"
+    )
+
+
 def _parse_uip_stdout(args: list[str], result: subprocess.CompletedProcess) -> dict:
     if result.returncode != 0:
         blob = f"{result.stdout}\n{result.stderr}"
         if _connection_is_dead(blob):
             sys.exit(
                 f"FAIL (ENVIRONMENT, not a skill regression): {' '.join(args)} "
-                f"exit={result.returncode}. The tenant's Outlook connection cannot "
-                "authenticate, so no MailFolder ID can be resolved and this task's "
-                "assertion never ran. Reauthorize the connection in "
-                f"{TEST_FOLDER_PATH} and re-run; do not read this as the agent "
-                f"reusing or inventing an ID.\nstderr: {result.stderr}\nstdout: {result.stdout}"
+                f"exit={result.returncode}. {_dead_credential_remedy(args)}; do not "
+                "read this as the agent reusing or inventing an ID.\n"
+                f"stderr: {result.stderr}\nstdout: {result.stdout}"
             )
         sys.exit(
             f"FAIL: {' '.join(args)} exit={result.returncode}\n"
@@ -116,6 +133,17 @@ def _find_test_folder_key() -> str:
     return key
 
 
+def _bound_connection_id(trigger: dict) -> str:
+    """The connection the trigger is actually bound to, from its persisted
+    ``inputs.detail.connectionId``. `node configure` requires the field, so it
+    is present on any flow that validated. Falling back to the folder's default
+    connection would validate the ID against the wrong grant whenever the two
+    differ — a dead default would then mask a healthy bound connection."""
+    detail = trigger.get("inputs", {}).get("detail", {}) or {}
+    conn_id = detail.get("connectionId")
+    return conn_id if isinstance(conn_id, str) and conn_id.strip() else ""
+
+
 def _find_default_outlook_connection() -> tuple[str, str, str]:
     """Return (connection_id, folder_key, connection_name) for the default
     enabled Outlook connection in the test folder."""
@@ -176,7 +204,9 @@ def check_folder_id_fresh():
             "The agent did not configure the required reference field."
         )
 
-    conn_id, _folder_key, _conn_name = _find_default_outlook_connection()
+    # Prefer the trigger's own binding; fall back to the folder default only
+    # when the flow never persisted one.
+    conn_id = _bound_connection_id(trigger) or _find_default_outlook_connection()[0]
     live = _uip_resources_run(
         ["list", CONNECTOR_KEY, "MailFolder", "--connection-id", conn_id, "--output", "json"]
     )
@@ -212,12 +242,15 @@ def check_folder_id_fresh():
             "skipped or failed resolve, NOT the PR #348 stale-reference regression."
         )
 
-    # Truncate the IDs in the error to avoid leaking full Exchange IDs while
-    # still giving enough signal to diagnose.
+    # The configured value is never echoed, not even truncated: reaching here
+    # means it matched no live id AND no live display name, so it can still BE a
+    # display name (a renamed or deleted folder, or one past the returned page).
+    # Report its shape instead.
     sys.exit(
-        f"FAIL (PR #348 regression): parentFolderId={flow_folder_id[:12]}... is NOT among "
-        f"the {len(live_ids)} MailFolder IDs on the current connection. The agent "
-        f"reused a reference ID from another connection or session."
+        f"FAIL (PR #348 regression): the configured parentFolderId ({len(flow_folder_id)} chars) "
+        f"is not among the {len(live_ids)} MailFolder IDs on the bound connection, and is not "
+        "one of their display names either. The agent reused a reference ID from another "
+        "connection or session."
     )
 
 

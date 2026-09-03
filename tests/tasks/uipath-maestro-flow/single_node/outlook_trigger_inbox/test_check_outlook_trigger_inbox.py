@@ -27,16 +27,15 @@ def _load_checker():
     return module
 
 
-def _patch_static(monkeypatch, checker, folder_id: str = "mail-folder-1") -> None:
+def _patch_static(
+    monkeypatch, checker, folder_id: str = "mail-folder-1", bound_connection: str | None = None
+) -> None:
     """Stub the non-CLI dependencies so we can focus on the verb path."""
+    detail: dict[str, Any] = {"eventParameters": {"parentFolderId": folder_id}}
+    if bound_connection is not None:
+        detail["connectionId"] = bound_connection
     monkeypatch.setattr(checker, "_read_flow", lambda: ({}, "OutlookTriggerInbox.flow"))
-    monkeypatch.setattr(
-        checker,
-        "_find_trigger_node",
-        lambda _flow: {
-            "inputs": {"detail": {"eventParameters": {"parentFolderId": folder_id}}}
-        },
-    )
+    monkeypatch.setattr(checker, "_find_trigger_node", lambda _flow: {"inputs": {"detail": detail}})
     monkeypatch.setattr(
         checker,
         "_find_default_outlook_connection",
@@ -266,3 +265,87 @@ def test_error_never_echoes_a_folder_display_name(monkeypatch) -> None:
         assert "Quarterly Board Minutes" not in str(exc.code)
     else:
         raise AssertionError("expected SystemExit on a display name in an id field")
+
+
+# ── connection binding ──────────────────────────────────────────────────────
+
+
+def test_resolves_against_the_triggers_bound_connection(monkeypatch) -> None:
+    """The flow's own `inputs.detail.connectionId` wins over the folder default:
+    validating against a different connection checks the wrong grant."""
+    checker = _load_checker()
+    _patch_static(monkeypatch, checker, bound_connection="connection-bound")
+    monkeypatch.setattr(
+        checker,
+        "_find_default_outlook_connection",
+        lambda: (_ for _ in ()).throw(AssertionError("must not fall back to the folder default")),
+    )
+    calls: list[list[str]] = []
+
+    def fake_run(args, **_kwargs):
+        calls.append(args)
+        return _fake_proc(0, stdout=_success_payload())
+
+    monkeypatch.setattr(checker.subprocess, "run", fake_run)
+    checker.check_folder_id_fresh()
+
+    assert "connection-bound" in calls[0]
+
+
+def test_falls_back_to_default_connection_when_unbound(monkeypatch) -> None:
+    """A flow that never persisted a connectionId still gets checked."""
+    checker = _load_checker()
+    _patch_static(monkeypatch, checker)
+    calls: list[list[str]] = []
+
+    def fake_run(args, **_kwargs):
+        calls.append(args)
+        return _fake_proc(0, stdout=_success_payload())
+
+    monkeypatch.setattr(checker.subprocess, "run", fake_run)
+    checker.check_folder_id_fresh()
+
+    assert "connection-1" in calls[0]
+
+
+def test_dead_cli_session_does_not_blame_the_outlook_connection() -> None:
+    """`or folders get` / `is connections list` run on the CLI's own session,
+    not the Outlook grant. A dead credential there is still ENVIRONMENT, but
+    reauthorizing the Outlook connection would not fix it."""
+    checker = _load_checker()
+
+    try:
+        checker._parse_uip_stdout(
+            ["uip", "or", "folders", "get", "Shared/uipath-maestro-flow", "--output", "json"],
+            _fake_proc(1, stdout=_aadsts_403()),
+        )
+    except SystemExit as exc:
+        message = str(exc.code)
+        assert "ENVIRONMENT, not a skill regression" in message
+        assert "uip login" in message
+        assert "Reauthorize the connection" not in message
+    else:
+        raise AssertionError("expected SystemExit on a dead CLI session")
+
+
+def test_stale_id_error_never_echoes_the_configured_value(monkeypatch) -> None:
+    """The PR #348 branch is reached when the value matched no id AND no name,
+    so the value can still BE a name (renamed/deleted folder, or off-page)."""
+    checker = _load_checker()
+    _patch_static(monkeypatch, checker, folder_id="Quarterly Board Minutes")
+
+    def fake_run(_args, **_kwargs):
+        return _fake_proc(
+            0, stdout=json.dumps({"Data": [{"id": "AAMkAGI2...", "displayName": "Inbox"}]})
+        )
+
+    monkeypatch.setattr(checker.subprocess, "run", fake_run)
+    try:
+        checker.check_folder_id_fresh()
+    except SystemExit as exc:
+        message = str(exc.code)
+        assert "PR #348 regression" in message
+        assert "Quarterly" not in message
+        assert "Quarterly Board Minutes"[:12] not in message
+    else:
+        raise AssertionError("expected SystemExit on an unmatched parentFolderId")
