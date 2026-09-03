@@ -68,7 +68,9 @@ def tombstone(record):
 
 
 def deployments():
-    data = uip_json(["solution", "deploy", "list"], allow_fail=True) or {}
+    data = uip_json(["solution", "deploy", "list"], allow_fail=True)
+    if data is None:
+        die("uip solution deploy list failed; refusing to continue because deployment idempotence checks depend on it")
     return data.get("Data") or []
 
 
