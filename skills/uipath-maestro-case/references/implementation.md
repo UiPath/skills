@@ -261,7 +261,9 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs` = the output set [`io-binding/impl-json.md` § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes) produces from `caseShape.outputs` plus the SDD's `->` / `=` rows, and the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+
+Copying `caseShape.outputs` unchanged drops every declared extract: `case spec` returns only the connector's own top-level outputs (`response`, curated fields, `Error`), never the SDD's rows. A `->` row reassigns one of those entries; a `=` row adds a `custom: true` entry that no `caseShape` entry corresponds to.
 
 **Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
 
@@ -275,6 +277,8 @@ Per-task composition (in reasoning, before that task's Edit) per [`plugins/varia
 
 1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
 2. Cross-task references (`input <- "Stage"."Task".output`): resolve the source output reference ID from the just-Read `caseplan.json` using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
+
+**A `=js:` value is JavaScript source, so a line break inside one of its string literals is already the two characters `\` and `n`.** `caseplan.json` is JSON, so on disk that is `\\n`. Writing `\n` makes JSON decode it to a real line break inside the `"` literal, and Jint rejects the expression at evaluation with `Invalid or unexpected token`. Nothing before the run objects: `validate` does not parse `=js:` bodies and the packer copies the break into the `.bpmn`. This holds for every path that writes an `=js:` value into `caseplan.json`, this Edit included.
 
 If a cross-task reference points to a task that does not exist in the just-Read `caseplan.json`, halt — the SDD orders the consumer before its producer; report to the user.
 
