@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 
 import yaml
 from unittest.mock import patch
@@ -50,10 +51,10 @@ class BehaviorCheckerTests(unittest.TestCase):
             marker_collection_id="MarkerCollection",
             error_end_id="ErrorEnd",
             error_boundary_id="Boundary",
-            jira_create_id="JiraCreate",
-            jira_update_id="JiraUpdate",
-            drive_copy_id="DriveCopy",
-            slack_send_id="SlackSend",
+            jira_create_id=("JiraCreate",),
+            jira_update_id=("JiraUpdate",),
+            drive_copy_id=("DriveCopy",),
+            slack_send_id=("SlackSend",),
         )
 
     def test_matrix_fits_the_live_run_budget(self) -> None:
@@ -283,10 +284,10 @@ class BehaviorCheckerTests(unittest.TestCase):
             marker_collection_id="MarkerCollection",
             error_end_id="ErrorEnd",
             error_boundary_id="Boundary",
-            jira_create_id="JiraCreate",
-            jira_update_id="JiraUpdate",
-            drive_copy_id="DriveCopy",
-            slack_send_id="SlackSend",
+            jira_create_id=("JiraCreate",),
+            jira_update_id=("JiraUpdate",),
+            drive_copy_id=("DriveCopy",),
+            slack_send_id=("SlackSend",),
         )
         scope = {
             "Globals": {
@@ -392,7 +393,9 @@ class BehaviorCheckerTests(unittest.TestCase):
             ["copied-file-id"],
         )
 
-    def test_runtime_contract_rejects_duplicate_connector_keys(self) -> None:
+    def test_repeated_connector_placement_indexes_every_id(self) -> None:
+        """The same operation on two branches is a legitimate topology."""
+
         process = ET.fromstring(
             f"""
             <bpmn:process
@@ -422,10 +425,10 @@ class BehaviorCheckerTests(unittest.TestCase):
             """
         )
 
-        with self.assertRaisesRegex(
-            checker.CheckFailure, "duplicate connector key"
-        ):
-            checker.index_runtime_connectors(process)
+        self.assertEqual(
+            checker.index_runtime_connectors(process),
+            {("duplicate", "/same-path"): ("First", "Second")},
+        )
 
     def test_live_target_rejects_the_wrong_tenant(self) -> None:
         completed = subprocess.CompletedProcess(
@@ -2377,7 +2380,7 @@ class RuntimeContractTests(unittest.TestCase):
         for key, attribute in checker.REQUIRED_CONNECTORS.items():
             self.assertEqual(
                 getattr(contract, attribute),
-                f"connector-{key[0]}-{key[1]}",
+                (f"connector-{key[0]}-{key[1]}",),
             )
 
     def test_contract_does_not_grade_process_topology(self) -> None:
@@ -2400,7 +2403,7 @@ class RuntimeContractTests(unittest.TestCase):
         contract = self.load(self.build_bpmn(connector_tag="serviceTask"))
         self.assertEqual(
             contract.slack_send_id,
-            "connector-uipath-salesforce-slack-/send_message_to_channel_v2",
+            ("connector-uipath-salesforce-slack-/send_message_to_channel_v2",),
         )
 
     def test_missing_connector_fails_with_the_absent_key(self) -> None:
@@ -2426,7 +2429,76 @@ class RuntimeContractTests(unittest.TestCase):
         ):
             self.load(self.build_bpmn(marker_collections=2))
 
-    def test_duplicate_connector_key_is_rejected(self) -> None:
+    def test_execution_counts_sum_across_repeated_placements(self) -> None:
+        """One op on two branches: exactly one of them may execute."""
+
+        case = next(
+            c for c in checker.SCENARIOS
+            if c.outputs["slackAction"] == "PostAlert"
+        )
+        contract = replace(
+            BehaviorCheckerTests.contract(),
+            public_output_ids={},
+            slack_send_id=("SlackA", "SlackB"),
+            jira_create_id=("JiraCreate",),
+            jira_update_id=("JiraUpdate",),
+            drive_copy_id=("DriveCopy",),
+        )
+        executed = [
+            {"ElementId": "SlackB"},
+            {"ElementId": "JiraCreate"}
+            if case.outputs["jiraAction"] == "CreateIssue"
+            else {"ElementId": "JiraUpdate"},
+        ]
+
+        # Only the branch that ran is in the trace -> the summed count is 1.
+        self.assertEqual(
+            sum(
+                [item["ElementId"] for item in executed].count(element_id)
+                for element_id in contract.slack_send_id
+            ),
+            1,
+        )
+        # Both branches firing must still be caught.
+        both = executed + [{"ElementId": "SlackA"}]
+        self.assertEqual(
+            sum(
+                [item["ElementId"] for item in both].count(element_id)
+                for element_id in contract.slack_send_id
+            ),
+            2,
+        )
+
+    def test_element_outputs_aggregate_across_repeated_placements(
+        self,
+    ) -> None:
+        variables_data = {
+            "Variables": [
+                {
+                    "Elements": [
+                        {"ElementId": "DriveA", "Outputs": {"response": {"id": "a"}}},
+                        {"ElementId": "DriveB", "Outputs": {"response": {"id": "b"}}},
+                        {"ElementId": "Other", "Outputs": {"response": {"id": "x"}}},
+                    ]
+                }
+            ]
+        }
+        records = checker.element_output_records(
+            variables_data, ("DriveA", "DriveB")
+        )
+        self.assertEqual(
+            [checker.get_ci(r, "response")["id"] for r in records], ["a", "b"]
+        )
+        # A bare string id still works, for the single-placement case.
+        self.assertEqual(
+            len(checker.element_output_records(variables_data, "DriveA")), 1
+        )
+
+    def test_repeated_connector_op_yields_both_ids_in_the_contract(
+        self,
+    ) -> None:
+        """A second Drive copy must not forfeit the whole live criterion."""
+
         definitions = self.build_bpmn()
         process = definitions.find(checker.q(checker.BPMN_NS, "process"))
         assert process is not None
@@ -2456,8 +2528,11 @@ class RuntimeContractTests(unittest.TestCase):
             name="path",
             value="/copyFile",
         )
-        with self.assertRaisesRegex(checker.CheckFailure, "duplicate"):
-            self.load(definitions)
+        contract = self.load(definitions)
+        self.assertEqual(
+            set(contract.drive_copy_id),
+            {"connector-uipath-google-drive-/copyFile", "duplicate-copyFile"},
+        )
 
 
 class RuntimeEnvelopeTests(unittest.TestCase):

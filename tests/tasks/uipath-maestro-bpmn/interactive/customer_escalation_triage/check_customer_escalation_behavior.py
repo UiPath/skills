@@ -577,10 +577,10 @@ class RuntimeContract:
 
     public_output_ids: dict[str, str]
     marker_collection_id: str
-    jira_create_id: str
-    jira_update_id: str
-    drive_copy_id: str
-    slack_send_id: str
+    jira_create_id: tuple[str, ...]
+    jira_update_id: tuple[str, ...]
+    drive_copy_id: tuple[str, ...]
+    slack_send_id: tuple[str, ...]
     error_end_id: str | None = None
     error_boundary_id: str | None = None
 
@@ -602,15 +602,21 @@ def connector_context(element: ET.Element) -> dict[str, str]:
 
 def index_runtime_connectors(
     process: ET.Element,
-) -> dict[tuple[str, str], str]:
-    """Index every connector-bearing node by (connectorKey, path).
+) -> dict[tuple[str, str], tuple[str, ...]]:
+    """Index the element ids of every connector-bearing node, by (key, path).
 
     Scans all descendants rather than a fixed tag list: registry templates
     may emit a connector activity as sendTask, serviceTask, or a plain task,
     and the runtime correlates on the element id either way.
+
+    Returns ALL ids per key. Placing the same connector operation on more than
+    one branch is a legitimate topology -- a Drive copy reached from two
+    routes, say -- so the contract carries every id and the runtime assertions
+    aggregate over them. An earlier version raised on the second occurrence,
+    which forfeited the whole live criterion for a correct process.
     """
 
-    connectors: dict[tuple[str, str], str] = {}
+    connectors: dict[tuple[str, str], list[str]] = {}
     for node in process.iter():
         identifier = node.attrib.get("id")
         if not identifier:
@@ -619,12 +625,8 @@ def index_runtime_connectors(
         key = (context.get("connectorKey", ""), context.get("path", ""))
         if not all(key):
             continue
-        if key in connectors:
-            raise CheckFailure(
-                f"live contract contains duplicate connector key {key}"
-            )
-        connectors[key] = identifier
-    return connectors
+        connectors.setdefault(key, []).append(identifier)
+    return {key: tuple(ids) for key, ids in connectors.items()}
 
 
 def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
@@ -1538,7 +1540,19 @@ def root_public_outputs(
 
 def element_output_records(
     variables_data: Any,
-    element_id: str,
+    element_ids: str | tuple[str, ...],
+) -> list[Any]:
+    """Collect Outputs for one element id, or across several equivalent ids."""
+
+    if isinstance(element_ids, str):
+        element_ids = (element_ids,)
+    wanted = set(element_ids)
+    return _element_output_records(variables_data, wanted)
+
+
+def _element_output_records(
+    variables_data: Any,
+    wanted: set[str],
 ) -> list[Any]:
     records: list[Any] = []
     scopes = get_ci(variables_data, "Variables", [])
@@ -1546,7 +1560,7 @@ def element_output_records(
         return records
     for scope in scopes:
         for element in get_ci(scope, "Elements", []):
-            if get_ci(element, "ElementId") == element_id:
+            if get_ci(element, "ElementId") in wanted:
                 records.append(get_ci(element, "Outputs", {}))
     return records
 
@@ -2056,27 +2070,40 @@ def assert_scenario(
             f"{case.name}: unexpectedly executed JiraUnavailable error path"
         )
 
-    expected_counts = {
-        contract.jira_create_id: (
-            1 if case.outputs["jiraAction"] == "CreateIssue" else 0
+    # Counts sum across every element id bound to the same connector
+    # operation: the process may place one operation on several branches, and
+    # only one of them should execute per run.
+    expected_counts = (
+        (
+            "Jira create",
+            contract.jira_create_id,
+            1 if case.outputs["jiraAction"] == "CreateIssue" else 0,
         ),
-        contract.jira_update_id: (
-            1 if case.outputs["jiraAction"] == "UpdateExisting" else 0
+        (
+            "Jira update",
+            contract.jira_update_id,
+            1 if case.outputs["jiraAction"] == "UpdateExisting" else 0,
         ),
-        contract.slack_send_id: (
-            1 if case.outputs["slackAction"] == "PostAlert" else 0
+        (
+            "Slack send",
+            contract.slack_send_id,
+            1 if case.outputs["slackAction"] == "PostAlert" else 0,
         ),
-    }
-    for element_id, expected_count in expected_counts.items():
-        actual_count = executed_ids.count(element_id)
+    )
+    for label, element_ids, expected_count in expected_counts:
+        actual_count = sum(
+            executed_ids.count(element_id) for element_id in element_ids
+        )
         if actual_count != expected_count:
             raise CheckFailure(
-                f"{case.name}: connector {element_id} expected "
+                f"{case.name}: {label} {list(element_ids)} expected "
                 f"{expected_count} executions, got {actual_count}"
             )
     # PIMS summarizes a marker body's static element in the root trace; prove
     # the iteration cardinality below from per-run outputs and remote files.
-    drive_trace_count = executed_ids.count(contract.drive_copy_id)
+    drive_trace_count = sum(
+        executed_ids.count(element_id) for element_id in contract.drive_copy_id
+    )
     if case.outputs["attachmentAction"] == "SaveToDrive":
         if drive_trace_count < 1:
             raise CheckFailure(
