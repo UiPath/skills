@@ -151,7 +151,6 @@ def manifest(job_path, existing=None, file_path="content/main.ts"):
     entry = {"filePath": file_path, "uniqueId": str(uuid.uuid4()), "type": "function"}
     if existing:
         for point in existing.get("entryPoints") or []:
-            entry["filePath"] = point.get("filePath", entry["filePath"])
             entry["uniqueId"] = point.get("uniqueId", entry["uniqueId"])
             break
     entry["input"] = input_schema
