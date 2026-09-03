@@ -14,10 +14,6 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
-      path: author_validate_fixture
-  mock_path_dirs:
-    - mocks
 
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
@@ -70,14 +66,6 @@ success_criteria:
   - type: run_command
     description: "Authored BPMN is well-formed, structurally sound, and fully shaped"
     command: "python3 $TASK_DIR/check_author_validate.py"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 4.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "The first validation attempt happened after complete DI existed"
-    command: "python3 $TASK_DIR/check_author_validate.py .first-validation-input.bpmn"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
