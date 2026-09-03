@@ -55,7 +55,7 @@ def manifest_projects(src):
             % src)
     entries = json.loads(uipx[0].read_text()).get("Projects") or []
     if not entries:
-        die("%s declares no projects; run solution_scaffold.py first" % uipx[0].name)
+        die("%s declares no projects; run scaffold_solution.py first" % uipx[0].name)
     return [p["ProjectRelativePath"].rsplit("/", 1)[0] for p in entries], uipx[0].name
 
 
