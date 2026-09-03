@@ -68,7 +68,7 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
+    description: "Agent resolved MailFolder against the current --connection-id, and the resolve succeeded (PR #348 regression)"
     tool_name: "Bash"
     # `[\s\S]` matches across newlines — agents often split `uip` commands with
     # backslash line-continuation, which `.*` would miss.
@@ -76,6 +76,10 @@ success_criteria:
     # and the legacy "execute" verb that older CLIs in the sandbox PATH may
     # still expose (MST-9674).
     command_pattern: 'uip\s+is\s+resources\s+(?:run|execute)\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
+    # Without this the gate matches command text alone and scores green on a
+    # resolve that returned nothing (seen 2026-09-03: lookup 403'd, agent wrote
+    # the display name "Inbox" into the id field, criterion still passed).
+    require_success: true
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

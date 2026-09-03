@@ -9,6 +9,8 @@ Two checks:
                           connection. Catches "agent resolved-but-reused a
                           stale ID" (the `command_executed` check in the YAML
                           catches "agent skipped the resolve entirely").
+                          Reports three causes separately: dead connection,
+                          displayName written instead of id, stale id.
 
 A `flow debug` check is intentionally omitted from this task — see the task
 YAML description for the infrastructure rationale.
@@ -27,8 +29,32 @@ TRIGGER_TYPE_MARKER = "uipath.connector.trigger.uipath-microsoft-outlook365.emai
 TEST_FOLDER_PATH = "Shared/uipath-maestro-flow"
 
 
+# Credential failures: the tenant's grant, not anything the agent built.
+_CONNECTION_DEAD_MARKERS = (
+    "invalid_grant",
+    "aadsts50173",  # grant revoked
+    "aadsts700082",  # refresh token expired
+    "reauthorize your account",
+)
+
+
+def _connection_is_dead(blob: str) -> bool:
+    lowered = blob.lower()
+    return any(marker in lowered for marker in _CONNECTION_DEAD_MARKERS)
+
+
 def _parse_uip_stdout(args: list[str], result: subprocess.CompletedProcess) -> dict:
     if result.returncode != 0:
+        blob = f"{result.stdout}\n{result.stderr}"
+        if _connection_is_dead(blob):
+            sys.exit(
+                f"FAIL (ENVIRONMENT, not a skill regression): {' '.join(args)} "
+                f"exit={result.returncode}. The tenant's Outlook connection cannot "
+                "authenticate, so no MailFolder ID can be resolved and this task's "
+                "assertion never ran. Reauthorize the connection in "
+                f"{TEST_FOLDER_PATH} and re-run; do not read this as the agent "
+                f"reusing or inventing an ID.\nstderr: {result.stderr}\nstdout: {result.stdout}"
+            )
         sys.exit(
             f"FAIL: {' '.join(args)} exit={result.returncode}\n"
             f"stderr: {result.stderr}\nstdout: {result.stdout}"
@@ -167,15 +193,32 @@ def check_folder_id_fresh():
             "FAIL: resources run/execute list MailFolder returned no folders on the bound connection"
         )
 
-    if flow_folder_id not in live_ids:
-        # Truncate the IDs in the error to avoid leaking full Exchange IDs while
-        # still giving enough signal to diagnose.
+    if flow_folder_id in live_ids:
+        print(f"OK: parentFolderId resolves on current connection ({len(live_ids)} folders checked)")
+        return
+
+    # describe declares Reference{LookupNames:["displayName"], LookupValue:"id"},
+    # so a display name here means the resolve was skipped, not a stale id.
+    live_names = {
+        name.lower()
+        for f in _extract_list_items(live)
+        if (name := (f.get("displayName") or f.get("DisplayName")))
+    }
+    if flow_folder_id.lower() in live_names:
         sys.exit(
-            f"FAIL (PR #348 regression): parentFolderId={flow_folder_id[:12]}... is NOT among "
-            f"the {len(live_ids)} MailFolder IDs on the current connection. The agent "
-            f"reused a reference ID from another connection or session."
+            "FAIL: parentFolderId holds a folder's displayName, not its id. The field "
+            "is a reference (LookupNames=[displayName], LookupValue=id), so the agent "
+            "must write the `id` returned by `resources run list MailFolder`. This is a "
+            "skipped or failed resolve, NOT the PR #348 stale-reference regression."
         )
-    print(f"OK: parentFolderId resolves on current connection ({len(live_ids)} folders checked)")
+
+    # Truncate the IDs in the error to avoid leaking full Exchange IDs while
+    # still giving enough signal to diagnose.
+    sys.exit(
+        f"FAIL (PR #348 regression): parentFolderId={flow_folder_id[:12]}... is NOT among "
+        f"the {len(live_ids)} MailFolder IDs on the current connection. The agent "
+        f"reused a reference ID from another connection or session."
+    )
 
 
 DISPATCH = {
