@@ -360,7 +360,7 @@ success_criteria:
     path: ".customer-escalation-results.json"
     assertions:
       - expression: "families.classification.all_passed"
-        operator: eq
+        operator: equals
         expected: true
     weight: 3.0
     pass_threshold: 1.0
@@ -370,7 +370,7 @@ success_criteria:
     path: ".customer-escalation-results.json"
     assertions:
       - expression: "families.precedence.all_passed"
-        operator: eq
+        operator: equals
         expected: true
     weight: 2.0
     pass_threshold: 1.0
@@ -380,7 +380,7 @@ success_criteria:
     path: ".customer-escalation-results.json"
     assertions:
       - expression: "families.fault_recovery.all_passed"
-        operator: eq
+        operator: equals
         expected: true
     weight: 2.0
     pass_threshold: 1.0
@@ -390,7 +390,7 @@ success_criteria:
     path: ".customer-escalation-results.json"
     assertions:
       - expression: "families.attachments_and_comms.all_passed"
-        operator: eq
+        operator: equals
         expected: true
     weight: 1.0
     pass_threshold: 1.0
