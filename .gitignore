@@ -101,3 +101,8 @@ package-lock.json
 # Per-scenario verdicts the live BPMN escalation grader writes for its
 # partial-credit json_check criteria. Run artifact, never committed.
 .customer-escalation-results.json
+
+# Working directory the live BPMN escalation grader creates under the sandbox
+# CWD: the ephemeral solution's .uipx (so post_run can glob it) plus
+# per-scenario debug logs. Run artifact, never committed.
+.customer-escalation-live/

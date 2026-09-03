@@ -2677,6 +2677,42 @@ class RuntimeEnvelopeTests(unittest.TestCase):
             checker.resolve_runtime_key({}, "caseKey", "caseKey")
 
 
+class PostRunConformanceTests(unittest.TestCase):
+    """Cleanup must be wired the way every other cloud task wires it."""
+
+    def test_shared_solution_sweep_runs_before_the_connector_sweep(
+        self,
+    ) -> None:
+        text = (
+            Path(__file__)
+            .with_name("customer_escalation_triage.yaml")
+            .read_text(encoding="utf-8")
+        )
+        commands = re.findall(r"^  - command: \"(.+?)\"", text, re.M)
+        self.assertEqual(len(commands), 2, commands)
+        self.assertIn("_shared/cleanup_solutions.py", commands[0])
+        self.assertIn("cleanup_customer_escalation.py", commands[1])
+
+    def test_solution_lives_under_the_sandbox_cwd(self) -> None:
+        """A tempdir would be gone before the shared sweep could glob it."""
+
+        self.assertFalse(checker.LIVE_RUN_DIR.is_absolute())
+        source = Path(checker.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("tempfile.TemporaryDirectory", source)
+
+    def test_shared_sweep_exists_and_is_stdlib_only(self) -> None:
+        sweep = (
+            Path(checker.__file__).resolve().parents[2]
+            / "_shared"
+            / "cleanup_solutions.py"
+        )
+        self.assertTrue(sweep.is_file(), sweep)
+        text = sweep.read_text(encoding="utf-8")
+        self.assertIn("BPMN_E2E_CLEANUP", text)
+        self.assertIn("SolutionId", text)
+        self.assertNotIn("import yaml", text)
+
+
 class ScenarioResultsTests(unittest.TestCase):
     """Partial credit must survive a failing run and cover every scenario."""
 

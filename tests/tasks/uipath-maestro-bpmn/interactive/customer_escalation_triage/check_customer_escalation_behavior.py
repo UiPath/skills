@@ -18,13 +18,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import contextlib
 import os
 import re
 import secrets
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -61,6 +61,9 @@ CLEANUP_JOURNAL = Path(".customer-escalation-cleanup.jsonl")
 # failure: a later family may still pass, and that is exactly the signal a
 # single exit code destroys.
 SCENARIO_RESULTS = Path(".customer-escalation-results.json")
+# Working directory for the ephemeral solution and per-scenario debug logs.
+# Under the sandbox CWD so the standard post_run sweep can glob the .uipx.
+LIVE_RUN_DIR = Path(".customer-escalation-live")
 # Outcome families. Each is graded as its own criterion so a submission that
 # gets, say, classification right but attachments wrong scores accordingly.
 SCENARIO_BUNDLES = {
@@ -2626,10 +2629,16 @@ def main() -> int:
     )
     side_effects = ConnectorSideEffectLease(environment)
 
-    with tempfile.TemporaryDirectory(
-        prefix="customer-escalation-live-alpha-"
-    ) as directory:
+    # Deliberately under the sandbox CWD, not a TemporaryDirectory: the
+    # repo-standard post_run sweep finds solutions by globbing `**/*.uipx`
+    # from the sandbox root, and a tempdir is destroyed before post_run runs,
+    # so the .uipx carrying the SolutionId would be gone. Keeping it here is
+    # what lets this task use `_shared/cleanup_solutions.py` like every other
+    # cloud task instead of hand-rolling solution cleanup. Debug logs land
+    # beside it, which also makes them available after a failed run.
+    with contextlib.nullcontext(LIVE_RUN_DIR) as directory:
         root = Path(directory)
+        root.mkdir(parents=True, exist_ok=True)
         solution_dir = root / "CustomerEscalationLiveAlphaEval"
         stage_started = time.monotonic()
         initialized = run_cli(

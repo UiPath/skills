@@ -394,3 +394,22 @@ success_criteria:
         expected: true
     weight: 1.0
     pass_threshold: 1.0
+
+# Cleanup runs here, not in-band, matching every other cloud task in the repo.
+# A `finally` block inside the graded command does not survive coder_eval
+# SIGKILLing it on timeout; post_run does.
+post_run:
+  # Repo-standard solution sweep, identical in shape to the flow/case/agents
+  # suites: glob `**/*.uipx` from the sandbox root, read SolutionId, delete.
+  # Works because the grader now creates its ephemeral solution under the
+  # sandbox CWD instead of a TemporaryDirectory that post_run never sees.
+  # Honours BPMN_E2E_CLEANUP=never when someone asked for the Alpha link.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/_shared/cleanup_solutions.py"
+    timeout: 120
+  # Connector side effects the shared sweep cannot reach: Jira issues, Drive
+  # copies, and Slack messages live in third-party sandboxes with no .uipx to
+  # glob. Replays the ids the grader recorded as it created them, following
+  # the `teardown_jira.py` precedent in the flow suite. 300 is the schema
+  # maximum for a post_run step; the sweep caps its own CLI calls just inside.
+  - command: "python3 $TASK_DIR/cleanup_customer_escalation.py"
+    timeout: 300
