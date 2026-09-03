@@ -226,19 +226,30 @@ def test_multiselect_prompt_names_slack_as_the_required_connector() -> None:
 
 def test_paginated_lookup_accepts_both_supported_resolution_routes() -> None:
     text = _task_text("connector_features/paginated_reference_lookup.yaml")
+    blocks = [block for kind, block in _criterion_blocks(text) if kind == "command_executed"]
+    manual_block, paged_block = blocks[:2]
     patterns = re.findall(r"(?m)^\s+command_pattern:\s*'([^']+)'", text)
-    resolve_pattern, pagination_pattern = map(re.compile, patterns[:2])
+    manual_pattern, paged_pattern = map(re.compile, patterns[:2])
 
-    manual_commands = (
-        "uip is resources run list uipath-salesforce-slack conversations "
-        "--connection-id id --query nextPage=token"
-    )
+    page_one = 'bash -lc "uip is resources run list \\"uipath-salesforce-slack\\" \\"conversations\\" --connection-id id"'
+    page_two = page_one[:-1] + ' --query nextPage=token"'
     sdk_command = (
-        "uip maestro flow registry prepare uipath-salesforce-slack "
+        "npx flow-sdk registry prepare uipath-salesforce-slack "
         "send-message-to-channel --resolve channel:name=simple"
     )
 
-    assert resolve_pattern.search(manual_commands)
-    assert pagination_pattern.search(manual_commands)
-    assert resolve_pattern.search(sdk_command)
-    assert pagination_pattern.search(sdk_command)
+    # The v1 route is telemetry the SDK arm never produces: advisory, but it
+    # still asks for the loop (page 1 alone is not pagination).
+    assert "min_count: 2" in manual_block and "pass_threshold: 0.0" in manual_block
+    assert manual_pattern.search(page_one) and manual_pattern.search(page_two)
+    assert not manual_pattern.search(sdk_command)
+
+    # The gating criterion needs "went past page 1" on a SUCCESSFUL command:
+    # a page-1 call, or `--resolve channel:` typed on something other than
+    # `registry prepare`, earns nothing.
+    assert "require_success: true" in paged_block and "pass_threshold: 1.0" in paged_block
+    assert paged_pattern.search(page_two)
+    assert paged_pattern.search(sdk_command)
+    assert not paged_pattern.search(page_one)
+    assert not paged_pattern.search("uip maestro flow validate --resolve channel:name=simple")
+    assert not paged_pattern.search("echo nextPage=token")

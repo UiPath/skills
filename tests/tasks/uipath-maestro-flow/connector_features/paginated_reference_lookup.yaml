@@ -38,22 +38,28 @@ initial_prompt: |
   planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
-# TWO ROUTES ARE CORRECT, and these criteria accept either. Manual discovery
-# may expose the channel collection as `conversations` or `curated_channels`;
-# the final artifact criterion below is the authority on the resolved id.
+# TWO ROUTES ARE CORRECT: the live-v1 loop pages `uip is resources run list`
+# by hand (the collection may be exposed as `conversations` or
+# `curated_channels`); the SDK route resolves the name inside
+# `npx flow-sdk registry prepare … --resolve channel:`. The first criterion is
+# v1-route telemetry and is advisory (the SDK arm never runs it); the second
+# gates on "went past page 1" for either route and only counts a command that
+# succeeded — typing the flag on a failing command does not page. The final
+# artifact criterion (resolved id C083AN4E61E) stays the authority.
   - type: command_executed
-    description: "Agent resolved the channel through the library — either a paged Slack channel-resource loop or `registry prepare --resolve`"
+    description: "Advisory (live-v1 route): paged Slack channel-resource loop ran more than once"
     tool_name: "Bash"
-    command_pattern: '(uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)|registry\s+prepare\s+\\?"?uipath-salesforce-slack)'
-    min_count: 1
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)'
+    min_count: 2
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent went past page 1 — `nextPage=<token>` by hand, or `--resolve channel:` which pages inside `prepare`"
+    description: "Agent went past page 1 — a channel-resource list call carrying `nextPage=<token>`, or `registry prepare … --resolve channel:` which pages inside `prepare`"
     tool_name: "Bash"
-    command_pattern: '(nextPage=|--resolve\s+\\?"?channel:)'
+    command_pattern: '(uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)[^\n]*nextPage=|registry\s+prepare\s+\\?"?uipath-salesforce-slack\\?"?[^\n]*--resolve\s+\\?"?channel:)'
     min_count: 1
+    require_success: true
     weight: 3.0
     pass_threshold: 1.0
 
