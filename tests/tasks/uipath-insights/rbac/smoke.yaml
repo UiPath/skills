@@ -106,7 +106,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Critical Rule 13's "do not reach an RBAC route through the SDK or a raw
+  # Critical Rule 15's "do not reach an RBAC route through the SDK or a raw
   # HTTP call", enforced the way the alerts smoke enforces its Rule 12
   # sibling. Route strings are the PermissionService paths the CLI calls
   # (/api/User, /api/Role, /api/Group), both casings.
