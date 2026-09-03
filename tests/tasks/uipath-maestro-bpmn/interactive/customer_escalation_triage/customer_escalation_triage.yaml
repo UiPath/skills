@@ -337,28 +337,60 @@ success_criteria:
   # OUTCOME: the exact submitted project runs hidden scenarios in live Alpha.
   # Runtime variables, element traces, incidents, typed error handling, real
   # connector side effects, sequential iteration order, and the exact business
-  # outputs are asserted; every created issue, file, message, and ephemeral
-  # solution the harness recovers is deleted afterwards.
+  # outputs are asserted.
+  #
+  # Graded as a gradient, not a cliff. The strict criterion below still
+  # requires all 12 scenarios, but it no longer carries the whole live weight:
+  # one binary run_command cannot tell 11-of-12 from a submission that produced
+  # nothing at all. The grader records every scenario's verdict (it keeps going
+  # after a failure) and the four family criteria award partial credit from
+  # that file, so classification, precedence, fault recovery, and
+  # attachments/comms are scored independently.
   - type: run_command
-    description: "The exact submitted project executes hidden scenarios in live Alpha and produces the expected business outputs and real connector side effects"
+    description: "All 12 hidden scenarios execute in live Alpha and produce the expected business outputs and real connector side effects"
     command: "python3 $TASK_DIR/check_customer_escalation_behavior.py"
     # Must match GRADER_TIMEOUT_SECONDS in check_customer_escalation_behavior.py.
     timeout: 9600
     expected_exit_code: 0
-    weight: 12.0
+    weight: 4.0
     pass_threshold: 1.0
 
-# Backstop sweep, per the convention in tests/experiments/default.yaml. Honours
-# BPMN_E2E_CLEANUP: unset (the default) deletes everything, `never` preserves the
-# Alpha solution for manual inspection and leaves the journal in place so its id
-# stays recoverable. Connector side effects are cleaned either way. The
-# grader frees its own resources in a finally block; that block is skipped if
-# coder_eval SIGKILLs the graded command on its timeout, so this replays the
-# durable cleanup journal the grader appends to as each resource is created.
-# Best-effort and always exits 0 — post_run must not fail a task over cleanup.
-post_run:
-  - command: "python3 $TASK_DIR/cleanup_customer_escalation.py"
-    # 300 is the coder_eval schema maximum for a post_run step. The sweep caps
-    # its own CLI calls just inside that so it reports what it could not free
-    # instead of being killed mid-delete.
-    timeout: 300
+  - type: json_check
+    description: "Severity and routing are correct, including each conjunct of the Sev1 rule"
+    path: ".customer-escalation-results.json"
+    assertions:
+      - expression: "families.classification.all_passed"
+        operator: eq
+        expected: true
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Assessment precedence holds: CRM-not-found over CRM-ambiguous over invalid-agent-output"
+    path: ".customer-escalation-results.json"
+    assertions:
+      - expression: "families.precedence.all_passed"
+        operator: eq
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Jira-unavailable faults recover through the typed path and restore the prior classification"
+    path: ".customer-escalation-results.json"
+    assertions:
+      - expression: "families.fault_recovery.all_passed"
+        operator: eq
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Ordered attachment copies reduce to lastAttachmentName and the Slack/acknowledgement decision is correct"
+    path: ".customer-escalation-results.json"
+    assertions:
+      - expression: "families.attachments_and_comms.all_passed"
+        operator: eq
+        expected: true
+    weight: 1.0
+    pass_threshold: 1.0

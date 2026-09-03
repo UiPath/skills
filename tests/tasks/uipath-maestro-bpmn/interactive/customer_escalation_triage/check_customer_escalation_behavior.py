@@ -54,6 +54,37 @@ SEEDED_DUPLICATE_KEY = "__SEEDED_JIRA_KEY_SET_AT_RUNTIME__"
 # exists, so the task's post_run sweep can delete it even if this process is
 # killed. See cleanup_customer_escalation.py.
 CLEANUP_JOURNAL = Path(".customer-escalation-cleanup.jsonl")
+# Per-scenario verdicts, written for the partial-credit json_check criteria.
+# One binary run_command over 12 live scenarios cannot tell 11-of-12 from a
+# submission that produced nothing, so the matrix records every scenario and
+# the task grades outcome families separately. Scenarios keep running after a
+# failure: a later family may still pass, and that is exactly the signal a
+# single exit code destroys.
+SCENARIO_RESULTS = Path(".customer-escalation-results.json")
+# Outcome families. Each is graded as its own criterion so a submission that
+# gets, say, classification right but attachments wrong scores accordingly.
+SCENARIO_BUNDLES = {
+    "classification": (
+        "mixed-case-sev1-new-two-attachments",
+        "whitespace-duplicate-degraded",
+        "standard-tier-unavailable-no-workaround-sev2",
+        "existing-sev1-jira-available",
+    ),
+    "precedence": (
+        "crm-zero-precedes-agent-and-jira",
+        "crm-ambiguous-precedes-agent",
+        "invalid-agent-single-match",
+    ),
+    "fault_recovery": (
+        "existing-sev3-jira-unavailable",
+        "jira-unavailable-sev2-typed-boundary",
+        "jira-unavailable-sev1-typed-boundary",
+    ),
+    "attachments_and_comms": (
+        "informational-auto-send-one-attachment",
+        "informational-auto-disabled-high-impact-context",
+    ),
+}
 # Solution cleanup policy. Deleting is the DEFAULT and the unset behaviour:
 # an eval run must not leave tenant clutter behind. Set
 # BPMN_E2E_CLEANUP=never only for a deliberate manual inspection, when someone
@@ -2484,6 +2515,45 @@ def run_debug_with_cleanup_recovery(
     return completed, payload, debug_data, instance_id
 
 
+def write_scenario_results(results: dict[str, dict[str, Any]]) -> None:
+    """Persist per-scenario verdicts plus per-family rollups.
+
+    The live matrix is graded twice over: once strictly (every scenario must
+    pass) and once per outcome family, so a submission that gets classification
+    right but attachments wrong is scored differently from one that never ran.
+    Written even when the run fails, so partial credit survives.
+    """
+
+    families: dict[str, Any] = {}
+    for family, names in SCENARIO_BUNDLES.items():
+        verdicts = [results.get(name) for name in names]
+        ran = [item for item in verdicts if item is not None]
+        families[family] = {
+            "total": len(names),
+            "ran": len(ran),
+            "passed": sum(1 for item in ran if item.get("passed")),
+            "all_passed": len(ran) == len(names)
+            and all(item.get("passed") for item in ran),
+        }
+    payload = {
+        "scenarios_total": len(SCENARIOS),
+        "scenarios_ran": len(results),
+        "scenarios_passed": sum(
+            1 for item in results.values() if item.get("passed")
+        ),
+        "families": families,
+        "scenarios": results,
+    }
+    try:
+        SCENARIO_RESULTS.write_text(
+            json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
+        )
+        print(f"wrote per-scenario verdicts to {SCENARIO_RESULTS}")
+    except OSError as exc:
+        # Never fail the run over the side-channel used for partial credit.
+        print(f"WARNING could not write {SCENARIO_RESULTS}: {exc}")
+
+
 def main() -> int:
     global ACTIVE_CLI_DEADLINE
     checker_started_monotonic = time.monotonic()
@@ -2556,6 +2626,7 @@ def main() -> int:
             side_effects=side_effects,
         )
         cleanup_failures: list[str] = []
+        scenario_results: dict[str, dict[str, Any]] = {}
         pending_error: BaseException | None = None
 
         previous_signal_handlers = {
@@ -2718,16 +2789,26 @@ def main() -> int:
                         update_issue_key=update_issue_key,
                     )
                 except CheckFailure as exc:
-                    raise CheckFailure(
+                    # Record and keep going. A failed scenario must not hide
+                    # the verdict of the nine that come after it.
+                    detail = (
                         f"{exc}; debug exit={debug.returncode}; "
                         f"debug={json.dumps(debug_payload)[:5000]}; "
                         f"variables={json.dumps(variables_data)[:5000]}; "
                         f"incidents={json.dumps(incidents_data)[:3000]}; "
                         f"log={tail_log(log_file)}"
-                    ) from exc
+                    )
+                    scenario_results[case.name] = {
+                        "passed": False,
+                        "error": detail[:4000],
+                    }
+                    print(f"FAIL live Alpha {index}/{len(SCENARIOS)}: "
+                          f"{case.name}: {exc}")
+                else:
+                    scenario_results[case.name] = {"passed": True}
                 side_effect_cleanup = side_effects.cleanup()
                 if side_effect_cleanup:
-                    raise CheckFailure(
+                    cleanup_failures.append(
                         f"{case.name}: connector cleanup failed: "
                         f"{'; '.join(side_effect_cleanup)}"
                     )
@@ -2738,11 +2819,15 @@ def main() -> int:
                     "duration_seconds="
                     f"{time.monotonic() - assertion_started:.3f}"
                 )
-                print(
-                    f"PASS live Alpha {index}/{len(SCENARIOS)}: {case.name} "
-                    "duration_seconds="
-                    f"{time.monotonic() - scenario_started:.3f}"
+                elapsed = time.monotonic() - scenario_started
+                scenario_results[case.name]["duration_seconds"] = round(
+                    elapsed, 3
                 )
+                if scenario_results[case.name]["passed"]:
+                    print(
+                        f"PASS live Alpha {index}/{len(SCENARIOS)}: "
+                        f"{case.name} duration_seconds={elapsed:.3f}"
+                    )
         except BaseException as exc:
             pending_error = exc
         finally:
@@ -2772,6 +2857,7 @@ def main() -> int:
             pending_error = KeyboardInterrupt(
                 "terminated during live Alpha evaluation"
             )
+        write_scenario_results(scenario_results)
         if cleanup_failures:
             detail = "; ".join(cleanup_failures)
             if pending_error is not None:
@@ -2782,6 +2868,17 @@ def main() -> int:
         if pending_error is not None:
             raise pending_error
 
+        failed = sorted(
+            name
+            for name, result in scenario_results.items()
+            if not result.get("passed")
+        )
+        if failed:
+            raise CheckFailure(
+                f"{len(failed)} of {len(SCENARIOS)} live Alpha scenarios "
+                f"failed: {failed}. Per-scenario verdicts and per-family "
+                f"partial credit are in {SCENARIO_RESULTS}."
+            )
         deleted = ", ".join(sorted(lease.solution_ids))
         print(
             f"PASS: {len(SCENARIOS)} exact-artifact Alpha scenarios; "

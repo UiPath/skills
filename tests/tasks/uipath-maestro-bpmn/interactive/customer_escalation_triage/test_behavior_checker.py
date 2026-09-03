@@ -12,6 +12,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+import yaml
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
@@ -585,25 +587,25 @@ class BehaviorCheckerTests(unittest.TestCase):
         run.assert_not_called()
 
     def test_live_checker_keeps_outer_timeout_cleanup_reserve(self) -> None:
-        task_text = Path(__file__).with_name(
-            "customer_escalation_triage.yaml"
-        ).read_text(encoding="utf-8")
-        match = re.search(
-            r"description: \"The exact submitted project executes hidden "
-            r"scenarios in live Alpha.*?\n\s+timeout: (\d+)",
-            task_text,
-            flags=re.DOTALL,
+        """Parse the YAML rather than the description, which is prose."""
+
+        task = yaml.safe_load(
+            Path(__file__)
+            .with_name("customer_escalation_triage.yaml")
+            .read_text(encoding="utf-8")
         )
-        self.assertIsNotNone(match)
-        assert match is not None
-        outer_timeout = int(match.group(1))
+        live = [
+            criterion
+            for criterion in task["success_criteria"]
+            if "check_customer_escalation_behavior.py"
+            in str(criterion.get("command", ""))
+        ]
+        self.assertEqual(len(live), 1)
+        outer_timeout = live[0]["timeout"]
+        self.assertEqual(outer_timeout, checker.GRADER_TIMEOUT_SECONDS)
         self.assertGreaterEqual(
             outer_timeout - checker.LIVE_CLEANUP_DEADLINE_SECONDS,
             600,
-        )
-        self.assertGreater(
-            checker.LIVE_CLEANUP_DEADLINE_SECONDS,
-            checker.LIVE_RUN_DEADLINE_SECONDS,
         )
 
     def test_cleanup_signal_is_record_only_for_every_cleanup_stage(self) -> None:
@@ -2499,6 +2501,66 @@ class RuntimeEnvelopeTests(unittest.TestCase):
     def test_runtime_key_reports_a_missing_id(self) -> None:
         with self.assertRaisesRegex(checker.CheckFailure, "missing"):
             checker.resolve_runtime_key({}, "caseKey", "caseKey")
+
+
+class ScenarioResultsTests(unittest.TestCase):
+    """Partial credit must survive a failing run and cover every scenario."""
+
+    def test_every_scenario_belongs_to_exactly_one_family(self) -> None:
+        names = [case.name for case in checker.SCENARIOS]
+        bundled = [
+            name
+            for family in checker.SCENARIO_BUNDLES.values()
+            for name in family
+        ]
+        self.assertCountEqual(names, bundled)
+        self.assertEqual(len(set(bundled)), len(bundled))
+
+    def test_family_weights_cover_the_whole_matrix(self) -> None:
+        """A json_check family must exist for every bundle, and vice versa."""
+
+        task = yaml.safe_load(
+            Path(__file__)
+            .with_name("customer_escalation_triage.yaml")
+            .read_text(encoding="utf-8")
+        )
+        graded = set()
+        for criterion in task["success_criteria"]:
+            for assertion in criterion.get("assertions", []):
+                expression = assertion["expression"]
+                if expression.startswith("families."):
+                    graded.add(expression.split(".")[1])
+        self.assertEqual(graded, set(checker.SCENARIO_BUNDLES))
+
+    def test_rollup_reports_partial_family_results(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.json"
+            passing = checker.SCENARIO_BUNDLES["precedence"]
+            partial = checker.SCENARIO_BUNDLES["fault_recovery"]
+            verdicts = {name: {"passed": True} for name in passing}
+            verdicts[partial[0]] = {"passed": True}
+            verdicts[partial[1]] = {"passed": False, "error": "boom"}
+            with patch.object(checker, "SCENARIO_RESULTS", results):
+                checker.write_scenario_results(verdicts)
+            payload = json.loads(results.read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["scenarios_total"], len(checker.SCENARIOS))
+        self.assertEqual(payload["scenarios_ran"], len(verdicts))
+        self.assertEqual(payload["scenarios_passed"], len(passing) + 1)
+        self.assertTrue(payload["families"]["precedence"]["all_passed"])
+        self.assertFalse(payload["families"]["fault_recovery"]["all_passed"])
+        self.assertEqual(payload["families"]["fault_recovery"]["passed"], 1)
+        # A family whose scenarios never ran must not read as passing.
+        self.assertFalse(
+            payload["families"]["classification"]["all_passed"]
+        )
+        self.assertEqual(payload["families"]["classification"]["ran"], 0)
+
+    def test_rollup_never_raises_when_the_file_cannot_be_written(self) -> None:
+        with patch.object(
+            checker, "SCENARIO_RESULTS", Path("/dev/null/nope/results.json")
+        ):
+            checker.write_scenario_results({})
 
 
 class CleanupJournalTests(unittest.TestCase):

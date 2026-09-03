@@ -97,3 +97,7 @@ package-lock.json
 # live Alpha solution/Jira/Drive/Slack ids; the post_run sweep consumes and
 # removes it. Never committed.
 .customer-escalation-cleanup.jsonl
+
+# Per-scenario verdicts the live BPMN escalation grader writes for its
+# partial-credit json_check criteria. Run artifact, never committed.
+.customer-escalation-results.json
