@@ -61,7 +61,7 @@ def check_imports_and_calls(text: str) -> None:
 
     if uses_retriever:
         if not re.search(
-            r"from\s+uipath_langchain\.retrievers\s+import\s+[^\n]*\bContextGroundingRetriever\b",
+            r"from\s+uipath_langchain\.retrievers\s+import\s+(?:[^\n]*\bContextGroundingRetriever\b|\([^)]*\bContextGroundingRetriever\b)",
             text,
         ):
             sys.exit(

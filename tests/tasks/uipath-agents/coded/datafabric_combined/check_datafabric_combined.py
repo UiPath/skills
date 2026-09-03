@@ -55,7 +55,7 @@ def find_graph_module() -> Path:
 
 def check_nl_tool_factory(text: str) -> None:
     if not re.search(
-        r"from\s+uipath_langchain\.agent\.tools\s+import\s+[^\n]*\bcreate_datafabric_tool\b",
+        r"from\s+uipath_langchain\.agent\.tools\s+import\s+(?:[^\n]*\bcreate_datafabric_tool\b|\([^)]*\bcreate_datafabric_tool\b)",
         text,
     ):
         sys.exit(
@@ -67,7 +67,7 @@ def check_nl_tool_factory(text: str) -> None:
 
 def check_entity_item_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath\.platform\.entities\s+import\s+[^\n]*\bDataFabricEntityItem\b",
+        r"from\s+uipath\.platform\.entities\s+import\s+(?:[^\n]*\bDataFabricEntityItem\b|\([^)]*\bDataFabricEntityItem\b)",
         text,
     ):
         sys.exit(
@@ -110,7 +110,7 @@ def check_prompt_forwarding(text: str) -> None:
 
 def check_sdk_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath\.platform\s+import\s+[^\n]*\bUiPath\b", text
+        r"from\s+uipath\.platform\s+import\s+(?:[^\n]*\bUiPath\b|\([^)]*\bUiPath\b)", text
     ):
         sys.exit("FAIL: must import UiPath from `uipath.platform`")
     print("OK: imports UiPath from uipath.platform")

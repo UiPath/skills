@@ -106,10 +106,10 @@ def _find_create_escalation_call(tree: ast.Module) -> ast.Call | None:
 
 
 def check_imports_and_calls(text: str, tree: ast.Module) -> None:
-    if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
+    if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         sys.exit("FAIL: missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bCreateEscalation\b", text):
+    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\bCreateEscalation\b|\([^)]*\bCreateEscalation\b)", text):
         sys.exit(
             "FAIL: missing `from uipath.platform.common import CreateEscalation`. "
             "The prompt describes an explicit escalation — the skill prescribes "

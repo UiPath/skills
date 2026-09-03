@@ -70,11 +70,11 @@ def main() -> None:
     except SyntaxError as exc:
         fail(f"{module} has a syntax error: {exc}")
 
-    if not re.search(r"from\s+langgraph\.types\s+import\s+[^\n]*\binterrupt\b", text):
+    if not re.search(r"from\s+langgraph\.types\s+import\s+(?:[^\n]*\binterrupt\b|\([^)]*\binterrupt\b)", text):
         fail("missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
 
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+[^\n]*\bWaitTask\b", text):
+    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\bWaitTask\b|\([^)]*\bWaitTask\b)", text):
         fail(
             "missing `from uipath.platform.common import WaitTask`. "
             "The scenario is `WaitTask` (wait on an existing Action Center task), "
