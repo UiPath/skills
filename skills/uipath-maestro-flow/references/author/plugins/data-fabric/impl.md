@@ -58,6 +58,8 @@ An invented id or column matches no record: every lookup returns empty and the r
 
 Node instances carry `inputs` only. Do **not** hand-write an `outputs` block, a `model` block, or a `ui` block — `flow format` owns layout, the definition owns the BPMN model, and the manifest's `outputDefinition` plus the `variables.nodes[]` entry that `flow format` regenerates own the output contract ([Author capability, rules 13–15](../../CAPABILITY.md#critical-rules)).
 
+> **Editing a node the canvas created: preserve the `_`-prefixed keys you do not recognize.** The entity panels snapshot the picked entity's schema onto `entityConfig` — `_entityFields`, `_relatedFields`, `_outputSchema` — and those snapshots are what resolve related-column paths and drive output IntelliSense. They are not required to author a node from scratch, and none of the examples below carry them, but stripping them from an existing node silently breaks any filter that addresses a related column (`customer.Name`), because a path that cannot resolve against the snapshot makes the serializer refuse the whole query. Change the keys you mean to change and leave the rest.
+
 ### Read — single record
 
 ```json
@@ -237,10 +239,33 @@ A **folder-scoped** entity carries `_folderKey` (the folder GUID). Its presence 
 
 ```json
 "bindings": [
-  { "id": "<bindingId1>", "resource": "Entity", "resourceKey": "<resourceKey>", "propertyAttribute": "name",      "name": "Orders" },
-  { "id": "<bindingId2>", "resource": "Entity", "resourceKey": "<resourceKey>", "propertyAttribute": "folderKey", "name": "<folder GUID>" }
+  {
+    "id": "<bindingId1>",
+    "name": "Orders",
+    "type": "string",
+    "resource": "Entity",
+    "resourceKey": "<resourceKey>",
+    "default": "Orders",
+    "propertyAttribute": "name"
+  },
+  {
+    "id": "<bindingId2>",
+    "name": "OrdersFolder",
+    "type": "string",
+    "resource": "Entity",
+    "resourceKey": "<resourceKey>",
+    "default": "<folder GUID>",
+    "propertyAttribute": "folderKey"
+  }
 ]
 ```
+
+Field-by-field, because three of these are easy to get wrong:
+
+- **The value lives in `default`, never in `name`.** `name` is a display label: the entity-name row uses the entity name for both, but the folder row's `name` is the literal convention `<entityName>Folder` while its `default` carries the folder GUID.
+- **`type` is `"string"` and is required** — the binding schema rejects a row without it.
+- **`resource` must be the capitalized `"Entity"`.** The BPMN engine matches it case-insensitively, but packaging requires the capital form; a lowercase row never becomes a binding resource, so the deploy side gets no override at all.
+- **`propertyAttribute` is what the serializer matches on**, not `name`.
 
 The folder token must come from the **`folderKey`** attribute, not `folderPath`: the platform's deploy-time override rewrites `folderPath` with the Orchestrator FQN, which breaks the query even in the source org.
 
