@@ -104,7 +104,8 @@ discovery or the user.
   (`Intsvc.EventTrigger`, `Intsvc.WaitForEvent`) use `connectionId`. Either way
   `uip maestro bpmn refresh` (and `pack`) materialize that binding into a
   `Connection` resource in `bindings_v2.json` — without it the process passes
-  `validate` but faults at runtime with `Connection null` (error 102010).
+  `validate` but faults at runtime with `102010 IntSvcArgumentsError -
+  Integration Services invalid value in input` (the connection resolves to null).
 
 Declare all bindings in a single process-level `<uipath:bindings version="v1">`
 block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,
@@ -262,4 +263,3 @@ hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
   extension types and stop. The final evidence files must literally contain the
   discovered type names, for example `Orchestrator.StartJob` and
   `Maestro.ReceiveMessageEvent`.
-

@@ -19,8 +19,7 @@ Before upload, publish, deploy, or debug:
 4. Regenerate package metadata from the validated BPMN source:
 
    ```bash
-   uip maestro bpmn \
-     refresh <project-path> --output json
+   uip maestro bpmn refresh <project-path> --output json
    ```
 
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
