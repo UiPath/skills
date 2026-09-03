@@ -14,7 +14,7 @@ user-invocable: true
 - Artifact folder intended for a new deployment or clone → this skill.
 - Plain-language domain description with no files → `uipath-ontology-modeler`.
 - Existing ontology CRUD, API, SDK, or artifact operations → `uipath-ontologies`.
-- Business rules that require computation route through this skill's classification of write operations; the coded leg's Orchestrator work belongs to `uipath-ontology-coded-action-deploy`.
+- Write operations needing computation the write surface cannot express route through this skill's classification; the coded leg's Orchestrator work belongs to `uipath-ontology-coded-action-deploy`.
 
 The words **new**, **clone**, **publish**, **deploy**, **mapping missing**, or **artifact folder** indicate authoring when the request concerns a new ontology. Do not hand such requests to existing-ontology CRUD.
 
@@ -38,7 +38,7 @@ Runtime delegation to `uipath-ontology-modeler` is intentional and is the only s
 ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
-CLASS_MAP: class -> entityName, entityId, folderId, readOnly (optional, rare)
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
@@ -100,12 +100,29 @@ While reading the SDD, also scan for:
 
 **Write operations (actions — zero or more files, one per action):** mutations the SDD describes (e.g. "update status", "create record", "delete entry"). For each, record: action name, target entity, SQL operation (UPDATE / INSERT / DELETE), fields affected, identifier field, and input parameters. Pass one `{name}-{actionName}.ttl` per action to the delegated modeler — there is no limit on the number of action files.
 
-Classify each recorded write operation as `kind: SQL` or `kind: CODED`. Apply these tests in order; first match wins:
+Classify each recorded write operation as `kind: SQL` or `kind: CODED`.
+
+**The question is whether producing the edit needs computation the write surface cannot express.**
+It is not whether the rule is a "business rule" or a "constraint" — neither term is defined here,
+and classifying on them puts the boundary in the wrong place. Anything that reaches past a single
+statement of literal values, and needs any computation to arrive at what to write, belongs on the
+coded leg. The write surface is literals-only SQL today, and the tests below would not move if it
+grew procedural extensions: what the coded leg buys is a Turing-complete language, not more SQL
+grammar.
+
+Apply these tests in order; first match wins:
 
 1. CODED if the new value must be computed from stored data, the clock, or arithmetic/string construction. The SQL surface is literals-only: no `GETDATE`, no expressions, enforced by Data Fabric's own parser (`SET x = x + 0` and `SET x = CASE...` are both rejected with "Only literal values supported").
 2. CODED if the operation reads before writing, branches on what it finds, iterates over rows or items (any per-row loop), may write several rows or several entities, or may legitimately write nothing (converged no-op).
 3. CODED if a rule depends on a fact the caller must not be trusted to assert. Values derived from data are computed from declared reads, never from caller parameters: a caller can lie about any fact concerning the data.
 4. Otherwise SQL: single entity, single record, caller-supplied literal values. Ambiguous cases default to SQL. Declarative by default; a job in a high-level language (currently supported: TypeScript) only when the edit cannot be expressed before it is computed.
+
+**Refuse rather than classify: an operation that reads after it writes.** A coded action's declared
+reads all run before the job starts, and its edits all apply after the job returns. There is no
+point at which a job can observe its own writes, or interleave a read between two of them. An SDD
+asking for that describes a sequence this shape cannot express, so stop at this gate and say which
+operation and which ordering — do not generate a job that would silently read pre-write state and
+look correct.
 
 Worked classifications:
 
@@ -117,6 +134,12 @@ Worked classifications:
 | `flagBigOrder(invoiceIds)` | CODED | per-row loop over lines, multi-row write |
 | `setInvoiceDecision(id, decision, approver)` | CODED | boundary case: looks like a parameter write, but composes a rationale string and screens caller-asserted facts |
 | `approveIfUnderLimit(id, amount)` | CODED | rule 3: the amount must come from a read, not the caller |
+
+Two of these are real and worked end to end, TTL beside job, in
+`uipath-ontology-modeler`'s `references/coded-action-example.md`: `tagOverdueTicket` and
+`flagBigOrder`. The rest are named for their shape only — each verdict follows from the rubric
+above, not from a file to open. Two worked pairs are enough context to generate from; more would
+be volume without a new shape.
 
 For every CODED operation additionally record: its **reads** (one bind name plus the SELECT intent per read), its **writes union** (every field any branch could touch, not one predicted run), and its **process name** (`PascalCase(actionName)` + `Process`).
 
@@ -249,6 +272,7 @@ Identify each entity's type from the response: `externalFields: []` → **Native
 **Federated entity rules:**
 - **Use existing only** — federated entities connect to external systems (SQL Server, Salesforce, SAP, etc.) via UiPath Integration Service. New federated entities cannot be created via CLI or API — the connection must be set up through the Data Fabric UI. If an SDD class needs a federated entity that doesn't exist yet, stop and tell the user to create it in the portal first.
 - **Readable and writable** — a federated class is a first-class target for both. Reads and writes traverse FQS, which resolves the external connection and routes the statement to the source system. Treat native and federated classes the same when planning operations; do not mark a class `readOnly` merely because it is federated.
+- **`readOnly` is an exception the author states, not a property of federation.** Set it on a class only when the author says that specific source rejects writes; a connection configured read-only, or a system that exposes no write API. It is never inferred, so most CLASS_MAPs carry it on no class at all.
 - **Write actions are allowed** — both SQL write actions (`{name}-{actionName}.ttl`) and coded actions may target a federated class. The write is compiled to bounded DML and executed against the source through its connector, so the source system remains the authority on whether a given write succeeds: a rejection (permissions, a type mismatch, a constraint, a connection configured read-only) surfaces as an upstream error on the failing step, not as a refusal by the platform. Set `readOnly: true` in CLASS_MAP only when the author states a specific source rejects writes — never inferred from federation.
 - **YARRRML mapping is identical** — the mapping syntax for a federated entity (`access: datafabric`, `entityId`, `folderId`) is the same as native. The FQS runtime handles the federation transparently, for reads and writes alike. Functions (SPARQL reads) work with federated entities.
 

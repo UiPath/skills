@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-coded-action-deploy
-description: "Use when an ontology's coded actions have been generated and their Orchestrator leg needs shipping: scaffolding the jobs Solution, staging each job source, publishing and deploying a new release, and patching the resolved folder id into every action TTL. Use when action TTLs still carry ont:processFolderId \"PENDING_DEPLOY\". Do not use to generate ontology artifacts, to upload any artifact to the ontology backend, or for existing-ontology CRUD."
+description: "Use when an ontology's coded actions have been generated and their Orchestrator leg needs shipping: scaffolding the jobs Solution, staging each job source, publishing and deploying a new release, and patching the resolved folder id into every action TTL. Use when action TTLs still carry ont:processFolderId \"PENDING_DEPLOY\". Do not use to generate ontology artifacts, to upload any artifact to the ontology backend, or for existing-ontology CRUD. For artifact generation→uipath-ontology-modeler. For backend validation and artifact upload→uipath-ontology-authoring. For `uip ont` syntax→uipath-ontologies."
 when_to_use: "Coded-action TTLs and their job sources exist and the jobs must reach Orchestrator; user says 'deploy the coded actions', 'ship the jobs', 'publish a new release of the jobs solution', 'the TTLs still say PENDING_DEPLOY', 'the job changed, release it again'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true

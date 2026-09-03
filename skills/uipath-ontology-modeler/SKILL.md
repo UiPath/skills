@@ -32,7 +32,7 @@ When called by ontology authoring, require one complete handoff object. Do not r
 ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
-CLASS_MAP: class -> entityName, entityId, folderId, readOnly (optional, rare)
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
