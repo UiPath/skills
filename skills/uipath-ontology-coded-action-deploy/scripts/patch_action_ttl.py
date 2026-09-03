@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Patch the deployed Orchestrator coordinates into ONE coded-action TTL.
 
-    ttl_patch.py <file.ttl> --folder-id 3225065 [--process-url URL] [--execute]
+    patch_action_ttl.py <file.ttl> --folder-id <numericId> [--process-url URL] [--execute]
 
 Generation writes ont:processFolderId "PENDING_DEPLOY"; this replaces it with the numeric folder
 id of the deployment that now carries the job. One file per action, one call per file: the
