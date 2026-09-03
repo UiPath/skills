@@ -1,5 +1,13 @@
 # task-entry-conditions — Implementation (Direct JSON Write)
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`implementation-phase-3.md`](../../../implementation-phase-3.md) — Step 11.5 marker resolution and the Step 12 checks
+> - [`io-binding/impl-json.md`](../../variables/io-binding/impl-json.md) — output shapes, allocated ids, and `originalVar`
+> - [`sla-response-shapes.md`](../../../sla-response-shapes.md) — which SLA response shape is legal where
+
 > **Phase split.** Phase 2 writes the condition. A `wait-for-connector` rule gets the canonical stub; Phase 3 Step 10.5 upgrades only its `uipath` when resolved. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Write the Phase 2 task-entry condition directly to the target task's `entryConditions[]`; this initial write needs no CLI call. Step 10.5 handles the separate connector-rule upgrade.
@@ -151,6 +159,6 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 
 Confirm target task's `entryConditions[]` length equals the number of Entry Condition rows the SDD declares for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
 
-**This count-parity check is not a safety net on its own** — it only confirms Step 10 wrote what the SDD's condition rows asked for; if the write was skipped entirely (a Phase 1 planning gap), parity holds at zero and the task silently ends up with no entry rule, which hangs `case debug` indefinitely instead of failing any build-time check. [`implementation.md § Step 12 Check 15`](../../../implementation.md#step-12--end-of-phase-3-validator-pass) is the mandatory backstop that re-derives the expected rule from the source SDD independent of whether Step 10 ran.
+**This count-parity check is not a safety net on its own** — it only confirms Step 10 wrote what the SDD's condition rows asked for; if the write was skipped entirely (a Phase 1 planning gap), parity holds at zero and the task silently ends up with no entry rule, which hangs `case debug` indefinitely instead of failing any build-time check. [`implementation.md § Step 12 Check 15`](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) is the mandatory backstop that re-derives the expected rule from the source SDD independent of whether Step 10 ran.
 
 <!-- END: impl-json.md -->

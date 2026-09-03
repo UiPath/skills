@@ -1,5 +1,14 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`implementation-phase-3.md`](../../../implementation-phase-3.md) — Step 11.5 marker resolution and the Step 12 checks
+> - [`logging/impl-json.md`](../../logging/impl-json.md) — the issue-log entry shape
+> - [`io-binding/impl-json.md`](../../variables/io-binding/impl-json.md) — output shapes, allocated ids, and `originalVar`
+> - [`bindings-v2-sync.md`](../../../bindings-v2-sync.md) — the `resources[]` sidecar contract — Step 12 Check 7 grades this
+
 > **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 16 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
@@ -272,7 +281,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 7. Root bindings exist for ConnectionId + folderKey with the minted ids
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
-10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
+10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.

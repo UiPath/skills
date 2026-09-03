@@ -1,5 +1,9 @@
 # event trigger — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`connector-trigger-planning.md`](../../../connector-trigger-planning.md) — connector resolution before you write the rule
+
 A case-level trigger that fires on an external connector event. Starts the case when the event matches a filter.
 
 The planning pipeline is shared with the [connector-trigger task](../../tasks/connector-trigger/planning.md) — see [connector-trigger-planning.md](../../../connector-trigger-planning.md) for the full 7-step resolution pipeline.

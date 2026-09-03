@@ -1,5 +1,14 @@
 # event trigger — Implementation (Direct JSON Write)
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`connector-trigger-planning.md`](../../../connector-trigger-planning.md) — connector resolution before you write the rule
+> - [`implementation-phase-3.md`](../../../implementation-phase-3.md) — Step 11.5 marker resolution and the Step 12 checks
+> - [`logging/impl-json.md`](../../logging/impl-json.md) — the issue-log entry shape
+> - [`bindings-v2-sync.md`](../../../bindings-v2-sync.md) — the `resources[]` sidecar contract — Step 12 Check 7 grades this
+
 Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
@@ -174,7 +183,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. `schema.edges` stays `[]` (Rule 20) — no edge from this trigger.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
-10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
+10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation-phase-3.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
 

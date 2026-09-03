@@ -1,5 +1,9 @@
 # connector-trigger task — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`connector-trigger-planning.md`](../../../connector-trigger-planning.md) — connector resolution before you write the rule
+
 A connector-based trigger **inside a stage** — waits for an external event before continuing.
 
 The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-planning.md](../../../connector-trigger-planning.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).

@@ -1,5 +1,9 @@
 # case-exit-conditions — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`connector-trigger-planning.md`](../../../connector-trigger-planning.md) — connector resolution before you write the rule
+
 Conditions that control **when the entire case completes (or exits non-completing)**. Attach at the case root level, not to any stage.
 
 ## When to Use

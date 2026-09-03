@@ -1,5 +1,9 @@
 # case (root) — JSON Implementation
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
 ## Purpose

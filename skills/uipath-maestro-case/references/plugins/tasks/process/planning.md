@@ -1,5 +1,9 @@
 # process task — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+
 An RPA-driven automated process task. Invokes a UiPath process (or agentic process) by name and folder.
 
 ## When to Use

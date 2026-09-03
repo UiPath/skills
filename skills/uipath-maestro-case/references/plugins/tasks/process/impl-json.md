@@ -1,5 +1,9 @@
 # process task — Implementation (Direct JSON Write)
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`io-binding/impl-json.md`](../../variables/io-binding/impl-json.md) — output shapes, allocated ids, and `originalVar`
+
 > **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape

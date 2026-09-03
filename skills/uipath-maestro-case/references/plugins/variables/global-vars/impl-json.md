@@ -1,5 +1,12 @@
 # Variables — Implementation
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`connector-trigger-impl.md`](../../../connector-trigger-impl.md) — connector rule/trigger JSON and the placeholder fallback
+> - [`logging/impl-json.md`](../../logging/impl-json.md) — the issue-log entry shape
+> - [`io-binding/impl-json.md`](../io-binding/impl-json.md) — output shapes, allocated ids, and `originalVar`
+
 No CLI command exists for variable declaration. Edit `caseplan.json` directly (Read → reason → Write/Edit).
 
 ## § Terminology + Resolution Semantics (read this first)

@@ -1,5 +1,9 @@
 # case-management task — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+
 A nested case task. Invokes another case definition as a sub-case within the current one. Enables hierarchical / recursive case structures.
 
 ## When to Use

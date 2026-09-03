@@ -1,5 +1,10 @@
 # I/O Binding — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+> - [`impl-json.md`](impl-json.md) — output shapes, allocated ids, and `originalVar`
+
 Trust the SDD. Emit inputs/outputs exactly as declared. Every SDD Outputs row carries `->` or `=`; preserve that operator and both operands into the caseplan. Bare outputs come only from resolved-schema discovery, never from an SDD row.
 
 The **canonical binding form** below (`<field-path> -> <case-variable>`, `<case-variable> = <expression>`, `<Field> <- <Binding>`) is the normalized reading of an SDD table row that [impl-json.md](impl-json.md) consumes when it writes `data.inputs[]` / `data.outputs[]`. It is a reasoning form, not a file: never write it to disk as an intermediate plan.

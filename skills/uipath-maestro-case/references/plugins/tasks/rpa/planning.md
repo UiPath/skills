@@ -1,5 +1,9 @@
 # rpa task — Planning
 
+> **Required reads** — open each in full (a single `cat`, or the `Read` tool) before writing this
+> construct. These are not optional context; the checks that grade this work live in them.
+> - [`bindings-and-expressions.md`](../../../bindings-and-expressions.md) — expression prefixes and the canonical form per sink
+
 An RPA robot task. The sdd.md component type is `RPA`. The task node's `type` field is `"rpa"`, but the cached registry entity typically lives in `process-index.json` — the registry does not separate "process" from "rpa" at storage time.
 
 ## When to Use
