@@ -7,6 +7,11 @@ hidden business scenarios in the Alpha runtime, inspects variables, element
 executions, and incidents, and deletes every returned solution id in a finally
 block. Repeated scenarios overwrite the same ephemeral solution rather than
 creating tenant clutter.
+
+Cleanup is unconditional by default. Set `BPMN_E2E_CLEANUP=never` only for a
+deliberate manual inspection: the run then prints the surviving solution ids
+and whoever asked for the Alpha link owns deleting them. Connector side
+effects are always cleaned, whatever the policy.
 """
 
 from __future__ import annotations
@@ -49,6 +54,27 @@ SEEDED_DUPLICATE_KEY = "__SEEDED_JIRA_KEY_SET_AT_RUNTIME__"
 # exists, so the task's post_run sweep can delete it even if this process is
 # killed. See cleanup_customer_escalation.py.
 CLEANUP_JOURNAL = Path(".customer-escalation-cleanup.jsonl")
+# Solution cleanup policy. Deleting is the DEFAULT and the unset behaviour:
+# an eval run must not leave tenant clutter behind. Set
+# BPMN_E2E_CLEANUP=never only for a deliberate manual inspection, when someone
+# has asked for the Alpha link; the run then prints the surviving solution ids
+# and it is that person's job to delete them. Connector side effects (Jira
+# issues, Drive copies, Slack messages) are ALWAYS cleaned regardless: they
+# live in shared external sandboxes, not in the solution under inspection.
+CLEANUP_POLICY_ENV = "BPMN_E2E_CLEANUP"
+
+
+def solution_cleanup_policy() -> str:
+    """Return `always` (delete, the default) or `never` (preserve)."""
+
+    policy = os.environ.get(CLEANUP_POLICY_ENV, "always").strip().casefold()
+    if policy not in {"always", "never"}:
+        print(
+            f"WARNING {CLEANUP_POLICY_ENV}={policy!r} is not always|never; "
+            "falling back to always (delete)"
+        )
+        return "always"
+    return policy
 # Timeout budget. The single load-bearing number is the run_command
 # `timeout` in customer_escalation_triage.yaml, mirrored here as
 # GRADER_TIMEOUT_SECONDS — coder_eval SIGKILLs this process there, and nothing
@@ -828,6 +854,22 @@ class AlphaSolutionLease:
 
     def cleanup(self) -> list[str]:
         self.capture_manifest()
+        if solution_cleanup_policy() == "never":
+            for solution_id in sorted(self.solution_ids):
+                print(
+                    f"PRESERVED Alpha solution {solution_id} "
+                    f"({EXPECTED_LIVE_TARGET['BaseUrl']}/"
+                    f"{EXPECTED_LIVE_TARGET['Organization']}/"
+                    f"{EXPECTED_LIVE_TARGET['Tenant']}) — "
+                    f"{CLEANUP_POLICY_ENV}=never was set, so delete it by hand"
+                )
+            if not self.solution_ids:
+                print(
+                    f"{CLEANUP_POLICY_ENV}=never was set but no solution id "
+                    "was captured, so nothing was preserved"
+                )
+            self.cleaned = True
+            return []
         failures: dict[str, str] = {}
         for _attempt in range(2):
             pending = self.solution_ids - self.removed_solution_ids

@@ -5,6 +5,7 @@ from __future__ import annotations
 import atexit
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -2526,6 +2527,85 @@ class CleanupJournalTests(unittest.TestCase):
         return BehaviorCheckerTests.environment()
 
 
+class SolutionCleanupPolicyTests(unittest.TestCase):
+    """Deleting is the default; preserving is an explicit, opt-in override."""
+
+    def test_default_is_delete(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(checker.solution_cleanup_policy(), "always")
+
+    def test_unknown_value_falls_back_to_delete(self) -> None:
+        for value in ("", "yes", "true", "keep", "0"):
+            with self.subTest(value=value):
+                with patch.dict(
+                    os.environ, {checker.CLEANUP_POLICY_ENV: value}
+                ):
+                    self.assertEqual(
+                        checker.solution_cleanup_policy(), "always"
+                    )
+
+    def test_never_is_honoured_case_insensitively(self) -> None:
+        for value in ("never", "NEVER", " Never "):
+            with self.subTest(value=value):
+                with patch.dict(
+                    os.environ, {checker.CLEANUP_POLICY_ENV: value}
+                ):
+                    self.assertEqual(
+                        checker.solution_cleanup_policy(), "never"
+                    )
+
+    def test_default_policy_deletes_the_solution(self) -> None:
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps({"Result": "Success"}),
+            stderr="",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            lease = checker.AlphaSolutionLease(Path(directory) / "Eval.uipx")
+            lease.solution_ids.add("11111111-1111-1111-1111-111111111111")
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(
+                    checker, "run_cli", return_value=completed
+                ) as run_cli,
+            ):
+                self.assertEqual(lease.cleanup(), [])
+        self.assertIn("delete", run_cli.call_args.args[0])
+        self.assertTrue(lease.cleaned)
+
+    def test_never_preserves_and_issues_no_delete(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            lease = checker.AlphaSolutionLease(Path(directory) / "Eval.uipx")
+            lease.solution_ids.add("11111111-1111-1111-1111-111111111111")
+            with (
+                patch.dict(
+                    os.environ, {checker.CLEANUP_POLICY_ENV: "never"}
+                ),
+                patch.object(checker, "run_cli") as run_cli,
+            ):
+                self.assertEqual(lease.cleanup(), [])
+        run_cli.assert_not_called()
+        self.assertTrue(lease.cleaned)
+
+    def test_never_does_not_affect_connector_side_effects(self) -> None:
+        """External sandbox resources are cleaned whatever the policy."""
+
+        environment = BehaviorCheckerTests.environment()
+        lease = checker.ConnectorSideEffectLease(environment)
+        lease.jira_issue_ids.add("10001")
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps({"Result": "Success"}),
+            stderr="",
+        )
+        with (
+            patch.dict(os.environ, {checker.CLEANUP_POLICY_ENV: "never"}),
+            patch.object(
+                checker, "run_cli", return_value=completed
+            ) as run_cli,
+        ):
+            self.assertEqual(lease.cleanup(), [])
+        run_cli.assert_called()
+
+
 class CleanupSweepTests(unittest.TestCase):
     """The replay script must be safe when there is nothing to free."""
 
@@ -2626,6 +2706,36 @@ class CleanupSweepTests(unittest.TestCase):
             solution_cleanup.assert_called_once()
             connector_cleanup.assert_called_once()
             self.assertFalse(journal.exists())
+
+    def test_sweep_preserves_the_solution_when_policy_is_never(self) -> None:
+        """The backstop must not delete what the run deliberately kept."""
+
+        sweep = self.sweep()
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            journal.write_text(
+                json.dumps(
+                    {
+                        "kind": "solution",
+                        "value": "11111111-1111-1111-1111-111111111111",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.dict(
+                    os.environ, {sweep.grader.CLEANUP_POLICY_ENV: "never"}
+                ),
+                patch.object(sweep.grader, "CLEANUP_JOURNAL", journal),
+                patch.object(
+                    sweep.grader.AlphaSolutionLease, "cleanup"
+                ) as solution_cleanup,
+            ):
+                self.assertEqual(sweep.main(), 0)
+            solution_cleanup.assert_not_called()
+            # journal survives so the preserved id stays recoverable
+            self.assertTrue(journal.exists())
 
     def test_sweep_never_deletes_the_shared_drive_fixtures(self) -> None:
         sweep = self.sweep()

@@ -69,6 +69,12 @@ def main() -> int:
     failures: list[str] = []
 
     solution_ids = records.get("solution", [])
+    if solution_ids and grader.solution_cleanup_policy() == "never":
+        # The run was told to preserve the solution for manual inspection;
+        # replaying the journal here would delete it anyway.
+        for solution_id in sorted(set(solution_ids)):
+            print(f"cleanup: PRESERVED Alpha solution {solution_id}")
+        solution_ids = []
     if solution_ids:
         solution_lease = grader.AlphaSolutionLease(Path("unused.uipx"))
         solution_lease.solution_ids = set(solution_ids)
@@ -105,6 +111,11 @@ def main() -> int:
         print(f"cleanup: {len(failures)} resource(s) could not be freed:")
         for failure in failures:
             print(f"  - {failure}")
+    elif grader.solution_cleanup_policy() == "never" and records.get("solution"):
+        print(
+            "cleanup: journal kept so the preserved solution id stays "
+            "recoverable"
+        )
     else:
         print("cleanup: every journalled resource is gone")
         try:

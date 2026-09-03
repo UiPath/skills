@@ -330,7 +330,10 @@ success_criteria:
     weight: 12.0
     pass_threshold: 1.0
 
-# Backstop sweep, per the convention in tests/experiments/default.yaml. The
+# Backstop sweep, per the convention in tests/experiments/default.yaml. Honours
+# BPMN_E2E_CLEANUP: unset (the default) deletes everything, `never` preserves the
+# Alpha solution for manual inspection and leaves the journal in place so its id
+# stays recoverable. Connector side effects are cleaned either way. The
 # grader frees its own resources in a finally block; that block is skipped if
 # coder_eval SIGKILLs the graded command on its timeout, so this replays the
 # durable cleanup journal the grader appends to as each resource is created.
