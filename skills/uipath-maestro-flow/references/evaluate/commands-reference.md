@@ -195,7 +195,7 @@ Example — Child simulation (tool inside an agent node):
 ```bash
 # Add a child tool simulation (Static). No separate parent simulation step
 # needed — --parent auto-creates the parent if it does not exist.
-# --output-schema is auto-resolved from the agent's tool definitions.
+# Output schema is auto-resolved from the agent's tool definitions.
 uip maestro flow eval simulation add Web_Search \
   --parent agent-lookup \
   --set "Smoke Tests" \

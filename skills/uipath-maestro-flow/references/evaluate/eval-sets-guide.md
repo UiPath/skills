@@ -180,7 +180,7 @@ uip maestro flow eval simulation add Web_Search \
   --path <flow_project> --output json
 
 # Add a child tool simulation (Llm — prompt-guided).
-# --output-schema is auto-resolved from the agent's tool definitions
+# Output schema is auto-resolved from the agent's tool definitions
 # (inline, same-solution, or published agents).
 uip maestro flow eval simulation add Send_Email \
   --parent <agent-node-id> \
@@ -209,7 +209,7 @@ No separate parent simulation step is needed — passing `--parent` auto-creates
 
 When `--parent` is used, `--component-type` defaults to `Node` (the convention for child tool simulations). You can override it if needed.
 
-`--output-schema` is auto-resolved for child simulations on all agent types:
+The output schema is auto-resolved for child simulations on all agent types:
 - **Inline canvas agents** (`uipath.agent.*`): resolved from the child tool node's outputs in the `.flow` file.
 - **Same-solution agents** (with `inputs.source`): resolved from the inline agent's `agent.json` resources.
 - **Published agents** (`uipath.core.agent.*`): resolved via the platform API (`simulatableComponents`). Requires `uip login`.
