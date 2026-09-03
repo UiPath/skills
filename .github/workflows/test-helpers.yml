@@ -144,22 +144,6 @@ jobs:
       - name: Run BPMN contract guards
         run: pytest tests/scripts/test_bpmn_*_contract.py tests/tasks/uipath-maestro-bpmn/_shared/ -v
 
-  bpmn-public-io-contract-guard:
-    runs-on: ubuntu-latest
-    name: maestro-bpmn public I/O contract guard
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install pytest
-        run: pip install pytest
-
-      - name: Run public I/O contract guard
-        run: pytest tests/scripts/test_bpmn_public_io_contract.py -v
-
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest
     name: catalog build integrity guards
