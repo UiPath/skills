@@ -243,7 +243,7 @@ Illustrative supported activities (confirm against `registry get` for the specif
 | `uipath-sap-s4hanacloud` | `Entity` | Create Entity | POST | method |
 | `uipath-google-bigquery` | `projects::table` | List All Records | GET | method |
 
-> **`uipath-uipath-dataservice` is the fallback for Data Fabric, not the default.** Entity records have native nodes — `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) — which need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`. Reach for these connector activities only when the native node's tenant flag is off, when the entity is federated (the native writes require a native entity), or when you need an operation the four nodes do not cover.
+> **Data Fabric also has native nodes — check whether they exist before choosing.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so they are the lighter path **when the tenant has them**. Their flags default to off, so confirm with `uip maestro flow registry get core.datafabric.read` first. If that answers "Node not found" — or search reports `AvailableOnTenant: false` — these `uipath-uipath-dataservice` activities are the correct path; stay here. Stay here too when the entity is federated, since the native writes require a native entity.
 
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 

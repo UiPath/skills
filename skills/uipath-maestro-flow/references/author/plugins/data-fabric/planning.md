@@ -51,16 +51,20 @@ Use these nodes when the record lives in **Data Fabric** and the flow itself is 
 | Bulk-load a CSV into an entity | No — that is a data-loading job, not a flow step; use `uip df records import` out of band |
 | Read a record from a non-UiPath system | No — use [connector](../connector/planning.md) or [http](../http/planning.md) |
 
-### Native node vs Data Service connector — pick the native node
+### Native node vs Data Service connector — availability decides
 
-The `uipath-uipath-dataservice` Integration Service connector also exposes entity operations (`QueryEntityRecordsCurated`, `CreateEntityRecordCurated`, …), and `registry search` surfaces both. **Prefer the native `core.datafabric.*` node**, because it:
+The `uipath-uipath-dataservice` Integration Service connector also exposes entity operations (`query-entity-records`, `create-entity-record`, `update-entity-record`, `get-entity-record-by-id`, `delete-entity-record`, …), and `registry search` surfaces both families.
+
+**Check availability before you choose — do not default to the native node.** All four tenant flags default to off, so on a tenant that has not enabled them the connector activities are the only working path. Run `uip maestro flow registry get core.datafabric.<op>` for the operation you need: if it answers "Node not found", or search reports `AvailableOnTenant: false`, build with the [connector](../connector/planning.md) and stop pursuing the native node. Use the connector too when the entity is federated, since the native writes require a native entity.
+
+Where the tenant *does* have them, the native node is the better build, because it:
 
 - needs **no Integration Service connection** — nothing to create, bind, or keep healthy, and no `bindings[]` connection row;
 - is **user-owned** — author it with `Edit`/`Write` instead of the CLI's `node add` + `node configure` envelope (see [Author capability — Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node));
 - gives downstream expressions the **record shape** (`$vars.readOrder1.output.Status`) with autocomplete, because the picked entity's schema is merged into the node's output definition;
 - carries **portable entity bindings**, so a folder-scoped entity survives export to another org.
 
-Choose the connector when the native node is unavailable (flag off), when the entity is federated, or when you need an operation the native nodes do not cover. Record that choice in **Open Questions** rather than making it silently.
+Whichever way the check sends you, record it in **Open Questions** rather than leaving the reader to guess why the flow took that path.
 
 ### Anti-Patterns
 
