@@ -1,8 +1,13 @@
 # Data Fabric Entity Nodes — Implementation
 
-Four OOTB nodes that read and write records in a UiPath Data Fabric entity: `core.datafabric.read`, `core.datafabric.create`, `core.datafabric.update`, `core.datafabric.delete`. Each is a `bpmn:Task` host — the serializer attaches a `<uipath:output>` carrying a `=datafabric...` target, and the BPMN engine's activity postprocessor performs the query or write after the task runs. There is no Integration Service connection and no connector binding.
+Four OOTB nodes that read and write records in a UiPath Data Fabric entity: `core.datafabric.read`, `core.datafabric.create`, `core.datafabric.update`, `core.datafabric.delete`. Each is a `bpmn:Task` host with no `serviceType`, and the BPMN engine does the actual work — but by two different mechanisms:
 
-Shared action-node boilerplate — skeleton, ports, error port, add/edit mechanics — is in [shared/action-nodes.md](../../../shared/action-nodes.md). This file covers only what is specific to the entity nodes.
+- **Read** emits its compiled query as a `<uipath:input>`. The engine's **input preprocessor** resolves it *before* the task runs.
+- **Create / Update / Delete** emit a `<uipath:output>` carrying a `=datafabric...` target. The engine's **activity postprocessor** performs the write *after* the task runs.
+
+That split matters when reading generated BPMN: a Read node with no `<uipath:output>` action target is correct, not a serialization failure.
+
+Shared action-node boilerplate — skeleton, ports, add/edit mechanics — is in [shared/action-nodes.md](../../../shared/action-nodes.md), with one exception noted under [No error port](#no-error-port). This file covers only what is specific to the entity nodes.
 
 ## Registry validation
 
@@ -17,14 +22,21 @@ uip maestro flow registry get core.datafabric.delete --output json
 
 Confirm on `Data.Node`:
 
-- `handleConfiguration` — input port `input`, output port `output`. All four share this shape.
+- `handleConfiguration` — input port `input`, output port `output`. All four share this shape, and none has an `error` handle.
 - `model.type` — `bpmn:Task` (**not** `bpmn:ServiceTask`; these nodes carry no `serviceType`).
 - `inputDefinition.properties.entityConfig` — the single input container.
 - `outputDefinition.output.source` — `=response`, with `type: "jsonSchema"`. **Delete has no `outputDefinition` at all** — that absence is the contract, not an omission.
 - `runtimeConstraints.exclude` — contains `api-function`.
-- `version` — copy it verbatim into the instance's `typeVersion`. Read and Create are ahead of Update and Delete; do not assume one version across the family.
+- `version` — copy it verbatim into the instance's `typeVersion`. The four are versioned independently; do not assume one version across the family.
 
-If `registry get` reports **"Node not found"**, the node is not available to you. Run `uip tools update`, then `uip maestro flow registry pull --force`, and retry. If it still fails, the tenant feature flag is off — `canvas.nodes.read-entity`, `canvas.nodes.update-entity`, `canvas.nodes.delete-entity`, or `canvas.nodes.create-entity` respectively. Confirm with the UiPath admin.
+If `registry get` reports **"Node not found"**, the node is not available to you. Run `uip tools update`, then `uip maestro flow registry pull --force`, and retry. If it still fails, that node's tenant feature flag is off:
+
+| Node type | Flag to ask the admin about |
+| --- | --- |
+| `core.datafabric.read` | `canvas.nodes.read-entity` |
+| `core.datafabric.create` | `canvas.nodes.create-entity` |
+| `core.datafabric.update` | `canvas.nodes.update-entity` |
+| `core.datafabric.delete` | `canvas.nodes.delete-entity` |
 
 `registry search` is not a substitute for `registry get` here. A flag-gated node can still appear in search with `AvailableOnTenant: false` while `registry get` refuses it — and without `registry get` you cannot source the `definitions[]` entry, which must never be hand-written ([Author capability, rule 6](../../CAPABILITY.md#critical-rules)). Treat `AvailableOnTenant: false` as unavailable and stop.
 
@@ -34,31 +46,46 @@ These are OOTB nodes and therefore **user-owned**: author them with `Edit` / `Wr
 
 Every node type still needs its `definitions[]` entry copied verbatim from `registry get`.
 
-## Resolving the entity and its columns
+## No error port
 
-Entity and column names are **case-sensitive**, and an unmatched column is silently dropped rather than rejected — a wrong name yields a node that validates green and writes nothing. Resolve both from the tenant before authoring:
+These four nodes are the exception to the implicit-error-port rule in [shared/action-nodes.md](../../../shared/action-nodes.md). None of them declares `supportsErrorHandling`, so the canvas never injects an `error` handle and the properties panel offers no error-handling toggle.
+
+Do not set `inputs.errorHandlingEnabled`, and do not add an edge with `sourcePort: "error"`. Such an edge still serializes a boundary event — keyed purely on the handle name — but the node has no `outputDefinition.error` to map, so it emits with no error mapping and shows no handle the author can see or remove. Handle failure upstream (validate inputs before the node) or downstream (branch on the result), not with an error edge.
+
+## Resolving the entity, its scope, and its columns
+
+Entity and column names are **case-sensitive**, and an unmatched column is silently dropped rather than rejected — a wrong name yields a node that validates green and writes nothing. Resolve everything from the tenant before authoring.
+
+`uip df entities list` shows **tenant-level entities only** by default. A folder-scoped entity will not appear until you widen the scope:
 
 ```bash
+# Tenant-level only (default)
 uip df entities list --output json
-uip df entities get <entity-id> --output json
+
+# Tenant + every folder you can see
+uip df entities list --include-folders --output json
+
+# One folder (mutually exclusive with --include-folders)
+uip df entities list --folder-key <folder-uuid> --output json
+
+# Writable entities only — Create/Update/Delete need a native entity
+uip df entities list --native-only --include-folders --output json
 ```
 
-`entities list` gives the entity `Name` (what `entityName` takes) and its id; `entities get` gives the exact column names for `_filters`, `fieldValues`, `fieldUpdates`, and `_selectedFieldNames`.
+Each listed entity carries its `folderId`. That value is both the `--folder-key` for follow-up commands and the `_folderKey` you put on a folder-scoped `entityConfig`.
 
-When a step needs a real record id or a sample row — for a `byId` selector, or to sanity-check a filter — read one rather than inventing it:
+Column names and a live record follow the same scoping rule — a folder-scoped entity needs `--folder-key` on each:
 
 ```bash
-uip df records list <entity-id> --output json
-uip df records query <entity-id> --body '{"filterGroup":{...}}' --output json
+uip df entities get <entity-id> [--folder-key <folder-uuid>] --output json
+uip df records list <entity-id> [--folder-key <folder-uuid>] --output json
 ```
 
-An invented id or column matches no record: every lookup returns empty and the run faults on empty data.
+`entities get` gives the exact column names for `_filters`, `fieldValues`, `fieldUpdates`, and `_selectedFieldNames`, plus each column's type, nullability, and whether it is a system field. Read a real record before writing a `byId` selector — an invented id matches nothing, and a read that matches nothing does not fault.
 
 ## JSON structure
 
 Node instances carry `inputs` only. Do **not** hand-write an `outputs` block, a `model` block, or a `ui` block — `flow format` owns layout, the definition owns the BPMN model, and the manifest's `outputDefinition` plus the `variables.nodes[]` entry that `flow format` regenerates own the output contract ([Author capability, rules 13–15](../../CAPABILITY.md#critical-rules)).
-
-> **Editing a node the canvas created: preserve the `_`-prefixed keys you do not recognize.** The entity panels snapshot the picked entity's schema onto `entityConfig` — `_entityFields`, `_relatedFields`, `_outputSchema` — and those snapshots are what resolve related-column paths and drive output IntelliSense. They are not required to author a node from scratch, and none of the examples below carry them, but stripping them from an existing node silently breaks any filter that addresses a related column (`customer.Name`), because a path that cannot resolve against the snapshot makes the serializer refuse the whole query. Change the keys you mean to change and leave the rest.
 
 ### Read — single record
 
@@ -84,6 +111,8 @@ Node instances carry `inputs` only. Do **not** hand-write an `outputs` block, a 
 }
 ```
 
+A single-record read faults only on an **over**-match. Zero matches completes normally, leaving `$vars.readOrder.output` unresolved — so treat "not found" as a branch, not an error.
+
 ### Read — multiple records
 
 ```json
@@ -98,7 +127,7 @@ Node instances carry `inputs` only. Do **not** hand-write an `outputs` block, a 
       "resultMode": "multiple",
       "_recordLimit": 100,
       "_skip": 0,
-      "_sort": { "field": "CreatedAt", "direction": "desc" },
+      "_sort": { "field": "CreateTime", "direction": "desc" },
       "_selectedFieldNames": ["Id", "OrderNumber", "Status"],
       "_filters": {
         "logicalOperator": "AND",
@@ -112,7 +141,9 @@ Node instances carry `inputs` only. Do **not** hand-write an `outputs` block, a 
 
 The rows land at `$vars.listOpenOrders.output.results`, not `$vars.listOpenOrders.output`.
 
-Write `_recordLimit` explicitly, as the canvas does. Omitting it does not mean "no cap" — the engine applies its own default, which differs by the entity's composite shape, so the row count silently depends on the entity rather than on the flow. A `_sort` matters for the same reason: a limit without an order returns an arbitrary slice.
+The emitted query **always** carries an explicit `limit`: omitting `_recordLimit` resolves to **100**, and any value is clamped to 1–1000. 1000 is a hard ceiling, so the only way to cover a larger entity is to page with `_skip` — raising `_recordLimit` past 1000 silently truncates. Pair any limit with `_sort`, or the slice is arbitrary.
+
+`CreateTime` above is the real server-managed audit column. The audit columns are `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy` — there is no `CreatedAt`, and a sort on a non-existent column is not caught by `flow validate`.
 
 ### Create
 
@@ -127,7 +158,7 @@ Write `_recordLimit` explicitly, as the canvas does. Omitting it does not mean "
       "entityName": "Orders",
       "fieldValues": [
         { "field": "OrderNumber", "value": "=js:$vars.start.output.orderNumber" },
-        { "field": "Status", "value": "Open" }
+        { "field": "Notes", "value": "Created by flow" }
       ]
     }
   }
@@ -150,7 +181,7 @@ At least one row must carry a non-blank `value`. A blank value is **omitted** fr
       "recordSource": "fromRead",
       "readEntityNodeId": "readOrder",
       "fieldUpdates": [
-        { "field": "Status", "value": "Shipped" },
+        { "field": "Notes", "value": "Shipped by flow" },
         { "field": "ShippedAt", "value": "=js:new Date().toISOString()" }
       ]
     }
@@ -158,7 +189,7 @@ At least one row must carry a non-blank `value`. A blank value is **omitted** fr
 }
 ```
 
-An empty `value` in `fieldUpdates` is a **real write** that clears the column — unlike Create, it is never treated as "leave unset".
+`readEntityNodeId` must match the Read node's `id` exactly — see [Record selection](#record-selection) for what happens when it does not.
 
 ### Delete
 
@@ -178,7 +209,34 @@ An empty `value` in `fieldUpdates` is a **real write** that clears the column �
 }
 ```
 
-`recordSource` is **required** on Delete (unlike Update, which tolerates its absence on legacy configs). Without it both selector guards go inert, the serializer resolves no record, and a destructive node publishes and runs green having deleted nothing.
+## Write bodies
+
+Both write editors take `[{ field, value }]` rows, but what a value means differs by verb and by column type. The serializer coerces each value using the column's declared type from the `_outputSchema` snapshot; a value it cannot coerce is passed through as a string for the API to reject, **and that rejection is only logged** — it surfaces as an unchanged row, not a failed run.
+
+| Column kind | What the row's `value` must be |
+| --- | --- |
+| String | The text itself |
+| Integer / number | A clean numeric literal. `42.5` in an integer column is not coerced and is rejected |
+| Boolean | `true` or `false` |
+| **Choice set (single)** | The choice's numeric **`numberId`**, not its label — the column's SQL type is `INT` |
+| **Choice set (multi)** | A JSON array of those numeric ids |
+| **System columns** | Never writable — see below |
+| **Attachment columns** | Never writable |
+
+**System columns are `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`.** Data Fabric assigns them. The canvas hides them from both write editors, but the serializer has no guard: a hand-authored `{ field: "Id", … }` or `{ field: "UpdatedBy", … }` satisfies the validator's "at least one field" rule, ships in the body, and is rejected and swallowed.
+
+**Blank values differ by verb.** On Create a blank value is omitted, letting the column default apply. On Update a blank value writes an explicit `null`, which **a non-nullable column rejects** — so "clear the column" only works on a nullable one. Nullability is not carried in the node's snapshot, so check it with `uip df entities get`.
+
+## Schema snapshots
+
+The entity panels persist snapshots of the picked entity onto `entityConfig`: `_entityFields`, `_relatedFields`, `_outputSchema`, `_choiceSets`, `_entityDisplayName`. When editing a node the canvas created, **preserve every one you are not deliberately changing.**
+
+They are not decoration, and two of them are load-bearing when authoring from scratch:
+
+- **`_entityFields` is mandatory for any dotted related path.** A filter on `customer.Name` resolves its first segment against this snapshot; without it the path is unresolvable, and the serializer refuses **the whole query** — the node emits nothing and every downstream `$vars` reference breaks. Related paths are capped at 3 segments, and a 3-segment path's last segment must literally be `Id`.
+- **`_outputSchema` is the only input to write-body type coercion.** Without it nothing is coerced: `{ field: "Quantity", value: "5" }` serializes as the string `"5"` on an integer column, is rejected, and is swallowed.
+
+So a from-scratch node is safe with plain scalar filters and string columns, and needs these snapshots as soon as it touches a related path, a typed column, or a choice set. When you cannot produce them, keep the config to columns on the entity itself and let the canvas fill the rest in on first open.
 
 ## Filters
 
@@ -208,12 +266,12 @@ Rows at the root and each group's rows join by that level's own `logicalOperator
 
 `in` takes a comma-separated `value` and is honoured **only** when `resultMode` is `"multiple"`. There is deliberately no `not in`, `not contains`, or null check — the serializer cannot emit them. `is any of` is the legacy spelling of `in` and is still read.
 
+A filter on a choice-set column compares against the numeric `numberId`, exactly as a write does — comparing against the label matches nothing.
+
 Filter values may be literals or `=js:` expressions. Two rules the serializer enforces by refusing the **entire** query — which leaves the node with no output and breaks every downstream reference:
 
 - **A filter value cannot reference `$self`,** and cannot use a value the engine's query bracket cannot carry. A query cannot wait on the record it is being run to fetch.
 - **An expression switched on and left blank is refused,** rather than dropped. Dropping it would silently widen the read past what was written.
-
-Keep filters narrow. A `multiple` read whose filters all compile away returns an arbitrary page, not an error.
 
 ## Record selection
 
@@ -226,13 +284,21 @@ Update and Delete name one record through `recordSource`:
 
 Both selectors are validated as **non-blank after trimming**, because the serializer trims before deciding a selector is usable. A whitespace-only `recordId` is not "empty enough" to be an obvious mistake but is exactly as inert.
 
-A `fromRead` pointing at a Read that matches more than one record faults the element at runtime — that over-match throw is the safety net, so do not disable it by widening the read.
+> **An absent `recordSource` does not mean the node is inert.** The validator requires the key, but the *serializer* infers the mode from whichever selector field is populated — `readEntityNodeId` wins, otherwise a non-blank `recordId` means `byId`. So a legacy or hand-edited config carrying `{ entityName, recordId }` and no `recordSource` compiles a **real** delete or update. Never read a missing `recordSource` in an existing file as dead code; resolve it explicitly.
+
+A `fromRead` target fails **silently** in three ways, none of which any validation rule catches, because each makes the serializer emit a plain no-op task:
+
+1. `readEntityNodeId` names a node that does not exist (a typo, or a node id that changed).
+2. The named Read is `resultMode: "multiple"` — a multi-record read is refused as a write target.
+3. The named Read's filters do not all compile.
+
+And at runtime, if the read matches more than one record, the engine re-runs the query as a single-record fetch and **swallows** the resulting over-match — the write is skipped and the run goes green. (The same over-match faults an ordinary read; only the write path swallows it.) A `fromRead` target must therefore be a genuinely single-record read, verified by you rather than by the runtime.
 
 ## Folder-scoped entities and bindings
 
 A **tenant-scoped** entity needs nothing beyond `entityName`; the target serializes as `=datafabric.<EntityName>`.
 
-A **folder-scoped** entity carries `_folderKey` (the folder GUID). Its presence switches the emitted target to the folder-qualified form, and for the flow to survive export to another org the entity's name and folder must serialize as binding tokens rather than source-org literals. That requires:
+A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its presence switches the emitted target to the folder-qualified form, and for the flow to survive export to another org the entity's name and folder must serialize as binding tokens rather than source-org literals. That requires:
 
 1. `_resourceKey` (preferred) or `_entityKey` on the `entityConfig`, and
 2. two top-level `bindings[]` rows for that key, with `resource: "Entity"` and `propertyAttribute` of `name` and `folderKey`.
@@ -303,7 +369,7 @@ Two wiring constraints unique to these nodes:
 uip maestro flow validate <ProjectName>.flow --output json
 ```
 
-The validator enforces the "green but inert" cases specifically, because for a write they are worse than a hard failure:
+The validator enforces the "green but inert" cases it can see structurally:
 
 | Message | Means |
 | --- | --- |
@@ -314,19 +380,29 @@ The validator enforces the "green but inert" cases specifically, because for a w
 | `Select a Read entity records node` | `recordSource: "fromRead"` with no `readEntityNodeId` |
 | `Choose how to identify the record` | Delete with `recordSource` missing or not one of `byId` / `fromRead` |
 
-It does **not** check that a column name exists — that is what `uip df entities get <entity-id>` is for.
+A separate rule refuses a query whose filter value the engine cannot carry, or whose related path cannot resolve.
+
+What it does **not** check — every one of these validates clean and fails silently at runtime:
+
+- whether a column name exists, or is writable, or has the type the value implies;
+- whether the entity is native (writes) or federated (write is rejected and swallowed);
+- whether `readEntityNodeId` names a real node, or names a multi-record read;
+- whether a `byId` record id matches any record.
+
+Use `uip df entities get` and `uip df records list` to close that gap before shipping.
 
 ## Debug
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `Node not found: core.datafabric.*` on `registry get` | Tenant flag off, or CLI predates the node | `uip tools update`, then `uip maestro flow registry pull --force`; then confirm the matching `canvas.nodes.*-entity` flag with the admin |
-| Node runs green, nothing written | An inert selector or an all-blank write body | Re-run `flow validate` — every inert case above has a message. A node that validates clean but still no-ops is a folder/binding problem, not a selector one |
-| Create runs, but `output.Id` is empty and the row was updated instead of inserted | Runtime engine older than `1.923.0` — `GetDataFabricAction()` falls back to `update` | Upgrade the engine, or turn `canvas.nodes.create-entity` off until it is upgraded |
-| Downstream `$vars.<id>.output` is `undefined` | `variables.nodes[]` missing | Run `uip maestro flow format` |
+| `Node not found: core.datafabric.*` on `registry get` | Tenant flag off, or CLI predates the node | `uip tools update`, then `uip maestro flow registry pull --force`; then confirm that node's flag with the admin (see the table above) |
+| Node validates clean, runs green, nothing written | Most often a **selector** problem, not a binding one: `readEntityNodeId` names a missing node or a multi-record read, the read's filters do not compile, or the `fromRead` read matched more than one record at runtime | Check the Read node's `id` matches exactly and its `resultMode` is `single`; confirm the filter identifies exactly one record with `uip df records list` |
+| Write runs green, row unchanged | The body was rejected and the rejection swallowed — a federated entity, a system or attachment column, a choice-set label instead of its numeric id, an uncoercible value, or a null into a non-nullable column | Re-check the entity is native and each column against `uip df entities get` |
+| Downstream `$vars.<id>.output` is `undefined` | `variables.nodes[]` missing, or the read matched nothing | Run `uip maestro flow format`; if it persists, verify the filter matches a real record |
 | A Loop over a multi-record read iterates nothing | Wired `output` instead of `output.results` | Use `=js:$vars.<readId>.output.results` |
+| Multi-record read returns only some rows | The limit is always explicit and capped at 1000 | Page with `_skip`; raising `_recordLimit` past 1000 truncates silently |
 | `404 Entity <name> does not exist` | Folder-scoped entity queried without folder qualification, or a related-field join | Set `_folderKey` and its bindings. Joins across a folder-scoped entity are not supported — the join request carries a bare name with no folder qualifier |
-| Read returns every record | Filters compiled away — a blank expression row, or an `in` row in `single` mode | Check each row against [Filters](#filters); the validator's `entityQueryExpressionRule` blocks the publishable cases |
+| Read returns every record | Filters compiled away — a blank expression row, or an `in` row in `single` mode | Check each row against [Filters](#filters) |
 | Console warning `… has no name/folderKey binding — serializing a non-portable literal` | Folder-scoped entity missing a `bindings[]` row | Add both rows — see [Folder-scoped entities and bindings](#folder-scoped-entities-and-bindings) |
 
 ## What not to do
@@ -334,9 +410,13 @@ It does **not** check that a column name exists — that is what `uip df entitie
 - **Do not hand-write `definitions[]`** — copy verbatim from `registry get`. A flag-gated node you cannot `registry get` is a node you cannot author.
 - **Do not put a `model` block on the instance.** `bpmn:Task` and the debug runtime live in the definition.
 - **Do not add an instance `outputs` block.** The canvas writes none for these nodes; the manifest `outputDefinition` plus `flow format`'s `variables.nodes[]` carry the contract.
+- **Do not wire an `error` edge or set `errorHandlingEnabled`** — these four nodes have no error port. See [No error port](#no-error-port).
+- **Do not write to a federated entity.** Create, Update and Delete require a native entity; the rejection is swallowed, so the run looks successful.
+- **Do not write a system column** (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) or an attachment column.
+- **Do not put a choice-set label in a value or a filter** — use the numeric `numberId`.
 - **Do not treat `AvailableOnTenant: false` as usable** because search returned the node.
 - **Do not use a Data Fabric node in an API workflow** — all four exclude the `api-function` runtime.
 - **Do not reference `$self` in a filter value,** and do not leave a filter expression blank — either refuses the whole query and strands every downstream reference.
 - **Do not add a placeholder value to satisfy Create's "at least one value" rule.** The rule exists because a blank-only insert writes nothing; a junk value writes junk.
+- **Do not strip `_entityFields` / `_outputSchema` / `_choiceSets` from an existing node** — related paths stop resolving and typed values stop coercing, both silently.
 - **Do not point `folderPath` at the folder token** for a folder-scoped entity — use `folderKey`.
-- **Do not wire an `error` edge back into the happy path.** A failed write that reaches the success End node reports `Completed` with success-shaped outputs ([Author capability, rule 16](../../CAPABILITY.md#critical-rules)).

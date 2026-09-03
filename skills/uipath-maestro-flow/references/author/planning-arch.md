@@ -110,7 +110,7 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Fire-and-forget robot work |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Robot work with result wait |
 | `core.datafabric.read` | [data-fabric](plugins/data-fabric/planning.md) | Read one record or a filtered list from a Data Fabric entity; gated by `canvas.nodes.read-entity` |
-| `core.datafabric.create` | [data-fabric](plugins/data-fabric/planning.md) | Insert a record and return the stored row; gated by `canvas.nodes.create-entity` (needs engine >= 1.923.0) |
+| `core.datafabric.create` | [data-fabric](plugins/data-fabric/planning.md) | Insert a record and return the stored row; gated by `canvas.nodes.create-entity` |
 | `core.datafabric.update` | [data-fabric](plugins/data-fabric/planning.md) | Patch named columns on one record; gated by `canvas.nodes.update-entity` |
 | `core.datafabric.delete` | [data-fabric](plugins/data-fabric/planning.md) | Delete one record; gated by `canvas.nodes.delete-entity` |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Inline human review, approval, or data entry |
@@ -168,6 +168,8 @@ Prefer, in order:
 1. A curated Integration Service connector ([connector](plugins/connector/planning.md)).
 2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
 3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
+
+**Data Fabric is not on this ladder.** Reading or writing records in a UiPath Data Fabric entity is not an external-service call: use the native `core.datafabric.*` nodes ([data-fabric](plugins/data-fabric/planning.md)), which need no Integration Service connection. The `uipath-uipath-dataservice` connector activities are the fallback — take them only when the native node's tenant flag is off, when the entity is federated (the native writes require a native entity), or when you need an operation the four nodes do not cover.
 
 ## Standard Port Reference
 
