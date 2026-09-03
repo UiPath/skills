@@ -52,8 +52,8 @@ jobs:
             SKILLS=$(ls -d skills/*/ preview/skills/*/ 2>/dev/null | sed 's|/$||' | sort -u)
           else
             SKILLS=$(echo "$CHANGED" \
-              | grep -E '^(skills|preview)/[^/]+/.*\.md$' \
-              | sed -E 's#^((skills|preview)/[^/]+)/.*#\1#' \
+              | grep -E '^(skills|preview/skills)/[^/]+/.*\.md$' \
+              | sed -E 's#^((skills|preview/skills)/[^/]+)/.*#\1#' \
               | sort -u || true)
           fi
 
