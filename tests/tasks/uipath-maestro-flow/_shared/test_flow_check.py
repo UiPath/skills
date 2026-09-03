@@ -596,6 +596,27 @@ def test_find_project_fails_when_multiple_flows(tmp_path, monkeypatch):
         _find_project("**/project.uiproj")
 
 
+def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypatch):
+    """stage-preview-sdk-workspace.sh symlinks the baked SDK tree to
+    ./node_modules; `glob('**')` follows it, so a fixture .flow/.uiproj inside
+    the SDK must never become a candidate (or a false `assert_no_flow_files`)."""
+    monkeypatch.chdir(tmp_path)
+    solution = tmp_path / "Real"
+    solution.mkdir()
+    _make_proj(solution, "Real", "Flow")
+    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "flow-sdk" / "fixtures"
+    sdk.mkdir(parents=True)
+    (sdk / "project.uiproj").write_text('{"ProjectType": "Flow"}')
+    (sdk / "Fixture.flow").write_text("{}")
+    os.symlink(sdk.parent.parent.parent, tmp_path / "node_modules")
+    assert _find_project("**/project.uiproj") == os.path.join("Real", "Real")
+    assert flow_check._rglob_pruned("**/*.flow") == []
+    flow_check.assert_no_flow_files()  # does not raise
+    (solution / "Real" / "Real.flow").write_text("{}")
+    with pytest.raises(SystemExit, match="Real.flow"):
+        flow_check.assert_no_flow_files()
+
+
 def test_find_project_fails_when_no_candidates(tmp_path, monkeypatch):
     """No project.uiproj at all — original failure message preserved."""
     monkeypatch.chdir(tmp_path)
@@ -1094,8 +1115,42 @@ def test_run_debug_rotates_the_solution_id_on_overwrite_1001_then_imports(monkey
     err = capsys.readouterr().err
     assert "INTERIM (UiPath/cli#3938" in err
     assert "rotated the bundled SolutionId 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
-    # The orphaned server id is named, because cleanup reads only the current one.
     assert "previous: 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+    # The rotated-away id is recorded beside the .uipx so cleanup_solutions.py
+    # deletes the tenant solution it still names (nothing leaks).
+    sidecar = sol / flow_check.ROTATED_SOLUTION_IDS_SIDECAR
+    assert sidecar.read_text().splitlines() == ["79cda3cb-5a10-4f37-e091-08df08c2afbe"]
+
+
+def test_cleanup_solutions_deletes_rotated_ids_from_the_sidecar(monkeypatch, tmp_path):
+    """The sidecar written by the rotation is a cleanup input, not a log line."""
+    import importlib.util
+
+    sol, _ = _uipx_project(tmp_path, solution_id="11111111-1111-4111-8111-111111111111")
+    (sol / flow_check.ROTATED_SOLUTION_IDS_SIDECAR).write_text(
+        "22222222-2222-4222-8222-222222222222\n\n11111111-1111-4111-8111-111111111111\n"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "cleanup_solutions", os.path.join(os.path.dirname(flow_check.__file__), "cleanup_solutions.py")
+    )
+    cleanup = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cleanup)
+    deleted: list[str] = []
+
+    def fake_run(cmd, **kwargs):
+        deleted.append(cmd[3])
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(cleanup.subprocess, "run", fake_run)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("FLOW_E2E_CLEANUP", raising=False)
+    assert cleanup.main() == 0
+    # current id + rotated id, each exactly once (the sidecar's duplicate of the
+    # current id and its blank line are ignored)
+    assert sorted(deleted) == [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+    ]
 
 
 def test_run_debug_rotates_the_solution_id_on_the_staged_overwrite_envelope(monkeypatch, tmp_path, capsys):

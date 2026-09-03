@@ -113,17 +113,10 @@ _INCIDENTS_TIMEOUT_SECONDS = 60
 _DEFAULT_RETRIES = 2
 _DEFAULT_BACKOFF_SECONDS = 5.0
 
-# A run that reports ``finalStatus: Completed`` but whose ``Data`` carries no
-# ``variables`` key at all did NOT produce "no outputs": the CLI's
-# post-completion GET of ``/debug-instances/{id}/variables`` failed and (before
-# UiPath/cli fixed it) the failure was reduced to a stderr warning. A flow that
-# genuinely declares no outputs still returns ``variables`` (with an empty
-# ``globals`` map), so "key absent" is exact, not heuristic. Newer CLIs keep the
-# key absent and add ``variablesError`` explaining why. Both shapes mean
-# "outputs UNREADABLE" — an infrastructure failure to retry, never a flow
-# result to grade. Observed live on coder-eval ``skill-flow-move-node`` (v2,
-# 2026-08-31 and 2026-09-01): every element Completed, ``Outputs: []``, task
-# graded as a flow defect.
+# ``finalStatus: Completed`` with NO ``variables`` key (or a ``variablesError``)
+# means the CLI's post-completion outputs fetch failed — infrastructure to retry,
+# not an empty result to grade (a flow with no outputs still returns the key).
+# Retries and the CLI-side fix: UiPath/cli#3929.
 _VARIABLES_UNREADABLE_ATTEMPTS = 2
 _STDERR_CAPTURE_TAIL_CHARS = 4000
 
@@ -143,48 +136,45 @@ _DEBUG_RETRY_MARKERS = (
 )
 
 
+def _rglob_pruned(pattern: str) -> list[str]:
+    """``glob.glob(pattern, recursive=True)`` from the CWD, but never descending
+    into ``node_modules`` (the preview workspace symlinks the baked SDK tree
+    there, and ``glob`` follows directory symlinks under ``**``)."""
+    if "**" not in pattern:
+        return sorted(glob.glob(pattern, recursive=True))
+    prefix, _, suffix = pattern.partition("**")
+    root = prefix.rstrip("/") or "."
+    suffix = suffix.lstrip("/")
+    matches: list[str] = []
+    for dirpath, dirnames, _ in os.walk(root, followlinks=True):
+        dirnames[:] = [d for d in dirnames if d != "node_modules"]
+        matches.extend(glob.glob(os.path.join(glob.escape(dirpath), suffix)))
+    if root == ".":
+        matches = [m[2:] if m.startswith("./") else m for m in matches]
+    return sorted(set(matches))
+
+
 def _output_blob(result: subprocess.CompletedProcess) -> str:
     """Both streams, lowercased, for case-insensitive marker matching."""
     return f"{result.stdout}\n{result.stderr}".lower()
 
 
-# INTERIM — Studio Web `Solution/{id}/Overwrite` regression (UiPath/cli#3938).
-#
-# Since 2026-09-02 (last known good: 2026-09-01 07:30Z) Studio Web answers
-# `400 {"code":"1001","message":"An argument had an invalid value."}` when a
-# solution that EXISTS is overwritten. `uip maestro flow debug` imports the
-# project on its first run and writes the server's solution id back into the
-# `.uipx`, so every LATER debug of the same project is an overwrite — and the
-# CLI treats any non-404 Overwrite as fatal. Result: the second seeded case of
-# every multi-case checker died at solution upload, in all three arms
-# (orchestrator_paths, escalation_slack_alert, billing_invoice_lookup,
-# decision, wiki_pageviews, canary). Reproduced on the host with two CLI
-# vintages and with `uip solution upload --force`; a fresh bundled SolutionId
-# imports as new and Completes (Slack message posted), so ONLY overwrite is
-# broken. The only earlier archived Overwrite 400 (2026-08-26) was code 20001, a
-# content error that must still fail.
-#
-# So: on exactly that signature, rotate the bundled SolutionId to a fresh uuid4
-# and retry ONCE — the retry is a new import. Self-limiting: once Overwrite
-# recovers the signature never fires and nothing here runs. Cost while it does:
-# one extra tenant solution per affected case, which `cleanup_solutions.py`
-# cannot see (it reads the `.uipx`'s CURRENT id) — the ids are printed so they
-# are not lost. The platform fix and a CLI-side fallback are asked for in the
-# issue above; delete this block when Overwrite works again.
+# INTERIM — Studio Web answers 400/1001 when an EXISTING solution is overwritten
+# (UiPath/cli#3938 has the evidence). `flow debug` #2 of a project is an
+# overwrite, so on exactly that signature the bundled SolutionId is rotated and
+# the debug retried ONCE as a new import. Delete this block when Overwrite works.
 _OVERWRITE_STUCK_ISSUE = "UiPath/cli#3938"
 _OVERWRITE_STUCK_MARKER = "overwrite failed (400)"
 _OVERWRITE_STUCK_CODE = re.compile(r'\\?"code\\?":\s*\\?"1001\\?"')
-# Since UiPath/cli#3951 (main 2026-09-02, `016231474`) the CLI reports a refused
-# upload against its stage instead of echoing the raw body:
-#   Message: "Failed during overwrite-solution: HTTP 400 on POST …/Overwrite — An argument had an invalid value."
-#   Context: {"HttpStatus": 400, "Stage": "overwrite-solution", "ErrorCode": "1001"}
-# The rotation must recognise both envelopes: an image whose CLI carries #3951
-# but whose checker knows only the legacy text fails every second debug of a
-# project with a plain `flow debug exit 1` (seen 2026-09-03 on every
-# multi-debug task of the batch-A rerun, both arms).
+# Since UiPath/cli#3951 the CLI reports the refusal as
+# Context: {"HttpStatus": 400, "Stage": "overwrite-solution", "ErrorCode": "1001"}
+# instead of echoing the raw body; both envelopes must rotate.
 _OVERWRITE_STUCK_STAGE = "overwrite-solution"
 _OVERWRITE_STUCK_ATTEMPTS = 2  # the failed overwrite + one import-as-new retry
 _SOLUTION_ID_RE = re.compile(r'("SolutionId"\s*:\s*")([0-9a-fA-F-]{36})(")')
+# Rotated-away ids, one per line, beside the `.uipx`; `cleanup_solutions.py`
+# deletes them alongside the current id so the rotation leaks nothing.
+ROTATED_SOLUTION_IDS_SIDECAR = ".rotated-solution-ids"
 
 
 def _is_overwrite_stuck(result: subprocess.CompletedProcess) -> bool:
@@ -221,7 +211,9 @@ def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
     Walks up from ``project_dir`` to the nearest ancestor holding exactly one
     ``*.uipx`` (a JSON text file; ``uip solution init`` writes it beside the
     project directory). Returns ``(old, new)``, or ``None`` when no unambiguous
-    ``.uipx`` is found — the caller then fails the plain way."""
+    ``.uipx`` is found — the caller then fails the plain way. The previous id is
+    appended to :data:`ROTATED_SOLUTION_IDS_SIDECAR` next to the ``.uipx`` so
+    ``cleanup_solutions.py`` can delete the solution it still names on the tenant."""
     import uuid
 
     here = os.path.abspath(project_dir)
@@ -239,6 +231,9 @@ def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
             new = str(uuid.uuid4())
             with open(uipx[0], "w", encoding="utf-8") as handle:
                 handle.write(text[: match.start(2)] + new + text[match.end(2):])
+            sidecar = os.path.join(here, ROTATED_SOLUTION_IDS_SIDECAR)
+            with open(sidecar, "a", encoding="utf-8") as handle:
+                handle.write(match.group(2) + "\n")
             return match.group(2), new
         parent = os.path.dirname(here)
         if parent == here:
@@ -483,7 +478,7 @@ def run_debug(
                 f"INTERIM ({_OVERWRITE_STUCK_ISSUE}: Studio Web Overwrite → 400/1001 for an "
                 f"existing solution since 2026-09-02): rotated the bundled SolutionId "
                 f"{rotated[0]} → {rotated[1]}; retrying as a new import. The solution "
-                f"{rotated[0]} stays on the tenant (cleanup reads only the current id).",
+                f"{rotated[0]} is recorded in {ROTATED_SOLUTION_IDS_SIDECAR} for cleanup.",
                 file=sys.stderr,
                 flush=True,
             )
@@ -1745,7 +1740,7 @@ def find_flow_files(
     Debug callers intentionally do not use this helper: ``uip maestro flow
     debug`` is project-scoped and must continue through :func:`find_project_dir`.
     """
-    project_candidates = sorted(glob.glob(project_pattern, recursive=True))
+    project_candidates = _rglob_pruned(project_pattern)
     flow_projects = [path for path in project_candidates if _is_flow_project(path)]
     root_matches = _dedupe_flow_candidates(
         sorted(glob.glob(os.path.basename(flow_glob)))
@@ -1821,7 +1816,7 @@ def assert_no_flow_files() -> None:
     tasks. It deliberately scans every location because any emitted Flow is a
     failure; there is no preferred artifact to select in the absence case.
     """
-    matches = sorted(glob.glob("**/*.flow", recursive=True))
+    matches = _rglob_pruned("**/*.flow")
     if matches:
         joined = "\n  - ".join(matches)
         _fail(f"Unexpected .flow file(s) found:\n  - {joined}")
@@ -1955,7 +1950,7 @@ def _find_project(pattern: str) -> str:
     abandoned scaffold — see :func:`_dedupe_flow_projects` and
     :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
-    candidates = sorted(glob.glob(pattern, recursive=True))
+    candidates = _rglob_pruned(pattern)
     if not candidates:
         _fail(f"No project.uiproj found matching {pattern}")
     flow_projects = [p for p in candidates if _is_flow_project(p)]

@@ -61,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Package operate metadata was created"
-    command: "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if any(Path('.').rglob('operate.json')) else 'operate.json missing')\""
+    command: "python3 -c \"from pathlib import Path; import sys; b=next(Path('.').rglob('WikiPageviews.bpmn'), None); sys.exit(0 if b and (b.parent / 'operate.json').is_file() else 'operate.json missing beside WikiPageviews.bpmn')\""
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

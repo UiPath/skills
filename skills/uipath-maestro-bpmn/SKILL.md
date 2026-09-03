@@ -293,7 +293,7 @@ and honestly surfaced to the user as gaps when asked.
    `uipath:event` / `uipath:mapping` templates declare their type as a nested
    `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
    templates use the payload's `type` attribute instead; notably,
-   `Orchestrator.StartAgentJob` is a direct child of `bpmn:serviceTask` with
+   `Orchestrator.StartAgentJob` is a direct child of `bpmn:ServiceTask` with
    `<uipath:activity type="Orchestrator.StartAgentJob" version="v1">`. Both
    declarations are supported. Paste the selected registry template literally
    and do not normalize one form into the other.

@@ -63,7 +63,10 @@ def find_caseplan(pattern: str = "**/caseplan.json") -> str:
             for _, plan in candidates
         }
         if len(signatures) == 1:
-            return min((path for path, _ in candidates), key=lambda path: (path.count(os.sep), len(path), path))
+            return min(
+                (path for path, _ in candidates),
+                key=lambda path: (path.count(os.sep), len(path), path),
+            )
 
     joined = "\n  - ".join(matches)
     _fail(f"Multiple distinct caseplan.json files match {pattern!r}:\n  - {joined}")

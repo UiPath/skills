@@ -164,10 +164,7 @@ def _validate(flow: str, deadline: float, budget: int) -> int:
 
 
 def main() -> int:
-    flows = find_flow_files()
-    if not flows:
-        print("FAIL: No .flow file found", file=sys.stderr)
-        return 1
+    flows = find_flow_files()  # exits with its own message when nothing is found
 
     budget = _budget_seconds()
     deadline = time.monotonic() + max(

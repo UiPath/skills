@@ -170,7 +170,6 @@ RUN cd "$PREVIEW_FLOW_SDK_ROOT" && \
     uip maestro registry pull --force --output json && \
     if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
       registry_snapshot="$(jq -er '.snapshotPath' "$UIP_MAESTRO_REGISTRY_HOME/current.json")"; \
-      registry_connectors="$registry_snapshot/connectors"; \
     else \
       library_json="$(readlink -f "$(uip maestro registry path --library-json)")" && \
       registry_snapshot="$(dirname "$library_json")" && \
@@ -179,20 +178,16 @@ RUN cd "$PREVIEW_FLOW_SDK_ROOT" && \
       mkdir -p "$UIP_MAESTRO_REGISTRY_HOME" && \
       jq -n --arg libraryHash "$library_hash" --arg snapshotPath "$registry_snapshot" \
         '{libraryHash: $libraryHash, snapshotPath: $snapshotPath}' \
-        > "$UIP_MAESTRO_REGISTRY_HOME/current.json" && \
-      registry_connectors="$PREVIEW_FLOW_SDK_ROOT/connectors" && \
-      mkdir -p "$registry_connectors"; \
+        > "$UIP_MAESTRO_REGISTRY_HOME/current.json"; \
     fi && \
     test -f "$registry_snapshot/library-json/index.json" && \
     test -f "$registry_snapshot/library-md/index.json" && \
     mkdir -p "$PREVIEW_FLOW_SDK_ASSETS_ROOT" && \
     ln -s "$registry_snapshot/library-json" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-json" && \
-    ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md" && \
-    ln -s "$registry_connectors" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/connectors"
+    ln -s "$registry_snapshot/library-md" "$PREVIEW_FLOW_SDK_ASSETS_ROOT/library-md"
 
 ENV FLOW_SDK_LIBRARY_JSON=/opt/preview-flow-sdk-assets/library-json \
-    FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md \
-    FLOW_SDK_CONNECTORS_DIR=/opt/preview-flow-sdk-assets/connectors
+    FLOW_SDK_LIBRARY_MD=/opt/preview-flow-sdk-assets/library-md
 
 # Prove that the installed SDK resolves without registry credentials and that
 # the product CLI can check real source against it.

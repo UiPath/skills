@@ -1,7 +1,6 @@
 # Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
 # v1-base prompt, outcome-graded criteria at preserved weights, and
 # arm-agnostic artifact discovery.
-# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 # PROTOTYPE — data-grounded on the Maestro Flow surface. skip:true.
 # Agent builds a flow (create-test-case node -> get-test-case node -> output the
 # retrieved name) and EXECUTES it (`uip maestro flow debug`) to produce the
