@@ -68,9 +68,17 @@ def tombstone(record):
 
 
 def deployments():
-    data = uip_json(["solution", "deploy", "list"], allow_fail=True)
-    if data is None:
-        die("uip solution deploy list failed; refusing to continue because deployment idempotence checks depend on it")
+    """Every deployment the tenant reports.
+
+    Dies rather than returning empty when the listing itself fails. The idempotence guards read
+    this, and an empty list means "nothing is deployed" -- so a transient CLI or API failure would
+    otherwise read as "safe to create", and the run would add a second deployment and a second
+    Orchestrator folder for a version that already has one.
+
+    Left to uip_json to die rather than checking for None here: it carries the CLI's own stderr
+    tail into the failure, which is the part that says why the listing failed.
+    """
+    data = uip_json(["solution", "deploy", "list"]) or {}
     return data.get("Data") or []
 
 

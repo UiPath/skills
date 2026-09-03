@@ -126,6 +126,19 @@ class WriteAndCheckTests(unittest.TestCase):
         derive(FIXTURES / "tagOverdueTicket.ts", "--out", str(self.out))
         self.assertEqual(json.loads(self.out.read_text())["entryPoints"][0]["uniqueId"], first)
 
+    def test_rewriting_does_not_inherit_a_stale_file_path(self):
+        """filePath names the file that was just staged, so the caller's value has to win. An
+        older manifest may name a path from a previous layout, and keeping it would point the
+        entry point at a file the package does not contain."""
+        derive(FIXTURES / "tagOverdueTicket.ts", "--out", str(self.out))
+        doc = json.loads(self.out.read_text())
+        doc["entryPoints"][0]["filePath"] = "content/functions/tagOverdueTicket.ts"
+        self.out.write_text(json.dumps(doc, indent=2))
+        derive(FIXTURES / "tagOverdueTicket.ts", "--out", str(self.out))
+        self.assertEqual(
+            json.loads(self.out.read_text())["entryPoints"][0]["filePath"], "content/main.ts"
+        )
+
     def test_check_accepts_a_manifest_that_matches(self):
         derive(FIXTURES / "tagOverdueTicket.ts", "--out", str(self.out))
         code, _, raw = derive(FIXTURES / "tagOverdueTicket.ts", "--check", str(self.out))

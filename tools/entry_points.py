@@ -142,10 +142,14 @@ def derive(job_path):
 
 
 def manifest(job_path, existing=None, file_path="content/main.ts"):
-    """Build the manifest, preserving an existing entry point's identity.
+    """Build the manifest, preserving only an existing entry point's identity.
 
-    `uniqueId` is referenced by the project's bindings, so regenerating must keep it. A fresh
+    `uniqueId` is referenced by the project's bindings, so regenerating must keep it; a fresh
     project has none and gets one minted.
+
+    `filePath` is NOT inherited. It names the file that was just staged, so the caller's value has
+    to win: an older manifest may name a path from a previous layout, and silently keeping it
+    would point the entry point at a file the package does not contain.
     """
     input_schema, output_schema = derive(job_path)
     entry = {"filePath": file_path, "uniqueId": str(uuid.uuid4()), "type": "function"}

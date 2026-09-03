@@ -251,6 +251,20 @@ class CodedActionPreflightTests(unittest.TestCase):
         payload = self.assert_only_gate_fails(workdir, "input-strictness")
         self.assertIn("cannot lower type", payload["errors"]["input-strictness"][0])
 
+    def test_ont_writes_repeated_as_separate_predicates_is_equivalent(self):
+        """`ont:writes "A", "B" ;` and the same predicate written twice are equivalent Turtle.
+        Reading only the first occurrence under-reported the declaration, so the writes gate
+        blamed the job for an edit the TTL did cover."""
+        workdir = self.workdir()
+        self.edit(
+            workdir / f"{ONTOLOGY}-{ACTION}.ttl",
+            'ont:writes      "Ticket.tags", "Ticket.dueAt" ;',
+            'ont:writes      "Ticket.tags" ;\n        ont:writes      "Ticket.dueAt" ;',
+        )
+        code, payload = run_preflight(workdir, "--skip-typecheck")
+        self.assertEqual(code, 0, payload)
+        self.assertEqual(gate(payload, "writes-cover-edits")["status"], "passed", payload)
+
     # ---- discovery -------------------------------------------------------------------
 
     def test_unknown_requested_action_is_a_discovery_failure(self):

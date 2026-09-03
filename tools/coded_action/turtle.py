@@ -109,7 +109,13 @@ def list_items(body: str, predicate: str) -> list[str] | None:
 
 
 def quoted_objects(body: str, predicate: str) -> list[str]:
-    """Objects of a repeated-triple predicate: `ont:writes \"A.b\", \"C.d\" ;`."""
+    """EVERY object of a repeated-triple predicate, in the order they appear.
+
+    Two forms are equivalent Turtle and both get written: `ont:writes "A.b", "C.d" ;` and the same
+    predicate repeated on its own line. Reading only the first occurrence under-reports the
+    declaration, and for ont:writes that means the writes gate blames the job for an edit the TTL
+    does in fact cover -- a false failure whose message points at the wrong file.
+    """
     found: list[str] = []
     for match in re.finditer(rf"{predicate}\s+((?:\"(?:\\.|[^\"])*\"\s*,?\s*)+)", body):
         found.extend(re.findall(r"\"((?:\\.|[^\"])*)\"", match.group(1)))

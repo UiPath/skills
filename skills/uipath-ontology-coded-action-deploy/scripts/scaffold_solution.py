@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Scaffold the Solution that carries an ontology's coded-action jobs.
 
-    solution_scaffold.py --workdir DIR --solution-name NAME
+    scaffold_solution.py --workdir DIR --solution-name NAME
                          --project NAME[=path/to/job.ts] [--project ...]
                          [--template] [--execute]
 
