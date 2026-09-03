@@ -119,8 +119,8 @@
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik
-/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
+/tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik @Yiqi517
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
