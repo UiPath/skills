@@ -96,6 +96,20 @@ success_criteria:
 
   - type: run_command
     description: >
+      the finished-case gate passes: `--strict` adds a stage with no tasks, unresolved
+      `$xref`, a hoisted conditionExpression, formal-argument and output-binding shapes,
+      connector context completeness and `=js:` that does not parse; `--sdd` audits every
+      stage, task, task type, condition row, SLA, trigger and case variable the SDD
+      declares. The default profile stays lenient so a partially authored file still
+      validates, which is why the run above cannot stand in for this one.
+    command: "uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --strict --sdd sdd.md --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
       sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
       that edits its own input has moved the goalposts rather than met them
     command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 269cbfa2cb0d39b20e4fd53f215ed6346e6854684fe19ec76723bcb509a83d8e"
