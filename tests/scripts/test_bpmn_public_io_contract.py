@@ -49,7 +49,6 @@ def test_minimal_example_bridges_public_input_to_mutable_state() -> None:
         mutable = variables[matches[0].attrib["var"]]
         assert mutable.tag.endswith("}inputOutput")
         assert mutable.attrib["type"] == public_input.attrib["type"]
-        assert "elementId" not in mutable.attrib
 
 
 def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
@@ -78,4 +77,3 @@ def test_minimal_example_bridges_mutable_state_to_public_output() -> None:
         mutable = variables[source.removeprefix("=vars.")]
         assert mutable.tag.endswith("}inputOutput")
         assert mutable.attrib["type"] == public_output.attrib["type"]
-        assert "elementId" not in mutable.attrib

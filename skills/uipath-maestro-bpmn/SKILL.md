@@ -242,12 +242,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
    writing an empty entry-point list.
-   Give public inputs and outputs explicit runtime bridges. Bind each public
-   input declaration to its intended root StartEvent and map it to a mutable
-   process variable before routing or scripting. Bind each public output
-   declaration to the root EndEvent that returns it and map the mutable result
-   there. When one public result must be returned on several normal routes,
-   converge those routes on the same completion EndEvent.
+   Give public inputs and outputs explicit runtime bridges, and converge routes
+   returning one result on a single completion EndEvent — for the two-layer
+   contract see
+   [references/structural-bpmn.md](references/structural-bpmn.md#variables-bpmnvariables).
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:

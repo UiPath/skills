@@ -1,0 +1,17 @@
+{
+  "tag": "e9cb961a",
+  "correlationId": "ESC-BPMN-e9cb961a",
+  "inputs": {
+    "customerTier": "Enterprise",
+    "serviceState": "Unavailable",
+    "workaroundAvailable": false,
+    "correlationId": "ESC-BPMN-e9cb961a",
+    "jiraProjectKey": "CE",
+    "jiraIssueTypeId": "11457",
+    "slackChannelId": "C01H4SPS77W"
+  },
+  "expected": {
+    "severity": "Sev1",
+    "caseKey": "ESC-BPMN-e9cb961a"
+  }
+}
