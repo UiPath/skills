@@ -23,7 +23,7 @@ Release shape                            ProcessType=Function,
                                          TargetFramework=Portable
                                          (Orchestrator computes the key itself; the CLI omits
                                          spec.packageName and nothing should hand-write it)
-uip binary           $UIP_CLI            defaults to `uip` on PATH
+CLI binary           $UIP_CLI            defaults to `uip` on PATH
 ```
 
 Every project in the Solution moves onto one version line together, which is why publishing is

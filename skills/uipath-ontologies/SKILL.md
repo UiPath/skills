@@ -114,12 +114,12 @@ This skill covers **operations on existing ontologies only**: list, get, update,
 
 ### Command Prefix
 
-`uip ont` — not `uip onto` or `uip ontologies`.
+`uip ont` — not `uip onto` or `uip ontologies`. <!-- uip-check-skip -->
 
 ```bash
 uip ont --help               # ✅
-uip onto --help              # ❌ "unknown command 'onto'"
-uip ontologies --help        # ❌ "unknown command 'ontologies'"
+uip onto --help              # ❌ "unknown command 'onto'" <!-- uip-check-skip -->
+uip ontologies --help        # ❌ "unknown command 'ontologies'" <!-- uip-check-skip -->
 ```
 
 ### Ontology State
@@ -188,7 +188,7 @@ uip ont artifact delete <idOrName> <fileName> --yes --reason <reason>
 | `"fetch failed"` | Not logged in / no valid token | `uip login` |
 | `"Not Found"` | `datafabric_` service not running on target env | Start the Ontologies / Data Fabric service |
 | HTTP 404 on `mapping` upsert | Missing Data Fabric entities or other API error | Inspect the response body, ensure all referenced Data Fabric entities exist, then retry |
-| `"unknown command 'onto'"` | Wrong prefix | Use `uip ont`, not `uip onto` or `uip ontologies` |
+| `"unknown command 'onto'"` | Wrong prefix | Use `uip ont`, not `uip onto` or `uip ontologies` | <!-- uip-check-skip -->
 | State stuck at `DRAFT` despite all artifacts validating individually and the mapping being re-uploaded | A schema class has zero properties and/or no instantiation in the mapping | See "Persistent `DRAFT`" note above the state table |
 
 Service URL pattern: `https://<baseUrl>/<org>/<tenant>/datafabric_/api/ontology`
