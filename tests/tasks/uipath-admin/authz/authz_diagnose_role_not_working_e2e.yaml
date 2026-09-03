@@ -7,7 +7,9 @@ description: >
   definition, list the grant, and run the effective-access check. Graded on the
   tenant records it reads back plus an llm_judge on the root cause. Retrieving
   the grant requires `--scope-path`; the centralized-access listing shapes
-  cannot see a mis-scoped grant. Validates Playbook 7.
+  cannot see a mis-scoped grant. Validates the Cause B branch (missing service
+  segment) of the unified Access Denied (HTTP 403) scenario in
+  skills/uipath-admin/references/diagnose/failure-modes.md.
 tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, troubleshoot, authz, role-assignment]
 
 pre_run:
@@ -101,7 +103,7 @@ success_criteria:
     # grant cannot match (centralizedaccess for the default/--identity-id/
     # --scope Tenant shapes, the service itself for --service <svc>). Finding
     # that retrieval is part of the diagnosis, so this is a fair gate — see
-    # diagnose/references/failure-modes.md, "Role Assignment Not Taking Effect".
+    # references/diagnose/failure-modes.md, "Access Denied (HTTP 403)" -> Cause B.
     pass_threshold: 1.0
 
   - type: run_command
