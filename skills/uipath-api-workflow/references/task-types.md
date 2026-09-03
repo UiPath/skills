@@ -14,6 +14,8 @@ Detailed reference for the activity types supported in the API Workflow DSL — 
 | TryCatch | `try` + `catch` | Error handling |
 | Wait | `wait` | Pause execution |
 | Response | `response` + `then: "end"` | Return result and end the workflow |
+| File to Base64 | `run.script` calling `$helpers.file.fileToBase64` | Encode a file reference as a base64 file. See [files-and-base64.md](files-and-base64.md) |
+| Base64 to File | `run.script` calling `$helpers.file.base64ToFile` | Decode a base64 file reference or string into a binary file. See [files-and-base64.md](files-and-base64.md) |
 | HTTP Request (Http kind) | `call: "UiPath.Http"` | Call an arbitrary REST API — use `uip api-workflow registry resolve` + `stub`. See [connector-activity-discovery.md](connector-activity-discovery.md) |
 | Connector activity (IntSvc kind) | `call: "UiPath.IntSvc"` | Call a vendor service (Slack, Outlook, Gmail, GitHub, …) — use `uip api-workflow registry resolve` + `stub` with a pinged connection. See [connector-activity-discovery.md](connector-activity-discovery.md) |
 
@@ -490,3 +492,83 @@ The simple single-expression form is fine; the designer corruption only affects 
 - Nesting `markJobAsFailed` inside `response` — it MUST be a sibling
 - Placing Response in the middle of a sequence — it should be at the end of an execution path
 - Using legacy `set: <object>` form instead of `response` + `then: "end"` — runtime accepts it but designer roundtrip breaks
+
+---
+
+## 11. File to Base64
+
+Encodes a file reference as base64 — the result is a NEW `JobAttachment` whose blob content **is** the base64 text (`<name>.base64`, `text/plain`, `Metadata.Encoding: "base64"`). It is a `run.script` task; what makes it this activity is `metadata.activityType: "FileToBase64"` plus the `$helpers.file.fileToBase64(...)` call (Studio Web restores the property panel by parsing that call).
+
+**Required fields:** `run.script.code` (`return { output: await $helpers.file.fileToBase64(<file ref>) }`), `run.script.language: "javascript"`, `run.script.arguments` (standard block), `export.as`, `metadata.activityType: "FileToBase64"`
+
+**Export pattern:**
+```
+{ ...$context, outputs: { ...$context?.outputs, "FileToBase64_N": $output } }
+```
+
+**Output:** `$context.outputs.FileToBase64_N.output` — a `JobAttachment`. To inline the base64 text in an HTTP body or Response: `$context.outputs.FileToBase64_N.output.serializeData()`.
+
+**Minimal JSON:**
+```json
+{
+  "FileToBase64_1": {
+    "run": {
+      "script": {
+        "code": "return { output: await $helpers.file.fileToBase64($workflow.input.document) }",
+        "language": "javascript",
+        "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+      }
+    },
+    "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"FileToBase64_1\": $output } }" },
+    "metadata": { "activityType": "FileToBase64", "displayName": "File to Base64", "fullName": "FileToBase64", "icon": "sw:convert-file-to-base64" }
+  }
+}
+```
+
+**Common mistakes:**
+- `$helpers.fileToBase64(...)` (namespace dropped) — `validate` errors, runtime `is not a function`
+- Anything besides the single `return` expression — a statement before/after it, or a second argument (`fileToBase64(ref, { extra: 1 })`) — Studio Web drops it on save; `validate` warns about the statements only, an extra argument passes silently
+- Using the output as a string (`.length`, concatenation, `Assign` into a string variable) — it is a file reference; use `.serializeData()` inline in a body/Response
+- Passing a base64 string instead of a file reference — `fileToBase64` accepts only a reference; a string input is a validation error
+- Running with `--no-auth` — needs Orchestrator blob storage (see [files-and-base64.md](files-and-base64.md))
+
+---
+
+## 12. Base64 to File
+
+Decodes base64 into a binary file reference. Input is either a base64 **file** reference (from File to Base64) or a raw base64 **string** (an API response field, a variable). `fileName` / `mimeType` are optional and used only for a string input; omitted → MIME sniffed from the bytes, unique GUID name.
+
+**Required fields:** `run.script.code` (`return { output: await $helpers.file.base64ToFile({ base64: <ref or string>, fileName?: <expr>, mimeType?: <expr> }) }`), `run.script.language: "javascript"`, `run.script.arguments`, `export.as`, `metadata.activityType: "Base64ToFile"`
+
+**Export pattern:**
+```
+{ ...$context, outputs: { ...$context?.outputs, "Base64ToFile_N": $output } }
+```
+
+**Output:** `$context.outputs.Base64ToFile_N.output` — a binary `JobAttachment` (`Metadata.Encoding: "byte-array"`).
+
+**Minimal JSON (string input with a name and type):**
+```json
+{
+  "Base64ToFile_1": {
+    "run": {
+      "script": {
+        "code": "return { output: await $helpers.file.base64ToFile({ base64: $context.outputs.HTTP_Request_1.content.data, fileName: 'invoice.pdf', mimeType: 'application/pdf' }) }",
+        "language": "javascript",
+        "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+      }
+    },
+    "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Base64ToFile_1\": $output } }" },
+    "metadata": { "activityType": "Base64ToFile", "displayName": "Base64 to File", "fullName": "Base64ToFile", "icon": "sw:convert-base64-to-file" }
+  }
+}
+```
+
+For a file-reference input drop `fileName` / `mimeType`: `base64ToFile({ base64: $context.outputs.FileToBase64_1.output })`. Omit the optional keys entirely when unset — a dangling `fileName: ` is a syntax error.
+
+**Common mistakes:**
+- `$helpers.base64ToFile(...)` (namespace dropped)
+- Anything besides the single `return` expression — a statement before/after it, or extra keys in the options object — Studio Web drops it on save; `validate` warns about the statements only, extra keys pass silently
+- Expecting `fileName` / `mimeType` to rename a reference input — they are ignored for references
+- URL-safe base64 (`-` / `_`), non-base64 characters, bad padding or an empty string → `The provided value is not a valid base64 string: base64ToFile` at runtime — the suffix is the literal helper name, not the task key (a `data:…;base64,` prefix and whitespace are tolerated and stripped)
+- Chaining it directly on a *binary* reference — a reference without `Encoding: "base64"` is returned unchanged (no-op), so nothing happens

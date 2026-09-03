@@ -776,6 +776,62 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Fix:** Always read the file before editing. After edit, re-run the workflow.
 <!--skill-flavor:post-edit-validation:end-->
 
+## File & Base64 Pitfalls
+
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
+### Run refused: "This workflow uses the file helpers … cannot run with --no-auth"
+- **Symptom:** the local run in no-auth mode exits 1 before the engine starts, naming File to Base64 / Base64 to File
+- **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage; there is no local file store
+- **Fix:** run signed in (sign in first, drop `--no-auth`) — still only on the user's explicit "yes" (rule 21). Same for `--input-file` / `--output-dir`.
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
+
+### `$helpers.fileToBase64 is not a function` / validate: "does not call $helpers.file.fileToBase64("
+- **Symptom:** `validate` reports one error at `…/run/script/code`; or a signed-in run fails inside the task
+- **Cause:** the helper was written without the `.file.` namespace (or with another name). The activity is recognised by that exact call
+- **Fix:** `return { output: await $helpers.file.fileToBase64(<ref>) }` / `$helpers.file.base64ToFile({ base64: … })`; keep `metadata.activityType` `FileToBase64` / `Base64ToFile`
+
+### File to Base64 / Base64 to File script lost code after a Studio Web save (validate warned "rebuilds the script … and drops the rest", or did not warn at all)
+- **Symptom:** after a designer roundtrip the task's `run.script.code` is back to the bare `return { output: await $helpers.file.*(…) }` — a preceding `const`, a trailing statement, a second argument (`fileToBase64(ref, { extra: 1 })`) or an extra option key is gone; downstream logic that relied on it now fails or the wrong reference is converted
+- **Cause:** Studio Web parses only the `$helpers.file.*` call and rebuilds the script from the property panel on save. `validate` warns about extra statements but passes an extra argument / option key as `Valid`
+- **Fix:** keep the script to the single `return` expression with exactly one argument (see [files-and-base64.md §2](files-and-base64.md#2-the-two-activities)); move pre-processing into a JavaScript activity before the conversion and pass its output as the argument
+
+### File to Base64 output used as a string (`.length`, `+`, `JSON.stringify` shows an object)
+- **Symptom:** downstream expression gets `[object Object]`, `undefined`, or an `{ ID, FullName, MimeType }` object where base64 text was expected
+- **Cause:** the activity returns a base64 **file reference**, not the base64 string — bytes never enter `$context`
+- **Fix:** inline the content where it is sent: `"${{ content: $context.outputs.FileToBase64_1.output.serializeData() }}"` in the HTTP body / Response
+
+### `{ "__uipathFileRead": { "ref": … } }` shows up in a variable or the output
+- **Symptom:** a marker object instead of file content
+- **Cause:** `serializeData()` was stored in a variable / returned from a script instead of being called inline in a body or Response field
+- **Fix:** call it only inside the HTTP body or `response` expression
+
+### Decoded file has no extension (`hello` instead of `hello.txt`)
+- **Symptom:** Base64 to File returns `FullName: "hello"`, `MimeType: application/octet-stream`
+- **Cause:** for a *reference* input the engine strips `.base64` and sniffs the MIME type from the bytes; plain text has no signature, and `fileName` / `mimeType` are ignored for references
+- **Fix:** acceptable for opaque payloads; when the name matters, decode a raw base64 **string** with `fileName` / `mimeType` (e.g. `{ base64: $context.variables.payload, fileName: 'notes.txt', mimeType: 'text/plain' }`)
+
+### `The provided value is not a valid base64 string: base64ToFile`
+- **Symptom:** Base64 to File fails on a string input. The suffix is always the literal helper name `base64ToFile` — it does not name the failing task, so with several Base64 to File tasks locate the culprit by the failing task in the run output, not by the message
+- **Cause:** URL-safe alphabet (`-` / `_`), non-base64 characters, bad padding, or an empty string. A `data:…;base64,` prefix and whitespace are NOT the problem — the engine strips both before decoding
+- **Fix:** convert URL-safe base64 to the standard alphabet (`-`→`+`, `_`→`/`) in a JavaScript activity; make sure the field really holds the payload and is not empty
+
+### `Raw bytes cannot be embedded in JSON` / `A bare file reference cannot be embedded in a nested field`
+- **Symptom:** an HTTP Request fails at send time with one of these messages
+- **Cause:** a JSON body field holds `serializeData()` of a *binary* reference (e.g. `$workflow.input.document.serializeData()`), or a bare reference object. Only a base64 reference's marker can be inlined in a nested field
+- **Fix:** run File to Base64 first and inline `$context.outputs.FileToBase64_1.output.serializeData()`; or, to send the raw bytes, make the bare reference the *whole* request body
+
+### File too large
+- **Symptom:** the helper fails with a size error
+- **Cause:** the in-memory conversion path is capped at 50 MB — it applies only to raw base64 strings and to references with a small declared `Metadata.Size`; references above 1 MB or with no declared size stream instead, with no size cap
+- **Fix:** pass the file as a reference (streamed) rather than as an inline string; keep inline strings under the cap
+
+<!--skill-flavor:file-base64-cli-folder:start-->
+### Upload / download 403 or "folder" errors with `--input-file` / `--output-dir`
+- **Symptom:** `Failed to upload input file … 403` or an Attachments API folder error
+- **Cause:** the tenant's Attachments API requires a folder context
+- **Fix:** pass `--folder-key <guid>` (the Orchestrator folder's key, visible in the folder's settings or via the platform CLI's folder listing)
+<!--skill-flavor:file-base64-cli-folder:end-->
+
 ---
 
 ## Debugging Strategy
