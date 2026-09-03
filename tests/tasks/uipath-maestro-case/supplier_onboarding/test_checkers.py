@@ -990,6 +990,16 @@ class TasksIoTests(CheckerBase):
         task(plan, "Record buyer review decision")["data"].pop("recipient", None)
         self.rejects(plan, "reaches nobody")
 
+    def test_rejects_a_task_with_no_entry_rule(self):
+        # A run that reached one stage, opened no task, raised no incident and timed out.
+        # `validate` only warns on this, so nothing before the run reports it.
+        plan = baseline_plan()
+        task(plan, "Validate application details")["entryConditions"] = []
+        self.rejects(plan, "carry no entry rule")
+
+    def test_accepts_a_task_whose_entry_rule_is_present(self):
+        self.accepts(baseline_plan())
+
     def test_rejects_an_input_the_sdd_binds_but_the_plan_leaves_empty(self):
         # The shape an agent shipped: the fields are declared, every binding dropped. The
         # runtime reads that as a missing field, not as an empty string, and the agent job

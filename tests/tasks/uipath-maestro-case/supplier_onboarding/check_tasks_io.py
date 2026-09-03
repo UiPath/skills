@@ -282,6 +282,22 @@ def main() -> int:
                 "each an expression, and an empty input reaches the runtime as a missing field"
             )
 
+    # ---- 9. every task carries an entry rule -------------------------------
+    # An empty `entryConditions` means the runtime never tells the task to start. The
+    # stage's exit condition can then never be satisfied, so `case debug` sits there until
+    # it gives up: no incident, no fault, nothing to read. `uip maestro case validate` only
+    # warns (`Task has no entry rules`), so a plan missing one still reports Valid.
+    ruleless = sorted(
+        f"{stage}/{P.task_name(task)!r}"
+        for stage, task in P.all_tasks(caseplan)
+        if not any(P.rule_names(c) for c in P.task_entry_conditions(task))
+    )
+    if ruleless:
+        problems.append(
+            f"{len(ruleless)} task(s) carry no entry rule: {ruleless}. The runtime never "
+            "starts them, the stage never completes, and the run hangs instead of faulting"
+        )
+
     print(f"checked {P.find_caseplan()}")
     print(f"tasks: {total}  types: {dict(sorted(types.items()))}")
     print(f"resource keys bound: {len(found)}/{len(E.RESOURCE_KEYS)}")
