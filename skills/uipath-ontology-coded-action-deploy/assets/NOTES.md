@@ -6,7 +6,7 @@ whole point of the staging step.
 
 It is the fallback for phase 1. The primary path is `uip solution init` plus `uip functions new
 --empty` plus `uip solution projects add`, verified live to produce job-capable
-(`ProcessType=Function`) releases. `solution_scaffold.py --template` instantiates the skeleton.
+(`ProcessType=Function`) releases. `scaffold_solution.py --template` instantiates the skeleton.
 
 `TagOverdueTicketProcess` is the exemplar: the one project directory, and the boilerplate every
 instantiated project is copied from. The skeleton is trimmed to exactly this one process. The

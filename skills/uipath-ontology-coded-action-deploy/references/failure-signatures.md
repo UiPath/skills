@@ -14,7 +14,7 @@ The other cause, and the one this skill owns, is a **stale release**: the deploy
 than the contract. Check the version rather than assuming.
 
 ```bash
-scripts/solution_release.py await <ProcessName> <expected-version> --folder-path "Shared/<deployment>"
+scripts/await_release.py <ProcessName> <expected-version> --folder-path "Shared/<deployment>"
 ```
 
 Three consecutive faults of this shape came from invoking before the release had moved. Await is
@@ -39,12 +39,12 @@ Check what actually got packed. `uip solution pack` reports `Status: Valid` for 
 job source is **missing or 0 bytes**, and builds a package containing an empty function. Nothing
 fails until invoke time. A Studio Web export shipped exactly that: a 0-byte entry point.
 
-`solution_release.py stage` refuses both cases, so prefer it over `uip solution pack` and never
+`stage_jobs.py` refuses both cases, so prefer it over `uip solution pack` and never
 pack the solution directory directly. To confirm after the fact, unzip the package and look inside
 the per-project nupkg. The job belongs at `content/main.ts`:
 
 ```bash
-scripts/solution_release.py pack <version> /tmp/pk
+scripts/build_package.py <version> /tmp/pk
 cd /tmp/pk && unzip -q <SolutionName>_<version>.zip
 unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/main.ts' | head
 ```
@@ -54,7 +54,7 @@ unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/
 The project's `uipath.json` functions map does not name the staged source. It has to read
 `{"main": "main.ts:default"}`, matching the `main.ts` that `stage` writes and the
 `filePath: content/main.ts` in the derived manifest; those three have to agree. `stage` writes the
-source and the manifest, and `solution_scaffold.py` writes the map, so seeing this means the map
+source and the manifest, and `scaffold_solution.py` writes the map, so seeing this means the map
 was edited or the project came from somewhere other than the scaffold.
 
 Note this error belongs to `uip functions pack`, which this pipeline does not run. Reaching it
@@ -64,7 +64,7 @@ means something invoked that command directly.
 
 `uip solution pack` was run without the per-project functions pass. `uip solution pack` never
 generates `entry-points.json`, and the error's suggested command names a binary
-(`uipath-functions`) that does not exist on PATH. `solution_release.py stage` derives the manifest
+(`uipath-functions`) that does not exist on PATH. `stage_jobs.py` derives the manifest
 for every staged project with `tools/entry_points.py`, so seeing this error means something called
 `uip solution pack` on a tree that did not go through `stage`. Go through the script.
 
@@ -85,7 +85,7 @@ with the interfaces faults the job before its handler runs.
 
 The `@uipath` npm scope is on GitHub Packages, not npmjs. The project needs an `.npmrc` mapping
 the scope to `https://npm.pkg.github.com/` with `${GH_NPM_REGISTRY_TOKEN}` as the token reference,
-and the environment needs `GH_NPM_REGISTRY_TOKEN` exported. `solution_scaffold.py` writes the
+and the environment needs `GH_NPM_REGISTRY_TOKEN` exported. `scaffold_solution.py` writes the
 `.npmrc`; a 404 after scaffolding means the token is missing from the environment.
 
 This can only happen during scaffolding, when `uip functions new` installs. Stage, pack, publish
@@ -123,7 +123,7 @@ The step trace is the whole diagnosis. Report it verbatim rather than summarisin
 ## `deploy run` says the package version does not exist
 
 `publish` must complete first, and it is asynchronous. The error does not mention publishing.
-Re-run `solution_release.py version` and confirm the version is actually present before deploying.
+Re-run `next_version.py` and confirm the version is actually present before deploying.
 
 ## `HTTP 400: <version> version already exists for this package`
 
@@ -147,7 +147,7 @@ pipeline, because every surface reports success: publish returns a package versi
 reports Successful, `deploy list` shows the deployment on that version, and the running code is
 whatever it was before.
 
-Always compute `next = current + 1` from the deployment. `solution_release.py version` does that,
+Always compute `next = current + 1` from the deployment. `next_version.py` does that,
 including filtering tombstones.
 
 ## The UI still shows the old version after a successful publish
@@ -184,7 +184,7 @@ Uninstall`, `ActivationStatus: None`, and only a `Delete` action left. It still 
 `CurrentPackageVersion`, so anything taking the first match reports a plausible version for a dead
 record that owns no folder, and `next` is then computed from the wrong release.
 
-`solution_release.py` filters tombstones and picks the highest live version. The tell is a
+`next_version.py` filters tombstones and picks the highest live version. The tell is a
 `deployment` whose `activation` is `None` and whose `actions` are just `["Delete"]`. Only the UI
 can clear the row.
 
@@ -199,10 +199,10 @@ against every release rather than only the one that changed.
 `projectName` error 2003, `RetryWillNotFix`. Something is calling
 `uip solution projects publish --project-name <name>`, which publishes an existing *cloud* solution
 project; that flag wants a Studio Web project name, and the name you passed is the deployment and
-package name, a different namespace. `solution_release.py publish` packs from `SOLUTION_SRC`
+package name, a different namespace. `publish_package.py` packs from `SOLUTION_SRC`
 instead and needs no cloud project. If you see this error, something is calling `uip` directly.
 
-## `ttl_patch.py` refused
+## `patch_action_ttl.py` refused
 
 Two refusals, both deliberate.
 

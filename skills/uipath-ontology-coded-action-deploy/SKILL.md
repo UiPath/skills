@@ -56,8 +56,8 @@ Everything else is a convention rather than a coordinate, and the scripts defaul
 
 ## Dry run by default
 
-`solution_scaffold.py`, `solution_release.py publish`, `solution_release.py deploy` and
-`ttl_patch.py` print the exact command or the exact change and do nothing without `--execute`.
+`scaffold_solution.py`, `publish_package.py`, `deploy_release.py` and
+`patch_action_ttl.py` print the exact command or the exact change and do nothing without `--execute`.
 Show the printed plan, get an explicit yes, then re-run with `--execute`. Publish and deploy write
 to a live tenant and move every job in the Solution onto one version line, so the version
 transition (`1.0.2` to `1.0.3`, and which processes move) is what to show.
@@ -83,7 +83,7 @@ it already exists: the script leaves an existing solution directory and an exist
 directory alone and creates only what is missing.
 
 ```bash
-scripts/solution_scaffold.py --workdir {workdir} --solution-name {name}-jobs \
+scripts/scaffold_solution.py --workdir {workdir} --solution-name {name}-jobs \
   --project {ActionName}Process=../jobs/{action}.ts \
   [--project ...] [--execute]
 ```
@@ -107,7 +107,7 @@ runtime. The scaffold writes each project's `.npmrc` for that scope, referencing
 The template fallback remains for the one case CLI mode does not serve:
 
 ```bash
-scripts/solution_scaffold.py ... --template --execute
+scripts/scaffold_solution.py ... --template --execute
 ```
 
 `--template` instantiates `assets/solution-skeleton`, a known-good Studio Web export's manifests.
@@ -126,7 +126,7 @@ source tree is never mutated and a job has exactly one home. The consequence: th
 directory is not directly packable, so always go through the script.
 
 ```bash
-SOLUTION_SRC={workdir}/{name}-jobs scripts/solution_release.py stage
+SOLUTION_SRC={workdir}/{name}-jobs scripts/stage_jobs.py
 ```
 
 **`main.ts` at the project root is the verified layout.** It is what the Studio Web export that
@@ -161,10 +161,10 @@ a CLI-scaffolded solution has only the `.uipx`, whose `Projects` array says the 
 ## Phase 3: Version, publish, deploy
 
 ```bash
-scripts/solution_release.py version                              # {current, next}
-scripts/solution_release.py pack    {next} /tmp/pk               # optional, local zip only
-scripts/solution_release.py publish {next} --execute             # tenant feed
-scripts/solution_release.py deploy  {next} {name}-jobs-{next-dashed} --execute
+scripts/next_version.py                              # {current, next}
+scripts/build_package.py    {next} /tmp/pk               # optional, local zip only
+scripts/publish_package.py {next} --execute             # tenant feed
+scripts/deploy_release.py  {next} {name}-jobs-{next-dashed} --execute
 ```
 
 **Never republish an existing version.** Read the current version from the deployment and compute
@@ -193,8 +193,8 @@ left running their old version, which is what makes a rollback a one-line TTL ed
 ## Phase 4: Resolve the folder and await every release
 
 ```bash
-scripts/solution_release.py folder-id "Shared/{deployment}"      # -> {folderId, folderKey}
-scripts/solution_release.py await {ProcessName} {next} --folder-path "Shared/{deployment}"
+scripts/resolve_folder_id.py "Shared/{deployment}"      # -> {folderId, folderKey}
+scripts/await_release.py {ProcessName} {next} --folder-path "Shared/{deployment}"
 ```
 
 `deploy run` reports a folder path and the TTL needs the numeric id, which is why `folder-id`
@@ -221,7 +221,7 @@ Await every release, not just the one that changed. A publish moves every job in
 One call per action TTL, with the folder id phase 4 resolved.
 
 ```bash
-scripts/ttl_patch.py {workdir}/{name}-{action}.ttl --folder-id {folderId} \
+scripts/patch_action_ttl.py {workdir}/{name}-{action}.ttl --folder-id {folderId} \
   [--process-url {url}] --execute
 ```
 
@@ -256,13 +256,34 @@ completed deploy, and neither is a green release beside a TTL that still says `P
 
 ## Scripts
 
-All emit JSON and exit non-zero on failure. python3, standard library only.
+All emit JSON on stdout, put errors on stderr, and exit non-zero on failure. python3, standard
+library only, no shell.
 
-| Script | What it does |
-|---|---|
-| `solution_scaffold.py` | phase 1: `init` + `functions new --empty` + `projects add`, or `--template` |
-| `solution_release.py` | phases 2 to 4: `version` `stage` `pack` `publish` `deploy` `folder-id` `await` |
-| `ttl_patch.py` | phase 5: set `ont:processFolderId` and optionally `ont:processUrl` on one TTL |
+One script per action. Each answers `--describe` with its own contract as JSON, so what it takes
+and returns comes from the script rather than from this table:
+
+```bash
+python3 scripts/<script>.py --describe
+```
+
+| Script | Phase | What it does | Mutates |
+|---|---|---|---|
+| `scaffold_solution.py` | 1 | Create the jobs Solution and one Function project per coded action | no |
+| `stage_jobs.py` | 2 | Stage each job as its project's `main.ts` and derive its manifest | no |
+| `next_version.py` | 3 | Report the package's current and next version | no |
+| `build_package.py` | 3 | Pack the staged tree into a deployable `.zip` | no |
+| `publish_package.py` | 3 | Pack and upload the package to the tenant feed | **yes** |
+| `deploy_release.py` | 3 | Deploy a published version into a new Orchestrator folder | **yes** |
+| `resolve_folder_id.py` | 4 | Resolve a folder path to its numeric `OrganizationUnitId` | no |
+| `await_release.py` | 4 | Poll a release until ready, stale, or missing | no |
+| `patch_action_ttl.py` | 5 | Replace the `PENDING_DEPLOY` placeholder with the resolved folder id | **yes** |
+
+Three private modules sit behind them: `_uip.py` (the CLI boundary), `_solution.py` (reading
+solution state) and `_staging.py` (the staging tree and the derived manifest). They are not entry
+points; nothing invokes them directly.
+
+The two phase-4 scripts need no `SOLUTION_SRC`: they ask the tenant about a folder or a release,
+not the source tree about a solution.
 
 ## When something breaks
 

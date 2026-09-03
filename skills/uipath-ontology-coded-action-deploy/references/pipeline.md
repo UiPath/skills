@@ -50,7 +50,7 @@ not npmjs, via `${GH_NPM_REGISTRY_TOKEN}`, and the CLI's own scaffolding writes 
 `uip or processes list` reports the release version as `ProcessVersion`.
 
 **Template fallback.** `assets/solution-skeleton` is a known-good Studio Web export's manifests,
-instantiated by `solution_scaffold.py --template`. Its `.uipx` carries the exported `SolutionId`
+instantiated by `scaffold_solution.py --template`. Its `.uipx` carries the exported `SolutionId`
 rather than a fresh one, which matters only if the solution ever has to reach Studio Web.
 `assets/NOTES.md` lists every renamed occurrence.
 
@@ -72,7 +72,7 @@ TTL that invokes it, and `jobs.map.json` in the solution directory records the m
 Relative paths resolve against that file's own directory, so a job beside its action is written
 relative and one outside the tree is written absolute.
 
-`solution_release.py` copies the tree to a temp staging dir, writes each mapped source in as that
+`stage_jobs.py` copies the tree to a temp staging dir, writes each mapped source in as that
 project's `main.ts`, derives that project's `entry-points.json` from the job's interfaces, and
 packs the copy. `main.ts` at the project root is the layout the verified Studio Web export shipped
 and what `uipath.json`'s functions map (`main: main.ts:default`) and the manifest's
@@ -102,14 +102,14 @@ Pack from the solution directory and upload the `.zip`. No cloud project, no Stu
 no `uip functions push`.
 
 ```bash
-scripts/solution_release.py version                               # {current, next}
-scripts/solution_release.py stage                                 # build + validate, temp only
-scripts/solution_release.py pack    1.0.3 /tmp/pk                 # local .zip, no tenant writes
-scripts/solution_release.py publish 1.0.3                         # prints the steps
-scripts/solution_release.py publish 1.0.3 --execute               # pack, then upload to the feed
-scripts/solution_release.py deploy  1.0.3 support-jobs-1-0-3 --execute
-scripts/solution_release.py folder-id "Shared/support-jobs-1-0-3" # -> ont:processFolderId
-scripts/solution_release.py await TagOverdueTicketProcess 1.0.3 --folder-path "Shared/support-jobs-1-0-3"
+scripts/next_version.py                               # {current, next}
+scripts/stage_jobs.py                                 # build + validate, temp only
+scripts/build_package.py    1.0.3 /tmp/pk                 # local .zip, no tenant writes
+scripts/publish_package.py 1.0.3                         # prints the steps
+scripts/publish_package.py 1.0.3 --execute               # pack, then upload to the feed
+scripts/deploy_release.py  1.0.3 support-jobs-1-0-3 --execute
+scripts/resolve_folder_id.py "Shared/support-jobs-1-0-3" # -> ont:processFolderId
+scripts/await_release.py TagOverdueTicketProcess 1.0.3 --folder-path "Shared/support-jobs-1-0-3"
 ```
 
 **Never reuse a version number.** Publishing the same version is a silent no-op everywhere:
@@ -166,7 +166,7 @@ get` takes only a GUID or key, never a path, and `uip or processes list` returns
 off one of them.
 
 ```bash
-scripts/ttl_patch.py {workdir}/{name}-{action}.ttl --folder-id <id> --execute
+scripts/patch_action_ttl.py {workdir}/{name}-{action}.ttl --folder-id <id> --execute
 ```
 
 `ont:process` does not change: the release Name and ProcessKey are identical in the new folder, and

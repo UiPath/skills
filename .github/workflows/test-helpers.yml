@@ -6,8 +6,11 @@ on:
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/scripts/**'
+      - 'tests/coded_action_preflight/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
+      - 'tools/**'    # coded-action validator and contract deriver have guards in tests/
+      - 'skills/uipath-ontology-coded-action-deploy/**'  # its scripts declare a contract tests check
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
@@ -43,6 +46,35 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/tasks/uipath-maestro-case/ -v
+
+  coded-action-guards:
+    runs-on: ubuntu-latest
+    name: coded-action validator, deriver and script contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # The deriver must reproduce, byte for byte, the entry-points manifests Studio Web itself
+      # produced for two jobs that deployed and ran on a tenant. Those goldens are the only
+      # evidence of what the platform accepts, and `uip functions pack` cannot produce them.
+      - name: Contract deriver
+        run: pytest tests/scripts/test_entry_points.py -v
+
+      # Includes a whole-payload golden. Gate order and diagnostics ordering are part of what
+      # callers see, and no per-gate assertion covers them.
+      - name: Coded-action validator
+        run: pytest tests/coded_action_preflight/ -v
+
+      # Each deploy script declares its own contract via --describe; this fails if SKILL.md's
+      # Scripts table drifts from it, or if a doc still names a script that no longer exists.
+      - name: Deploy script contracts
+        run: pytest tests/scripts/test_coded_action_scripts.py -v
 
   runtime-payload-casing-guard:
     runs-on: ubuntu-latest
