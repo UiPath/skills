@@ -169,8 +169,11 @@ def _expression(value: object) -> tuple[str | None, str | None]:
 
 def _root_node_id(expression: str) -> str | None:
     """The node id in a `$vars.<id>.output…` expression."""
-    parts = expression.lstrip("=").lstrip("$").split(".")
-    return parts[1] if len(parts) > 2 and parts[0] == "vars" else None
+    text = expression[1:] if expression.startswith("=") else expression
+    if not text.startswith("$vars."):
+        return None
+    parts = text.split(".")
+    return parts[1] if len(parts) > 2 else None
 
 
 def check_settings(flow: dict) -> int:
@@ -237,6 +240,20 @@ def check_settings(flow: dict) -> int:
                     f"{WAIT_FOR_MESSAGE} node in this flow — `flow validate` accepts "
                     "invented $vars paths, so this has to be checked here"
                 )
+
+    node_ids = {n.get("id") for n in flow.get("nodes") or []}
+    for wait in _nodes_of(flow, WAIT_FOR_MESSAGE):
+        wait_id = wait.get("id")
+        expression, err = _expression((wait.get("inputs") or {}).get("conversationId"))
+        if err:
+            problems.append(f"{wait_id}.conversationId: {err}")
+            continue
+        root_id = _root_node_id(expression)
+        if root_id not in node_ids:
+            problems.append(
+                f"{wait_id}.conversationId is rooted at {root_id!r}, which is not a "
+                "node in this flow — the wait node would never receive a message"
+            )
 
     if problems:
         return _fail("; ".join(problems))
@@ -395,7 +412,11 @@ def _grade_agent_json(path: str, problems: list[str]) -> bool:
             f"{metadata.get('isConversational')!r}, expected true"
         )
     iterations = settings.get("maxIterations")
-    if not isinstance(iterations, int) or not 1 <= iterations <= 8:
+    if (
+        isinstance(iterations, bool)
+        or not isinstance(iterations, int)
+        or not 1 <= iterations <= 8
+    ):
         problems.append(
             f"{label}: settings.maxIterations is {iterations!r}; conversational "
             "expects 1-8"

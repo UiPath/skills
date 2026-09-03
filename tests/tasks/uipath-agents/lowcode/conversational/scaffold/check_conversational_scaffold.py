@@ -53,7 +53,11 @@ def assert_conversational_essentials(agent: dict) -> None:
     print('OK: settings.engine == "conversational-v1"')
 
     iterations = settings.get("maxIterations")
-    if not isinstance(iterations, int) or not 1 <= iterations <= 8:
+    if (
+        isinstance(iterations, bool)
+        or not isinstance(iterations, int)
+        or not 1 <= iterations <= 8
+    ):
         sys.exit(
             f"FAIL: settings.maxIterations must be 1-8 for conversational, "
             f"got {iterations!r}"
