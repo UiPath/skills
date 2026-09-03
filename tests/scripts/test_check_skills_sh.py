@@ -20,6 +20,7 @@ Run from repo root:
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -127,6 +128,64 @@ def test_duplicate_grouping_is_attributed_to_the_change_that_adds_it():
     assert [f["key"] for f in new] == ["uipath-rpa"]
 
 
+# --- finding identity must not move under unrelated edits ------------------
+#
+# Review finding: identity keyed on the formatted error string, which embeds
+# grouping titles and list indices. Retitling a grouping or inserting one at
+# the top then re-attributed untouched drift to the PR and blocked it.
+
+
+def test_retitling_a_grouping_keeps_a_duplicate_finding_preexisting():
+    """The duplicate message names both groupings; the identity must not."""
+    base = manifest(("Authoring", "uipath-rpa"), ("Platform", "uipath-rpa"))
+    head = manifest(("Authoring & Design", "uipath-rpa"), ("Platform Ops", "uipath-rpa"))
+
+    new, preexisting = split(head, {"uipath-rpa"}, base, {"uipath-rpa"})
+
+    assert new == []
+    assert [f["key"] for f in preexisting] == ["uipath-rpa"]
+
+
+def test_inserting_a_grouping_keeps_schema_findings_preexisting():
+    """A grouping inserted at the top shifts every index below it."""
+    base = manifest(("Authoring", "uipath-rpa"))
+    base["groupings"].append({"title": "Broken", "skills": []})
+    head = manifest(("Brand New", "uipath-rpa"))
+    head["groupings"].append({"title": "Broken", "skills": []})
+    head["groupings"].insert(0, {"title": "Inserted", "skills": ["uipath-rpa"]})
+
+    new, preexisting = split(head, {"uipath-rpa"}, base, {"uipath-rpa"})
+
+    kinds = {f["kind"] for f in preexisting}
+    assert "group-skills-missing" in kinds, f"reattributed as new: {new}"
+
+
+def test_moving_a_bad_skill_entry_between_groupings_stays_preexisting():
+    base = manifest(("Authoring", "uipath-rpa", ""), ("Platform", "uipath-admin"))
+    head = manifest(("Authoring", "uipath-rpa"), ("Platform", "uipath-admin", ""))
+
+    new, preexisting = split(head, {"uipath-rpa", "uipath-admin"},
+                             base, {"uipath-rpa", "uipath-admin"})
+
+    # "" trips two rules — the entry is invalid AND it is grouped with nothing
+    # on disk to match. Both are pre-existing regardless of which grouping
+    # holds it.
+    assert sorted(f["kind"] for f in preexisting) == ["grouped-not-on-disk", "skill-entry"]
+    assert new == []
+
+
+def test_identity_ignores_the_display_message():
+    a = check.finding("ungrouped", "uipath-x", "uipath-x", "one wording")
+    b = check.finding("ungrouped", "uipath-x", "uipath-x", "a totally different wording")
+    assert check.identity(a) == check.identity(b)
+
+
+def test_identity_separates_different_kinds_on_the_same_subject():
+    a = check.finding("ungrouped", "uipath-x", "uipath-x", "msg")
+    b = check.finding("grouped-not-on-disk", "uipath-x", "uipath-x", "msg")
+    assert check.identity(a) != check.identity(b)
+
+
 # --- baseline resolution ---------------------------------------------------
 
 
@@ -182,8 +241,34 @@ def test_cli_warns_and_stays_strict_on_a_bad_baseline():
     assert "cannot read baseline" in result.stderr
 
 
-def test_cli_json_output_carries_the_preexisting_flag():
+def test_json_output_flags_both_classes(monkeypatch, tmp_path, capsys):
+    """Not vacuous: the tree is pointed at a fixture with one pre-existing and
+    one introduced finding, so both JSON branches actually emit."""
+    manifest_path = tmp_path / "skills.sh.json"
+    manifest_path.write_text(json.dumps(manifest(("Authoring", "uipath-rpa"))))
+    skills_dir = tmp_path / "skills"
+    for name in ("uipath-rpa", "uipath-stale", "uipath-fresh"):
+        (skills_dir / name).mkdir(parents=True)
+        (skills_dir / name / "SKILL.md").write_text("# x\n")
+
+    monkeypatch.setattr(check, "MANIFEST_PATH", manifest_path)
+    monkeypatch.setattr(check, "SKILLS_DIR", skills_dir)
+    # Baseline already had uipath-stale ungrouped; this change adds uipath-fresh.
+    monkeypatch.setattr(check, "baseline_state",
+                        lambda ref: (manifest(("Authoring", "uipath-rpa")),
+                                     {"uipath-rpa", "uipath-stale"}))
+    monkeypatch.setattr(sys, "argv",
+                        ["check-skills-sh.py", "--json", "--baseline-ref", "HEAD"])
+
+    exit_code = check.main()
+    emitted = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+
+    assert exit_code == 1
+    by_key = {item["key"]: item["preexisting"] for item in emitted}
+    assert by_key == {"uipath-fresh": False, "uipath-stale": True}
+
+
+def test_cli_json_stays_silent_on_a_clean_tree():
     result = run_cli("--json", "--baseline-ref", "HEAD")
     assert result.returncode == 0
-    for line in result.stdout.splitlines():
-        assert "preexisting" in json.loads(line)
+    assert result.stdout.strip() == ""

@@ -87,6 +87,17 @@ def skills_on_disk():
     return {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
 
 
+def finding(kind, key, subject, error):
+    """One finding.
+
+    `key` and `error` are for display. `kind` and `subject` are the identity
+    used to decide whether the same drift exists at the baseline, so neither
+    may embed anything that unrelated edits can change — no list indices, and
+    no grouping titles for findings that are really about a skill name.
+    """
+    return {"kind": kind, "key": key, "subject": subject, "error": error}
+
+
 def check_schema(manifest):
     """Structural findings. Returns (findings, groupings, usable) — `groupings`
     is the subset safe to reason about downstream, and `usable` is False when
@@ -95,62 +106,79 @@ def check_schema(manifest):
     findings = []
 
     if not isinstance(manifest, dict):
-        return ([{"key": MANIFEST_PATH.name, "error": "top level must be a JSON object"}], [], False)
+        return ([finding("top-level-type", MANIFEST_PATH.name, MANIFEST_PATH.name,
+                         "top level must be a JSON object")], [], False)
 
     for key in sorted(set(manifest) - TOP_LEVEL_KEYS):
-        findings.append({"key": key,
-                         "error": f"unknown top-level key — expected one of {sorted(TOP_LEVEL_KEYS)}"})
+        findings.append(finding("unknown-top-level-key", key, key,
+                                f"unknown top-level key — expected one of "
+                                f"{sorted(TOP_LEVEL_KEYS)}"))
 
     schema = manifest.get("$schema")
     if schema is not None and schema != SCHEMA_URL:
-        findings.append({"key": "$schema", "error": f"expected {SCHEMA_URL!r}, got {schema!r}"})
+        findings.append(finding("schema-url", "$schema", "$schema",
+                                f"expected {SCHEMA_URL!r}, got {schema!r}"))
 
     not_grouped = manifest.get("notGrouped")
     if not_grouped is not None and not_grouped not in NOT_GROUPED_VALUES:
-        findings.append({"key": "notGrouped",
-                         "error": f"must be one of {sorted(NOT_GROUPED_VALUES)}, got {not_grouped!r}"})
+        findings.append(finding("not-grouped-value", "notGrouped", "notGrouped",
+                                f"must be one of {sorted(NOT_GROUPED_VALUES)}, "
+                                f"got {not_grouped!r}"))
 
     groupings = manifest.get("groupings")
     if not isinstance(groupings, list) or not groupings:
-        findings.append({"key": "groupings", "error": "required, and must be a non-empty list"})
+        findings.append(finding("groupings-missing", "groupings", "groupings",
+                                "required, and must be a non-empty list"))
         return (findings, [], False)
     if len(groupings) > MAX_GROUPINGS:
-        findings.append({"key": "groupings",
-                         "error": f"at most {MAX_GROUPINGS} groupings, got {len(groupings)}"})
+        findings.append(finding("groupings-count", "groupings", "groupings",
+                                f"at most {MAX_GROUPINGS} groupings, got {len(groupings)}"))
 
     valid = []
     for index, group in enumerate(groupings):
+        # `key` is for display and carries the index so a reader can find the
+        # entry. `subject` is the identity used for baseline comparison and
+        # must NOT carry the index — inserting a grouping at the top shifts
+        # every index and would re-attribute untouched drift as new.
         where = f"groupings[{index}]"
         if not isinstance(group, dict):
-            findings.append({"key": where, "error": "must be an object"})
+            findings.append(finding("group-type", where, where, "must be an object"))
             continue
 
         title = group.get("title")
-        if not isinstance(title, str) or not 1 <= len(title) <= MAX_TITLE:
-            findings.append({"key": where,
-                             "error": f"`title` is required and must be 1-{MAX_TITLE} characters"})
+        titled = isinstance(title, str) and 1 <= len(title) <= MAX_TITLE
+        # An invalid title leaves nothing stabler than the index to key on;
+        # that finding is by definition about the entry the author just touched.
+        subject = title if titled else where
+        if not titled:
+            findings.append(finding("group-title", where, subject,
+                                    f"`title` is required and must be 1-{MAX_TITLE} characters"))
         else:
             where = f"groupings[{index}] {title!r}"
 
         description = group.get("description")
         if description is not None and (not isinstance(description, str)
                                         or len(description) > MAX_DESCRIPTION):
-            findings.append({"key": where,
-                             "error": f"`description` must be a string of at most "
-                                      f"{MAX_DESCRIPTION} characters"})
+            findings.append(finding("group-description", where, subject,
+                                    f"`description` must be a string of at most "
+                                    f"{MAX_DESCRIPTION} characters"))
 
         skills = group.get("skills")
         if not isinstance(skills, list) or not skills:
-            findings.append({"key": where, "error": "`skills` is required and must be non-empty"})
+            findings.append(finding("group-skills-missing", where, subject,
+                                    "`skills` is required and must be non-empty"))
             continue
         if len(skills) > MAX_SKILLS_PER_GROUP:
-            findings.append({"key": where,
-                             "error": f"at most {MAX_SKILLS_PER_GROUP} skills, got {len(skills)}"})
+            findings.append(finding("group-skills-count", where, subject,
+                                    f"at most {MAX_SKILLS_PER_GROUP} skills, "
+                                    f"got {len(skills)}"))
         for name in skills:
             if not isinstance(name, str) or not 1 <= len(name) <= MAX_SKILL_NAME:
-                findings.append({"key": where,
-                                 "error": f"skill entry {name!r} must be a string of "
-                                          f"1-{MAX_SKILL_NAME} characters"})
+                # Keyed on the offending entry, not the grouping: moving a bad
+                # entry between groupings is the same pre-existing drift.
+                findings.append(finding("skill-entry", where, repr(name),
+                                        f"skill entry {name!r} must be a string of "
+                                        f"1-{MAX_SKILL_NAME} characters"))
         valid.append(group)
 
     return (findings, valid, True)
@@ -167,22 +195,25 @@ def check_coverage(groupings, on_disk):
             if not isinstance(name, str):
                 continue
             if name in seen:
-                findings.append({"key": name,
-                                 "error": f"listed in more than one grouping "
-                                          f"({seen[name]!r} and {title!r})"})
+                # The message names both groupings for the reader, but identity
+                # is the skill alone: retitling a grouping, or moving the
+                # duplicate elsewhere, is not new drift.
+                findings.append(finding("duplicate-grouping", name, name,
+                                        f"listed in more than one grouping "
+                                        f"({seen[name]!r} and {title!r})"))
             else:
                 seen[name] = title
 
     for name in sorted(set(seen) - on_disk):
-        findings.append({"key": name,
-                         "error": "grouped but no skills/<name>/SKILL.md exists — the skill was "
-                                  "renamed or removed. Run --fix to drop it."})
+        findings.append(finding("grouped-not-on-disk", name, name,
+                                "grouped but no skills/<name>/SKILL.md exists — the skill was "
+                                "renamed or removed. Run --fix to drop it."))
 
     for name in sorted(on_disk - set(seen)):
-        findings.append({"key": name,
-                         "error": "exists on disk but is in no grouping — it would render "
-                                  "ungrouped on skills.sh. Add it to the right section by hand "
-                                  "(placement is an editorial call, so --fix will not guess)."})
+        findings.append(finding("ungrouped", name, name,
+                                "exists on disk but is in no grouping — it would render "
+                                "ungrouped on skills.sh. Add it to the right section by hand "
+                                "(placement is an editorial call, so --fix will not guess)."))
 
     return findings
 
@@ -234,9 +265,14 @@ def baseline_state(ref):
     return (manifest, on_disk)
 
 
-def identity(finding):
-    """What makes two findings 'the same drift' across two commits."""
-    return (finding["key"], finding["error"])
+def identity(item):
+    """What makes two findings 'the same drift' across two commits.
+
+    Deliberately NOT the formatted message: it embeds grouping titles and list
+    indices, so a retitle or an insertion would re-attribute untouched drift to
+    the PR and block it.
+    """
+    return (item["kind"], item["subject"])
 
 
 def split_by_baseline(findings, baseline):
@@ -244,8 +280,8 @@ def split_by_baseline(findings, baseline):
     baseline_manifest, baseline_on_disk = baseline
     already = {identity(f) for f in validate(baseline_manifest, baseline_on_disk)}
     new, preexisting = [], []
-    for finding in findings:
-        (preexisting if identity(finding) in already else new).append(finding)
+    for item in findings:
+        (preexisting if identity(item) in already else new).append(item)
     return (new, preexisting)
 
 
@@ -329,10 +365,10 @@ def main():
             findings, preexisting = split_by_baseline(findings, baseline)
 
     if args.json:
-        for finding in findings:
-            print(json.dumps({**finding, "preexisting": False}))
-        for finding in preexisting:
-            print(json.dumps({**finding, "preexisting": True}))
+        for item in findings:
+            print(json.dumps({**item, "preexisting": False}))
+        for item in preexisting:
+            print(json.dumps({**item, "preexisting": True}))
         return 1 if findings else 0
 
     annotate = os.environ.get("GITHUB_ACTIONS") == "true"
@@ -340,9 +376,9 @@ def main():
     if preexisting:
         print(f"{len(preexisting)} pre-existing finding(s) — already present at "
               f"{args.baseline_ref}, not caused by this change:\n")
-        for finding in preexisting:
+        for item in preexisting:
             prefix = "::warning::" if annotate else "  "
-            print(f"{prefix}{finding['key']}: {finding['error']}")
+            print(f"{prefix}{item['key']}: {item['error']}")
         print()
 
     if not findings:
@@ -354,9 +390,9 @@ def main():
         return 0
 
     print(f"{len(findings)} finding(s):\n")
-    for finding in findings:
+    for item in findings:
         prefix = "::error::" if annotate else "  "
-        print(f"{prefix}{finding['key']}: {finding['error']}")
+        print(f"{prefix}{item['key']}: {item['error']}")
     return 1
 
 

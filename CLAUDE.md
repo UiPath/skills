@@ -25,7 +25,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
    python3 scripts/check-skills-sh.py                     # add/rename/remove: must print OK
    ```
 
-   For a removed or renamed skill, `python3 scripts/check-skills-sh.py --fix` drops the stale grouping entry. It will NOT place a new skill — pick the section that matches the skill's purpose by hand.
+   Full change→edit table, the `--fix` limits, and how pre-existing drift is reported: [`.claude/rules/skill-structure.md` § skills.sh Grouping](.claude/rules/skill-structure.md).
 6. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
 7. **No secrets or personal paths** in committed files
 8. **CLI commands must use `--output json`** when output is parsed programmatically
