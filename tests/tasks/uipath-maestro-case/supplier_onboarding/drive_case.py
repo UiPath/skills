@@ -340,15 +340,27 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
     if assigned.get("Result") != "Success":
         fail(f"assigning task {task_id} to {who} failed: "
              f"{assigned.get('Message') or assigned.get('Code') or assigned}")
+    # The assign lands on `AssignedToUserId`, but completion is gated on the task's
+    # assignment criteria, which is a separate field. `AppTasksFacade.cs:782` maps a group
+    # recipient to `AllUsers`, and Orchestrator then answers `tasks complete` with "this
+    # action is no longer assigned to you" for any caller outside that group, whatever
+    # `AssignedToUserId` says.
     back = envelope(["uip", "tasks", "get", task_id, "--output", "json"])
     holder = back.get("Data") or {}
-    fields = {k: v for k, v in holder.items()
-              if isinstance(v, (str, int)) and "assign" in k.lower()}
-    if who not in str(fields.values()):
-        fail(f"`tasks assign` reported Success for task {task_id}, and reading it back shows "
-             f"{fields or 'no assignment field at all'}, not {who!r}. Orchestrator answers a "
-             f"refused assignment with HTTP 200 and an error body, so the envelope is not "
-             f"evidence. assign returned: {str(assigned.get('Data'))[:400]}")
+    if holder.get("TaskAssignmentCriteria") == "AllUsers" and not holder.get(
+        "IsCurrentUserInAllUserAssignedGroup"
+    ):
+        fail(f"task {task_id} carries TaskAssignmentCriteria 'AllUsers' and "
+             f"IsCurrentUserInAllUserAssignedGroup is false, so {who!r} cannot complete it "
+             f"however the assign reads. The SDD routes this task to a role, the engine maps a "
+             f"group recipient to the AllUsers criteria, and the driving identity is not in that "
+             f"group. AssignedToUserId={holder.get('AssignedToUserId')}, "
+             f"LastAssignedTime={holder.get('LastAssignedTime')}")
+    if not holder.get("AssignedToUserId"):
+        fail(f"`tasks assign` reported Success for task {task_id}, and reading it back shows no "
+             f"AssignedToUserId. Orchestrator answers a refused assignment with HTTP 200 and an "
+             f"error body, so the envelope is not evidence. assign returned: "
+             f"{str(assigned.get('Data'))[:300]}")
     reply = envelope([
         "uip", "tasks", "complete", task_id,
         "--type", "AppTask",
