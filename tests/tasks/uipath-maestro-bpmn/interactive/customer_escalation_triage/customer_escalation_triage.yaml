@@ -242,7 +242,13 @@ simulation:
 # Switch to `direct` (needs ANTHROPIC_API_KEY) only if Bedrock is unavailable.
 checker_context:
   api_route:
-    route: bedrock
+    route: direct
+    # Explicitly null, not merely absent: the task's api_route deep-merges with
+    # the experiment's, which sets litellm `params`/`env_params`. Inheriting
+    # those trips "params/env_params require route: litellm" and the task fails
+    # validation before it starts.
+    params: null
+    env_params: null
 
 success_criteria:
   - type: agent_judge
@@ -411,5 +417,9 @@ post_run:
   # glob. Replays the ids the grader recorded as it created them, following
   # the `teardown_jira.py` precedent in the flow suite. 300 is the schema
   # maximum for a post_run step; the sweep caps its own CLI calls just inside.
-  - command: "python3 $TASK_DIR/cleanup_customer_escalation.py"
+  # $SKILLS_REPO_PATH, not $TASK_DIR: post_run does not expand $TASK_DIR (it
+  # resolves to empty, so the command becomes `python3 /cleanup_...py` and
+  # exits 2). Every other task's post_run uses the repo-path form for exactly
+  # this reason.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/interactive/customer_escalation_triage/cleanup_customer_escalation.py"
     timeout: 300
