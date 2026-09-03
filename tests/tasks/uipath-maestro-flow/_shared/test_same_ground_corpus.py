@@ -237,6 +237,9 @@ def test_paginated_lookup_accepts_both_supported_resolution_routes() -> None:
         "npx flow-sdk registry prepare uipath-salesforce-slack "
         "send-message-to-channel --resolve channel:name=simple"
     )
+    # The CLI wraps the same resolver as `uip maestro registry prepare`
+    # (UiPath/cli#3969) — top-level `maestro registry`, not `maestro flow registry`.
+    uip_command = "uip maestro " + sdk_command[len("npx flow-sdk "):]
 
     # The v1 route is telemetry the SDK arm never produces: advisory, but it
     # still asks for the loop (page 1 alone is not pagination).
@@ -250,6 +253,7 @@ def test_paginated_lookup_accepts_both_supported_resolution_routes() -> None:
     assert "require_success: true" in paged_block and "pass_threshold: 1.0" in paged_block
     assert paged_pattern.search(page_two)
     assert paged_pattern.search(sdk_command)
+    assert paged_pattern.search(uip_command) and not manual_pattern.search(uip_command)
     assert not paged_pattern.search(page_one)
     assert not paged_pattern.search("uip maestro flow validate --resolve channel:name=simple")
     assert not paged_pattern.search("echo nextPage=token")
