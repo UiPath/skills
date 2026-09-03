@@ -72,7 +72,7 @@ uip tm testcases link-automation \
 
 The output should show `Result: "Linked"`. `link-automation` is idempotent on the `(test-case-key, package-name, test-name)` triple — re-running with the same triple replaces the previous link.
 
-**Alternative — link by id.** When the entry point name is too long to type, or `list-automations` shows it truncated (with `…`), pass `--entry-point-id <PackageEntryPointId>` (from Step 4) instead of `--test-name`. The id binds directly; `--test-name` is then optional (used only as the stored label, not for matching). Supply one of `--test-name` / `--entry-point-id`.
+**Alternative — link by id.** When the entry point name is too long to type, or `list-automations` shows it truncated (with `…`), pass `--entry-point-id <PackageEntryPointId>` (from Step 4) instead of `--test-name`. The id binds directly and `--test-name` is ignored (the label is taken from the entry point). Supply one of `--test-name` / `--entry-point-id`.
 
 ```bash
 uip tm testcases link-automation \
