@@ -4,6 +4,8 @@ Tools that call a runnable process — RPA workflows, agents, API workflows, or 
 
 For Integration Service connector tools (separate capability), see [../integration-service/integration-service.md](../integration-service/integration-service.md). For built-in tools that ship pre-built (e.g. `analyze-attachments`), see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) — those use `type: "internal"` and need no solution-level files.
 
+For tools the **client** executes rather than the server — user forms, host-app data or actions — see [../client-side-tools/client-side-tools.md](../client-side-tools/client-side-tools.md); those use `type: "clientSide"`.
+
 ## When to Use
 
 - Agent needs to invoke an RPA process, another agent, an API workflow, or an agentic process

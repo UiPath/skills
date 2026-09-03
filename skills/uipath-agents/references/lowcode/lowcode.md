@@ -95,6 +95,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add a process tool (RPA / agent / API / agentic) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
 | Wire a multi-agent solution (parent + tool agents) | [capabilities/process/process.md](capabilities/process/process.md) § Multi-Agent Solution Example | |
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
+| Add a client-side tool (executes on the client surface — user form, host-app data or action) | [capabilities/client-side-tools/client-side-tools.md](capabilities/client-side-tools/client-side-tools.md) | |
 | Add an MCP (Model Context Protocol) server tool | [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md) | |
 | Add a built-in tool (Analyze Files) | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) | [capabilities/built-in-tools/analyze-attachments.md](capabilities/built-in-tools/analyze-attachments.md) |
 | Accept a file as agent input or return a file as output | [agent-definition.md](agent-definition.md) § File Attachments | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) |
