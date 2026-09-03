@@ -34,9 +34,28 @@ on:
         required: false
         default: '4'
       confirm_large_run:
-        description: 'Allow >50 tasks (cost guardrail).'
+        description: 'Allow >50 task RUNS — tasks x repeats (cost guardrail).'
         type: boolean
         default: false
+      # Replicates. Some tasks depend on nondeterministic agent behaviour
+      # (whether a skill is loaded, whether the agent honours a "do not mutate"
+      # instruction), so a single run is a coin flip and a red job says nothing
+      # about whether anything regressed. N runs plus a pass-rate threshold turn
+      # that into a signal. Cost is linear: task runs = tasks x repeats.
+      repeats:
+        description: 'Runs per task (--repeats). 1 = today behaviour. Cost is linear.'
+        type: string
+        required: false
+        default: '1'
+      # Applied PER TASK across its replicates, not across the suite. At the
+      # default 1.0 every replicate must pass, so repeats:1 + pass_rate:1.0 is
+      # byte-for-byte today's gate. Lower it (e.g. 0.6) to let a known-flaky
+      # task pass on 3 of 5 while still failing a task that always fails.
+      pass_rate:
+        description: 'Fraction of a task''s replicates that must pass (0-1). 1.0 = all.'
+        type: string
+        required: false
+        default: '1.0'
       # Framework version. tests/.coder-eval-version is the single source of
       # truth for this repo — smoke-skills.yml, activation-gate.yml,
       # smoke-rpa-skills.yml and the nightly VM's daily.sh all read it — so an
@@ -165,6 +184,7 @@ jobs:
         env:
           INPUT_GLOBS: ${{ inputs.task_globs }}
           CONFIRMED:   ${{ inputs.confirm_large_run }}
+          REPEATS:     ${{ inputs.repeats }}
         run: |
           set -euo pipefail
           if [ -z "$INPUT_GLOBS" ]; then
@@ -196,8 +216,15 @@ jobs:
             echo "::error::No task files matched the provided globs"
             exit 1
           fi
-          if [ "$TOTAL" -gt 50 ] && [ "$CONFIRMED" != "true" ]; then
-            echo "::error::Glob matches $TOTAL tasks (> 50). Tick confirm_large_run to authorize."
+          # Repeats multiply cost, so the guardrail counts RUNS, not files:
+          # 15 tasks x 5 repeats is 75 agent runs and must be confirmed.
+          REPEATS="${REPEATS:-1}"
+          case "$REPEATS" in ''|*[!0-9]*) echo "::error::repeats must be a positive integer (got '$REPEATS')"; exit 1;; esac
+          [ "$REPEATS" -ge 1 ] || { echo "::error::repeats must be >= 1"; exit 1; }
+          RUNS=$((TOTAL * REPEATS))
+          echo "Task runs: $TOTAL task(s) x $REPEATS repeat(s) = $RUNS"
+          if [ "$RUNS" -gt 50 ] && [ "$CONFIRMED" != "true" ]; then
+            echo "::error::Glob matches $TOTAL tasks x $REPEATS repeats = $RUNS runs (> 50). Tick confirm_large_run to authorize."
             exit 1
           fi
           # Space-separated; downstream jobs word-split on consumption.
@@ -410,6 +437,7 @@ jobs:
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
+          REPEATS:                  ${{ inputs.repeats }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
           # The model when agent_model is blank: one repo variable per harness, named the
@@ -585,6 +613,12 @@ jobs:
 
           # After the clamp, so a delegate run reports the -j it will actually use.
           args+=(-j "$j" -v --model "$model")
+
+          # Replicates. Omitted entirely at the default of 1 so a normal run's
+          # argv is unchanged from before this input existed.
+          if [ "${REPEATS:-1}" -gt 1 ]; then
+            args+=(--repeats "$REPEATS")
+          fi
 
           # Task globs are `args` entries like everything else: the action
           # promotes none of the CLI's flags to named inputs, so there is no
@@ -869,6 +903,8 @@ jobs:
 
       - name: Plaintext summary + verdict
         if: always()
+        env:
+          PASS_RATE: ${{ inputs.pass_rate }}
         run: |
           set -uo pipefail
           # /tmp/runs IS the run dir (--run-dir above), so its subdirectories are
@@ -881,14 +917,33 @@ jobs:
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, pathlib, sys
+          python - "$run_dir" "$PASS_RATE" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import collections, json, pathlib, sys
+          # Group replicates by (variant, task): with --repeats each run writes
+          # its own task.json under .../<task-id>/<NN>/. Counting rows directly
+          # would require EVERY replicate to pass, which makes repeats a
+          # stricter gate rather than a stability measure.
           rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          threshold = float(sys.argv[2])
+          groups = collections.OrderedDict()
           for r in rows:
-              print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
-          ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
-          print(f"\n{ok}/{len(rows)} PASS (linux)")
-          sys.exit(0 if rows and ok == len(rows) else 1)
+              groups.setdefault((r.get('variant_id', ''), r.get('task_id', '?')), []).append(r)
+          failed = 0
+          for (variant, task), reps in groups.items():
+              ok = sum(1 for r in reps if r.get('final_status') == 'SUCCESS')
+              rate = ok / len(reps)
+              passed = rate >= threshold
+              if not passed:
+                  failed += 1
+              if len(reps) == 1:
+                  print(f"{task}: {reps[0].get('final_status', '?')}")
+              else:
+                  # Flaky is worth naming: it passed, but not every time.
+                  note = '' if ok == len(reps) else ('  <- FLAKY' if passed else '')
+                  print(f"{task}: {ok}/{len(reps)} replicates PASS ({rate:.0%}){note}")
+          n = len(groups)
+          print(f"\n{n - failed}/{n} PASS (linux)" + (f", threshold {threshold:.0%} of replicates" if any(len(v) > 1 for v in groups.values()) else ""))
+          sys.exit(0 if groups and failed == 0 else 1)
           PY
 
   run-windows:
@@ -1426,6 +1481,8 @@ jobs:
       - name: Plaintext summary + verdict
         if: always()
         shell: bash
+        env:
+          PASS_RATE: ${{ inputs.pass_rate }}
         run: |
           set -uo pipefail
           run_dir=$(ls -td tests/runs/*/ 2>/dev/null | head -n 1 || true)
@@ -1433,14 +1490,33 @@ jobs:
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, pathlib, sys
+          python - "$run_dir" "$PASS_RATE" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import collections, json, pathlib, sys
+          # Group replicates by (variant, task): with --repeats each run writes
+          # its own task.json under .../<task-id>/<NN>/. Counting rows directly
+          # would require EVERY replicate to pass, which makes repeats a
+          # stricter gate rather than a stability measure.
           rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          threshold = float(sys.argv[2])
+          groups = collections.OrderedDict()
           for r in rows:
-              print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
-          ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
-          print(f"\n{ok}/{len(rows)} PASS (windows)")
-          sys.exit(0 if rows and ok == len(rows) else 1)
+              groups.setdefault((r.get('variant_id', ''), r.get('task_id', '?')), []).append(r)
+          failed = 0
+          for (variant, task), reps in groups.items():
+              ok = sum(1 for r in reps if r.get('final_status') == 'SUCCESS')
+              rate = ok / len(reps)
+              passed = rate >= threshold
+              if not passed:
+                  failed += 1
+              if len(reps) == 1:
+                  print(f"{task}: {reps[0].get('final_status', '?')}")
+              else:
+                  # Flaky is worth naming: it passed, but not every time.
+                  note = '' if ok == len(reps) else ('  <- FLAKY' if passed else '')
+                  print(f"{task}: {ok}/{len(reps)} replicates PASS ({rate:.0%}){note}")
+          n = len(groups)
+          print(f"\n{n - failed}/{n} PASS (windows)" + (f", threshold {threshold:.0%} of replicates" if any(len(v) > 1 for v in groups.values()) else ""))
+          sys.exit(0 if groups and failed == 0 else 1)
           PY
 
       # A single dispatch can start both jobs, and only the Linux one publishes an

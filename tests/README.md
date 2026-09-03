@@ -562,6 +562,37 @@ runs/
 - **`experiment.md`** — high-level pass/fail summary across all tasks
 - **`task.json`** — per-criterion scores, agent transcript, and LLM reviewer output
 
+### Replicates — separating flaky from broken
+
+Some tasks turn on nondeterministic agent behaviour: whether the agent loads the
+skill at all, or whether it honours a "do not mutate" instruction. A single run
+of those is a coin flip, so one red job says nothing about whether anything
+regressed.
+
+The **Run Coder Eval** workflow takes two inputs for this:
+
+| Input | Default | Meaning |
+|---|---|---|
+| `repeats` | `1` | Runs per task (`--repeats`). Cost is linear: runs = tasks x repeats. |
+| `pass_rate` | `1.0` | Fraction of a task's replicates that must pass. |
+
+`pass_rate` is applied **per task across its own replicates**, not across the
+suite. At the defaults (`1` / `1.0`) the gate is identical to a run without
+these inputs, so nothing changes unless you ask for it.
+
+Each replicate writes its own `task.json` under `<task-id>/<NN>/`, and the
+verdict groups them by task before applying the threshold — counting rows
+directly would require every replicate to pass, which makes repeats a *stricter*
+gate rather than a stability measure. A task that passes some but not all of its
+replicates is reported as `3/5 replicates PASS (60%)  <- FLAKY`.
+
+The large-run guardrail counts **runs**, not task files, so 15 tasks at
+`repeats: 5` is 75 runs and needs `confirm_large_run`.
+
+Use it to tell a flaky task from a broken one: a task failing every replicate is
+a real regression; one failing some is nondeterminism, and the pass rate is the
+number to track over time.
+
 ## Debugging Failures
 
 1. **Read the task result:**
