@@ -37,6 +37,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
 | Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |
 | Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |
+| Data Fabric | `core.datafabric.read`, `core.datafabric.create`, `core.datafabric.update`, `core.datafabric.delete` — `inputs.entityConfig` is plain JSON, not an envelope ([data-fabric/impl.md](plugins/data-fabric/impl.md)) |
 
 **CLI-owned nodes (`uip maestro flow node add` + `uip maestro flow node configure`):**
 
@@ -116,6 +117,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Create a subflow** | [plugins/subflow/impl.md](plugins/subflow/impl.md) + [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](plugins/delay/) or [plugins/scheduled-trigger/](plugins/scheduled-trigger/) |
 | **Use queue nodes** | [plugins/queue/impl.md](plugins/queue/impl.md) |
+| **Read or write Data Fabric entity records** | [plugins/data-fabric/impl.md](plugins/data-fabric/impl.md) — `core.datafabric.read` / `create` / `update` / `delete`, each gated by its own `canvas.nodes.*-entity` tenant flag |
 
 ## Anti-patterns
 
@@ -158,7 +160,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [planning-arch.md](planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](plugins/) — per-node-type planning + impl docs:
-  - [connector](plugins/connector/) — IS connector nodes (incl. Data Fabric activities)
+  - [connector](plugins/connector/) — IS connector nodes (incl. the `uipath-uipath-dataservice` entity activities; prefer the native [data-fabric](plugins/data-fabric/) nodes when their flag is on)
   - [connector-trigger](plugins/connector-trigger/)
   - [script](plugins/script/) — Jint ES2020 JavaScript
   - [http](plugins/http/) — `core.action.http.v2` (Managed HTTP Request)
@@ -184,6 +186,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
+  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`), no Integration Service connection
 
 ### Cross-capability (shared)
 
