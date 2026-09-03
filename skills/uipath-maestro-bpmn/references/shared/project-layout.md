@@ -26,6 +26,27 @@ ProjectNameSolution/             ← auto-scaffolded when init runs outside a so
   ProjectName/
     ProjectName.bpmn
     project.uiproj
+    bindings_v2.json             ← generated; preserve as written
+    entry-points.json            ← generated
+    operate.json                 ← generated
+    package-descriptor.json      ← generated
+```
+
+`init` writes all six files. Preserve the four generated ones as written —
+that shape is the contract `pack` consumes.
+
+With `--skip-solution-registration` the project lands bare instead, with no
+solution wrapper (use it for a local-only project you do not intend to package
+or operate):
+
+```text
+ProjectName/
+  ProjectName.bpmn
+  project.uiproj
+  bindings_v2.json
+  entry-points.json
+  operate.json
+  package-descriptor.json
 ```
 
 If a **non-empty** directory already exists at the path you typed, init warns
