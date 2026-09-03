@@ -24,9 +24,8 @@ Use this guide when BPMN source changed and local package metadata must be refre
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
 consumes it as written:
 
-- The CLI initializer omits `bpmn:process@isExecutable`; preserve that shape.
-  An existing `isExecutable="false"` is the equivalent default and is also
-  fine. Do not force `isExecutable="true"`.
+- Preserve the initializer's `bpmn:process@isExecutable` shape — see
+  [structural-bpmn.md](../structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples).
 - `project.uiproj` carries `"Name"` and `"ProjectType":
   "ProcessOrchestration"`. The CLI does not write `"main"` here; it preserves a
   hand-authored one, so do not add one expecting it to be required.
@@ -46,8 +45,7 @@ For a new local project, reuse the current solution when one is already in
 scope; otherwise let the supported generator create and register one:
 
 ```bash
-uip maestro bpmn init <ProjectName> \
-  --output json
+uip maestro bpmn init <ProjectName> --output json
 ```
 
 Edit the project at the returned `Data.Path` and preserve its generated

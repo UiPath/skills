@@ -138,8 +138,10 @@ schema bodies are JSON text or CDATA.
 ```
 
 If a migration marker is present, its supported shape is
-`<uipath:migrationVersion version="11.5" />`; the attribute is `version`, not
-`value`. The CLI initializer may omit that optional marker.
+`<uipath:migrationVersion version="15" />`; the attribute is `version`, not
+`value`, and its value is an **integer** serializer migration number — the
+reader does `Number.parseInt`, so a decimal such as `11.5` is silently
+truncated. The CLI initializer may omit that optional marker.
 
 See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
