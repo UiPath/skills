@@ -96,7 +96,7 @@ A missing scope name (`scope not found` / `Not all scopes=<list> are present in 
 
 ## Manual portal fallback
 
-> **Portal picker labels vs scope names.** In the portal, scopes are grouped under **resource labels** that differ from the CLI scope names. Pick the scopes per resource from [oauth-scopes.md](oauth-scopes.md). Some services span two resources: Insights analytics and SLA reads need both the **Insights** resource (scope `Insights`) and the **Insights Real-Time Data** resource (scope `Insights.RealTimeData`); SLA summaries also need **PIMS**.
+> **Portal picker labels vs scope names.** In the portal, scopes are grouped under **resource labels** that differ from the CLI scope names. Pick the scopes per resource from [oauth-scopes.md](oauth-scopes.md). Some services require more than one resource.
 
 ### Create a new External Application
 
