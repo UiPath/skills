@@ -15,13 +15,13 @@ description: >
 tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:improve]
 
 run_limits:
-  expected_turns: 6
+  expected_turns: 7
 
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:
     - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_routing}
+    - {type: template_dir, path: ../_shared/mock_template_metrics}
 
 initial_prompt: |
   Extraction scores in the IXP project `parcel_docs-6e2b91c8-ixp` are below
