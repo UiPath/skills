@@ -54,71 +54,35 @@ def test_minimal_example_has_supported_root_contract() -> None:
     UUID(entry_point.attrib["value"])
 
 
-def test_minimal_example_has_integral_flow_and_di() -> None:
+def test_minimal_example_has_complete_di_coverage() -> None:
+    """Every node has a shape, every flow an edge, every edge two waypoints.
+
+    Deliberately narrow: this pins DI *coverage* over the canonical example
+    agents copy, which is what the CLI's `validate` still does not enforce
+    (0x0 bounds and single-waypoint edges report Valid on uip 1.202.0).
+    It does not re-assert the example's graph wiring -- that is a hand-written
+    snippet checked into this repo, not a regression surface.
+    """
+
     root = _minimal_example()
     process = root.find("bpmn:process", NS)
     assert process is not None
 
-    nodes_by_type = {
-        kind: [
-            element.attrib["id"]
-            for element in list(process)
-            if element.tag.rsplit("}", 1)[-1] == kind
-        ]
-        for kind in ("startEvent", "task", "endEvent")
+    node_ids = {
+        element.attrib["id"]
+        for element in process
+        if element.tag.rsplit("}", 1)[-1]
+        in ("startEvent", "task", "endEvent", "exclusiveGateway")
     }
-    assert all(len(ids) == 1 for ids in nodes_by_type.values())
-    start_id = nodes_by_type["startEvent"][0]
-    task_id = nodes_by_type["task"][0]
-    end_id = nodes_by_type["endEvent"][0]
-    node_ids = {start_id, task_id, end_id}
-
-    flows = process.findall("bpmn:sequenceFlow", NS)
-    assert len(flows) == 2
-    flow_ids = {flow.attrib["id"] for flow in flows}
-    assert {
-        (flow.attrib["sourceRef"], flow.attrib["targetRef"])
-        for flow in flows
-    } == {
-        (start_id, task_id),
-        (task_id, end_id),
+    flow_ids = {
+        flow.attrib["id"] for flow in process.findall("bpmn:sequenceFlow", NS)
     }
-    incoming_by_node = {
-        element.attrib["id"]: {
-            incoming.text
-            for incoming in element.findall("bpmn:incoming", NS)
-            if incoming.text
-        }
-        for element in list(process)
-        if element.attrib.get("id") in node_ids
-    }
-    outgoing_by_node = {
-        element.attrib["id"]: {
-            outgoing.text
-            for outgoing in element.findall("bpmn:outgoing", NS)
-            if outgoing.text
-        }
-        for element in list(process)
-        if element.attrib.get("id") in node_ids
-    }
-    flow_by_pair = {
-        (flow.attrib["sourceRef"], flow.attrib["targetRef"]): flow.attrib["id"]
-        for flow in flows
-    }
-    assert outgoing_by_node[start_id] == {flow_by_pair[(start_id, task_id)]}
-    assert incoming_by_node[task_id] == {flow_by_pair[(start_id, task_id)]}
-    assert outgoing_by_node[task_id] == {flow_by_pair[(task_id, end_id)]}
-    assert incoming_by_node[end_id] == {flow_by_pair[(task_id, end_id)]}
-
     shapes = root.findall(".//bpmndi:BPMNShape", NS)
     edges = root.findall(".//bpmndi:BPMNEdge", NS)
-    assert len(shapes) == len(node_ids)
-    assert len(edges) == len(flow_ids)
+
     assert {shape.attrib["bpmnElement"] for shape in shapes} == node_ids
     assert {edge.attrib["bpmnElement"] for edge in edges} == flow_ids
     assert all(len(edge.findall("di:waypoint", NS)) >= 2 for edge in edges)
-
-
 def test_variable_and_migration_examples_use_serializer_attributes() -> None:
     text = REFERENCE.read_text(encoding="utf-8")
     variables_section = text.split("## Variables (`BPMN.Variables`)", maxsplit=1)[1]

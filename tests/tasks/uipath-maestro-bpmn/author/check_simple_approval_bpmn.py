@@ -74,8 +74,11 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process element")
-    if process.attrib.get("isExecutable") not in (None, "false"):
-        fail("new projects must preserve the CLI scaffold executable default")
+    # `isExecutable` is deliberately not graded: nothing in the CLI reads it
+    # (no reference in maestro-sdk/maestro-tool outside the spec), so pack,
+    # validate, and the canvas all tolerate any value. The skill documents the
+    # scaffold default; failing an agent over an inert attribute would grade
+    # style, not behaviour -- see .claude/rules/test-writing.md.
 
     starts = process.findall("bpmn:startEvent", NS)
     if len(starts) != 1:
@@ -132,14 +135,20 @@ def main() -> None:
         descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         fail(f"package-descriptor.json is not valid JSON: {exc}")
-    expected_files = {
+    # Subset, not equality: this map is CLI-generated, so pinning it exactly
+    # turns any future CLI addition into an eval failure.
+    required_files = {
         "operate.json": "operate.json",
         "entry-points.json": "entry-points.json",
         "bindings.json": "bindings_v2.json",
         bpmn_path.name: bpmn_path.name,
     }
-    if descriptor.get("files") != expected_files:
-        fail("package-descriptor.json must preserve the current CLI root files map")
+    files = descriptor.get("files")
+    if not isinstance(files, dict):
+        fail("package-descriptor.json has no files map")
+    missing = {k: v for k, v in required_files.items() if files.get(k) != v}
+    if missing:
+        fail(f"package-descriptor.json files map is missing entries: {missing}")
 
     variable_names = {
         var.attrib.get("name")
