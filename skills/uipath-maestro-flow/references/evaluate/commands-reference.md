@@ -145,7 +145,6 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 | `--component-description <text>` | No | Human-readable label for the component |
 | `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
 | `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |
-| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved when omitted** — works for top-level simulations (from the `.flow` node outputs) and child simulations with `--parent` (from the `.flow` for inline agents, from `agent.json` for same-solution agents, or via the platform API for published agents when logged in). Pass explicitly only to override. |
 | `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent simulation exists yet, one is auto-created (type `agent`, strategy `Llm`). `--component-type` defaults to `Node`. |
 | `--path <path>` | No | (see Common Options) |
 
@@ -153,25 +152,19 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 
 | Strategy | When to use | Key flags |
 |----------|-------------|-----------|
-| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved for all agent types) |
+| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions` (output schema auto-resolved) |
 | `Static` | Output is fixed and deterministic | `--mock-value` |
 
-**`--output-schema` auto-resolution:** When omitted, the CLI auto-resolves the output schema for both top-level and child (`--parent`) simulations:
+**Output schema auto-resolution:** The CLI always auto-resolves the output schema for both top-level and child (`--parent`) simulations:
 
 - **Top-level simulations:** reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`).
 - **Child simulations (inline canvas agents):** finds the child tool node via edges in the `.flow` file and extracts its output schema.
 - **Child simulations (same-solution agents):** reads the inline agent's `agent.json` and matches the tool by name in the `resources[]` array.
 - **Child simulations (published agents):** calls the platform API (`simulatableComponents`) using the current login session to fetch the tool's schema. Requires `uip login`.
 
-Fails with an actionable error if the node/tool is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text.
+Fails with an actionable error if the node/tool is not found or has no outputs.
 
-**Static mock value validation:** When `--output-schema` is resolved (explicitly or auto) and `--strategy Static` is used with `--parent`, the CLI validates that the `--mock-value` keys match the schema properties, catching mismatches early.
-
-For a connector that returns `{ status, message }` you would pass:
-
-```bash
---output-schema '{"type":"object","properties":{"status":{"type":"string"},"message":{"type":"string"}}}'
-```
+**Static mock value validation:** For `Static` child simulations, the CLI validates that `--mock-value` keys match the auto-resolved schema properties, catching shape mismatches early.
 
 Example — LLM strategy:
 

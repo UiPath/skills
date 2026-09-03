@@ -133,7 +133,6 @@ uip maestro flow eval simulation add <component-id> \
   --strategy Llm \
   --component-type connector \
   --simulation-instructions "Pretend to send the email and return success." \
-  --output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}' \
   --path <flow_project> --output json
 
 uip maestro flow eval simulation add <component-id> \
@@ -157,10 +156,10 @@ uip maestro flow eval simulation remove <component-id> \
 
 | Strategy | Use | Required or relevant flags |
 |---|---|---|
-| `Llm` | Plausible, non-deterministic output | `--simulation-instructions`, `--output-schema` (auto-resolved for all agent types) |
+| `Llm` | Plausible, non-deterministic output | `--simulation-instructions` (output schema auto-resolved) |
 | `Static` | Identical output every run | `--mock-value <json>` |
 
-For `Llm`, `--output-schema` is auto-resolved when omitted — for both top-level and child (`--parent`) simulations. Top-level reads the `.flow` node outputs; child simulations resolve from the `.flow` edges (inline agents), `agent.json` resources (same-solution agents), or the platform API (published agents, requires `uip login`). Pass it explicitly only to override.
+The output schema is always auto-resolved — for both top-level and child (`--parent`) simulations. Top-level reads the `.flow` node outputs; child simulations resolve from the `.flow` edges (inline agents), `agent.json` resources (same-solution agents), or the platform API (published agents, requires `uip login`).
 
 Simulations are stored inline in the data point's `simulations` array. Adding one for an existing `<component-id>` and data point replaces the existing simulation.
 
