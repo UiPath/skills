@@ -135,7 +135,7 @@
             "For_Each_1": {
               "for": {
                 "each": "term",
-                "in": "${$context.outputs.Do_While_1.results ?? []}",
+                "in": "${$context.outputs?.Do_While_1?.results ?? []}",
                 "at": "termIndex"
               },
               "do": [
@@ -168,7 +168,7 @@
           },
           {
             "Response_1": {
-              "response": "${{ lastTerm: $context.variables.current, iterationsRun: $context.variables.iteration, fibSum: $context.variables.sum, classified: $context.outputs.For_Each_1.results }}",
+              "response": "${{ lastTerm: $context.variables.current, iterationsRun: $context.variables.iteration, fibSum: $context.variables.sum, classified: $context.outputs?.For_Each_1?.results ?? [] }}",
               "markJobAsFailed": false,
               "then": "end",
               "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }" },

@@ -219,7 +219,7 @@ Iterates over a collection. Requires `#Body` inside `do`.
 
 **Output pattern:** `${$context.outputs?.For_Each_N}`
 
-> The `?.` after `outputs` is required. The bucket is created by the body's export — zero iterations (empty collection) means no export, and `$context.outputs.For_Each_N` without `?.` crashes the run with `Cannot read properties of undefined`.
+> The `?.` after `outputs` is required — **and so is guarding every downstream read of the bucket.** The bucket is created by the body's export, so zero iterations (empty collection) means no export: `$context.outputs.For_Each_N` without `?.` crashes the run with `Cannot read properties of undefined (reading 'For_Each_N')`, and so does a Response, `for.in`, or Assign that reads `$context.outputs.For_Each_N.results` — a trailing `?? []` does not help because `.results` already threw. Read the bucket downstream as `${$context.outputs?.For_Each_N?.results ?? []}`.
 
 **Minimal JSON:**
 ```json
@@ -257,7 +257,7 @@ Inside the body, the iterator and index are accessible as globals **with a `$` p
 **Nesting:**
 - Each ForEach activity's iterator and index variable names are scoped to that loop. Inner loops MUST use distinct names — e.g. outer `for.each: "outerItem"` / inner `for.each: "innerItem"`. Reusing `currentItem` in both loops shadows the outer one.
 - An `If`, another `ForEach`, a `DoWhile`, or a `TryCatch` placed inside a `#Body` is fine — drop them into the body's `do` array. Each gets its own `export.as` as usual; the body's outer `export.as` (the index-aware accumulation) is unchanged.
-- The body's accumulation export merges per-iteration `$output` into `$context.outputs.For_Each_N.results`. If you want per-iteration data, capture it via Assign / JsInvoke inside the body — those activities' `$output` become the body's per-iteration `$output`.
+- The body's accumulation export merges per-iteration `$output` into `$context.outputs.For_Each_N.results`; downstream, read it as `$context.outputs?.For_Each_N?.results ?? []` (the bucket is absent after zero iterations). If you want per-iteration data, capture it via Assign / JsInvoke inside the body — those activities' `$output` become the body's per-iteration `$output`.
 
 ---
 

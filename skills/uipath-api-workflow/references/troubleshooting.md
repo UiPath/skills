@@ -60,6 +60,11 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 - **Cause:** Using `$context.outputs` without optional chaining when no outputs exist yet
 - **Fix:** Always use `$context?.outputs` in export patterns
 
+### `Cannot read properties of undefined (reading 'For_Each_N')` — only when the collection is empty
+- **Symptom:** the run succeeds for a non-empty input and fails with this error for `[]`, thrown from the loop's `output.as` or from a downstream Response / `for.in` / Assign that reads `$context.outputs.For_Each_N.results`
+- **Cause:** the `For_Each_N` bucket is created by the body's export; zero iterations means it never exists. A trailing `?? []` does not help — the `.results` access already threw
+- **Fix:** guard every read of a loop bucket, not only the loop's own `output.as`: `${$context.outputs?.For_Each_N?.results ?? []}`. Use the same shape for `Do_While_N` buckets
+
 ### ForEach body export missing index reset
 - **Symptom:** Results array grows incorrectly across loop iterations
 - **Cause:** Using the simpler DoWhile accumulation pattern instead of the ForEach index-aware pattern
