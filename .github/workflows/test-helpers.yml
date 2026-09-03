@@ -13,6 +13,7 @@ on:
       - 'skills/uipath-maestro-bpmn/references/structural-bpmn.md'
       - 'skills/uipath-maestro-bpmn/references/shared/project-layout.md'
       - 'skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md'
+      - 'skills/uipath-maestro-bpmn/validator/bpmn-spec.json'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'

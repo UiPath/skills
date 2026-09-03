@@ -57,6 +57,15 @@ do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 
+For an existing ScriptTask, preserve its mapping discriminator and
+`uipath:scriptVersion`. Preserve its arguments and outputs except where the
+requested edit requires a surgical change; make that change using the node's
+existing contract. Migration to a different contract requires explicit
+confirmation. If runtime diagnosis establishes that the node itself is
+incompatible, present that evidence and obtain confirmation before migrating
+it. Do not normalize a working brownfield node merely because the new-node
+authoring contract differs.
+
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
 `uipath-maestro-case`.
@@ -174,6 +183,12 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+   `BPMN.ScriptTask` is the registry lookup key, but a new node serializes
+   `<uipath:type value="BPMN.Variables" version="v1" />` — never the lookup
+   key. Local validation accepts the older discriminator, so a clean
+   `validate` does not prove that mapping is right. For the compatibility
+   fallback and its scope, see
+   [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
