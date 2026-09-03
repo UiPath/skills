@@ -178,7 +178,7 @@ uip maestro flow registry get <node-type> --output json \
 
 FilterBuilder parameters are not limited to list operations. Use the `name` this returns (`where`, `q`, `queryExpression`, or another connector-specific name) — never a guessed one. Data Service `query-entity-records` returns `[{"name":"queryExpression","type":"query"}]`.
 
-Every name returned goes under the `filter` key of `--detail`, as a structured tree. Never pass a CEQL string under `queryParameters.<name>`; the CLI rejects it or leaves Studio Web's tree undefined. From the tree the CLI writes runtime `queryParameters.<name>` and design-time `configuration.essentialConfiguration.savedFilterTrees.<name>`. Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+Every name returned is configured through the `filter` key of `--detail`. The value of `filter` IS the tree — `groupOperator`, `filters[]`, `groups[]` at its top level. Do not nest the tree under the parameter name (`"filter": {"queryExpression": {...}}`): the CLI targets the FilterBuilder parameter it discovered, reads no `filters` at the top level, and compiles an EMPTY query with no error, so the flow fetches the whole entity. Never pass a CEQL string under `queryParameters.<name>`; the CLI rejects it or leaves Studio Web's tree undefined. From the tree the CLI writes runtime `queryParameters.<name>` and design-time `configuration.essentialConfiguration.savedFilterTrees.<name>`. Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 Read path slots from the same registry output; never hand-type `endpoint`:
 
@@ -189,12 +189,24 @@ uip maestro flow registry get <node-type> --output json \
 
 Data Service `query-entity-records` returns path `/v2/{entityName}/qer` with `entityName` as a path parameter, so set `pathParameters.entityName` in the same configure call.
 
-A runtime value goes in the tree, never in a hand-written string. Give the leaf operand a dynamic value with `"isLiteral": false`; the CLI compiles it to a `{var_<hash>}` placeholder plus a `filterVariables` entry:
+A runtime value goes in the tree, never in a hand-written string. Give the leaf operand a dynamic value with `"isLiteral": false`; the CLI compiles it to a `{var_<hash>}` placeholder plus a `filterVariables` entry. Full `--detail` shape (write it to a file with a quoted heredoc):
 
 ```json
-{ "id": "accountNumber", "operator": "Equals",
-  "value": { "value": "=js:$vars.<node>.output.<field>", "isLiteral": false } }
+{
+  "connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>",
+  "pathParameters": { "entityName": "<ENTITY_NAME>" },
+  "filter": {
+    "groupOperator": 0,
+    "filters": [
+      { "id": "accountNumber", "operator": "Equals",
+        "value": { "value": "=js:$vars.<node>.output.<field>", "isLiteral": false } }
+    ],
+    "groups": []
+  }
+}
 ```
+
+After configure, confirm the compile: `queryParameters.<name>` holds `accountNumber = '{var_<hash>}'` and `filterVariables` has that `var_<hash>` key. An empty `queryParameters.<name>` means the tree was mis-shaped.
 
 Read exact, case-sensitive field names from `uip df entities list --output json` and `uip df entities get <entity-id> --output json`; unmatched leaves are silently dropped.
 
