@@ -60,18 +60,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--fields flag value includes f-001 (cleanly-correct Invoice Number)"
+    description: "f-001 (cleanly-correct Invoice Number) confirmed on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-001).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-001).*)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--fields flag value includes f-002 (cleanly-correct Invoice Date)"
+    description: "f-002 (cleanly-correct Invoice Date) confirmed on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-002).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-002).*)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 
@@ -85,9 +85,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Agent passed --corrections with the OCR-mangled field's corrected value"
+    description: "--corrections carries the OCR-mangled field's corrected value, on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--corrections\s+.*f-003.*\$?12,?000\.00).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)(?=[^\r\n]*--corrections\s+[^\r\n]*f-003[^\r\n]*\$?12,?000\.00).*)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0

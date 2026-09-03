@@ -31,10 +31,10 @@ initial_prompt: |
 
 success_criteria:
   - type: file_matches_regex
-    description: "Agent confirmed per-document, passing a <document-id> and the reviewed -m/--model-version each time (Critical Rules 15, 19)"
+    description: "Agent confirmed EACH of doc-001/002/003 by id, every one pinning the reviewed -m/--model-version (Critical Rules 15, 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-00[123]\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))[^\r\n]*$){3}
+      (?m)\A(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-001\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-002\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-003\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))
     weight: 5.0
     pass_threshold: 1.0
 

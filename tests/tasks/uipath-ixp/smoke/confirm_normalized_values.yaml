@@ -59,18 +59,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--fields includes f-102 (normalized Date confirmed as-is)"
+    description: "f-102 (normalized Date) confirmed as-is on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-102).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-102).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "--fields includes f-103 (normalized Monetary Quantity confirmed as-is)"
+    description: "f-103 (normalized Monetary Quantity) confirmed as-is on a version-pinned call"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--fields\s+[^|;&]*f-103).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-103).*)[^\r\n]*$
     weight: 3.0
     pass_threshold: 1.0
 

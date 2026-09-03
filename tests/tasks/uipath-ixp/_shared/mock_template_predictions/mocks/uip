@@ -8,7 +8,7 @@
 # (`Data.Predictions[].ModelVersion`). The base mock fails every invocation, so
 # a task graded on the pin is unwinnable there — the read yields no version and
 # an agent that declines to invent one correctly stops. Every other task works
-# around that by naming the version in the prompt (see confirm_all_predictions,
+# around that by naming the version in the prompt (see confirm_predictions,
 # no_blind_confirm_all), which exercises Rule 19's FIRST branch. This overlay
 # exists for the second, and far more common, branch: the version was never
 # given, so the agent has to read it.
