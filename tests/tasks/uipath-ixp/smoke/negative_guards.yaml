@@ -92,7 +92,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Task 2: agent recorded verdict via uip ixp labellings with the reviewed version pinned, not manual extraction (Critical Rules #11, #19)"
+    description: "Task 2: confirmed the reviewed field f-001 on doc-abc-123 with the version pinned — not manual extraction, and not a bare bulk confirm (Critical Rules #8, #11, #19)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
