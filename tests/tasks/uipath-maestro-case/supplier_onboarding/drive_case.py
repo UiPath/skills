@@ -324,7 +324,19 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
     # alone proves nothing. Read the task back and see whose name is on it: the symptom
     # otherwise arrives one step later as `tasks complete` saying the action is no longer
     # assigned to you, which does not say who holds it.
-    assigned = envelope(["uip", "tasks", "assign", task_id, "--user", who, "--output", "json"])
+    # `tasks users <folder-id>` is the folder's assignable set, and its own help says to
+    # pass the resulting user ID to `tasks assign`. An email that is not in that set is
+    # what an assign refuses while still answering Success.
+    allowed = run_list(["uip", "tasks", "users", folder_id, "--output", "json"])
+    mine = next((u for u in allowed
+                 if who in (u.get("UserName"), u.get("EmailAddress"), u.get("Name"))), None)
+    if mine is None:
+        fail(f"{who!r} is not in the assignable set for folder {folder_id}. That folder allows "
+             f"{[u.get('UserName') or u.get('EmailAddress') for u in allowed][:8]}, so an assign "
+             f"to {who!r} cannot take effect and `tasks complete` then reports the action is no "
+             f"longer assigned to you")
+    by_id = ["--user-id", str(mine["Id"])] if mine.get("Id") else ["--user", who]
+    assigned = envelope(["uip", "tasks", "assign", task_id, *by_id, "--output", "json"])
     if assigned.get("Result") != "Success":
         fail(f"assigning task {task_id} to {who} failed: "
              f"{assigned.get('Message') or assigned.get('Code') or assigned}")
