@@ -226,6 +226,24 @@ simulation:
     - "Keep replies concise and in character. Emit the stop token only after every revealed requirement is addressed and the agent reports successful local validation and packing."
   max_turns: 20
 
+# REQUIRED, not a preference: this is the repo's only task with an
+# `agent_judge` criterion, and coder_eval raises at setup resolution when an
+# enabled agent_judge meets `checker_context.api_route.route: litellm`, which
+# every experiment in tests/experiments/ sets as its default. `litellm`
+# dispatches llm_judge in-process, but agent_judge runs as a real Claude Code
+# subprocess needing an Anthropic-compatible endpoint, so the runner rejects
+# the pair rather than silently misrouting it
+# (coder_eval/orchestrator.py::_reject_litellm_agent_judge_if_unsupported).
+#
+# `bedrock` matches how CI routes the agent (smoke-skills.yml sets
+# API_BACKEND: bedrock) and sources its credentials from
+# AWS_BEARER_TOKEN_BEDROCK + AWS_REGION. Deleting this block, or dropping the
+# route back to litellm, makes the whole task fail before the agent starts.
+# Switch to `direct` (needs ANTHROPIC_API_KEY) only if Bedrock is unavailable.
+checker_context:
+  api_route:
+    route: bedrock
+
 success_criteria:
   - type: agent_judge
     description: "Agent conducted a progressive requirements interview and incorporated the late correction before implementation"
