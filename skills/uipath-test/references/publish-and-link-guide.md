@@ -56,7 +56,7 @@ A single package can expose multiple test entry points (one per `[TestCase]` met
 uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_UUID> --output json
 ```
 
-Optional filter: `--package-name <PACKAGE_ID>` (case-insensitive substring) when many packages live in the same folder. Pick the row whose `PackageName` matches the `Id` from Step 2 and note its `TestName`.
+Optional filter: `--package-name <PACKAGE_ID>` (case-insensitive substring) when many packages live in the same folder. Pick the row whose `PackageName` matches the `Id` from Step 2 and note its `TestName`. Each row also carries a `PackageEntryPointId` — use it with `--entry-point-id` in Step 5 when the name is too long to type or is shown truncated (with `…`).
 
 ## Step 5 — Link the automation
 
@@ -71,6 +71,18 @@ uip tm testcases link-automation \
 ```
 
 The output should show `Result: "Linked"`. `link-automation` is idempotent on the `(test-case-key, package-name, test-name)` triple — re-running with the same triple replaces the previous link.
+
+**Alternative — link by id.** When the entry point name is too long to type, or `list-automations` shows it truncated (with `…`), pass `--entry-point-id <PackageEntryPointId>` (from Step 4) instead of `--test-name`. The id binds directly; `--test-name` is then optional (used only as the stored label, not for matching). Supply one of `--test-name` / `--entry-point-id`.
+
+```bash
+uip tm testcases link-automation \
+  --project-key <PROJECT_KEY> \
+  --test-case-key <TEST_CASE_KEY> \
+  --folder-key <FOLDER_UUID> \
+  --package-name <PACKAGE_ID> \
+  --entry-point-id <PACKAGE_ENTRY_POINT_ID> \
+  --output json
+```
 
 ## Step 6 — Run
 
