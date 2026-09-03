@@ -13,8 +13,6 @@ import sys
 import tempfile
 import unittest
 from dataclasses import replace
-
-import yaml
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
@@ -33,6 +31,111 @@ SPEC.loader.exec_module(checker)
 _JOURNAL_DIR = tempfile.TemporaryDirectory()
 atexit.register(_JOURNAL_DIR.cleanup)
 checker.CLEANUP_JOURNAL = Path(_JOURNAL_DIR.name) / "cleanup.jsonl"
+
+
+
+def load_task() -> dict:
+    """Parse the task YAML without a third-party dependency.
+
+    The grader itself imports only the standard library, and the CI job that
+    runs these tests installs pytest alone, so pulling in PyYAML here would
+    have meant changing the workflow to test a stdlib-only checker. This
+    handles the narrow subset the assertions need: `run_limits` scalars and
+    the `success_criteria` list of flat mappings.
+    """
+
+    text = (
+        Path(__file__)
+        .with_name("customer_escalation_triage.yaml")
+        .read_text(encoding="utf-8")
+    )
+
+    def scalar(raw: str):
+        raw = raw.strip()
+        if raw in ("true", "false"):
+            return raw == "true"
+        if re.fullmatch(r"-?\d+", raw):
+            return int(raw)
+        if re.fullmatch(r"-?\d+\.\d+", raw):
+            return float(raw)
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'":
+            return raw[1:-1]
+        return raw
+
+    task: dict = {"run_limits": {}, "success_criteria": []}
+    section = None
+    current: dict | None = None
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if re.match(r"^[A-Za-z_]", line):
+            section = line.split(":", 1)[0]
+            continue
+        if section == "run_limits":
+            match = re.match(r"^  ([a-z_]+):\s*(\S+)", line)
+            if match:
+                task["run_limits"][match.group(1)] = scalar(match.group(2))
+        elif section == "success_criteria":
+            match = re.match(r"^  - ([a-z_]+):\s*(.*)$", line)
+            if match:
+                current = {match.group(1): scalar(match.group(2))}
+                task["success_criteria"].append(current)
+                continue
+            match = re.match(r"^    ([a-z_]+):\s*(.*)$", line)
+            if match and current is not None:
+                value = match.group(2)
+                current[match.group(1)] = scalar(value) if value else {}
+            match = re.match(r"^      - expression:\s*\"(.*)\"", line)
+            if match and current is not None:
+                current.setdefault("expressions", []).append(match.group(1))
+    return task
+
+
+class TaskParserTests(unittest.TestCase):
+    """`load_task` stands in for PyYAML; prove it agrees where it is used.
+
+    The assertions that read the task YAML would otherwise be trusting a
+    hand-rolled parser, so a mis-parse could make them pass vacuously.
+    """
+
+    def test_parses_the_fields_the_assertions_rely_on(self) -> None:
+        task = load_task()
+        self.assertEqual(
+            set(task["run_limits"]),
+            {"expected_turns", "max_turns", "turn_timeout", "task_timeout"},
+        )
+        for value in task["run_limits"].values():
+            self.assertIsInstance(value, int)
+
+        criteria = task["success_criteria"]
+        self.assertEqual(len(criteria), 9)
+        self.assertEqual(
+            [c["type"] for c in criteria],
+            [
+                "agent_judge",
+                "command_not_executed",
+                "run_command",
+                "run_command",
+                "run_command",
+                "json_check",
+                "json_check",
+                "json_check",
+                "json_check",
+            ],
+        )
+        for criterion in criteria:
+            self.assertIsInstance(criterion["weight"], float)
+        self.assertEqual(
+            sum(c["weight"] for c in criteria), 23.0
+        )
+        live = [
+            c
+            for c in criteria
+            if "check_customer_escalation_behavior.py"
+            in str(c.get("command", ""))
+        ]
+        self.assertEqual(len(live), 1)
+        self.assertIsInstance(live[0]["timeout"], int)
 
 
 class BehaviorCheckerTests(unittest.TestCase):
@@ -592,11 +695,7 @@ class BehaviorCheckerTests(unittest.TestCase):
     def test_live_checker_keeps_outer_timeout_cleanup_reserve(self) -> None:
         """Parse the YAML rather than the description, which is prose."""
 
-        task = yaml.safe_load(
-            Path(__file__)
-            .with_name("customer_escalation_triage.yaml")
-            .read_text(encoding="utf-8")
-        )
+        task = load_task()
         live = [
             criterion
             for criterion in task["success_criteria"]
@@ -2594,15 +2693,10 @@ class ScenarioResultsTests(unittest.TestCase):
     def test_family_weights_cover_the_whole_matrix(self) -> None:
         """A json_check family must exist for every bundle, and vice versa."""
 
-        task = yaml.safe_load(
-            Path(__file__)
-            .with_name("customer_escalation_triage.yaml")
-            .read_text(encoding="utf-8")
-        )
+        task = load_task()
         graded = set()
         for criterion in task["success_criteria"]:
-            for assertion in criterion.get("assertions", []):
-                expression = assertion["expression"]
+            for expression in criterion.get("expressions", []):
                 if expression.startswith("families."):
                     graded.add(expression.split(".")[1])
         self.assertEqual(graded, set(checker.SCENARIO_BUNDLES))
