@@ -109,9 +109,11 @@ def list_items(body: str, predicate: str) -> list[str] | None:
 
 
 def quoted_objects(body: str, predicate: str) -> list[str]:
-    """Objects of a repeated-triple predicate: `ont:writes "A.b", "C.d" ;`."""
-    match = re.search(rf"{predicate}\s+((?:\"(?:\\.|[^\"])*\"\s*,?\s*)+)", body)
-    return re.findall(r"\"((?:\\.|[^\"])*)\"", match.group(1)) if match else []
+    """Objects of a repeated-triple predicate: `ont:writes \"A.b\", \"C.d\" ;`."""
+    found: list[str] = []
+    for match in re.finditer(rf"{predicate}\s+((?:\"(?:\\.|[^\"])*\"\s*,?\s*)+)", body):
+        found.extend(re.findall(r"\"((?:\\.|[^\"])*)\"", match.group(1)))
+    return found
 
 
 def first_quoted(body: str, predicate: str) -> str:
