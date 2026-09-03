@@ -24,8 +24,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import re
 import sys
 from pathlib import Path
 
@@ -35,7 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from coded_action.gates import (  # noqa: E402
     check_fields,
-    check_folder_id,
+    classify_folder_id,
     check_input,
     check_job_language,
     check_signature,
@@ -47,68 +45,12 @@ from coded_action.job_source import interface_fields, written_edits  # noqa: E40
 from coded_action.pairs import SUPPORTED_JOB_LANGUAGES, discover, schema_terms  # noqa: E402
 # Re-exported: the test suite path-loads this file and asks it whether a compiler exists.
 from coded_action.typecheck import find_tsc, typecheck_job  # noqa: E402,F401
-from coded_action.verdict import GATES, GateLog  # noqa: E402
-
-
-
-# --------------------------------------------------------------------------- ttl text scanning
-
-
-
-
-
-
+from coded_action.verdict import GateLog  # noqa: E402
 
 
 # --------------------------------------------------------------------------- job source
 # Ported wholesale from the deploy skill's job_source.py: regex, not a TypeScript parser, because
 # the job shapes are narrow. Every extraction failure is reported rather than read as "nothing".
-
-
-
-
-# --------------------------------------------------------------------------- schema
-
-
-
-
-# --------------------------------------------------------------------------- gate bookkeeping
-
-
-
-
-# --------------------------------------------------------------------------- typecheck
-
-
-# --------------------------------------------------------------------------- discovery
-
-
-
-
-# --------------------------------------------------------------------------- gates
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# --------------------------------------------------------------------------- main
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -185,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
             check_writes(log, name, action, edits)
 
         check_fields(log, name, action, edits, schema, schema_reason)
-        deployable, folder_detail = check_folder_id(log, name, action)
+        deployable, folder_detail = classify_folder_id(name, action)
         warnings.append(folder_detail)
 
         if args.skip_typecheck:

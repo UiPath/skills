@@ -36,12 +36,15 @@ python3 tools/coded_action_preflight.py \
 ```
 
 Gates: `ttl-parses-and-well-formed`, `signature-resolves`, `input-matches-marker`,
-`input-strictness`, `writes-cover-edits`, `fields-exist-in-schema`, `folder-id-status`,
+`input-strictness`, `writes-cover-edits`, `fields-exist-in-schema`,
 `job-language`, `typecheck`.
 A gate reports `passed`, `failed`, or `skipped` (a skip carries its reason and never counts as a
-pass); the exit code is 0 only when nothing failed. `folder-id-status` never fails: it reports
-whether `ont:processFolderId` is still the `PENDING_DEPLOY` placeholder, which callers sequence on
-via `pairs[].deployable`.
+pass); the exit code is 0 only when nothing failed.
+
+Whether an action is ready to deploy is NOT a gate, and deliberately: the `PENDING_DEPLOY`
+placeholder is the expected state between generation and deploy, so there is nothing to fail on.
+It is reported per pair as `pairs[].deployable`, with the reason in `warnings`. Callers sequence
+on that field, not on a gate status.
 
 Contracts are declared with `type<T>()` over plain interfaces. `input-strictness` runs
 `entry_points.py` and inspects what it derives, so it checks the property that actually matters --

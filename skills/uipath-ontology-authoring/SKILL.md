@@ -513,7 +513,7 @@ Then rerun the coded preflight against the patched files:
 python3 tools/coded_action_preflight.py --workdir {workdir} --ontology-name {name}
 ```
 
-Require that no `PENDING_DEPLOY` placeholder remains anywhere in the inventory before proceeding to Step 3.
+Before Step 3, require every coded pair in the preflight payload to report `deployable: true`. That field, not a gate status, is what says the placeholder is gone: the placeholder is the expected state until the deploy skill patches it, so no gate fails on it and a green preflight alone does not mean the TTLs are ready to upload.
 
 ---
 

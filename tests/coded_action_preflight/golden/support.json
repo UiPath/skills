@@ -51,12 +51,6 @@
     },
     {
       "diagnostics": [],
-      "id": "folder-id-status",
-      "passed": true,
-      "status": "passed"
-    },
-    {
-      "diagnostics": [],
       "id": "job-language",
       "passed": true,
       "status": "passed"

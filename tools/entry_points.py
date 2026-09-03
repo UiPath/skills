@@ -13,9 +13,8 @@ than being guessed at, because a wrong manifest faults the job before its handle
 
     python3 tools/entry_points.py JOB.ts                       # print the manifest
     python3 tools/entry_points.py JOB.ts --out entry-points.json
-    python3 tools/entry_points.py JOB.ts --check entry-points.json   # compare, exit 1 on drift
 
-Exit codes: 0 ok, 1 unlowerable contract or drift, 2 bad usage.
+Exit codes: 0 ok, 1 unlowerable contract, 2 bad usage.
 """
 
 import argparse
@@ -173,8 +172,6 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("job", help="the job's .ts source")
     parser.add_argument("--out", help="write the manifest here instead of printing it")
-    parser.add_argument("--check", metavar="MANIFEST",
-                        help="compare against an existing manifest; exit 1 on drift")
     parser.add_argument("--file-path", default="content/main.ts",
                         help="entry point filePath (default: content/main.ts)")
     args = parser.parse_args(argv)
@@ -183,29 +180,6 @@ def main(argv=None):
     if not job.is_file():
         print(json.dumps({"ok": False, "error": "job not found: %s" % job}), file=sys.stderr)
         return 2
-
-    if args.check:
-        target = pathlib.Path(args.check)
-        if not target.is_file():
-            print(json.dumps({"ok": False, "error": "manifest not found: %s" % target}),
-                  file=sys.stderr)
-            return 1
-        try:
-            want_in, want_out = derive(job)
-        except Unlowerable as exc:
-            print(json.dumps({"ok": False, "error": str(exc)}), file=sys.stderr)
-            return 1
-        got_in, got_out = schemas_of(json.loads(target.read_text()))
-        drift = [slot for slot, want, got in (("input", want_in, got_in),
-                                              ("output", want_out, got_out)) if want != got]
-        if drift:
-            print(json.dumps({"ok": False, "drift": drift,
-                              "error": "the manifest disagrees with the job's interfaces (%s). "
-                                       "Regenerate it: the interfaces are the contract."
-                                       % ", ".join(drift)}, indent=2), file=sys.stderr)
-            return 1
-        print(json.dumps({"ok": True, "checked": str(target)}))
-        return 0
 
     existing = None
     if args.out and pathlib.Path(args.out).is_file():

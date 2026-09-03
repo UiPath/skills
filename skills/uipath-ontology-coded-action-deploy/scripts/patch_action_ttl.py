@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Patch the deployed Orchestrator coordinates into ONE coded-action TTL.
 
-    patch_action_ttl.py <file.ttl> --folder-id <numericId> [--process-url URL] [--execute]
+    patch_action_ttl.py <file.ttl> --folder-id <numericId> [--execute]
 
 Generation writes ont:processFolderId "PENDING_DEPLOY"; this replaces it with the numeric folder
 id of the deployment that now carries the job. One file per action, one call per file: the
@@ -35,8 +35,6 @@ from _uip import described
 # the rewritten line valid Turtle whichever of ; , . closed the original.
 FOLDER_RE = re.compile(r'^(?P<indent>\s*)ont:processFolderId(?P<gap>\s+)"(?P<value>[^"]*)"'
                        r'(?P<tail>\s*)(?P<sep>[;,.])(?P<rest>.*)$')
-URL_RE = re.compile(r'^(?P<indent>\s*)ont:processUrl(?P<gap>\s+)"(?P<value>[^"]*)"'
-                    r'(?P<tail>\s*)(?P<sep>[;,.])(?P<rest>.*)$')
 
 
 DESCRIBE = {
@@ -74,12 +72,6 @@ def rewrite(match, value, sep=None):
         match.group("tail"), sep or match.group("sep"), match.group("rest"))
 
 
-def rewrite_url(match, value):
-    return '%sont:processUrl%s"%s"%s%s%s' % (
-        match.group("indent"), match.group("gap"), value,
-        match.group("tail"), match.group("sep"), match.group("rest"))
-
-
 def main():
     if described(DESCRIBE):
         return
@@ -87,7 +79,6 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("ttl", help="one per-action TTL file")
     ap.add_argument("--folder-id", required=True, help="numeric Orchestrator folder id")
-    ap.add_argument("--process-url", help="Studio Web designer URL, when it can be derived")
     ap.add_argument("--execute", action="store_true", help="write; default prints the change")
     args = ap.parse_args()
 
@@ -104,24 +95,14 @@ def main():
     idx, match = locate(stripped, FOLDER_RE, "ont:processFolderId", required=True)
     current = match.group("value")
 
-    url_idx, url_match = (None, None)
-    if args.process_url is not None:
-        url_idx, url_match = locate(stripped, URL_RE, "ont:processUrl", required=False)
-    current_url = url_match.group("value") if url_match else None
-
     changes = []
     if current != args.folder_id:
         changes.append({"predicate": "ont:processFolderId", "line": idx + 1,
                         "from": current, "to": args.folder_id})
-    if args.process_url is not None and current_url != args.process_url:
-        changes.append({"predicate": "ont:processUrl",
-                        "line": (url_idx + 1) if url_idx is not None else idx + 2,
-                        "from": current_url, "to": args.process_url,
-                        "inserted": url_idx is None})
 
     if not changes:
         print(json.dumps({"ok": True, "noop": True, "file": str(path),
-                          "folderId": current, "processUrl": current_url,
+                          "folderId": current,
                           "reason": "already patched"}, indent=2))
         return
 
@@ -132,19 +113,6 @@ def main():
 
     newline = "\n" if lines[idx].endswith("\n") else ""
     lines[idx] = rewrite(match, args.folder_id) + newline
-    if args.process_url is not None:
-        if url_match is not None:
-            nl = "\n" if lines[url_idx].endswith("\n") else ""
-            lines[url_idx] = rewrite_url(url_match, args.process_url) + nl
-        else:
-            # No processUrl yet. Insert it directly after processFolderId, borrowing that line's
-            # indentation. The folderId line takes a continuation ';' and the new line inherits
-            # whichever separator closed the original, so the block stays valid Turtle even when
-            # processFolderId was the last predicate in it.
-            lines[idx] = rewrite(match, args.folder_id, sep=";") + newline
-            lines.insert(idx + 1, '%sont:processUrl%s"%s"%s%s\n' % (
-                match.group("indent"), match.group("gap"), args.process_url,
-                match.group("tail"), match.group("sep")))
 
     path.write_text("".join(lines))
     print(json.dumps({"ok": True, "file": str(path), "changes": changes}, indent=2))

@@ -93,14 +93,37 @@ class ScriptContractTests(unittest.TestCase):
     def test_no_stale_script_names_remain_in_the_docs(self):
         """The multi-verb scripts are gone; a doc still naming one would send an agent to a file
         that does not exist."""
-        stale = ("solution_release.py", "solution_scaffold.py", "ttl_patch.py")
+        stale = ("solution_release.py", "solution_scaffold.py", "ttl_patch.py",
+                 "scaffold_solution.py", "build_package.py", "next_version.py")
         hits = []
-        for doc in sorted(SKILL_DIR.rglob("*.md")):
+        # Not just markdown: one of these used to live in a docstring that gets written verbatim
+        # into every generated jobs.map.json, so it shipped to users' disks.
+        candidates = [f for pattern in ("*.md", "*.py", "*.json")
+                      for f in SKILL_DIR.rglob(pattern)]
+        for doc in sorted(candidates):
             for number, line in enumerate(doc.read_text().splitlines(), 1):
                 for name in stale:
                     if name in line:
                         hits.append("%s:%d names %s" % (doc.relative_to(ROOT), number, name))
         self.assertFalse(hits, "docs name scripts that no longer exist:\n  " + "\n  ".join(hits))
+
+    def test_every_suite_in_this_area_actually_runs_tests(self):
+        """A suite whose `unittest.main()` block is gone exits 0 having run nothing, which reads
+        as a pass. That happened once during this refactor, when a regex removing the last test in
+        a file took the entrypoint with it."""
+        suites = [
+            ROOT / "tests" / "scripts" / "test_entry_points.py",
+            ROOT / "tests" / "scripts" / "test_coded_action_scripts.py",
+            ROOT / "tests" / "coded_action_preflight" / "test_coded_action_preflight.py",
+        ]
+        for suite in suites:
+            with self.subTest(suite=suite.name):
+                text = suite.read_text()
+                self.assertIn('if __name__ == "__main__":', text,
+                              "%s has no entrypoint; running it directly would exit 0 silently"
+                              % suite.name)
+                self.assertIn("unittest.main(", text, suite.name)
+                self.assertGreater(text.count("def test_"), 0, suite.name)
 
     def test_shared_modules_are_not_entry_points(self):
         for module in sorted(SCRIPTS.glob("_*.py")):

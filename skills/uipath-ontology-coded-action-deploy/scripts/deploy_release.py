@@ -12,11 +12,9 @@ import os
 from _solution import (
     PARENT_FOLDER_PATH,
     folder_id,
-    deployments,
     live_at_version,
     name_taken,
     solution_name,
-    tombstone,
 )
 from _uip import UIP, described, die, emit, uip_json
 

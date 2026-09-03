@@ -15,9 +15,7 @@ from pathlib import Path
 
 from coded_action.action_model import PENDING_DEPLOY, marker_of
 from coded_action.contract import foreign_idiom, load_deriver
-from coded_action.job_source import interface_fields
 from coded_action.pairs import JOB_LANGUAGES, SUPPORTED_JOB_LANGUAGES
-from coded_action.turtle import mask_ttl
 from coded_action.verdict import GateLog
 
 
@@ -235,9 +233,15 @@ def check_fields(
         log.add("fields-exist-in-schema", "passed")
 
 
-def check_folder_id(log: GateLog, name: str, action: dict) -> tuple[bool, str]:
+def classify_folder_id(name: str, action: dict) -> tuple[bool, str]:
+    """(deployable, detail) for one action's ont:processFolderId. Not a gate.
+
+    This used to log a gate that always passed, which is worse than no gate: a `passed` row
+    teaches the caller that a check ran and could have failed. It cannot. The placeholder is the
+    EXPECTED state between generation and deploy, so there is nothing here to fail on -- the
+    answer is a classification, and callers sequence on it through `pairs[].deployable`.
+    """
     folder = action["processFolderId"]
-    log.add("folder-id-status", "passed")
     if folder == PENDING_DEPLOY:
         return False, f"{name}: ont:processFolderId is the {PENDING_DEPLOY} placeholder; publish first, then patch it"
     if folder.isdigit():

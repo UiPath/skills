@@ -15,7 +15,6 @@ GATES = (
     "input-strictness",
     "writes-cover-edits",
     "fields-exist-in-schema",
-    "folder-id-status",
     "job-language",
     "typecheck",
 )

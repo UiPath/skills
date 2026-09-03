@@ -13,7 +13,6 @@ from coded_action.turtle import (
     first_quoted,
     is_directive,
     list_items,
-    mask_ttl,
     quoted_objects,
     subject_of,
     ttl_statements,

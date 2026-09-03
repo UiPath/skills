@@ -19,9 +19,9 @@ import shutil
 import sys
 import tempfile
 
-from _solution import solution_name, solution_src
+from _solution import solution_name, solution_src, version_info
 from _staging import pack
-from _uip import UIP, described, emit, uip_json
+from _uip import UIP, described, die, emit, uip_json
 
 DESCRIBE = {
     "name": 'publish_package',
@@ -40,15 +40,35 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("version")
+    ap.add_argument("--force-version", action="store_true",
+                    help="publish a version other than the computed next one")
     ap.add_argument("--execute", action="store_true")
     args = ap.parse_args()
     name = solution_name()
 
+    # The version is checked here rather than left to whoever typed it. Republishing a version
+    # that already exists is the most expensive trap in this pipeline precisely because every
+    # surface reports success: publish returns a package key, deploy reports Successful, and the
+    # running code does not change. No output distinguishes it from a real release, so the only
+    # place it can be caught is before it happens.
+    live = version_info(name)
+    if live and args.version != live["next"] and not args.force_version:
+        die("refusing to publish %s: the next version for %r is %s (current is %s). Republishing "
+            "an existing version is a silent no-op -- publish succeeds, deploy reports Successful, "
+            "and the running code does not change. Pass --force-version if you mean it."
+            % (args.version, name, live["next"], live["current"]),
+            current=live["current"], next=live["next"], requested=args.version)
+
     if not args.execute:
-        emit({"ok": True, "dryRun": True, "steps": [
-            [sys.argv[0].replace("publish_package.py", "stage_jobs.py")],
-            [UIP, "solution", "pack", "<staging>", "<outdir>", "-n", name, "-v", args.version],
-            [UIP, "solution", "publish", "<zip>", "--wait"]]})
+        emit({"ok": True, "dryRun": True,
+              "current": live["current"] if live else None,
+              "next": live["next"] if live else None,
+              "publishing": args.version,
+              "firstRelease": live is None,
+              "steps": [
+                  [sys.argv[0].replace("publish_package.py", "stage_jobs.py")],
+                  [UIP, "solution", "pack", "<staging>", "<outdir>", "-n", name, "-v", args.version],
+                  [UIP, "solution", "publish", "<zip>", "--wait"]]})
         return
 
     outdir = tempfile.mkdtemp(prefix="ontology-pack-")

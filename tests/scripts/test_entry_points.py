@@ -113,7 +113,7 @@ class FailClosedTests(unittest.TestCase):
         self.assertEqual(code, 2, raw)
 
 
-class WriteAndCheckTests(unittest.TestCase):
+class ManifestWriteTests(unittest.TestCase):
     def setUp(self):
         self.out = Path(tempfile.mkdtemp(prefix="entry-points-out-")) / "entry-points.json"
         self.addCleanup(shutil.rmtree, self.out.parent, ignore_errors=True)
@@ -138,30 +138,6 @@ class WriteAndCheckTests(unittest.TestCase):
         self.assertEqual(
             json.loads(self.out.read_text())["entryPoints"][0]["filePath"], "content/main.ts"
         )
-
-    def test_check_accepts_a_manifest_that_matches(self):
-        derive(FIXTURES / "tagOverdueTicket.ts", "--out", str(self.out))
-        code, _, raw = derive(FIXTURES / "tagOverdueTicket.ts", "--check", str(self.out))
-        self.assertEqual(code, 0, raw)
-
-    def test_check_rejects_a_manifest_that_drifted_from_the_job(self):
-        derive(FIXTURES / "tagOverdueTicket.ts", "--out", str(self.out))
-        doc = json.loads(self.out.read_text())
-        doc["entryPoints"][0]["input"]["properties"]["ticketId"] = {"type": "number"}
-        self.out.write_text(json.dumps(doc, indent=2))
-        code, payload, raw = derive(FIXTURES / "tagOverdueTicket.ts", "--check", str(self.out))
-        self.assertEqual(code, 1, raw)
-        self.assertEqual(payload["drift"], ["input"])
-
-    def test_check_reports_the_golden_manifest_as_current(self):
-        """The committed goldens are what the platform accepted; --check has to agree they match
-        the jobs beside them, or the deriver has drifted from the verified pipeline."""
-        for job in GOLDEN:
-            with self.subTest(job=job):
-                code, _, raw = derive(
-                    FIXTURES / f"{job}.ts", "--check", str(FIXTURES / f"{job}.golden.json")
-                )
-                self.assertEqual(code, 0, raw)
 
 
 if __name__ == "__main__":

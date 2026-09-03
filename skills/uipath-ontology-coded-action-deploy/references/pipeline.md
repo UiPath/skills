@@ -50,9 +50,9 @@ not npmjs, via `${GH_NPM_REGISTRY_TOKEN}`, and the CLI's own scaffolding writes 
 `uip or processes list` reports the release version as `ProcessVersion`.
 
 **Template fallback.** `assets/solution-skeleton` is a known-good Studio Web export's manifests,
-instantiated by `scaffold_solution.py --template`. Its `.uipx` carries the exported `SolutionId`
-rather than a fresh one, which matters only if the solution ever has to reach Studio Web.
-`assets/NOTES.md` lists every renamed occurrence.
+no longer shipped. `uip solution init` plus `uip functions new --empty` plus
+`uip solution projects add` is verified to produce the same shape, and the export carried a
+`SolutionId` that was not ours to reuse.
 
 ### The manifest is authoritative, not the directory listing
 
@@ -102,9 +102,9 @@ Pack from the solution directory and upload the `.zip`. No cloud project, no Stu
 no `uip functions push`.
 
 ```bash
-scripts/next_version.py                               # {current, next}
+scripts/publish_package.py 1.0.3                         # dry run: current, next, target
 scripts/stage_jobs.py                                 # build + validate, temp only
-scripts/build_package.py    1.0.3 /tmp/pk                 # local .zip, no tenant writes
+uip solution pack <staging> /tmp/pk -n support-jobs -v 1.0.3  # local .zip, no tenant writes
 scripts/publish_package.py 1.0.3                         # prints the steps
 scripts/publish_package.py 1.0.3 --execute               # pack, then upload to the feed
 scripts/deploy_release.py  1.0.3 support-jobs-1-0-3 --execute

@@ -56,16 +56,15 @@ Everything else is a convention rather than a coordinate, and the scripts defaul
 
 ## Dry run by default
 
-`scaffold_solution.py`, `publish_package.py`, `deploy_release.py` and
-`patch_action_ttl.py` print the exact command or the exact change and do nothing without `--execute`.
-Show the printed plan, get an explicit yes, then re-run with `--execute`. Publish and deploy write
-to a live tenant and move every job in the Solution onto one version line, so the version
-transition (`1.0.2` to `1.0.3`, and which processes move) is what to show.
+`publish_package.py`, `deploy_release.py` and `patch_action_ttl.py` print the exact command or the
+exact change and do nothing without `--execute`. Show the printed plan, get an explicit yes, then
+re-run with `--execute`. Publish and deploy write to a live tenant and move every job in the
+Solution onto one version line, so the version transition (`1.0.2` to `1.0.3`, and which processes
+move) is what to show.
 
-`version`, `stage`, `pack`, `folder-id` and `await` are read-only or temp-directory-only. Run them
-freely; `stage` is the cheapest proof that a job change reaches the staging tree and that its
-contract lowers to a manifest. `pack` needs no installer and no token: it zips the staging tree
-and writes nothing outside the temp directory.
+`stage_jobs.py`, `resolve_folder_id.py` and `await_release.py` are read-only or
+temp-directory-only. Run them freely; staging is the cheapest proof that a job change reaches the
+tree and that its contract lowers to a manifest.
 
 ## Service dependency
 
@@ -76,46 +75,71 @@ run of this skill against a service without that support produces a correct fold
 release, and an action that cannot be invoked. Say so rather than reporting the deploy as complete
 proof the action works.
 
-## Phase 1: Scaffold the jobs Solution
+## Phase 1: Create the jobs Solution
 
-One Solution per ontology, named `{name}-jobs`, one Function project per coded action. Reuse it if
-it already exists: the script leaves an existing solution directory and an existing project
-directory alone and creates only what is missing.
+One Solution per ontology, named `{name}-jobs`, one Function project per coded action. There is no
+script for this phase: it is four `uip` commands and two small files, and `uip solution` and
+`uip functions` already document the commands. What is written here is the order, because the order
+is not obvious and two of the steps fail quietly if it is wrong.
 
-```bash
-scripts/scaffold_solution.py --workdir {workdir} --solution-name {name}-jobs \
-  --project {ActionName}Process=../jobs/{action}.ts \
-  [--project ...] [--execute]
-```
-
-The sequence it runs is `uip solution init`, then `uip functions new --empty` per project, then
-`uip solution projects add`. `--empty` and not the hello-world default: a scaffolded sample
-job is a second copy of the entry point, free to drift from the job source phase 2 stages in.
-
-**CLI scaffolding is verified live.** A solution built this way from an empty directory deploys a
-real job-capable release: `ProcessType=Function`, `ProcessKey={Solution}.Function.{Name}`, the same
-kind a Studio Web export produces. It emits no `SolutionStorage.json` and needs none.
-
-**`GH_NPM_REGISTRY_TOKEN` is only needed if scaffolding installs.** The `@uipath` npm scope
-(`@uipath/coded-functions-js-sdk`) resolves from GitHub Packages rather than npmjs, so
-`uip functions new` may shell out to an installer that 404s without the token. Nothing in the
-stage, pack, publish or deploy path installs anything: the SDK is a devDependency for local
-typechecking, `type<T>()` is erased at compile time, and `defineFunction` is supplied by the
-runtime. The scaffold writes each project's `.npmrc` for that scope, referencing the token as
-`${GH_NPM_REGISTRY_TOKEN}`; a literal token never goes in the file.
-
-The template fallback remains for the one case CLI mode does not serve:
+Reuse an existing solution directory and existing project directories; create only what is missing.
 
 ```bash
-scripts/scaffold_solution.py ... --template --execute
+cd {workdir}
+uip solution init {name}-jobs
+cd {name}-jobs
+
+# 1. .npmrc FIRST -- see below. Same content in the solution root and in each project.
+cat > .npmrc <<'EOF'
+@uipath:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${GH_NPM_REGISTRY_TOKEN}
+EOF
+
+# 2. one project per coded action, PascalCase(actionName) + "Process"
+uip functions new {ActionName}Process --language ts --empty
+
+# 3. register it, or the package will not contain it
+uip solution projects add ./{ActionName}Process ./{name}-jobs.uipx
 ```
 
-`--template` instantiates `assets/solution-skeleton`, a known-good Studio Web export's manifests.
-`assets/NOTES.md` lists what gets renamed. One difference matters: in CLI mode the fresh
-`SolutionId` comes from `uip solution init`, and in template mode the `.uipx` carries the exported
-id and no new one is minted, which matters only if the solution ever has to reach Studio Web.
+**`.npmrc` must exist before `uip functions new`.** That command shells out to an installer, and
+the `@uipath` scope resolves from GitHub Packages rather than npmjs, so without the file it fails
+with `GET https://registry.npmjs.org/@uipath%2fcoded-functions-js-sdk - 404`. The project directory
+is still created, which makes the failure easy to miss. Nothing later in the pipeline installs
+anything -- the SDK is a devDependency for local typechecking, `type<T>()` is erased at compile
+time, and `defineFunction` comes from the runtime -- so a 404 here is the only place the token
+matters. The token stays an `${GH_NPM_REGISTRY_TOKEN}` reference; a literal never goes in the file.
 
-Both modes write `jobs.map.json`, which is what phase 2 stages from.
+**`--empty`, not the hello-world default.** A scaffolded sample job is a second copy of the entry
+point, free to drift from the job source phase 2 stages in.
+
+**`projects add` is not optional.** It writes the `.uipx` `Projects` entry and generates the
+`resources/solution_folder/**` descriptors that make the release a job rather than an HTTP
+endpoint. A project directory that exists but was never added is absent from the package, and the
+package still builds. `stage_jobs.py` refuses in that case, naming the project.
+
+Then map each project to the job that supplies its code, in `{name}-jobs/jobs.map.json`:
+
+```json
+{
+  "projects": { "{ActionName}Process": "../jobs/{action}.ts" }
+}
+```
+
+Paths resolve against that file's own directory, so a job living beside its action TTL one level up
+is `../jobs/{action}.ts`. This is what phase 2 stages from, and the only place the pairing is
+recorded.
+
+**Do not hand-edit `uipath.json`.** `uip functions new --empty` leaves `"functions": {}`, and
+`uip solution pack` reports `No functions defined in uipath.json` and produces nothing. Phase 2
+writes that map into the staging copy, because the map, the staged source and the manifest all have
+to name the same file -- setting it here means it can drift from what is actually staged, and
+setting it by hand means it can be forgotten.
+
+**Verified end to end offline.** These commands plus phase 2 produce a package whose per-project
+nupkg is `{Solution}.Function.{Project}.{version}.nupkg` carrying `content/main.ts` and
+`content/entry-points.json`, which is the shape a Studio Web export produces. `uip solution init`
+is also where the fresh `SolutionId` comes from.
 
 ## Phase 2: Stage each job as its project's main.ts, with a derived manifest
 
@@ -161,16 +185,26 @@ a CLI-scaffolded solution has only the `.uipx`, whose `Projects` array says the 
 ## Phase 3: Version, publish, deploy
 
 ```bash
-scripts/next_version.py                              # {current, next}
-scripts/build_package.py    {next} /tmp/pk               # optional, local zip only
-scripts/publish_package.py {next} --execute             # tenant feed
-scripts/deploy_release.py  {next} {name}-jobs-{next-dashed} --execute
+scripts/publish_package.py {version}                     # dry run: reports current, next, target
+scripts/publish_package.py {version} --execute           # tenant feed
+scripts/deploy_release.py  {version} {name}-jobs-{version-dashed} --execute
 ```
 
-**Never republish an existing version.** Read the current version from the deployment and compute
-`next = current + 1`. Publishing the same version number is a silent no-op everywhere: publish
-succeeds, deploy reports Successful, and nothing changes. Nothing in either output distinguishes
-that from a real release.
+**Republishing an existing version is refused, not merely discouraged.** It is the most expensive
+trap in this pipeline because every surface reports success: publish returns a package key, deploy
+reports Successful, and the running code does not change. No output distinguishes it from a real
+release. So `publish_package.py` reads the current version from the live deployment, computes
+`next = current + 1`, and refuses any other version unless `--force-version` is passed. Its dry run
+prints `current`, `next` and what it would publish, which is how you learn the number rather than
+guessing it.
+
+On a first release there is no deployment to read, so there is no `next` to enforce; the dry run
+reports `firstRelease: true` and the version you pass is accepted. Pick a starting version and say
+so in the plan you show the user.
+
+A local zip needs no script: `stage_jobs.py` prints its staging path and leaves the tree in place,
+so `uip solution pack <staging> /tmp/pk -n {name}-jobs -v {version}` produces one without touching
+the tenant.
 
 **`publish` is asynchronous.** The script passes `--wait`. Deploying before the publish completes
 fails with a package-not-found error that never mentions publishing.
@@ -221,14 +255,11 @@ Await every release, not just the one that changed. A publish moves every job in
 One call per action TTL, with the folder id phase 4 resolved.
 
 ```bash
-scripts/patch_action_ttl.py {workdir}/{name}-{action}.ttl --folder-id {folderId} \
-  [--process-url {url}] --execute
+scripts/patch_action_ttl.py {workdir}/{name}-{action}.ttl --folder-id {folderId} --execute
 ```
 
 `ont:process` is never touched: a release is matched on Name or ProcessKey and never on version, so
-the process name survives a new release and only the folder moves. `--process-url` is optional and
-worth passing only when the Studio Web designer URL can actually be derived; it is a convenience
-link, not something the runtime resolves.
+the process name survives a new release and only the folder moves.
 
 The script refuses when `ont:processFolderId` is absent, and when it appears more than once. Both
 refusals are deliberate and neither is to be worked around: an absent predicate means this is not a
@@ -268,15 +299,15 @@ python3 scripts/<script>.py --describe
 
 | Script | Phase | What it does | Mutates |
 |---|---|---|---|
-| `scaffold_solution.py` | 1 | Create the jobs Solution and one Function project per coded action | no |
-| `stage_jobs.py` | 2 | Stage each job as its project's `main.ts` and derive its manifest | no |
-| `next_version.py` | 3 | Report the package's current and next version | no |
-| `build_package.py` | 3 | Pack the staged tree into a deployable `.zip` | no |
-| `publish_package.py` | 3 | Pack and upload the package to the tenant feed | **yes** |
+| `stage_jobs.py` | 2 | Stage each job as its project's `main.ts`, derive its manifest, set its functions map | no |
+| `publish_package.py` | 3 | Enforce the next version, pack, and upload to the tenant feed | **yes** |
 | `deploy_release.py` | 3 | Deploy a published version into a new Orchestrator folder | **yes** |
 | `resolve_folder_id.py` | 4 | Resolve a folder path to its numeric `OrganizationUnitId` | no |
 | `await_release.py` | 4 | Poll a release until ready, stale, or missing | no |
 | `patch_action_ttl.py` | 5 | Replace the `PENDING_DEPLOY` placeholder with the resolved folder id | **yes** |
+
+Phase 1 has no script; it is four `uip` commands and two small files, documented above. There is a
+script only where a plain command would let a failure through silently.
 
 Three private modules sit behind them: `_uip.py` (the CLI boundary), `_solution.py` (reading
 solution state) and `_staging.py` (the staging tree and the derived manifest). They are not entry

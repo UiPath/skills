@@ -55,7 +55,8 @@ def manifest_projects(src):
             % src)
     entries = json.loads(uipx[0].read_text()).get("Projects") or []
     if not entries:
-        die("%s declares no projects; run scaffold_solution.py first" % uipx[0].name)
+        die("%s declares no projects; add them with `uip solution projects add` "
+            "(see the skill's phase 1)" % uipx[0].name)
     return [p["ProjectRelativePath"].rsplit("/", 1)[0] for p in entries], uipx[0].name
 
 
@@ -86,8 +87,10 @@ def version_info(name):
     hits = [d for d in deployments()
             if (d.get("PackageName") == name or d.get("Name") == name) and not tombstone(d)]
     if not hits:
-        die("no live deployment for package %r" % name,
-            hint="first release: pick a starting version yourself, then deploy it")
+        # A first release, not an error: there is no current version to compute `next` from. The
+        # caller decides what that means; publish_package treats it as "the version is yours to
+        # choose" rather than refusing.
+        return None
 
     def vkey(d):
         parts = (d.get("CurrentPackageVersion") or d.get("PackageVersion") or "").split(".")

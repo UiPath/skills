@@ -44,7 +44,8 @@ pack the solution directory directly. To confirm after the fact, unzip the packa
 the per-project nupkg. The job belongs at `content/main.ts`:
 
 ```bash
-scripts/build_package.py <version> /tmp/pk
+scripts/stage_jobs.py          # prints its staging path
+uip solution pack <staging> /tmp/pk -n <SolutionName> -v <version>
 cd /tmp/pk && unzip -q <SolutionName>_<version>.zip
 unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/main.ts' | head
 ```
@@ -54,8 +55,8 @@ unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/
 The project's `uipath.json` functions map does not name the staged source. It has to read
 `{"main": "main.ts:default"}`, matching the `main.ts` that `stage` writes and the
 `filePath: content/main.ts` in the derived manifest; those three have to agree. `stage` writes the
-source and the manifest, and `scaffold_solution.py` writes the map, so seeing this means the map
-was edited or the project came from somewhere other than the scaffold.
+source, the manifest and the map together, in the staging copy, so seeing this means
+`uip solution pack` was run on a tree that did not go through `stage`.
 
 Note this error belongs to `uip functions pack`, which this pipeline does not run. Reaching it
 means something invoked that command directly.
@@ -85,8 +86,9 @@ with the interfaces faults the job before its handler runs.
 
 The `@uipath` npm scope is on GitHub Packages, not npmjs. The project needs an `.npmrc` mapping
 the scope to `https://npm.pkg.github.com/` with `${GH_NPM_REGISTRY_TOKEN}` as the token reference,
-and the environment needs `GH_NPM_REGISTRY_TOKEN` exported. `scaffold_solution.py` writes the
-`.npmrc`; a 404 after scaffolding means the token is missing from the environment.
+and the environment needs `GH_NPM_REGISTRY_TOKEN` exported. Phase 1 writes that `.npmrc`
+**before** `uip functions new`, because that command installs; a 404 means either the file was
+written after the command, or the token is missing from the environment.
 
 This can only happen during scaffolding, when `uip functions new` installs. Stage, pack, publish
 and deploy run no installer: the SDK is a devDependency for local typechecking, `type<T>()` is
@@ -123,7 +125,8 @@ The step trace is the whole diagnosis. Report it verbatim rather than summarisin
 ## `deploy run` says the package version does not exist
 
 `publish` must complete first, and it is asynchronous. The error does not mention publishing.
-Re-run `next_version.py` and confirm the version is actually present before deploying.
+Re-run `publish_package.py <version>` without `--execute`; its dry run reports the current and
+next version, and refuses outright if the version is not the next one.
 
 ## `HTTP 400: <version> version already exists for this package`
 
@@ -147,8 +150,9 @@ pipeline, because every surface reports success: publish returns a package versi
 reports Successful, `deploy list` shows the deployment on that version, and the running code is
 whatever it was before.
 
-Always compute `next = current + 1` from the deployment. `next_version.py` does that,
-including filtering tombstones.
+`publish_package.py` computes `next = current + 1` from the live deployment, filtering
+tombstones, and refuses any other version unless `--force-version` is passed. That refusal is the
+only thing between this trap and a release that reports success and changes nothing.
 
 ## The UI still shows the old version after a successful publish
 
@@ -184,7 +188,7 @@ Uninstall`, `ActivationStatus: None`, and only a `Delete` action left. It still 
 `CurrentPackageVersion`, so anything taking the first match reports a plausible version for a dead
 record that owns no folder, and `next` is then computed from the wrong release.
 
-`next_version.py` filters tombstones and picks the highest live version. The tell is a
+`_solution.version_info` filters tombstones and picks the highest live version. The tell is a
 `deployment` whose `activation` is `None` and whose `actions` are just `["Delete"]`. Only the UI
 can clear the row.
 

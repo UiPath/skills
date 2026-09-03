@@ -101,7 +101,7 @@ class CodedActionPreflightTests(unittest.TestCase):
         self.assertEqual(failed_gates(payload), set(), payload)
         for gate_id in ("ttl-parses-and-well-formed", "signature-resolves", "input-matches-marker",
                         "input-strictness", "writes-cover-edits", "fields-exist-in-schema",
-                        "folder-id-status", "job-language"):
+                        "job-language"):
             self.assertEqual(gate(payload, gate_id)["status"], "passed", payload)
         self.assertIn(gate(payload, "typecheck")["status"], ("passed", "skipped"), payload)
         self.assertEqual(
@@ -126,12 +126,19 @@ class CodedActionPreflightTests(unittest.TestCase):
         self.assertIsNone(gate(payload, "fields-exist-in-schema")["passed"], payload)
 
     def test_pending_deploy_placeholder_is_reported_as_state_not_failure(self):
+        """The placeholder is the EXPECTED state between generation and deploy, so nothing fails
+        on it. It is reported per pair, and there is deliberately no gate: a gate row that can
+        never fail teaches the caller that `passed` means a check ran."""
         workdir = self.workdir()
         self.edit(workdir / f"{ONTOLOGY}-{ACTION}.ttl", '"3225065"', '"PENDING_DEPLOY"')
         code, payload = run_preflight(workdir, "--skip-typecheck")
         self.assertEqual(code, 0, payload)
-        self.assertEqual(gate(payload, "folder-id-status")["status"], "passed", payload)
+        self.assertEqual(payload["status"], "PASS", payload)
         self.assertFalse(payload["pairs"][0]["deployable"], payload)
+        self.assertTrue(
+            any("PENDING_DEPLOY" in w for w in payload["warnings"]), payload["warnings"]
+        )
+        self.assertNotIn("folder-id-status", [g["id"] for g in payload["gate_results"]], payload)
 
     # ---- one mutation per gate -------------------------------------------------------
 

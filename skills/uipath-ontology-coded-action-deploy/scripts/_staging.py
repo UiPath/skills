@@ -70,6 +70,28 @@ def write_entry_points(project_dir, job_source):
     return "derived"
 
 
+def write_functions_map(project_dir):
+    """Point the project's uipath.json functions map at the main.ts staging just wrote.
+
+    `uip functions new --language ts --empty` leaves `"functions": {}`, and `uip solution pack`
+    then reports `No functions defined in uipath.json` and produces nothing. The map, the staged
+    source and the manifest's `content/main.ts` all have to name the same file, so the step that
+    writes the source writes the map -- setting it anywhere earlier means it can drift from what
+    is actually staged, and setting it by hand means it can simply be forgotten.
+    """
+    path = project_dir / "uipath.json"
+    if not path.is_file():
+        die("%s has no uipath.json; `uip functions new` did not create this project"
+            % project_dir.name)
+    doc = json.loads(path.read_text())
+    wanted = {"main": "main.ts:default"}
+    if doc.get("functions") == wanted:
+        return "already correct"
+    doc["functions"] = wanted
+    path.write_text(json.dumps(doc, indent=2) + "\n")
+    return "written"
+
+
 def stage(src):
     """Build the staging tree and validate every entry point. Returns the staging path."""
     staging = pathlib.Path(tempfile.mkdtemp(prefix="ontology-solution-"))
@@ -108,8 +130,10 @@ def stage(src):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
         manifest_status = write_entry_points(staging / project, target)
+        map_status = write_functions_map(staging / project)
         staged.append({"project": project, "from": rel, "to": "main.ts",
-                       "bytes": source.stat().st_size, "entryPoints": manifest_status})
+                       "bytes": source.stat().st_size, "entryPoints": manifest_status,
+                       "functionsMap": map_status})
 
     # Belt and braces: check EVERY project, not just the mapped ones. An unmapped project with a
     # missing or empty main.ts is the same silent failure, and pack will not catch it.
