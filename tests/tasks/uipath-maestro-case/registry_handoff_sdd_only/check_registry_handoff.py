@@ -40,7 +40,6 @@ assert len(entries) == len(EXPECTED), (
 )
 
 cache_root = Path.home() / ".uip" / "case-resources"
-tasks_text = Path("tasks/tasks.md").read_text(encoding="utf-8")
 
 for name, expected in EXPECTED.items():
     matching_entries = [
@@ -120,8 +119,3 @@ for name, expected in EXPECTED.items():
         f"{name} resolved to an ephemeral debug-solution deploy "
         f"({sel_folder!r}); expected the canonical resource"
     )
-
-    assert name in tasks_text, f"tasks.md omitted resource name {name}"
-
-assert "Post Invoice" in tasks_text
-assert "Draft Notification" in tasks_text

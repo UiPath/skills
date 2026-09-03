@@ -65,7 +65,7 @@ initial_prompt: |
   | 1 | `handle.holdBriefly` | Hold briefly | wait-for-timer | Yes | No |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  Treat all build gates as pre-approved — do NOT block on the HARD
   STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug`.
   After `uip maestro case validate` passes, PUBLISH the solution to Studio Web:
   run `uip solution resources refresh` on the solution folder, then

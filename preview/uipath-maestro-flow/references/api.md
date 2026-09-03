@@ -9,19 +9,33 @@ Exact `@uipath/flow-sdk` authoring signatures and option shapes, from the public
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [formTrigger](#formtrigger-function) · [conversationTrigger](#conversationtrigger-function) · [voiceTrigger](#voicetrigger-function) · [flow](#flow-function) · [subflow](#subflow-function)
+> **This page is compact on purpose, and it is not the whole truth.** `@remarks`
+> and `@example` bodies are omitted here. The package's own **`.d.ts` files carry
+> them in full**, they are installed alongside your project, and they are the
+> authoritative declarations this page is generated from — so when a signature
+> names a type whose members or rules you need, read the declaration:
+>
+> ```bash
+> grep -rln "declare function err" node_modules/@uipath/flow-sdk/dist --include="*.d.ts"
+> #  -> node_modules/@uipath/flow-sdk/dist/core/expr.d.ts
+> ```
+>
+> Grep the **`.d.ts`**, never `dist/*.js` — the compiled JavaScript carries no
+> types and no comments.
+
+**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [formTrigger](#formtrigger-function) · [conversationTrigger](#conversationtrigger-function) · [voiceTrigger](#voicetrigger-function) · [STICKY_NOTE_COLORS](#stickynotecolors-const) · [flow](#flow-function) · [subflow](#subflow-function)
 
 **Actions** — [DELAY_PRESETS](#delaypresets-const) · [http](#http-function) · [script](#script-function) · [transform](#transform-function) · [hitl](#hitl-function) · [summarize](#summarize-function) · [batchTransform](#batchtransform-function) · [ixpExtract](#ixpextract-function) · [delay](#delay-function) · [mock](#mock-function) · [rpaWorkflow](#rpaworkflow-function) · [apiWorkflow](#apiworkflow-function) · [publishedFunction](#publishedfunction-function) · [sendMessage](#sendmessage-function) · [waitForMessage](#waitformessage-function) · [conversationContext](#conversationcontext-function) · [createOutgoingCall](#createoutgoingcall-function) · [endCall](#endcall-function) · [voiceAgent](#voiceagent-function) · [conversationalAgent](#conversationalagent-function) · [agenticProcess](#agenticprocess-function) · [agent](#agent-function) · [inlineAgent](#inlineagent-function) · [documentClassify](#documentclassify-function) · [dynamicExtract](#dynamicextract-function) · [dataFabricRead](#datafabricread-function) · [dataFabricUpdate](#datafabricupdate-function) · [queueItem](#queueitem-function) · [connector](#connector-function) · [waitForEvent](#waitforevent-function)
 
 **Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [entryInput](#entryinput-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
 
-**Generated descriptors** — [descriptor](#descriptor-function) · [triggerDescriptor](#triggerdescriptor-function)
+**Generated descriptors** — [ConnectorValue](#connectorvalue-type) · [ConnectorLookupValue](#connectorlookupvalue-type) · [ConnectorMeta](#connectormeta-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [descriptor](#descriptor-function) · [TriggerMeta](#triggermeta-interface) · [TriggerDescriptor](#triggerdescriptor-type) · [triggerDescriptor](#triggerdescriptor-function) · [LookupStrategy](#lookupstrategy-type) · [LookupSpec](#lookupspec-interface) · [LookupToken](#lookuptoken-interface) · [isLookupToken](#islookuptoken-function) · [lookupKey](#lookupkey-function) · [LookupBuilder](#lookupbuilder-type) · [lookup](#lookup-function) · [LookupResolution](#lookupresolution-interface) · [LookupResolutions](#lookupresolutions-type) · [resolvedValue](#resolvedvalue-function) · [unresolvedLookupMessage](#unresolvedlookupmessage-function) · [lookupSpecOf](#lookupspecof-function) · [refuseLookupToken](#refuselookuptoken-function)
 
 **Builders** — [FlowBuilder](#flowbuilder-class) · [StepList](#steplist-class) · [ArmBuilder](#armbuilder-class)
 
 **Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [PublishedFunctionInputs](#publishedfunctioninputs-interface) · [SendMessageInputs](#sendmessageinputs-interface) · [WaitForMessageInputs](#waitformessageinputs-interface) · [ConversationContextInputs](#conversationcontextinputs-interface) · [CreateOutgoingCallInputs](#createoutgoingcallinputs-interface) · [EndCallInputs](#endcallinputs-interface) · [VoiceAgentInputs](#voiceagentinputs-interface) · [ConversationalAgentInputs](#conversationalagentinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
 
-**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ErrorEnvelopeField](#errorenvelopefield-type) · [RawReference](#rawreference-type) · [EventFilter](#eventfilter-type) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [StickyNote](#stickynote-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [ReturnFieldType](#returnfieldtype-type) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [StickyNoteColor](#stickynotecolor-type) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -84,6 +98,8 @@ Behavior and worked examples: [scheduled-trigger.md](scheduled-trigger.md).
 export declare function formTrigger(): TriggerSpec;
 ````
 
+Behavior and worked examples: [form-trigger.md](form-trigger.md).
+
 ## conversationTrigger (function)
 
 ````ts
@@ -94,11 +110,26 @@ export declare function formTrigger(): TriggerSpec;
 export declare function conversationTrigger(): TriggerSpec;
 ````
 
+Behavior and worked examples: [conversational.md](conversational.md).
+
 ## voiceTrigger (function)
 
 ````ts
 /** Start the flow when a phone call comes IN (`core.trigger.voice`). */
 export declare function voiceTrigger(): TriggerSpec;
+````
+
+Behavior and worked examples: [voice.md](voice.md).
+
+## STICKY_NOTE_COLORS (const)
+
+````ts
+/**
+ * The designer's sticky-note palette. Any other string is passed through — the
+ * `.flow` format stores `inputs.color` unvalidated — but these five are what the
+ * canvas offers and what round-trips as a named swatch.
+ */
+export declare const STICKY_NOTE_COLORS: readonly ["yellow", "pink", "blue", "green", "white"];
 ````
 
 ## flow (function)
@@ -263,6 +294,8 @@ Behavior and worked examples: [api-workflow.md](api-workflow.md).
 export declare function publishedFunction(inputs: PublishedFunctionInputs): ActionSpec;
 ````
 
+Behavior and worked examples: [published-function.md](published-function.md).
+
 ## sendMessage (function)
 
 ````ts
@@ -272,6 +305,8 @@ export declare function publishedFunction(inputs: PublishedFunctionInputs): Acti
  */
 export declare function sendMessage(inputs: SendMessageInputs): ActionSpec;
 ````
+
+Behavior and worked examples: [conversational.md](conversational.md).
 
 ## waitForMessage (function)
 
@@ -283,6 +318,8 @@ export declare function sendMessage(inputs: SendMessageInputs): ActionSpec;
  */
 export declare function waitForMessage(inputs: WaitForMessageInputs): ActionSpec;
 ````
+
+Behavior and worked examples: [conversational.md](conversational.md).
 
 ## conversationContext (function)
 
@@ -306,6 +343,8 @@ export declare function conversationContext(inputs: ConversationContextInputs): 
 export declare function createOutgoingCall(inputs: CreateOutgoingCallInputs): ActionSpec;
 ````
 
+Behavior and worked examples: [voice.md](voice.md).
+
 ## endCall (function)
 
 ````ts
@@ -315,6 +354,8 @@ export declare function createOutgoingCall(inputs: CreateOutgoingCallInputs): Ac
  */
 export declare function endCall(inputs: EndCallInputs): ActionSpec;
 ````
+
+Behavior and worked examples: [voice.md](voice.md).
 
 ## voiceAgent (function)
 
@@ -326,6 +367,8 @@ export declare function endCall(inputs: EndCallInputs): ActionSpec;
 export declare function voiceAgent(inputs: VoiceAgentInputs): ActionSpec;
 ````
 
+Behavior and worked examples: [voice.md](voice.md).
+
 ## conversationalAgent (function)
 
 ````ts
@@ -335,6 +378,8 @@ export declare function voiceAgent(inputs: VoiceAgentInputs): ActionSpec;
  */
 export declare function conversationalAgent(inputs: ConversationalAgentInputs): ActionSpec;
 ````
+
+Behavior and worked examples: [conversational.md](conversational.md).
 
 ## agenticProcess (function)
 
@@ -386,6 +431,8 @@ Behavior and worked examples: [inline-agent.md](inline-agent.md).
 export declare function documentClassify(inputs: DocumentClassifyInputs): ActionSpec;
 ````
 
+Behavior and worked examples: [document-pipeline.md](document-pipeline.md).
+
 ## dynamicExtract (function)
 
 ````ts
@@ -398,11 +445,15 @@ export declare function documentClassify(inputs: DocumentClassifyInputs): Action
 export declare function dynamicExtract(inputs: DynamicExtractInputs): ActionSpec;
 ````
 
+Behavior and worked examples: [document-pipeline.md](document-pipeline.md).
+
 ## dataFabricRead (function)
 
 ````ts
 export declare function dataFabricRead(inputs: DataFabricReadInputs): ActionSpec;
 ````
+
+Behavior and worked examples: [data-fabric.md](data-fabric.md).
 
 ## dataFabricUpdate (function)
 
@@ -414,6 +465,8 @@ export declare function dataFabricRead(inputs: DataFabricReadInputs): ActionSpec
  */
 export declare function dataFabricUpdate(inputs: DataFabricUpdateInputs): ActionSpec;
 ````
+
+Behavior and worked examples: [data-fabric.md](data-fabric.md).
 
 ## queueItem (function)
 
@@ -431,7 +484,7 @@ Behavior and worked examples: [queue.md](queue.md).
  * generated descriptor supplies the nodeType and statically-checked input types:
  * `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
  */
-export declare function connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
+export declare function connector<I, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
 
 /**
  * Stringly form, for a connector with no prepared module —
@@ -530,6 +583,8 @@ export declare function ran(step: string): Expr;
  *   'error')` — the envelope has no `error` field of its own.
  */
 export declare function err(step: string, field?: ErrorEnvelopeField): Expr;
+
+// ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status'
 ````
 
 ## js (function)
@@ -575,6 +630,58 @@ export declare const types: {
 };
 ````
 
+## ConnectorValue (type)
+
+````ts
+/** What a generated `Inputs` property accepts: the value, or an expression. */
+export type ConnectorValue<T> = Expr | (T extends readonly (infer E)[] ? Array<E | Expr> : T);
+````
+
+## ConnectorLookupValue (type)
+
+````ts
+/** `ConnectorValue` for a field that also accepts an unresolved lookup. */
+export type ConnectorLookupValue<T> = LookupToken | (T extends readonly (infer E)[] ? Array<E | Expr | LookupToken> : T | Expr);
+````
+
+## ConnectorMeta (interface)
+
+````ts
+/** Runtime metadata a generated descriptor carries. `nodeType` is `uipath.connector.<key>.<action>` (no `@version`). */
+export interface ConnectorMeta {
+    nodeType: string;
+    version?: string;
+    requiresConnection?: boolean;
+    requiresFolderKey?: boolean;
+    /**
+     * Which OBJECT this descriptor addresses, for a **generic** operation whose
+     * nodeType covers many (`…netsuite.get-record` covers 182). Baked in by the
+     * generator so `connector(D, …)` needs no `{ object }`; an explicit
+     * `{ object }` still wins.
+     */
+    objectName?: string;
+    /**
+     * The operation's resolvable lookup fields, keyed by field name — generated
+     * from each input's `reference` block. Absent when the operation has none.
+     */
+    lookups?: Readonly<Record<string, LookupSpec>>;
+}
+````
+
+## ConnectorDescriptor (type)
+
+````ts
+/**
+ * A generated, typed connector descriptor: `ConnectorMeta` branded with
+ * phantom input/output types. `__inputs`/`__outputs` never materialize at
+ * runtime — they exist only so `connector(descriptor, inputs)` can infer types.
+ */
+export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
+    readonly __inputs?: I;
+    readonly __outputs?: O;
+};
+````
+
 ## descriptor (function)
 
 ````ts
@@ -584,7 +691,39 @@ export declare const types: {
  * Curried so the generator names `I`/`O` explicitly while TS still narrows the
  * literal (`nodeType`, flags) from `as const`.
  */
-export declare function descriptor<I = Record<string, unknown>, O = Record<string, unknown>>(): <const D extends ConnectorMeta>(d: D) => D & ConnectorDescriptor<I, O>;
+export declare function descriptor<I = Record<string, unknown>, O = Record<string, unknown>>(): <const D extends ConnectorMeta>(d: D) => D & {
+    readonly __inputs?: I;
+    readonly __outputs?: O;
+};
+````
+
+## TriggerMeta (interface)
+
+````ts
+/** Runtime metadata a generated trigger descriptor carries. */
+export interface TriggerMeta {
+    /** Connector key, e.g. `'uipath-atlassian-jira'`. */
+    connector: string;
+    /** Curated event id, e.g. `'issue-created'` (the last segment of the nodeType). */
+    event: string;
+    version?: string;
+    /** Human label from the registry catalog, e.g. `'Issue Created'` (docs only). */
+    displayName?: string;
+}
+````
+
+## TriggerDescriptor (type)
+
+````ts
+/**
+ * A generated, typed connector-trigger descriptor: `TriggerMeta` branded
+ * with phantom `where`/output types. Offline both are loose; a connection-scoped
+ * generator can narrow them. `__where`/`__output` never materialize at runtime.
+ */
+export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
+    readonly __where?: W;
+    readonly __output?: O;
+};
 ````
 
 ## triggerDescriptor (function)
@@ -596,6 +735,143 @@ export declare function descriptor<I = Record<string, unknown>, O = Record<strin
  * generator names `W`/`O` explicitly while TS narrows the literal.
  */
 export declare function triggerDescriptor<W = Record<string, string>, O = Record<string, unknown>>(): <const D extends TriggerMeta>(d: D) => D & TriggerDescriptor<W, O>;
+````
+
+## LookupStrategy (type)
+
+````ts
+/** How `prepare` should retrieve the collection, chosen from the metadata. */
+export type LookupStrategy =
+/** `filterPattern` present — substitute `{filter}` and issue one request. */
+'filter'
+/** No server-side filter — page the collection and match client-side. */
+ | 'scan'
+/** `childPath` present — the collection is a tree to walk. */
+ | 'tree'
+/** `dependsOn` present — another field must resolve first. */
+ | 'dependent';
+````
+
+## LookupSpec (interface)
+
+````ts
+/** One lookup field's retrieval contract, generated from `reference`. */
+export interface LookupSpec {
+    /** The collection holding the records, e.g. `curated_users`. */
+    objectName?: string;
+    /** The path to call, filter included, e.g. `/curated_users?fields=id`. */
+    path: string;
+    /** Every field the collection can be searched by. */
+    by: readonly string[];
+    /** The field whose value is sent to the connector, e.g. `id`. */
+    value: string;
+    /** `{ byEmail: 'profile.email' }` — only for names with an unambiguous alias. */
+    aliases: Readonly<Record<string, string>>;
+    strategy: LookupStrategy;
+    /** For `strategy: 'dependent'`, the fields that must resolve first. */
+    dependsOn?: readonly string[];
+}
+````
+
+## LookupToken (interface)
+
+````ts
+/** An unresolved lookup: what `.byEmail(…)` returns. */
+export interface LookupToken {
+    readonly __lookup: {
+            readonly nodeType: string;
+            readonly field: string;
+            readonly by: string;
+            readonly value: unknown;
+        };
+}
+````
+
+## isLookupToken (function)
+
+````ts
+/** True when `v` is an unresolved `LookupToken`. */
+export declare function isLookupToken(v: unknown): v is LookupToken;
+````
+
+## lookupKey (function)
+
+````ts
+/** The identity of one resolution, as `prepare` records it and `compile` reads it. */
+export declare function lookupKey(nodeType: string, field: string, by: string, value: unknown): string;
+````
+
+## LookupBuilder (type)
+
+````ts
+/** What `lookup(...)` returns: the generic form plus any generated aliases. */
+export type LookupBuilder<S extends LookupSpec | undefined = undefined> = S extends LookupSpec ? {
+    by(name: S['by'][number], value: unknown): LookupToken;
+} & {
+    [K in keyof S['aliases']]: (value: unknown) => LookupToken;
+} : {
+    by(name: string, value: unknown): LookupToken;
+};
+````
+
+## lookup (function)
+
+````ts
+/** Begin resolving a lookup field on a generated descriptor. */
+export declare function lookup<D extends LookupBearing, F extends keyof NonNullable<D['lookups']> & string>(descriptor: D, field: F): LookupBuilder<NonNullable<D['lookups']>[F] extends LookupSpec ? NonNullable<D['lookups']>[F] : never>;
+
+/** Begin resolving a lookup field addressed by connector key and action. */
+export declare function lookup(key: string, action: string, field: string): LookupBuilder;
+````
+
+## LookupResolution (interface)
+
+````ts
+/** One recorded resolution, as `connectors-local/resolutions.json` stores it. */
+export interface LookupResolution {
+    nodeType: string;
+    field: string;
+    by: string;
+    /** The human-meaningful value the author wrote. */
+    match: string;
+    /** The opaque id the connector wants. */
+    value: string;
+}
+````
+
+## LookupResolutions (type)
+
+````ts
+/** Every recorded resolution, keyed by `lookupKey`. */
+export type LookupResolutions = Readonly<Record<string, LookupResolution>>;
+````
+
+## resolvedValue (function)
+
+````ts
+/** The recorded id for a token, or `undefined`. */
+export declare function resolvedValue(token: LookupToken, resolutions: LookupResolutions): string | undefined;
+````
+
+## unresolvedLookupMessage (function)
+
+````ts
+/** The message for a lookup nothing has resolved — the command that fixes it. */
+export declare function unresolvedLookupMessage(token: LookupToken): string;
+````
+
+## lookupSpecOf (function)
+
+````ts
+/** The `LookupSpec` for one field, or `undefined` when it earns no helper. */
+export declare function lookupSpecOf(reference: RawReference, invariant?: ReadonlySet<string>): LookupSpec | undefined;
+````
+
+## refuseLookupToken (function)
+
+````ts
+/** Refuse a lookup token where the family cannot resolve one. */
+export declare function refuseLookupToken(value: unknown, family: string, field: string): void;
 ````
 
 ## FlowBuilder (class)
@@ -621,6 +897,8 @@ declare class FlowBuilder extends StepList {
      * than being dropped.
      */
     layout(layout: FlowLayout): this;
+    /** Pin free-text notes to the canvas, for whoever reads the diagram. */
+    stickyNotes(notes: StickyNote[]): this;
     /**
      * Set what starts the flow. Omit this call for the **manual** trigger (a
      * caller starts the flow on demand) — that is the default and what most
@@ -630,7 +908,7 @@ declare class FlowBuilder extends StepList {
      */
     trigger(spec: TriggerSpec | FlowTrigger, options?: NodeOptions): this;
     /**
-     * Add an ADDITIONAL flow root (design §5.1): its own trigger node, its own
+     * Add an ADDITIONAL flow root: its own trigger node, its own
      * scoped inputs (read them with `entryInput('<id>', '<name>')`), and an
      * optional prefix that runs before the root joins the shared body. Without a
      * prefix the root connects straight to the first shared step; a prefix that
@@ -657,6 +935,8 @@ declare class FlowBuilder extends StepList {
     /** Finish the flow and return the graph the compiler serializes. */
     build(): BuiltFlow;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## StepList (class)
@@ -761,6 +1041,17 @@ export interface TriggerOptions<W = Record<string, string>> {
      * `{ parentFolderId: '<mail folder id>' }`.
      */
     where?: W;
+    /**
+     * The OBJECT a GENERIC event watches — the one thing its node type does not
+     * say. `record-created` / `record-updated` on Data Fabric, Salesforce,
+     * ServiceNow, Jira and some sixty other connectors fire for ONE object of the
+     * connection (an entity, a table, a custom object), and the library carries no
+     * default for it: `uip is triggers objects <key> <EVENT> --connection-id <id>`
+     * lists the choices. REQUIRED for such an event, refused for a curated one whose
+     * object is built in (Outlook `email-received` is always `Message`). It is not
+     * an event parameter, so it does not go in `where`.
+     */
+    object?: string;
     /** Optional filters on the payload. Omit to take every event in scope. */
     filters?: EventFilter[];
     /** bindings.json id for the connection (defaults to the flow's single binding). */
@@ -789,6 +1080,12 @@ export interface EventSubscription {
      * --connection-id <id>`).
      */
     where?: Record<string, string>;
+    /**
+     * The OBJECT a GENERIC event watches (a Data Fabric entity, a Salesforce or
+     * ServiceNow object, a Jira record type). Required for such an event, refused
+     * for a curated one; see `TriggerOptions.object`.
+     */
+    object?: string;
     /** Optional filters on the payload. Omit to take every event in scope. */
     filters?: EventFilter[];
     /** bindings.json id for the connection (defaults to the flow's single binding). */
@@ -821,6 +1118,13 @@ export type HttpInputs = HttpInputsBase & ({
     connection?: string;
     /** Symbolic folder name declared in bindings.json. */
     folder?: string;
+    /**
+     * Connector key whose authentication the HTTP proxy should reuse.
+     * Defaults to `uipath-uipath-http`. Set this for a connector-specific
+     * fallback endpoint, for example `uipath-salesforce-slack`.
+     * Requires both `connection` and `folder`.
+     */
+    targetConnector?: string;
 });
 ````
 
@@ -852,6 +1156,8 @@ export interface TransformInputs {
     /** At least one operation — an empty chain is a no-op node. */
     operations: TransformOperation[];
 }
+
+// TransformVariant = 'map' | 'filter' | 'group-by'
 ````
 
 ## HitlInputs (interface)
@@ -908,6 +1214,8 @@ export interface HitlInputs {
      */
     document?: DocValidationInputs;
 }
+
+// HitlVariant = 'quick-form' | 'action-app' | 'document-validation'
 ````
 
 ## SummarizeInputs (interface)
@@ -1065,7 +1373,7 @@ export interface RpaWorkflowInputs {
      * The process's OUTPUT arguments — the fields it returns, and their types
      * (e.g. `{ title: 'string' }`). Required if anything reads the step's output.
      */
-    returns?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
 }
 ````
 
@@ -1099,7 +1407,7 @@ export interface ApiWorkflowInputs {
      * @enforcedBy APIWF_READ_WITHOUT_RETURNS Reading a field off the result requires
      *   declaring it here.
      */
-    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
 }
 ````
 
@@ -1139,7 +1447,7 @@ export interface PublishedFunctionInputs {
      * @enforcedBy FUNCTION_READ_WITHOUT_RETURNS Reading a field off the result requires
      *   declaring it here.
      */
-    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
 }
 ````
 
@@ -1226,10 +1534,16 @@ export interface EndCallInputs {
 export interface VoiceAgentInputs {
     /**
      * The agent's standing instructions — who it is on the call and what it must
-     * do. Written as plain text; a voice agent has no `{{input.…}}` templating,
-     * because its turn comes from the live call rather than from flow arguments.
+     * do. Use `{{input.<name>}}` placeholders for values declared in `inputs`;
+     * the caller's audio remains the conversational turn.
      */
     systemPrompt: string;
+    /**
+     * Flow values made available to `systemPrompt` placeholders. Each key must
+     * be referenced as `{{input.<key>}}`; the compiler emits the node's runtime
+     * argument binding and the matching agent.json input contract together.
+     */
+    inputs?: Record<string, unknown>;
     /**
      * The call to attach the agent to — the `callContext` from the incoming-call
      * trigger or `createOutgoingCall`. Required: without it the agent has no
@@ -1350,13 +1664,16 @@ export interface AgentInputs {
      * @enforcedBy AGENT_READ_WITHOUT_RETURNS Reading a field off the result requires
      *   declaring it here.
      */
-    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
     /**
      * Whether the published resource is a CODED agent project (LangGraph /
      * LlamaIndex / OpenAI Agents) or a low-code one built in Agent Builder.
      */
     flavour?: AgentFlavour;
 }
+
+// AgentLocation = 'published' | 'in-solution'
+// AgentFlavour = 'coded' | 'lowcode'
 ````
 
 ## InlineAgentInputs (interface)
@@ -1451,6 +1768,8 @@ export interface InlineAgentInputs {
      */
     escalation?: EscalationRef | EscalationRef[];
 }
+
+// InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
 ````
 
 ## DocumentClassifyInputs (interface)
@@ -1578,7 +1897,7 @@ export interface QueueItemInputs {
      * `HTTP 409: Duplicate Reference`, so derive it from the flow's input rather
      * than hard-coding it.
      */
-    reference?: string;
+    reference?: string | Expr;
     /** Earliest the item may be processed, ISO-8601 (e.g. `'2026-08-01T09:00:00Z'`). */
     deferDate?: string;
     /** Latest the item should be processed, ISO-8601. What an SLA is measured against. */
@@ -1594,8 +1913,10 @@ export interface QueueItemInputs {
      * their types (e.g. `{ approved: 'boolean' }`). Required if anything reads the
      * step's output.
      */
-    returns?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
 }
+
+// QueuePriority = 'Low' | 'Normal' | 'High'
 ````
 
 ## ConnectorOpts (interface)
@@ -1620,9 +1941,9 @@ export interface ConnectorOpts {
 
 ````ts
 /**
- * Options shared by every builder method that creates a definition-backed node
- * (design §5.2). More fields (label overrides, variable updates) arrive in
- * later phases; today this carries exact version selection.
+ * Options shared by every builder method that creates a definition-backed node:
+ * `version` selects the exact node definition to compile against, and `updates`
+ * assigns flow variables when the node completes.
  */
 export interface NodeOptions {
     /**
@@ -1640,6 +1961,11 @@ export interface NodeOptions {
      * outputs); values are `Expr`s or raw literals.
      */
     updates?: Record<string, Expr | unknown>;
+    /**
+     * What the canvas shows on this node (`display.label`). Defaults to the step
+     * name.
+     */
+    label?: string;
 }
 ````
 
@@ -1702,7 +2028,7 @@ interface HttpInputsBase {
      * and the same word, as
      * `rpaWorkflow`'s `returns`.
      */
-    returns?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
     /**
      * How long to wait for the response before giving up, as an **ISO-8601
      * duration** — `'PT30S'` is "give up after 30 seconds", `'PT1M'` one minute,
@@ -1794,7 +2120,7 @@ interface AgenticProcessInputsBase {
      */
     inputs?: Record<string, unknown>;
     /**
-     * Which published form this Agentic Process is (design §2.1): the three forms
+     * Which published form this Agentic Process is: the three forms
      * share one public concept and differ only in wire identity. `'bpmn'` (the
      * default, and what this factory always emitted) is a Maestro BPMN process
      * orchestration; `'flow'` is a published Maestro Flow; `'case'` is a Case
@@ -1808,7 +2134,7 @@ interface AgenticProcessInputsBase {
 
 ````ts
 /**
- * Loop-specific options (design §5.2). Any of these — or a `b.break()` in the
+ * Loop-specific options. Any of these — or a `b.break()` in the
  * body — selects the loop's v2.4 definition (the current Workbench contract,
  * with inner `start`/`continue`/`break` handles); a plain `.loop()` keeps the
  * SDK's long-pinned 1.0.0 emission unchanged. An explicit `{ version: '1.0.0' }`
@@ -1835,7 +2161,7 @@ export interface LoopOptions extends NodeOptions {
 
 ````ts
 /**
- * Do-while options (design §3.1). `limit` caps iterations; the platform
+ * Do-while options. `limit` caps iterations; the platform
  * defaults a blank limit to 10,000 and rejects values outside 1–10,000.
  */
 export interface DoWhileOptions extends NodeOptions {
@@ -1991,15 +2317,6 @@ export type TriggerSpec = {
 };
 ````
 
-## TriggerDescriptor (type)
-
-````ts
-export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
-    readonly __where?: W;
-    readonly __output?: O;
-};
-````
-
 ## ChildFlow (type)
 
 ````ts
@@ -2129,51 +2446,50 @@ export type ActionSpec = {
 };
 ````
 
-## ConnectorDescriptor (type)
-
-````ts
-export type ConnectorDescriptor<I = Record<string, unknown>, O = Record<string, unknown>> = ConnectorMeta & {
-    readonly __inputs?: I;
-    readonly __outputs?: O;
-};
-````
-
 ## ErrorEnvelopeField (type)
 
 ````ts
 export type ErrorEnvelopeField = 'code' | 'message' | 'detail' | 'category' | 'status';
 ````
 
-## ConnectorMeta (interface)
+## RawReference (type)
 
 ````ts
-export interface ConnectorMeta {
-    nodeType: string;
-    version?: string;
-    requiresConnection?: boolean;
-    requiresFolderKey?: boolean;
+type RawReference = {
     objectName?: string;
-}
+    path?: string;
+    lookupNames?: string[];
+    lookupValue?: string;
+    filterPattern?: string;
+    childPath?: string;
+    dependsOn?: string[];
+} | undefined;
 ````
 
-## TriggerMeta (interface)
+## EventFilter (type)
 
 ````ts
-export interface TriggerMeta {
-    connector: string;
-    event: string;
-    version?: string;
-    displayName?: string;
-}
-````
-
-## EventFilter (interface)
-
-````ts
-export interface EventFilter {
+export type EventFilter = {
     field: string;
+} & ({
     contains: string;
-}
+} | {
+    startsWith: string;
+} | {
+    endsWith: string;
+} | {
+    equals: string | number | boolean;
+} | {
+    notEquals: string | number | boolean;
+} | {
+    lessThan: string | number;
+} | {
+    lessThanOrEqual: string | number;
+} | {
+    greaterThan: string | number;
+} | {
+    greaterThanOrEqual: string | number;
+});
 ````
 
 ## ScheduleEvery (type)
@@ -2191,10 +2507,26 @@ export interface FlowLayout {
 }
 ````
 
+## StickyNote (interface)
+
+````ts
+export interface StickyNote {
+    id?: string;
+    content: string;
+    color?: StickyNoteColor;
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+}
+````
+
 ## TypeDesc (type)
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## VarSpec (interface)
@@ -2207,6 +2539,8 @@ export interface VarSpec {
     schema?: Record<string, unknown>;
     default?: unknown;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## BuiltFlow (interface)
@@ -2224,6 +2558,7 @@ export interface BuiltFlow {
     trigger?: TriggerSpec;
     triggerOptions?: NodeOptions;
     layout?: FlowLayout;
+    stickyNotes?: StickyNote[];
     entryPoints?: BuiltEntryPoint[];
     triggerId?: string;
 }
@@ -2233,6 +2568,8 @@ export interface BuiltFlow {
 
 ````ts
 export type ScriptReturns = ScriptReturnType | Record<string, ScriptReturnType>;
+
+// ScriptReturnType = 'string' | 'number' | 'boolean' | 'object' | 'array'
 ````
 
 ## TransformVariant (type)
@@ -2257,6 +2594,8 @@ export type TransformOperation = {
     groupByField: string;
     aggregations?: Aggregation[];
 };
+
+// FilterMatch = 'and' | 'or'
 ````
 
 ## HitlVariant (type)
@@ -2310,6 +2649,9 @@ export interface HitlRecipient {
         };
     connections?: Partial<Record<'Slack' | 'teams', HitlConnection>>;
 }
+
+// HitlChannel = 'Slack' | 'teams' | 'Email' | 'ActionCenter'
+// HitlAssigneeType = 'user' | 'group' | 'staticEmail' | 'staticGroupName' | 'workload' | 'roundRobin' | 'custom'
 ````
 
 ## OutputColumn (interface)
@@ -2319,6 +2661,14 @@ export interface OutputColumn {
     name: string;
     description: string;
 }
+````
+
+## ReturnFieldType (type)
+
+````ts
+export type ReturnFieldType = InlineAgentFieldType;
+
+// InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
 ````
 
 ## VoiceSettings (interface)
@@ -2375,7 +2725,7 @@ export type AgenticProcessCompletion = {
      * @enforcedBy AGENTIC_READ_WITHOUT_RETURNS Reading a field off the result requires
      * declaring it here.
      */
-    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
+    returns?: Record<string, ReturnFieldType>;
 } | {
     /**
      * Dispatch the process and continue immediately — the platform's
@@ -2471,6 +2821,8 @@ export interface EscalationRef {
     priority?: 'low' | 'medium' | 'high' | 'critical';
     labels?: string[];
 }
+
+// InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
 ````
 
 ## DataFabricFilter (interface)
@@ -2652,6 +3004,12 @@ export interface EdgeRoute {
 }
 ````
 
+## StickyNoteColor (type)
+
+````ts
+export type StickyNoteColor = (typeof STICKY_NOTE_COLORS)[number] | (string & {});
+````
+
 ## VarDecl (interface)
 
 ````ts
@@ -2663,6 +3021,8 @@ export interface VarDecl {
     subType?: string;
     schema?: Record<string, unknown>;
 }
+
+// TypeDesc = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file' | 'any' | 'integer' | 'float' | 'double' | 'date' | 'datetime' | 'jsonSchema'
 ````
 
 ## BuiltEntryPoint (interface)
@@ -2700,6 +3060,8 @@ export interface FilterRule {
     condition: FilterCondition;
     value?: string | number | boolean | null;
 }
+
+// FilterCondition = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'greater_equal' | 'less_equal' | 'contains' | 'not_contains' | 'starts_with' | 'not_starts_with' | 'ends_with' | 'not_ends_with' | 'matches_regex' | 'in' | 'not_in' | 'is_null' | 'is_not_null' | 'is_empty' | 'is_not_empty'
 ````
 
 ## FilterMatch (type)
@@ -2716,6 +3078,8 @@ export interface FieldMapping {
     transformation?: Transformation;
     renameTo?: string;
 }
+
+// Transformation = 'copy' | 'uppercase' | 'lowercase' | 'trim'
 ````
 
 ## Aggregation (interface)
@@ -2726,6 +3090,8 @@ export interface Aggregation {
     alias: string;
     field?: string;
 }
+
+// AggregationOperation = 'count' | 'sum' | 'average' | 'min' | 'max' | 'first' | 'last' | 'collect'
 ````
 
 ## ShownField (interface)
@@ -2738,6 +3104,8 @@ export interface ShownField {
     direction: 'input';
     value: Expr;
 }
+
+// FormFieldType = 'text' | 'number' | 'boolean' | 'date-time'
 ````
 
 ## AskedField (interface)
@@ -2750,6 +3118,8 @@ export interface AskedField {
     direction: 'output';
     required?: boolean;
 }
+
+// FormFieldType = 'text' | 'number' | 'boolean' | 'date-time'
 ````
 
 ## InOutField (interface)
@@ -2763,6 +3133,8 @@ export interface InOutField {
     value: Expr;
     required?: boolean;
 }
+
+// FormFieldType = 'text' | 'number' | 'boolean' | 'date-time'
 ````
 
 ## HitlChannel (type)
@@ -2857,6 +3229,8 @@ export interface BuiltinToolRef {
     fileExtension?: string;
     citationMode?: string;
 }
+
+// BuiltinToolName = 'analyzefiles' | 'summarize' | 'batchtransform'
 ````
 
 ## ConnectorToolRef (interface)
@@ -2883,6 +3257,9 @@ export interface ProcessToolRef {
     inputs?: Record<string, InlineAgentFieldType>;
     returns?: Record<string, InlineAgentFieldType>;
 }
+
+// InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
+// ProcessToolKind = 'process' | 'agent' | 'api' | 'flow' | 'maestro' | 'function'
 ````
 
 ## IxpToolRef (interface)
@@ -2946,6 +3323,8 @@ export interface ClientSideToolRef {
     inputs?: Record<string, InlineAgentFieldType>;
     returns?: Record<string, InlineAgentFieldType>;
 }
+
+// InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'
 ````
 
 ## HttpRequestToolRef (interface)
@@ -3011,6 +3390,8 @@ export interface GuardrailSelector {
     scopes: GuardrailScope[];
     matchNames?: string[];
 }
+
+// GuardrailScope = 'Agent' | 'Llm' | 'Tool'
 ````
 
 ## GuardrailAction (type)

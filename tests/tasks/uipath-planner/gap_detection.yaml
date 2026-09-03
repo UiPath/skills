@@ -4,18 +4,22 @@ description: >
   analyze a deliberately incomplete PDD. Tests whether the skill correctly
   applies [DEFAULT] markers for standard gaps and [SME REVIEW] markers for
   business-knowledge gaps, per Critical Rule 10 and the Gap Detection Checklist.
-tags: [uipath-planner, integration, lifecycle:generate]
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 25
   # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
-  # guides, select scope, generate §1–§18). The experiment default caps the
-  # whole task at task_timeout: 1200s — that fires before the SDD lands no
-  # matter how high turn_timeout is. Raise BOTH: task_timeout for the
-  # end-to-end wall clock, turn_timeout for the long authoring turn.
-  # See fix/planner-sdd-turn-timeout.
-  task_timeout: 2700
-  turn_timeout: 1800
+  # guides, select scope, generate §1–§18). Raise BOTH caps: task_timeout for
+  # the end-to-end wall clock, turn_timeout for the long authoring turn. Keep
+  # turn_timeout <= task_timeout — the orchestrator warns when task_timeout is
+  # the larger of the two, because the agent's single-iteration budget IS
+  # turn_timeout and a bigger task_timeout cannot extend it.
+  # turn_timeout: 1800 was too tight: run 2026-08-27_04-13-44 hard-killed the
+  # turn at 1800s with NO SDD written (ERROR, score 0.000) — 93% of the budget
+  # went to reasoning blocks and Write was never reached. Match the proven
+  # constraint_gate budget: 2700s turn / 3600s task.
+  task_timeout: 3600
+  turn_timeout: 2700
 
 initial_prompt: |
   Analyze the following Process Design Document and generate a Solution Design
@@ -24,6 +28,14 @@ initial_prompt: |
   This PDD is deliberately incomplete. Apply [DEFAULT] and [SME REVIEW] markers
   as the skill instructs. For any [SME REVIEW] items, keep them as-is in the
   SDD — do NOT resolve them.
+
+  Save the SDD as `payment-reconciliation-sdd.md` in the current directory.
+
+  Important:
+  - Before starting, load the uipath-planner skill. Read and follow its
+    workflow steps and RPA SDD template exactly — do not free-form the SDD.
+  - Do NOT attempt to create a UiPath project or run any `uip` commands.
+  - Your only deliverable is the SDD markdown file.
 
   --- BEGIN PDD ---
 

@@ -1,0 +1,53 @@
+task_id: skill-api-workflow-evals-gate-off-no-evals
+description: >
+  Build (gate off): a plain create request — no "don't ask" — on a scaffolded
+  project WITHOUT an `evals/` folder. Per SKILL.md rule 22 the missing folder
+  means the Evaluations feature is not enabled for this project, so the agent
+  must NOT ask about tests or loop mode, must NOT create `evals/`, and must just
+  author the workflow. Graded on the workflow having been authored and returning
+  `{ "sum": 5 }` for a=2, b=3 (raw output), and on no `evals/` folder existing.
+
+  The negative twin of gate_create (which seeds the panel-created folder and
+  expects the agent to stop and ask): together they pin the condition the gate
+  hinges on. Local-only.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:eval]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/gate_off_no_evals/seed.py"
+    timeout: 120
+
+initial_prompt: |
+  Create an API workflow in the scaffolded project ./AddNumbers that takes two
+  numbers `a` and `b` and returns their sum.
+
+success_criteria:
+  - type: run_command
+    description: "Feature off: the workflow was authored (returns sum 5 for 2+3) and no evals/ folder was created"
+    command: python3 $TASK_DIR/check_authored.py
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The authored workflow validates"
+    command: 'uip api-workflow validate AddNumbers/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the offline validator (rule 20)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30

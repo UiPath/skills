@@ -1,0 +1,63 @@
+task_id: skill-case-diagnose-formal-arg-slot-ids
+description: >
+  Diagnose mode — the staged case passes `uip maestro case validate` with zero
+  findings, but `variables.inputs[0].id` is "caseRef" and
+  `variables.outputs[0].id` is "finalDecision" — each formal-argument slot id
+  copied from its companion name. Rule 22 requires synthetic ids distinct from
+  `name`/`var`, and the skill carries its own Step 12 Check 10 precisely
+  because "CLI validate does not check this". Exercises whether the agent
+  applies a skill-owned invariant the CLI cannot see.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:variables]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate`, but it violates one of the uipath-maestro-case
+  skill's own structural invariants for case variables — something the CLI
+  validator does not check.
+
+  Audit LinearThreeStages/LinearThreeStages/caseplan.json against the skill's
+  rules for case variables, find the violation, and repair it in place.
+
+  - Keep every variable's `name` and `var` exactly as they are. Renaming a
+    variable to dodge the rule is not a fix — other parts of the case bind to
+    those names.
+  - Do NOT delete variables.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end in a single pass.
+
+  Load the uipath-maestro-case skill and check its variable rules.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every inputs/outputs slot id is synthetic and distinct from its name/var, and all names/vars are unchanged"
+    command: "python3 $TASK_DIR/check_formal_arg_slot_ids.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

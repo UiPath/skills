@@ -283,6 +283,54 @@ Or have the terminal node compute the full aggregate and emit it.
 
 ---
 
+## Available Tools
+
+The `uipath-langchain` package provides UiPath-specific LangChain tools:
+
+| Tool | Import | Purpose |
+|------|--------|---------|
+| Process invocation | `uipath_langchain.agent.tools import create_process_tool` | Trigger UiPath processes |
+| Escalation (HITL) | `uipath_langchain.agent.tools import create_escalation_tool` | Send to human reviewer |
+| Context search | `uipath_langchain.retrievers import ContextGroundingRetriever` | Search Context Grounding indexes |
+| MCP tools | `uipath_langchain.agent.tools import open_mcp_tools` | Connect to MCP servers |
+
+> **Context Grounding retrieval in LangGraph:** always use `ContextGroundingRetriever` from `uipath_langchain.retrievers` — not `sdk.context_grounding.search()` / `search_async()`. The LangChain retriever integrates natively with the graph pipeline and declares `index_name` + `folder_path` at one call site — the exact shape the `index` binding entry needs (see [../lifecycle/bindings-reference.md](../lifecycle/bindings-reference.md)). See [../capabilities/context-grounding.md](../capabilities/context-grounding.md) for usage examples.
+
+### Context Grounding RAG Example
+
+Minimal RAG shape: retrieval node + answer node.
+
+```python
+from typing import TypedDict
+
+from langchain_core.messages import HumanMessage, SystemMessage
+from uipath_langchain.chat.models import UiPathAzureChatOpenAI
+from uipath_langchain.retrievers import ContextGroundingRetriever
+
+class GraphState(TypedDict):
+    question: str
+    snippets: list[str]
+    answer: str
+
+async def retrieve(state: GraphState) -> dict:
+    retriever = ContextGroundingRetriever(index_name="company_docs", folder_path="Shared")
+    documents = await retriever.ainvoke(state["question"])
+    return {"snippets": [doc.page_content for doc in documents]}
+
+async def answer(state: GraphState) -> dict:
+    context = "\n\n".join(state["snippets"])
+    llm = UiPathAzureChatOpenAI(temperature=0)
+    response = await llm.ainvoke([
+        SystemMessage(content="Answer only from the provided context."),
+        HumanMessage(content=f"Context:\n{context}\n\nQuestion: {state['question']}"),
+    ])
+    return {"answer": response.content}
+```
+
+Wire `retrieve → answer` as in § Building the Graph.
+
+---
+
 ## Tracing
 
 LangGraph agents get **automatic tracing** — you do NOT need `@traced()` on graph nodes. The UiPath LangGraph runtime instruments all node executions, LLM calls, and tool invocations automatically.
@@ -393,19 +441,3 @@ Both are valid — pick based on the agent's needs:
 See `../capabilities/conversational-agents.md` § Running Locally for the `--keep-state-file` flag (required on every turn) and § Wire Envelope for the `turn1.json` shape.
 
 ---
-
-## Available Tools
-
-The `uipath-langchain` package provides UiPath-specific LangChain tools:
-
-| Tool | Import | Purpose |
-|------|--------|---------|
-| Process invocation | `uipath_langchain.agent.tools import create_process_tool` | Trigger UiPath processes |
-| Escalation (HITL) | `uipath_langchain.agent.tools import create_escalation_tool` | Send to human reviewer |
-| Context search | `uipath_langchain.retrievers import ContextGroundingRetriever` | Search Context Grounding indexes |
-| MCP tools | `uipath_langchain.agent.tools import open_mcp_tools` | Connect to MCP servers |
-
-> **Context Grounding retrieval in LangGraph:** always use `ContextGroundingRetriever` from `uipath_langchain.retrievers` — not `sdk.context_grounding.search()` / `search_async()`. The LangChain retriever integrates natively with the graph pipeline and auto-generates the correct `index` binding. See [../capabilities/context-grounding.md](../capabilities/context-grounding.md) for usage examples.
-
----
-

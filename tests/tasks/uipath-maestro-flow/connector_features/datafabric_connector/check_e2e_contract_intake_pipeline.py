@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
-"""Verify the ContractRegistry intake e2e scenario:
-    - 6 create-entity-record nodes on ContractRegistry, each body populating
-      contractTitle, status, priority, dueDate, value, isUrgent
-    - >=2 query-entity-records nodes on ContractRegistry: at least one sorted
-      by priority DESC and at least one filtered by isUrgent = true
-    - >=1 update-entity-record node touching status
-    - 6 delete-entity-record nodes"""
+"""Verify the shrunk ContractRegistry bulk lifecycle:
+
+- >=1 ForEach loop node in the flow
+- >=1 create-entity-record on ContractRegistry (typically single, inside a loop)
+- >=1 query-entity-records on ContractRegistry, sorted by priority DESC
+- >=1 update-entity-record on ContractRegistry touching `status`, with a
+  recordId expression bound to the query's output (not a hard-coded literal)
+- >=1 delete-entity-record on ContractRegistry (typically single, inside a loop)
+
+Only what's UNIQUE to this e2e: the loop-driven bulk pattern + the query→update
+wiring. Single-node CRUD assertions live in smoke_update; multi-condition
+FilterBuilder in integration_query.
+"""
 import glob
 import json
 import re
 import sys
 
 ENTITY = "ContractRegistry"
-CREATE_FIELDS = {"contractTitle", "status", "priority", "dueDate", "value", "isUrgent"}
 
 
 def detail(node):
@@ -53,9 +58,18 @@ def has_priority_desc_sort(node):
     return asc is False
 
 
-def has_isurgent_true_filter(node):
-    expr = str(qparams(node).get("queryExpression") or "").lower()
-    return "isurgent" in expr and "true" in expr
+def update_wired_to_query(update_node, query_node_ids):
+    """The update's recordId must reference an upstream query output (not a
+    hard-coded literal). We accept any =js:$vars.<id>. expression whose <id>
+    matches a query node's id — that's the CLI-emitted binding form."""
+    pp = detail(update_node).get("pathParameters") or {}
+    rec = str(pp.get("recordId", ""))
+    if not rec.startswith("=js:"):
+        return False
+    for qid in query_node_ids:
+        if qid and qid in rec:
+            return True
+    return False
 
 
 def main() -> int:
@@ -67,14 +81,13 @@ def main() -> int:
     for path in flows:
         with open(path) as f:
             doc = json.load(f)
-        creates, queries, updates, deletes = [], [], [], []
-        has_loop = False
+        loops, creates, queries, updates, deletes = [], [], [], [], []
         for n in doc.get("nodes", []):
-            if n.get("type", "").startswith("core.logic.loop"):
-                has_loop = True
+            t = n.get("type", "")
+            if t.startswith("core.logic.loop"):
+                loops.append(n)
             if not targets_entity(n):
                 continue
-            t = n.get("type", "")
             if t.endswith(".create-entity-record"):
                 creates.append(n)
             elif t.endswith(".query-entity-records"):
@@ -84,46 +97,38 @@ def main() -> int:
             elif t.endswith(".delete-entity-record"):
                 deletes.append(n)
 
-        # Accept either 6 separate create nodes OR >=1 create node driven by a loop
+        if not loops:
+            print(f"FAIL: {path} — no ForEach loop; the bulk pattern requires >=1 loop", file=sys.stderr)
+            continue
         if not creates:
-            print(f"FAIL: {path} — no create-entity-record node on {ENTITY}", file=sys.stderr)
+            print(f"FAIL: {path} — no create-entity-record on {ENTITY}", file=sys.stderr)
             continue
-        if len(creates) < 6 and not has_loop:
-            print(f"FAIL: {path} — {len(creates)} create nodes without a loop; need either 6 create nodes or a loop over 1+", file=sys.stderr)
+        if not queries:
+            print(f"FAIL: {path} — no query-entity-records on {ENTITY}", file=sys.stderr)
             continue
-        missing_by_node = [sorted(CREATE_FIELDS - set(body(n).keys())) for n in creates]
-        offenders = [(i, m) for i, m in enumerate(missing_by_node) if m]
-        if offenders:
-            print(f"FAIL: {path} — create nodes missing body fields: {offenders}", file=sys.stderr)
-            continue
-        if len(queries) < 2:
-            print(f"FAIL: {path} — expected >=2 query nodes on {ENTITY}, found {len(queries)}", file=sys.stderr)
-            continue
-        if not any(has_priority_desc_sort(n) for n in queries):
+        if not any(has_priority_desc_sort(q) for q in queries):
             print(f"FAIL: {path} — no query with priority DESC sort", file=sys.stderr)
             continue
-        if not any(has_isurgent_true_filter(n) for n in queries):
-            print(f"FAIL: {path} — no query filtering isUrgent=true", file=sys.stderr)
-            continue
         if not updates:
-            print(f"FAIL: {path} — no update node on {ENTITY}", file=sys.stderr)
+            print(f"FAIL: {path} — no update-entity-record on {ENTITY}", file=sys.stderr)
             continue
-        if not any("status" in body(n) for n in updates):
-            print(f"FAIL: {path} — no update touches status", file=sys.stderr)
+        if not any("status" in body(u) for u in updates):
+            print(f"FAIL: {path} — no update touching status", file=sys.stderr)
+            continue
+        q_ids = [q.get("id") for q in queries]
+        if not any(update_wired_to_query(u, q_ids) for u in updates):
+            print(f"FAIL: {path} — update recordId not wired to a query output (found literals or unrelated references)", file=sys.stderr)
             continue
         if not deletes:
-            print(f"FAIL: {path} — no delete node on {ENTITY}", file=sys.stderr)
-            continue
-        if len(deletes) < 6 and not has_loop:
-            print(f"FAIL: {path} — {len(deletes)} delete nodes without a loop; need either 6 or a loop", file=sys.stderr)
+            print(f"FAIL: {path} — no delete-entity-record on {ENTITY}", file=sys.stderr)
             continue
 
-        loop_hint = " (loop-driven)" if has_loop else ""
-        print(f"OK: {path} — {len(creates)} create, {len(queries)} query, "
-              f"{len(updates)} update, {len(deletes)} delete on {ENTITY}{loop_hint}")
+        print(f"OK: {path} — {len(loops)} loop(s), "
+              f"{len(creates)} create, {len(queries)} query (priority DESC), "
+              f"{len(updates)} update (status), {len(deletes)} delete on {ENTITY}")
         return 0
 
-    print(f"FAIL: no .flow satisfies the ContractRegistry intake shape", file=sys.stderr)
+    print("FAIL: no .flow satisfies the bulk-lifecycle shape", file=sys.stderr)
     return 1
 
 

@@ -13,6 +13,7 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 | `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
 | `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<Activity>` | Workflow run |
 | `$output` | The current task's raw output. | This task only |
+| `$helpers` | Engine host functions, available in `run.script` code: `$helpers.file.fileToBase64(ref)` and `$helpers.file.base64ToFile({ base64, fileName?, mimeType? })` — both `async`, so `await` them. See [File references](#file-references-jobattachment-and-helpersfile). | Inside scripts |
 | Loop bindings | Whatever name you set in `for.each` / `for.at`, prefixed with `$`. Examples: `for.each: "currentItem"` → `${$currentItem}`, `for.each: "customer"` → `${$customer}`, `for.at: "idx"` → `${$idx}`. The `$` is a literal character in the identifier — the unprefixed name is NOT bound. | Inside the loop body |
 | Catch binding | `${$error}` — `catch.as: "error"` binds the global as `$error` (note the `$` prefix, same convention as loop iterators). Reference fields like `${$error.title}` / `${$error.detail}` / `${$error.originatingTaskName}`. | Inside `catch.do` |
 
@@ -265,6 +266,22 @@ Javascript_1        → adds $context.outputs.Javascript_1 (final summary comput
 Response_1          → reads any $context data, ends workflow
 ```
 
+## File References (`JobAttachment`) and `$helpers.file`
+
+A file anywhere in a workflow — a file input, a binary HTTP response, the result of the base64 activities — is a **reference**, not bytes:
+
+```json
+{ "ID": "6f1c…", "FullName": "invoice.pdf", "MimeType": "application/pdf", "Metadata": { "Size": 48213, "Encoding": "byte-array" } }
+```
+
+- `$workflow.input.<file>` is that object. `$workflow.input.document.FullName` works; there is no `.content` / `.bytes`.
+- `Metadata.Encoding` is `"byte-array"` (binary) or `"base64"` (the blob holds base64 text — what File to Base64 produces). It is a tag, nothing is converted on read.
+- `await $helpers.file.fileToBase64(ref)` → a new `"base64"`-tagged reference (`<name>.base64`). Idempotent for an already-base64 reference.
+- `await $helpers.file.base64ToFile({ base64: refOrString, fileName?, mimeType? })` → a new binary reference. `fileName` / `mimeType` only apply to a string input.
+- `ref.serializeData()` — the one way to get a file's *content* into an HTTP request body or a Response field: `"${{ content: $context.outputs.FileToBase64_1.output.serializeData() }}"`. It returns a small deferred-read marker (`{ __uipathFileRead: { ref } }`) that the engine replaces with the content at send/egress time, so large data never enters `$context`. Use it only inline in a body / Response — not in an Assign, a variable, or script logic. Nested inside a JSON body field it is valid **only on a base64 reference** (File to Base64 output); a binary reference's marker or a bare reference nested in a body is a send-time error. A bare reference as the *whole* HTTP body is sent as the file's bytes.
+
+Full guide (activity JSON, CLI run, pitfalls): [files-and-base64.md](files-and-base64.md).
+
 ## Anti-patterns
 
 - **Do NOT** use `$input.<name>` to read workflow inputs from non-first tasks — `$input` is the previous task's `$output`. Use `$workflow.input.<name>`.
@@ -273,3 +290,5 @@ Response_1          → reads any $context data, ends workflow
 - **Do NOT** use `var` inside JS_Invoke scripts — strict mode rejects implicit globals; use `const` / `let`.
 - **Do NOT** wrap loop variable names (`each`, `at`) in `${...}` — those fields take plain identifiers.
 - **Do NOT** mix `${...}` and string concatenation when a single expression form works: prefer `"${\"prefix-\" + $workflow.input.x}"` over splitting.
+- **Do NOT** read a file input as text or bytes (`$workflow.input.document.content`) — inputs of file type are `JobAttachment` references. Convert with `$helpers.file.*` or inline with `.serializeData()`.
+- **Do NOT** store `serializeData()` in a variable or pass it through a script — the marker is only resolved inside an HTTP body / Response.

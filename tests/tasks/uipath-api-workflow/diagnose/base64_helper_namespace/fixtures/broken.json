@@ -1,0 +1,128 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "namespace": "default",
+    "name": "base64-helper-call-missing",
+    "version": "0.0.1",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {},
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "evaluate": {
+    "language": "javascript",
+    "mode": "strict"
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "document": {
+            "$ref": "#/definitions/job-attachment"
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "definitions": {
+          "job-attachment": {
+            "type": "object",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string"
+              },
+              "MimeType": {
+                "type": "string"
+              },
+              "Metadata": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "ID"
+            ],
+            "x-uipath-resource-kind": "JobAttachment"
+          }
+        }
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          },
+          {
+            "FileToBase64_1": {
+              "run": {
+                "script": {
+                  "code": "return { output: await $helpers.fileToBase64($workflow.input.document) }",
+                  "language": "javascript",
+                  "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                }
+              },
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"FileToBase64_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "FileToBase64",
+                "displayName": "File to Base64",
+                "fullName": "FileToBase64"
+              }
+            }
+          },
+          {
+            "Response_1": {
+              "response": "${$context.outputs.FileToBase64_1.output}",
+              "markJobAsFailed": false,
+              "then": "end",
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ]
+}

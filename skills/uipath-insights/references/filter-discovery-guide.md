@@ -4,7 +4,7 @@ The `filter-*` commands list folders, processes, queues, and machines with recen
 
 Pass the returned values to `jobs` commands: `FolderKey` to `--folder-key`, `ProcessName` to `--process-name`, `MachineName` to `--machine-name`. There is no key-based flag for processes or machines, and `jobs` has no queue filter at all. Every `jobs` command also needs a time range, which these commands do not supply; see [`jobs-commands-guide.md`](jobs-commands-guide.md).
 
-Keys inside `Data` are PascalCase on the wire. Read `FolderKey`, not `folderKey`.
+Keys inside `Data` are PascalCase in the CLI's JSON output. Read `FolderKey`, not `folderKey`.
 
 ## Shared Options
 

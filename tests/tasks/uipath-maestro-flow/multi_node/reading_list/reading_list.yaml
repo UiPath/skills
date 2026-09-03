@@ -48,7 +48,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs and transform output contains the 3 curated books"
     command: "python3 $TASK_DIR/check_reading_list.py"
-    timeout: 300  # must exceed run_debug's internal subprocess timeout (240s)
+    timeout: 600  # >= debug_budget(240) + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

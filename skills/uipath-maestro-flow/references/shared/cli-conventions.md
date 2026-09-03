@@ -1,30 +1,31 @@
 # CLI Conventions
 
-Shared conventions for the `uip` CLI that apply across **all three capabilities** (Author, Operate, Diagnose). Read this first when invoking any `uip` command — every capability assumes these mechanics.
+Shared conventions for the `uip` CLI across Author, Operate, and Diagnose. Read this before invoking any `uip` command.
 
-## 1. Resolve the `uip` binary and detect command prefix
+## 1. Resolve `uip` and detect the command prefix
 
-The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments) and detect the command namespace.
+Resolve the npm-installed binary, which may be absent from PATH in nvm environments:
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
 ```
 
-If `uip` is not found at all, install it:
+If `uip` is not found, run:
 
 ```bash
 npm install -g @uipath/cli@latest
 ```
 
-If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges — do not retry automatically.
+If global installation fails with a permission error, prompt the user to rerun it with appropriate privileges; do not retry automatically.
 
-### Command prefix by version
+Use `uip maestro flow` for CLI version **≥ 0.3.4** and `uip flow` for versions **< 0.3.4**: <!-- uip-check-skip -->
 
 | Installed version | Command prefix | Example |
 | --- | --- | --- |
 | **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
 | **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
+
 
 ```bash
 MIN_VERSION="0.3.4"
@@ -36,11 +37,11 @@ fi
 echo "Using: $FLOW_CMD (CLI version $CURRENT)"
 ```
 
-> **All commands across this skill are written as `uip maestro flow ...` (the ≥ 0.3.4 form).** If version detection above returns < 0.3.4, replace `uip maestro flow` with `uip flow`. Arguments and flags are identical — only the prefix differs. See UiPath/cli#841 for background on the restructuring. <!-- uip-check-skip -->
+Run all commands below with `uip maestro flow ...`; if detection returns < 0.3.4, replace only that prefix with `uip flow`. Arguments and flags are identical. See UiPath/cli#841. <!-- uip-check-skip -->
 
-## 2. Always use `--output json`
+## 2. Use JSON output
 
-All `uip` commands support structured JSON output. Use `--output json` whenever output is parsed programmatically — every reference doc and recipe in this skill assumes it.
+Run programmatically parsed commands with `--output json`:
 
 ```bash
 uip maestro flow validate <ProjectName>.flow --output json
@@ -48,78 +49,66 @@ uip maestro flow registry list --output json
 uip maestro flow instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
 ```
 
-> **Anti-pattern: `--format json` does NOT exist.** The flag is `--output json`. Using `--format json` produces `error: unknown option '--format'` and exit code 3 on every `uip` subcommand — not a helpful message pointing at `--output`.
-
-The `--localstorage-file` warning that appears in some environments is benign and can be ignored.
+Do not use `--format json`; it does not exist and produces `error: unknown option '--format'` with exit code 3 on every `uip` subcommand. Ignore the benign `--localstorage-file` warning when it appears.
 
 ## 3. Prefer `--output-filter` for extraction
 
-When extracting one field or a projection from `uip --output json`, use `--output-filter '<jmespath>'`. The CLI exposes `--output-filter <expression>` as a global flag on every subcommand; it applies a [JMESPath](https://jmespath.org/) expression to the `Data` envelope **before** printing. Write expressions starting at `Data` — do **not** prefix them with `Data.`.
+Prefer `--output-filter '<jmespath>'` for field or projection extraction. It is a global flag on every subcommand, applies to the `Data` envelope before printing, and expressions start at `Data` (never `Data.`).
 
-**Canonical example (broad discovery)** — list all nodes matching a keyword with the standard projection:
+Run broad discovery with:
 
 ```bash
 uip maestro flow registry search slack --output json \
   --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"
 ```
 
-This is the form used in the connector skill — see [Cross-references](#cross-references) below — and is the right starting point when you want to inspect what's available.
-
-**Narrow query** — once you know the connector namespace, filter to a single connector's activities:
+Run a narrowed connector query with:
 
 ```bash
 uip maestro flow registry search slack --output json \
   --output-filter "[?starts_with(NodeType,'uipath.connector.uipath-salesforce-slack.')].{NodeType:NodeType,DisplayName:DisplayName}"
 ```
 
-`registry search` returns `Data` as a **flat array of PascalCase objects** — `NodeType`, `Category`, `DisplayName`, `Description`, `Version`, `Tags`, `AvailableOnTenant`. Not `Data.Nodes`, not lowercase `type`/`category`; those shapes do not exist. Knowing the shape lets you write the right expression on call #1 — which is the actual protection. Do **not** rely on `--output-filter` to *catch* a wrong-shape guess: a syntactically valid expression that simply doesn't match (e.g. `--output-filter "Nodes"` or `"Nodes[*].NodeType"` against the flat array) returns `Data: []` with **exit 0** — the same silent trap as `python3`/`jq` (see the silent-`[]` note below). Only an *invalid* expression fails loudly with exit 3: a syntax error, or a type error such as `keys(@)` on an array.
+Treat `registry search` as returning `Data` as a flat array of PascalCase objects: `NodeType`, `Category`, `DisplayName`, `Description`, `Version`, `Tags`, `AvailableOnTenant`. It does not return `Data.Nodes` or lowercase `type`/`category`.
 
-> **Never `head`/`tail`/`grep -m`/pager a discovery query** (`registry search`, `is connectors list`, any `list`/`search`). A row past the cutoff reads exactly like a row that doesn't exist — the same false-absence trap as the silent `[]`, self-inflicted. To check existence, push the predicate into `--output-filter` so the result is *all* matches and already small; cap rows only on data already known complete or already filtered.
->
-> ```bash
-> uip … registry search slack --output json --output-filter "[?contains(NodeType,'get-channel-info')].NodeType"   # right: every match
-> uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
-> ```
+Do not use `head`, `tail`, `grep -m`, or a pager on discovery queries (`registry search`, `is connectors list`, or any `list`/`search`). Test existence with a predicate in `--output-filter` and return all matches:
 
-### When to fall back to `python3` / `jq`
+```bash
+uip … registry search slack --output json --output-filter "[?contains(NodeType,'get-channel-info')].NodeType"   # right: every match
+uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
+```
 
-`--output-filter` is the preferred extraction mechanism, but it is not a general-purpose transformation tool. Fall back to `python3 -c` or `jq` when JMESPath cannot express the operation:
+Treat `Data: []` with exit 0 as a valid but mismatched expression, not proof of absence. Only invalid syntax or type errors fail with exit 3.
 
-- Multi-step joins across two CLI calls.
-- Format conversion (JSON → CSV, JSON → env-var assignments).
-- Conditional output that depends on a value computed from multiple fields.
+Use `python3 -c` or `jq` only when JMESPath cannot perform a multi-step join across CLI calls, JSON-to-CSV or JSON-to-env-var conversion, or conditional output based on multiple fields. Verify the shape first:
 
-Before reaching for an external parser, verify the JSON shape. The CLI roots `--output-filter` expressions at `Data`, so:
+- Run `--output-filter "type(@)"`; it returns `"array"` or `"object"`.
+- For an object, run `--output-filter "keys(@)"`.
+- For an array, run `--output-filter "[0]"` or `--output-filter "[0] | keys(@)"`.
+- Do not run `keys(@)` directly on an array; it fails with `Filter 'keys(@)' failed to evaluate: Invalid type: keys() expected argument 1 to be of type (object) but received type array instead`.
+- If an expected value is `Data: []`, check field-name casing.
 
-- **Check whether `Data` is array or object first** — `--output-filter "type(@)"` returns `"array"` or `"object"`. `keys(@)` throws on arrays (`Filter 'keys(@)' failed to evaluate: Invalid type: keys() expected argument 1 to be type (object) but received type array instead`), so use `type(@)` as the first probe.
-- **If `type(@)` returned `"object"`:** `--output-filter "keys(@)"` lists the top-level field names at `Data`.
-- **If `type(@)` returned `"array"`:** `--output-filter "[0]"` shows the first row, or `--output-filter "[0] | keys(@)"` lists the keys of one row.
-- **Watch for silent `[]`** — when the JMESPath path doesn't match anything, the CLI returns `Data: []` with `Result: "Success"`. That's the exact silent-failure mode the docs are designed to surface. If you got `Data: []` and were expecting a value, double-check field-name casing — **and note casing differs by command:**
-  - `registry search` / `list` (and most `uip … --output json` commands) return **PascalCase** keys → filter `[*].NodeType`, `[*].DisplayName`.
-  - `registry get` returns the node definition **verbatim** (it is pasted straight into the `.flow`), so its keys keep the manifest's own casing — predominantly **camelCase**: `Node.nodeType`, `Node.inputDefinition`, `Node.supportsErrorHandling`, `Node.form.sections[…]`. A few nested *runtime-output* schemas are PascalCase because the engine emits them that way (e.g. Summarize's `content.Text` / `content.Citations`) — match whatever the manifest actually declares, not a normalized form.
-  - When unsure, probe before guessing: `--output-filter "keys(@)"` (object) or `--output-filter "[0] | keys(@)"` (array).
+`registry search` and `list` (and most `uip … --output json` commands) use PascalCase keys such as `[*].NodeType` and `[*].DisplayName`. `registry get` returns the node definition verbatim for pasting into `.flow`; its keys are predominantly camelCase: `Node.nodeType`, `Node.inputDefinition`, `Node.supportsErrorHandling`, and `Node.form.sections[…]`. Some nested runtime-output schemas are PascalCase, such as Summarize's `content.Text` and `content.Citations`. Match the manifest rather than assuming normalized casing. When uncertain, probe with `--output-filter "keys(@)"` for objects or `--output-filter "[0] | keys(@)"` for arrays.
 
-Most agent-side retry loops on `uip --output json` parsing come from guessing the shape wrong; verify, then parse.
+Verify the shape before parsing; most parsing retries result from an incorrect shape guess.
 
 ### Cross-references
 
-The broad-discovery recipe above is used in [author/references/plugins/connector/planning.md](../author/references/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/references/plugins/connector/impl.md](../author/references/plugins/connector/impl.md) for connection-resource lookup. Keep the three in sync on the **preference** (always `--output-filter`) and the **shape pin** (`registry search` Data is a flat array of PascalCase objects); each file may pick a projection appropriate to its task.
+Keep the broad-discovery recipe aligned with [author/plugins/connector/planning.md](../author/plugins/connector/planning.md) (§ Discovery) for connector discovery and [author/plugins/connector/impl.md](../author/plugins/connector/impl.md) for connection-resource lookup. Both files use the `--output-filter` preference and the `registry search` flat-array/PascalCase shape; each may use a task-specific projection.
 
-## 4. CLI output JSON shape
+## 4. Check the JSON response shape
 
-Every `uip` command returns one of two response shapes:
+Every `uip` command returns one of these shapes:
 
-**Success:**
 ```json
 { "Result": "Success", "Code": "FlowValidate", "Data": { ... } }
 ```
 
-**Failure:**
 ```json
 { "Result": "Failure", "Message": "...", "Instructions": "Found N error(s): ..." }
 ```
 
-Always check `Result` first. On failure, `Message` and `Instructions` carry the diagnostic detail.
+Always check `Result` first. On failure, use `Message` and `Instructions` for diagnostics.
 
 ## 5. Login state
 
@@ -131,15 +120,15 @@ Always check `Result` first. On failure, `Message` and `Instructions` carry the 
 | **Operate** | **Yes** — `solution upload`, `solution resources refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 
-Tenant-specific connector and resource nodes in the registry also require login. Without login, registry shows OOTB nodes only. **In-solution sibling projects** are always available via `--local` without login.
+Tenant-specific connector and resource nodes require login; without it, the registry shows OOTB nodes only. In-solution sibling projects are always available with `--local` without login.
 
-Check login status:
+Check login by running:
 
 ```bash
 uip login status --output json
 ```
 
-Log in interactively (opens browser):
+Log in interactively by running:
 
 ```bash
 uip login
@@ -148,34 +137,28 @@ uip login --authority https://alpha.uipath.com    # non-production environments
 
 ## 6. `--folder-key` requirement
 
-All `uip maestro flow instance` and `uip maestro flow incident get` commands require `--folder-key <FOLDER_KEY>` (`-f` shorthand). Without it, the command rejects the request before reaching the API.
+Run all `uip maestro flow instance` and `uip maestro flow incident get` commands with `--folder-key <FOLDER_KEY>` (or `-f`). Without it, the request is rejected before reaching the API.
 
-Get the folder key:
+Get the folder key by running:
 
 ```bash
 uip or folders list --output json
 ```
 
-Or pull it from the job/process context (e.g., `Data.folderKey` on a job status response, or from the debug output's surrounding metadata).
+Alternatively obtain it from job/process context, such as `Data.folderKey` in a job-status response or surrounding debug metadata.
 
-## 7. `UIP_LOG_LEVEL=info` for debug runs
+## 7. Use `UIP_LOG_LEVEL=info` for debug runs
 
-Set `UIP_LOG_LEVEL=info` on `flow debug` invocations to surface progress and diagnostic detail in the CLI output. Without it, debug runs return only the final result.
+Run debug with `UIP_LOG_LEVEL=info`:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
-At `info` the run narrates the `jobKey`, the `instanceId`, and the Studio Web URL to **stderr**. Capture stderr, not just stdout: when a run overruns its poll budget the CLI reports only `Debug polling timed out after <N>s` on stdout, with no instance identifier — the stderr narration is then the only way to find the instance and inspect it (`uip maestro flow debug-instance incidents <instanceId>`).
+Capture stderr as well as stdout. At `info`, stderr reports the `jobKey`, `instanceId`, and Studio Web URL. If polling exceeds its budget, stdout may contain only `Debug polling timed out after <N>s`; stderr is then the only way to identify the instance and inspect it with `uip maestro flow debug-instance incidents <instanceId>`.
 
-> **The variable is `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL`.** The CLI reads only the former; the latter is silently ignored, so a command prefixed with it produces no extra output at all. `--log-level <level>` is the equivalent global flag.
-
-The level applies to every `uip` command, not just `flow debug`.
+Use `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL`; the latter is silently ignored. `--log-level <level>` is the equivalent global flag. The setting applies to every `uip` command.
 
 ## 8. Global options
 
-All `uip` commands support `--output json|yaml|table` and `--help`. Run any command with `--help` to discover all available options for that subcommand.
-
-```bash
-uip maestro flow <subcommand> --help
-```
+Run `uip maestro flow <subcommand> --help` to discover subcommand options. All `uip` commands support `--output json|yaml|table` and `--help`.

@@ -85,6 +85,54 @@ uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --outpu
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
+### Publishing to a non-tenant feed
+
+By default everything targets the **tenant** feed. A package can instead go to your
+Personal Workspace or to a specific **folder feed**. Start by listing what you can
+actually target — a raw folder key is not necessarily a publishable feed:
+
+```bash
+uip solution feeds list --output json
+```
+
+`Data` is a list of `{ Name, Key, Type, IsMyPersonalWorkspace }` where `Type` is
+`Tenant`, `PersonalWorkspace`, or `Folder`. Only feeds in this list can be
+targeted; passing anything else fails with *"is not an available publish
+location"*. Personal Workspaces belonging to other users are filtered out even
+when you can browse them.
+
+Then target a feed with `--feed <name-or-key>` (accepts either the feed's name or
+its folder key) or `--personal-workspace`:
+
+```bash
+# Publish into a folder feed
+uip solution publish ./output/MySolution_2.0.0.zip --feed "Finance" --output json
+
+# Publish into your own Personal Workspace
+uip solution publish ./output/MySolution_2.0.0.zip --personal-workspace --output json
+```
+
+The same two flags scope the rest of the lifecycle, and they are **mutually
+exclusive** everywhere:
+
+| Command | What the flag scopes |
+|---|---|
+| `uip solution publish --feed / --personal-workspace` | Which feed the package is uploaded to |
+| `uip solution deploy run --feed / --personal-workspace` | Which feed the package is deployed **from** |
+| `uip solution deploy list --feed / --personal-workspace` | Which feed's deployments are listed |
+| `uip solution packages list --feed / --personal-workspace` | Which feed's packages are listed |
+| `uip solution packages delete --feed / --personal-workspace` | Which feed the version is deleted from |
+
+**Deploy from the feed you published to.** A package published to a folder feed or
+Personal Workspace is not in the tenant feed, so a plain `deploy run` cannot see
+it — pass the same `--feed` / `--personal-workspace` there too. Likewise, omitting
+the flag on `packages list` shows only tenant packages, which is the usual reason
+a freshly published feed package looks missing.
+
+`deploy run --feed` also accepts `--parent-folder-path` / `--parent-folder-key` to
+pick **where inside** the feed's folder the deployment lands; without them it goes
+to the feed folder itself.
+
 ## Step 3 (Alternative): Upload to Studio Web
 
 If the goal is browser-based editing rather than deployment, use `upload` instead of `publish`:
@@ -93,7 +141,7 @@ If the goal is browser-based editing rather than deployment, use `upload` instea
 uip solution upload ./MySolution --output json
 ```
 
-This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
+This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` overwrites that solution in place; otherwise it imports as new — see [develop-solution.md § `upload` decides import or overwrite from what the cloud holds](develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds) for the decision rules and snapshot recording.
 
 `upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
 

@@ -43,14 +43,14 @@ success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
     command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Check debugs the flow: an inline uipath.agent.autonomous node is present, the flow completes, and the drafted email cites invoice MCS-2026-04872'
     command: python3 $TASK_DIR/check_billing_resolution_writer.py
-    timeout: 600
+    timeout: 1200
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

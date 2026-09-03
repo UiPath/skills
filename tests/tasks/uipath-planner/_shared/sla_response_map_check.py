@@ -1,4 +1,4 @@
-"""Deterministic guards for the SDD **SLA Response Map** contract (uipath-planner assets/templates/case-sdd-template.md § SLA Response Map).
+"""Deterministic guards for the SDD **SLA Response Map** contract (uipath-planner assets/templates/case/case-sdd-template.md § SLA Response Map).
 
 The map is the single place SLA breach / at-risk behavior is decided:
 

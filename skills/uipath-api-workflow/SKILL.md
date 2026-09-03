@@ -1,6 +1,6 @@
 ---
 name: uipath-api-workflow
-description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Covers logical/hierarchical structure (Sequence, Assign, JavaScript, If with #Wrapper/#Then/#Else, ForEach, DoWhile, Break, TryCatch, Wait, Response — nested patterns) AND HTTP / Integration Service connector activities (Gmail, Outlook, GitHub, Slack) authored via `uip api-workflow registry resolve`/`stub`. Operate: run locally, manage IS connections (`uip is connections`), pack/publish/deploy via `uip solution`, invoke published workflows via HTTP/schedule/event triggers. Diagnose: validate → run --no-auth loop, root-cause run/expression/connection faults, inspect job logs & traces. Triggers on UiPath API workflows, project type \"Api\", JSON files with `document.dsl`/`do[]`, those activity types, or fetching from a public/vendor API. For .flow Maestro→uipath-maestro-flow. For .xaml/coded RPA→uipath-rpa. For coded agents→uipath-agents. For Coded Apps→uipath-coded-apps."
+description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows for `uip api-workflow`. Load for ANY create/edit of a `Workflow.json` / API workflow project; with `evals/` present, tests come first (TDD). Covers Sequence, Assign, JavaScript, If (#Wrapper/#Then/#Else), ForEach, DoWhile, Break, TryCatch, Wait, Response, nested; files as JobAttachment refs via File to Base64 / Base64 to File (`$helpers.file.*`, `serializeData()`, `--input-file`/`--output-dir`); HTTP / IS connector activities via `uip api-workflow registry`. Operate: run, IS connections, pack/publish/deploy. Test/eval: `evals/<scope>/eval-sets/` datasets (exact-match, Evaluations panel); loop until green. Triggers on API workflows, project type \"Api\", JSON with `document.dsl`/`do[]`, those activity types, or file/base64 handling. Agent evals (`evals/eval-sets/`, no scope) & coded agents→uipath-agents. Flow & its evals→uipath-maestro-flow. .xaml/coded RPA→uipath-rpa. Coded Apps→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -12,6 +12,8 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 <!--skill-flavor:host-command-contract:start-->
 <!--skill-flavor:host-command-contract:end-->
 
+> **TDD gate — read this first (rule 22).** On ANY request to create or edit a workflow, Phase 0 first checks whether the project has an `evals/` folder — it lives **inside the project directory, next to `Workflow.json`** (`<project>/evals/`), not at the workspace or solution root, so list the project directory itself. **No `evals/` folder → the Evaluations feature is not enabled for this project: skip everything about tests and loop mode and author normally.** `evals/` present → **end your turn** with two questions — **(1) tests:** the eval set has rows → "should anything change, or use as-is?" / it is empty → "want me to add some?"; **(2) loop mode:** "run the tests and re-try until every case passes, or author once?" — and NOTHING is authored until the user answers. Tests come **first**: once answered, write or update the eval set, then author the workflow to make it pass. If you are about to write `Workflow.json` in a project with `evals/` and the user has not answered these two questions in this conversation, stop. Later change requests that alter behavior can break the tests — ask before editing whether to update them (rule 22, [references/testing-and-evals.md](references/testing-and-evals.md) §3). Only a prompt that explicitly says not to ask skips the gate when `evals/` exists — and that skips the questions, not the run consent (rule 21): run rows only when the request itself asks for a run.
+
 ## When to Use This Skill
 
 - User wants to **create or edit** an API workflow JSON file
@@ -20,7 +22,8 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User wants to **package** an API workflow project into `.nupkg` / solution `.zip`
 - User wants to **publish** an API workflow to UiPath Cloud / Orchestrator
 <!--skill-flavor:surface-lifecycle-scope:end-->
-- User asks about **activity types** (Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, Connector)
+- User asks about **activity types** (Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, File to Base64, Base64 to File, HTTP Request, Connector)
+- User wants to **handle a file** in an API workflow — take a file input, send a file as base64 to an API, turn a base64 payload back into a file, or asks about `JobAttachment`, `$helpers.file`, `serializeData()`, `--input-file` / `--output-dir`. See [references/files-and-base64.md](references/files-and-base64.md)
 - User asks about **nested control flow** — If inside ForEach, TryCatch around a loop, conditional Break, multi-way branching, etc.
 - User asks for an **Integration Service connector activity** (Gmail Send Email, Outlook Get Newest Email, GitHub Search Issues, Slack Send Message, etc.) — follow the discovery flow in [references/connector-activity-discovery.md](references/connector-activity-discovery.md)
 - User asks for a **generic HTTP Request** that needs to render in StudioWeb's designer — same discovery flow
@@ -29,11 +32,14 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 - User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 - User wants to **operate** a published workflow — invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its Orchestrator jobs, or **manage the Integration Service connections** it uses (`uip is connections list`/`ping`/`edit`). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 <!--skill-flavor:surface-operations-scope:end-->
+- User wants to **test / evaluate** a workflow — author `(inputs, expectedOutput)` cases in the project's `evals/` folder (the dataset Studio Web's **Evaluations** panel reads), run them, score them by the project's evaluator, or **"loop until the tests pass"**. Follow [references/testing-and-evals.md](references/testing-and-evals.md). An `evals/` folder alone is not the signal — it is an API-workflow one only when it sits next to `Workflow.json` and uses the `evals/<scope>/eval-sets/` layout; low-code agents use `evals/eval-sets/` (no scope) → `uipath-agents`, Flow evals → `uipath-maestro-flow`
+- **Any authoring request** (create or edit) — Phase 0 discovery checks for an `evals/` folder; when it exists, the two test questions (change / add tests? loop mode?) are asked up front — the turn ends there — whether or not the user mentioned testing (rule 22). No `evals/` folder → the feature is off, author normally. See Phase 0 and [references/testing-and-evals.md](references/testing-and-evals.md)
 
 Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / coded RPA (→ `uipath-rpa`), coded agents (→ `uipath-agents`), Coded Web Apps (→ `uipath-coded-apps`).
 
 ## Core Principles
 
+0. **Tests first — when the project has `evals/`, and only after asking.** Discover `<project>/evals/` (next to `Workflow.json`). Absent → the Evaluations feature is off for this project: author normally, no test or loop-mode questions. Present → ask the two rule-22 questions, end the turn; once answered: declare `output.schema`, eval set first, workflow second, then run the rows **only in loop mode** (that "yes" is the rule-21 consent; "author once" means hand over without running). Behavior changes later on re-open the question — the tests may need updating.
 1. **Know before you write.** Read the existing workflow file before editing. Read an example template before creating from scratch.
 <!--skill-flavor:runtime-validation-contract:start-->
 2. **Start minimal, iterate to correct.** Add one activity at a time. Run with `--no-auth --output json` after each addition. Fix what breaks. Repeat.
@@ -123,11 +129,32 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 21. **Never run `uip api-workflow run` without an explicit user "yes."** Validation (rule 20) is autonomous; *running* is not. Once validate passes, ask the user: (a) run now or skip, (b) if running, with `--no-auth` (fast, structure-only — IntSvc kind vendor calls fail) or with auth (real Integration Service calls — vendor side effects WILL happen: emails sent, tickets created, files uploaded). Suggest a default based on workflow content (`--no-auth` for control-flow-only + Http kind `ImplicitConnection`; with-auth for any IntSvc kind vendor activity), but wait for the user's answer. Never invoke `uip api-workflow run` with auth on speculation — once a vendor call goes out, it can't be unsent.
 <!--skill-flavor:runtime-execution-consent:end-->
 
+22. **TDD gate — only for projects with an `evals/` folder; STOP and ask before authoring; tests are written before the workflow.** Every authoring request (create OR edit — including a one-line change) runs Phase-0 discovery of the project's `evals/` folder — `<project>/evals/`, the directory next to `Workflow.json` (list that directory; the workspace or solution root is the wrong place to look):
+    - **No `evals/` folder** → the Evaluations feature is not enabled for this project. Skip the gate entirely: do not offer to create tests, do not mention loop mode, do not create the folder — author normally (Phases 1–3).
+    - **`evals/` present** → **end the turn** with two questions. Do not write or edit `Workflow.json`, and do not create or change eval files, until the user has answered both:
+      1. **Tests** — the eval set has rows → *"I found N test case(s): [one line each]. Should anything change, or use them as-is?"*; the set is empty (the panel seeds one with 0 rows) → *"There are no test cases yet — want me to add some? I'd suggest: [2–3 proposed cases]."*
+      2. **Loop mode** — *"Run in loop mode (run the tests and re-try — fix, re-run — until every case passes), or author once and you verify?"* A "yes" to loop mode is also the consent to run the rows with `--no-auth` (rule 21) — do not ask "run now?" separately; connector/authed runs still need their own explicit "yes".
+
+    **Order after the answers (TDD):** first declare `input.schema` / `output.schema` in `Workflow.json` (`init` scaffolds `output: null`, so the row keys have no other source — property names and casing come from here, and the Response must emit exactly those keys), then write or update the eval set, then author the workflow, then run the rows (loop mode) or hand over (author once — do not run). **Later change requests that alter behavior** (threshold, rounding, branch order, a new default — even with the schema unchanged) can make existing expectations wrong: before editing, list the affected rows and ask whether to update them; after editing, re-run the rows. Ask as two specific questions — never one vague "how do you want to verify it?". With `evals/` present, the gate is skipped only when the user already answered, or explicitly asked not to be prompted ("don't ask for confirmation"); then keep existing tests as-is and add tests only if requested. "Don't ask" waives the two questions, **not** rule 21's run consent: run the rows only if the request itself asks for a run or a loop ("run the evaluations", "until they pass" — that wording is the consent); otherwise author once and hand over the exact command to run them. Protocol and wording: [references/testing-and-evals.md](references/testing-and-evals.md) §3.
+
+23. **Files are references, not bytes — and base64 is a file too.** A file input or output is a `JobAttachment` (`{ ID, FullName, MimeType, Metadata? }`) pointing at a blob in Orchestrator storage; `$workflow.input.<file>` is that object, never the bytes.
+    - **The two activities.** Both are `run.script` tasks; the `$helpers.file.*` call in the script is what identifies them (it is what `validate` checks). **File to Base64** (`metadata.activityType: "FileToBase64"`, code `return { output: await $helpers.file.fileToBase64(<file ref>) }`) returns a NEW reference whose blob content IS the base64 text (`<name>.base64`, `text/plain`, `Metadata.Encoding: "base64"`). **Base64 to File** (`metadata.activityType: "Base64ToFile"`, code `return { output: await $helpers.file.base64ToFile({ base64: <ref or string>, fileName?, mimeType? }) }`) returns a binary reference. The script is that single `return` expression and nothing else: Studio Web rebuilds the script from the parsed call on every designer save and silently drops a preceding or trailing statement, a second argument, or an extra option key. `validate` warns only about the extra statements — an extra argument passes as `Valid` and still breaks — so put any pre-processing in a JavaScript activity before the conversion.
+    - **Reading results.** Read either activity's result as `$context.outputs.<Key>.output`.
+    - **Inlining file content.** To put a file's content INLINE in an HTTP request body or a Response field, call `<ref>.serializeData()` right there — it returns a deferred-read marker the engine fills at send time; never store it in a variable or use it in script logic. Nested in a JSON body it works **only for a base64 reference** (the File to Base64 output): a binary file's marker, or a bare reference, nested in a body is a send-time error — send a binary file as the *whole* body (bare reference) or convert it first.
+    - **Naming.** `fileName` / `mimeType` apply only to a raw base64 *string*; a reference keeps its own name and the engine sniffs the type from bytes (a `.txt` round-trips to an extension-less file).
+    - **Running.** Both helpers need Orchestrator blob storage:
+<!--skill-flavor:file-run-cli:start-->
+    `uip api-workflow run --no-auth` refuses such a workflow up front; run it signed in (`uip login`, no `--no-auth`) — it still needs the rule-21 "yes". Pass local files with `--input-file <name>=<path>` (uploaded, arriving as `$workflow.input.<name>`), collect returned files with `--output-dir <dir>` (each reference in the output gains a `LocalPath`), and `--folder-key <guid>` if the tenant's Attachments API requires a folder. In the printed output the CLI PascalCases keys (`ID` → `Id`).
+<!--skill-flavor:file-run-cli:end-->
+    Shapes, worked example and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
+
 ## Workflow Phases
 
 ### Phase 0: Discovery
 
-Before touching anything, understand what exists.
+Before touching anything, understand what exists — the workflow structure **and** whether the project has tests. Discovery ALWAYS includes checking for an `evals/` folder inside the project directory (`ls <project>/` — the folder is a sibling of `Workflow.json`, never at the workspace/solution root): Studio Web creates it when the Evaluations feature is enabled and the panel is opened, so its absence means the feature is off for this project. If present, read `evals/<scope>/eval-sets/*.json` (`<scope>` is `default` unless the project says otherwise) and the evaluator(s) in `evals/<scope>/evaluators/` — the same files the **Evaluations** panel reads and writes. Contract and semantics: [references/testing-and-evals.md](references/testing-and-evals.md) §1.
+
+Then apply **rule 22 (TDD gate)**: no `evals/` folder → the feature is off, continue to Phase 1 without any test or loop-mode question; `evals/` present → end the turn with the two questions — tests (change / add?) and loop mode — and start Phase 1 only after the user has answered, writing the eval set before the workflow.
 
 For **edit** requests:
 1. Read the existing workflow file with `Read`
@@ -159,6 +186,8 @@ Decide which activities to use and in what order.
 | Handle errors (skip & continue) | **TryCatch inside body** | One bad item skipped, loop continues — see [control-flow-patterns.md](references/control-flow-patterns.md#7-trycatch-inside-a-loop-body-skip-and-continue-error-handling) |
 | Return result and end | **Response** | `then: "end"`; `markJobAsFailed` sibling of `response` |
 | Pause execution | **Wait** | `wait.seconds`/`minutes`/`milliseconds` |
+| Encode a file (input or downloaded) as base64 for an API that wants inline base64 | **File to Base64** (`FileToBase64`) | `run.script` calling `await $helpers.file.fileToBase64(<ref>)`; output is a base64 FILE reference — inline it in the body with `.serializeData()`. Rule 23. |
+| Turn a base64 payload (API response string or a base64 file) back into a file | **Base64 to File** (`Base64ToFile`) | `run.script` calling `await $helpers.file.base64ToFile({ base64, fileName?, mimeType? })`; output is a binary file reference. Rule 23. |
 | Exit loop early | **Break (in If)** | Wrap Break in an If — there's no "break when" condition on Break itself. `break: "true"` (string!), `then: "exit"`, `set: "${$input}"` |
 | Exit nested loops | **Flag variable + Break twice** | Set a flag in inner loop, check + Break in outer — see [control-flow-patterns.md](references/control-flow-patterns.md#5-conditional-break-inside-a-loop) |
 | Call an arbitrary REST API (catfacts, stock prices, weather, any public/internal endpoint) | **Unified HTTP Request** (`call: "UiPath.Http"`, Http kind) | `connectionId: "ImplicitConnection"`. NEVER `call: "http"` (block icon). Via rule 16's flow. |
@@ -173,11 +202,15 @@ Before generating, determine:
 
 ### Phase 2: Generate or Edit
 
+**Precondition (projects with `evals/`):** the two rule-22 questions have been answered in this conversation and the eval set (if wanted) is already written. If not, go back to Phase 0 and ask — do not write `Workflow.json` yet. Projects without `evals/` have no such gate.
+
 For each activity, read its reference section in [references/task-types.md](references/task-types.md), copy the minimal JSON, fill in values.
 
 **For CREATE:** copy from a template, then add user activities AFTER `WorkflowStart` inside the root sequence (literally `Sequence_1.do` in the template skeleton).
 
 **For EDIT:** read the file first, identify the exact insertion / replacement point, use `Edit` with sufficient context for unique matching.
+
+If the edit **changes behavior** and the project has an eval set, rule 22 applies first: ask whether to update the expectations the change would invalidate, then edit, then re-run the rows (see [references/testing-and-evals.md](references/testing-and-evals.md) §3 step 5).
 
 Workflow skeleton:
 ```json
@@ -254,6 +287,10 @@ uip solution init MySolution --output json
 cd ./MySolution
 uip api-workflow init MyApiProject --output json
 
+# 1b. TDD gate (rule 22): if ./MyApiProject/evals/ exists (next to Workflow.json), STOP and ask the two questions
+#     (tests: change / add?  loop mode?) and wait for the answers before step 2.
+#     No evals/ folder → the feature is off for this project; go straight to step 2.
+
 # 2. Edit MyApiProject/Workflow.json to add user activities after WorkflowStart inside the root sequence
 
 # 3. Validate (offline, autonomous — fix + re-validate until Status: Valid)
@@ -281,6 +318,7 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Combining activities into hierarchical structures — nested If, ForEach inside DoWhile, TryCatch around/inside loops, conditional Break, multi-way branching, key uniqueness rules |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — three-step flow, sample stub output, field-shape rules, multipart subsection, worked examples |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Writing JS expressions, propagating outputs via `export.as`, accessing `$context` / `$input` / `$workflow`, JS_Invoke argument passing, strict-mode gotchas, key patterns |
+| [references/files-and-base64.md](references/files-and-base64.md) | **Files & base64** — `JobAttachment` references, the File to Base64 / Base64 to File activities (exact JSON, `$helpers.file.*`), `serializeData()` for inline bodies/Responses, passing local files in and getting files out of a run, pitfalls |
 <!--skill-flavor:cli-reference-navigation:start-->
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 <!--skill-flavor:cli-reference-navigation:end-->
@@ -288,6 +326,7 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), diagnose a faulted cloud run (`uip or jobs get` — `jobs logs` and `traces spans get` are dead ends here). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 <!--skill-flavor:published-reference-navigation:end-->
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
+| [references/testing-and-evals.md](references/testing-and-evals.md) | **Testing / evals** — the `evals/<scope>/eval-sets` + `evaluators` file contract shared with Studio Web's Evaluations panel, `uipath-exact-match` scoring (strict deep-equal on the RAW output — the CLI PascalCases printed keys), running a row locally with `--no-auth` (or through the host in Studio Web), and the **interactive test-until-green loop** (offer → check `evals/` → create/update cases → run/fix/repeat with progress → stale-expectation guard) |
 <!--skill-flavor:reference-navigation-extra:start-->
 
 <!--skill-flavor:reference-navigation-extra:end-->
@@ -300,6 +339,7 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [assets/templates/conditional-workflow-example.json](assets/templates/conditional-workflow-example.json) | If branching with TryCatch — input validation + classification + error fallback |
 | [assets/templates/loop-aggregation-example.json](assets/templates/loop-aggregation-example.json) | DoWhile + ForEach + Assign accumulation — pure-compute aggregation pattern |
 | [assets/templates/nested-control-flow-example.json](assets/templates/nested-control-flow-example.json) | Heavy nesting demo — TryCatch around DoWhile around If with conditional Break |
+| [assets/templates/file-base64-roundtrip-example.json](assets/templates/file-base64-roundtrip-example.json) | **Files** — a `document` file input → File to Base64 → Base64 to File → Response returning both references. The exact `run.script` shape Studio Web writes for the two activities (rule 23). Verified end-to-end with a signed-in run: local file in → `.base64` reference → decoded file out, bytes identical. |
 <!--skill-flavor:template-execution-proof:start-->
 | [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) | **Http kind** — HTTP Request curated activity (`call: "UiPath.Http"`) for arbitrary REST calls. Generated by `registry stub` against the catfacts URL. Shows the canonical shape: `connectionId: "ImplicitConnection"`, `unifiedTypesCompatible: true`, `savedJitInputFieldId: "in_http-request"`, URL in `bodyParameters.url`. Verified end-to-end with `uip api-workflow run --no-auth`. |
 <!--skill-flavor:template-execution-proof:end-->
@@ -316,6 +356,8 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** wrap connector `bodyParameters` / `queryParameters` literals as `${'literal'}` — rule 5's wrap is **inverted** for connectors; bare literals only, or the field clears on save. See rule 16.
 - **Do NOT** ship a `<REPLACE_WITH_*>` placeholder in a workflow — StudioWeb renders it as a broken connection and it 401s. No pinged UUID → ask the user. See rule 16.
 - **Do NOT** read workflow inputs as `$input.<name>` from a non-first activity — use `$workflow.input.<name>`. See rule 13.
+- **Do NOT** treat a file input or a File to Base64 result as a string — both are `JobAttachment` references. Inline a file's content only with `<ref>.serializeData()` inside an HTTP body / Response, never in an Assign or script — and inside a JSON body field only on the File to Base64 output (`$workflow.input.document.serializeData()` nested in a body fails with "Raw bytes cannot be embedded in JSON"). See rule 23.
+- **Do NOT** write `$helpers.fileToBase64(...)` / `$helpers.base64ToFile(...)` — the helpers live under `$helpers.file.`; `validate` rejects the task and the runtime says `is not a function`. See rule 23.
 <!--skill-flavor:runtime-execution-antipattern:start-->
 - **Do NOT** invoke `uip api-workflow run` autonomously, and never with auth without an explicit "yes" — vendor calls have irreversible side effects (emails sent, tickets created). See rules 20–21.
 <!--skill-flavor:runtime-execution-antipattern:end-->
@@ -325,6 +367,8 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** wire a project into the solution with `uip solution projects add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
 - **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Scaffolding with `init` is what guarantees it (rule 19a).
 <!--skill-flavor:project-creation-antipatterns:end-->
+- **Do NOT** copy expected outputs from the CLI's printed `Data` — `uip` PascalCases every key (`grade` → `Grade`) and `uipath-exact-match` is case-sensitive on keys, so the row passes for you and fails in the Evaluations panel. Derive keys from `output.schema` / the Response expression and read the raw output from the debug log. See [references/testing-and-evals.md](references/testing-and-evals.md) §2.
+- **Do NOT** author first and ask later in a project that has `evals/`: rule 22 ends the turn with the two test questions (change / add tests? loop mode?) BEFORE any `Workflow.json` or eval file is written, unless the user already answered or asked not to be prompted. **Do NOT** offer tests or loop mode — or create an `evals/` folder — in a project that has none: the feature is not enabled there. And **do NOT** "fix" the workflow to satisfy an expectation a requested behavior change made stale — re-derive the expected outputs instead, after asking. See rule 22 + [references/testing-and-evals.md](references/testing-and-evals.md) §3–4.
 
 ## Infinite Loop Prevention
 

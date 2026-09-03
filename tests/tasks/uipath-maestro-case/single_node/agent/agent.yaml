@@ -5,7 +5,7 @@ description: >
   agent-index.json, and direct caseplan.json write of a `type: "agent"`
   task. Validates the resulting case file and runs `uip maestro case debug`
   end-to-end, asserting only that the case finalStatus is `Completed`.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:operate, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
 run_limits:
@@ -100,7 +100,7 @@ initial_prompt: |
   | letterCount | number | -> count |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish

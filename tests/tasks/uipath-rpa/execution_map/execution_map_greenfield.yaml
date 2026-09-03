@@ -7,7 +7,7 @@ description: >
   a hard 10-turn cap. Comparable pre-map task (skill-rpa-xaml-test-case)
   budgets 36-40 turns; this task fails if the skill regresses to per-activity
   discovery or validate-after-every-activity loops.
-tags: [uipath-rpa, smoke, mode:build]
+tags: [uipath-rpa, windows, smoke, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 6

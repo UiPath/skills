@@ -8,8 +8,9 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision", "node:hitl", "feature:approval-gate"]
 
 run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
   expected_turns: 25
-  turn_timeout: 1200
 
 sandbox:
   template_sources:

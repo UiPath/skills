@@ -10,7 +10,17 @@ Use this guide when BPMN source changed and local package metadata must be refre
 
 ## Local Synthetic Project Contract
 
-`uip maestro bpmn update-metadata <file.bpmn>` is the contract. It writes the
+> **Use `uip maestro bpmn refresh <project-path>` for any project with an
+> Integration Service connector node.** `refresh` regenerates all four package
+> files *and* materializes `Intsvc.*` connection bindings (activities, and
+> `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` triggers) into `bindings_v2.json`
+> `Connection` resources — the trigger connection field is `connectionId`
+> (activities use `connection`). `update-metadata` is **deprecated** and never
+> materializes connection bindings, so a trigger regenerated with it passes
+> `validate` but faults at runtime with a null connection (error 102010). The
+> file-shape contract below is identical for both commands.
+
+`uip maestro bpmn update-metadata <file.bpmn>` writes the
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
 consumes it as written:
 
@@ -52,9 +62,14 @@ Do not derive metadata from stale package files first. Use existing generated fi
 3. Regenerate package metadata from the BPMN source:
 
    ```bash
-   uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
-   uip maestro bpmn update-metadata <file.bpmn>             # regenerate
+   uip maestro bpmn refresh <project-path>                  # regenerate + materialize IS connection bindings
    ```
+
+   Use `refresh` — it materializes `Intsvc.*` connection bindings (including
+   triggers) and validates before writing. The deprecated
+   `uip maestro bpmn update-metadata <file.bpmn>` (with `--dry-run` for a
+   drift check) only rewrites the BPMN-derived fields and does **not** materialize
+   connection bindings.
 
    If CLI unavailable for a local-only synthetic project, write the minimal
    placeholder-safe shape (see below) before continuing.
@@ -204,8 +219,8 @@ If multiple BPMN elements share a connector connection binding, regenerate or va
 
 Before a connector element is executable, enrichment must make these fields agree:
 
-- Every `Intsvc.*` `connection`, `trigger`, object/property, or resource context value references an existing root binding with `=bindings.<id>`.
-- The referenced package resource exists in `bindings_v2.json`.
+- Every `Intsvc.*` connection, `trigger`, object/property, or resource context value references an existing root binding with `=bindings.<id>`. The connection context field is `connection` for activities and `connectionId` for triggers/waits (`Intsvc.EventTrigger`, `Intsvc.WaitForEvent`).
+- The referenced package resource exists in `bindings_v2.json` — for connection bindings this `Connection` resource is materialized by `uip maestro bpmn refresh` (and `pack`), including for triggers. If it is missing, the process passes `validate` but faults at runtime with a null connection (error 102010).
 - Connector-specific package metadata agrees with the `connectorKey` in the enriched payload.
 - Trigger property resources carry the parent trigger resource key when required by the connector shape.
 - Activity payloads include required operation context and generated request/input schema data when the selected operation requires it.

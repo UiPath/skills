@@ -352,9 +352,11 @@ jobs:
 
       # Host coder-eval CLI = pinned wheel from the Azure Artifacts `coder_eval`
       # feed; its UiPath deps resolve from the ml-packages feed (both as extra
-      # indexes). No source checkout.
+      # indexes). No source checkout. The [codex] extra is required even though the
+      # agent itself runs inside the container: the docker driver imports the selected
+      # agent class on the HOST before dispatching work.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system --prerelease=allow "coder-eval[codex,litellm]==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
       # skills smoke image extends it below. Needs read:packages only —
@@ -431,8 +433,8 @@ jobs:
       # evaluated nothing. Fail here instead, before any task runs.
       - name: Require an agent model
         env:
-          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
-        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
+          AGENT_MODEL: ${{ vars.CODEX_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CODEX_MODEL repo variable}"'
 
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
@@ -459,22 +461,27 @@ jobs:
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
+          # Codex auth: the key + the endpoint the codex binary talks to. Same secrets
+          # the nightly and run-coder-eval.yml use.
+          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+          CODEX_BASE_URL: ${{ secrets.CODEX_BASE_URL }}
           # The gate's agent model, passed explicitly on the command line rather than
           # pinned in experiments/smoke.yaml — one repo variable moves every gate here,
           # and the experiment file stays harness-agnostic (the nightly runs the same
-          # file under codex/antigravity with their own models). No literal fallback:
+          # file under claude/antigravity with their own models). No literal fallback:
           # gating on a model nobody configured reports a verdict about the wrong thing,
           # so an unset variable fails the guard step above. NOT $BEDROCK_MODEL: that
-          # is the evaluation-side model (llm_judge + the simulated user), and reusing
-          # it here would move the grader with the agent.
-          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+          # is the evaluation-side model (llm_judge + the simulated user), which stays
+          # on Claude on purpose — the grader must not move with the agent.
+          AGENT_MODEL: ${{ vars.CODEX_MODEL }}
         working-directory: tests
         id: smoke
         run: |
           shopt -s globstar nullglob
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --type codex --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
             -e experiments/smoke.yaml \
+            --type codex \
             --model "$AGENT_MODEL" \
             -j "$TASK_PARALLELISM" -v \
             --run-dir /tmp/runs \
@@ -711,7 +718,7 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). `coder-eval plan` validates schemas on the runner -- no image.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        run: uv pip install --system "coder-eval[litellm]==${{ steps.ceref.outputs.version }}"
 
       - name: Validate every task YAML against the pinned coder_eval schema
         # `coder-eval plan` exits non-zero if any file fails to load under the

@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution."
+description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution, JS/TS function backends (`defineFunction`, `uip function serve`)→uipath-functions."
 when_to_use: "User wants to scaffold, build, push/pull, pack, publish, or deploy a Coded Web App or Coded Action App, or use the `@uipath/uipath-typescript` SDK inside one. Also dashboard requests: 'build me a dashboard', 'show agent health / error rate / KPIs / governance violations', 'generate an analytics or observability dashboard', edit an existing one (add/remove/change a widget, change time range, deploy), or fix/diagnose a dashboard that won't build (a metric that fails to compile, a bad SDK call, a broken widget). For RPA→uipath-rpa; Python agents→uipath-agents; Maestro flows→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 ---
@@ -20,6 +20,8 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
 - User wants to **generate an agent-monitoring / analytics dashboard** from a natural-language description — e.g. "show agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
 - User says "build/create/generate a dashboard", describes metrics to visualize, or asks for an agent observability, operations, or cost view
+
+For the app's **JS/TS function backend** — authoring the `defineFunction` endpoint the app calls, tokens, CORS, the local two-server dev loop → `uipath-functions`.
 
 ## App Types
 
