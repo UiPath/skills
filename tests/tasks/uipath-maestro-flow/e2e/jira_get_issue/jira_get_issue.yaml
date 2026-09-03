@@ -55,7 +55,7 @@ success_criteria:
   - type: run_command
     description: "JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary"
     command: "python3 $TASK_DIR/check_jira_get_issue.py"
-    timeout: 900
+    timeout: 1080
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

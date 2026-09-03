@@ -90,9 +90,9 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 | Field | Source | Plugin step |
 |---|---|---|
-| `id` | `connection-id` from `tasks.md` | Planning |
+| `id` | `connection-id` from `registry-resolved.json` | Planning |
 | `name` | `.Data.Connections[selected].name` from `get-connection` | Step 1 |
-| `connectorKey` | `connector-key` from `tasks.md` | Planning |
+| `connectorKey` | `connector-key` from `registry-resolved.json` | Planning |
 | `connectorName` | `.Data.Connections[selected].connector.name` from `get-connection` | Step 1 |
 | `folderKey` | `.Data.Connections[selected].folder.key` from `get-connection` | Step 1 |
 | `folderName` | `.Data.Connections[selected].folder.name` from `get-connection` | Step 1 |
@@ -156,6 +156,6 @@ After regenerating `bindings_v2.json` and running `resources refresh`:
    - **Skip `package` entries** — never target one directly. Removing the owning `process` / `app` cascades to *that resource's own* package declaration (the one its `dependencies[]` names); sibling resources and their packages are untouched.
    - **Never prune the case project's own `process` + `package` pair** (`Name` == the case project) — created by `solution projects add`, never by a binding, so absent from `bindings_v2.json` by design.
 3. Remove each unmatched entry using **that entry's `Key` from step 1's output** — the registry GUID, never the `bindings_v2.json` `key`: `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json`. Offline, no auth, does not touch `bindings_v2.json`.
-4. Re-run `resources refresh`, then re-publish via Phase 5 (`uip solution upload` — [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish)) so Studio Web drops its copy; a local removal alone does not clear an orphan already uploaded. Re-uploading an existing `SolutionId` is **refused without `--force`**, and `--force` destroys that solution's Studio Web version history — confirm with the user before passing it.
+4. Re-run `resources refresh`, then re-publish via Phase 5 (`uip solution upload` — [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish)) so Studio Web drops its copy; a local removal alone does not clear an orphan already uploaded. The re-upload overwrites the Studio Web solution in place, discarding anything edited there since the last upload (the replaced contents are recorded as a restorable version) — keep it behind the Phase 5 consent gate.
 
 <!-- END: bindings-v2-sync.md -->

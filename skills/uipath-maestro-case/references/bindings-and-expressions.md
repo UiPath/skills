@@ -6,8 +6,8 @@ How to wire values into task inputs — expression prefixes, cross-task output r
 
 Every task input is wired using one of two modes. Pick based on the source of the value.
 
-| Mode | Tasks.md syntax | Implementation |
-|------|-----------------|----------------|
+| Mode | Canonical form | Implementation |
+|------|----------------|----------------|
 | **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
 | **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve the source's output reference ID → write `"=vars.<outputReferenceId>"` to target input's `value` |
 
@@ -70,17 +70,27 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 
 In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing — and validation passes either way (loose `==` is valid JS), so nothing flags it.
 
-SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
+SDD IF columns use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
 
 ### Null-safe task-output references
 
-In any `=js:` sink (conditions, SLA, task inputs, connector bodies), null-guard every task-output dereference — guard the object, not the property:
+A task output is `null` until its task runs — and stays null when its task is adhoc, optional, or skipped, so a task input can hit it as easily as a case-start rule. Only the `=js:` form dereferences, so only it needs a guard.
+
+**`=vars.<id>` — lookup.** A single identifier ([§ Form by sink](#form-by-sink-the-table)): nothing to dereference, no guard. (A dotted `=vars.X.Y` is a different sink — see [io-binding/planning.md § `=` operator](plugins/variables/io-binding/planning.md).)
+
+**`=js:<expr>` — JS eval (Jint, ES2020).** Optional-chain every hop. Unguarded, it throws `Cannot read property 'Y' of null` (or `... of undefined`):
 
 ```
-=js:JSON.parse((vars.response4 || {}).RequestBody || '{}').outcome === 'Signed'
+=js:vars.X.Y                       ✗  throws while X is null
+=js:vars.X?.Y                      ✓
+
+=js:vars.X.Y.Z                     ✗  throws while X or X.Y is null
+=js:vars.X?.Y?.Z                   ✓
+
+=js:vars.$xref('Stage','Task','response')?.request_body   ✓  same for a marker
 ```
 
-`(vars.X || {}).Y` — never `vars.X.Y || <default>`. Whole-value `=vars.<id>` needs no guard.
+`?.` short-circuits to `undefined`, so `vars.X?.Y || <default>` is the way to supply a fallback.
 
 ### Conservative rule for `=metadata.X`
 
@@ -90,13 +100,13 @@ The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is N
 
 ### Planner-emit form
 
-The planner emits `tasks.md` using SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
+The SDD uses SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
 
 ## Cross-Task References
 
 Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase resolves to variable IDs via direct JSON lookup.
 
-### Planning syntax (in `tasks.md`)
+### Planning syntax (in `sdd.md`)
 
 ```
 input_name <- "Stage Name"."Task Name".output_name
@@ -115,11 +125,11 @@ uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
 uip maestro case tasks describe --type connector-activity --id "<typeId>" --connection-id "<uuid>" --output json
 ```
 
-Output names appear in the response under the output schema. Record them in the source task's `outputs:` field in `tasks.md` so downstream references can be validated.
+Output names appear in the response under the output schema. Record them on the source task's `data.outputs[]` in `caseplan.json` so downstream references can be validated.
 
 ### Validation rule
 
-Every cross-task reference in `tasks.md` MUST point to:
+Every cross-task reference in the SDD MUST point to:
 1. A stage that exists (created by an earlier `Create stage "..."` task).
 2. A task inside that stage that exists (created by an earlier `Add ... task "..." to "<stage>"` task).
 3. An output name listed in that task's `outputs:` field.
@@ -169,10 +179,12 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ## Examples
 
+The blocks below are the **canonical reasoning form** described in [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) — a normalized reading of the SDD Inputs/Outputs rows, never written to disk. `registry-resolved.json` records registry lookups only.
+
 ### Literal and expression inputs
 
-```markdown
-## T10: Add api-workflow task "Fetch Inbox" to "Triage"
+```text
+api-workflow task "Fetch Inbox" in stage "Triage"
 - inputs:
   - inbox_config = "=vars.inbox_config"
   - po_patterns  = "=vars.po_patterns"
@@ -182,8 +194,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ### Cross-task reference
 
-```markdown
-## T11: Add agent task "Classify Emails" to "Triage"
+```text
+agent task "Classify Emails" in stage "Triage"
 - inputs:
   - emails <- "Triage"."Fetch Inbox".emails
   - customer_id <- "Triage"."Fetch Inbox".customer_id
@@ -194,8 +206,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 ### Mixed inputs (HITL/action)
 
-```markdown
-## T12: Add action task "Review Classification" to "Triage"
+```text
+action task "Review Classification" in stage "Triage"
 - recipient: approver@corp.com
 - priority: High
 - inputs:
@@ -216,7 +228,8 @@ vars.$xref('Stage Name','Task Name','output_name')
 - **Nesting expressions inside literals.** `"$metadata.amount"` or `"{{ amount }}"` do not work. Use `=metadata.amount` directly as the full value.
 - **Plain `=vars.X` inside connector body JSON.** The runtime does NOT evaluate plain prefix refs in connector body sinks — they arrive at the API as literal strings. Wrap as `=js:(vars.X)`. See [§ Canonical form per sink](#canonical-form-per-sink).
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
-- **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user.email`.
+- **Trailing default instead of a guard.** `vars.X.Y || '{}'` guards nothing — the throw lands on `.Y`, before `||` is reached. Guard the object: `vars.X?.Y`.
+- **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user?.email`.
 - **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
 - **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
 

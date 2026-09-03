@@ -109,7 +109,7 @@
                 "exitConditions": [
                     {
                         "id": "Condition_Fy9pWb",
-                        "displayName": "Complete Rule 1",
+                        "displayName": "Complete Rule 2",
                         "type": "exit-only",
                         "marksStageComplete": true,
                         "rules": [
@@ -170,7 +170,7 @@
                 "entryConditions": [
                     {
                         "id": "Condition_Bx5rNm",
-                        "displayName": "Entry Rule 1",
+                        "displayName": "Entry Rule 2",
                         "isInterrupting": false,
                         "rules": [
                             [
@@ -186,7 +186,7 @@
                 "exitConditions": [
                     {
                         "id": "Condition_Hc6xTq",
-                        "displayName": "Complete Rule 1",
+                        "displayName": "Complete Rule 3",
                         "type": "exit-only",
                         "marksStageComplete": true,
                         "rules": [
@@ -211,7 +211,7 @@
                             "entryConditions": [
                                 {
                                     "id": "cNv6Wk3Tp8",
-                                    "displayName": "Entry Rule 1",
+                                    "displayName": "Entry Rule 3",
                                     "rules": [
                                         [
                                             {
@@ -257,7 +257,7 @@
                 "entryConditions": [
                     {
                         "id": "Condition_Rk2mTs",
-                        "displayName": "Entry Rule 1",
+                        "displayName": "Entry Rule 4",
                         "isInterrupting": false,
                         "rules": [
                             [
@@ -273,7 +273,7 @@
                 "exitConditions": [
                     {
                         "id": "Condition_Mv8nBj",
-                        "displayName": "Complete Rule 1",
+                        "displayName": "Complete Rule 4",
                         "type": "exit-only",
                         "marksStageComplete": true,
                         "rules": [
@@ -298,7 +298,7 @@
                             "entryConditions": [
                                 {
                                     "id": "cHs5Tn7Wq9",
-                                    "displayName": "Entry Rule 1",
+                                    "displayName": "Entry Rule 5",
                                     "rules": [
                                         [
                                             {

@@ -17,7 +17,7 @@ description: >
   terminal exit-only secondary stage, secondary-stage SLA, sla-breached
   escalation, UserGroup recipient scope, a task embedded inside a
   secondary stage, and the wait-for-timer plugin's timeDate branch.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:exception-stage, feature:multi-exception, feature:conditions, feature:sla, feature:escalation, feature:wait-for-timer]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:exception-stage, feature:multi-exception, feature:conditions, feature:sla, feature:escalation, feature:wait-for-timer]
 max_iterations: 1
 
 run_limits:
@@ -200,7 +200,7 @@ initial_prompt: |
   | Repeat | No |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on

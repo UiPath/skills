@@ -1,0 +1,47 @@
+task_id: skill-agent-coded-datafabric-combined
+description: >
+  Coded-agent Data Fabric integration combining both paths. Agent
+  discovers entities, selects the right one, then wires both an
+  NL-to-SQL tool for freeform queries and an SDK write tool for a
+  fixed operation — with prompt forwarding and lazy init.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+
+run_limits:
+  expected_turns: 65
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build me a coded agent called `order-manager` that works with our
+  order data in Data Fabric — find the right entity by listing what's
+  available. It needs to handle two things:
+  1. Users asking freeform questions about orders — anything from
+     totals to customer lookups. I can't predict these ahead of time.
+  2. Closing a specific order by setting its Status to "Closed" —
+     this is always the same operation.
+
+  The agent's instructions should apply consistently everywhere.
+  Scaffold and init only — don't run or deploy.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both integration paths present, correct imports, lazy init, bindings"
+    command: "python3 $TASK_DIR/check_datafabric_combined.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

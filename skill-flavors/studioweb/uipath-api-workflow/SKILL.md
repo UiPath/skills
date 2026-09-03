@@ -119,3 +119,7 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 <!--skill-flavor:solution-resource-template:start-->
 | [assets/templates/solution-connection-resource-template.json](assets/templates/solution-connection-resource-template.json) | **Studio Web resource reference.** Inspect the relevant host resource capability and use its declared fields for connection-resource authoring. |
 <!--skill-flavor:solution-resource-template:end-->
+
+<!--skill-flavor:file-run-cli:start-->
+    In Studio Web the run goes through the consent-gated, schema-inspected `RunProject` host operation; file arguments are supplied through the fields it declares for `JobAttachment` inputs (the host uploads them), and returned files appear as attachment references in the host result. Validation with `uip api-workflow validate` works offline as usual.
+<!--skill-flavor:file-run-cli:end-->

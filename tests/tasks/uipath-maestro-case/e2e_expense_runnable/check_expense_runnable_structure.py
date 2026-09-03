@@ -54,7 +54,7 @@ REQUIRED_EXTERNAL_BINDINGS = {
     "Shared/uipath-agents/WeatherAPI.WeatherAPI": "WeatherAPI",
     "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters": "CountLetters",
     "Shared/uipath-agents/ProcurementProcess.ProcurementProcess": "ProcurementProcess",
-    "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow": "RPA Workflow",
+    "Shared/uipath-maestro-flow/HelpDeskLookup RPA.HelpDeskLookup": "HelpDeskLookup",
     "Shared/uipath-maestro-case/CaseTest.Maestro Case": "Maestro Case",
 }
 

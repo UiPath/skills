@@ -4,37 +4,37 @@
         {
             "id": 1,
             "prompt": "I have an sdd.md and spec.json for a loan approval case. Generate the implementation tasks from these spec files so I can build it.",
-            "expected_output": "Skill triggers, produces a tasks.md with ordered task entries covering case creation, stages, tasks, and conditions, then stops before Phase 2 because the request is plan-only",
+            "expected_output": "Skill triggers, resolves resources into tasks/registry-resolved.json covering the SDD's stages, tasks, and conditions, then stops before Phase 2 because the request is plan-only",
             "expectations": [
                 "The case-management skill was triggered",
                 "References uip maestro case registry pull for upfront caching",
-                "Produces a tasks.md file with numbered task sections (T01, T02, etc.)",
+                "Produces a tasks/registry-resolved.json ledger with one entry per resolvable SDD resource",
                 "Includes registry lookups to resolve taskTypeIds",
                 "Generates a registry-resolved.json for audit",
-                "Stops after tasks.md without creating a solution or caseplan because the request asks only for implementation tasks"
+                "Stops after resolution without creating a solution or caseplan because the request asks only for implementation tasks"
             ]
         },
         {
             "id": 2,
             "prompt": "Break down my case spec into implementation tasks. The spec files are at ./specs/sdd.md and ./specs/spec.json",
-            "expected_output": "Skill triggers, reads both spec files, resolves registry lookups, generates tasks.md, and stops before Phase 2 because the request is plan-only",
+            "expected_output": "Skill triggers, reads both spec files, resolves registry lookups into tasks/registry-resolved.json, and stops before Phase 2 because the request is plan-only",
             "expectations": [
                 "The case-management skill was triggered",
                 "Reads both sdd.md and spec.json from the provided paths",
                 "Uses the component_type mapping to determine registry search types",
-                "Produces a tasks/ folder with tasks.md",
-                "Stops after tasks.md without creating a solution or caseplan because the request asks only for an implementation-task breakdown"
+                "Produces a tasks/ folder with registry-resolved.json",
+                "Stops after resolution without creating a solution or caseplan because the request asks only for an implementation-task breakdown"
             ]
         },
         {
             "id": 3,
             "prompt": "Convert this case specification into a step-by-step plan and build the case",
-            "expected_output": "Skill triggers, produces an actionable tasks.md, then auto-proceeds to write caseplan.json directly via the matching plugins without a Phase 1 approval prompt",
+            "expected_output": "Skill triggers, resolves resources, then auto-proceeds to write caseplan.json directly from the SDD via the matching plugins without a Phase 1 approval prompt",
             "expectations": [
                 "The case-management skill was triggered",
-                "Produces tasks.md with declarative task entries (no shell commands in tasks.md)",
+                "Produces tasks/registry-resolved.json with one entry per resolved resource",
                 "Cross-references use human-readable format like Stage.Task.field",
-                "Auto-proceeds from tasks.md into the build without asking for Phase 1 approval",
+                "Auto-proceeds from resolution into the build without asking for Phase 1 approval",
                 "Writes caseplan.json directly via plugin impl-json.md recipes"
             ]
         },
@@ -175,13 +175,13 @@
     {
       "id": 14,
       "prompt": "Design a supplier application case. Withdrawal can arrive from the supplier portal at any point. Each phase warns handlers at 70% of its SLA and, on breach, interrupts into an escalation lane that creates an operations-lead task and sends the supplier a delay note. The case has a 15-day SLA whose breach interrupts into a director-review lane before closure. In Supplier Setup, verify identity, then set the supplier record, then invite the supplier. Preserve why every stage kind, task type, activation/sequence, SLA, and routing choice was made in the SDD and implementation plan.",
-      "expected_output": "Skill models global withdrawal/SLA events as interrupting secondary-stage entries, preserves explicit sequential work with runs-sequentially, and carries durable design rationale into tasks.md",
+      "expected_output": "Skill models global withdrawal/SLA events as interrupting secondary-stage entries, preserves explicit sequential work with runs-sequentially, and carries durable design rationale into caseplan.json",
       "expectations": [
         "Withdrawal is one interrupting secondary stage entered by the supplier-portal wait-for-connector event; the skill does not repeat withdrawal tasks or exits on every primary stage",
         "The 70% at-risk warning is an SLA escalation notification; phase/case breach work uses sla-status-change entry rules on interrupting secondary stages that reference the intended SLA rules (a breach references the SLA alone; only an at-risk rule also names an escalation)",
         "The explicitly ordered Supplier Setup tasks each use runs-sequentially, are not emitted as parallel current-stage-entered tasks, and are laid out as consecutive single-task data.tasks sets rather than one parallel inner array",
         "The SDD stores design rationale for stage kind/routing, task type/activation/sequencing, and SLA behavior instead of leaving the reasons only in chat",
-        "tasks.md preserves the SDD rationale on the matching stage, task, condition, and SLA T-entries"
+        "caseplan.json preserves the SDD rationale on the matching stage, task, condition, and SLA elements"
       ]
     }
   ]

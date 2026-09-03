@@ -41,6 +41,17 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
+  checker_context:
+    api_route:
+      route: litellm
+      model: gpt-5.6-luna
+      params:
+        api_version: "2024-05-01"
+        num_retries: 5
+      env_params:
+        api_base: CODEX_BASE_URL
+        api_key: CODEX_API_KEY
+
   # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
   # sandboxes don't leak Node module resolution).
   post_run:

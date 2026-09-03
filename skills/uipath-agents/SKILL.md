@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). For deterministic Python Coded Functions (`uip function`, `uipath.json` functions map, no agent runtime/LLM)→uipath-functions."
+description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). For deterministic Coded Functions — Python or JS/TS (`uip function`, `uipath.json` functions map, no agent runtime/LLM)→uipath-functions."
 when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, debug, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / debug / evaluate / deploy my agent'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
@@ -20,7 +20,7 @@ user-invocable: true
 
 Determine the agent mode before proceeding:
 
-1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map (e.g. `"functions": {"main": "main.py:main"}`), the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip function new/init/pack/publish/run`).
+1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map — a Python entrypoint (e.g. `"functions": {"main": "main.py:main"}`, sibling `pyproject.toml`) or a JS/TS one (e.g. `"functions": {"invoice": "functions/invoice.ts:default"}`, sibling `package.json`) — the project is a **Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip function new/pack/publish/run`; `init` is Python-only).
 2. **Check for existing agent project files** in the working directory:
    - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
@@ -44,6 +44,7 @@ Determine the agent mode before proceeding:
 | Create/build/deploy coded agent | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/lifecycle/*`, `coded/frameworks/*` |
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
+| Query or write Data Fabric entities from a coded agent (SDK direct or NL-to-SQL tool) | Coded | [coded/capabilities/datafabric.md](references/coded/capabilities/datafabric.md) | `coded/capabilities/sdk-services.md` § Entities |
 | Set a coded agent's environment variables, or reference an Orchestrator asset from one (`%ASSETS/<ASSET_NAME>%`) | Coded | [coded/lifecycle/environment-variables.md](references/coded/lifecycle/environment-variables.md) | `coded/lifecycle/file-sync.md` for what `.env` does and does not carry |
 | Call an Integration Service connector (Slack, Jira, Web Search) from a coded agent | Coded | [coded/capabilities/integration-service.md](references/coded/capabilities/integration-service.md) **+ then immediately read** [`uipath-platform/references/integration-service/agent-workflow.md`](../uipath-platform/references/integration-service/agent-workflow.md) — discovery lives there, not in `uipath-agents` | `coded/capabilities/sdk-services.md` § Connections |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |

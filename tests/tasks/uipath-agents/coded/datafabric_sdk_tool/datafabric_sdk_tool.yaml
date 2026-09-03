@@ -1,0 +1,43 @@
+task_id: skill-agent-coded-datafabric-sdk-tool
+description: >
+  Coded-agent Data Fabric integration via direct SDK. Agent discovers
+  entities from the tenant, selects the right one, and builds a
+  deterministic @tool-wrapped query with lazy init and correct imports.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+
+run_limits:
+  expected_turns: 55
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build me a coded agent called `order-lookup` that can look up
+  customer orders. The data lives in Data Fabric — find the right
+  entity by listing what's available. The agent should take a
+  customer name and return their open orders — the query is always
+  the same shape.
+
+  Scaffold and init only — don't run or deploy.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "SDK import, lazy init, entity filter, binding shape"
+    command: "python3 $TASK_DIR/check_datafabric_sdk_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

@@ -177,3 +177,13 @@ First distinguish bridge rejection from background failure:
 <!--skill-flavor:allowlist-run-proof:start-->
   Some task types the runtime can execute are still not authorable, so **an activity that appears to work is not proof it can be published.** The validator is the gate.
 <!--skill-flavor:allowlist-run-proof:end-->
+
+<!--skill-flavor:file-base64-cli-pitfalls:start-->
+### File to Base64 / Base64 to File fail in a run
+- **Symptom:** a `RunProject` run fails inside a File to Base64 or Base64 to File task with a storage or authentication error
+- **Cause:** `$helpers.file.*` reads and writes Orchestrator blob storage through the active Studio Web session
+- **Fix:** report the exact host result as an authentication or capability blocker and retry after the relevant host state changes; static validation with `uip api-workflow validate` stays available meanwhile
+<!--skill-flavor:file-base64-cli-pitfalls:end-->
+
+<!--skill-flavor:file-base64-cli-folder:start-->
+<!--skill-flavor:file-base64-cli-folder:end-->

@@ -1,0 +1,93 @@
+task_id: skill-governance-compliance-unnamed-standard
+description: >
+  Skill-guided: a compliance request that names NO standard ("check my compliance
+  posture") must resolve WHICH standard first - list the catalog and ask - instead
+  of silently defaulting to one pack. More than one standard ships (ISO 42001,
+  ISO 27001), so a pack-scoped command run before the standard is settled targets
+  an arbitrary pack and reports posture for a standard the user never asked about.
+
+  Guards SKILL.md Workflow step 1 + compliance-pack/catalog/impl.md Pack ID lookup.
+  Sibling check_routing_smoke.yaml covers the same posture flow WITH the standard
+  named; this task covers the ambiguous case that a second pack introduced.
+
+  Platform note: uip commands fail with auth errors in this environment - expected.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
+
+sandbox:
+  python: {}
+
+# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that fails
+# this test (defaults to a pack and applies it) really mutates the tenant.
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+initial_prompt: |
+  Check my compliance posture and tell me where I stand.
+
+  Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI is not connected to a live tenant - auth errors expected.
+  - Run each command once, capture output, and move on. Do NOT retry.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed the available standards instead of assuming one"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+list'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent asks which standard before reporting a posture"
+    include_agent_output: true
+    prompt: |
+      The user asked: "Check my compliance posture and tell me where I stand."
+
+      The request names no compliance standard. More than one standard is
+      available on the platform (e.g. ISO 42001 and ISO 27001), and posture is
+      always measured against ONE specific standard.
+
+      Correct behavior: the agent establishes which standard the user means
+      before presenting any posture result - normally by listing the available
+      standards and asking the user to pick.
+
+      IMPORTANT - grading scope:
+      - Whether the agent executed any CLI command is verified by SEPARATE
+        deterministic criteria. Do NOT infer from descriptive text that the
+        agent ran or applied anything.
+      - An auth/connectivity error preventing the catalog from loading does not
+        excuse assuming a standard; asking the user which standard they mean is
+        still correct in that case.
+      - Judge ONLY the agent's final response text.
+
+      Score 1.0 if the response asks the user which standard to check (or
+        presents the available standards as a choice) before reporting posture.
+      Score 0.5 if it flags the ambiguity but still leads with one standard's
+        posture as though it were the answer.
+      Score 0.0 if it silently picks a standard and reports its posture with no
+        acknowledgement that the choice was unspecified.
+    weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_not_executed
+    description: >
+      Agent did NOT run a pack-scoped coverage/get against an assumed standard -
+      the request names none, so no pack is the right pack yet.
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+(?:coverage|get)\s+(?:tenant|organization)\s+\S+\s+iso-'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent made no mutations (no enable / disable / restore)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+(?:enable|disable|restore)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

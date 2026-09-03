@@ -30,14 +30,16 @@ artifact can establish.
 
 ## Local authoring hard gates
 
-Use this section only when emit-only mode is disabled. Source and compiled
-checks are separate commands: use the source check as the fast no-output inner
-loop, compile to emit, then run the deep checker on the artifact.
+Use this section only when emit-only mode is disabled. Use the source check as
+the fast no-output inner loop (with a library and a `bindings.json` beside the
+source it reports every connector-input and binding refusal `compile` would
+raise), compile to emit, then run the product's static check on the artifact.
+There is no compiled-artifact `check`; `validate` is that rung.
 
 ```bash
 uip maestro flow check <Name>.flow.ts --source
 uip maestro flow compile <Name> -o <Name>.flow
-uip maestro flow check <Name>.flow --compiled
+uip maestro flow validate <Name>.flow --output json
 ```
 
 Warnings require deliberate review; whether one blocks a release comes from the
@@ -52,14 +54,17 @@ source at the workspace root beside `node_modules/`, and create the nested
 scaffold once:
 
 ```bash
-uip solution init <Name>Sol
-( cd <Name>Sol && uip maestro flow init <Name> )
+uip solution init <Solution>
+( cd <Solution> && uip maestro flow init <Name> )
 ```
 
-The result has three related names: `<Name>.flow.ts`, the `<Name>` project
-directory, and `<Name>.flow` inside that project. Keep them aligned for this
-scaffold so each command addresses the intended project; `compile -o` remains
-the authority over where the emitted file is written.
+`<Solution>` and `<Name>` are the request's own names, used verbatim: a request
+that gives one name for both ("inside a solution of the same name") uses it for
+both, and a request that names only the Flow uses `<Name>` for both. The result
+has three related names: `<Name>.flow.ts`, the `<Name>` project directory, and
+`<Name>.flow` inside that project. Keep them aligned for this scaffold so each
+command addresses the intended project; `compile -o` remains the authority over
+where the emitted file is written.
 
 ## Eval/product-CLI packaging: emit-only
 
@@ -77,17 +82,17 @@ refresh and debug only when the stated acceptance bar requires product-runtime
 behavior evidence:
 
 ```bash
-uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
-uip maestro flow validate <Name>Sol/<Name>/<Name>.flow --output json
+uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
+uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
-( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
-  --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
+( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
+( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
   --output json )
 ```
 
 This loop has exactly one emitted artifact:
-`<Name>Sol/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
+`<Solution>/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
 validators and evidence collectors cannot choose safely between duplicates.
 Re-run the whole sequence after the final source or binding edit.
 
@@ -116,30 +121,27 @@ Match the final evidence to the stated acceptance bar after the last edit:
 If the requested evidence cannot be obtained inside that bound, report the
 evidence boundary instead of replacing it with repeated debug launches.
 
-### Managed HTTP: emitted-artifact bindings in emit-only projects
+### Managed HTTP: authored connection bindings
 
 `http({ managed: true, ... })` needs real connection and folder bindings for
-product debug. After **every emit**, select an enabled HTTP connection and add
-both bindings to the emitted artifact:
+connector-authenticated product debug. Select an enabled HTTP connection:
 
 ```bash
 uip is connections list --all-folders \
   --output-filter "[?ConnectorKey=='uipath-uipath-http'].{Id:Id,FolderKey:FolderKey,Name:Name}"
-
-uip maestro flow binding add <Name>Sol/<Name>/<Name>.flow \
-  "uipath-uipath-http connection" connection <connection-id> \
-  --resource-key <connection-id> --property-attribute ConnectionId --output json
-
-uip maestro flow binding add <Name>Sol/<Name>/<Name>.flow \
-  "FolderKey" folderKey <folder-key> \
-  --resource-key <folder-key> --property-attribute FolderKey --output json
 ```
 
-These are product bindings embedded in the emitted `.flow`, not the symbolic
-connector names authored in a root-level `bindings.json`. A managed-HTTP-only
-flow needs no authored `bindings.json`, but it still needs the two
-emitted-artifact bindings for product debug. Re-emission overwrites the artifact,
-so run both `binding add` commands again after the last compile.
+Declare symbolic entries in `bindings.json`, then pass both names to the node:
+
+```ts
+http({ managed: true, method: 'GET', url: '/me',
+  connection: 'spotifyHttp', folder: 'shared' })
+```
+
+Compilation resolves those names and writes both the connector-authenticated
+node detail and the required product bindings into the emitted `.flow`. Do not
+patch them into the artifact after emission; that edit would be lost on the next
+compile. Omit both options only when manual/implicit authentication is intended.
 
 ## Refresh, debug, and preserve evidence
 
@@ -153,25 +155,94 @@ These are the common flags; use only the ones the behavior claim needs:
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
 | Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
-| Compact read-back | `--output-filter '<JMESPath>' --output json` |
+| Compact read-back | `--output-filter "<JMESPath>" --output json` |
+| Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
+
+### `--output-filter` is JMESPath, and three things about it are worth knowing
+
+**A string literal is `'single-quoted'`, not `` `backticked` ``.** Backticks
+delimit a JSON literal, so `` `Completed` `` is a syntax error — bare words are
+not JSON. Both forms below work; prefer the first, because its failure is loud.
+Wrap the whole expression in DOUBLE quotes so the inner `'…'` survives the shell:
+
+```bash
+--output-filter "elementExecutions[?status!='Completed']"     # raw string literal
+--output-filter 'elementExecutions[?status!=`"Completed"`]'   # JSON literal
+```
+
+**The projection selects from `Data`, not from the envelope.** `Result` and
+`Code` stay at the top level and are still printed, so a filter naming
+`finalStatus` reads `Data.finalStatus`.
+
+**Filter, do not post-process.** `--output-filter` is cheaper and less brittle
+than piping the whole envelope through `jq`, and much cheaper than hunting for
+the JSON inside interleaved log lines. If a filter is rejected, fix the
+expression rather than falling back to `--output json | jq` — a rejected filter
+exits non-zero with the parse error, so the fix is usually one edit.
+
+### Ready-made projections — copy one, do not compose your own
+
+These are verified against a real `flow debug` envelope. Pick the narrowest one
+that answers the claim; composing a projection from scratch is what turns a
+read-back into seven tool calls.
+
+```bash
+# Did it finish? The cheapest possible check.
+--output-filter "{status:finalStatus,instance:instanceId}"
+
+# The standard read-back: status, where to look, what did NOT complete, all globals.
+--output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,\
+failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},\
+globals:variables.globals}"
+
+# Just the values the flow produced.
+--output-filter "variables.globals"
+
+# Every element's status, when you need the path the run actually took.
+--output-filter "elementExecutions[].{id:elementId,status:status}"
+```
+
+**`variables.globals` is a FLAT map, and its keys contain dots.** A step output is
+`"<step>.output.<field>"`, alongside the bare name of every declared global:
+
+```jsonc
+{ "product": 42, "start.output.a": 6, "multiply.output": 42, "multiply.error": null }
+```
+
+So a bare global reads as `variables.globals.product`, and a dotted key needs
+quoting — which flips the shell quoting, because the expression now contains
+double quotes instead of single ones:
+
+```bash
+--output-filter '{status:finalStatus,raw:variables.globals."multiply.output"}'
+```
+
+**There is no `incidents` in this envelope.** `Data` carries exactly
+`finalStatus`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`,
+`solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
+projection silently yields `null`. Incidents come from the separate
+`debug-instance incidents` call below, keyed by the `instanceId` you just read.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
+( cd <Solution> && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
-  --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
   --output json )
 ```
 
 The top-level envelope still carries `Result`; the projection above selects
-from `Data`. Read and retain `Result`, the projected instance/status/URL,
-incomplete or faulted element executions, needed global outputs, and incidents.
-`Completed` with the expected outputs and no unexpected incidents is evidence
-for the product-runtime path; a bare process exit code is not. Omit the filter
-only when diagnosing a field that the compact projection did not retain.
+from `Data`. Read and retain `Result`, the projected status/instance/URL, the
+`failed` element executions, and the globals the claim needs.
+`Completed` with the expected globals and an empty `failed` is evidence for the
+product-runtime path; a bare process exit code is not. Omit the filter only when
+diagnosing a field the projection did not retain.
+
+Incidents are **not** in this envelope — fetch them by the `instance` you just
+read, and only when something actually failed.
 
 For a fault, query the backend incident payload with the returned instance id:
 
