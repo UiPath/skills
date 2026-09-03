@@ -15,7 +15,7 @@ Use for requests to review, audit, check, evaluate, improve, quality-gate, or un
 
 ## Critical Rules
 
-1. **Read-only.** Never manually modify files. The sole exception is mandatory `uip agent refresh` for low-code agents; it may update derived files, which must not be restored or cleaned up. Report fixes and route them to `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-api-workflow`, `uipath-coded-apps`, `uipath-platform`, or `uipath-solution`.
+1. **Read-only.** Never manually modify files. The sole exceptions are mandatory `uip agent refresh` for low-code agents, which may update derived files that must not be restored or cleaned up, and `uip agent review-history add` (Step 6), which writes CLI-owned `review-history.json`. Report fixes and route them to `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-api-workflow`, `uipath-coded-apps`, `uipath-platform`, or `uipath-solution`.
 2. **Validate first.** Every RPA entry point requires `uip rpa validate`, plus a project-level `uip rpa build` — `build` compiles the whole project, including entry points `validate` was never pointed at, so a clean per-file `validate` can still fail `build`. Low-code agents require `uip agent refresh` then `uip agent validate`; use `uip maestro flow validate`, `uip maestro bpmn validate`, and `uip api-workflow validate` as applicable. Every CLI validation command uses `--output json`. Report each command's Error, Warning, and Info counts; detail every Error and Warning, but add no detail lines for clean results. A review without both RPA `validate` and `build` is incomplete.
 3. Discover and classify every project before reviewing any project.
 4. Classify findings as **Critical** (blocks deployment), **Warning** (should fix), or **Info** (improvement opportunity).
@@ -266,6 +266,16 @@ Required sections, in order:
 8. `### Recommended Next Steps` — route fixes to the appropriate skill.
 9. `### Optimization Notes` — only when relevant.
 10. `**Final grade: <A–F>**` — agents only, on its own line as the **last line** of the report (nothing after it); the letter **must match** the Summary Agent Grade.
+
+### Step 6 — Record the Agent Grade
+
+Agent projects only, after the report. For each agent project, persist its per-agent final grade (Step 4.5) into the project's `review-history.json`:
+
+```bash
+uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <CRITICAL_COUNT> --warnings <WARNING_COUNT> --output json
+```
+
+The CLI owns `review-history.json`: never create, edit, or review the file; exclude it from the authored-file set. If the command fails, state that the grade was not recorded and stop — recording never changes the review outcome.
 
 Legacy validation status must say: `Use uipath-rpa (Legacy mode) for Legacy-specific validation`. Do not say “Could not run” or “Failed”. Legacy is supported indefinitely in Studio LTS and is not a Critical deployment blocker. Recommend migration based on actual needs. Overall Quality is **Good** for 0 Critical and 0–3 Warnings; **Needs Improvement** for 0 Critical and 4+ Warnings or 1 Critical with a clear fix; **Critical Issues** for 2+ Critical or 1 security/data-integrity Critical. For agents, A/B maps to Good, C/D to Needs Improvement, and F to Critical Issues. Never use “Mismatch” or “Aligned”.
 
