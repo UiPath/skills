@@ -24,10 +24,19 @@ source (`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags.
 Validation uses `uip maestro bpmn validate <file>` — see
 [Validation](structural-bpmn.md#validation).
 
-The `validate` command runs the full PO.Frontend canvas rule set offline (it was
-added to the CLI in UiPath/cli#3135). If your CLI reports `validate` as an
-unknown command, or it clearly runs only the deploy-readiness checks and not the
-structural rules, the installed CLI predates that change — update to the latest:
+## Validation order
+
+For file-based authoring, complete coherent BPMN DI before the first final
+`validate` call — see [Validation](structural-bpmn.md#validation). Then run:
+
+```bash
+uip maestro bpmn validate <file.bpmn> --output json
+```
+
+The `validate` command runs the canvas rules offline. If your CLI reports
+`validate` as an unknown command, or it clearly runs only the deploy-readiness
+checks and not the structural rules, the installed CLI is too old — update to
+the latest:
 
 ```bash
 npm install -g @uipath/cli@latest   # or: bun add -g @uipath/cli
