@@ -506,6 +506,25 @@ def _bound_inputs(sdd: str) -> dict[str, set[str]]:
     return bound
 
 
+_RECIPIENT_RE = re.compile(r"^\*\*Recipient:\*\*\s*(.+?)\s*(?:·|$)", re.M)
+
+
+def _sdd_recipients(sdd: str) -> dict[str, str]:
+    """Task name -> the Recipient the SDD names for it.
+
+    Only tasks the SDD actually routes somewhere. A task with no Recipient line is not
+    in the result, so a plan is never asked to invent one.
+    """
+    headings = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
+    out: dict[str, str] = {}
+    for index, (start, name) in enumerate(headings):
+        end = headings[index + 1][0] if index + 1 < len(headings) else len(sdd)
+        match = _RECIPIENT_RE.search(sdd, start, end)
+        if match and match.group(1) not in _NO_BINDING:
+            out[name] = match.group(1)
+    return out
+
+
 def sdd_facts() -> dict:
     """Re-derive the volatile facts from the fixture, and refuse a thin parse.
 
@@ -559,6 +578,12 @@ def sdd_facts() -> dict:
         )
 
     bound_inputs = _bound_inputs(sdd)
+    recipients = _sdd_recipients(sdd)
+    if len(recipients) < 10:
+        raise SystemExit(
+            f"expected.py: parsed only {len(recipients)} Recipient line(s) from sdd.md; the "
+            f"fixture routes at least 10 tasks. Got {sorted(recipients)}"
+        )
     # A floor, not a count. An agent shipped this case with all three of its agent task's
     # inputs emitted as "", the job faulted on `Field required [input_value={}]`, and every
     # grader stayed green — nothing was reading the input side at all.
@@ -574,4 +599,5 @@ def sdd_facts() -> dict:
         "connector_extracts": extracts,
         "var_reads": var_reads,
         "bound_inputs": bound_inputs,
+        "recipients": recipients,
     }

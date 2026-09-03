@@ -282,6 +282,27 @@ def main() -> int:
                 "each an expression, and an empty input reaches the runtime as a missing field"
             )
 
+    # ---- 8b. a routed task reaches a real recipient -------------------------
+    # The engine logs `Recipient=---` and reports the assignment a success, so the task
+    # exists, sits in nobody's queue, and the run waits for a person who was never asked.
+    # `validate` does not read this field. The SDD's own em-dash means "not applicable"
+    # and never reaches a task it routes.
+    placeholders = {"", "-", "--", "---", "\u2014", "\u2013", "n/a", "none", "null"}
+    for name, routed_to in sorted(facts["recipients"].items()):
+        task = names_to_task.get(name)
+        if task is None:
+            continue
+        recipient = P.task_data(task).get("recipient")
+        if recipient is None:
+            continue  # an omitted role recipient is a reading the skill's references allow
+        value = recipient.get("Value", recipient.get("value")) if isinstance(recipient, dict) else recipient
+        if value is not None and str(value).strip().casefold() in placeholders:
+            problems.append(
+                f"task {name!r} recipient is {value!r}; the SDD routes it to {routed_to!r}. "
+                f"A placeholder assigns the task to nobody, and the engine still reports the "
+                f"assignment a success, so the run waits on a person who was never asked"
+            )
+
     # ---- 9. every task carries an entry rule -------------------------------
     # An empty `entryConditions` means the runtime never tells the task to start. The
     # stage's exit condition can then never be satisfied, so `case debug` sits there until

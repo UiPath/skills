@@ -990,6 +990,22 @@ class TasksIoTests(CheckerBase):
         task(plan, "Record buyer review decision")["data"].pop("recipient", None)
         self.rejects(plan, "reaches nobody")
 
+    def test_rejects_a_placeholder_recipient(self):
+        # The engine logged `ConfiguredAssignee=---` and `Recipient=---`, called the
+        # assignment a success, and the task sat in nobody's queue for the whole run.
+        plan = baseline_plan()
+        task(plan, "Validate application details")["data"]["recipient"] = {
+            "Type": 1, "Value": "---"
+        }
+        self.rejects(plan, "recipient is")
+
+    def test_rejects_an_em_dash_recipient(self):
+        plan = baseline_plan()
+        task(plan, "Validate application details")["data"]["recipient"] = {
+            "Type": 1, "Value": "\u2014"
+        }
+        self.rejects(plan, "assigns the task to nobody")
+
     def test_rejects_a_task_with_no_entry_rule(self):
         # A run that reached one stage, opened no task, raised no incident and timed out.
         # `validate` only warns on this, so nothing before the run reports it.
