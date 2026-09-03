@@ -18,7 +18,7 @@ The trigger and message nodes are identical whichever you pick. Only the agent n
 
 | Flavor | Node type | Where the agent lives | Choose it when |
 | --- | --- | --- | --- |
-| **Inline** | `uipath.agent.conversational` | A UUID subdirectory inside this flow project | The agent exists only to serve this chat. You scaffold it with `agent init --inline-in-flow`. |
+| **Inline** | `uipath.agent.conversational` | A UUID subdirectory inside this flow project | The agent exists only to serve this chat, or you need [structured outputs](impl.md#structured-outputs) to route on — only inline has them. You scaffold it with `agent init --inline-in-flow`. |
 | **In-solution** | `uipath.core.agent.<projectId>` | A sibling project in the same solution | The agent is its own project, versioned separately, maybe reused by other flows in the solution. Discover it with `registry list --local`. |
 | **Published** | `uipath.core.agent.<guid>` | The tenant, already published | The user names an existing agent, or one is already deployed. Discover it with `registry search`. Nothing to scaffold. |
 
@@ -52,26 +52,27 @@ Use these nodes when the process **is** the conversation: a support chat, an int
 - **The conversation is a phone call** — [inline-voice-agent](../inline-voice-agent/planning.md).
 - **A single question with a typed answer** — a chat loop is the wrong shape; use [hitl](../hitl/planning.md) for a form.
 
-## Topology
+## Rules Any Chat Flow Must Follow
 
-One loop, and the trigger is what makes it a chat:
+Combine the nodes however the conversation needs. These hold whatever shape you build:
+
+- **Start with `core.trigger.conversation`.** The trigger alone sets `runtimeOptions.isConversational` in the packed `operate.json`. An agent — inline, in-solution or published — does not make its caller conversational, so a chat agent hung off a manual trigger packs without the marker, is not listed as a Conversational Agent, and nothing reports an error.
+- **The agent reads a wait node's context.** Every key in `conversationalAgentSettings` derives from one wait-for-message node's `conversationContext` — see [impl.md](impl.md#the-conversationalagentsettings-wiring-rule).
+- **Reach a wait node again to keep the conversation alive.** After the agent answers, control has to arrive back at a wait node — directly, or through any nodes in between — or the conversation ends after that turn. Arriving there is also what ends the exchange; there is no flag to set.
+- **The agent streams its own reply.** No send-message is needed for the agent to answer. Add one only when the flow itself speaks — a greeting, a handoff notice.
+- **Leave the agent on the port its flavor exposes** — `success` for inline, `output` for in-solution and published. See [Ports](#ports).
+
+The smallest flow that satisfies all five:
 
 ```
-core.trigger.conversation
-        │
-        ▼
-wait-for-message ──▶ conversational agent ──────────────┐
-        ▲              (success inline, output otherwise)│
-        └───────────────────────────────────────────────┘
+core.trigger.conversation → wait-for-message → conversational agent ──┐
+                                   ▲                                   │
+                                   └───────────────────────────────────┘
 ```
 
-The agent streams its own reply, so **no send-message is needed for the agent to answer**. Add send-message only when the flow itself has something to say — a greeting before the first wait, or a message when handing off.
+That is a starting point, not the supported shape. Whatever else the conversation needs goes between those nodes — a greeting before the first wait, a decision on the agent's reply, an escalation to [hitl](../hitl/planning.md), a connector or RPA call between turns, or no loop back at all when one answer ends it.
 
-`get-conversation-context` is legal but usually redundant, and an unconnected one does not fail validation.
-
-### The trigger is the whole distinction
-
-`runtimeOptions.isConversational` in the packed `operate.json` is set by the **trigger alone**. An agent — inline, in-solution or published — does not make its caller conversational. A chat agent hung off a manual trigger packs without the marker and is not listed as a Conversational Agent, and nothing reports an error.
+`get-conversation-context` is legal but usually redundant — wait-for-message already returns the context — and an unconnected one does not fail validation.
 
 ## Ports
 
@@ -95,7 +96,7 @@ In-solution and published agents are the opposite: they continue on `output` and
 | --- | --- |
 | `core.trigger.conversation` | `output.conversationId` |
 | `uipath.conversational.wait-for-message` | `output.conversationContext` — an object holding `conversationId`, `latestExchangeId`, `messages`, `userSettings` |
-| `uipath.agent.conversational` | Declares no output properties — the reply is streamed, not returned |
+| `uipath.agent.conversational` | `output.uipath__agent_response_messages` — this turn's messages (role, contentParts, toolCalls). The reply is streamed, so there is no `output.response`. |
 
 There is **no `output.exchangeId`** on wait-for-message and **no `output.response`** on the agent. Binding either produces `undefined` at runtime, and `flow validate` does not catch it — invented `$vars` paths pass validation today, so read the real field names off `registry get` rather than trusting a clean validate.
 

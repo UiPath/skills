@@ -1,6 +1,6 @@
 # Conversational (Text Chat) Nodes — Implementation
 
-Build the loop from [planning.md](planning.md): conversation trigger → wait for message → conversational agent → back to wait.
+Wire whatever shape the conversation needs, inside the rules in [planning.md](planning.md#rules-any-chat-flow-must-follow).
 
 For a phone conversation, use [inline-voice-agent/impl.md](../inline-voice-agent/impl.md) instead.
 
@@ -185,7 +185,7 @@ Reads recent exchanges without waiting. wait-for-message already returns the sam
 
 ### Send message (only when the flow itself speaks)
 
-`conversationId`, `exchangeId` and `content` are all required. `content` is normally a literal — the agent's own replies are streamed, not routed through this node.
+`conversationId`, `exchangeId`, `content`, `role` and `mimeType` are all required. `role` and `mimeType` each accept exactly one value, so write them as shown. `content` is normally a literal — the agent's own replies are streamed, not routed through this node.
 
 ```json
 {
@@ -195,14 +195,28 @@ Reads recent exchanges without waiting. wait-for-message already returns the sam
     "conversationId": { "type": "jsExpression", "expression": "$vars.conversationTrigger1.output.conversationId", "fieldType": "string" },
     "exchangeId":     { "type": "jsExpression", "expression": "$vars.waitForMessage1.output.conversationContext.latestExchangeId", "fieldType": "string" },
     "content":        { "type": "literal", "expression": "Anything else I can help with?", "fieldType": "string" },
-    "role": "assistant"
+    "role": "assistant",
+    "mimeType": "text/markdown"
   }
 }
 ```
 
+## Structured Outputs
+
+An **inline** agent can return named fields for a downstream node to route on. Published and in-solution agents cannot.
+
+Declare each field in two places or it yields nothing at run time:
+
+| Where | What |
+| --- | --- |
+| the node, in the `.flow` | `inputs.agentOutputVariables: [{ "id": "shouldHandoff", "type": "boolean", "description": "..." }]` |
+| the inline `agent.json` | the same field under `outputSchema.properties` |
+
+Bind it downstream as `$vars.<agentNodeId>.output.shouldHandoff`. Writing one side without the other passes `agent validate` and `flow validate` — nothing checks the pair.
+
 ## Wire the Edges
 
-The loop back leaves an **inline** agent on `success`; an in-solution or published one leaves on `output`:
+An **inline** agent leaves on `success`; an in-solution or published one leaves on `output`. The smallest loop:
 
 ```bash
 uip maestro flow edge add ChatFlow/ChatFlow.flow conversationTrigger1 waitForMessage1
