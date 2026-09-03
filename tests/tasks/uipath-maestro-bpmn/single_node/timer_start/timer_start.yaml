@@ -26,8 +26,9 @@ initial_prompt: |
   scheduled timer start -> a script task that assembles a report -> end.
 
   Requirements:
-  - Discover the timer-trigger extension type via the registry and author its
-    node from the registry template. Do not hand-author uipath:* XML from prose.
+  - Retrieve the exact Intsvc.TimerTrigger template directly from the registry
+    before authoring; do not list or search for a type that is already named.
+    Author the node from that template, not from prose.
   - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
     wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
   - Configure a recurring hourly schedule using a bpmn:timeCycle with a valid
@@ -54,6 +55,15 @@ success_criteria:
     includes:
       - "Intsvc.TimerTrigger"
       - "timerEventDefinition"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved the Intsvc.TimerTrigger registry template"
+    tool_name: "Bash"
+    command_pattern: >-
+      uip\s+maestro\s+bpmn\s+registry\s+get\s+["']?Intsvc\.TimerTrigger(["']|\s|$)
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
