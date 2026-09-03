@@ -128,7 +128,7 @@ constrains. A single pattern needs only its own guide.
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. Treat
+Work the five steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
 that mode, immediately create `registry-evidence/`, run and save `registry pull
@@ -143,27 +143,8 @@ first complete draft before further spelunking. If
 directly covers the requested construct, write a first complete draft before
 further spelunking.
 
-For registry-evidence-only tasks, be command-first and time-boxed:
-
-- Create `registry-evidence/` before anything else.
-- Run the registry command forms the user asked for. For RPA job + internal
-  message discovery, use `uip maestro bpmn registry list --limit -1 --output
-  json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
-  and `uip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json`.
-- If `uip` is unavailable in a temp/smoke sandbox, or if it writes a valid JSON
-  failure object such as `"Result": "Failure"` instead of registry content, do
-  not search the repo for a replacement CLI or inspect test fixtures. Still
-  issue the required `list` and `get` command forms once each with output
-  redirected to their evidence files (allowing failure with `|| true`), so the
-  transcript shows the discovery loop:
-  `uip maestro bpmn registry list --limit -1 --output json` and
-  `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
-  attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
-  in the expected `registry-evidence/*.json` files with valid JSON evidence from
-  `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
-  extension types and stop. The final evidence files must literally contain the
-  discovered type names, for example `Orchestrator.StartJob` and
-  `Maestro.ReceiveMessageEvent`.
+For registry-evidence-only tasks, follow the command-first recipe in
+[references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -233,7 +214,7 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
    If the user asks for the package metadata files, or to package or operate,
-   run `uip maestro bpmn update-metadata <file.bpmn>` to generate the five
+   run `uip maestro bpmn refresh <project-path>` to generate the
    files, and keep its output as written — that shape is the contract `pack`
    consumes. Only fall back to the equivalent hand-authored shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
@@ -269,6 +250,19 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+5. **Refresh derived metadata when package-ready output is required.** After
+   source validation passes, regenerate the four CLI-owned package files:
+
+   ```bash
+   uip maestro bpmn refresh <project-path> --output json
+   ```
+
+   Treat a nonzero result as a source/precondition failure: fix the BPMN or
+   `project.uiproj`, revalidate, and refresh again — never repair the generated
+   JSON by hand. Refresh is needed only for a package-ready, upload, debug,
+   publish, or deploy deliverable, not for a source-only draft. For the full
+   contract (scope, idempotency, binding rules) see
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 ## Operate and diagnose
 
