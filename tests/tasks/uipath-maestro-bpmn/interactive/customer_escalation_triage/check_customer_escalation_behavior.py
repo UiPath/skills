@@ -314,9 +314,12 @@ SCENARIOS = (
     ),
     scenario(
         "whitespace-duplicate-degraded",
+        # Enterprise + Degraded + no workaround. Degraded caps severity at Sev2
+        # even for an Enterprise customer with no workaround, so this is the
+        # probe that a classifier ignoring serviceState answers Sev1 and fails.
         customer_tier="Enterprise",
         service_state="DeGrAdEd",
-        workaround=True,
+        workaround=False,
         duplicate_key="   \t ",
         auto_send=True,
         expected={
@@ -424,6 +427,10 @@ SCENARIOS = (
     ),
     scenario(
         "jira-unavailable-sev2-typed-boundary",
+        # Enterprise + Unavailable + workaround available. Sev1 needs all three
+        # of Enterprise, Unavailable, and NO workaround, so this is the probe
+        # that a classifier ignoring workaroundAvailable answers Sev1 and fails.
+        customer_tier="Enterprise",
         service_state="Unavailable",
         workaround=True,
         duplicate_key="  SHOULD-NOT-BE-UPDATED  ",
@@ -499,17 +506,24 @@ SCENARIOS = (
         },
     ),
     scenario(
-        "informational-auto-disabled-low-impact-context",
-        service_state="available",
-        auto_send=False,
-        business_impact="Routine informational context only",
+        "standard-tier-unavailable-no-workaround-sev2",
+        # Standard + Unavailable + no workaround. Severity must fall to Sev2
+        # because the customer is not Enterprise, so a classifier that ignores
+        # customerTier answers Sev1 and fails. Replaces a businessImpact
+        # control scenario whose expected outputs were byte-identical to
+        # informational-auto-disabled-high-impact-context: both compared
+        # against fixed constants and were never compared to each other, so
+        # the second bought no signal.
+        customer_tier="Standard",
+        service_state="Unavailable",
+        workaround=False,
         expected={
-            "route": "Informational",
-            "severity": "Sev3",
-            "engineeringNeeded": False,
-            "jiraAction": "NoAction",
+            "route": "NewEscalation",
+            "severity": "Sev2",
+            "engineeringNeeded": True,
+            "jiraAction": "CreateIssue",
             "attachmentAction": "NoAttachments",
-            "slackAction": "NoAlert",
+            "slackAction": "PostAlert",
             "responseMode": "Draft",
             "lastAttachmentName": "",
             "failureReason": "",

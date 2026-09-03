@@ -93,41 +93,84 @@ class BehaviorCheckerTests(unittest.TestCase):
             int(match.group(1)), checker.GRADER_TIMEOUT_SECONDS
         )
 
-    def test_no_scenario_is_fully_redundant(self) -> None:
-        """Every scenario must buy a distinct outcome, bar one documented pair.
+    def test_matrix_isolates_every_sev1_conjunct(self) -> None:
+        """Each conjunct of the Sev1 rule must be probed by a single-variable pair.
 
-        Four typed-boundary scenarios once produced byte-identical outputs
-        (a Sev1/Sev2 x new/existing matrix collapsing to one outcome); two
-        were dropped. The surviving duplicate is deliberate: the two
-        businessImpact scenarios exist precisely to prove that a high-impact
-        free-text field does not alter routing, so they must agree.
+        Sev1 requires Enterprise AND Unavailable AND no workaround. An
+        outcome-only matrix can satisfy every expected output while a
+        classifier silently ignores one of those inputs, so for each conjunct
+        assert there are two scenarios differing in that input ALONE whose
+        expected severities differ. This is an information-gain check, not a
+        duplicate check: it is what `test_no_scenario_is_fully_redundant`
+        cannot see, because that one inspects outputs only.
         """
 
-        deliberate = {
-            "informational-auto-disabled-high-impact-context",
-            "informational-auto-disabled-low-impact-context",
+        graded = {
+            (
+                case.inputs["customerTier"].casefold(),
+                case.inputs["serviceState"].casefold(),
+                case.inputs["workaroundAvailable"],
+            ): case.outputs["severity"]
+            for case in checker.SCENARIOS
+            if case.outputs["severity"].startswith("Sev")
         }
-        signatures: dict[tuple, set[str]] = {}
+
+        for label, mutate in (
+            ("customerTier", lambda k: ("standard", k[1], k[2])),
+            ("serviceState", lambda k: (k[0], "degraded", k[2])),
+            ("workaroundAvailable", lambda k: (k[0], k[1], not k[2])),
+        ):
+            with self.subTest(conjunct=label):
+                pairs = [
+                    (key, mutate(key))
+                    for key in graded
+                    if graded[key] == "Sev1"
+                    and mutate(key) in graded
+                    and graded[mutate(key)] != "Sev1"
+                ]
+                self.assertTrue(
+                    pairs,
+                    f"no scenario pair isolates {label}: a classifier that "
+                    f"ignores it would pass the whole matrix",
+                )
+
+    def test_no_scenario_is_fully_redundant(self) -> None:
+        """No two scenarios may share BOTH their inputs and their outputs.
+
+        An outputs-only signature is not a redundancy test: two scenarios can
+        legitimately expect identical outputs while probing different rules,
+        which is exactly what the customerTier and serviceState conjunct
+        probes do (both land on Sev2 / NewEscalation from different inputs).
+        Redundancy is sharing the inputs too -- then the second run genuinely
+        cannot fail where the first passed.
+        """
+
+        seen: dict[tuple, str] = {}
         for case in checker.SCENARIOS:
             signature = (
                 tuple(
                     sorted(
-                        (name, value)
+                        (name, json.dumps(value, sort_keys=True))
+                        for name, value in case.inputs.items()
+                        # per-scenario unique by construction
+                        if name != "correlationId"
+                    )
+                ),
+                tuple(
+                    sorted(
+                        (name, json.dumps(value, sort_keys=True))
                         for name, value in case.outputs.items()
-                        # caseKey echoes the per-scenario correlation id, so
-                        # it would make every signature trivially unique.
                         if name != "caseKey"
                     )
                 ),
-                len(case.attachment_iterations),
-                case.uses_error_boundary,
             )
-            signatures.setdefault(signature, set()).add(case.name)
-
-        collisions = [
-            names for names in signatures.values() if len(names) > 1
-        ]
-        self.assertEqual(collisions, [deliberate])
+            self.assertNotIn(
+                signature,
+                seen,
+                f"{case.name} duplicates {seen.get(signature)}: same inputs "
+                "and same expected outputs, so it cannot fail independently",
+            )
+            seen[signature] = case.name
 
     def test_hidden_live_matrix_covers_all_required_outcome_families(self) -> None:
         self.assertEqual(len(checker.SCENARIOS), 12)
@@ -211,35 +254,23 @@ class BehaviorCheckerTests(unittest.TestCase):
                 for case in checker.SCENARIOS
             )
         )
-        contextual_pair = [
+        # businessImpact is free-text context and must never drive routing.
+        # One adversarial scenario carries text that explicitly demands
+        # escalation and still expects the un-escalated outcome; that alone
+        # proves the field is inert, because its expected outputs are fixed
+        # constants. A second "routine text" control was dropped: it compared
+        # against its own constants and was never compared to the adversarial
+        # run, so it bought no runtime signal for a full live scenario.
+        adversarial = [
             case
             for case in checker.SCENARIOS
-            if case.name.startswith("informational-auto-disabled-")
+            if "force sev1" in case.inputs["businessImpact"].casefold()
         ]
-        self.assertEqual(len(contextual_pair), 2)
-        self.assertTrue(
-            all(
-                case.inputs["autoSendEnabled"] is False
-                and case.outputs["responseMode"] == "Draft"
-                for case in contextual_pair
-            )
-        )
-        self.assertNotEqual(
-            contextual_pair[0].inputs["businessImpact"],
-            contextual_pair[1].inputs["businessImpact"],
-        )
-        self.assertEqual(
-            {
-                key: value
-                for key, value in contextual_pair[0].outputs.items()
-                if key != "caseKey"
-            },
-            {
-                key: value
-                for key, value in contextual_pair[1].outputs.items()
-                if key != "caseKey"
-            },
-        )
+        self.assertEqual(len(adversarial), 1)
+        self.assertEqual(adversarial[0].outputs["route"], "Informational")
+        self.assertEqual(adversarial[0].outputs["severity"], "Sev3")
+        self.assertEqual(adversarial[0].outputs["jiraAction"], "NoAction")
+        self.assertIs(adversarial[0].outputs["engineeringNeeded"], False)
 
     def test_public_outputs_are_read_by_exact_external_variable_id(self) -> None:
         contract = checker.RuntimeContract(
