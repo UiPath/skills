@@ -140,6 +140,29 @@ jobs:
       - name: Run catalog guard tests
         run: pytest tests/scripts/test_catalog_build_guards.py -v
 
+  skills-sh-checker-tests:
+    runs-on: uipath-ubuntu-latest
+    name: skills.sh grouping checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        # No fetch-depth override: the suite only ever resolves HEAD or a
+        # deliberately missing ref, both of which work on the default shallow
+        # clone.
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Pins the --baseline-ref contract: drift already on the base branch
+      # warns, drift this change introduces fails, an unreadable baseline stays
+      # strict. Without these the check regresses to failing ~20 unrelated
+      # branches per incident (see the 2026-08-04 process-mining window).
+      - name: Run skills.sh checker tests
+        run: pytest tests/scripts/test_check_skills_sh.py -v
+
   telemetry-hook-tests:
     runs-on: uipath-ubuntu-latest
     name: telemetry hook contract guard
