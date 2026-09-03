@@ -125,7 +125,7 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
 <!--skill-flavor:runtime-validation-limit:end-->
 
 <!--skill-flavor:runtime-execution-consent:start-->
-21. **Never run `uip api-workflow run` without an explicit user "yes."** Validation (rule 20) is autonomous; *running* is not. Once validate passes, ask the user: (a) run now or skip, (b) if running, with `--no-auth` (fast, structure-only — IntSvc kind vendor calls fail) or with auth (real Integration Service calls — vendor side effects WILL happen: emails sent, tickets created, files uploaded). Suggest a default based on workflow content (`--no-auth` for control-flow-only + Http kind `ImplicitConnection`; with-auth for any IntSvc kind vendor activity), but wait for the user's answer. Never invoke `uip api-workflow run` with auth on speculation — once a vendor call goes out, it can't be unsent. This rule gates the run only: when the user asked to package or publish, do not end the turn on the run question — validate, pack (rule 19), and offer the run afterwards.
+21. **Never run `uip api-workflow run` without an explicit user "yes."** Validation (rule 20) is autonomous; *running* is not. Once validate passes, ask the user: (a) run now or skip, (b) if running, with `--no-auth` (fast, structure-only — IntSvc kind vendor calls fail) or with auth (real Integration Service calls — vendor side effects WILL happen: emails sent, tickets created, files uploaded). Suggest a default based on workflow content (`--no-auth` for control-flow-only + Http kind `ImplicitConnection`; with-auth for any IntSvc kind vendor activity), but wait for the user's answer. Never invoke `uip api-workflow run` with auth on speculation — once a vendor call goes out, it can't be unsent. This rule gates only `uip api-workflow run`. If the user asked to package or publish, do not stop on the run question: validate, then pack (rule 19). A local run is a separate request; do it only when the user asks for it.
 <!--skill-flavor:runtime-execution-consent:end-->
 
 22. **TDD gate — only for projects with an `evals/` folder; STOP and ask before authoring; tests are written before the workflow.** Every authoring request (create OR edit — including a one-line change) runs Phase-0 discovery of the project's `evals/` folder — `<project>/evals/`, the directory next to `Workflow.json` (list that directory; the workspace or solution root is the wrong place to look):
@@ -235,7 +235,7 @@ Fix run failures in category order — **Structure > Expression > Activity Confi
 ### Phase 4: Package, Publish, and Operate
 
 <!--skill-flavor:deployment-lifecycle:start-->
-Packaging needs only a passing `validate` (rule 20), not a run: when the request is to build, package, or publish, pack right away and offer the run afterwards — rule 21 gates `uip api-workflow run`, never `uip solution pack`. Deploy via the solution packager. If the project must open in Studio Web, confirm it uses the `init`-produced shape first (rule 19a) — runtime/pack success does not prove it.
+Packaging needs a passing `validate` (rule 20), not a local run. When the request is to build, package, or publish, pack right away; rule 21 gates `uip api-workflow run`, never `uip solution pack`. Deploy via the solution packager. If the project must open in Studio Web, confirm it uses the `init`-produced shape first (rule 19a); runtime/pack success does not prove it.
 
 **Pack:**
 ```bash
