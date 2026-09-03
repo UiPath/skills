@@ -97,6 +97,7 @@ success_criteria:
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     flags:
+      fields: {contains: "f-001", aliases: ["f"]}
       model-version: {equals: "7", aliases: ["m"]}
     weight: 4.0
     pass_threshold: 1.0
