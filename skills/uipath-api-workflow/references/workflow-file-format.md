@@ -6,6 +6,8 @@ JSON files conforming to **CNCF Serverless Workflow DSL 1.0.0** with UiPath task
 
 ## Top-Level Structure
 
+An API workflow is a JSON object with required `document`, `do`, and `evaluate` fields and optional `input`, `output`, and `httpRetryConfig`:
+
 ```json
 {
   "document": {
@@ -17,54 +19,15 @@ JSON files conforming to **CNCF Serverless Workflow DSL 1.0.0** with UiPath task
       "variables": {
         "schema": {
           "format": "json",
-          "document": {
-            "type": "object",
-            "properties": {
-              "myVar": { "type": "string", "default": "" }
-            },
-            "title": "Variables"
-          }
+          "document": { "type": "object", "properties": {} }
         }
-      }
-    }
-  },
-  "input": {
-    "schema": {
-      "format": "json",
-      "document": {
-        "type": "object",
-        "properties": {
-          "inputField": { "type": "string" }
-        },
-        "title": "Inputs"
-      }
-    }
-  },
-  "output": {
-    "schema": {
-      "format": "json",
-      "document": {
-        "type": "object",
-        "properties": {
-          "outputField": { "type": "string" }
-        },
-        "title": "Outputs"
       }
     }
   },
   "do": [
     {
       "Sequence_1": {
-        "do": [
-          {
-            "WorkflowStart": {
-              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
-              "output": { "as": "${$input}" },
-              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "fullName": "Assign", "isTransparent": true }
-            }
-          }
-        ],
+        "do": [ /* WorkflowStart, then user tasks */ ],
         "metadata": { "activityType": "Sequence", "displayName": "Sequence", "fullName": "Sequence" }
       }
     }
@@ -73,25 +36,23 @@ JSON files conforming to **CNCF Serverless Workflow DSL 1.0.0** with UiPath task
 }
 ```
 
-## Required Top-Level Keys
-
-| Key | Type | Required | Notes |
-|-----|------|----------|-------|
+| Key | Type | Required | Rule |
+|-----|------|----------|------|
 | `document.dsl` | string | yes | MUST be `"1.0.0"`. |
 | `document.name` | string | yes | Workflow display name. |
-| `document.version` | string | yes | SemVer. Independent of solution version. |
-| `document.namespace` | string | yes | Logical grouping. `"default"` is fine. |
-| `document.metadata.variables` | object | yes | Variables JSON Schema. See **Variables** below. |
-| `input.schema` | object | optional | JSON Schema for workflow inputs. |
-| `output.schema` | object | optional | JSON Schema for workflow outputs. |
+| `document.version` | string | yes | SemVer; independent of solution version. |
+| `document.namespace` | string | yes | Logical grouping; `"default"` is fine. |
+| `document.metadata.variables` | object | yes | Variables JSON Schema; see **Variables**. |
+| `input.schema` | object | optional | Workflow input JSON Schema. |
+| `output.schema` | object | optional | Workflow output JSON Schema. |
 | `evaluate.language` | string | yes | MUST be `"javascript"`. |
 | `evaluate.mode` | string | yes | `"strict"`. |
-| `do` | array | yes | Ordered tasks. Each entry is `{ "<TaskName>": { ... } }`. Root is conventionally a single `Sequence_1`. |
+| `do` | array | yes | Ordered tasks; each entry is `{ "<TaskName>": { ... } }`. Root is conventionally one `Sequence_1`. |
 | `httpRetryConfig` | object | optional | Workflow-level retry policy for HTTP **GET** calls (`UiPath.Http` GET + `UiPath.IntSvc` list/get). Absent → no retry. See [http-retry-config.md](http-retry-config.md). |
 
 ## Variables
 
-Variables live at `document.metadata.variables.schema.document` as a JSON Schema:
+Define variables at `document.metadata.variables.schema.document` using JSON Schema. `WorkflowStart` hydrates `$context.variables` from these defaults at run start.
 
 ```json
 "variables": {
@@ -100,9 +61,9 @@ Variables live at `document.metadata.variables.schema.document` as a JSON Schema
     "document": {
       "type": "object",
       "properties": {
-        "counter":  { "type": "number",  "default": 0 },
-        "userName": { "type": "string",  "default": "" },
-        "results":  { "type": "array",   "default": [] }
+        "counter": { "type": "number", "default": 0 },
+        "userName": { "type": "string", "default": "" },
+        "results": { "type": "array", "default": [] }
       },
       "title": "Variables"
     }
@@ -110,24 +71,9 @@ Variables live at `document.metadata.variables.schema.document` as a JSON Schema
 }
 ```
 
-`WorkflowStart` (see below) hydrates `$context.variables` from these defaults at run start.
-
 ## Inputs and Outputs
 
-Workflow-level I/O is declared at the root via JSON Schema:
-
-```json
-"input": {
-  "schema": {
-    "format": "json",
-    "document": {
-      "type": "object",
-      "properties": { "userId": { "type": "string" } },
-      "title": "Inputs"
-    }
-  }
-}
-```
+Declare workflow I/O at the root with JSON Schema. Outputs are read from the final `Response` task's `response` value.
 
 <!--skill-flavor:runtime-input-output:start-->
 Inputs come from `--input-arguments` JSON or the calling workflow. Read them as `$workflow.input.<name>` from any task. (Reading as `$input.<name>` only works on the very first task — see [expressions-and-context.md](expressions-and-context.md).)
@@ -137,7 +83,7 @@ Outputs are read from the final `Response` task's `response` value.
 
 ## WorkflowStart — System Activity
 
-`WorkflowStart` is **always the first activity** inside the root sequence's `do` array (`Sequence_1.do` in the template skeleton; the actual key may differ in existing workflows). It hydrates variable defaults into `$context.variables` and forwards inputs to `$input`. Treat it as system-generated:
+`WorkflowStart` must be the first activity inside the root sequence's `do` array (`Sequence_1.do` in the template skeleton; the actual key may differ). It hydrates variable defaults into `$context.variables` and forwards inputs to `$input`:
 
 ```json
 {
@@ -151,31 +97,31 @@ Outputs are read from the final `Response` task's `response` value.
 ```
 
 Rules:
-- Always present, always first inside the root sequence's `do` array
-- `isTransparent: true` (only `WorkflowStart` uses `true` — user-created Assign uses `false`)
-- Do not rename, remove, or modify the `set` expression
 
-User activities go AFTER `WorkflowStart` inside the root sequence.
+- Always include it first inside the root sequence's `do` array.
+- Set `isTransparent` to `true`; only `WorkflowStart` uses `true`. User-created Assign uses `false`.
+- Do not rename, remove, or modify its `set` expression.
+- Put user activities after `WorkflowStart` inside the root sequence.
 
 ## Task Naming
 
-- Each task wraps in a single-key object: `{ "<TaskName>": { ... } }`
-- Names must be **globally unique** across the whole workflow (including `#Wrapper`, `#Then`, `#Else`, `#Body` suffixes)
-- Names become keys in `$context.outputs` for downstream reads
-- Convention: `<ActivityType>_<index>` — e.g., `Assign_1`, `Javascript_1`, `If_2#Wrapper`, `For_Each_1`
+- Wrap every task in one single-key object: `{ "<TaskName>": { ... } }`.
+- Names must be globally unique across the workflow, including `#Wrapper`, `#Then`, `#Else`, and `#Body` suffixes.
+- Names become keys in `$context.outputs` for downstream reads.
+- Use `<ActivityType>_<index>` by convention, such as `Assign_1`, `Javascript_1`, `If_2#Wrapper`, and `For_Each_1`.
 
 ## Common Task Body Fields
 
 | Field | Purpose |
 |-------|---------|
-| `call` / `run` / `do` / `for` / `try` / `switch` / `wait` / `response` / `set` / `break` | Action selector — varies per task type |
-| `with` | Inputs to the action (less common — most activities in this skill use `set` / `do` / `for` / `try` / `run.script`) |
-| `export` | How to merge this task's output into context. See [expressions-and-context.md](expressions-and-context.md) |
-| `metadata` | StudioWeb editor metadata (`activityType`, `displayName`, `fullName`). Required for designer roundtrip. Runtime mostly ignores it. |
+| `call` / `run` / `do` / `for` / `try` / `switch` / `wait` / `response` / `set` / `break` | Action selector; varies by task type. |
+| `with` | Action inputs; less common in this skill, whose activities mostly use `set` / `do` / `for` / `try` / `run.script`. |
+| `export` | Merges task output into context. See [expressions-and-context.md](expressions-and-context.md). |
+| `metadata` | StudioWeb editor metadata (`activityType`, `displayName`, `fullName`); required for designer roundtrip, mostly ignored by runtime. |
 
 ## Sequence
 
-A `Sequence` task groups child tasks. Most workflows have a single root `Sequence_1`:
+A `Sequence` groups child tasks. Most workflows have one root `Sequence_1`:
 
 ```json
 {
@@ -186,12 +132,12 @@ A `Sequence` task groups child tasks. Most workflows have a single root `Sequenc
 }
 ```
 
-Child tasks execute in order. `$context` flows from one to the next via `export.as`.
+Child tasks execute in order. `$context` flows between tasks through `export.as`.
 
 <!--skill-flavor:project-structure:start-->
 ## Project Structure (Studio Web editable contract)
 
-An API workflow project that must open and edit in **Studio Web** ships a specific on-disk shape. **`uip api-workflow init <name>` generates this shape for you** (and registers the project in the solution `.uipx`) — use it for new projects instead of writing these files by hand. The layout below is the contract `init` produces and what `uip solution pack` reads via `project.uiproj`; it also documents what to recreate when converting a legacy `project.json` project:
+An API workflow project that must open and edit in **Studio Web** ships the following on-disk shape. **`uip api-workflow init <name>` generates this shape for you** (and registers the project in the solution `.uipx`) — use it for new projects instead of writing these files by hand. The layout is what `uip solution pack` reads via `project.uiproj` and what to recreate when converting a legacy `project.json` project:
 
 ```
 <solutionDir>/
@@ -204,12 +150,10 @@ An API workflow project that must open and edit in **Studio Web** ships a specif
     └── .local/ProjectSettings.json # NOT written by init — Studio Web creates it on first open. Do not author by hand.
 ```
 
-`uip solution pack` auto-generates `operate.json` and `package-descriptor.json` during build — do NOT commit these.
-
-### Field rules (what Studio Web enforces)
+### Field Rules (what Studio Web enforces)
 
 | File | Field | Rule |
-|------|-------|------|
+|------|------|------|
 | `.uipx` | `Projects[].ProjectRelativePath` | MUST end with `/project.uiproj`. Pointing at `project.json` → folder isn't recognized as a project. |
 | `.uipx` | `Projects[].Type` | `"Api"`. |
 | `project.uiproj` | `ProjectType` | Exactly `"Api"` (capital A). Studio Web parses this with a strict enum — `"api"` is rejected with `InvalidUiprojFileError`. |
