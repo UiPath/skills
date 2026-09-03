@@ -98,6 +98,9 @@ Execute an API workflow JSON file locally using the Serverless Workflow executor
 ```bash
 uip api-workflow run <file> \
   [--input-arguments <json>] \
+  [--input-file <name>=<path>]... \
+  [--output-dir <dir>] \
+  [--folder-key <guid>] \
   [--no-auth] \
   [--output json]
 ```
@@ -106,7 +109,10 @@ uip api-workflow run <file> \
 |-----------------|----------|-------------|
 | `<file>` | yes | Path to the workflow JSON file. |
 | `-i, --input-arguments <json>` | no | Input arguments as a JSON string (e.g., `'{"name":"World"}'`). Invalid JSON exits 1. |
-| `--no-auth` | no | Skip credential loading. Use for workflows that don't need Orchestrator/IS auth — control-flow-only workflows, or Http kind activities using `connectionId: "ImplicitConnection"`. IntSvc kind (vendor connector) activities always need auth at run time. |
+| `--input-file <name>=<path>` | no (repeatable) | Upload a local file to Orchestrator blob storage and pass the resulting `JobAttachment` reference as input `<name>` — the same object Studio Web's run panel produces, read as `$workflow.input.<name>`. MIME type from the extension. Needs a signed-in session; refused with `--no-auth`. |
+| `--output-dir <dir>` | no | After a successful run, download every `JobAttachment` reference found in the output into `<dir>`; each downloaded reference in the printed `Data` gains a `LocalPath`. Same-named blobs get an `-<Id>` suffix. Needs a signed-in session. |
+| `--folder-key <guid>` | no | Orchestrator folder key for the attachments the run creates (uploaded inputs and the files written by File to Base64 / Base64 to File). Pass it when the tenant's Attachments API rejects folder-less requests. |
+| `--no-auth` | no | Skip credential loading. Use for workflows that don't need Orchestrator/IS auth — control-flow-only workflows, or Http kind activities using `connectionId: "ImplicitConnection"`. IntSvc kind (vendor connector) activities always need auth at run time, and so do file features: a workflow calling `$helpers.file.*` (File to Base64 / Base64 to File) is refused up front under `--no-auth`, as are `--input-file` / `--output-dir`. |
 | `--output json` | no | Emit machine-readable JSON. Strongly recommended when output is parsed. |
 
 ### Success output
@@ -138,6 +144,11 @@ Exit code: `1`. Common `Message` values:
 - `"Invalid JSON in workflow file"`
 - `"Invalid JSON in --input-arguments"`
 - `"<task error>"` (executor-level failure)
+- `"Invalid --input-file value '<value>'. Expected <name>=<path> …"`
+- `"--input-file needs a signed-in session …"` / `"--output-dir needs a signed-in session …"` (used with `--no-auth`)
+- `"This workflow uses the file helpers ($helpers.file.fileToBase64 / $helpers.file.base64ToFile …) … cannot run with --no-auth"`
+- `"Input file for '<name>' not found: <path>"` / `"Failed to upload input file '<name>' (<file>): …"`
+- `"The workflow completed, but downloading its output files to <dir> failed: …"` (the run succeeded; its output — with the attachment IDs — is still printed under `Data`)
 
 ### Examples
 
@@ -149,6 +160,14 @@ uip api-workflow run ./hello.json --no-auth --output json
 uip api-workflow run ./greet.json \
   --input-arguments '{"name":"Alice","count":3}' \
   --output json
+
+# With a file input and file outputs (needs `uip login`; no --no-auth)
+uip api-workflow run ./MyApiProject/Workflow.json \
+  --input-file document=./invoice.pdf \
+  --output-dir ./out \
+  --output json
+# → Data.<Key> = { "Id": "...", "FullName": "invoice.base64", "MimeType": "text/plain",
+#                  "Metadata": { "Size": 1234, "Encoding": "base64" }, "LocalPath": "/abs/out/invoice.base64" }
 ```
 <!--skill-flavor:runtime-execution:end-->
 
