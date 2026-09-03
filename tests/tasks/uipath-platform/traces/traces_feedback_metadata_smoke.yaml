@@ -1,0 +1,69 @@
+task_id: skill-platform-traces-feedback-metadata
+description: >
+  Smoke test: agent attaches structured review metadata to existing feedback
+  records via `update --metadata` and `--metadata-file`, neither of which is
+  reached by any other traces test. Two assertions discriminate. First, metadata
+  must be valid JSON — the prompt states the payload in prose, so an agent that
+  passes the phrasing through as bare text is rejected server-side with
+  INVALID_FEEDBACK_METADATA. Second, `update` now reads the record before it
+  writes and carries over fields the caller omitted, so re-passing the existing
+  comment and tags to "protect" them is wrong; the agent must send metadata
+  alone. Auth/404 responses are acceptable outcomes — the graded behavior is
+  command shape.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
+
+pre_run:
+  - command: "sh $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_feedback_metadata.sh"
+    timeout: 15
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Two feedback records in folder key `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`
+  need the review payload from this quarter's sweep attached to them. Both
+  already carry a reviewer comment and category tags from the original triage,
+  and none of that may change — only the payload is being added.
+
+  - Record `9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3`: reviewer is `qa-sweep`, this
+    is round `3`, and it was sampled from the monthly export. Keep it
+    thumbs-down, as it is today.
+  - Record `4e07a2d9-8c15-43f6-9a20-7d3b1f6c8e52`: the payload is the full
+    rubric already sitting in `review-meta.json`. It is long and nested — do not
+    retype it. Keep it thumbs-down, as it is today.
+
+  Both IDs come from the review export and are authoritative — apply the updates
+  directly rather than looking the records up first. They may not resolve
+  against this tenant; that is expected and is not a reason to stop. Report what
+  each command returns.
+
+success_criteria:
+  # Segment idiom per tests/README.md: (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*
+  # confines every lookahead to THIS command, so a chained second `uip` call
+  # cannot satisfy or veto an assertion about the first.
+  # `--metadata[\s=]` (separator required) does not match `--metadata-file`;
+  # the carry-over criterion spells `--metadata(?:-file)?` so an agent that
+  # stages even the short payload in a file still earns it.
+  - type: command_executed
+    description: "Agent serialized the prose payload as JSON on --metadata, with the required --folder-key"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata[\s=]+["'']?\{)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent sent metadata alone (inline or from a file) — omitted comment and categories are preserved by the read-before-write, so re-passing them is wrong"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata(?:-file)?[\s=])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment(?:-file)?[\s=])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category[\s=])'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent sourced the nested rubric from review-meta.json rather than retyping it inline"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+4e07a2d9-8c15-43f6-9a20-7d3b1f6c8e52(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata-file[\s=]+["'']?(?:\$?\S*/)?review-meta\.json)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata[\s=])'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
