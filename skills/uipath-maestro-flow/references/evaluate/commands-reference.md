@@ -141,11 +141,12 @@ Add or replace a simulation on a data point. If a simulation for `<component-id>
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
 | `--strategy <strategy>` | Yes | `Llm` or `Static` |
-| `--component-type <type>` | Yes | Component type (e.g. `connector`, `agent`, `subflow`) |
+| `--component-type <type>` | No | Component type (e.g. `connector`, `agent`, `subflow`). Required unless `--parent` is used (defaults to `Node`). |
 | `--component-description <text>` | No | Human-readable label for the component |
 | `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
 | `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |
-| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** — fails if the node is not found or has no outputs. Pass explicitly to override. |
+| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** (top-level simulations only; required when using `--parent`). |
+| `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent simulation exists yet, one is auto-created (type `agent`, strategy `Llm`). `--component-type` defaults to `Node`. |
 | `--path <path>` | No | (see Common Options) |
 
 **Strategy guide:**
@@ -185,6 +186,22 @@ uip maestro flow eval simulation add agent-lookup \
   --path ./MySolution/MyFlow --output json
 ```
 
+Example — Child simulation (tool inside an agent node):
+
+```bash
+# Add a child tool simulation. No separate parent simulation step needed —
+# --parent auto-creates the parent if it does not exist.
+uip maestro flow eval simulation add Web_Search \
+  --parent agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Static \
+  --mock-value '{"results": [{"title": "Example", "url": "https://example.com"}]}' \
+  --path ./MySolution/MyFlow --output json
+```
+
+The child's `<component-id>` is the tool's **runtime name** (e.g. `Web_Search`, `Send_Email`), not a `.flow` node ID. Child simulations are stored in the parent's `childSimulations` array.
+
 ### `uip maestro flow eval simulation list`
 
 List all simulations configured on a data point.
@@ -193,10 +210,19 @@ List all simulations configured on a data point.
 |------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
+| `--parent <component-id>` | No | Parent agent component ID. When set, lists child tool simulations on that parent instead of top-level simulations. |
 | `--path <path>` | No | (see Common Options) |
 
 ```bash
+# List top-level simulations
 uip maestro flow eval simulation list \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+
+# List child simulations on an agent node
+uip maestro flow eval simulation list \
+  --parent agent-lookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
@@ -210,10 +236,19 @@ Remove a simulation from a data point. Returns an error if no simulation with th
 |------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
+| `--parent <component-id>` | No | Parent agent component ID. When set, removes a child tool simulation from the parent instead of a top-level simulation. |
 | `--path <path>` | No | (see Common Options) |
 
 ```bash
+# Remove a top-level simulation
 uip maestro flow eval simulation remove connector-send-email \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+
+# Remove a child simulation from an agent node
+uip maestro flow eval simulation remove Web_Search \
+  --parent agent-lookup \
   --set "Smoke Tests" \
   --data-point "hello-test" \
   --path ./MySolution/MyFlow --output json
@@ -298,6 +333,7 @@ The CLI emits a `Code` field on every JSON response. Useful when filtering or sc
 | `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |
 | `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |
 | `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |
+| `eval simulation add --parent` / `list --parent` / `remove --parent` | `FlowEvalChildSimulationAdd` / `FlowEvalChildSimulationList` / `FlowEvalChildSimulationRemove` |
 | `eval run start` (no `--wait`) | `FlowEvalRunStarted` |
 | `eval run start --wait` (summary) | `FlowEvalRunCompleted` |
 | `eval run status` | `FlowEvalRunStatus` |

@@ -4,16 +4,12 @@
 
 `core.logic.merge`
 
-## When to Use
+## Use
 
-Use a Merge node to synchronize parallel branches before continuing. It waits for all incoming paths to complete.
+Use a Merge node to synchronize two or more parallel branches before continuing. It waits for all incoming paths to complete.
 
-### Selection Heuristics
-
-| Situation | Use Merge? |
-| --- | --- |
-| Two or more parallel branches need to join before continuing | Yes |
-| Sequential pipeline (no parallel branches) | No — wire nodes directly |
+- Use it when parallel branches must rejoin or after one node forks into multiple downstream branches.
+- Do not use it for sequential pipelines; wire nodes directly.
 
 ## Ports
 
@@ -23,7 +19,5 @@ Use a Merge node to synchronize parallel branches before continuing. It waits fo
 
 ## Wiring Rules
 
-- Connect each parallel branch's terminal node to the Merge node's `input` port
-- Merge accepts multiple incoming edges on the same `input` port
-- Execution continues from `output` only after all incoming paths complete
-- Use after forking from a single node to multiple downstream nodes
+- Connect each parallel branch's terminal node to the Merge node's `input` port; multiple incoming edges may use the same port.
+- Execution continues from `output` only after all incoming paths complete.

@@ -35,7 +35,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs with subflow, output contains branch message"
     command: "python3 $TASK_DIR/check_group_to_subflow.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

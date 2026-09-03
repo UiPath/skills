@@ -28,7 +28,7 @@ uip maestro flow registry list --local --output json
 uip maestro flow registry search "<agent name>" --output json
 ```
 
-Both of the latter give a `uipath.core.agent.<id>` node type. `registry get` on it returns `inputDefaults` holding `isConversational: true` and `conversationalAgentSettings`, which is how you confirm the agent really is a chat agent rather than an autonomous one. Discovery details live in [agent/impl.md](../agent/impl.md#discovery).
+Both of the latter give a `uipath.core.agent.<id>` node type. `registry get` on it returns `inputDefaults` holding `isConversational: true` and `conversationalAgentSettings`, which is how you confirm the agent really is a chat agent rather than an autonomous one. Discovery details live in [agent/impl.md](../agent/impl.md#discovery-and-registry-validation).
 
 **If an in-solution agent comes back autonomous**, the registry could not read its `agent.json` — it builds that node from the sibling project's file, and falls back to autonomous when the file is missing or malformed. Re-run with `--log-level debug` and it names the reason:
 

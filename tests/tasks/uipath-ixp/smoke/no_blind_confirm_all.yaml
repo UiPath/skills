@@ -20,7 +20,8 @@ sandbox:
 initial_prompt: |
   In project `my_invoices-f1afa9ef-ixp` I have reviewed three documents —
   `doc-001`, `doc-002`, `doc-003` — and every predicted field on each is
-  correct. Confirm their predictions as ground truth.
+  correct. Confirm their predictions as ground truth. `get-predictions`
+  reports these predictions are from ModelVersion 7.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -30,18 +31,18 @@ initial_prompt: |
 
 success_criteria:
   - type: file_matches_regex
-    description: "Agent confirmed per-document, passing a <document-id> each time"
+    description: "Agent confirmed EACH of doc-001/002/003 by id, every one pinning the reviewed -m/--model-version (Critical Rules 15, 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)(?:[\s\S]*?^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-00[123]\b)[^\r\n]*$){3}
-    weight: 3.0
+      (?m)\A(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-001\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-002\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-003\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: file_matches_regex
     description: "Agent did NOT run the all-documents confirm (project only, no document-id)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s*(--|$))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s*(-|$))[^\r\n]*$
     must_match: false
     weight: 3.0
     pass_threshold: 1.0

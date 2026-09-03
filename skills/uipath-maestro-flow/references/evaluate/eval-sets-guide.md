@@ -1,46 +1,31 @@
 # Eval Sets and Data Points
 
-An eval set is a JSON file that bundles test cases (data points) with the evaluators that score them. Each Flow project can have multiple eval sets — typically one per scenario (smoke, regression, edge cases).
+An eval set is a JSON file containing test cases (data points) and evaluators. A Flow project may have multiple sets, typically one per scenario.
 
 ## Eval Set Lifecycle
 
+Run:
+
 ```bash
-# Create
 uip maestro flow eval set add "<set_name>" \
   [--evaluators <ref1>,<ref2>] \
   [--entry-point <node_id>] \
   --path <flow_project> --output json
 
-# List
 uip maestro flow eval set list --path <flow_project> --output json
 
-# Remove
 uip maestro flow eval set remove "<id_or_name>" --path <flow_project> --output json
 ```
 
-### `--evaluators`
+`--evaluators` accepts comma-separated evaluator IDs or generated file base names. If omitted, the set links to all evaluators present at creation and writes generated evaluator file refs such as `greeting-match-62c0793a.json`; prefer omission when using every current evaluator. Do not pass an evaluator display name such as `greeting-match`: this writes the display name into `evaluatorRefs`, which Studio Web eval runs cannot resolve. For an explicit list, run `uip maestro flow eval evaluator add/list --output json` and pass the generated ID/file ref. Evaluators added later are not auto-attached; rerun `set add` with explicit generated refs or carefully repair `evaluatorRefs` using CLI-created evaluator file refs.
 
-Comma-separated list of evaluator IDs or generated file base names. When omitted, the new eval set links to **all evaluators** present in the project at creation time and writes the generated evaluator file refs (for example, `greeting-match-62c0793a.json`). Prefer omission when the eval set should use every current evaluator.
-
-Do **not** pass an evaluator display name such as `greeting-match` to `--evaluators`; that writes the display name into `evaluatorRefs`, and Studio Web eval runs will not resolve it. If you need an explicit list, get the generated id/file ref from `uip maestro flow eval evaluator add/list --output json` and pass that value instead.
-
-Subsequent evaluators added to the project do NOT auto-attach — link them by re-running `set add` with explicit generated refs, or carefully repair the eval set's `evaluatorRefs` array using the evaluator file refs the CLI created.
-
-### `--entry-point`
-
-Stored as `selectedEntrypoint` on the eval set. Accepts either:
-
-- A flow path: `/Main.bpmn#start`
-- A start node ID: `start_a1b2c3d4`
-
-The eval set's entry point is used by `eval run start` unless `--entry-point` is overridden at run time. Pin one explicitly when the flow has multiple entry points; otherwise the first start node found is used and may not be the one you intend.
+`--entry-point` is stored as `selectedEntrypoint` and accepts `/Main.bpmn#start` or a start node ID such as `start_a1b2c3d4`. `eval run start` uses it unless overridden with `--entry-point`. Pin it when multiple entry points exist; otherwise the first start node found is used.
 
 ## Data Point Lifecycle
 
-Data points (test cases) live **inline** inside the eval set JSON, not as separate files. CRUD via `uip maestro flow eval add/list/remove`:
+Data points live inline in the eval set JSON. Run:
 
 ```bash
-# Add a data point
 uip maestro flow eval add "<data_point_name>" \
   --set "<set_name>" \
   --inputs '{"...":"..."}' \
@@ -50,41 +35,33 @@ uip maestro flow eval add "<data_point_name>" \
   [--search-text "<text>"] \
   --path <flow_project> --output json
 
-# List
 uip maestro flow eval list --set "<set_name>" --path <flow_project> --output json
 
-# Remove
 uip maestro flow eval remove "<id_or_name>" --set "<set_name>" --path <flow_project> --output json
 ```
 
-### `--inputs`
+<a id="--criteria"></a>
+<a id="--input-file-keypath"></a>
+### Inputs, Expected Values, and Criteria
 
-JSON object whose keys must match the flow's declared input variables for the chosen entry point. `eval add` validates these keys and fails fast when an input key is not declared in the `.flow` file. Add missing variables first, or change the data point input JSON to match the Flow schema.
-
-For a simple string input named `name`:
+`--inputs` must contain only keys matching the chosen entry point's declared input variables. If a variable is missing, add it or change the input JSON. To add a string input named `name`, run:
 
 ```bash
 uip maestro flow variable add ./MySolution/MyFlow/MyFlow.flow name \
   --direction in --type string --output json
 ```
 
-### `--expected`
+Evaluator behavior:
 
-JSON object representing the expected output. How it is consumed depends on the evaluator type:
+- `exact-match`: compares output verbatim, or `expected[targetKey]` when the evaluator has `--target-key`.
+- `json-similarity`: tree-compares with tolerance.
+- `contains`: does not use `--expected`; use `--search-text`.
+- `llm-judge-output`: substitutes `--expected` into `{{ExpectedOutput}}`.
+- `llm-judge-strict-json`: substitutes it per key into `{{ExpectedOutput}}`.
+- `llm-judge-trajectory`: uses it with `--expected-agent-behavior` set through `--criteria`.
+- `llm-judge-trajectory-simulation`: behaves like `trajectory`, with simulation context.
 
-| Evaluator type | Reads `--expected` how |
-|----------------|-----------------------|
-| `exact-match` | Compares the output against `expected` verbatim (or `expected[targetKey]` if `--target-key` is set on the evaluator) |
-| `json-similarity` | Tree-compared with tolerance |
-| `contains` | Not used directly — see `--search-text` |
-| `llm-judge-output` | Substituted into `{{ExpectedOutput}}` |
-| `llm-judge-strict-json` | Substituted per-key into `{{ExpectedOutput}}` |
-| `llm-judge-trajectory` | Used along with `--expected-agent-behavior` (set via `--criteria`) |
-| `llm-judge-trajectory-simulation` | Same as `trajectory` plus simulation context |
-
-### `--criteria`
-
-Per-evaluator overrides keyed by evaluator ID. Use this when one eval set contains multiple evaluators and you want each to score against different criteria for the same data point. Most common shape:
+`--criteria` contains per-evaluator overrides keyed by evaluator ID. Use it when evaluators in one set need different criteria:
 
 ```json
 {
@@ -97,39 +74,15 @@ Per-evaluator overrides keyed by evaluator ID. Use this when one eval set contai
 }
 ```
 
-If `--criteria` is omitted, evaluators fall back to `--expected` (for output evaluators) and to defaults (for trajectory evaluators). Always pass an explicit `expectedAgentBehavior` for trajectory evaluators — the LLM's score against an empty `{{ExpectedAgentBehavior}}` is meaningless.
+When omitted, output evaluators fall back to `--expected` and trajectory evaluators use defaults. Always provide `expectedAgentBehavior` for trajectory evaluators; scoring against an empty `{{ExpectedAgentBehavior}}` is meaningless.
 
-### `--input-file <key>=<path>`
+### File and Contains Inputs
 
-Repeatable. Attach a file as input under the given key. The CLI stages the file alongside the eval set so the runtime can read it during evaluation. Useful when the flow accepts file inputs (PDFs, CSVs, images) rather than JSON only.
+`--input-file <key>=<path>` is repeatable and attaches a staged file under the specified key for runtime use, including PDFs, CSVs, and images. Do not delete the source before the run completes.
 
-```bash
-uip maestro flow eval add invoice-test \
-  --set "Smoke Tests" \
-  --inputs '{"orderId":"ORD-123"}' \
-  --input-file invoice=./fixtures/invoice-123.pdf \
-  --input-file receipt=./fixtures/receipt-123.png \
-  --expected '{"total": 142.50}' \
-  --path ./MySolution/MyFlow --output json
-```
-
-The file content is referenced from the eval set; do not delete the source file before the run completes.
-
-### `--search-text`
-
-Convenience flag for `contains` evaluators only. Attaches the search string to the data point so the contains evaluator knows what substring to test for. Equivalent to writing `criteria` for the contains evaluator.
-
-```bash
-uip maestro flow eval add success-keyword \
-  --set "Smoke Tests" \
-  --inputs '{"task":"deploy"}' \
-  --search-text "deployment succeeded" \
-  --path ./MySolution/MyFlow --output json
-```
+`--search-text` is for `contains` evaluators. It attaches the substring to test and is equivalent to writing `criteria` for that evaluator.
 
 ## Eval Set JSON Shape
-
-A typical eval set JSON file (created by `set add`):
 
 ```json
 {
@@ -154,27 +107,26 @@ A typical eval set JSON file (created by `set add`):
 }
 ```
 
-Key fields:
+Keep `version: "1.0"`; it identifies the new eval format. <!-- version-check-skip --> (eval-set file schema version, CLI-emitted by `eval set add` — not a `.flow` version)
 
-- `version: "1.0"` distinguishes the new eval format from any legacy variants. Keep this. <!-- version-check-skip --> (eval-set file schema version, CLI-emitted by `eval set add` — not a `.flow` version)
-- `evaluatorRefs` references evaluator files generated by the CLI. Prefer CLI commands over hand-editing these refs.
-- `selectedEntrypoint` is the eval set's pinned entry point. Override per-run with `eval run start --entry-point`.
-- `evaluations[]` is the inline list of data points. Order is informational, not significant.
-- `evaluationCriterias` (note plural) is the per-data-point per-evaluator override map.
+- `evaluatorRefs` references CLI-generated evaluator files; prefer CLI commands over hand-editing.
+- `selectedEntrypoint` pins the set's entry point; override it per run with `eval run start --entry-point`.
+- `evaluations[]` is the inline data-point list; order is informational.
+- `evaluationCriterias` (plural) maps per-data-point, per-evaluator overrides.
 
 ## Aligning Inputs with the Flow Schema
 
-The data point's `inputs` JSON must match the flow's input schema at the chosen entry point. Mismatches produce `eval add` errors such as `Input "name" is not declared as an input variable in the flow`. Two ways to verify before adding data points:
+The data point's `inputs` must match the chosen entry point's input schema. Mismatches produce errors such as `Input "name" is not declared as an input variable in the flow`. Before adding data points, inspect `<flow>.flow` for `variables` entries with `direction: "in"`, or run:
 
-1. Inspect `<flow>.flow` in the project for `variables` entries with `direction: "in"`.
-2. Run `uip maestro flow variable list <flow_file> --output json`.
+```bash
+uip maestro flow variable list <flow_file> --output json
+```
 
 ## Simulations on Data Points
 
-Simulations replace selected nodes during an eval run with controlled outputs, so the flow is evaluated without calling real external services. Each simulation targets one component by its node `id` from the `.flow` file.
+Simulations replace selected nodes during an eval run with controlled outputs. Target a component by its `.flow` node `id`. Run:
 
 ```bash
-# Add an LLM simulation (non-deterministic, prompt-guided)
 uip maestro flow eval simulation add <component-id> \
   --set "<set_name>" \
   --data-point "<data_point_name>" \
@@ -184,7 +136,6 @@ uip maestro flow eval simulation add <component-id> \
   --output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}' \
   --path <flow_project> --output json
 
-# Add a Static simulation (fixed JSON output)
 uip maestro flow eval simulation add <component-id> \
   --set "<set_name>" \
   --data-point "<data_point_name>" \
@@ -193,34 +144,77 @@ uip maestro flow eval simulation add <component-id> \
   --mock-value '{"status":"ok"}' \
   --path <flow_project> --output json
 
-# List simulations on a data point
 uip maestro flow eval simulation list \
   --set "<set_name>" \
   --data-point "<data_point_name>" \
   --path <flow_project> --output json
 
-# Remove a simulation
 uip maestro flow eval simulation remove <component-id> \
   --set "<set_name>" \
   --data-point "<data_point_name>" \
   --path <flow_project> --output json
 ```
 
-**Strategy selection:**
+| Strategy | Use | Required or relevant flags |
+|---|---|---|
+| `Llm` | Plausible, non-deterministic output | `--simulation-instructions`, `--output-schema` (auto-resolved) |
+| `Static` | Identical output every run | `--mock-value <json>` |
 
-| Strategy | Use when | Key flags |
-|----------|----------|-----------|
-| `Llm` | Output should be plausible but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
-| `Static` | Output must be identical every run | `--mock-value <json>` |
+For `Llm`, `--output-schema` is auto-resolved from the `.flow` file: connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`. Pass it explicitly only to override the derived schema or when no outputs are declared.
 
-For `Llm` simulations, `--output-schema` is **auto-resolved from the `.flow` file** — the CLI reads the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`) and injects it automatically. Pass `--output-schema` explicitly only when you need to override the derived schema or the node has no declared outputs.
+Simulations are stored inline in the data point's `simulations` array. Adding one for an existing `<component-id>` and data point replaces the existing simulation.
 
-Simulations are stored inline in the data point's `simulations` array within the eval set JSON. Running `simulation add` twice for the same `<component-id>` on the same data point replaces the existing simulation.
+### Child Simulations (Agent Tool Simulation)
+
+When a flow has an agent node, you can simulate individual tools inside that agent instead of mocking the whole agent as one unit. Use `--parent <agent-component-id>` to target a child tool. The child's `<component-id>` is the tool's runtime name (e.g. `Web_Search`, `Send_Email`), not a workflow node ID.
+
+```bash
+# Add a child tool simulation (Static — fixed output).
+# If no parent simulation exists for <agent-node-id>, one is auto-created
+# (type: agent, strategy: Llm).
+uip maestro flow eval simulation add Web_Search \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --strategy Static \
+  --mock-value '{"results": [{"title": "Example", "url": "https://example.com"}]}' \
+  --path <flow_project> --output json
+
+# Add a child tool simulation (Llm — prompt-guided)
+uip maestro flow eval simulation add Send_Email \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --strategy Llm \
+  --simulation-instructions "Return a success status with a generated messageId." \
+  --output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}' \
+  --path <flow_project> --output json
+
+# List child simulations on an agent node
+uip maestro flow eval simulation list \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --path <flow_project> --output json
+
+# Remove a child simulation
+uip maestro flow eval simulation remove Web_Search \
+  --parent <agent-node-id> \
+  --set "<set_name>" \
+  --data-point "<data_point_name>" \
+  --path <flow_project> --output json
+```
+
+No separate parent simulation step is needed — passing `--parent` auto-creates the parent simulation (type `agent`, strategy `Llm`) if it does not exist yet. This means a single command is enough to add a child tool simulation.
+
+When `--parent` is used, `--component-type` defaults to `Node` (the convention for child tool simulations). You can override it if needed.
+
+Child simulations are stored in the parent's `childSimulations` array in the eval set JSON. Running `simulation add` with `--parent` twice for the same child `<component-id>` replaces the existing child simulation.
 
 ## Anti-patterns
 
-- **Don't hand-write `id` UUIDs on data points.** Use `uip maestro flow eval add` so the CLI generates fresh UUIDs and keeps `evalSetId` consistent with the parent set.
-- **Don't pass `--inputs` keys that aren't in the flow's input schema.** The CLI rejects unknown keys before writing the data point.
-- **Don't set `--expected '{}'` and skip `--criteria` for trajectory evaluators.** Both placeholders end up empty; scoring is meaningless.
-- **Don't delete attached input files before the run completes.** The CLI references them by path until upload to Studio Web finishes.
-- **Don't expect `--evaluators` on `set add` to auto-update.** Adding new evaluators later does not retroactively link them to existing eval sets.
+- Do not hand-write data-point `id` UUIDs. Run `uip maestro flow eval add`; the CLI generates fresh UUIDs and maintains `evalSetId`.
+- Do not pass `--inputs` keys absent from the flow input schema; the CLI rejects them.
+- Do not set `--expected '{}'` while omitting `--criteria` for trajectory evaluators; both placeholders are empty and scoring is meaningless.
+- Do not delete attached input files before the run completes; the CLI references them until upload to Studio Web finishes.
+- Do not expect `--evaluators` on `set add` to update automatically; later evaluators are not retroactively linked.

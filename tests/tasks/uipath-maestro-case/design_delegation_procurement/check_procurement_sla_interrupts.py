@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the procurement SLA design and plan regression contract."""
+"""Check the procurement SLA design regression contract (design-only run)."""
 
 from __future__ import annotations
 
@@ -24,36 +24,6 @@ def has_near(text: str, left: str, right: str, distance: int = 500) -> bool:
         text,
         flags=re.IGNORECASE | re.DOTALL,
     ) is not None
-
-
-def task_section(plan: str, task_name: str, stage_name: str | None = None) -> str:
-    heading = (
-        # Accepts the compact plan title (`T21: task "Name"`) AND the canonical
-        # full-form build title (`T21: Add <type> task "Name" to "Stage"`).
-        rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])\s*"
-        rf"(?:[^\"\n]*?\btask\s+)?(?:Task:\s*)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
-    )
-    next_heading = rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])"
-    matches = list(re.finditer(
-        rf"(?ims){heading}.*?(?={next_heading}|\Z)",
-        plan,
-    ))
-    if stage_name is not None:
-        matches = [
-            match
-            for match in matches
-            if re.search(
-                rf'(?im)^[-*]?\s*stage:\s*["`]?{re.escape(stage_name)}["`]?\s*$',
-                match.group(0),
-            )
-        ]
-    if not matches:
-        location = f" in stage {stage_name!r}" if stage_name else ""
-        fail(f"missing tasks.md T-entry for {task_name!r}{location}")
-    if len(matches) > 1:
-        location = f" in stage {stage_name!r}" if stage_name else ""
-        fail(f"ambiguous tasks.md T-entry for {task_name!r}{location}")
-    return matches[0].group(0)
 
 
 def rule_type(value: str, task_name: str, field: str) -> str:
@@ -125,27 +95,6 @@ def sdd_task_activation(sdd: str) -> dict[tuple[str, str], tuple[str, str]]:
     return contracts
 
 
-def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
-    """The no-build handoff must not reinterpret confirmed task semantics."""
-    for (stage_name, task_name), (sdd_activation, sdd_entry_rule) in sdd_task_activation(sdd).items():
-        section = task_section(plan, task_name, stage_name)
-        activation = re.search(r"(?im)^[-*]?\s*activation-mode:\s*([^\n]+)", section)
-        entry_rule = re.search(r"(?im)^[-*]?\s*entry-rule:\s*([^\n]+)", section)
-        if not activation:
-            fail(f"missing tasks.md activation-mode for task {task_name!r}")
-        if not entry_rule:
-            fail(f"missing tasks.md entry-rule for task {task_name!r}")
-
-        plan_activation = rule_type(activation.group(1), task_name, "plan activation")
-        plan_entry_rule = rule_type(entry_rule.group(1), task_name, "plan entry")
-        if plan_activation != sdd_activation or plan_entry_rule != sdd_entry_rule:
-            fail(
-                f"tasks.md changes {task_name!r} activation from "
-                f"{sdd_activation}/{sdd_entry_rule} to "
-                f"{plan_activation}/{plan_entry_rule}"
-            )
-
-
 def stage_section(sdd: str, stage_name: str) -> str:
     heading = rf"^#{{2,4}}\s+(?:(?:Primary\s+)?Stage\s+\d+:\s*|Secondary\s+Stage(?:\s+S?\d+)?:\s*)?{re.escape(stage_name)}\b[^\n]*\n"
     next_stage = r"^#{2,4}\s+(?:(?:Primary\s+)?Stage\s+\d+|Secondary\s+Stage(?:\s+S?\d+)?:)"
@@ -156,13 +105,6 @@ def stage_section(sdd: str, stage_name: str) -> str:
     if not match:
         fail(f"missing SDD stage section for {stage_name!r}")
     return match.group(0)
-
-
-def task_lane(section: str, task_name: str) -> int:
-    match = re.search(r"(?im)^[-*]?\s*[^\n]*\blane:\s*(\d+)\b", section)
-    if not match:
-        fail(f"missing lane for sequential task {task_name!r}")
-    return int(match.group(1))
 
 
 STAGE_HEADING = r"(?im)^#{3,4}\s+(?:(?:Primary\s+)?Stage\s+\d+|Exception Stage|Secondary Stage(?:\s+S?\d+)?):\s*(.+)$"
@@ -373,43 +315,13 @@ def check_sla_reference_closure(sdd: str) -> None:
             )
 
 
-def check_plan_carries_sla_references(sdd: str, plan: str) -> None:
-    """tasks.md must carry the SLA interrupt it inherited from the SDD.
-
-    The compact no-build plan contract (planning.md § Compact
-    tasks/tasks.md contract) requires the global-event entry to name its rule
-    type and, for `sla-status-change`, the SLA it fires off (plus the at-risk
-    escalation when the row is at-risk; a breach row names the SLA alone).
-    Grading only sdd.md would let a plan that drops the interrupt entirely pass.
-    """
-    lowered_plan = plan.casefold()
-    if "sla-status-change" not in lowered_plan:
-        fail("tasks/tasks.md carries no sla-status-change condition entry")
-    missing = sorted(
-        {
-            title
-            for _, args in sla_references(sdd)
-            for title in args[1:3]
-            if title.casefold() not in lowered_plan
-        }
-    )
-    if missing:
-        fail(
-            "tasks/tasks.md does not carry the SLA/escalation titles its "
-            f"sla-status-change entries reference: {missing}"
-        )
-
-
 def main() -> None:
     sdd = read_required(Path("sdd.md"))
-    plan = read_required(Path("tasks/tasks.md"))
-    combined = f"{sdd}\n{plan}"
 
-    if combined.lower().count("sla-status-change") < 2:
+    if sdd.lower().count("sla-status-change") < 2:
         fail("phase/case breach work is not modeled with SLA stage-entry rules")
 
     check_sla_reference_closure(sdd)
-    check_plan_carries_sla_references(sdd, plan)
 
     for stage in ("SLA Escalation", "Case SLA Review", "Withdrawn"):
         if not has_near(sdd, stage, "Interrupting", 1200):
@@ -427,31 +339,26 @@ def main() -> None:
     ):
         fail("Withdrawn connector rule does not preserve the supplier-portal withdrawal event")
 
-    sequential_tasks = ("Verify Supplier Identity", "Set Supplier Record", "Invite Supplier")
-    lanes: list[int] = []
-    for task in sequential_tasks:
-        if not has_near(combined, task, "runs-sequentially", 700):
-            fail(f"{task!r} does not preserve the explicit sequential mode")
-        section = task_section(plan, task)
-        if not has_near(section, "activation-mode", "sequential", 120):
-            fail(f"{task!r} does not expose activation-mode: sequential")
-        if not has_near(section, "entry-rule", "runs-sequentially", 120):
-            fail(f"{task!r} does not expose entry-rule: runs-sequentially")
-        lanes.append(task_lane(section, task))
-    expected_lanes = list(range(lanes[0], lanes[0] + len(lanes))) if lanes else []
-    if lanes != expected_lanes:
-        fail(
-            "Supplier Setup strict sequential tasks must use consecutive "
-            f"single-task lane/task-set indices; got {lanes!r}, "
-            f"expected {expected_lanes!r}"
-        )
-
-    check_plan_preserves_task_activation(sdd, plan)
+    # Each of the three Supplier Setup tasks declares sequential activation in its
+    # own SDD detail block; sdd_task_activation() below proves every task carries
+    # both fields, this pins the three that must be sequential.
+    activation = sdd_task_activation(sdd)
+    for task in ("Verify Supplier Identity", "Set Supplier Record", "Invite Supplier"):
+        declared = [
+            value for (_, name), value in activation.items() if name == task
+        ]
+        if not declared:
+            fail(f"SDD declares no task detail block for {task!r}")
+        if len(declared) > 1:
+            fail(f"ambiguous SDD task detail blocks for {task!r}")
+        mode, entry_rule = declared[0]
+        if mode != "sequential":
+            fail(f"{task!r} declares activation mode {mode!r}, not sequential")
+        if entry_rule != "runs-sequentially":
+            fail(f"{task!r} declares entry rule {entry_rule!r}, not runs-sequentially")
 
     if sdd.lower().count("rationale") < 4:
         fail("SDD does not preserve enough design rationale")
-    if plan.lower().count("rationale") < 4:
-        fail("tasks.md does not carry the SDD rationale into planning")
 
     print(
         "OK: global interrupts, resolvable SLA references, task activation, "

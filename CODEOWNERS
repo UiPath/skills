@@ -31,12 +31,13 @@
 /tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 
 # Platform skill
-/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent
+/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime
 /skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 /skills/uipath-platform/references/data-fabric/ @UiPath/DatafabricCodingAgent
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
-/tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent
+/skills/uipath-platform/references/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
+/tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange @UiPath/DatafabricCodingAgent @biftime
 /tests/tasks/uipath-platform/orchestrator/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/resources/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
@@ -44,6 +45,7 @@
 /tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/data-fabric/ @UiPath/DatafabricCodingAgent
+/tests/tasks/uipath-platform/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
@@ -73,22 +75,23 @@
 # Guardrails in lowcode/conversational (more specific than /lowcode/conversational/ above — wins via last-match)
 /tests/tasks/uipath-agents/lowcode/conversational/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
-# Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
-/skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
-/tests/tasks/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
-/tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
+# Functions skill (JS/TS → @lucarachiteanu, Python → @vldcmp-uipath; shared surfaces → both)
+/skills/uipath-functions/ @lucarachiteanu @vldcmp-uipath
+/skills/uipath-functions/references/js/ @lucarachiteanu
+/skills/uipath-functions/references/python/ @vldcmp-uipath
+/tests/tasks/uipath-functions/ @lucarachiteanu @vldcmp-uipath
+/tests/tasks/uipath-functions/js_smoke/ @lucarachiteanu
+/tests/tasks/uipath-functions/js_http_author/ @lucarachiteanu
+/tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @vldcmp-uipath
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-# Case-design evals migrated from uipath-maestro-case (planner-sole-SDD-author) — case owners stay reviewers
-/tests/tasks/uipath-planner/_shared/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/case_design_interview/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/case_design_loan/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/case_finalize_draft/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/case_finalize_draft_loan/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/case_finalize_draft_picker/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/case_finalize_draft_reject/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-planner/ @RaduAna-Maria
+/tests/tasks/uipath-planner/ @RaduAna-Maria
+/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/skills/uipath-planner/scripts/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
@@ -118,7 +121,6 @@
 # Case Management skill
 /skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik
 /tests/tasks/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @abhiram-vad @roberts-cliff @StephenHanzlik
-/tests/tasks/uipath-maestro-case/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
@@ -191,8 +193,9 @@
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
-/skills/uipath-insights/ @suranabhavya @rliuup
-/tests/tasks/uipath-insights/ @suranabhavya @rliuup
+/skills/uipath-insights/ @UiPath/insights
+/tests/tasks/uipath-insights/ @UiPath/insights
+/tests/tasks/activation/uipath-insights.jsonl @UiPath/insights
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif

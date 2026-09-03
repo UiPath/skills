@@ -30,14 +30,16 @@ artifact can establish.
 
 ## Local authoring hard gates
 
-Use this section only when emit-only mode is disabled. Source and compiled
-checks are separate commands: use the source check as the fast no-output inner
-loop, compile to emit, then run the deep checker on the artifact.
+Use this section only when emit-only mode is disabled. Use the source check as
+the fast no-output inner loop (with a library and a `bindings.json` beside the
+source it reports every connector-input and binding refusal `compile` would
+raise), compile to emit, then run the product's static check on the artifact.
+There is no compiled-artifact `check`; `validate` is that rung.
 
 ```bash
 uip maestro flow check <Name>.flow.ts --source
 uip maestro flow compile <Name> -o <Name>.flow
-uip maestro flow check <Name>.flow --compiled
+uip maestro flow validate <Name>.flow --output json
 ```
 
 Warnings require deliberate review; whether one blocks a release comes from the
@@ -52,14 +54,17 @@ source at the workspace root beside `node_modules/`, and create the nested
 scaffold once:
 
 ```bash
-uip solution init <Name>Sol
-( cd <Name>Sol && uip maestro flow init <Name> )
+uip solution init <Solution>
+( cd <Solution> && uip maestro flow init <Name> )
 ```
 
-The result has three related names: `<Name>.flow.ts`, the `<Name>` project
-directory, and `<Name>.flow` inside that project. Keep them aligned for this
-scaffold so each command addresses the intended project; `compile -o` remains
-the authority over where the emitted file is written.
+`<Solution>` and `<Name>` are the request's own names, used verbatim: a request
+that gives one name for both ("inside a solution of the same name") uses it for
+both, and a request that names only the Flow uses `<Name>` for both. The result
+has three related names: `<Name>.flow.ts`, the `<Name>` project directory, and
+`<Name>.flow` inside that project. Keep them aligned for this scaffold so each
+command addresses the intended project; `compile -o` remains the authority over
+where the emitted file is written.
 
 ## Eval/product-CLI packaging: emit-only
 
@@ -77,17 +82,17 @@ refresh and debug only when the stated acceptance bar requires product-runtime
 behavior evidence:
 
 ```bash
-uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
-uip maestro flow validate <Name>Sol/<Name>/<Name>.flow --output json
+uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
+uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
-( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && uip maestro flow debug <Name> --log-level error \
+( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
+( cd <Solution> && uip maestro flow debug <Name> --log-level error \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
   --output json )
 ```
 
 This loop has exactly one emitted artifact:
-`<Name>Sol/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
+`<Solution>/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
 validators and evidence collectors cannot choose safely between duplicates.
 Re-run the whole sequence after the final source or binding edit.
 
@@ -222,8 +227,8 @@ For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && uip maestro flow debug <Name> --log-level error \
+( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
+( cd <Solution> && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
   --output json )

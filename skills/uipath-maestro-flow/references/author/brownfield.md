@@ -1,94 +1,90 @@
 # Brownfield — Edit an Existing Flow
 
-Recipe-driven journey for targeted changes to an existing `.flow` file. Author terminates at `validate` + `format`. To publish, run, or debug after edits, see [operate/CAPABILITY.md](../operate/CAPABILITY.md).
+Recipe-driven journey for targeted changes to an existing `.flow` file. Authoring ends at `validate` + `format`. For publishing, running, or debugging, see [operate/CAPABILITY.md](../operate/CAPABILITY.md).
 
-> **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
+> **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not exist, see [greenfield.md](greenfield.md).
 
 ## Converting an existing project to Maestro
 
-A frequent request: *"Can my existing project — e.g. a low-code agent plus a coded (C#) RPA rule engine — become a Maestro flow, and what would the structure look like?"*
+There is no automatic project-to-flow conversion. Re-host only orchestration:
 
-There is **no automatic "turn this project into a flow" conversion, and you shouldn't want one.** You don't rewrite the project into a flow — you **re-host the orchestration and keep the parts**:
+1. Keep coded/RPA components and agents as resource nodes; do not rewrite them into Maestro. Use `uipath.core.rpa-workflow.*` and `uipath.core.agent.*`; see the relevant plugin's `planning.md`.
+2. Lift ordering, waits, and branches into explicit trigger → steps → decisions → end topology.
+3. Make sleeps, polling, and "check again later" first-class Maestro wait, delay, HITL, or `create-and-wait` nodes.
+4. Publish executors or keep them in-solution, then resolve them with `registry list --local` for in-solution projects.
 
-1. **Keep the executors as-is.** Existing coded/RPA components and any existing agent stay their own artifacts. They are **not** rewritten into Maestro — they become **resource nodes** the flow calls (`uipath.core.rpa-workflow.*`, `uipath.core.agent.*`). See the relevant plugin's `planning.md`.
-2. **Lift only the orchestration into Maestro.** The control flow currently implicit in the rule engine (what runs first, what waits, what branches) becomes the explicit flow topology — trigger → steps → decisions → end.
-3. **Make every wait a first-class node.** Anything the old code did with sleeps, polling loops, or "check again later" becomes a Maestro wait/delay/HITL/`create-and-wait` node — that visibility is the whole reason to move.
-4. **Publish (or keep in-solution), then reference.** Each executor is published or kept as a sibling project so the flow's registry resolves it (`registry list --local` for in-solution).
-
-Resulting structure: a **thin flow** that is mostly trigger + waits + branches, delegating the real work to the existing RPA and agent artifacts. To author it, treat the flow as greenfield ([greenfield.md](greenfield.md)) with those artifacts discovered as resource nodes during [planning-arch.md](planning-arch.md).
-
-> **Migrate when** the project has long waits, human approvals, parallel branches, or needs per-case visibility. **Don't migrate** a short, fully-automated, fire-once script — Maestro adds orchestration overhead it won't repay. Apply the [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home) gate first.
+The result should be a thin flow delegating work to existing artifacts. Author it as greenfield ([greenfield.md](greenfield.md)), discovering artifacts during [planning-arch.md](planning-arch.md). Apply [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home): migrate for long waits, human approvals, parallel branches, or per-case visibility; do not migrate short, fully automated, fire-once scripts when orchestration overhead is not worthwhile.
 
 ## Read this first
 
-> **Before each node you add or modify, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only — use `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`.** The same risk applies when *adding* a connector node to an existing flow as when building a new one.
+Before each node added or modified, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only: run `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`; this also applies when adding a connector node to an existing flow.
 
-**[editing-operations.md](editing-operations.md)** — `Edit` is the default tool for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes use the relevant plugin's `impl.md` configuration workflow (`node add` + `node configure`). Read the strategy selection matrix before any modification.
+Read [editing-operations.md](editing-operations.md) and the strategy selection matrix before modifying. Use `Edit` for in-place user-owned changes; use `Write` only when ≥70% of nodes change. For CLI-owned nodes, follow the plugin's `impl.md` configuration workflow (`node add` + `node configure`).
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user (per the dropdown question rule in [SKILL.md](../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+**Self-check before every mutation:** name the tool. If it is not `Edit`, `Write`, or `uip maestro flow ...`, STOP and ask the user under the dropdown question rule in [SKILL.md](../../SKILL.md). Treat `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs as last resorts requiring explicit user approval after surfacing trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 ## Common edits
 
-For each edit, run `uip maestro flow validate` once after **all** edits are complete, then `uip maestro flow format`. Do not validate after each individual change — intermediate states are expected to be invalid.
+Make all edits first. Then run `uip maestro flow validate` once, followed by `uip maestro flow format`; do not validate intermediate invalid states.
 
-When a single edit touches more than one top-level array (e.g. insert-a-node hits `nodes`, `edges`, and `definitions`), follow the [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits) — anchor each Edit on its own array's opening key, never on top-level key order.
+For edits touching multiple top-level arrays, follow [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits): anchor each Edit on its array's opening key, never on top-level key order.
 
-| Edit | Description | Guide |
-|------|-------------|-------|
-| **Change a script body or node inputs** | Use `Edit` to modify the node's `inputs` in-place. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs) |
-| **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [Edit/Write: Insert a node](editing-operations-json.md#insert-a-node-between-two-existing-nodes) |
-| **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [Edit/Write: Insert a decision branch](editing-operations-json.md#insert-a-decision-branch) |
-| **Remove a node** | Remove the node, sweep edges/definitions/variables, reconnect upstream to downstream. | [Edit/Write: Remove a node](editing-operations-json.md#remove-a-node-and-reconnect) |
-| **Remove an edge** | Find the edge ID, remove it. | [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge) |
-| **Add a workflow variable** | Use `Edit` to modify `variables.globals` in the `.flow` file (Edit-only). For `out` variables, map on every End node. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md). | [Edit/Write: Add a workflow variable](editing-operations-json.md#add-a-workflow-variable) |
-| **Update a state variable** | Use `Edit` to add a `variableUpdates` entry for `inout` variables (Edit-only). See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md). | [Edit/Write: Add a variable update](editing-operations-json.md#add-a-variable-update) |
-| **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (`Edit`-only, or `Write` if scaffolding from template). | [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) + [subflow/impl.md](plugins/subflow/impl.md) |
-| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [Edit/Write: Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) + [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
-| **Add a connector trigger** | Remove manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
-| **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via `Edit`, wire edges. | Relevant plugin's `impl.md` + [editing-operations-json.md](editing-operations-json.md) |
-| **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, direct `.flow` JSON structure, and validation. |
-| **Add chat nodes** | Turn a flow into a text conversation: a chat agent looping with wait-for-message, started by `core.trigger.conversation`. The agent can be inline, in-solution, or published — settle that first. The trigger is what marks the package conversational. | [conversational-agent/planning.md](plugins/conversational-agent/planning.md) for the loop and when chat beats voice, [conversational-agent/impl.md](plugins/conversational-agent/impl.md) for node JSON and the `conversationalAgentSettings` wiring. |
-| **Add voice nodes** | Turn a flow into a phone conversation: a `uipath.agent.voice` inline conversational agent wired to a live call, plus the trigger, create-call, and end-call nodes. Binding an inbound number happens at deploy time, not in the `.flow`. | [inline-voice-agent/planning.md](plugins/inline-voice-agent/planning.md) for the two topologies and trunk requirements, [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) for node JSON, `callContext` wiring, and number binding. |
-| **Add a HITL QuickForm node** | Insert a human approval/review/enrichment checkpoint. Wire the `completed` port after adding. | [Edit/Write: Add a node](editing-operations-json.md) + [hitl/impl.md](plugins/hitl/impl.md) |
+| Edit | Required operation and guide |
+|---|---|
+| **Change a script body or node inputs** | Use `Edit` on `inputs`; do not delete/re-add because node IDs and `$vars` expressions must remain stable. Script nodes must return an object (`return { key: value }`). See [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
+| **Add a node between two existing nodes** | Remove the connecting edge; add the node; wire upstream → new → downstream. See [Edit/Write: Insert a node](editing-operations-json.md#insert-a-node-between-two-existing-nodes). |
+| **Add a branch (decision node)** | Remove an edge; add the decision; wire true/false branches. See [Edit/Write: Insert a decision branch](editing-operations-json.md#insert-a-decision-branch). |
+| **Remove a node** | Remove the node; sweep edges/definitions/variables; reconnect upstream to downstream. See [Edit/Write: Remove a node](editing-operations-json.md#remove-a-node-and-reconnect). |
+| **Remove an edge** | Find and remove its edge ID. See [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge). |
+| **Add a workflow variable** | Use `Edit` on `variables.globals` (Edit-only). For `out` variables, map every End node. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) and [Edit/Write: Add a workflow variable](editing-operations-json.md#add-a-workflow-variable). |
+| **Update a state variable** | Use `Edit` to add a `variableUpdates` entry for `inout` variables (Edit-only). See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) and [Edit/Write: Add a variable update](editing-operations-json.md#add-a-variable-update). |
+| **Create a subflow** | Add a `core.subflow` parent and `subflows.{nodeId}` with nested nodes, edges, and variables (`Edit`-only, or `Write` for template scaffolding). See [Edit/Write: Create a subflow](editing-operations-json.md#create-a-subflow) and [subflow/impl.md](plugins/subflow/impl.md). |
+| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. See [Edit/Write: Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) and [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md). |
+| **Add a connector trigger** | Remove the manual trigger; add and configure the connector trigger with a connection. Use [CLI: Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) and [connector-trigger/impl.md](plugins/connector-trigger/impl.md). |
+| **Add a resource node** | Discover through the registry (`--local` for in-solution, or tenant registry for published); add with `Edit`; wire edges. Use the relevant plugin's `impl.md` and [editing-operations-json.md](editing-operations-json.md). |
+| **Add an inline agent node** | Embed `uipath.agent.autonomous` with an inline agent definition in the flow project. See [inline-agent/planning.md](plugins/inline-agent/planning.md) for inline versus published selection and [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, JSON, and validation. |
+| **Add chat nodes** | Turn a flow into a text conversation: a chat agent looping with wait-for-message, started by `core.trigger.conversation` — the trigger is what marks the package conversational. Settle inline versus in-solution versus published first. See [conversational-agent/planning.md](plugins/conversational-agent/planning.md) for the rules and when chat beats voice, and [conversational-agent/impl.md](plugins/conversational-agent/impl.md) for node JSON and the `conversationalAgentSettings` wiring. |
+| **Add voice nodes** | Turn a flow into a phone conversation: a `uipath.agent.voice` inline conversational agent wired to a live call, plus the trigger, create-call, and end-call nodes. Binding an inbound number happens at deploy time, not in the `.flow`. See [inline-voice-agent/planning.md](plugins/inline-voice-agent/planning.md) for the two topologies and trunk requirements, and [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) for node JSON, `callContext` wiring, and number binding. |
+| **Add a HITL QuickForm node** | Insert the human approval/review/enrichment checkpoint and wire its `completed` port. See [Edit/Write: Add a node](editing-operations-json.md) and [hitl/impl.md](plugins/hitl/impl.md). |
 
-The table intentionally routes OOTB structural CRUD to Edit/Write only. There is no CLI opt-in path for non-carve-out flow graph edits.
+OOTB structural CRUD uses Edit/Write only; there is no CLI opt-in path for other flow-graph edits.
 
 ## After edits
 
-1. **Validate** — `uip maestro flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
-2. **Format** — `uip maestro flow format <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](CAPABILITY.md)) — without format, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
+1. Run `uip maestro flow validate <ProjectName>.flow --output json`. Fix errors and re-validate.
+2. Run `uip maestro flow format <ProjectName>.flow --output json`. Run it before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](CAPABILITY.md)); without it, stale or hand-edited `layout` data renders as misshapen rectangles in Studio Web.
 
 ## "Refusing to serialize a vX workflow" — migrate first
 
-If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v<current> file format`, the `.flow` file predates the current schema version. Recover with one command:
+If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v<current> file format`, run:
 
 ```bash
 uip maestro flow migrate <ProjectName>.flow --output json
 ```
 
-`migrate` is lossless — it walks the per-version migration chain (e.g. `=js:` expression strings become rich expression objects) and bumps the file to the current version. Re-run `flow format` and `flow validate` afterward; both should now pass. **A passing `flow validate` does NOT imply `format`/`debug`/`pack` will pass** — `validate` never re-serializes the workflow, so it skips the version guard those commands enforce. When you see the refusal, always migrate; never assume the edit was wrong.
+`migrate` is lossless, walks the per-version migration chain (for example, `=js:` expression strings become rich expression objects), and bumps the file to the current version. Then run `flow format` and `flow validate`; both should pass. `flow validate` does not re-serialize and therefore does not check the version guard enforced by `format`/`debug`/`pack`. When this refusal appears, always migrate; do not assume the edit was wrong.
 
 ## Completion Output
 
-When you finish editing the flow, report to the user:
+When editing finishes, report:
 
-1. **File path** of the `.flow` file edited
-2. **What changed** — summary of nodes/edges added, removed, or modified
-3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
+1. **File path** of the edited `.flow` file
+2. **What changed** — nodes/edges added, removed, or modified
+3. **Validation status** — whether `flow validate` passes, or remaining unresolvable errors
 4. **Format status** — confirm `flow format` was run
-5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced
-6. **Missing connections** — any connector nodes that need connections the user must create
-7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../SKILL.md))
+5. **Mock placeholders** — every `core.logic.mock` node needing replacement
+6. **Missing connections** — connector nodes requiring connections the user must create
+7. **What's next** — ask the user using the dropdown below (see the dropdown question rule in [SKILL.md](../../SKILL.md))
 
 ### What's next dropdown
 
-Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../operate/CAPABILITY.md) for the command sequence.
+Authoring ends here. For any selected option, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow; do not run operate commands from this document.
 
 | Option | What it does |
-| --- | --- |
+|---|---|
 | **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
-| **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first — debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
-| **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
+| **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first because debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
+| **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen; see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it. |
 
-Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+Do not run any option without explicit user selection.

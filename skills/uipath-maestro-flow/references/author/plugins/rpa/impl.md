@@ -1,6 +1,6 @@
 # RPA Node — Implementation
 
-RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
+RPA nodes invoke RPA processes using `uipath.core.rpa-workflow.{key}`.
 
 ## Discovery
 
@@ -11,18 +11,16 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
-Search the **node-type token** `uipath.core.rpa-workflow` — this lists every published RPA workflow — then pick the one you need by its `resourceKey` / folder path and description. Do **not** search by the process name from the request: `registry search` matches the Orchestrator **release name**, which is frequently unrelated to the name the user uses or the folder the process lives in. The requested name often appears only in the folder path, so a keyword search for it returns nothing even though the process exists. Match on the folder path inside `resourceKey`, not on a name keyword.
+Run `registry pull --force` first. Search the **node-type token** `uipath.core.rpa-workflow`, not the process name. Select the published workflow by `resourceKey` / folder path and description. `registry search` matches the Orchestrator **release name**, often unrelated to the process name or folder; match the folder path inside `resourceKey`, not a name keyword.
 
-**An empty result is not authoritative — do not conclude the process is unpublished.** Before treating "not found" as real, confirm all three hold: (a) you searched the `uipath.core.rpa-workflow` token, not a name keyword; (b) `registry pull --force` ran first; (c) you scanned the returned folder paths and descriptions for the target, not just the display names. Only then is the process genuinely absent. Jumping to the local-scaffold fallback on a name-search miss builds a flow that validates but has nothing real to run.
+Treat an empty result as non-authoritative until you confirm that you searched the node-type token, refreshed the registry, and scanned returned folder paths and descriptions rather than only display names. Do not use the local-scaffold fallback after only a name-search miss.
 
-**In-solution (local, no login required):**
+**In-solution (local, no login required):** Run these inside the flow project directory to discover sibling RPA projects in the same `.uipx` solution:
 
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
-
-Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.
 
 ## Registry Validation
 
@@ -35,21 +33,19 @@ Confirm:
 
 - Input port: `input`
 - Output port: `output`
-- `model.serviceType` — `Orchestrator.StartJob`
-- `model.bindings.resourceSubType` — `Process`
-- `model.bindings.resourceKey` — the `<FolderPath>.<ResourceName>` string used to scope binding resolution
-- `inputDefinition` — may contain typed input fields (check `properties`)
-- `outputDefinition` — always `error` (`source: "=Error"`); processes with output arguments also declare `output` (`source: "=this"`). Either way do not author `output` on the instance — the converter injects `=this`, and `$vars.{nodeId}.output` carries the process return value
+- `model.serviceType`: `Orchestrator.StartJob`
+- `model.bindings.resourceSubType`: `Process`
+- `model.bindings.resourceKey`: the `<FolderPath>.<ResourceName>` string used to scope binding resolution
+- `inputDefinition`: may contain typed input fields; check `properties`
+- `outputDefinition`: always `error` (`source: "=Error"`); processes with output arguments also declare `output` (`source: "=this"`). Do not author `output` on the instance: the converter injects `=this`, and `$vars.{nodeId}.output` carries the process return value.
 
-## Adding / Editing
+## Adding and Editing
 
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for node-specific `inputs`.
 
-## JSON Structure
+### Node instance (`nodes[]`)
 
-### Node instance (inside `nodes[]`)
-
-The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and binding/context templates come from the definition in `definitions[]`.
+The instance carries per-instance data (`inputs`, `outputs`, `display`); BPMN type, serviceType, version, and binding/context templates come from `definitions[]`.
 
 ```json
 {
@@ -72,11 +68,11 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
+Declare `error` only; `output` is derived. If authored, the converter copies its `source` verbatim, so values such as `"=result.response"` resolve to null at runtime even when `flow validate` passes. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
 
-### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+### Top-level `bindings[]`
 
-Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same RPA process — do NOT create duplicates.
+Add one entry per `(resourceKey, propertyAttribute)` pair as a sibling of `nodes`/`edges`/`definitions`. Share entries across instances referencing the same RPA process; do not duplicate them.
 
 ```json
 "bindings": [
@@ -103,13 +99,13 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+For resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ## If the RPA Process Is Genuinely Not Published
 
-Reach this path only after the empty-result confirmation in [Discovery](#discovery) — a brand-name search miss does not qualify. When the process truly does not exist on the tenant and no sibling RPA project provides it, tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip maestro flow registry list --local --output json` and wire it directly — no publish required.
+Use this path only after completing the empty-result confirmation in [Discovery](#discovery) and only when no sibling RPA project provides the process. Tell the user to create the RPA project inside the same solution using `uipath-rpa`. After it exists as a sibling in the `.uipx` solution, run `uip maestro flow registry list --local --output json` and wire it directly; publishing is not required.
 
-A freshly scaffolded RPA project has no implementation, so the wired flow will pass `flow validate` but fault the moment it is debugged or run (`Robot.JobUnexpectedExitCode`) until `uipath-rpa` fills in the actual workflow. A validated flow is not a working one.
+A freshly scaffolded RPA project has no implementation. The wired flow may pass `flow validate` but fault during debug or execution (`Robot.JobUnexpectedExitCode`) until `uipath-rpa` fills in the workflow. A validated flow is not necessarily a working one.
 
 ## Debug
 

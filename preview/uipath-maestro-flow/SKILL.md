@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ d9cd1b2. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 9856764. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -26,12 +26,14 @@ To author a Flow, create a root-level `<Name>.flow.ts` and import the package di
 
 **The source lives at the root; the compiled artifact does not.** Scaffold the project
 before authoring, then emit into it — `compile -o` is the authority over where the
-emitted file is written:
+emitted file is written. `<Solution>` and `<Name>` are the request's own names, used
+verbatim: a request that gives one name for both ("inside a solution of the same
+name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
 
 ```bash
-uip solution init <Name>Sol
-( cd <Name>Sol && uip maestro flow init <Name> )
-uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
+uip solution init <Solution>
+( cd <Solution> && uip maestro flow init <Name> )
+uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 ```
 
 Exactly one emitted `<Name>.flow` may exist, at that path. Never leave a second copy
@@ -51,9 +53,10 @@ Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor
 If the request mentions `loadByDefault`, dependent dropdowns, preselected
 reference values, `customFieldsRequestDetails`, or other connection-specific
 fields, the static library descriptor is not sufficient. Before authoring the
-connector call, resolve the real parent values, run `uip maestro registry
-prepare <connector-key> <action> --connection-id <id>` with every required
+connector call, resolve the real parent values, run
+`npx flow-sdk registry prepare <connector-key> <action>` with every required
 `-f NAME=VALUE`, and import the generated `connectors-local/<key>.ts` descriptor.
+It finds the connection itself and writes `bindings.json`.
 
 Do not substitute manual `resources run list` lookups plus a static
 `connectors/<key>.ts` import: the lookups choose values but do not create the
@@ -295,6 +298,7 @@ export default flow('mail').trigger(onEvent(mail))
 ```
 
 Resolve scope names and ids from the bound connection; preserve filter casing.
+A generic event (`record-created`/`record-updated`) needs `object: '<Entity>'` — never put it in `where`.
 Use the reference's completion contract before debugging: an injected start
 payload can exercise downstream wiring, but it is not a subscription witness.
 
@@ -629,6 +633,14 @@ Signature: `rawNode({ nodeType, version, manifest, inputs?, outputs? })`.
 wrote. Prefer a typed factory when one exists: it carries the family's checks,
 defaults and output contract. `decompile` emits this for a node type it cannot
 name, so an unknown node keeps its type and version through a round trip.
+
+**Never for a connector.** `check` and `compile` refuse a `uipath.connector.*`
+node type here: a raw node keeps its inputs verbatim, so the emitted node has no
+`inputs.detail` and no connection binding — `validate` only warns and the run
+never reaches Integration Service. When `compile` refuses a connector input as
+unknown, the answer is `npx flow-sdk registry prepare <key> <action>` (see
+[connector-params.md](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop)),
+not `rawNode`.
 
 **Reference: [`references/placeholder.md`](references/placeholder.md#unknown-node-types)**
 
