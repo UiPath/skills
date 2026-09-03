@@ -157,10 +157,10 @@ uip maestro flow eval simulation remove <component-id> \
 
 | Strategy | Use | Required or relevant flags |
 |---|---|---|
-| `Llm` | Plausible, non-deterministic output | `--simulation-instructions`, `--output-schema` (auto-resolved) |
+| `Llm` | Plausible, non-deterministic output | `--simulation-instructions`, `--output-schema` (auto-resolved for all agent types) |
 | `Static` | Identical output every run | `--mock-value <json>` |
 
-For `Llm`, `--output-schema` is auto-resolved from the `.flow` file: connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`. Pass it explicitly only to override the derived schema or when no outputs are declared.
+For `Llm`, `--output-schema` is auto-resolved when omitted — for both top-level and child (`--parent`) simulations. Top-level reads the `.flow` node outputs; child simulations resolve from the `.flow` edges (inline agents), `agent.json` resources (same-solution agents), or the platform API (published agents, requires `uip login`). Pass it explicitly only to override.
 
 Simulations are stored inline in the data point's `simulations` array. Adding one for an existing `<component-id>` and data point replaces the existing simulation.
 
@@ -180,14 +180,15 @@ uip maestro flow eval simulation add Web_Search \
   --mock-value '{"results": [{"title": "Example", "url": "https://example.com"}]}' \
   --path <flow_project> --output json
 
-# Add a child tool simulation (Llm — prompt-guided)
+# Add a child tool simulation (Llm — prompt-guided).
+# --output-schema is auto-resolved from the agent's tool definitions
+# (inline, same-solution, or published agents).
 uip maestro flow eval simulation add Send_Email \
   --parent <agent-node-id> \
   --set "<set_name>" \
   --data-point "<data_point_name>" \
   --strategy Llm \
   --simulation-instructions "Return a success status with a generated messageId." \
-  --output-schema '{"type":"object","properties":{"status":{"type":"string"},"messageId":{"type":"string"}}}' \
   --path <flow_project> --output json
 
 # List child simulations on an agent node
@@ -208,6 +209,13 @@ uip maestro flow eval simulation remove Web_Search \
 No separate parent simulation step is needed — passing `--parent` auto-creates the parent simulation (type `agent`, strategy `Llm`) if it does not exist yet. This means a single command is enough to add a child tool simulation.
 
 When `--parent` is used, `--component-type` defaults to `Node` (the convention for child tool simulations). You can override it if needed.
+
+`--output-schema` is auto-resolved for child simulations on all agent types:
+- **Inline canvas agents** (`uipath.agent.*`): resolved from the child tool node's outputs in the `.flow` file.
+- **Same-solution agents** (with `inputs.source`): resolved from the inline agent's `agent.json` resources.
+- **Published agents** (`uipath.core.agent.*`): resolved via the platform API (`simulatableComponents`). Requires `uip login`.
+
+For `Static` strategy, the CLI also validates that `--mock-value` keys match the resolved schema properties, catching shape mismatches before the eval run.
 
 Child simulations are stored in the parent's `childSimulations` array in the eval set JSON. Running `simulation add` with `--parent` twice for the same child `<component-id>` replaces the existing child simulation.
 
