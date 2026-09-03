@@ -169,50 +169,47 @@ Omitting `bodyParameters`, `queryParameters`, or `pathParameters` removes prior 
 
 #### Step 6a — FilterBuilder parameters
 
-List the operation's FilterBuilder parameters before you author anything:
+A filter is authored as a tree under the `filter` key of `--detail`. The CLI compiles the tree; you never write the query text. Five steps:
 
-```bash
-uip maestro flow registry get <node-type> --output json \
-  --output-filter "Node.connectorMethodInfo.parameters[?design.component=='FilterBuilder'].{name:name,type:type}"
-```
+1. **Find the filter parameter and the path slots** — read them from the registry, never guess:
 
-FilterBuilder parameters are not limited to list operations. Use the `name` this returns (`where`, `q`, `queryExpression`, or another connector-specific name) — never a guessed one. Data Service `query-entity-records` returns `[{"name":"queryExpression","type":"query"}]`.
+   ```bash
+   uip maestro flow registry get <node-type> --output json \
+     --output-filter "Node.{filterParams:connectorMethodInfo.parameters[?design.component=='FilterBuilder'].name,path:connectorMethodInfo.path,pathParams:connectorMethodInfo.parameters[?type=='path'].name}"
+   ```
 
-Every name returned is configured through the `filter` key of `--detail`. The value of `filter` IS the tree — `groupOperator`, `filters[]`, `groups[]` at its top level. You never name the parameter: the CLI applies the tree to the FilterBuilder parameter it discovered (the first one, if the operation has several). Do not nest the tree under the parameter name (`"filter": {"queryExpression": {...}}`): the CLI targets the FilterBuilder parameter it discovered, reads no `filters` at the top level, and compiles an EMPTY query with no error, so the flow fetches the whole entity. Never pass a CEQL string under `queryParameters.<name>`; the CLI rejects it or leaves Studio Web's tree undefined. From the tree the CLI writes runtime `queryParameters.<name>` and design-time `configuration.essentialConfiguration.savedFilterTrees.<name>`. Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+   Data Service `query-entity-records` returns `filterParams: ["queryExpression"]`, `path: "/v2/{entityName}/qer"`, `pathParams: ["entityName"]`. FilterBuilder parameters are not limited to list operations. If `filterParams` is empty, pass no `filter` and filter downstream.
 
-Read path slots from the same registry output; never hand-type `endpoint`:
+2. **Read exact field names** — `uip df entities list --output json`, then `uip df entities get <ENTITY_ID> --output json`. Names are case-sensitive; a leaf whose `id` matches no field is dropped without an error.
 
-```bash
-uip maestro flow registry get <node-type> --output json \
-  --output-filter "Node.{path:connectorMethodInfo.path,pathParams:connectorMethodInfo.parameters[?type=='path'].name}"
-```
+3. **Write the `--detail` JSON to a file** with a quoted heredoc. The value of `filter` IS the tree — `groupOperator`, `filters[]`, `groups[]` at its top level. Do not nest it under the parameter name; the CLI applies the tree to the FilterBuilder parameter it found in step 1 (the first one, if there are several). A runtime value is a leaf operand with `"isLiteral": false`:
 
-Data Service `query-entity-records` returns path `/v2/{entityName}/qer` with `entityName` as a path parameter, so set `pathParameters.entityName` in the same configure call.
+   ```json
+   {
+     "connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>",
+     "pathParameters": { "entityName": "<ENTITY_NAME>" },
+     "filter": {
+       "groupOperator": 0,
+       "filters": [
+         { "id": "accountNumber", "operator": "Equals",
+           "value": { "value": "=js:$vars.<node>.output.<field>", "isLiteral": false } }
+       ],
+       "groups": []
+     }
+   }
+   ```
 
-A runtime value goes in the tree, never in a hand-written string. Give the leaf operand a dynamic value with `"isLiteral": false`; the CLI compiles it to a `{var_<hash>}` placeholder plus a `filterVariables` entry. Full `--detail` shape (write it to a file with a quoted heredoc):
+   Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
-```json
-{
-  "connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>",
-  "pathParameters": { "entityName": "<ENTITY_NAME>" },
-  "filter": {
-    "groupOperator": 0,
-    "filters": [
-      { "id": "accountNumber", "operator": "Equals",
-        "value": { "value": "=js:$vars.<node>.output.<field>", "isLiteral": false } }
-    ],
-    "groups": []
-  }
-}
-```
+4. **Configure** — `uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat /tmp/detail.json)" --output json` (Step 6b).
 
-After configure, confirm the compile: `queryParameters.<name>` holds `accountNumber = '{var_<hash>}'` and `filterVariables` has that `var_<hash>` key. An empty `queryParameters.<name>` means the tree was mis-shaped.
+5. **Verify the compile** — read the node back. `queryParameters.<name>` must hold the compiled query with a placeholder, `accountNumber = '{var_<hash>}'`, and `filterVariables` must have that `var_<hash>` key. The CLI also writes `configuration.essentialConfiguration.savedFilterTrees.<name>`. An **empty** `queryParameters.<name>` means the tree was mis-shaped (step 3): the CLI found no `filters` at the top level and compiled an empty query with no error, so the flow would fetch the whole entity.
 
-Read exact, case-sensitive field names from `uip df entities list --output json` and `uip df entities get <entity-id> --output json`; unmatched leaves are silently dropped.
+Never:
 
-A whole-value `=js:` query string is not sanctioned. `flow validate` cannot read it, because it reads only a plain concatenation, and the CLI warns on it. If you find one in a flow, replace it with a filter tree.
-
-If no FilterBuilder parameter exists, pass no `filter` and filter downstream.
+- pass a CEQL string under `queryParameters.<name>` — the CLI rejects it or leaves Studio Web's tree undefined;
+- write the query as a whole-value `=js:` string — `flow validate` cannot read it (it reads only a plain concatenation) and the CLI warns on it; replace any you find with a tree;
+- hand-type `endpoint` or `pathParameters` names — take them from step 1.
 
 #### Step 6b — Run configure
 
