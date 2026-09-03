@@ -183,9 +183,11 @@ Generation writes the job to `{workdir}/jobs/{actionName}.ts`, beside the artifa
 
 Typechecking is the `typecheck` gate of `tools/coded_action_preflight.py`, which compiles the job against a stub of the SDK, and is skipped with a reason when no TypeScript compiler is reachable. The job imports nothing beyond the SDK, so no package needs installing for the gate to run.
 
-### zod, the idiom generation does not emit
+### The idiom this pipeline refuses
 
-The SDK also accepts a Standard Schema (zod 4.2 and above, arktype, valibot) or a JSON Schema literal in place of the marker. Such a contract carries its own schema, so it needs nothing derived, and `coded_action_preflight.py` recognizes it: a zod job is validated with `.strict()` required on the top-level input object, which is what supplies the `additionalProperties: false` the marker gets from the derivation. It is accepted when found in an existing source, but generation emits `type<T>()`, matching the verified jobs and keeping one idiom across the family.
+The SDK also accepts a Standard Schema (zod, arktype, valibot) or a JSON Schema literal in place of the marker. Such a contract carries its own schema and needs nothing derived, which is exactly why this pipeline cannot deploy it: what gets staged is a manifest derived from the interfaces, and only `type<T>()` can be lowered. A Standard-Schema contract has no interfaces to read, so nothing can be derived and there is no manifest to stage.
+
+`coded_action_preflight.py` fails `input-strictness` for such a job and names both the library and the consequence. Do not work around it by hand-writing an `entry-points.json`: a manifest that disagrees with the job faults it before the handler runs, which is harder to diagnose than the refusal.
 
 ## Validation rules
 

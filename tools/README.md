@@ -43,15 +43,23 @@ pass); the exit code is 0 only when nothing failed. `folder-id-status` never fai
 whether `ont:processFolderId` is still the `PENDING_DEPLOY` placeholder, which callers sequence on
 via `pairs[].deployable`.
 
-Both job contract idioms are understood: `type<T>()` over plain interfaces (what generation emits,
-matching the verified jobs) and zod (`input: z.object({...}).strict()`). `input-strictness` is the
-gate for both, and it checks the same property either way, that the input schema ends up carrying
-`additionalProperties: false`. For a zod contract that means `.strict()` on the top-level object.
-For a `type<T>()` contract the gate runs `entry_points.py` and inspects what it derives, so a
-contract the deriver cannot lower fails here rather than at pack time. The typecheck gate compiles
-the job against a stub of the Coded Functions SDK and is skipped, with a reason, when no
-TypeScript compiler is available (set `CODED_ACTION_TSC` to point it at one) or, for a zod-idiom
-job, when zod is not resolvable from the workdir upward.
+Contracts are declared with `type<T>()` over plain interfaces. `input-strictness` runs
+`entry_points.py` and inspects what it derives, so it checks the property that actually matters --
+that the input schema carries `additionalProperties: false` -- rather than assuming the SDK will
+supply it. A contract the deriver cannot lower fails here, at authoring time, instead of at pack
+time with nothing written.
+
+A Standard-Schema contract (zod, arktype, valibot) fails that gate by design: it carries its own
+schema and so cannot be lowered into the manifest the deploy step stages. The diagnostic names the
+library and the consequence.
+
+The typecheck gate compiles the job against a stub of the Coded Functions SDK, and is skipped with
+a reason when no TypeScript compiler is available (set `CODED_ACTION_TSC` to point it at one). The
+job imports nothing but the SDK, and the SDK is stubbed, so no package needs installing.
+
+Implementation lives in `coded_action/` -- turtle lexing, the action model, job-source scanning,
+the deriver bridge, pair discovery, typecheck, the verdict shape, and the gates -- with this file's
+CLI as the only public surface.
 
 ## `entry_points.py`
 

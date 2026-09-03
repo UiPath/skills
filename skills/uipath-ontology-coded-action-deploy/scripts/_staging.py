@@ -46,9 +46,15 @@ def entry_points_module():
 def write_entry_points(project_dir, job_source):
     """Derive the project's entry-points.json from the staged job. Returns a status string.
 
-    An existing manifest is honoured when the contract cannot be lowered: a job whose contract is
-    declared some other way already carries a schema the platform can read, and overwriting it
-    with a guess would be worse than leaving it. Only the case with neither is fatal.
+    A contract that cannot be lowered is fatal here, and deliberately so. This used to fall back to
+    "keep whatever manifest is already in the project", which is wrong in the one case it fires:
+    the template skeleton ships a manifest, so an unlowerable job inherited the EXEMPLAR's input
+    schema and deployed under a contract that has nothing to do with it -- passing every check and
+    faulting at invoke time on additionalProperties. A schema that was not derived from this job
+    cannot be attributed to it, so there is nothing safe to keep.
+
+    Only the entry point's identity survives from an existing manifest: uniqueId, which the
+    project's bindings reference, and which module.manifest carries over.
     """
     module = entry_points_module()
     target = project_dir / "entry-points.json"
@@ -56,10 +62,10 @@ def write_entry_points(project_dir, job_source):
     try:
         doc = module.manifest(job_source, existing, "content/main.ts")
     except module.Unlowerable as exc:
-        if existing and (existing.get("entryPoints") or [{}])[0].get("input"):
-            return "kept existing manifest (%s)" % exc
-        die("cannot derive entry-points.json for %s and none is committed: %s"
-            % (project_dir.name, exc))
+        die("cannot derive entry-points.json for %s from %s: %s. The manifest is the contract the "
+            "platform validates against, and one that was not derived from this job would deploy "
+            "the wrong schema. Declare the contract as plain interfaces behind type<T>()."
+            % (project_dir.name, pathlib.Path(job_source).name, exc))
     target.write_text(json.dumps(doc, indent=2) + "\n")
     return "derived"
 
