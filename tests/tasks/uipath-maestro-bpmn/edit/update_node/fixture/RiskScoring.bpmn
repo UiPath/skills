@@ -28,7 +28,7 @@
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SS</bpmn:incoming><bpmn:outgoing>Flow_SF</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: amount > 500 ? "high" : "low" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return amount > 500 ? "high" : "low";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Format" name="Format Message" scriptFormat="JavaScript">
       <bpmn:extensionElements>

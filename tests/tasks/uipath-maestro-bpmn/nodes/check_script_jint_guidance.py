@@ -262,8 +262,9 @@ def main() -> None:
     process = root.find("bpmn:process", NS)
     if process is None:
         fail("missing bpmn:process")
-    if process.attrib.get("isExecutable") not in (None, "false"):
-        fail("new projects must preserve the supported executable default")
+    # `isExecutable` is not graded: nothing in the CLI reads it, so grading it
+    # would grade doc style rather than behaviour (same call as
+    # check_simple_approval_bpmn.py; see .claude/rules/test-writing.md).
 
     start = exactly_one(elements(root, "startEvent"), "root start event")
     end = exactly_one(elements(root, "endEvent"), "root end event")

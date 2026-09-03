@@ -104,4 +104,5 @@ def test_script_task_registry_entry_uses_supported_shape() -> None:
     assert int(match.group(1)) >= 3
     script = task.find("bpmn:script", NS)
     assert script is not None
-    assert (script.text or "").strip() == "return null;"
+    # Canvas default for a new ScriptTask (origin/develop:src/reducers/actions.ts:352)
+    assert (script.text or "").strip() == "return {};"
