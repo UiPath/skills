@@ -82,4 +82,7 @@ success_criteria:
 
 run_limits:
   expected_turns: 5
-  max_turns: 14
+  # 20, not 14: agents that explore one directory per LS call and read the skill
+  # files with Read (gemini/antigravity, 2026-09-03) ran out of turns before
+  # producing the final response the llm_judge grades.
+  max_turns: 20
