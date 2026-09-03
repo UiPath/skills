@@ -164,10 +164,17 @@ def test_budget_exhaustion_reports_instead_of_running(monkeypatch, capsys):
     assert "-0s left" not in err  # negative remainder is clamped for display
 
 
-def test_no_flow_file_fails(monkeypatch, capsys):
+def test_no_flow_file_fails(monkeypatch):
+    """`find_flow_files()` exits with its own message when nothing is found;
+    `main` has no empty-list branch of its own."""
     _stub(monkeypatch, [], flows=())
-    assert validate_flow.main() == 1
-    assert "No .flow file found" in capsys.readouterr().err
+
+    def no_flows():
+        raise SystemExit("FAIL: No Flow project found matching '**/project.uiproj'")
+
+    monkeypatch.setattr(validate_flow, "find_flow_files", no_flows)
+    with pytest.raises(SystemExit, match="No Flow project found"):
+        validate_flow.main()
 
 
 @pytest.mark.parametrize(

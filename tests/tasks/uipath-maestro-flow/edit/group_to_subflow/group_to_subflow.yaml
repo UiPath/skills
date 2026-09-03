@@ -1,7 +1,6 @@
 # Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
 # v1-base prompt, outcome-graded criteria at preserved weights, and
 # arm-agnostic artifact discovery.
-# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-group-to-subflow
 description: >
   Extract the getWeather HTTP node and formatSummary Script node into a subflow

@@ -19,7 +19,7 @@
 
 # preview skills
 /preview/uipath-maestro-flow/ @UiPath/maestro-cli-team
-/preview/uipath-maestro-case/ @UiPath/maestro-cli-team
+/preview/uipath-maestro-case/ @dmetzgar @tmatup
 /preview/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 
 # Activity references (bundled inside uipath-rpa skill)

@@ -28,16 +28,17 @@ if [ -n "$manifest" ]; then
 fi
 
 search_root=${STAGE_SHARED_ROOT:-tests/tasks}
-if [[ "$search_root" = "$PWD"/* ]]; then
-  search_root=${search_root#"$PWD"/}
-fi
-case "$search_root" in
-  tests/tasks | tests/tasks/*) ;;
+# Compare resolved paths so `tests/tasks/../../etc` cannot pass the guard.
+resolved_root=$(realpath -m -- "$search_root")
+tasks_root=$(realpath -m -- "$PWD/tests/tasks")
+case "$resolved_root" in
+  "$tasks_root" | "$tasks_root"/*) ;;
   *)
     echo "stage_shared: STAGE_SHARED_ROOT must be under tests/tasks: $search_root" >&2
     exit 2
     ;;
 esac
+search_root=${resolved_root#"$PWD"/}
 
 count=0
 while IFS= read -r f; do
