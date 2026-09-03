@@ -527,6 +527,7 @@ Encodes a file reference as base64 — the result is a NEW `JobAttachment` whose
 
 **Common mistakes:**
 - `$helpers.fileToBase64(...)` (namespace dropped) — `validate` errors, runtime `is not a function`
+- Anything besides the single `return` expression — a statement before/after it, or a second argument (`fileToBase64(ref, { extra: 1 })`) — Studio Web drops it on save; `validate` warns about the statements only, an extra argument passes silently
 - Using the output as a string (`.length`, concatenation, `Assign` into a string variable) — it is a file reference; use `.serializeData()` inline in a body/Response
 - Passing a base64 string instead of a file reference — `fileToBase64` accepts only a reference; a string input is a validation error
 - Running with `--no-auth` — needs Orchestrator blob storage (see [files-and-base64.md](files-and-base64.md))
@@ -567,6 +568,7 @@ For a file-reference input drop `fileName` / `mimeType`: `base64ToFile({ base64:
 
 **Common mistakes:**
 - `$helpers.base64ToFile(...)` (namespace dropped)
+- Anything besides the single `return` expression — a statement before/after it, or extra keys in the options object — Studio Web drops it on save; `validate` warns about the statements only, extra keys pass silently
 - Expecting `fileName` / `mimeType` to rename a reference input — they are ignored for references
-- URL-safe base64 (`-` / `_`), non-base64 characters, bad padding or an empty string → `The provided value is not a valid base64 string: <task name>` at runtime (a `data:…;base64,` prefix and whitespace are tolerated and stripped)
+- URL-safe base64 (`-` / `_`), non-base64 characters, bad padding or an empty string → `The provided value is not a valid base64 string: base64ToFile` at runtime — the suffix is the literal helper name, not the task key (a `data:…;base64,` prefix and whitespace are tolerated and stripped)
 - Chaining it directly on a *binary* reference — a reference without `Encoding: "base64"` is returned unchanged (no-op), so nothing happens

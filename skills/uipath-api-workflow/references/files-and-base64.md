@@ -30,7 +30,14 @@ Consequences:
 
 ## 2. The two activities
 
-Both are ordinary `run.script` tasks. What makes them *these* activities — for Studio Web's designer, for `uip api-workflow validate`, and for the engine — is `metadata.activityType` plus the `$helpers.file.*` call in the script. Studio Web restores the property panel by parsing that call, so keep the exact shape.
+Both are ordinary `run.script` tasks. What makes them *these* activities — for Studio Web's designer, for `uip api-workflow validate`, and for the engine — is `metadata.activityType` plus the `$helpers.file.*` call in the script.
+
+**The script is one `return` expression and nothing else.** Studio Web does not keep the script text: on open it parses the `$helpers.file.*` call to fill the property panel, and on save it **rebuilds the script from the panel**. Anything the parser did not pick up is dropped silently, and the workflow breaks (or loses arguments) at the next designer save. The only shapes that survive a roundtrip:
+
+- File to Base64: `return { output: await $helpers.file.fileToBase64(<ref>) }` — exactly **one** argument
+- Base64 to File: `return { output: await $helpers.file.base64ToFile({ base64: <ref or string>, fileName?: <expr>, mimeType?: <expr> }) }` — exactly **one** object argument, only those keys
+
+Dropped on save: a statement before the `return` (`const ref = …;`), a statement after it, a second argument (`fileToBase64(ref, { extra: 1 })`), extra keys in the options object. `uip api-workflow validate` warns about the extra statements ("rebuilds the script … and drops the rest, which breaks the workflow") but reports `Valid` with **no warning** for an extra argument or extra option key — check that shape yourself before validating. Any pre-processing (picking the right reference, normalising a string) goes in a JavaScript activity *before* the conversion; pass its output in as the single argument.
 
 ### File to Base64 (`FileToBase64`)
 
@@ -141,7 +148,7 @@ Example output:
 
 - **Size:** file references have no practical size cap — a reference with a declared `Metadata.Size` above 1 MB, or with **no** declared size (common for job inputs), streams with bounded memory at any size. Only in-memory inputs are capped at 50 MB per conversion: a raw base64 *string*, or a reference small enough to be buffered.
 - **Namespace:** `$helpers.fileToBase64` (no `.file.`) fails with `is not a function` and fails `validate`.
-- **Invalid base64:** a `data:…;base64,` prefix and whitespace/line breaks are **tolerated** (stripped before decoding). What is rejected with `The provided value is not a valid base64 string: <task name>`: the URL-safe alphabet (`-` / `_`), other non-base64 characters, bad padding, and an empty string.
+- **Invalid base64:** a `data:…;base64,` prefix and whitespace/line breaks are **tolerated** (stripped before decoding). What is rejected with `The provided value is not a valid base64 string: base64ToFile`: the URL-safe alphabet (`-` / `_`), other non-base64 characters, bad padding, and an empty string. The suffix is always the literal helper name `base64ToFile`, never your task key — grep logs for the message text, not for `Base64ToFile_1`.
 - **Names:** `fileName` / `mimeType` never rename a reference input; a decoded text file loses its extension.
 - **Preview feature:** in Studio Web the two activities sit behind the `FE.EnableBase64Activities` flag and are marked "in preview".
 

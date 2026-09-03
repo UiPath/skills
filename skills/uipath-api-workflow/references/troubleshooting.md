@@ -790,6 +790,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** the helper was written without the `.file.` namespace (or with another name). The activity is recognised by that exact call
 - **Fix:** `return { output: await $helpers.file.fileToBase64(<ref>) }` / `$helpers.file.base64ToFile({ base64: … })`; keep `metadata.activityType` `FileToBase64` / `Base64ToFile`
 
+### File to Base64 / Base64 to File script lost code after a Studio Web save (validate warned "rebuilds the script … and drops the rest", or did not warn at all)
+- **Symptom:** after a designer roundtrip the task's `run.script.code` is back to the bare `return { output: await $helpers.file.*(…) }` — a preceding `const`, a trailing statement, a second argument (`fileToBase64(ref, { extra: 1 })`) or an extra option key is gone; downstream logic that relied on it now fails or the wrong reference is converted
+- **Cause:** Studio Web parses only the `$helpers.file.*` call and rebuilds the script from the property panel on save. `validate` warns about extra statements but passes an extra argument / option key as `Valid`
+- **Fix:** keep the script to the single `return` expression with exactly one argument (see [files-and-base64.md §2](files-and-base64.md#2-the-two-activities)); move pre-processing into a JavaScript activity before the conversion and pass its output as the argument
+
 ### File to Base64 output used as a string (`.length`, `+`, `JSON.stringify` shows an object)
 - **Symptom:** downstream expression gets `[object Object]`, `undefined`, or an `{ ID, FullName, MimeType }` object where base64 text was expected
 - **Cause:** the activity returns a base64 **file reference**, not the base64 string — bytes never enter `$context`
@@ -805,8 +810,8 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** for a *reference* input the engine strips `.base64` and sniffs the MIME type from the bytes; plain text has no signature, and `fileName` / `mimeType` are ignored for references
 - **Fix:** acceptable for opaque payloads; when the name matters, decode a raw base64 **string** with `fileName` / `mimeType` (e.g. `{ base64: $context.variables.payload, fileName: 'notes.txt', mimeType: 'text/plain' }`)
 
-### `The provided value is not a valid base64 string: <task name>`
-- **Symptom:** Base64 to File fails on a string input
+### `The provided value is not a valid base64 string: base64ToFile`
+- **Symptom:** Base64 to File fails on a string input. The suffix is always the literal helper name `base64ToFile` — it does not name the failing task, so with several Base64 to File tasks locate the culprit by the failing task in the run output, not by the message
 - **Cause:** URL-safe alphabet (`-` / `_`), non-base64 characters, bad padding, or an empty string. A `data:…;base64,` prefix and whitespace are NOT the problem — the engine strips both before decoding
 - **Fix:** convert URL-safe base64 to the standard alphabet (`-`→`+`, `_`→`/`) in a JavaScript activity; make sure the field really holds the payload and is not empty
 
