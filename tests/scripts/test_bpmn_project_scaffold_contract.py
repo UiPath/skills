@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-import xml.etree.ElementTree as ET  # noqa: F401
+import xml.etree.ElementTree as ET
 from uuid import UUID
 
 from bpmn_doc_example import NS, REFERENCE, minimal_example
