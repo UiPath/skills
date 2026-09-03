@@ -111,21 +111,34 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 ## CLI Setup
 
 ```bash
-# Install the UiPath CLI (run once)
-npm install -g @uipath/cli
+# Fresh macOS/Linux machine: installs Node.js >= 20, uip, agent skills, .NET SDK 8.0, and Python 3.11-3.14
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+
+# Resolve the CLI binary before using it
+UIP=$(command -v uip 2>/dev/null || true)
+if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
+  UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
+fi
+if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
+  echo "UiPath CLI not found after bootstrap. Update PATH for this host, then rerun this step." >&2
+  exit 2
+fi
+$UIP --version
 
 # Install the coded apps tool
-uip tools install @uipath/codedapp-tool
+$UIP tools install @uipath/codedapp-tool
 
 # Install the Orchestrator tool (needed to resolve folder name → key for deploy)
-uip tools install @uipath/orchestrator-tool
+$UIP tools install @uipath/orchestrator-tool
 
 # Verify both are installed
-uip tools list
+$UIP tools list
+```
 
-# Resolve uip if not on PATH
-UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
-$UIP --version
+Windows PowerShell fresh-machine setup:
+
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
 ```
 
 Authenticate before any cloud command:

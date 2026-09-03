@@ -42,7 +42,7 @@ Early stop: every criterion carries a `stop_early: {on_pass: stop}` block (coder
 
 1. Create `<new-skill>.jsonl` with positive prompts (one JSON object per line, fields: `id`, `prompt`).
 2. Optional: add must-not-fire prompts that touch your skill's domain to `negative.jsonl` as adversarial negatives.
-3. Edit `activation.yaml`: add the new file to `dataset.paths` and append a new `skill_triggered` criterion with `skill_name: uipath-<new-skill>` **and `stop_when: auto`**. The `stop_when` key is not optional: validation only requires that *some* criterion is armed, so omitting it raises no error — but the new skill's positive rows would then have no pass-armed criterion to defer for, and the 23 existing criteria (all armed fail-stop distractors on those rows) would end the row on the first touch of any other skill, silently deflating the new skill's recall.
+3. Edit `activation.yaml`: add the new file to `dataset.paths` and append a new `skill_triggered` criterion with `skill_name: uipath-<new-skill>` **and `stop_early: {on_pass: stop}`**. The `stop_early` block is not optional: validation only requires that *some* criterion is armed, so omitting it raises no error — but the new skill's positive rows would then have no pass-armed criterion to defer for, and the 23 existing criteria (all armed fail-stop distractors on those rows) would end the row on the first touch of any other skill, silently deflating the new skill's recall.
 
 ## Cost
 
