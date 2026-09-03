@@ -1,0 +1,99 @@
+#!/bin/sh
+# Untrained-project `uip` mock for the uipath-ixp diagnose smoke tasks. Overlays
+# the base mock_template (list it SECOND so this file wins).
+#
+# `projects get-metrics` has three documented response shapes and the skill says to
+# stop on two of them. The base mock fails every call and the task prompts frame
+# that as an auth error, so on the base mock alone an agent never has to tell "no
+# metrics yet" apart from "could not reach the tenant". Forcing that distinction is
+# what this fixture is for.
+#
+# Fixture — two projects, one per non-happy shape:
+#
+#   fresh_contracts-8c21b4d3-ixp    no trained model at all
+#     get-metrics  -> Result: Failure, ErrorCode: not_found, no Data, exit 1
+#     list-models  -> Success, empty Models[], no tags
+#
+#   pending_invoices-4f77e9a1-ixp   trained at v3, not yet validated
+#     get-metrics  -> Success, Data is exactly { Metrics: null }, exit 0
+#     list-models  -> Success, one trained version, nothing published
+#
+# Both mean "report no metrics yet and stop". Neither is a retry candidate, and
+# neither is fixed by `configure-model` or `publish`. What this grades is the agent
+# that re-polls, retrains, publishes, or invents F1 numbers out of a null.
+#
+# The failure envelope exits 1 deliberately: an agent that reads the exit code
+# without reading the ErrorCode is the one that treats a permanent not_found as a
+# transient blip and loops.
+#
+# Response shapes follow the skill's cli-reference § projects get-metrics. Logging
+# matches the base mock exactly, so anchored `^uip\s+ixp …` criteria keep working.
+# This overlay writes calls.log only. Must stay mode 755.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"8c21b4d3-77a1-4e05-b3d2-9f1c6e408a55","Name":"fresh_contracts-8c21b4d3-ixp","Title":"Fresh_Contracts","CreatedAt":"2026-08-16T09:14:02Z"},{"Id":"4f77e9a1-2b60-4d18-8c93-5ae7d0b1f622","Name":"pending_invoices-4f77e9a1-ixp","Title":"Pending_Invoices","CreatedAt":"2026-08-12T11:47:38Z"}],"Total":2,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+    case "$4" in
+    *fresh_contracts*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"fresh_contracts-8c21b4d3-ixp","Title":"Fresh_Contracts","Description":"Supplier contracts, new project","CreatedTime":"2026-08-16T09:14:02Z"}}
+EOF
+        exit 0
+        ;;
+    *pending_invoices*)
+cat <<'EOF'
+{"Result":"Success","Data":{"Name":"pending_invoices-4f77e9a1-ixp","Title":"Pending_Invoices","Description":"Invoices awaiting validation","CreatedTime":"2026-08-12T11:47:38Z"}}
+EOF
+        exit 0
+        ;;
+    esac
+;;
+"ixp projects list-models")
+    case "$4" in
+    *fresh_contracts*)
+        # No trained model has ever been produced: empty Models[], no tags.
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[],"Tags":[],"MaxPublished":0}}
+EOF
+        exit 0
+        ;;
+    *pending_invoices*)
+        # Trained but unvalidated, and nothing published — Tags[] is empty.
+cat <<'EOF'
+{"Result":"Success","Data":{"Models":[{"Version":3,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-17T22:05:11Z","Description":""}],"Tags":[],"MaxPublished":0}}
+EOF
+        exit 0
+        ;;
+    esac
+;;
+"ixp projects get-metrics")
+    case "$4" in
+    *fresh_contracts*)
+        # No trained model yet: a FAILURE envelope with no Data, exit 1.
+cat <<'EOF'
+{"Result":"Failure","ErrorCode":"not_found","Message":"No trained model found for this project."}
+EOF
+        exit 1
+        ;;
+    *pending_invoices*)
+        # Trained, not yet validated: Success, and Data is exactly this.
+cat <<'EOF'
+{"Result":"Success","Data":{"Metrics":null}}
+EOF
+        exit 0
+        ;;
+    esac
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

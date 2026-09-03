@@ -1,0 +1,82 @@
+task_id: skill-ixp-diagnose-low-f1-field-smoke
+description: >
+  Smoke (diagnose): find the field dragging quality and re-instruct only it.
+  `get-metrics` reports per-field scores by `FieldId` with no name, so the agent
+  must join against `get-taxonomy`'s `moon_form[].field_id`. Graded on which
+  field's instructions the agent then updates — Vendor Name (F1 0.34), not the
+  three fields at F1 >= 0.93. Fixture: ../_shared/mock_template_drift.
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  expected_turns: 7
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_drift}
+
+initial_prompt: |
+  Extraction quality on the IXP project `my_invoices-f1afa9ef-ixp` is
+  disappointing. The header values it returns are wrong often enough that
+  people have stopped trusting the output, and the project score has stopped
+  improving no matter how many documents we validate.
+
+  Work out where the quality is actually being lost and fix that part of the
+  taxonomy's extraction instructions. Don't touch the parts that are already
+  performing well.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Read commands are served from a fixture; write commands
+    will fail with auth errors — that is expected. Run each command once and
+    move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Agent read the validation metrics for the project"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+["']?my_invoices-f1afa9ef-ixp["']?)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The join half of the diagnosis. get-metrics returns FieldId only, so without
+  # the taxonomy the agent cannot turn 2b6f8c04e9a17d53 into "Vendor Name".
+  - type: file_matches_regex
+    description: "Agent read the taxonomy to resolve the failing FieldId to a field name"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\s+["']?my_invoices-f1afa9ef-ixp["']?)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The conclusion, acted on. `update-prompts` matches by field NAME and reports
+  # an unmatched name WITHOUT failing, so the exact taxonomy name is required —
+  # a reworded one is a silent no-op. Deliberately does NOT also require
+  # `--output json`: that habit is covered by update_prompts_heredoc.yaml, and
+  # folding it in here would let a correct diagnosis fail on an unrelated flag.
+  - type: file_matches_regex
+    description: "Agent re-instructed the underperforming field (Vendor Name), the one at F1 0.34"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--updates)(?=[^\r\n]*"name"\s*:\s*"Vendor Name")[^\r\n]*)$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Negative guard against the wrong diagnosis, "quality is bad, re-instruct
+  # everything". Positive control is the Vendor Name criterion above.
+  #
+  # Lists only the three fields that actually score well. `Withholding Tax` is
+  # excluded on purpose: it has no metrics row at all, so re-instructing it is the
+  # D10 reading of this fixture rather than a mistake. Shotgunning is still caught,
+  # since re-instructing everything necessarily touches these three.
+  - type: file_matches_regex
+    description: "Agent did NOT re-instruct one of the three fields already scoring F1 >= 0.93"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*"name"\s*:\s*"(?:Invoice Number|Invoice Date|Total Amount)")[^\r\n]*)$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0

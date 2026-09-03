@@ -1,0 +1,91 @@
+task_id: skill-ixp-diagnose-taxonomy-drift-smoke
+description: >
+  Smoke (diagnose): a field exists in the project taxonomy but the live model
+  never returns it, because it was added after the live version trained. The
+  diagnosis compares `projects get-taxonomy` (current) with `deployments
+  get-taxonomy --version 15` (as-trained), 15 coming from `list-models`. Only
+  assertion on `deployments get-taxonomy`. Guards the two wrong fixes, which both
+  duplicate the field: `fields add` and `import-taxonomy` (merges, never
+  replaces). Fixture: ../_shared/mock_template_drift.
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_drift}
+
+initial_prompt: |
+  On the IXP project `my_invoices-f1afa9ef-ixp` we added a `Withholding Tax`
+  field to the invoice header taxonomy a few weeks ago. Every other header
+  field extracts fine, but this one comes back empty on every single document
+  we run through the live model — never a wrong value, always nothing at all.
+
+  Somebody has already checked the field is spelled correctly and has
+  instructions on it. Find out what is actually wrong before changing anything,
+  and tell me what has to happen to make the live model start returning it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Read commands are served from a fixture; write commands
+    will fail with auth errors — that is expected. Run each command once and
+    move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Agent read the current project taxonomy (confirming the field does exist now)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\s+["']?my_invoices-f1afa9ef-ixp["']?)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `deployments get-taxonomy --version` is required with no default, so the
+  # version number has to come from somewhere — list-models is the only source.
+  - type: file_matches_regex
+    description: "Agent looked up the trained/published versions to get a version number"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list-models\s+["']?my_invoices-f1afa9ef-ixp["']?)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The comparison that IS the diagnosis: the as-trained snapshot for the live
+  # version. Pinned to 15 because that is the version tagged `live` in the
+  # fixture — reading the deployed taxonomy of some other version does not
+  # explain the live model's behavior.
+  - type: file_matches_regex
+    description: "Agent read the as-trained taxonomy for the live version (15) to compare against current"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+get-taxonomy\s+["']?my_invoices-f1afa9ef-ixp["']?\s+(?=[^\r\n]*--version[=\s]+["']?15\b)[^\r\n]*)$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Negative guard: the naive wrong fix. The field already exists, so `fields
+  # add` duplicates it under a new field_id. Positive control is the
+  # deployments get-taxonomy criterion above.
+  - type: file_matches_regex
+    description: "Agent did NOT try to fix it by adding the field again"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+fields\s+add\b(?=[^\r\n]*Withholding Tax)[^\r\n]*)$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Negative guard: the other wrong fix. import-taxonomy MERGES and ignores a
+  # posted field_id, so re-importing returns {"status":"ok"} while leaving the
+  # field duplicated — a silent corruption the skill calls out explicitly.
+  - type: file_matches_regex
+    description: "Agent did NOT try to fix it by re-importing the taxonomy"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0

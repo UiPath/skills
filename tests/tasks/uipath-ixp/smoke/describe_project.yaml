@@ -1,0 +1,133 @@
+task_id: skill-ixp-describe-project-smoke
+description: >
+  Smoke: describe a project via the skill's three-call recipe — `projects get`
+  (identity), `list-models` (live version), `projects get-taxonomy` (counts) —
+  and take the document count from `documents list`'s `Total` without paging
+  (SKILL.md:103). Only assertion on `projects get` and on the no-paging rule;
+  the fixture sets `Total: 128` against `Limit: 50` so paging looks necessary.
+  Reads are served by ../_shared/mock_template_project_state; writes fail offline.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 25
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_project_state}
+
+initial_prompt: |
+  A colleague handed me the IXP project `vendor_bills-9a7c5d24-ixp` and I know
+  nothing about it. Describe it for me — what it is, which trained model version
+  is currently live, what the taxonomy looks like, and how many documents are in
+  it.
+
+  Put the summary in `project_summary.md`. Read-only — don't change anything.
+
+  Note: the `uip` CLI in this environment reads from a fixture tenant. Write
+  commands are not connected and will fail. Do NOT prompt the user for
+  confirmation — this is an automated test.
+
+success_criteria:
+  # The headline. `get\s+` cannot match `get-taxonomy` or `get-metrics` — those
+  # have no space after `get` — so this is specific to the identity call, the
+  # one documented command with no assertion anywhere else in the suite.
+  - type: file_matches_regex
+    description: "Called `projects get` for identity (the recipe's first call)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get\s+["']?vendor_bills-9a7c5d24-ixp)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The unguarded negative rule. Paging requires --offset; the fixture's
+  # Total (128) > Limit (50) makes the page look incomplete on purpose.
+  - type: file_matches_regex
+    description: "Did NOT page `documents list` — read `Total` instead (SKILL.md:103)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+list\b[^\r\n]*--offset\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Called `list-models` for the trained/published version"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list-models\s+["']?vendor_bills-9a7c5d24-ixp)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Called `projects get-taxonomy` for the taxonomy counts"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\s+["']?vendor_bills-9a7c5d24-ixp)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced the requested summary"
+    path: "project_summary.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Identity + both field-group names. The Title comes only from `projects get`;
+  # the group names only from `get-taxonomy`. Together they prove both reads were
+  # actually used, not just issued.
+  - type: file_contains
+    description: "Summary reports the project Title and both field-group names"
+    path: "project_summary.md"
+    includes:
+      - "Vendor_Bills"
+      - "Invoice Header"
+      - "Line Items"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The document count read from the envelope's Total, not counted by paging.
+  # 128 is distinctive enough to assert bare.
+  - type: file_matches_regex
+    description: "Summary reports 128 documents (the envelope's Total)"
+    path: "project_summary.md"
+    pattern: >-
+      (?m)\b128\b
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Version 12 is Pinned and tagged `live`; version 9 is the older trained one.
+  # Accepts `version 12`, `version: 12`, `v12`, and markdown decoration between
+  # the word and the number (`**Live version:** **12**`, `| Live version | 12 |`,
+  # `` `12` ``); the 12 inside 128 cannot match.
+  - type: file_matches_regex
+    description: "Summary names version 12 as the live/published model version"
+    path: "project_summary.md"
+    pattern: >-
+      (?mi)^[^\r\n]*\b(?:version|v)[\s*_`|:]*12\b[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # A line that also names version 12 is a correct answer mentioning 9 as the
+  # older version, so the lookahead excludes it.
+  - type: file_matches_regex
+    description: "Did NOT report the older version 9 as the live one"
+    path: "project_summary.md"
+    pattern: >-
+      (?mi)^(?![^\r\n]*\b(?:version|v)[\s*_`|:]*12\b)[^\r\n]*\blive\b[^\r\n]*\b(?:version|v)[\s*_`|:]*9\b[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The skill scopes this question to three calls and says not to read
+  # deployment bindings for it.
+  - type: file_matches_regex
+    description: "Did NOT read deployment bindings — out of scope for this question"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0

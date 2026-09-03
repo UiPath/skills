@@ -1,0 +1,105 @@
+task_id: skill-ixp-data-type-edit-chain-smoke
+description: >
+  Smoke: `data-types rename`, `update-instructions`, and `delete -y` in one
+  task — the only assertions on these three verbs. Guards rename-by-recreate
+  (`data-types add`, which drops every field's `field_type_id` reference) and a
+  `delete` landing on the renamed type instead of the unused one.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 7
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  Tidy up the data types on IXP project `my_invoices-f1afa9ef-ixp`. Three
+  changes, and the field references must survive all of them:
+
+  1. The data type `Supplier Ref` is misnamed — it holds the vendor's own
+     reference number. Rename it to `Vendor Reference`.
+
+  2. The data type `Payment Terms` has stale instructions. Replace them with:
+     "The agreed payment window as printed on the invoice, e.g. Net 30, Net 60,
+     or Due on receipt. Do not infer terms that are not stated."
+
+  3. The data type `Legacy Code` is left over from an old taxonomy and no field
+     references it any more. Remove it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # `data-types rename` is the only verb that keeps existing `field_type_id`
+  # references intact, which is what the prompt requires.
+  - type: cli_called
+    description: "Renamed the type with `data-types rename --name/--new-name` (preserves field_type_id references)"
+    verb: "ixp data-types rename"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      name: "Supplier Ref"
+      new-name: "Vendor Reference"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Anchored on two distant phrases so a paraphrase of the requested text fails.
+  - type: cli_called
+    description: "Replaced the type's instructions with `data-types update-instructions`"
+    verb: "ixp data-types update-instructions"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      name: "Payment Terms"
+      instructions: {matches_regex: 'agreed payment window[\s\S]*Do not infer terms'}
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # `-y, --yes` is REQUIRED — the CLI never prompts and exits 1 without it, so an
+  # agent that omits the flag has not performed the deletion at all. The key is
+  # quoted because a bare `yes` is a YAML boolean.
+  - type: cli_called
+    description: "Deleted the unused type with the required `-y`/`--yes` flag"
+    verb: "ixp data-types delete"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      name: "Legacy Code"
+      "yes": {present: true, aliases: ["y"]}
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Rename-by-recreate changes every field's `field_type_id`, so confirmed
+  # annotations stop resolving — the breakage `rename` exists to avoid.
+  - type: cli_called
+    description: "Did NOT rename by recreating the type (`data-types add`)"
+    verb: "ixp data-types add"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `delete` is IRREVERSIBLE and breaks every field referencing the type. It must
+  # land on `Legacy Code` only — never on the renamed type under either name.
+  - type: cli_called
+    description: "Did NOT delete the renamed type under either name"
+    verb: "ixp data-types delete"
+    tool: "uip"
+    flags:
+      name: {any_of: ["Supplier Ref", "Vendor Reference"]}
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

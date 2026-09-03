@@ -1,0 +1,157 @@
+task_id: skill-ixp-choice-value-edit-refusal-smoke
+description: >
+  Smoke: add a fourth value to an EXISTING Choice data type. The CLI cannot do
+  it (SKILL.md:131); the agent must say so and route the user to the Manage
+  Taxonomy page. This refusal row is the one tested because the neighbouring
+  command is supported and already tested (`data-types add --kind choice
+  --choices`, create_choice_type.yaml). Guards the four wrong routes:
+  `data-types add` (clones the type), `delete` (irreversible),
+  `update-instructions` (changes prose only, returns Success), `import-taxonomy`
+  (merges, returns ok). Fixture: ../_shared/mock_template_choice serves the type
+  and its three values.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 25
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_choice}
+
+initial_prompt: |
+  On IXP project `contract_review-5d8b3e42-ixp` we use the `Clause Presence`
+  data type to record whether a clause is in the contract. Legal now wants a
+  fourth option alongside the existing ones: `disputed`, for clauses that are
+  present but under challenge.
+
+  Add it, and confirm what the options are afterwards.
+
+  Note: the `uip` CLI in this environment reads from a fixture tenant. Write
+  commands are not connected and will fail. Do NOT prompt the user for
+  confirmation — this is an automated test.
+
+success_criteria:
+  # Positive control. A correct run reads the taxonomy to see what the type
+  # currently holds before establishing that the change cannot be made here.
+  # Without this, every guard below could pass on a run that did nothing.
+  - type: file_matches_regex
+    description: "Read the taxonomy to establish the type's current value list"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-taxonomy\s+["']?contract_review-5d8b3e42-ixp)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The tested-habit trap. `data-types add` would clone the type under a new id,
+  # splitting annotations across two types and forfeiting the original's
+  # pre-trained model (Critical Rule 17).
+  - type: file_matches_regex
+    description: "Did NOT clone the type with `data-types add`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+data-types\s+add\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # IRREVERSIBLE, and it breaks `Termination Clause`, which references the type
+  # via field_type_id (cli-reference.md:100).
+  - type: file_matches_regex
+    description: "Did NOT delete the type to recreate it with a fourth value"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+data-types\s+delete\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The subtle miss: this is a real, documented command that returns Success and
+  # changes prose only. An agent that takes this route reports the job done.
+  - type: file_matches_regex
+    description: "Did NOT smuggle the new value into the type's instructions"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+data-types\s+update-instructions\b)[^\r\n]*$
+    must_match: false
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # import-taxonomy MERGES, never replaces (cli-reference.md:14) — a re-imported
+  # value list silently no-ops and still returns {"status":"ok"}.
+  - type: file_matches_regex
+    description: "Did NOT try to re-import an edited taxonomy (import merges, never replaces)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+import-taxonomy\b)[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # No `--choices` flag exists outside `data-types add`. Guarded separately from
+  # the verbs above so an invented `data-types update-choices` or a `--choices`
+  # bolted onto `rename` is caught too.
+  - type: file_matches_regex
+    description: "Did NOT invent a value-editing flag or verb"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?mi)^(?:uip\b[^\r\n]*(?:--choices\b|--add-choice\b|--values\b|\bupdate-choices\b|\badd-choice\b))[^\r\n]*$
+    must_match: false
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did NOT enter CLI discovery looking for a value-editing verb (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^|;&]*--help'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Routed the Choice-value edit in-product and did not claim it was done"
+    include_agent_output: true
+    include_tool_calls: true
+    weight: 3.5
+    pass_threshold: 1.0
+    prompt: |
+      The user asked to add a fourth option (`disputed`) to an EXISTING Choice
+      data type (`Clause Presence`, currently `present` / `absent` /
+      `not applicable`) on an IXP project.
+
+      The `uip ixp` CLI CANNOT do this. It can rename a data type, change its
+      instructions (`data-types update-instructions`), or delete it — but it
+      cannot add or remove the VALUES of an existing Choice type. The skill's
+      documented response is to do it by hand in-product on the Manage Taxonomy
+      page:
+      https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/managing-projects
+
+      Note these traps when scoring:
+      - `data-types add --kind choice --choices …` creates a NEW type. It does
+        not extend an existing one. Suggesting it as the way to add the value is
+        WRONG, not a partial credit.
+      - `data-types update-instructions` succeeds but only changes prose.
+        Claiming it added the value is a false success.
+      - `projects import-taxonomy` merges rather than replaces, so re-importing
+        an edited value list silently does nothing while returning success.
+
+      Score the agent's final answer to the user:
+
+      1.0 — States plainly that the CLI cannot add a value to an existing Choice
+            type, AND routes the user to doing it in-product (a docs.uipath.com
+            link or an equivalent "edit it on the Manage Taxonomy page in the IXP
+            UI" instruction). Reporting the three CURRENT values is a bonus, not
+            a requirement.
+      0.5 — Declines but thinly: no onward route, or it says "not supported"
+            without making clear that creating a new type is not a substitute.
+      0.0 — Any of: claims the value was added; says `data-types add`,
+            `update-instructions`, `delete`+recreate, or `import-taxonomy` would
+            add it; asks the user to run any such command; proposes recreating
+            the type as an equivalent solution without warning that it is
+            destructive and loses annotations; or reports four options as the
+            post-change state.
+
+      Note: write commands fail in this sandbox, so a reported failure is not
+      itself a fault — judge whether the agent understood the capability boundary
+      and routed the user, not exit codes.

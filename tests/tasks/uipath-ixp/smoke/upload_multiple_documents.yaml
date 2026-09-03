@@ -1,0 +1,101 @@
+task_id: skill-ixp-upload-multiple-documents-smoke
+description: >
+  Smoke: upload a folder of mixed files into an existing project, one
+  `documents upload` call per supported file. Only assertion on `documents
+  upload`. Grades one call per file, the case-insensitive whitelist
+  (`receipt_scan.TIF` must be uploaded; `.docx` and `.csv` must not be
+  attempted), and not reaching for `projects create` on an existing project.
+  Fixture: ../_shared/upload_inbox_template.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/upload_inbox_template}
+
+initial_prompt: |
+  The `./inbox` folder holds this week's supplier paperwork. Upload the
+  documents from it into the existing IXP project
+  `my_invoices-f1afa9ef-ixp`.
+
+  Tell me if anything in there could not go in.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # One assertion per supported file: `documents upload` takes a single file, so
+  # a correct run produces three separate invocations. These three are also the
+  # positive controls for the guards below.
+  - type: file_matches_regex
+    description: "Uploaded invoice_2411.pdf"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+upload\s+["']?my_invoices-f1afa9ef-ixp["']?\s+[^\r\n]*invoice_2411\.pdf)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Uploaded invoice_2412.png"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+upload\s+["']?my_invoices-f1afa9ef-ixp["']?\s+[^\r\n]*invoice_2412\.png)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The whitelist is case-insensitive. An agent that globs `*.tif` (or writes
+  # its own lower-case-only extension list) silently drops this file and reports
+  # a complete upload — the reason this file carries its own criterion rather
+  # than being folded into a count.
+  - type: file_matches_regex
+    description: "Uploaded receipt_scan.TIF — the whitelist is case-insensitive"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+upload\s+["']?my_invoices-f1afa9ef-ixp["']?\s+[^\r\n]*receipt_scan\.TIF)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # `.docx` is off the whitelist. Attempting it is not harmless: the CLI rejects
+  # it before any network call, so the agent has to interpret an error it could
+  # have avoided from the documented list.
+  - type: file_matches_regex
+    description: "Did NOT attempt the unsupported .docx"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+upload\b[^\r\n]*supplier_notes\.docx)[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Did NOT attempt the unsupported .csv sidecar"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+documents\s+upload\b[^\r\n]*manifest\.csv)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `projects create <name> <folder>` bulk-uploads a folder AND suggests a
+  # taxonomy — the right tool for a brand-new project, the wrong one here. It
+  # would create a second project and leave the named one empty.
+  - type: file_matches_regex
+    description: "Did NOT create a second project instead of uploading into the named one"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+create\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
