@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Eval-lifecycle check for the deterministic ExactMatch path.
+"""Eval-lifecycle check for the ExactMatch path.
 
 Validates that the agent authored both halves of the evaluation
 harness — the evaluator config under `evaluations/evaluators/` AND
 the evaluation set under `evaluations/eval-sets/` whose `evaluatorRefs`
 match the evaluator `id` — and that `uip codedagent eval --no-report`
 produced an output file in which every test case has
-`status == "PASSED"` (deterministic agent + deterministic evaluator
-means anything else is a bug).
+`status == "PASSED"` (an enum-constrained tag on deliberately
+unambiguous cases + a deterministic evaluator means anything else is
+a bug).
 
 Checks:
-  1. `adder/evaluations/evaluators/<file>.json` has `evaluatorTypeId`
-     == "uipath-exact-match" and a non-empty `id`.
-  2. `adder/evaluations/eval-sets/<file>.json` has version "1.0",
+  1. `lingo-tagger/evaluations/evaluators/<file>.json` has
+     `evaluatorTypeId` == "uipath-exact-match" and a non-empty `id`.
+  2. `lingo-tagger/evaluations/eval-sets/<file>.json` has version "1.0",
      `evaluatorRefs` referencing the evaluator id, at least 2 test
      cases, and each test case's `evaluationCriterias` keys the
      evaluator id.
@@ -20,7 +21,7 @@ Checks:
      (`evaluationSetName`, `evaluationSetResults: [...]`), every
      test case in `evaluationSetResults` has at least one matching
      `evaluationRunResults[]` entry for the configured evaluator,
-     and every such entry scored exactly 1.0 (deterministic agent +
+     and every such entry scored exactly 1.0 (unambiguous cases +
      deterministic evaluator: anything below 1.0 is a bug).
 """
 
@@ -34,7 +35,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.project_root import find_project_root  # noqa: E402
 
-ROOT = find_project_root("adder")
+ROOT = find_project_root("lingo-tagger")
 
 
 def _load_json(path: Path) -> dict:
@@ -163,7 +164,7 @@ def check_results(evaluator_id: str, expected_case_count: int) -> None:
             if score != 1.0:
                 bad_cases.append(
                     f'{case_name!r}: evaluator {evaluator_id!r} scored '
-                    f'{score!r}, expected 1.0 (deterministic agent + '
+                    f'{score!r}, expected 1.0 (unambiguous cases + '
                     f'deterministic evaluator)'
                 )
         matching_run_count += len(matching)
