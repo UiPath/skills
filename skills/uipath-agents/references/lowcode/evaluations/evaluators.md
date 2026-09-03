@@ -2,39 +2,26 @@
 
 Evaluators define how agent output is scored. Each evaluator is a JSON file in `evals/evaluators/`.
 
-## Supported Evaluator Types
+## Supported evaluator types
 
-Low-code agents support exactly four evaluator types. All four are first-class options in the Studio Web "Add evaluator" dialog. Two also have CLI-flag shortcuts; the other two are created via the UI or by hand-writing JSON in `evals/evaluators/`.
+Low-code agents support exactly these four types; all are available in Studio Web → Evaluators → **Create New** → **Add evaluator**:
 
-| UI label | `type` | `category` | `--type` flag | What it scores | LLM-based |
-|----------|--------|-----------|---------------|----------------|-----------|
-| LLM-as-a-judge: Semantic Similarity | 5 | 1 (LlmAsAJudge) | `semantic-similarity` | Whether the agent's output has the same meaning as the expected output | Yes |
-| Trajectory | 7 | 3 (Trajectory) | `trajectory` | Whether the agent's reasoning path and tool usage match expected behavior | Yes |
-| Exact match | 1 | 0 (Deterministic) | — | Whether the output precisely matches the expected output without variations in wording or formatting | No |
-| JSON similarity | 6 | 0 (Deterministic) | — | Whether two JSON structures or values are "close enough" or share similar structure/contents | No |
+| UI label | `type` | `category` | `--type` flag | Scores | LLM-based |
+|---|---:|---:|---|---|---|
+| LLM-as-a-judge: Semantic Similarity | 5 | 1 (`LlmAsAJudge`) | `semantic-similarity` | Whether actual and expected output have the same meaning | Yes |
+| Trajectory | 7 | 3 (`Trajectory`) | `trajectory` | Whether reasoning and tool usage match expected behavior | Yes |
+| Exact match | 1 | 0 (`Deterministic`) | — | Whether output precisely matches expected output | No |
+| JSON similarity | 6 | 0 (`Deterministic`) | — | Whether JSON structures or values are sufficiently similar | No |
 
-How to add each type:
+Use the UI for any type. Use the CLI only for `semantic-similarity` and `trajectory`; create Exact match and JSON similarity in the UI or by hand-writing JSON. For hand-written files, run `uip agent refresh --output json`, then run `uip agent validate --output json`; reference the evaluator’s `id` from the eval set’s `evaluatorRefs`.
 
-- **Studio Web UI** — Evaluators tab → **Create New** → Add evaluator dialog → pick any of the four. UI is the canonical surface and supports all four with no special steps.
-- **CLI** — `uip agent eval evaluator add <name> --type <flag>` for `semantic-similarity` or `trajectory`. The CLI does not have a `--type` value for Exact match or JSON similarity; create those in the UI or hand-write the JSON.
-- **Hand-write JSON** — drop a file in `evals/evaluators/` matching the schema below; run `uip agent refresh --output json` then `uip agent validate --output json` to confirm schema validity; reference the new `id` from your eval set's `evaluatorRefs`. Useful when you want to pin a specific model and prompt for the LLM-based types, or when you're scaffolding eval files programmatically.
+The coded eval reference ([coded/lifecycle/evaluations/evaluators.md](../../coded/lifecycle/evaluations/evaluators.md)) lists 13 types, but low-code uses the legacy hierarchy (`BaseLegacyEvaluator`, with no eval-set `version` field). Its four classes are `LegacyLlmAsAJudgeEvaluator`, `LegacyTrajectoryEvaluator`, `LegacyExactMatchEvaluator`, and `LegacyJsonSimilarityEvaluator`. Coded agents use `BaseEvaluator`, eval sets with `version: "1.0"`, and distinct `evaluatorTypeId` implementations. Do not use coded-only types on low-code agents.
 
-### Why fewer than coded?
+## JSON shapes
 
-The coded eval reference ([coded/lifecycle/evaluations/evaluators.md](../../coded/lifecycle/evaluations/evaluators.md)) lists 13 evaluator types. Low-code supports only these four because the two surfaces use **different engines** in the SDK:
+Filenames may be descriptive; runtime resolution uses `id` and `evaluatorRefs`. CLI-created files use `evaluator-<uuid8>.json`, where `<uuid8>` is the first 8 hex characters of the UUID. Hand-written files may use any filename.
 
-- **Coded** uses the new evaluator hierarchy (`BaseEvaluator`, eval sets carry `version: "1.0"`). 13 distinct `evaluatorTypeId` strings, each with its own implementation class.
-- **Low-code** uses the **legacy** evaluator hierarchy (`BaseLegacyEvaluator`, no `version` field on the eval set). The four legacy classes shipped — `LegacyLlmAsAJudgeEvaluator`, `LegacyTrajectoryEvaluator`, `LegacyExactMatchEvaluator`, `LegacyJsonSimilarityEvaluator` — are exactly what the UI exposes.
-
-Most coded evaluator types (`contains`, `binary-classification`, `multiclass-classification`, all four `tool-call-*`, `llm-judge-output-strict-json-similarity`, `llm-judge-trajectory-simulation`) have no legacy counterpart and cannot be used on a low-code agent.
-
-## JSON Shapes
-
-For hand-written files, the filename can be any descriptive name (e.g. `legacy-equality.json`) — the runtime keys off `id` / `evaluatorRefs`, not the filename. The CLI-generated `evaluator-<uuid8>.json` pattern only applies to evaluators created via `uip agent eval evaluator add`.
-
-### Exact match (`type` 1, `category` 0 — Deterministic)
-
-No LLM. Equivalent of coded `uipath-exact-match`.
+### Exact match (`type` 1, `category` 0)
 
 ```json
 {
@@ -50,11 +37,9 @@ No LLM. Equivalent of coded `uipath-exact-match`.
 }
 ```
 
-No `prompt`/`model` required (Deterministic category bypasses the LLM checks).
+Do not add `prompt` or `model`; deterministic evaluators bypass LLM checks.
 
-### JSON similarity (`type` 6, `category` 0 — Deterministic)
-
-Tree-based JSON comparison. No LLM. Equivalent of coded `uipath-json-similarity`.
+### JSON similarity (`type` 6, `category` 0)
 
 ```json
 {
@@ -70,9 +55,7 @@ Tree-based JSON comparison. No LLM. Equivalent of coded `uipath-json-similarity`
 }
 ```
 
-### LLM-as-a-judge: Semantic Similarity (`type` 5, `category` 1 — LlmAsAJudge)
-
-The CLI's `evaluator add --type semantic-similarity` writes a shorter prompt; hand-write the file when you want to pin a specific model and the longer 0–100 prompt:
+### Semantic Similarity (`type` 5, `category` 1)
 
 ```json
 {
@@ -90,7 +73,7 @@ The CLI's `evaluator add --type semantic-similarity` writes a shorter prompt; ha
 }
 ```
 
-### Trajectory (`type` 7, `category` 3 — Trajectory)
+### Trajectory (`type` 7, `category` 3)
 
 ```json
 {
@@ -108,33 +91,26 @@ The CLI's `evaluator add --type semantic-similarity` writes a shorter prompt; ha
 }
 ```
 
-After hand-writing any evaluator, run `uip agent refresh --output json` then `uip agent validate --output json` to confirm the file passes schema validation. Then reference the new evaluator's `id` from your eval set's `evaluatorRefs`. Watch for: `id` collisions with existing evaluators, missing required fields, and ISO-8601 formatting on the timestamps.
+After hand-writing an evaluator, run `uip agent refresh --output json`, then run `uip agent validate --output json`. Fix `id` collisions, missing required fields, and non-ISO-8601 timestamps before referencing the evaluator’s `id` in `evaluatorRefs`.
 
-## Coded-only evaluators (NOT available on low-code)
+## Coded-only evaluators
 
-The following coded `evaluatorTypeId` strings have no legacy class — agents working on a low-code agent should not attempt to use them. Switch to a coded agent (`version: "1.0"` eval sets) if you need any of these:
+Do not use these on low-code agents:
 
 `uipath-contains`, `uipath-llm-judge-output-strict-json-similarity`, `uipath-llm-judge-trajectory-simulation`, `uipath-binary-classification`, `uipath-multiclass-classification`, `uipath-tool-call-order`, `uipath-tool-call-args`, `uipath-tool-call-count`, `uipath-tool-call-output`.
 
-## Managing Evaluators
+Switch to a coded agent (`version: "1.0"` eval sets) when one is required.
 
-### Add an evaluator
+## CLI management
+
+### Add
 
 ```bash
 uip agent eval evaluator add <name> --type <type> --path <agent_dir> --output json
 ```
 
-**Options:**
+`--type` is required and accepts only `semantic-similarity` or `trajectory`. Optional flags are `--description <desc>`, `--prompt <prompt>`, `--target-key <key>`, and `--path <path>` (default `.`). The default target key is `*`; prompts use the built-in default unless overridden.
 
-| Flag | Required | Description | Default |
-|------|----------|-------------|---------|
-| `--type <type>` | Yes | One of: `semantic-similarity`, `trajectory` | — |
-| `--description <desc>` | No | Human-readable description | Auto-generated from type |
-| `--prompt <prompt>` | No | Custom LLM evaluation prompt | Built-in default per type |
-| `--target-key <key>` | No | Specific output key to evaluate | `*` (all keys) |
-| `--path <path>` | No | Agent project directory | `.` |
-
-**Example:**
 ```bash
 uip agent eval evaluator add content-quality \
   --type semantic-similarity \
@@ -142,49 +118,32 @@ uip agent eval evaluator add content-quality \
   --output json
 ```
 
-### List evaluators
+### List
 
 ```bash
 uip agent eval evaluator list --path <agent_dir> --output json
 ```
 
-### Remove an evaluator
+### Remove
 
 ```bash
 uip agent eval evaluator remove <id_or_name> --path <agent_dir> --output json
 ```
 
-Removing an evaluator automatically removes its references from all eval sets that reference it.
+Use this command rather than deleting a file by hand; it removes references from all eval sets.
 
-## Default Evaluators
+## Defaults and filenames
 
-`uip agent init` creates two default evaluators:
+`uip agent init` creates:
 
-### Semantic Similarity (`evaluator-default.json`, `name: "Default Evaluator"`)
+- `evaluator-default.json`, named `Default Evaluator`: semantic similarity using `{{ExpectedOutput}}` and `{{ActualOutput}}`.
+- `evaluator-default-trajectory.json`, named `Default Trajectory Evaluator`: trajectory scoring using `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}`, `{{ExpectedAgentBehavior}}`, and `{{AgentRunHistory}}`.
 
-Compares expected vs actual output for semantic equivalence. Default prompt asks the LLM for a 0–100 score and substitutes `{{ExpectedOutput}}` and `{{ActualOutput}}`.
+Both default evaluators use `"model": "same-as-agent"`, which resolves to the agent’s configured model. Use an explicit model only when scoring with a different model. The runtime DTO normalizes scores to 0–100, but prompts can ask for different scales; use one scale per eval set.
 
-### Trajectory (`evaluator-default-trajectory.json`, `name: "Default Trajectory Evaluator"`)
+CLI-added files use `evaluator-<uuid8>.json`; the `<name>` argument populates the JSON `name`, not the filename. Eval sets reference evaluator UUIDs through `id`, never filename or name.
 
-Evaluates the agent's reasoning path against expected behavior. Default prompt asks the LLM for a 0–100 score and substitutes `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}`, `{{ExpectedAgentBehavior}}`, and `{{AgentRunHistory}}`.
-
-Both default evaluators ship with `"model": "same-as-agent"` — this is supported and resolves to the agent's configured model at runtime. Override with an explicit model only if you need to score with a different model than the agent uses.
-
-The runtime DTO normalizes all evaluator scores to a 0–100 scale regardless of what the prompt asks for, but mixed-scale prompts in the same eval set produce confusing intermediate values — pick one scale per eval set.
-
-## Filename vs Name
-
-CLI-added evaluators are saved as `evaluator-<uuid8>.json` (first 8 hex chars of the evaluator UUID). The `<name>` argument populates the `name` field inside the JSON; it does NOT shape the filename.
-
-```bash
-uip agent eval evaluator add content-quality --type semantic-similarity --path ./my-agent
-# Creates: evals/evaluators/evaluator-b47e26ca.json
-# JSON has: "name": "content-quality"
-```
-
-The two `evaluator-default*.json` files are written by `uip agent init`, not by `evaluator add`. Eval sets reference evaluators by `id` (UUID), not by filename or name.
-
-## Evaluator JSON Format
+## Evaluator JSON and mappings
 
 ```json
 {
@@ -202,30 +161,21 @@ The two `evaluator-default*.json` files are written by `uip agent init`, not by 
 }
 ```
 
-**Type and category mapping:**
-
-| CLI Type | `type` (numeric) | `category` |
-|----------|-------------------|------------|
+| CLI type | `type` | `category` |
+|---|---:|---:|
 | `semantic-similarity` | 5 | 1 (output-based) |
 | `trajectory` | 7 | 3 (trajectory-based) |
 
-## Default Prompts and Template Variables
-
-The prompt and score scale the CLI writes when you run `evaluator add` differs from what `uip agent init` writes for the two default evaluators:
+## Prompts and template variables
 
 | Type | `evaluator add` default | `uip agent init` default |
-|------|-------------------------|--------------------------|
+|---|---|---|
 | `semantic-similarity` | Asks 0–1; uses `{{ExpectedOutput}}`, `{{ActualOutput}}` | Asks 0–100; same placeholders |
 | `trajectory` | Asks 0–1; uses `{{AgentRunHistory}}`, `{{ExpectedBehavior}}` | Asks 0–100; uses `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}`, `{{ExpectedAgentBehavior}}`, `{{AgentRunHistory}}` |
 
-Two notable inconsistencies:
+When editing a prompt, retain the placeholder names already present; do not mix `{{ExpectedBehavior}}` with `{{ExpectedAgentBehavior}}`. The runtime normalizes results to 0–100, but LLM judges return the scale requested by the prompt. Rewrite inconsistent prompts so each eval set uses one scale.
 
-1. **Trajectory placeholder names**: `{{ExpectedBehavior}}` (CLI add) vs `{{ExpectedAgentBehavior}}` (init default). When editing a prompt, use the placeholders already present in that file — do not mix.
-2. **Score scales**: `evaluator add` writes 0–1 prompts; `init` writes 0–100 prompts. The runtime normalizes both to 0–100 in the result DTO, but the LLM judge actually returns whatever the prompt asks for. Mixed-scale eval sets are hard to read; pick one and rewrite the prompts you don't want.
-
-## Custom Prompts
-
-Pass `--prompt` to override the default. Use only the placeholders listed above for the chosen `--type`; unknown placeholders are passed through to the LLM as literal text.
+Override prompts with `--prompt` and use only placeholders listed for that evaluator type; unknown placeholders are passed literally to the LLM.
 
 ```bash
 uip agent eval evaluator add strict-match \
@@ -234,47 +184,47 @@ uip agent eval evaluator add strict-match \
   --path ./my-agent --output json
 ```
 
-## What `uip agent validate` Checks
+## Validation
 
-Validate runs schema migration, which enforces the following on every file in `evals/evaluators/`:
+Run `uip agent validate`; schema migration checks every file in `evals/evaluators/`.
 
-**Required fields:** `fileName`, `id`, `name`, `description`, `category`, `type`, `targetOutputKey`, `createdAt`, `updatedAt`. Missing field → `Required field "<field>" is missing`.
-
-**Category ↔ type compatibility:**
+Required fields are `fileName`, `id`, `name`, `description`, `category`, `type`, `targetOutputKey`, `createdAt`, and `updatedAt`. LLM evaluators additionally require `prompt` and `model`.
 
 | Category | Name | Allowed `type` | Additional requirements |
-|----------|------|----------------|-------------------------|
-| `0` | Deterministic | `1`, `6` | — |
-| `1` | LlmAsAJudge | `5` | `prompt` and `model` required |
-| `3` | Trajectory | `7` | `prompt` and `model` required |
+|---:|---|---|---|
+| 0 | Deterministic | 1, 6 | — |
+| 1 | LlmAsAJudge | 5 | `prompt` and `model` |
+| 3 | Trajectory | 7 | `prompt` and `model` |
 
-Category `2` (`AgentScorer`) exists in the SDK enum but is reserved/unused — do not write it manually.
+Category 2 (`AgentScorer`) exists in the SDK enum but is reserved/unused; do not write it manually. Eval sets are validated against a Zod schema. Fix the reported file path, JSON path, and message, then run validate again.
 
-Eval sets are validated against a Zod schema. The CLI surfaces the offending file path, JSON path, and message — fix and re-run validate.
+## Runtime errors
 
-## Runtime Errors (Eval Worker)
+These occur only after `uip agent eval run start`; `uip agent validate` does not catch them. They come from `python-eval-worker/workflows/eval/activities.py` and the SDK’s `EvaluatorFactory`.
 
-These errors surface only after `uip agent eval run start` — `uip agent validate` does NOT catch them. They come from the cloud eval worker (`python-eval-worker/workflows/eval/activities.py`) and the SDK's `EvaluatorFactory`.
+| Error | Trigger | Fix |
+|---|---|---|
+| `Evaluator '<id>' is an LLM-based evaluator but 'model' is not set in its evaluatorConfig. Specify a valid model name (e.g. 'claude-haiku-4-5-20251001').` | LLM evaluator has empty or missing `model` and is not `same-as-agent`; the worker fails before the LLM gateway call. | Set a tenant-available model or set `"model": "same-as-agent"` and configure `agent.json`. |
+| `'same-as-agent' model option requires agent settings. Ensure agent.json contains valid model settings.` | `same-as-agent` cannot resolve a model from `agent.json`. | Set a model in `agent.json` or use an explicit evaluator model. |
 
-| Error string | Trigger | Fix |
-|--------------|---------|-----|
-| `Evaluator '<id>' is an LLM-based evaluator but 'model' is not set in its evaluatorConfig. Specify a valid model name (e.g. 'claude-haiku-4-5-20251001').` | Evaluator JSON has empty/missing `model` (and is not `same-as-agent`). The worker fail-fasts before calling the LLM gateway. | Set `model` in the evaluator JSON to a model available in your tenant, or set `"model": "same-as-agent"` and ensure `agent.json` has a model. |
-| `'same-as-agent' model option requires agent settings. Ensure agent.json contains valid model settings.` | Evaluator uses `"same-as-agent"` but `agent.json` has no resolvable model. | Set `model` in `agent.json`, or override the evaluator with an explicit model. |
-
-**Pre-empt locally:** before upload, run
+Before upload, run:
 
 ```bash
 uip agent eval evaluator list --path ./my-agent --output json --output-filter '[?model==`""` || model==null]'
 ```
 
-to find any LLM evaluator without an explicit model. (Switch to `--output-filter '[?model==`"same-as-agent"`]'` if you want to flag those that depend on `agent.json`.)
+This finds LLM evaluators without an explicit model. To flag evaluators depending on `agent.json`, run:
+
+```bash
+uip agent eval evaluator list --path ./my-agent --output json --output-filter '[?model==`"same-as-agent"`]'
+```
 
 ## Anti-patterns
 
-- **Don't reference an evaluator by filename.** Eval sets reference evaluators by UUID (`id`).
-- **Don't pass `--type` in PascalCase.** Only `semantic-similarity` and `trajectory` are accepted.
-- **Don't assume `evaluator add` mirrors `init`'s prompts.** They differ for trajectory; check the resulting JSON before reusing template variables in your own scoring tooling.
-- **Don't delete an evaluator file by hand.** Use `uip agent eval evaluator remove` so `evaluatorRefs` in eval sets are cleaned up automatically.
-- **Don't copy evaluator JSON across projects without regenerating UUIDs.** `id` collisions silently corrupt cross-project resolution.
-- **Don't try to add a coded-only evaluator type to a low-code agent.** Anything starting with `uipath-tool-call-*`, `uipath-binary-classification`, `uipath-multiclass-classification`, `uipath-contains`, `uipath-llm-judge-output-strict-json-similarity`, or `uipath-llm-judge-trajectory-simulation` has no legacy class and the eval worker will not load it. If you need one of these, the agent must be coded, not low-code.
-- **Don't hand-write a category/type combination outside the validate matrix.** Validate accepts cat 0 → types {1, 6}, cat 1 → type {5}, cat 3 → type {7}. Anything else fails schema migration.
+- Do not reference evaluators by filename; use UUID `id`.
+- Do not pass `--type` in PascalCase; use only `semantic-similarity` or `trajectory`.
+- Do not assume `evaluator add` mirrors `init`; inspect the generated JSON, especially trajectory placeholders and score scales.
+- Do not delete evaluator files by hand; run `uip agent eval evaluator remove` to clean `evaluatorRefs`.
+- Do not copy evaluator JSON across projects without regenerating UUIDs; `id` collisions silently corrupt cross-project resolution.
+- Do not use coded-only evaluator types on low-code agents; those without legacy classes will not load in the eval worker.
+- Do not hand-write category/type combinations outside the validation matrix: category 0 → types {1, 6}; category 1 → type {5}; category 3 → type {7}.

@@ -2,61 +2,55 @@
 
 ## When to Use
 
-Pick this when:
+Use this skill when all apply:
 
-- Project has `agent.json` with `"type": "lowCode"` (standalone) **or** the agent is inline inside a Maestro Flow (`uipath.agent.autonomous` node)
-- User is building in Studio Web Agent Builder, no Python
-- Source data is tabular (CSV) — one input row should produce one output row plus extra LLM-filled columns
-- Output destination is an Orchestrator bucket attachment downstream consumers (RPA, agents) can read
+- `agent.json` has `"type": "lowCode"` (standalone), or the agent is inline in a Maestro Flow (`uipath.agent.autonomous` node).
+- The agent is built in Studio Web Agent Builder without Python.
+- Source data is tabular CSV, with one output row per input row plus LLM-filled columns.
+- Output is an Orchestrator bucket attachment for downstream RPA or agent consumers.
 
-Confirm BatchTransform is the right mode first — see [../../../../context-grounding-patterns.md](../../../../context-grounding-patterns.md).
+Confirm BatchTransform is appropriate first: [../../../../context-grounding-patterns.md](../../../../context-grounding-patterns.md).
 
-For coded agents (Python, LangGraph) → [../../../../coded/capabilities/batch-transform/planning.md](../../../../coded/capabilities/batch-transform/planning.md).
+For coded agents (Python, LangGraph), use [../../../../coded/capabilities/batch-transform/planning.md](../../../../coded/capabilities/batch-transform/planning.md).
 
-## Inputs You Need Before Building
+## Confirm Before Building
 
-| Input | Why | Source |
-|---|---|---|
-| Agent project shape | Standalone vs. inline-in-flow — affects where `resource.json` lives | Inspect `agent.json` and the parent solution |
-| Tool resource configuration | Top-level prompt + per-column descriptions + web-grounding default | Author / Studio Web tool config |
-| Attachment ingress | The `batch-transform` tool consumes runtime-uploaded CSV attachments — confirm the agent has an attachment input wired | Studio Web schema / `entry-points.json` |
-| Output destination | Bucket + path where the augmented CSV is written | User config; include unique suffix per run to avoid overwrites |
-| Web grounding default | Whether to enable web search per row by default | User flag; default off (turn on only when the task needs fresh external data) |
-| System prompt | Tells the agent when to invoke `batch-transform` and how to frame the row prompt | Author / Studio Web |
+- **Project shape:** Identify standalone versus inline-in-flow; this determines where `resource.json` lives. Inspect `agent.json` and the parent solution.
+- **Tool configuration:** Confirm the top-level prompt, per-column descriptions, and web-grounding default in the authoring or Studio Web tool configuration.
+- **Attachment ingress:** Confirm that `batch-transform` receives runtime-uploaded CSV attachments through a wired attachment input in the Studio Web schema / `entry-points.json`.
+- **Output destination:** Define the bucket and path, adding a unique suffix per run to prevent overwrites.
+- **Web grounding:** Default to off; enable only when each row needs fresh external data.
+- **System prompt:** Specify when to invoke `batch-transform` and how to frame the row prompt.
 
-## Tool Resource Shape
+## Resource Shapes
 
-Built-in tools are declared in `resources/<name>/resource.json` with `$resourceType: "tool"`, `type: "internal"`, `referenceKey: null`, and `properties.toolType: "batch-transform"`. See [impl-json.md](impl-json.md) for the exact JSON.
+Declare a built-in tool in `resources/<name>/resource.json` with `$resourceType: "tool"`, `type: "internal"`, `referenceKey: null`, and `properties.toolType: "batch-transform"`. See [impl-json.md](impl-json.md) for the exact JSON.
 
-Built-in tools accept these `toolType` values: `analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`. Anything else fails `uip agent validate`.
+Valid built-in `toolType` values are `analyze-attachments`, `load-attachments`, `deep-rag`, and `batch-transform`. Run `uip agent validate` to validate the agent; any other value fails validation.
 
-### Tool resource vs context-index resource
+This tool shape invokes BatchTransform through the agent's tool-calling loop. The alternative context-index shape uses `$resourceType: "context"`, `contextType: "index"`, and `retrievalMode: "batchtransform"` (lowercase, no hyphen). `uip agent validate` accepts camelCase, but Studio Web silently drops the resource on import. Set `webSearchGrounding` and `outputColumns` on the context resource.
 
-Two valid shapes for enabling BatchTransform on a low-code agent. This skill documents the **built-in tool** shape (the agent invokes BatchTransform through its tool-calling loop). The alternative is a **context-index resource** that wires BatchTransform as a retrieval mode on a pre-built ECS index — `$resourceType: "context"`, `contextType: "index"`, `retrievalMode: "batchtransform"` (lowercase, no hyphen — `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import), with `webSearchGrounding` and `outputColumns` set on the resource. Use the context-index form when the CSV lives in a stable, pre-built index reused across runs and the agent should query it transparently as context; use the tool form (this skill) when the CSV is a runtime attachment and the agent must decide row-by-row when to invoke it.
+Use the context-index shape when a CSV is in a stable, pre-built ECS index reused across runs and should be queried transparently as context. Use the tool shape when the CSV is a runtime attachment and the agent must decide row-by-row when to invoke BatchTransform.
 
 ## Critical Decisions
 
-| Decision | Rule |
-|---|---|
-| `batch-transform` vs `deep-rag` | Pick by input file type: `.csv` → `batch-transform`; `.pdf` / `.txt` → `deep-rag`. Hard rule, no subjective tiebreaker. |
-| `batch-transform` vs `analyze-attachments` | `analyze-attachments` does single-file, single-shot extraction. `batch-transform` iterates across all rows of a CSV at scale. |
-| Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
-| Output column names | Must match regex `^[\w\s\.,!?-]+$`. No `/`, `:`, `&`, `(`, `)`, or other special chars. |
-| Output column descriptions | Each is the per-column LLM instruction. Be specific about format, enums, and "when uncertain" handling. Worked examples improve quality. |
-| Web grounding default | Off unless the prompt explicitly needs fresh external data. |
+- **`batch-transform` vs. `deep-rag`:** Choose by file type: `.csv` → `batch-transform`; `.pdf` / `.txt` → `deep-rag`. This is a hard rule.
+- **`batch-transform` vs. `analyze-attachments`:** `analyze-attachments` performs single-file, single-shot extraction; `batch-transform` iterates over all CSV rows at scale.
+- **Standalone vs. inline-in-flow:** Use the same `resource.json` shape. Inline flows additionally require an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md).
+- **Output column names:** Match `^[\w\s\.,!?-]+$`; do not use `/`, `:`, `&`, `(`, `)`, or other special characters.
+- **Output column descriptions:** Provide each column's LLM instruction, including format, enums, and handling when uncertain. Worked examples improve quality.
+- **Web grounding:** Keep it off unless the prompt explicitly requires fresh external data.
 
-## Bindings / Permissions
+## Bindings, Permissions, and Output
 
-BatchTransform runs in the folder context of the running agent. The tool requires the index permission and write access to the destination bucket. If the agent is published to a folder where its identity lacks rights, runs fail with 403 (read) or 400 (folder/permission).
+BatchTransform runs in the running agent's folder context and requires index permission plus write access to the destination bucket. If the published agent identity lacks those rights, runs fail with 403 (read) or 400 (folder/permission).
 
-## Output Handling
+BatchTransform returns an Orchestrator bucket attachment, not an inline chat value. Plan to:
 
-Output is an Orchestrator bucket attachment, not an inline value the agent returns to the chat. Plan for:
-
-- A unique destination path per run (timestamp / UUID suffix)
-- Downstream RPA / agent steps that read the attachment and continue processing
-- A summary message the agent posts back to chat with the bucket location, row count, and any failure summary
+- Write to a unique destination path per run using a timestamp or UUID suffix.
+- Have downstream RPA or agent steps read the attachment and continue processing.
+- Post a chat summary containing the bucket location, row count, and any failure summary.
 
 ## Hand-off
 
-Once planning is complete, implement per [impl-json.md](impl-json.md).
+After planning, implement according to [impl-json.md](impl-json.md).

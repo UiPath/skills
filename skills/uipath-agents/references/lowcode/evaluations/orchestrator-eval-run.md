@@ -1,382 +1,136 @@
 # Orchestrator Runtime Eval Commands
 
-Manage and run runtime evaluations for agents published as Orchestrator packages. All commands are scoped by `--process-key` (process key GUID) and hit the agents runtime API.
+Manage runtime evaluations for agents published as Orchestrator packages. Commands call the agents runtime API and are scoped by `--process-key` (process key GUID). Run `uip or processes list` to find process keys.
 
-## Command Structure
+## Command structure
 
-```
+```text
 uip or eval
-├── execute-and-evaluate             Submit a runtime eval run
-├── run list                         List eval set runs for a process
-├── run get <evalSetRunId>           Get details of a specific run
-├── run results <evalSetRunId>       View per-item results
-├── evaluator list/get/create/update/delete Manage evaluators
-├── eval-set list/get/create/update/delete  Manage eval sets (dataset containers)
-├── evaluation list/get/create/update/delete Manage data points within eval sets
-└── schedule create/list/get/update/pause/resume/delete
-                                     Manage scheduled recurring eval runs
+├── execute-and-evaluate
+├── run list / get / results
+├── evaluator list / get / create / update / delete
+├── eval-set list / get / create / update / delete
+├── evaluation list / get / create / update / delete
+└── schedule create / list / get / update / pause / resume / delete
 ```
-
----
 
 ## execute-and-evaluate
 
-Submit a runtime eval run for a published Orchestrator package.
+Run an evaluation against a published package. Always pass inline `--items` and `--evaluators`, including when `--eval-set-id` is supplied; inline data is what runs.
 
 ```bash
 uip or eval execute-and-evaluate \
-  --process-key <guid> \
-  --workload-id <guid> \
-  --items <json> \
-  --evaluators <json> \
-  [--eval-set-id <guid>] \
-  [--batch-size <n>] \
-  [--folder-key <folder-guid>] \
-  [--tenant <tenant-name>] \
-  --output json
+  --process-key <guid> --workload-id <guid> --items <json> --evaluators <json> \
+  [--eval-set-id <guid>] [--batch-size <n>] [--folder-key <folder-guid>] \
+  [--tenant <tenant-name>] --output json
 ```
 
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--process-key` | Yes | Process key (GUID). Use `uip or processes list` to find keys. |
-| `--workload-id` | Yes | Workload ID (GUID). |
-| `--items` | Yes | JSON array of eval items. See [Evaluations](#evaluation-data-points). |
-| `--evaluators` | Yes | JSON array of evaluator configs. See [Evaluators](#evaluators). |
-| `--eval-set-id` | No | Eval set ID; defaults to zero GUID |
-| `--batch-size` | No | Max concurrent evaluation pipelines (default: `5`) |
-| `--folder-key` | No | Folder key GUID; defaults to personal workspace |
-| `--tenant` | No | UiPath tenant name |
+Required: `--process-key`, `--workload-id` (valid GUID), `--items` (JSON array), and `--evaluators` (JSON array). Optional: `--eval-set-id` (defaults to zero GUID), `--batch-size` (maximum concurrent evaluation pipelines; default `5`), `--folder-key` (folder key GUID; otherwise the personal workspace), and `--tenant`.
 
-The folder resolves from your personal workspace automatically. Pass `--folder-key` to target a specific folder.
-
-### Example
-
-```bash
-uip or eval execute-and-evaluate \
-  --process-key "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --workload-id "a1b2c3d4-0000-0000-0000-000000000001" \
-  --items '[{"id":"i1","name":"Test","inputs":{"input":"hello"},"expectedOutput":{},"expectedBehavior":""}]' \
-  --evaluators '[{"id":"ev-1","version":"","evaluatorTypeId":"uipath-llm-judge-output-semantic-similarity","evaluatorConfig":{"name":"Semantic","prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
-  --output json
-```
-
-### Output
+Typical item:
 
 ```json
-{
-  "Result": "Success",
-  "Code": "EvalRunSubmitted",
-  "Data": {
-    "ProcessKey": "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09",
-    "Folder": "user@uipath.com's workspace",
-    "EvalSetId": "00000000-0000-0000-0000-000000000000",
-    "EvalSetRunId": "f3a7d219-8b4c-4e62-a951-7d3f6e2c8b04"
-  }
-}
+{"id":"<id>","name":"<name>","inputs":{},"expectedOutput":{},"expectedBehavior":""}
 ```
 
----
+Typical evaluator:
+
+```json
+{"id":"<id>","version":"","evaluatorTypeId":"<type-id>","evaluatorConfig":{"name":"<name>","prompt":"<prompt>","model":"<explicit-model-id>","targetOutputKey":"*"}}
+```
+
+Output includes `Result`, `Code`, and `Data`. `Code` is `EvalRunSubmitted`; `Data` includes `ProcessKey`, `Folder`, `EvalSetId`, and `EvalSetRunId`.
 
 ## Evaluators
 
-CRUD for evaluators scoped by process key.
-
-### evaluator list
+Evaluator CRUD is scoped by process key.
 
 ```bash
 uip or eval evaluator list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
-```
-
-Output code: `EvaluatorList`. Fields: EvaluatorId, Name, Description, EvaluatorTypeId, Version, CreatedAt. Includes `Pagination` field.
-
-### evaluator get
-
-```bash
 uip or eval evaluator get <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
-```
-
-Output code: `EvaluatorDetails`.
-
-### evaluator create
-
-```bash
 uip or eval evaluator create \
-  --process-key <guid> \
-  --workload-id <guid> \
-  --folder-key <guid> \
-  --name <name> \
-  --description <text> \
-  --evaluator-type-id <id> \
-  --evaluator-config <json> \
-  [--version <version>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--process-key` | Yes | Process key (GUID) |
-| `--workload-id` | Yes | Workload ID (GUID) |
-| `--folder-key` | Yes | Folder key (GUID) |
-| `--name` | Yes | Evaluator name |
-| `--description` | Yes | Evaluator description |
-| `--evaluator-type-id` | Yes | Type ID (e.g. `uipath-exact-match`, `uipath-llm-judge-output-semantic-similarity`, `uipath-llm-judge-trajectory-similarity`) |
-| `--evaluator-config` | Yes | Evaluator config as JSON object |
-| `--version` | No | Version string (default: `1.0`) |
-
-Output code: `EvaluatorCreated`.
-
-### evaluator update
-
-```bash
+  --process-key <guid> --workload-id <guid> --folder-key <guid> \
+  --name <name> --description <text> --evaluator-type-id <id> \
+  --evaluator-config <json> [--version <version>] [--tenant <tenant>] --output json
 uip or eval evaluator update <evaluatorId> \
-  --process-key <guid> \
-  [--name <name>] \
-  [--description <text>] \
-  [--evaluator-type-id <id>] \
-  [--evaluator-config <json>] \
-  [--version <version>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-At least one optional field must be provided. The command fetches the current state, merges your changes, and PUTs the full object back (the backend has no PATCH endpoint).
-
-Output code: `EvaluatorUpdated`.
-
-### evaluator delete
-
-```bash
+  --process-key <guid> [--name <name>] [--description <text>] \
+  [--evaluator-type-id <id>] [--evaluator-config <json>] [--version <version>] \
+  [--tenant <tenant>] --output json
 uip or eval evaluator delete <evaluatorId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
-Output code: `EvaluatorDeleted`.
+`evaluator list` returns `EvaluatorList` with `EvaluatorId`, `Name`, `Description`, `EvaluatorTypeId`, `Version`, `CreatedAt`, and `Pagination`; `evaluator get` returns `EvaluatorDetails`; create, update, and delete return `EvaluatorCreated`, `EvaluatorUpdated`, and `EvaluatorDeleted`.
 
----
+Create requires `--process-key`, `--workload-id`, `--folder-key`, `--name`, `--description`, `--evaluator-type-id`, and `--evaluator-config`; `--version` defaults to `1.0`. Evaluator type IDs include `uipath-exact-match`, `uipath-llm-judge-output-semantic-similarity`, and `uipath-llm-judge-trajectory-similarity`. Update requires at least one optional field; fetch current state, merge changes, and PUT the full object because the backend has no PATCH endpoint.
 
 ## Eval Sets
 
-CRUD for eval sets (dataset containers) scoped by process key.
-
-### eval-set list
+Eval sets are dataset containers scoped by process key.
 
 ```bash
 uip or eval eval-set list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
-```
-
-Output code: `EvalSetList`. Fields: EvalSetId, Name, Description, BatchSize, EvaluatorRefs, CreatedAt. Includes `Pagination` field.
-
-### eval-set get
-
-```bash
 uip or eval eval-set get <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
-```
-
-Output code: `EvalSetDetails`.
-
-### eval-set create
-
-```bash
 uip or eval eval-set create \
-  --process-key <guid> \
-  --workload-id <guid> \
-  --folder-key <guid> \
-  --name <name> \
-  [--description <text>] \
-  [--batch-size <n>] \
-  [--timeout-minutes <n>] \
-  [--evaluator-refs <refs...>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--process-key` | Yes | Process key (GUID) |
-| `--workload-id` | Yes | Workload ID (GUID) |
-| `--folder-key` | Yes | Folder key (GUID) |
-| `--name` | Yes | Eval set name |
-| `--description` | No | Description |
-| `--batch-size` | No | Max concurrent evaluations |
-| `--timeout-minutes` | No | Timeout per evaluation |
-| `--evaluator-refs` | No | Evaluator IDs to link (space-separated) |
-
-Output code: `EvalSetCreated`.
-
-### eval-set update
-
-```bash
+  --process-key <guid> --workload-id <guid> --folder-key <guid> --name <name> \
+  [--description <text>] [--batch-size <n>] [--timeout-minutes <n>] \
+  [--evaluator-refs <refs...>] [--tenant <tenant>] --output json
 uip or eval eval-set update <evalSetId> \
-  --process-key <guid> \
-  [--name <name>] \
-  [--description <text>] \
-  [--batch-size <n>] \
-  [--timeout-minutes <n>] \
-  [--evaluator-refs <refs...>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-At least one optional field must be provided. Fetches current state, merges changes, PUTs the full object.
-
-Output code: `EvalSetUpdated`.
-
-### eval-set delete
-
-```bash
+  --process-key <guid> [--name <name>] [--description <text>] \
+  [--batch-size <n>] [--timeout-minutes <n>] [--evaluator-refs <refs...>] \
+  [--tenant <tenant>] --output json
 uip or eval eval-set delete <evalSetId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
-Output code: `EvalSetDeleted`.
+`eval-set list` returns `EvalSetList` with `EvalSetId`, `Name`, `Description`, `BatchSize`, `EvaluatorRefs`, `CreatedAt`, and `Pagination`; get returns `EvalSetDetails`; create, update, and delete return `EvalSetCreated`, `EvalSetUpdated`, and `EvalSetDeleted`.
 
----
+Create requires `--process-key`, `--workload-id`, `--folder-key`, and `--name`. Optional fields are `--description`, `--batch-size`, `--timeout-minutes`, and space-separated evaluator IDs in `--evaluator-refs`. Update requires at least one optional field; fetch, merge, and PUT the full object.
 
 ## Evaluation (Data Points)
 
-CRUD for evaluations (test cases / data points) within eval sets.
-
-### evaluation list
+Evaluations are test cases/data points within eval sets.
 
 ```bash
 uip or eval evaluation list \
-  --process-key <guid> \
-  --eval-set-id <guid> \
-  [--limit <n>] \
-  [--offset <n>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-Output code: `EvaluationList`. Fields: EvaluationId, EvalSetId, Name, Inputs, ExpectedOutput, ExpectedBehavior, CreatedAt. Includes `Pagination` field.
-
-### evaluation get
-
-```bash
+  --process-key <guid> --eval-set-id <guid> [--limit <n>] [--offset <n>] \
+  [--tenant <tenant>] --output json
 uip or eval evaluation get <evaluationId> \
-  --process-key <guid> \
-  --eval-set-id <guid> \
-  [--tenant <tenant>] \
-  --output json
-```
-
-Output code: `EvaluationDetails`.
-
-### evaluation create
-
-```bash
+  --process-key <guid> --eval-set-id <guid> [--tenant <tenant>] --output json
 uip or eval evaluation create \
-  --process-key <guid> \
-  --eval-set-id <guid> \
-  --folder-key <guid> \
-  --name <name> \
-  --inputs <json> \
-  [--expected-output <json>] \
-  [--expected-behavior <text>] \
-  [--evaluation-criterias <json>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--process-key` | Yes | Process key (GUID) |
-| `--eval-set-id` | Yes | Eval set ID (GUID) |
-| `--folder-key` | Yes | Folder key (GUID) |
-| `--name` | Yes | Data point name |
-| `--inputs` | Yes | Input values as JSON |
-| `--expected-output` | No | Expected output as JSON (for output evaluators) |
-| `--expected-behavior` | No | Expected agent behavior (for trajectory evaluators) |
-| `--evaluation-criterias` | No | Per-evaluator criteria overrides as JSON (spelling matches the backend API field name) |
-
-Output code: `EvaluationCreated`.
-
-### evaluation update
-
-```bash
+  --process-key <guid> --eval-set-id <guid> --folder-key <guid> --name <name> \
+  --inputs <json> [--expected-output <json>] [--expected-behavior <text>] \
+  [--evaluation-criterias <json>] [--tenant <tenant>] --output json
 uip or eval evaluation update <evaluationId> \
-  --process-key <guid> \
-  --eval-set-id <guid> \
-  [--name <name>] \
-  [--inputs <json>] \
-  [--expected-output <json>] \
-  [--expected-behavior <text>] \
-  [--evaluation-criterias <json>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-At least one optional field must be provided. Fetches current state, merges changes, PUTs the full object.
-
-Output code: `EvaluationUpdated`.
-
-### evaluation delete
-
-```bash
+  --process-key <guid> --eval-set-id <guid> [--name <name>] [--inputs <json>] \
+  [--expected-output <json>] [--expected-behavior <text>] \
+  [--evaluation-criterias <json>] [--tenant <tenant>] --output json
 uip or eval evaluation delete <evaluationId> \
-  --process-key <guid> \
-  --eval-set-id <guid> \
-  [--tenant <tenant>] \
-  --output json
+  --process-key <guid> --eval-set-id <guid> [--tenant <tenant>] --output json
 ```
 
-Output code: `EvaluationDeleted`.
+`evaluation list` returns `EvaluationList` with `EvaluationId`, `EvalSetId`, `Name`, `Inputs`, `ExpectedOutput`, `ExpectedBehavior`, `CreatedAt`, and `Pagination`; get returns `EvaluationDetails`; create, update, and delete return `EvaluationCreated`, `EvaluationUpdated`, and `EvaluationDeleted`.
 
----
+Create requires `--process-key`, `--eval-set-id`, `--folder-key`, `--name`, and `--inputs`. Optional fields are `--expected-output`, `--expected-behavior`, and `--evaluation-criterias`, the backend spelling for per-evaluator criteria overrides. Update requires at least one optional field; fetch, merge, and PUT the full object.
 
 ## Run Results
 
-Query eval run results by process key.
-
-### run list
+Query runs by process key.
 
 ```bash
 uip or eval run list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
-```
-
-Output code: `EvalSetRunList`. Fields: EvalSetRunId, EvalSetId, Status, Score, EvalsExecuted, Duration, CreatedAt. Includes `Pagination` field.
-
-### run get
-
-```bash
 uip or eval run get <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
-```
-
-Output code: `EvalSetRunDetails`.
-
-### run results
-
-```bash
 uip or eval run results <evalSetRunId> --process-key <guid> [--tenant <tenant>] --output json
 ```
 
-Output code: `EvalRunResults`. Fields: EvalRunId, DataPoint, Status, Result, CreatedAt.
-
----
+`run list` returns `EvalSetRunList` with `EvalSetRunId`, `EvalSetId`, `Status`, `Score`, `EvalsExecuted`, `Duration`, `CreatedAt`, and `Pagination`; `run get` returns `EvalSetRunDetails`; `run results` returns `EvalRunResults` with `EvalRunId`, `DataPoint`, `Status`, `Result`, and `CreatedAt`.
 
 ## Schedules
 
-CRUD for scheduled recurring eval runs.
-
-### schedule create
+Manage recurring evaluation runs.
 
 ```bash
 uip or eval schedule create \
-  --process-key <guid> \
-  --eval-set-id <guid> \
-  --cron <expression> \
-  [--workload-id <guid>] \
-  [--folder-key <guid>] \
-  [--tenant <tenant>] \
-  --output json
-```
-
-`--process-key`, `--eval-set-id`, and `--cron` are required. `--workload-id` and `--folder-key` are auto-resolved from the eval set when omitted. Pass them explicitly to override.
-
-Output code: `EvalScheduleCreated`. Fields: ScheduleId, WorkloadId, ProcessKey, FolderKey, EvalSetId, CronExpression, Status, CreatedAt.
-
-### schedule list / get / update / pause / resume / delete
-
-```bash
+  --process-key <guid> --eval-set-id <guid> --cron <expression> \
+  [--workload-id <guid>] [--folder-key <guid>] [--tenant <tenant>] --output json
 uip or eval schedule list --process-key <guid> --output json
 uip or eval schedule get <scheduleId> --process-key <guid> --output json
 uip or eval schedule update <scheduleId> --process-key <guid> [--eval-set-id <guid>] [--cron <expr>] --output json
@@ -385,80 +139,36 @@ uip or eval schedule resume <scheduleId> --process-key <guid> --output json
 uip or eval schedule delete <scheduleId> --process-key <guid> --output json
 ```
 
-Output codes: `EvalScheduleList`, `EvalScheduleDetails`, `EvalScheduleUpdated`, `EvalSchedulePaused`, `EvalScheduleResumed`, `EvalScheduleDeleted`.
+Create requires `--process-key`, `--eval-set-id`, and `--cron`. `--workload-id` and `--folder-key` resolve from the eval set when omitted and override it when supplied. It returns `EvalScheduleCreated` with `ScheduleId`, `WorkloadId`, `ProcessKey`, `FolderKey`, `EvalSetId`, `CronExpression`, `Status`, and `CreatedAt`. Other output codes are `EvalScheduleList`, `EvalScheduleDetails`, `EvalScheduleUpdated`, `EvalSchedulePaused`, `EvalScheduleResumed`, and `EvalScheduleDeleted`. Update requires at least one of `--eval-set-id` or `--cron`; folder key is immutable after creation.
 
-Update requires at least one of `--eval-set-id` or `--cron`. Folder key is immutable after creation.
+## Typical workflow — CRUD-first
 
----
+1. Run `uip or eval evaluator create` with `--process-key`, `--workload-id`, `--folder-key`, `--name`, `--description`, `--evaluator-type-id`, and valid `--evaluator-config` JSON; capture the evaluator ID.
+2. Run `uip or eval eval-set create` with `--process-key`, `--workload-id`, `--folder-key`, `--name`, and `--evaluator-refs`; capture the eval set ID.
+3. Run `uip or eval evaluation create` with `--process-key`, `--eval-set-id`, `--folder-key`, `--name`, `--inputs`, and applicable expected values.
+4. Run `uip or eval eval-set update` with `--evaluator-refs` to add or replace linked evaluator IDs when needed.
+5. Run `uip or eval execute-and-evaluate` with `--process-key`, `--workload-id`, `--eval-set-id`, inline `--items`, and inline `--evaluators`; copy canonical CRUD data into the inline arguments.
+6. Run `uip or eval run list` and `uip or eval run results <evalSetRunId>` with `--process-key` to inspect results.
+7. Run `uip or eval schedule create` with `--process-key`, `--eval-set-id`, and `--cron`; `--workload-id` and `--folder-key` resolve from the eval set when omitted.
 
-## Typical Workflow — CRUD-first
-
-Create evaluators, eval sets, and data points via CRUD, then run against the eval set.
-
-```bash
-# 1. Create an evaluator
-uip or eval evaluator create \
-  --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" --folder-key "$FOLDER_KEY" \
-  --name "Semantic Similarity" --description "LLM output comparison" \
-  --evaluator-type-id uipath-llm-judge-output-semantic-similarity \
-  --evaluator-config '{"name":"Semantic","prompt":"As an expert evaluator, analyze the semantic similarity of these outputs to determine a score from 0-100.\n----\nExpectedOutput:\n{{ExpectedOutput}}\n----\nActualOutput:\n{{ActualOutput}}\n","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}' \
-  --output json
-
-# 2. Create an eval set linking the evaluator
-uip or eval eval-set create \
-  --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" --folder-key "$FOLDER_KEY" \
-  --name "Smoke Tests" --evaluator-refs "$EVALUATOR_ID" \
-  --output json
-
-# 3. Add data points to the eval set
-uip or eval evaluation create \
-  --process-key "$PROCESS_KEY" --eval-set-id "$EVAL_SET_ID" --folder-key "$FOLDER_KEY" \
-  --name "Greeting test" --inputs '{"input":"hello"}' \
-  --expected-output '{"content":"Hi there!"}' \
-  --output json
-
-# 4. Update the eval set to add more evaluator refs if needed
-uip or eval eval-set update "$EVAL_SET_ID" \
-  --process-key "$PROCESS_KEY" \
-  --evaluator-refs "$EVALUATOR_ID" "$ANOTHER_EVALUATOR_ID" \
-  --output json
-
-# 5. Run the eval — items and evaluators are passed inline
-uip or eval execute-and-evaluate \
-  --process-key "$PROCESS_KEY" \
-  --workload-id "$WORKLOAD_ID" \
-  --eval-set-id "$EVAL_SET_ID" \
-  --items '[{"id":"i1","name":"Greeting test","inputs":{"input":"hello"},"expectedOutput":{"content":"Hi there!"},"expectedBehavior":""}]' \
-  --evaluators '[{"id":"'"$EVALUATOR_ID"'","version":"","evaluatorTypeId":"uipath-llm-judge-output-semantic-similarity","evaluatorConfig":{"name":"Semantic","prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
-  --output json
-
-# 6. Check results
-uip or eval run list --process-key "$PROCESS_KEY" --output json
-uip or eval run results "$EVAL_SET_RUN_ID" --process-key "$PROCESS_KEY" --output json
-
-# 7. Schedule recurring runs (workload-id and folder-key auto-resolved from eval set)
-uip or eval schedule create \
-  --process-key "$PROCESS_KEY" \
-  --eval-set-id "$EVAL_SET_ID" \
-  --cron "0 9 * * *" --output json
-```
+Keep CRUD data and inline execution data synchronized. `--eval-set-id` does not automatically use CRUD items or evaluators.
 
 ## Troubleshooting
 
 | Error | Cause | Fix |
-|-------|-------|-----|
-| `401 Unauthorized` | Auth expired | Run `uip login` |
-| `Authentication failed` | No active session | Run `uip login` first |
-| `Process not found` | Invalid process key | Verify with `uip or processes list` |
-| `personal workspace not found` | No personal workspace | Pass `--folder-key` explicitly |
-| `WorkloadId must not be equal to zero GUID` | Missing or zero `--workload-id` | Pass a valid workload ID GUID |
-| `--items is not a valid JSON array` | Malformed JSON | Check JSON syntax; must be array of objects |
-| `--evaluator-config is not valid JSON` | Malformed JSON | Pass a valid JSON object |
+|---|---|---|
+| `401 Unauthorized` | Auth expired | Run `uip login`. |
+| `Authentication failed` | No active session | Run `uip login` first. |
+| `Process not found` | Invalid process key | Verify with `uip or processes list`. |
+| `personal workspace not found` | No personal workspace | Pass `--folder-key` explicitly. |
+| `WorkloadId must not be equal to zero GUID` | Missing or zero `--workload-id` | Pass a valid workload ID GUID. |
+| `--items is not a valid JSON array` | Malformed JSON | Check JSON syntax; it must be an array of objects. |
+| `--evaluator-config is not valid JSON` | Malformed JSON | Pass a valid JSON object. |
 
 ## Anti-patterns
 
-- **Don't pass `evaluatorConfig: {}` (empty) in `--evaluators`.** LLM-based evaluators (types 5, 7) need `prompt`, `model`, and `targetOutputKey` in the config. An empty config will fail at runtime.
-- **Don't pass `"model": "same-as-agent"` in inline evaluator configs.** Runtime evals have no access to `agent.json` to resolve this. Use an explicit model ID.
-- **Don't forget `--folder-key` on create commands when not using the personal workspace.** The default personal workspace fallback only works for `execute-and-evaluate`. CRUD commands (`evaluator create`, `eval-set create`, `evaluation create`) require `--folder-key` explicitly.
-- **Keep CRUD data and inline `execute-and-evaluate` items in sync.** `execute-and-evaluate` requires `--items` and `--evaluators` inline even when `--eval-set-id` is provided — the inline data is what actually runs. Use CRUD to manage the canonical dataset and copy items from it into `--items` when triggering a run. Divergence between the two causes confusing results.
-- **Don't reuse evaluator IDs across different processes.** Evaluators are scoped to a process key. Using IDs from one process in another will fail.
+- **Do not pass `evaluatorConfig: {}` in `--evaluators`.** LLM-based evaluators (types 5, 7) require `prompt`, `model`, and `targetOutputKey`; an empty config fails at runtime.
+- **Do not pass `"model": "same-as-agent"` in inline evaluator configs.** Runtime evals cannot read `agent.json` to resolve it; pass an explicit model ID.
+- **Do not omit `--folder-key` on create commands when targeting a non-personal workspace.** The personal-workspace fallback works only for `execute-and-evaluate`; `evaluator create`, `eval-set create`, and `evaluation create` require `--folder-key` explicitly.
+- **Keep CRUD data and inline `execute-and-evaluate` items synchronized.** `execute-and-evaluate` requires inline `--items` and `--evaluators` even with `--eval-set-id`; divergence produces confusing results.
+- **Do not reuse evaluator IDs across processes.** Evaluators are scoped to a process key; IDs from another process fail.

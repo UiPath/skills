@@ -3,18 +3,18 @@
 ## Evaluator Selection Guide
 
 | Agent Type | Primary Evaluator | Secondary | Notes |
-|-----------|------------------|-----------|-------|
+|---|---|---|---|
 | Calculator/Deterministic | Exact Match | - | Binary pass/fail |
 | Text/NLP | LLM Judge Output | Contains | Semantic matching |
 | Multi-step Orchestration | LLM Judge Trajectory | Tool Call Order | Execution path + tool validation |
 | API Integration | JSON Similarity | Exact Match | Structured data |
 | Classification | Binary/Multiclass Classification | - | Label validation |
 
-All evaluators return scores: **1.0** (pass), **0.5-0.9** (partial), **0.0** (fail).
+All evaluators return **1.0** (pass), **0.5-0.9** (partial), or **0.0** (fail).
 
 ## Evaluator File Structure
 
-Every evaluator needs a JSON config in `evaluations/evaluators/`. All follow this structure:
+Every evaluator needs a JSON config in `evaluations/evaluators/`:
 
 ```json
 {
@@ -29,176 +29,83 @@ Every evaluator needs a JSON config in `evaluations/evaluators/`. All follow thi
 }
 ```
 
----
-
 ## Output-Based Evaluators
 
-### ExactMatchEvaluator (`uipath-exact-match`)
+| Evaluator | Type ID and scoring | Configuration | Use |
+|---|---|---|---|
+| **ExactMatchEvaluator** | `uipath-exact-match`; strict string comparison, binary (1.0 or 0.0) | `targetOutputKey` (default `"*"`), `ignoreCase` (default false), `negated` (default false) | Deterministic outputs and exact numbers; avoid for natural language and floats |
+| **ContainsEvaluator** | `uipath-contains`; substring search, binary (1.0 or 0.0) | `targetOutputKey` (default `"*"`), `caseSensitive` (default false), `negated` (default false) | Keyword validation and required terms |
+| **JsonSimilarityEvaluator** | `uipath-json-similarity`; tree-based JSON comparison, continuous (0.0-1.0) | — | Structured JSON outputs and API responses; avoid for exact string matching |
+| **LLMJudgeOutputEvaluator** | `uipath-llm-judge-output-semantic-similarity`; LLM semantic similarity, continuous (0.0-1.0); accept 0.7+ as a good match | `model`, `temperature` (default 0), `maxTokens` (default 4096), `targetOutputKey`, optional `prompt` with `{{ExpectedOutput}}` and `{{ActualOutput}}` | Natural language and summaries; requires LLM API access |
+| **LLMJudgeStrictJSONSimilarityOutputEvaluator** | `uipath-llm-judge-output-strict-json-similarity`; per-key LLM penalty scoring, continuous (0.0-1.0) | — | Structured outputs where each field matters independently |
 
-Strict string comparison. Binary scoring (1.0 or 0.0).
+`JsonSimilarityEvaluator` uses Levenshtein distance for strings, approximately 1% tolerance for numbers, penalizes missing keys, and ignores extra keys.
 
-**Config:** `targetOutputKey` (default `"*"`), `ignoreCase` (default false), `negated` (default false)
+All LLM-based evaluators (`uipath-llm-judge-*`) require `model` in `evaluatorConfig`. Set it to a model available in your tenant; an empty or missing `model` fails at request time against the LLM Gateway.
 
-**Eval criteria:**
+Eval criteria examples:
+
 ```json
 "ExactMatchEvaluator": { "expectedOutput": { "result": "8" } }
-```
-
-**Use for:** Deterministic outputs, exact numbers. **Avoid for:** Natural language, floats.
-
-### ContainsEvaluator (`uipath-contains`)
-
-Substring search. Binary scoring (1.0 or 0.0).
-
-**Config:** `targetOutputKey` (default `"*"`), `caseSensitive` (default false), `negated` (default false)
-
-**Eval criteria:**
-```json
 "ContainsEvaluator": { "searchText": "success" }
-```
-
-**Use for:** Keyword validation, required terms.
-
-### JsonSimilarityEvaluator (`uipath-json-similarity`)
-
-Tree-based JSON comparison. Continuous scoring (0.0-1.0). Strings use Levenshtein distance, numbers ~1% tolerance. Missing keys penalized, extra keys ignored.
-
-**Eval criteria:**
-```json
 "JsonSimilarityEvaluator": { "expectedOutput": { "result": 5.0, "status": "complete" } }
-```
-
-**Use for:** Structured JSON output, API responses. **Avoid for:** Exact string matching.
-
-LLM-based evaluators (all `uipath-llm-judge-*`) require `model` in `evaluatorConfig` — set it to a model available in your tenant. An empty or missing `model` fails at request time against the LLM Gateway.
-
-### LLMJudgeOutputEvaluator (`uipath-llm-judge-output-semantic-similarity`)
-
-LLM-powered semantic similarity. Continuous scoring (0.0-1.0). Accept 0.7+ as good match.
-
-**Config:** `model`, `temperature` (default 0), `maxTokens` (default 4096), `targetOutputKey`, `prompt` (optional, placeholders: `{{ExpectedOutput}}`, `{{ActualOutput}}`)
-
-**Eval criteria:**
-```json
 "LLMJudgeOutputEvaluator": { "expectedOutput": { "summary": "A helpful response about the topic" } }
-```
-
-**Use for:** Natural language, summaries. **Note:** Requires LLM API access.
-
-### LLMJudgeStrictJSONSimilarityOutputEvaluator (`uipath-llm-judge-output-strict-json-similarity`)
-
-Per-key JSON matching with LLM-powered penalty scoring. Continuous (0.0-1.0).
-
-**Eval criteria:**
-```json
 "LLMJudgeStrictJSONSimilarityOutputEvaluator": { "expectedOutput": { "key1": "value1" } }
 ```
 
-**Use for:** Structured outputs where each field matters independently.
+## Trajectory and Tool Call Evaluators
 
----
+| Evaluator | Type ID / behavior | Criteria or configuration |
+|---|---|---|
+| **LLMJudgeTrajectoryEvaluator** | `uipath-llm-judge-trajectory-similarity`; LLM execution-path analysis, continuous (0.0-1.0) | `model`, `temperature` (default 0), optional `prompt` with `{{AgentRunHistory}}`, `{{ExpectedAgentBehavior}}`, and `{{UserOrSyntheticInput}}`; criteria uses `expectedAgentBehavior` |
+| **LLMJudgeTrajectorySimulationEvaluator** | `uipath-llm-judge-trajectory-simulation`; LLM simulation-based trajectory evaluation, continuous (0.0-1.0) | Placeholders: `{{ExpectedAgentBehavior}}`, `{{AgentRunHistory}}`, `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}` |
+| **ToolCallOrderEvaluator** | `uipath-tool-call-order`; validates tool-call sequence | `toolCallsOrder` |
+| **ToolCallArgsEvaluator** | `uipath-tool-call-args`; validates tool-call arguments | `strict` (default false), `subset` (default false), and `toolCalls` |
+| **ToolCallCountEvaluator** | `uipath-tool-call-count`; validates counts | `toolCallsCount`; operators: `"="`, `">"`, `"<"`, `">="`, `"<="` |
+| **ToolCallOutputEvaluator** | `uipath-tool-call-output`; validates tool-call outputs | `toolOutputs` |
 
-## Trajectory & Tool Call Evaluators
+Write trajectory behavior specifically, such as “Agent calls fetch_data, then transform_data in order,” not vaguely, such as “Agent should work correctly.” LLM-based trajectory evaluators require LLM API access.
 
-### LLMJudgeTrajectoryEvaluator (`uipath-llm-judge-trajectory-similarity`)
+Criteria examples:
 
-LLM-powered execution path analysis. Continuous scoring (0.0-1.0).
-
-**Config:** `model`, `temperature` (default 0), `prompt` (optional, placeholders: `{{AgentRunHistory}}`, `{{ExpectedAgentBehavior}}`, `{{UserOrSyntheticInput}}`)
-
-**Eval criteria:**
 ```json
 "LLMJudgeTrajectoryEvaluator": {
   "expectedAgentBehavior": "The agent should call the calculator tool once with the correct arguments and return the sum."
 }
-```
-
-**Writing good behavior descriptions:** Be specific ("Agent calls fetch_data, then transform_data in order"), not vague ("Agent should work correctly").
-
-**Use for:** Multi-step agents, tool call validation. **Note:** Requires LLM API access.
-
-### LLMJudgeTrajectorySimulationEvaluator (`uipath-llm-judge-trajectory-simulation`)
-
-Uses LLM simulation to evaluate agent trajectory. Continuous (0.0-1.0).
-
-**Eval criteria:**
-```json
 "LLMJudgeTrajectorySimulationEvaluator": {
   "expectedAgentBehavior": "The agent should search for the product, compare prices, and return the cheapest option."
 }
-```
-
-**Placeholders:** `{{ExpectedAgentBehavior}}`, `{{AgentRunHistory}}`, `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}`
-
-### ToolCallOrderEvaluator (`uipath-tool-call-order`)
-
-Validates tool call sequence.
-
-**Eval criteria:**
-```json
 "ToolCallOrderEvaluator": { "toolCallsOrder": ["search_products", "compare_prices", "format_result"] }
-```
-
-### ToolCallArgsEvaluator (`uipath-tool-call-args`)
-
-Validates arguments passed to tool calls.
-
-**Config:** `strict` (default false), `subset` (default false)
-
-**Eval criteria:**
-```json
 "ToolCallArgsEvaluator": {
   "toolCalls": [{ "name": "calculator", "arguments": { "a": 5, "b": 3, "operation": "add" } }]
 }
-```
-
-### ToolCallCountEvaluator (`uipath-tool-call-count`)
-
-Validates tool call counts. Operators: `"="`, `">"`, `"<"`, `">="`, `"<="`.
-
-**Eval criteria:**
-```json
 "ToolCallCountEvaluator": { "toolCallsCount": { "search": ["=", 1], "format": ["=", 2] } }
-```
-
-### ToolCallOutputEvaluator (`uipath-tool-call-output`)
-
-Validates tool call outputs.
-
-**Eval criteria:**
-```json
 "ToolCallOutputEvaluator": {
   "toolOutputs": [{ "name": "get_temperature", "output": "{'temperature': 25.0, 'unit': 'fahrenheit'}" }]
 }
 ```
 
----
-
 ## Classification Evaluators
 
 ### BinaryClassificationEvaluator (`uipath-binary-classification`)
 
-**Config:** `classes` (string[]), `positiveClass` (string), `metricType` (`"precision"`, `"recall"`, `"f-score"`)
+Configuration: `classes` (string[]), `positiveClass` (string), and `metricType` (`"precision"`, `"recall"`, `"f-score"`).
 
-**Eval criteria:**
 ```json
 "BinaryClassificationEvaluator": { "expectedClass": "positive" }
 ```
 
 ### MulticlassClassificationEvaluator (`uipath-multiclass-classification`)
 
-**Config:** `classes` (string[]), `metricType` (`"precision"`, `"recall"`, `"f-score"`), `averaging` (`"micro"`, `"macro"`)
+Configuration: `classes` (string[]), `metricType` (`"precision"`, `"recall"`, `"f-score"`), and `averaging` (`"micro"`, `"macro"`).
 
-**Eval criteria:**
 ```json
 "MulticlassClassificationEvaluator": { "expectedClass": "spam" }
 ```
 
----
-
 ## Custom Evaluators
 
-Two commands — run in order:
+Run these commands in order:
 
 ```bash
 # 1. Scaffold the evaluator class at evaluations/evaluators/custom/<name>.py
@@ -210,7 +117,7 @@ uip codedagent register evaluator <EVALUATOR_NAME>.py
 
 `add` scaffolds `evaluations/evaluators/custom/<name>.py`. Edit it, then run `register` to generate `evaluations/evaluators/<name>-evaluator.json`. The spec references the Python file via `"evaluatorSchema": "file://<name>.py:<ClassName>"`.
 
-### Criteria class requirements
+### Criteria Class Requirements
 
 The criteria class holds per-test-case data:
 
@@ -221,15 +128,15 @@ class MyEvaluationCriteria(BaseEvaluationCriteria):
 
 Criteria with no fields (`pass`) causes **"No evaluation criteria provided"** at runtime.
 
-### evaluationCriterias per-case values
+### `evaluationCriterias` Per-Case Values
 
 | Value | Behavior |
-|-------|----------|
+|---|---|
 | `"MyEvaluator": { "expectedValue": "x" }` | Run with these criteria, overriding `defaultEvaluationCriteria` from the spec |
 | `"MyEvaluator": null` | Run using `defaultEvaluationCriteria` from the evaluator spec |
-| evaluator id absent / `evaluationCriterias: {}` | Skip the evaluator for this test case |
+| Evaluator ID absent / `evaluationCriterias: {}` | Skip the evaluator for this test case |
 
-### defaultEvaluationCriteria
+### `defaultEvaluationCriteria`
 
 `register` generates `"defaultEvaluationCriteria": null`. Set it manually in the spec so tests that omit criteria in the eval set still run:
 
@@ -240,11 +147,11 @@ Criteria with no fields (`pass`) causes **"No evaluation criteria provided"** at
 }
 ```
 
-JSON uses camelCase — `expected_value` → `expectedValue`.
+JSON uses camelCase; Python uses snake_case. For example, `expected_value` becomes `expectedValue`.
 
-### Wiring into an eval set
+### Wiring into an Eval Set
 
-Reference the evaluator `id` from the spec in `evaluatorRefs`, then key each test case's `evaluationCriterias` on that same id:
+Reference the evaluator `id` from the spec in `evaluatorRefs`, then key each test case's `evaluationCriterias` on that same ID:
 
 ```json
 {
@@ -265,11 +172,11 @@ Reference the evaluator `id` from the spec in `evaluatorRefs`, then key each tes
 }
 ```
 
-### Evaluating trace spans
+### Evaluating Trace Spans
 
-Custom evaluators receive `agent_execution.agent_trace` — a list of OpenTelemetry `ReadableSpan` objects from the agent run. Use this to evaluate execution behavior that output-based evaluators cannot: timing, call order, named operations.
+Custom evaluators receive `agent_execution.agent_trace`, a list of OpenTelemetry `ReadableSpan` objects from the agent run. Use it to evaluate timing, call order, and named operations that output-based evaluators cannot evaluate.
 
-Add `@traced(name="<span-name>")` to any function in the agent to emit a named span, then match by `span.name` in the evaluator. Always use explicit names — it keeps span lookup clean and unambiguous. See [tracing.md](../../capabilities/tracing.md) for the full decorator API.
+Add `@traced(name="<span-name>")` to any agent function to emit a named span, then match by `span.name` in the evaluator. Always use explicit names to keep span lookup clean and unambiguous. See [tracing.md](../../capabilities/tracing.md) for the full decorator API.
 
 ```python
 # In the agent
@@ -292,18 +199,16 @@ async def evaluate(self, agent_execution, criteria):
     return NumericEvaluationResult(score=1.0 if passed else 0.0, details=f"{duration_ms:.2f}ms")
 ```
 
----
-
 ## Field Naming Convention
 
-JSON files use **camelCase**, Python uses **snake_case**. Key mappings: `expectedOutput`, `expectedAgentBehavior`, `searchText`, `targetOutputKey`, `defaultEvaluationCriteria`, `maxTokens`, `toolCallsCount`, `toolCallsOrder`, `expectedClass`, `positiveClass`.
+JSON files use **camelCase**; Python uses **snake_case**. Key mappings: `expectedOutput`, `expectedAgentBehavior`, `searchText`, `targetOutputKey`, `defaultEvaluationCriteria`, `maxTokens`, `toolCallsCount`, `toolCallsOrder`, `expectedClass`, `positiveClass`.
 
 ## Built-in evaluatorTypeId Values
 
 The SDK exposes 13 public built-in `evaluatorTypeId` values in the enum below.[^templates]
 
 | evaluatorTypeId | Evaluator | Scoring |
-|----------------|-----------|---------|
+|---|---|---|
 | `uipath-exact-match` | ExactMatchEvaluator | Binary (0/1) |
 | `uipath-contains` | ContainsEvaluator | Binary (0/1) |
 | `uipath-json-similarity` | JsonSimilarityEvaluator | Continuous (0-1) |

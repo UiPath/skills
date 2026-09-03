@@ -1,7 +1,6 @@
 # BatchTransform in a Coded Agent — Implementation
 
-LangGraph + `interrupt()` pattern. **No polling** — runtime suspends on `Create*` resume-trigger models and resumes on the BatchRAG completion event.
-
+LangGraph + `interrupt()` pattern. **Do not poll**: suspend on `Create*` resume-trigger models and resume on the BatchRAG completion event.
 
 ## Dependencies
 
@@ -10,9 +9,11 @@ LangGraph + `interrupt()` pattern. **No polling** — runtime suspends on `Creat
 dependencies = ["uipath", "uipath-langchain"]
 ```
 
-## Flavour A — Ephemeral index (attachment-backed, one-shot)
+## Flavour A — Ephemeral index
 
-### Node: create_index
+Use this attachment-backed, one-shot flow.
+
+### `create_index` node
 
 ```python
 from uipath.platform import UiPath
@@ -30,10 +31,12 @@ ephemeral_index = await sdk.context_grounding.create_ephemeral_index_async(
     folder_key=folder_key,
 )
 if ephemeral_index.in_progress_ingestion():
-    ephemeral_index = interrupt(WaitEphemeralIndex(index=ephemeral_index))  # → ContextGroundingIndex (ingested)
+    ephemeral_index = interrupt(WaitEphemeralIndex(index=ephemeral_index))
 ```
 
-### Node: run_batch_transform
+The resumed value is an ingested `ContextGroundingIndex`.
+
+### `run_batch_transform` node
 
 ```python
 from uipath.platform.common import CreateBatchTransform
@@ -41,21 +44,19 @@ from langgraph.types import interrupt
 
 result = interrupt(CreateBatchTransform(
     name=task_name,
-    index_id=ephemeral_index_id,        # from state, set by create_index node
+    index_id=ephemeral_index_id,        # state from create_index
     is_ephemeral_index=True,
     prompt=prompt,
     output_columns=output_columns,
-    destination_path="results/run-<uuid>.csv",
+    destination_path=local_destination_path,
     enable_web_search_grounding=False,
-    index_folder_key=index_folder_key,  # from state, set by create_index node
+    index_folder_key=index_folder_key,  # state from create_index
 ))
 ```
 
 ## Flavour B — Existing named index
 
-Skip the `fetch_source`, `upload_attachment`, and `create_index` nodes entirely.
-
-### Node: run_batch_transform
+Skip `fetch_source`, `upload_attachment`, and `create_index`.
 
 ```python
 from uipath.platform.common import CreateBatchTransform
@@ -63,50 +64,50 @@ from langgraph.types import interrupt
 
 result = interrupt(CreateBatchTransform(
     name=task_name,
-    index_name="<INDEX_NAME>",
-    index_folder_path="<INDEX_FOLDER_PATH>",
+    index_name=index_name,
+    index_folder_path=index_folder_path,
     prompt=prompt,
     output_columns=output_columns,
-    destination_path="results/run-<uuid>.csv",
+    destination_path=local_destination_path,
     enable_web_search_grounding=False,
 ))
 ```
 
-`destination_path` is a LOCAL filesystem path. On resume, the runtime calls `download_batch_transform_result_async(...)` to write the augmented CSV there and returns a confirmation string. Read the CSV from disk if downstream nodes need the rows inline.
+`destination_path` is a LOCAL filesystem path. On resume, the runtime calls `download_batch_transform_result_async(...)`, writes the augmented CSV there, and returns a confirmation string. Read the CSV from disk when downstream nodes need inline rows.
 
-## Procedure (Flavour A)
+## Procedure for Flavour A
 
-1. **fetch_source** — accept / download the source CSV → local path
-2. **upload_attachment** — `await sdk.attachments.upload_async(name=..., source_path=local, folder_key=folder_key)` → attachment uuid
-3. **create_index** — `create_ephemeral_index_async` → check `in_progress_ingestion()` → conditionally `interrupt(WaitEphemeralIndex(...))` → `ContextGroundingIndex`
-4. **run_batch_transform** — `interrupt(CreateBatchTransform(... is_ephemeral_index=True, index_id=..., output_columns=..., destination_path=<local-path>, index_folder_key=...))` → confirmation string; augmented CSV written to `destination_path`
-5. **finalize** — return the local `destination_path` (or read the CSV from disk for downstream nodes)
+1. **fetch_source** — accept or download the source CSV to a local path.
+2. **upload_attachment** — run `await sdk.attachments.upload_async(name=..., source_path=local, folder_key=folder_key)` to obtain the attachment UUID.
+3. **create_index** — run `create_ephemeral_index_async`; check `in_progress_ingestion()`; conditionally run `interrupt(WaitEphemeralIndex(...))`; obtain the ingested `ContextGroundingIndex`.
+4. **run_batch_transform** — run `interrupt(CreateBatchTransform(... is_ephemeral_index=True, index_id=..., output_columns=..., destination_path=<local-path>, index_folder_key=...))`; the runtime writes the augmented CSV to `destination_path` and returns a confirmation string.
+5. **finalize** — return the local `destination_path`, or read the CSV from disk for downstream nodes.
 
-Instantiate `UiPath()` inside nodes only — never at module level.
+Instantiate `UiPath()` inside nodes only; never at module level.
 
-## `BatchTransformOutputColumn` Validation
+## `BatchTransformOutputColumn` validation
 
 | Field | Constraint | Notes |
 |---|---|---|
 | `name` | 1–500 chars, regex `^[\w\s\.,!?-]+$` | Friendly column header. No `/`, `:`, `&`, `(`, `)`. |
-| `description` | 1–20000 chars | Per-column LLM instruction. Specify format, enums, "when uncertain" handling. |
+| `description` | 1–20000 chars | Per-column LLM instruction. Specify format, enums, and "when uncertain" handling. |
 
-## Resume Values
+## Resume values and failures
 
 | Yielded model | Resume value | Useful fields |
 |---|---|---|
 | `WaitEphemeralIndex` | `ContextGroundingIndex` | `id`, `folder_key` (ingested) |
-| `CreateBatchTransform` | `str` confirmation message | Format: `"Batch transform completed. Modified file available at <abs_path>"`. Augmented CSV written to the local `destination_path` you supplied — read it from disk if needed. Runtime raises `UiPathFaultedTriggerError` (wrapping `BatchTransformFailedException`) on terminal failure. |
+| `CreateBatchTransform` | `str` confirmation message | Format: `"Batch transform completed. Modified file available at <abs_path>"`. The augmented CSV is written to the supplied local `destination_path`; read it from disk if needed. |
 
-Runtime raises `UiPathFaultedTriggerError` (imported as `from uipath.core.errors import UiPathFaultedTriggerError`) on terminal `Failed`.
+On terminal `Failed`, runtime raises `UiPathFaultedTriggerError` wrapping `BatchTransformFailedException`. Import it with `from uipath.core.errors import UiPathFaultedTriggerError`.
 
-## Local-Run Verification
+## Local-run verification
 
 ```bash
 uip codedagent run agent '{"instructions":"<PROMPT>","enable_web_search":false}' --output-file out.json
 ```
 
-Runtime executes pre-interrupt nodes synchronously, then suspends at `create_index` with the `WaitEphemeralIndex` model captured as the suspend value (Flavour A) or at `run_batch_transform` with `CreateBatchTransform` (Flavour B). That output is correct — not a failure. End-to-end completion happens only on a deployed agent or via `uip codedagent dev`.
+The runtime executes pre-interrupt nodes synchronously, then suspends at `create_index` with `WaitEphemeralIndex` captured as the suspend value (Flavour A), or at `run_batch_transform` with `CreateBatchTransform` (Flavour B). This is correct, not a failure. End-to-end completion occurs only on a deployed agent or via `uip codedagent dev`.
 
 ## Resources
 

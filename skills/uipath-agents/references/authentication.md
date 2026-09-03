@@ -1,84 +1,73 @@
 # UiPath Authentication
 
-Authenticate before running cloud commands. Do not hand-edit auth tokens — use `uip login`. The wrapper resolves the auth env file and injects credentials into forwarded subprocesses, and refreshes the access token automatically when needed; the Python CLI also loads local `.env` on startup. The `uip codedagent` wrapper does not expose an auth subcommand; all auth flows go through `uip login` at the CLI root.
+Authenticate before running cloud commands. Do not hand-edit auth tokens; run `uip login`. The wrapper resolves the auth env file, injects credentials into forwarded subprocesses, and refreshes access tokens automatically when needed. The Python CLI also loads local `.env` on startup. `uip codedagent` has no auth subcommand; run all auth flows through root-level `uip login`.
 
-## Command Surface
+## Commands
 
-| Command | Argument style | Purpose |
-|---------|----------------|---------|
+| Command | Arguments | Purpose |
+|---|---|---|
 | `uip login` | flags | Establish a session |
-| `uip login status` | none | Report current login state |
-| `uip login tenant list` | none | List tenants for the current session |
-| `uip login tenant set <name>` | positional `<name>` (not `--tenant`) | Switch the active tenant |
+| `uip login status` | none | Report login state |
+| `uip login tenant list` | none | List tenants |
+| `uip login tenant set <name>` | positional `<name>`; not `--tenant` | Switch active tenant |
 | `uip logout` | none | Clear the session |
 
-## Quick Reference
+## Rules
 
-```bash
-# Status (includes "Expiration Date") — the wrapper auto-refreshes tokens before forwarding cloud commands
-uip login status --output json
-
-# Production cloud (one-shot browser sign-in, org/tenant pre-selected — see Critical Rules for who runs it)
-uip login --organization "<ORG>" --tenant "<TENANT>" --output json
-
-# Staging
-uip login --authority "https://staging.uipath.com/identity_" --organization "<ORG>" --tenant "<TENANT>" --output json
-
-# Alpha
-uip login --authority "https://alpha.uipath.com/identity_" --organization "<ORG>" --tenant "<TENANT>" --output json
-
-# Service principal (unattended)
-uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --output json
-```
-
-## Critical Rules
-
-- **`uip login status --output json` once per invocation.** Reports `Status`, `Organization`, `Tenant`, `Expiration Date`. When the user has not asked to connect to a specific org/tenant, trust one `Logged in` result — the wrapper auto-refreshes tokens on forwarded cloud calls. No `uip login refresh` subcommand exists. Re-auth only on a real `401`.
-- **If the user supplied environment + organization + tenant, connect with those exact values.** First run/capture `uip login status --output json` if requested or required, then use the matching one-shot command from the Quick Reference (`uip login --organization "<ORG>" --tenant "<TENANT>" --output json`, plus `--authority` for staging/alpha) — see the next rule for who runs it. Do this even if the status check reports an existing `Logged in` session, because the active session may point at a different org/tenant. Do not ask another auth question when all three values are already present.
-- **Interactive sign-ins belong in the user's own terminal.** Every `uip login` without `--client-secret` is a browser sign-in: it blocks until the person completes it, and run from your shell tool it shows them nothing while your tool's timeout can kill it mid-wait. Prefer asking the user to run the one-shot command themselves (in Claude Code, prefix it with `!` so it runs inside the session); if you do run it, first tell the user a browser window is about to open and the command will wait for them. **Never pass `--no-browser` for a human sign-in** — that flag is for automation that opens the printed URL programmatically; relaying the URL by copy/paste is fragile (a line-wrapped or truncated copy is rejected by the identity server with an opaque browser-side error).
-- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker cannot be driven from Claude's Bash tool.
-- **When auth is needed and the user did not supply all values, ask one question, then stop.** If the status check shows the user is not logged in and any of environment / organization / tenant is missing, your entire response must be exactly this question — no headers, no bullets, no next-steps:
+- Run `uip login status --output json` once per invocation. It reports `Status`, `Organization`, `Tenant`, and `Expiration Date`. If no specific organization or tenant is requested, trust one `Logged in` result; forwarded cloud commands auto-refresh tokens. There is no `uip login refresh` command. Re-authenticate only after a real `401`.
+- If the user supplied environment, organization, and tenant, connect with those exact values. Run or capture `uip login status --output json` if requested or required, then run the matching one-shot command below, including `--authority` for staging or alpha, even if an existing session is `Logged in`; it may target another organization or tenant. Do not ask another auth question when all three values are present.
+- Interactive sign-ins belong in the user's terminal. Every `uip login` without `--client-secret` opens a browser and blocks until completion; a shell-tool run may show the user nothing and may time out. Prefer asking the user to run the exact one-shot command themselves; in Claude Code, prefix it with `!` to run it inside the session. If you run it, first tell the user that a browser window will open and the command will wait. Never pass `--no-browser` for human sign-in; it is for automation that opens the printed URL programmatically, and copy/pasting a relayed URL is fragile because line-wrapping or truncation causes an opaque browser-side identity-server error.
+- Never run `uip login` without `--tenant`; Claude's Bash tool cannot drive the interactive tenant picker.
+- When authentication is needed, the user has not supplied all of environment, organization, and tenant, and status shows they are not logged in, respond with exactly this question and nothing else:
 
   > What is your UiPath **environment** (cloud / staging / alpha), **organization name**, and **tenant name**?
 
-  Wait for the reply, then follow the interactive-sign-ins rule above: give the user the exact one-shot command from the Quick Reference to run in their own terminal (or, if you run it, first tell them a browser window is about to open), and confirm with `uip login status --output json`.
+  Wait for the reply. Then follow the interactive-sign-in rule: give the user the exact one-shot command below to run in their terminal, or, if you run it, first say that a browser window will open. Confirm with `uip login status --output json`.
 
-## Environment → Authority Mapping
+## Environment and Login Commands
 
-| User says | Flag to use |
-|-----------|-------------|
-| cloud (default) | no `--authority` flag |
-| staging | `--authority "https://staging.uipath.com/identity_"` |
-| alpha | `--authority "https://alpha.uipath.com/identity_"` |
+| Environment | Command |
+|---|---|
+| cloud (default) | `uip login --organization "<ORG>" --tenant "<TENANT>" --output json` |
+| staging | `uip login --authority "https://staging.uipath.com/identity_" --organization "<ORG>" --tenant "<TENANT>" --output json` |
+| alpha | `uip login --authority "https://alpha.uipath.com/identity_" --organization "<ORG>" --tenant "<TENANT>" --output json` |
 
-For on-premise Automation Suite, use `--authority <identity-url>` pointing at your instance.
+For on-premise Automation Suite, run `uip login --authority <identity-url>` pointing at the instance.
 
-## Unattended (Service Principal)
+## Unattended Service-Principal Login
+
+Run:
 
 ```bash
 uip login --client-id "<ID>" --client-secret "<SECRET>" --base-url "<URL>" --output json
 ```
 
-Works without a browser. Values for `--client-id` and `--client-secret` can be passed as `env.VAR_NAME` to read from an environment variable.
+This requires no browser. Pass `env.VAR_NAME` for `--client-id` or `--client-secret` to read an environment variable.
 
-## If the User Doesn't Know Their Tenant
+## Unknown Tenant
+
+Run:
 
 ```bash
 uip login --organization "<ORG>" --output json
 uip login tenant list --output json
-# Present tenants, ask which one:
+```
+
+Present the tenants and ask which one to use, then run:
+
+```bash
 uip login tenant set "<SELECTED>" --output json
 ```
 
 ## Troubleshooting
 
 | Error | Cause | Solution |
-|-------|-------|----------|
-| `401 Unauthorized` | Session expired | Re-run the appropriate `uip login` command from the Quick Reference |
+|---|---|---|
+| `401 Unauthorized` | Session expired | Re-run the appropriate `uip login` command above |
 | `No tenant selected` | Ran `uip login` without `--tenant` or `--interactive` | Re-run with `--organization <org> --tenant <tenant>` |
-| `Tenant not found` | Tenant name misspelled or user lacks access | Run `uip login tenant list --output json` to see exact names (case-sensitive) |
-| Browser does not open | Running under SSH/container without a default browser | Use service-principal flow (`--client-id`, `--client-secret`) |
+| `Tenant not found` | Misspelled tenant or insufficient access | Run `uip login tenant list --output json`; names are case-sensitive |
+| Browser does not open | SSH/container has no default browser | Use service-principal login with `--client-id` and `--client-secret` |
 
 ## Network Configuration
 
-The CLI honours `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, and `REQUESTS_CA_BUNDLE`.
+The CLI honors `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, and `REQUESTS_CA_BUNDLE`.

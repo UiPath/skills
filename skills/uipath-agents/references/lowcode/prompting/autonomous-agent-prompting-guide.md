@@ -1,12 +1,10 @@
 # Autonomous Agents Prompting Guide
 
-This is the prompting guide for low-code autonomous agents.
-
-"Coding-agent-centric" = the prompt makes the embedded agent behave like a disciplined tool-using agent: explicit tool-call criteria, stop conditions, structured output. Maps to the agent's `tool` artifact ports and `outputSchema`.
+Prompt low-code autonomous agents as disciplined, tool-using agents: define tool-call criteria, stop conditions, and structured output. This maps to the agent's `tool` artifact ports and `outputSchema`.
 
 ## 1. System-prompt skeleton
 
-Copy this skeleton, fill every slot. Consistent structure → consistent runs. Put role/behavior here; data/task goes in the user message (§2).
+Use this structure and fill every slot. Keep role and behavior in the system prompt; put task data in the user message (§2).
 
 ```text
 You are <ROLE> for <DOMAIN>. <ONE-LINE PURPOSE>.
@@ -32,15 +30,15 @@ Uncertainty:
 
 Slot rules:
 
-- **Role + scope** — name the role, bound it. An unbounded agent answers off-task prompts.
-- **Tool-call criteria** — one trigger condition per tool, plus a stop condition. Without this the agent over-calls or loops to `maxIterations`.
-- **Output contract** — state that output MUST match `outputSchema`; map each field. Without it the agent free-forms prose.
-- **Grounding** — forbid values not traceable to input or tool output. Cuts hallucination.
-- **Iteration budget** — for multi-tool tasks, note the agent has limited iterations (`maxIterations`, default 25) and should act, not deliberate.
+- **Role + scope:** name and bound the role; unbounded agents answer off-task prompts.
+- **Tool-call criteria:** give each tool one trigger, a stop condition, and a cap. Otherwise the agent may over-call or loop to `maxIterations`.
+- **Output contract:** require `outputSchema` conformance and explain every field; otherwise the agent may free-form prose.
+- **Grounding:** forbid values not traceable to input or tool output.
+- **Iteration budget:** multi-tool agents have limited iterations (`maxIterations`, default 25); instruct them to act rather than deliberate.
 
 ## 2. User-prompt anatomy
 
-The user message carries the task and the data — not the role.
+The user message carries the task and data, not the role.
 
 ```text
 <TASK INSTRUCTION>.
@@ -51,98 +49,38 @@ The user message carries the task and the data — not the role.
 <EXPLICIT OUTPUT INSTRUCTION — e.g. "Return the category and a one-sentence reason.">
 ```
 
-Token form depends on context:
+Token syntax:
 
-- **Inline-in-flow agents** reference upstream flow nodes: `{{ $vars.<flowNodeId>.output[.<field>] }}`. See the [uipath-maestro-flow inline-agent prompt-wiring guide](../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
-- **Standalone agents** reference declared inputs: `{{input.<field>}}`.
+- **Inline-in-flow agents:** reference upstream flow nodes with `{{ $vars.<flowNodeId>.output[.<field>] }}`. See the [uipath-maestro-flow inline-agent prompt-wiring guide](../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+- **Standalone agents:** reference declared inputs with `{{input.<field>}}`.
 
-Mirror every `{{ ... }}` in `contentTokens[]` per [agent-definition.md § contentTokens Construction](../agent-definition.md#contenttokens-construction).
+Mirror every `{{ ... }}` in `contentTokens[]` per [agent-definition.md § contentTokens Construction](../agent-definition.md#messages-and-contenttokens).
 
 ## 3. Grounding in wired data
 
-Reference inputs through tokens — never restate their literal contents in prose. The runtime injects the value; restating it duplicates tokens and risks drift if the upstream field changes. Tell the agent *what the field is*, not *what it contains*.
+Reference inputs through tokens; never restate their literal contents in prose. Runtime injection avoids duplication and drift when upstream fields change. Describe what each field is, not what it contains. Keep untrusted data in the user message and instructions in the system message; do not paste untrusted input into the system prompt.
 
-## 4. Worked example — email triage
+## 4. Typed output pattern
 
-Realistic inline-in-flow agent. Note the **structured `outputSchema`**, not a bare `content` blob.
-
-**Before (toy):**
-
-```json
-"settings": { "model": "gpt-5.4" },
-"outputSchema": { "type": "object", "properties": { "content": { "type": "string" } } },
-"messages": [
-  { "role": "system", "content": "You are an assistant." },
-  { "role": "user", "content": "Triage this email." }
-]
-```
-
-**After (robust):**
-
-```json
-"settings": { "model": "anthropic.claude-sonnet-4-6", "temperature": 0, "maxTokens": 4096, "maxIterations": 10 },
-"outputSchema": {
-  "type": "object",
-  "properties": {
-    "category": { "type": "string", "description": "One of: billing, technical, sales, other" },
-    "priority": { "type": "string", "description": "low | medium | high | urgent" },
-    "reason":   { "type": "string", "description": "One sentence justifying the category" },
-    "needsHuman": { "type": "boolean", "description": "true if the email requires human review" }
-  },
-  "required": ["category", "priority", "needsHuman"]
-}
-```
-
-System prompt (filled skeleton):
-
-```text
-You are a support-email triage classifier for a SaaS product. Classify each inbound email and flag those needing a human.
-
-Scope:
-- In scope: categorizing the email and assessing priority.
-- Out of scope: replying to the customer or taking any action — only classify.
-
-Output:
-- Return a result conforming to the output schema. category MUST be one of billing, technical, sales, other. priority MUST be low, medium, high, or urgent.
-- Set needsHuman=true for legal threats, churn risk, or anything outside the four categories.
-- Never invent customer details not present in the email.
-
-Uncertainty:
-- If the email is empty or unintelligible, set category="other", needsHuman=true, reason="unintelligible input".
-```
-
-User prompt:
-
-```text
-Classify the following email.
-
-From: {{ $vars.emailReceived1.output.from }}
-Subject: {{ $vars.emailReceived1.output.subject }}
-
-{{ $vars.emailReceived1.output.body }}
-
-Return category, priority, a one-sentence reason, and needsHuman.
-```
+Use a typed schema rather than a bare `content` blob. Define fields that downstream nodes can consume, describe how to fill every field, and require the agent to return the schema exactly. For classification, constrain enum-like fields explicitly (for example, `category` values and `priority` values), include a concise `reason` when needed, and use a boolean escalation field such as `needsHuman` when review is required. If input is empty or unintelligible, use an explicit safe fallback, set escalation as appropriate, and do not invent details.
 
 ## 5. Production checklist — adjacent `agent.json` quality fields
 
-A robust agent is more than its prompt. Each field: default, and when to change.
-
 | Field | Default | Change when |
 |-------|---------|-------------|
-| `outputSchema` | Scaffold gives a single `content` string | **Almost always** — define typed fields a downstream node can consume. Bare `content` forces brittle string-parsing. |
-| `settings.temperature` | `0` | Keep `0` for extraction/classification/judgment. Raise only when output *variation* is wanted (drafting, brainstorming). |
-| `settings.maxIterations` | `25` | `≤5` only if tool-less and single-shot. Kill switch, not a loop fix: without a per-tool cap the agent loops to the ceiling — observed dying at 5 and at 25 alike (`TERMINATION_MAX_ITERATIONS`). |
-| `settings.maxTokens` | Scaffold value | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
-| `settings.model` | `gpt-5.4` | **Always override** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
+| `outputSchema` | Scaffold gives a single `content` string | **Almost always** — define typed fields downstream nodes can consume; bare `content` requires brittle string parsing. |
+| `settings.temperature` | `0` | Keep `0` for extraction/classification/judgment. Raise only when output variation is wanted (drafting, brainstorming). |
+| `settings.maxIterations` | `25` | `≤5` only if tool-less and single-shot. This is a kill switch, not a loop fix: without a per-tool cap the agent loops to the ceiling — observed dying at 5 and at 25 alike (`TERMINATION_MAX_ITERATIONS`). |
+| `settings.maxTokens` | Scaffold value | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover). |
+| `settings.model` | `gpt-5.4` | **Always override** — discover and select per [model-selection-guide.md](../model-selection-guide.md). |
 | `guardrails` | `[]` | Add input/output policy enforcement (PII, content, escalation). See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md). |
 
 ## Anti-patterns
 
-- **Vague role** — "You are a helpful agentic assistant." Name the role and bound the scope.
-- **No output contract** — agent free-forms prose; downstream nodes can't parse it.
-- **Bare `content` output** — a single string where typed fields belong. Define `outputSchema`.
-- **No tool-call criteria** — agent over-calls tools or loops to `maxIterations`.
-- **Prompt-injection-prone passthrough** — pasting untrusted input into the system prompt. Keep untrusted data in the user message; keep instructions in the system message.
-- **Ignoring `outputSchema`** — prompt that doesn't tell the agent to conform to the declared schema.
-- **Cargo-culted `temperature`** — copying a nonzero temperature into a deterministic classification task.
+- **Vague role:** “You are a helpful agentic assistant.” Name and bound the role.
+- **No output contract:** free-form prose prevents downstream parsing.
+- **Bare `content` output:** define typed `outputSchema` fields instead.
+- **No tool-call criteria:** causes over-calling or loops to `maxIterations`.
+- **Prompt-injection-prone passthrough:** keep untrusted data in the user message and instructions in the system message; do not paste untrusted input into the system prompt.
+- **Ignoring `outputSchema`:** explicitly require conformity to the declared schema.
+- **Cargo-culted `temperature`:** do not copy nonzero temperature into deterministic classification tasks.

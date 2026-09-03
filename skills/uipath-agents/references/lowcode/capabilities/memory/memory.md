@@ -1,28 +1,28 @@
 # Agent Memory Spaces
 
-Use this when a low-code agent needs an attached UiPath memory space for dynamic few-shot retrieval or seeded memory items.
+Use this skill when a low-code agent needs an attached UiPath memory space for dynamic few-shot retrieval or seeded memory items.
 
 ## Critical Rules
 
-1. **Use `uip agent memory` for memory features.** Do not hand-author `features/{Name}/feature.json` unless recovering from a broken project. The CLI updates the feature file; run `uip agent refresh` afterwards to regenerate derived files.
-2. **`uip agent memory add` attaches an existing memory space; it does not create the platform memory space.** Always attempt `uip solution resources list --kind MemorySpace` discovery before attaching, even when the user supplied an exact memory space name and folder. Treat provided values as search inputs and fallback values only if discovery is blocked by auth or connectivity.
-3. **Use folder paths, not folder keys.** `--folder-path` must be the literal folder path where the memory space exists, such as `Shared` or `Shared/Sales`.
-4. **Refresh, validate, and solution-refresh after memory changes.** Memory bindings are generated during `uip agent refresh`; do not edit `bindings_v2.json` directly. In a solution, always attempt `uip solution resources refresh --output json` from the solution root after refresh so the generated `memorySpace` binding is imported into solution resources.
-5. **Seed only non-sensitive examples.** Memory items become agent project configuration. Do not store secrets, credentials, or raw PII as seed items.
+1. Use `uip agent memory` for memory features. Do not hand-author `features/{Name}/feature.json` except to recover a broken project. The CLI updates the feature file; run `uip agent refresh` afterwards to regenerate derived files.
+2. `uip agent memory add` attaches an existing memory space; it does not create one. Always attempt `uip solution resources list --kind MemorySpace` discovery first, even with an exact supplied name and folder. Treat supplied values as search and fallback values only when auth or connectivity blocks discovery.
+3. Pass folder paths, not folder keys, to `--folder-path`, such as `Shared` or `Shared/Sales`.
+4. After memory changes, refresh, validate, and solution-refresh. Generated bindings come from `uip agent refresh`; never edit `bindings_v2.json`. In a solution, always attempt `uip solution resources refresh --output json` from the solution root so the generated `memorySpace` binding is imported into solution resources.
+5. Seed only non-sensitive examples. Never seed secrets, credentials, or raw PII.
 
 ## Workflow
 
 ### 1. Discover the memory space
 
-Always attempt discovery first, even when the user already provided the memory space name and folder. Use the provided name as the search term:
+Always attempt discovery first, using the supplied name as the search term:
 
 ```bash
 uip solution resources list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
 ```
 
-Use the row's `Name` as `--memory-space` and `Folder` as `--folder-path`. If discovery fails because the local session is not authenticated or the network is unavailable, continue only when the user already provided both the memory space name and folder path; use those provided values and report that discovery was attempted.
+Use the result row's `Name` as `--memory-space` and `Folder` as `--folder-path`. If discovery fails because the session is unauthenticated or the network is unavailable, continue only when the user supplied both the memory space name and folder path; use those values and report that discovery was attempted.
 
-If the space is external to the solution and should be tracked as a solution resource:
+If the space is external to the solution and should be tracked as a solution resource, run:
 
 ```bash
 uip solution resources add \
@@ -33,9 +33,11 @@ uip solution resources add \
   --output json
 ```
 
-If no memory space exists, stop and ask the user to create or provide one. Do not invent a memory space name and continue silently.
+If no memory space exists, stop and ask the user to create or provide one. Do not invent a name and continue silently.
 
-### 2. Attach the memory space to the agent
+### 2. Attach the memory space
+
+Run:
 
 ```bash
 uip agent memory add SupportRecall \
@@ -49,26 +51,7 @@ uip agent memory add SupportRecall \
   --output json
 ```
 
-`SupportRecall` is the feature name inside the agent. Choose a short PascalCase or kebab-free name that describes how the agent will use the memory.
-
-**`--field` names an `inputSchema` key, not a flow variable.** Each `--field` must match a property in the agent's `inputSchema.properties` exactly — retrieval reads the value from the agent's `input` under that key. For inline agents (`--inline-in-flow`), inputs use the flattened key `<triggerNodeId>__output__<var>` (see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § Wiring Flow Inputs Into an Inline Agent), so pass the flattened name:
-
-```bash
-# inline agent: flow global userQuestion on trigger node "start"
-uip agent memory add SupportRecall \
-  --memory-space "<MEMORY_SPACE_NAME>" \
-  --folder-path "<FOLDER_PATH>" \
-  --threshold 0.25 \
-  --result-count 5 \
-  --search-mode hybrid \
-  --field start__output__userQuestion=1 \
-  --path "<FLOW_PROJECT_DIR>/<PROJECT_ID>" \
-  --output json
-```
-
-Passing the un-flattened global name (`--field userQuestion=1`) on an inline agent names a field the agent never receives; `validate` does not catch this.
-
-Options:
+`SupportRecall` is the feature name inside the agent. Choose a short PascalCase or kebab-free name describing the agent's use of memory.
 
 | Option | Meaning |
 |---|---|
@@ -83,9 +66,11 @@ Options:
 | `--disable-dynamic-few-shot` | Attach the memory space without runtime retrieval |
 | `--path` | Agent project directory; default `.` |
 
+**`--field` names an `inputSchema` key, not a flow variable** — the value is read from the agent's `input` under that key. For inline agents (`--inline-in-flow`), use the flattened key `<triggerNodeId>__output__<var>` (see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) § Wiring Flow Inputs Into an Inline Agent); e.g. `--field start__output__userQuestion=1`. Passing the un-flattened global name (`--field userQuestion=1`) names a field the agent never receives, and `validate` does not catch it.
+
 ### 3. Seed optional memory items
 
-Add items only when the user explicitly wants seed examples or defaults in the agent project.
+Add items only when the user explicitly requests seed examples or defaults. Run:
 
 ```bash
 uip agent memory item add SupportRecall customer-tier gold \
@@ -96,16 +81,18 @@ uip agent memory item add SupportRecall customer-tier gold \
   --output json
 ```
 
-Valid memory item types are:
+Valid memory item types:
 
 | Value | Numeric | Use |
 |---|---:|---|
 | `episodic` | `0` | General recall examples |
 | `escalation` | `1` | Escalation-related memory |
 
-Episodic memory items require `--feedback-id`; use the feedback ID for the conversation, trace, or support example the seed item came from. `--metadata` must be a JSON object, not an array or scalar. Adding an item with an existing key updates that item.
+Episodic items require `--feedback-id`, identifying the source conversation, trace, or support example. `--metadata` must be a JSON object, not an array or scalar. An existing key updates that item.
 
 ### 4. Verify
+
+Run:
 
 ```bash
 uip agent memory list --path "<AGENT_PROJECT_DIR>" --output json
@@ -115,17 +102,17 @@ uip agent validate "<AGENT_PROJECT_DIR>" --output json
 uip solution resources refresh --output json
 ```
 
-After refresh, inspect `<AGENT_PROJECT_DIR>/bindings_v2.json` only to verify that a `memorySpace` binding exists. Do not edit it. Run `uip solution resources refresh` from the solution root so the solution resource catalogue sees the memory binding. Do not skip refresh because the memory space name/folder were provided, because `bindings_v2.json` looks correct, or because publish/deploy is out of scope. If refresh fails due authentication, leave the generated files intact and report the failed refresh command.
+Run `uip solution resources refresh` from the solution root. Do not skip it because values were supplied, `bindings_v2.json` appears correct, or publish/deploy is out of scope. Inspect `<AGENT_PROJECT_DIR>/bindings_v2.json` only to verify a `memorySpace` binding; do not edit it. If refresh fails due authentication, leave generated files intact and report the failed command.
 
 ## Remove
 
-Remove a feature by feature name or ID:
+Remove a feature by feature name or ID. Run:
 
 ```bash
 uip agent memory remove SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
 ```
 
-Remove by memory space name only when you also pass the folder path:
+Remove by memory space name only with the folder path. Run:
 
 ```bash
 uip agent memory remove "<MEMORY_SPACE_NAME>" \
@@ -134,7 +121,7 @@ uip agent memory remove "<MEMORY_SPACE_NAME>" \
   --output json
 ```
 
-Remove a seed item by key or ID:
+Remove a seed item by key or ID. Run:
 
 ```bash
 uip agent memory item remove SupportRecall customer-tier \
@@ -144,13 +131,13 @@ uip agent memory item remove SupportRecall customer-tier \
 
 ## Generated Shape
 
-The CLI writes a feature file at:
+The CLI writes:
 
 ```text
 <AGENT_PROJECT_DIR>/features/SupportRecall/feature.json
 ```
 
-Expected shape, for review only (standalone agent; an inline agent's `fieldSettings[].name` is the flattened key, e.g. `start__output__userQuestion`):
+Review it only; do not hand-author it:
 
 ```json
 {

@@ -1,32 +1,24 @@
 # Guardrail Recommendation and Validation — Coded Agents
 
 This reference covers two workflows for Python coded agents (LangChain/LangGraph):
-- **Recommend**: The agent has no guardrails (or insufficient ones) → which guardrails should be added?
-- **Validate**: The agent already has guardrails → are they correctly configured and appropriate?
+- **Recommend**: identify guardrails to add.
+- **Validate**: assess existing guardrails for correctness, actionability, and relevance.
 
-Both workflows are driven by live data — the catalog (`uip agent guardrails catalog`) for recommendation reasoning, the guardrails list (`uip agent guardrails list`) for tenant-availability and parameter/scope constraints, and the live UiPath Python SDK docs (`WebFetch`) for mapping catalog `validator_id` values to Python middleware/Validator class names. Do not hardcode assumptions about which guardrail fits which agent type, or which Python class implements which validator.
+Use live data: `uip agent guardrails catalog` for recommendation metadata, `uip agent guardrails list` for tenant availability and parameter/scope constraints, and live UiPath Python SDK docs (`WebFetch`) for mapping catalog `validator_id` values to Python middleware and Validator classes. Never hardcode validator fit, class names, enum members, or import paths.
 
-> **This file covers WHEN to add guardrails and WHY. For the exact Python writing patterns (middleware spread with `*`, decorator placement, factory refactors), always read [guardrails.md](guardrails.md) before editing the agent code.**
-
----
+> This file covers WHEN to add guardrails and WHY. For exact Python patterns (middleware spread with `*`, decorator placement, factory refactors), always read [guardrails.md](guardrails.md) before editing agent code.
 
 ## Step 0 — Fetch Catalog, Available Validators, and SDK Docs (MANDATORY — do this before any analysis)
 
-> Full three-fetch mandate applies to **Recommend mode**. In **Validate mode** of an existing guardrail the SDK docs are the authoritative, sufficient source for a validator's scope/stage — `catalog` (relevance metadata) and `list` (tenant entitlement) are recommended cross-checks, not a hard prerequisite for a scope/placement fix. See [Validate Mode](#validate-mode).
+In **Recommend mode**, run all three fetches. In **Validate mode**, SDK docs are authoritative and sufficient for an existing validator's scope/stage fix; still run catalog and list for relevance and entitlement cross-checks, though they are not a hard prerequisite for that fix.
 
-> **The SDK docs are authoritative for shape, never for availability.** They carry `Platform Availability`
-> notes for features still rolling out (BYOG, LLM-as-judge). Those are product-wide statements, not facts
-> about this tenant — only `uip agent guardrails list` decides that. Never withhold or down-rank a
-> recommendation because a fetched page called the feature "not enabled on every tenant yet".
+**Required first operation in both modes:** run `WebFetch` on `https://uipath.github.io/uipath-python/core/guardrails/` before catalog calls, project inspection, analysis, or edits. Do not consider the work grounded until it completes.
 
-**Required first operation in both modes:** use `WebFetch` on
-`https://uipath.github.io/uipath-python/core/guardrails/` before catalog calls,
-project inspection, analysis, or edits. A coded guardrail recommendation or
-validation is not grounded until this WebFetch has completed.
+SDK docs are authoritative for shape, never availability. Their `Platform Availability` notes are product-wide, including BYOG and LLM-as-judge rollout, not tenant facts. Only `uip agent guardrails list` determines tenant availability.
 
 ### Catalog (cacheable — 30-minute TTL)
 
-The catalog is the same for all tenants (authored metadata, rarely changes). Cache it locally for 30 minutes to avoid redundant calls.
+Run:
 
 ```bash
 python3 -c "
@@ -39,269 +31,209 @@ else:
 "
 ```
 
-- **CACHE_HIT**: read `.guardrails-catalog-cache.json` directly.
-- **CACHE_MISS**: fetch and save:
-  ```bash
-  uip agent guardrails catalog --output json > .guardrails-catalog-cache.json
-  ```
+On `CACHE_HIT`, read `.guardrails-catalog-cache.json`. On `CACHE_MISS`, run and save:
 
-Inspect the saved JSON. If the output contains `"Code": "GuardrailCatalogUnavailable"`, surface the message to the user and **stop** — do not fall back to guessing. Note: the CLI writes all structured output (both success and error JSON) to stdout, so the redirect captures error responses correctly — do not add `2>&1`.
+```bash
+uip agent guardrails catalog --output json > .guardrails-catalog-cache.json
+```
 
-The cache file is `.guardrails-catalog-cache.json` in the current working directory. Add it to `.gitignore` if one exists.
+Inspect the saved JSON. If it contains `"Code": "GuardrailCatalogUnavailable"`, surface the message and stop; do not guess. The CLI writes structured success and error JSON to stdout, so the redirect captures errors; do not add `2>&1`. The cache is `.guardrails-catalog-cache.json` in the working directory; add it to `.gitignore` if one exists.
 
-### Guardrails List (NEVER cached — tenant-specific)
+### Guardrails list (NEVER cached — tenant-specific)
 
-This returns only guardrails available to the current tenant (filtered by entitlements and feature flags). Run it fresh every time:
+Run fresh every time:
 
 ```bash
 uip agent guardrails list --output json
 ```
 
-Build a lookup of `{ validatorId: status }` from the `Data` array. You will use this to filter recommendations.
+Build `{ validatorId: status }` from the `Data` array, but disambiguate by `(Validator, IsByo)`, not `Validator` alone. Built-in and BYO entries can share `Validator`; BYO entries have `IsByo: true` and may carry `ByoValidatorName`, `ByoConnectionId`, and `ByoConfigurationId`. Recommend only entries whose `Status == "Available"`; mention `Unauthorised` entries but do not add them, and skip absent entries.
 
-> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`, carrying `ByoValidatorName`/`ByoConnectionId`/`ByoConfigurationId`). Collapsing them loses the distinction and can point the discovery/wiring flow at the wrong entry. See [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).
+The catalog contains all platform guardrails and rich metadata; the list contains only tenant-accessible guardrails.
 
-> **Catalog vs. list — the key distinction:** The catalog lists all guardrails that exist on the platform (with rich metadata for reasoning). The guardrails list returns only those accessible to this tenant. Only recommend validators where `Status == "Available"` in the list.
+### SDK documentation (NEVER skipped)
 
-### SDK Documentation (NEVER skipped — Python class names)
+Identify the framework by reading `pyproject.toml` and entrypoint imports. Always fetch the core page above. Extract Validator classes, entity-type enums, `GuardrailScope`, `GuardrailExecutionStage`, and Action classes.
 
-Coded agents reference guardrails by **Python class name** (e.g. `UiPathPIIDetectionMiddleware`, `PIIDetectionValidator`), not by `validator_id`. The catalog gives you the `validator_id`; the SDK docs give you the corresponding Python classes, import paths, scope/stage enums, and entity-type enums.
-
-Identify the agent's framework first (read `pyproject.toml` and the entrypoint imports), then fetch the SDK doc pages. Today only **LangChain** has a published UiPath guardrail adapter; for any other framework, the platform SDK is the only source.
-
-Always fetch the **core** page (validators, entity enums, scope/stage enums, action classes — usable on any framework):
-
-`https://uipath.github.io/uipath-python/core/guardrails/`
-
-If the agent is a **LangChain / LangGraph** agent (detected by `uipath-langchain` in `pyproject.toml` or `from langchain...` / `from langgraph...` imports), additionally fetch:
+For LangChain/LangGraph—detected by `uipath-langchain` in `pyproject.toml` or `from langchain...` / `from langgraph...` imports—also run `WebFetch` once on:
 
 `https://uipath.github.io/uipath-python/langchain/guardrails/`
 
-This is the LangChain adapter page — it documents the middleware classes, their supported scopes/stages, and the correct `uipath_langchain.guardrails` import paths. The framework adapter is needed for the `@guardrail` decorator / middleware to actually wrap the LLM / tool / agent (see [guardrails.md § Imports Pattern](guardrails.md#imports-pattern)).
+Extract middleware classes, supported scopes/stages, extra parameters, and `uipath_langchain.guardrails` import paths. For other frameworks (LlamaIndex, OpenAI Agents, plain Python, etc.), do not invent adapter URLs; use only the core page. No published framework adapter currently auto-wraps those objects, so direct validator invocation may be required.
 
-If the agent uses any other framework (LlamaIndex, OpenAI Agents, plain Python, etc.) there is no published framework adapter yet — only the core page applies. The decorator/middleware mechanism cannot auto-wrap those framework objects without an adapter; you may need to invoke validators directly. Do not invent doc URLs for frameworks that do not have one.
-
-Call `WebFetch` once per page. From the core page extract Validator classes, entity-type enums, `GuardrailScope` / `GuardrailExecutionStage`, and Action classes. From the LangChain page (when applicable) extract middleware classes, supported scopes/stages, extra parameters, and the correct `uipath_langchain.guardrails` import paths.
-
-**Use the fetched content as the sole source of truth.** Never rely on memory for class names, enum members, or import paths — the SDK evolves and the docs are the only reliable mapping.
-
-Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages } }` lookup in working memory by joining catalog entries with SDK class names.
-
----
+Use fetched content as the sole source of truth. Join catalog entries to SDK documentation into `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages } }`.
 
 ## Recommend Mode
 
-Use when the agent has no guardrails or when the user asks which guardrails to add.
+Use when the agent lacks guardrails or the user asks which to add.
 
 ### Step 1 — Read Agent Code
 
-Use `Glob` / `Grep` to locate the entrypoint Python file. Look for `create_agent`, `StateGraph`, or `@entrypoint`. Once found, read it to extract:
+Use `Glob` / `Grep` to find and read the entrypoint Python file. Identify:
 
-- **System prompt text** — what does the agent do? What domains and behaviors are described?
-- **Input / output schemas** (`pydantic.BaseModel` classes or function signatures) — what data does the agent receive and produce?
-- **`@tool` functions** — name, docstring, signature. These become the targets of Tool-scoped guardrails.
-- **LLM factory** — is the LLM created inside a named function (e.g. `def create_llm(): return UiPathChat(...)`) or assigned directly at module level? Decorator-style LLM-scope guardrails require a factory.
-- **Agent factory** — is `create_agent(...)` wrapped in a named function? Decorator-style Agent-scope guardrails require a factory.
-- **Existing guardrails** — any `@guardrail(...)` decorators above functions, or `*UiPath…Middleware(...)` entries inside `middleware=[...]` in `create_agent(...)`. Note them to avoid duplicating.
+- system prompt and domain/behavior;
+- input/output schemas (`pydantic.BaseModel` or function signatures);
+- `@tool` functions, including name, docstring, and signature;
+- LLM factory versus direct `UiPathChat(...)` assignment;
+- agent factory versus module-level `create_agent(...)`;
+- existing `@guardrail(...)` decorators and `*UiPath…Middleware(...)` entries.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
 For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
 
 1. Read the entry's `when_to_use`, `use_cases`, `description`, and `security_risk_addressed`.
-2. Compare against agent context (system prompt, schemas, tool docstrings) using semantic reasoning:
-   - Does the agent's purpose align with the `when_to_use` scenario?
-   - Do any `use_cases` items describe what this agent does or the data it handles?
-   - Does the agent face the threat described in `security_risk_addressed`?
-3. Also read `when_not_to_use`. If the agent matches a disqualifying condition, exclude this validator from recommendations (or mention it with an explanation).
-4. Cross-reference with the guardrails list status lookup from Step 0:
-   - `Available` → candidate for recommendation
-   - `Unauthorised` → mention to the user ("this guardrail is not licensed for your tenant") but do NOT add it
-   - Not in the list at all → skip silently (not available on this platform version)
-5. If the validator is a candidate: use the catalog entry's `examples[].config` to determine the appropriate scope, stage, action, and parameters. Translate `validator_parameters` shape to the Python `Validator(...)` / `Middleware(...)` constructor arguments using the SDK docs from Step 0.
+2. Compare against agent context (system prompt, schemas, tool docstrings): does the agent's purpose align with `when_to_use`, do any `use_cases` describe what it does or the data it handles, does it face the `security_risk_addressed` threat?
+3. Read `when_not_to_use`; if the agent matches a disqualifying condition, exclude the validator (or mention it with an explanation).
+4. Cross-reference the Step 0 list status: `Available` → candidate; `Unauthorised` → mention as unlicensed but do NOT add; absent → skip silently.
+5. For a candidate, use `examples[].config` for scope, stage, action, and parameters; translate `validator_parameters` to Python `Validator(...)` / `Middleware(...)` arguments using the Step 0 SDK docs. Do not use predetermined mappings.
 
-Do **not** apply predetermined knowledge about which guardrail maps to which schema field. Let the catalog entry's authored fields drive every recommendation decision.
-
-> **Built-in vs. BYO — default to built-in.** When a matched validator has both a built-in entry and one or more `Available` BYO (`IsByo: true`) entries, recommend the standard SDK validator/middleware (built-in) by default, and mention a BYO alternative exists. Only wire in a specific BYO configuration when the user names it or asks for BYO explicitly — see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators) for how that's actually referenced in code.
+When both built-in and `Available` BYO entries exist, default to the built-in SDK validator/middleware and mention the BYO alternative. Wire a specific BYO configuration only when requested; see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).
 
 ### Step 3 — De-duplicate Overlapping Validators
 
-Several catalog validators address the same threat. Recommending more than one of them at the same scope and stage is redundant — it doubles latency and cost on every call for marginal benefit (the canonical case is `prompt_injection` and `user_prompt_attacks`: both have `security_category: "adversarial_input"` and both run at LLM · PRE).
+Group candidates by (`security_category`, scope, stage). For any group with more than one candidate:
 
-After Step 2 produces the candidate list, group candidates by **(`security_category`, scope, stage)**. For any group with more than one candidate:
+1. **Drop deprecated or unavailable entries first** — if the catalog marks an entry deprecated (`status`, or a note in `notes` / `when_not_to_use`), remove it; never recommend a retiring validator when an active alternative covers the category.
+2. **Keep the single best fit** for the agent's context (closest `when_to_use` / `use_cases` match) and recommend only that one.
+3. **Mention the dropped alternative(s)** and why (e.g. "recommending only User Prompt Attacks, not Prompt Injection — both cover adversarial input at LLM · PRE and the catalog marks Prompt Injection deprecated").
 
-1. **Drop deprecated or unavailable entries first.** If the catalog marks an entry deprecated (via its `status`, or a deprecation note in `notes` / `when_not_to_use`), remove it from the group. Never recommend a validator the catalog signals is being retired when an active alternative covers the same category.
-2. **Keep the single best fit** for the agent's context — the one whose `when_to_use` / `use_cases` most closely match. Recommend only that one.
-3. **Mention the alternative(s)** you dropped and why (e.g. "also recommending only User Prompt Attacks, not Prompt Injection — both cover adversarial input at LLM PRE and the catalog marks Prompt Injection deprecated").
-
-Do **not** hardcode validator names or a fixed "prefer X over Y" rule in your reasoning — derive the grouping from each entry's `security_category`, scope, and stage, and derive deprecation from the catalog's own fields. This keeps the behavior correct as the catalog evolves.
+Do not hardcode validator names or a fixed "prefer X over Y" rule; derive grouping and deprecation from the catalog's own fields.
 
 ### Step 4 — Style Choice
 
-If the user has not specified **middleware** or **decorator**, ask before generating any code. Do not implement both unless explicitly asked.
-
-Use the comparison table from the fetched `langchain/guardrails/` SDK doc (the "Choosing between patterns" section) to help the user decide if they ask.
+If the user has not specified **middleware** or **decorator**, ask before generating code; do not implement both unless explicitly requested. Use the comparison table in the fetched `langchain/guardrails/` SDK doc, the “Choosing between patterns” section, when helping choose.
 
 ### Step 5 — Scope and Tool Filtering
 
-In coded agents, scopes map to concrete Python constructs, not selector strings:
+Map catalog scopes as follows:
 
 | Catalog scope | Coded mapping |
-|---------------|---------------|
-| `Agent` | `GuardrailScope.AGENT` on middleware, or `@guardrail` above a named **agent factory function** that returns `create_agent(...)`. If `create_agent(...)` is called at module level, refactor it into a factory first. |
-| `Llm` | `GuardrailScope.LLM` on middleware, or `@guardrail` above a named **LLM factory function** that returns `UiPathChat(...)`. If the LLM is assigned directly (`llm = UiPathChat(...)`), refactor into a factory first. |
-| `Tool` | `GuardrailScope.TOOL` on middleware with `tools=[<tool_obj>]` (Python object, not string), or `@guardrail` placed directly above a `@tool` function. |
+|---|---|
+| `Agent` | `GuardrailScope.AGENT` middleware, or `@guardrail` above a named agent factory returning `create_agent(...)`; refactor a module-level call first. |
+| `Llm` | `GuardrailScope.LLM` middleware, or `@guardrail` above a named LLM factory returning `UiPathChat(...)`; refactor a direct assignment first. |
+| `Tool` | `GuardrailScope.TOOL` middleware with `tools=[<tool_obj>]`, or `@guardrail` directly above a `@tool` function. Use Python objects, never strings. |
 
-If the user asks for recommendations for a **specific tool** (e.g., "for the lookup_account_info tool"):
-- Tool scope only. Confirm the tool exists as a `@tool` function in the agent code before writing.
-- Pass the Python object (e.g. `lookup_account_info`) into `tools=[...]` — never a string name.
+For a named tool, verify it exists as a `@tool` function and use Tool scope only. For a requested scope, retain only candidates whose SDK/catalog `allowed_scopes` include it. If there are no tools, do not add Tool-scoped guardrails.
 
-If the user asks for recommendations for a **specific scope** (e.g., "only for Llm"):
-- Keep only candidates whose `allowed_scopes` (from the catalog entry and/or SDK class) include that scope.
-- Discard candidates that do not support that scope.
+Choose the outermost permitted scope:
 
-#### Block as early as possible — default scope selection
-
-When a validator supports **more than one scope** (e.g. `pii_detection` allows Agent / Llm / Tool), pick the scope that stops a violation at the **outermost boundary the validator allows**, so a bad run is halted with the least wasted work:
-
-| Guardrail intent | Prefer | Why |
+| Intent | Preferred scope | Reason |
 |---|---|---|
-| **Input protection** (block bad/sensitive input: PII, jailbreak, injection) | broadest **PRE** scope allowed → **Agent** > Llm > Tool | Agent · PRE fires once, before the agent reaches the LLM or any tool. Catching PII or an attack at Agent · PRE blocks the whole run immediately instead of after the model has already been called. |
-| **Output protection** (block bad output the caller sees: harmful content, IP) | **Agent · POST** when allowed | Agent · POST inspects the agent's final answer — the thing the user actually receives. |
-| **Tool I/O protection** (a specific tool's input/output) | **Tool** scope on that tool | Only narrow to Tool when the concern is genuinely that one tool, or the user scoped it there. |
+| Input protection (PII, jailbreak, injection) | broadest permitted PRE scope: Agent > Llm > Tool | stop the run before model/tool work |
+| Output protection (harmful content, IP) | Agent · POST when allowed | inspect the final caller-visible answer |
+| Tool I/O protection | Tool on the relevant tool | narrow only when the concern is tool-specific or requested |
 
-Concretely: **PII detection meant to stop the agent handling personal data belongs at `GuardrailScope.AGENT` · PRE, not `GuardrailScope.LLM` · PRE** — both are allowed by the catalog, but Agent · PRE blocks the run earlier (before the LLM call) and covers the whole agent, not just one model invocation. Only drop to a narrower scope when the validator does not support the broader one (`prompt_injection` and `user_prompt_attacks` are Llm-only, so Llm · PRE is the earliest available for them) or when the user explicitly asks for a narrower scope.
-
-Always confirm the chosen scope is in the validator's `allowed_scopes` from the guardrails list — never assume a scope the catalog/SDK does not permit.
+PII intended to stop personal-data handling belongs at `GuardrailScope.AGENT` · PRE rather than LLM · PRE when allowed. Use a narrower scope only when unsupported or explicitly requested; `prompt_injection` and `user_prompt_attacks` are Llm-only examples. Confirm the selected scope is allowed.
 
 ### Step 6 — Choose the Action
 
-The action (`BlockAction` vs `LogAction` vs `EscalateAction`) is **not** a free choice — default to the `action_type` in the catalog entry's representative `examples[].config`. For security-critical guardrails (`adversarial_input` — prompt injection / user prompt attacks; `content_safety` — harmful content / IP) the catalog examples use **Block**, because a logged-but-allowed violation provides no actual protection.
+Default to `action_type` in the catalog representative `examples[].config`. Security-critical `security_category` values `adversarial_input` and `content_safety` use catalog `Block` defaults because log-only enforcement does not protect.
 
-**`EscalateAction` (human-in-the-loop)** is a third option — recommend it when the user wants a **human to review/approve** a flagged item rather than hard-block it (high-stakes or sensitive content where a person should approve or edit before the run proceeds). It **suspends** the run for review and resumes on Approve (terminates on Reject). **Prerequisite:** the fetched SDK docs expose `EscalateAction`, and a deployed Action App is declared in `bindings.json` via the coded-agent bindings sync workflow — see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop). If the user asks for escalation but the SDK docs or Action App are unavailable, say so and fall back to Block/Log rather than authoring a guardrail that fails at runtime.
+Use `EscalateAction` only when the user wants human review/approval, fetched SDK docs expose it, and a deployed Action App is declared in `bindings.json` through the coded-agent bindings sync workflow; see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop). It suspends for review, resumes on Approve, and terminates on Reject. If docs, app, or binding are unavailable, say so and fall back to Block/Log; never silently remove escalation.
 
-Rules:
-
-1. **Default to the catalog example's `action_type`.** If it is `Block`, generate `BlockAction(...)`. Do not substitute `LogAction` for a security-critical guardrail on your own initiative.
-2. **Never silently downgrade Block → Log** (or a requested escalation → Log/Block). A guardrail set to log-only when the user expected blocking is the dangerous failure mode — the agent looks protected but isn't. If you use `LogAction` for any guardrail whose catalog default is `Block`, you **must** state it explicitly in the report and give the reason. If the user asked for **human review** (escalation) but you author Block/Log instead (e.g. no Action App available), say so explicitly — don't quietly drop the human-in-the-loop step.
-3. **Legitimate reasons to use Log instead of Block** (state which applies):
-   - The user explicitly asked for observe-only / audit / "log first, block later" rollout.
-   - A high false-positive risk where blocking would break normal operation (e.g. PII `PERSON` entity flagging ordinary words) — log so the user can tune thresholds before enforcing.
-4. **When ambiguous, ask once.** If the user gave no action preference and the guardrail is security-critical, you may apply the Block default and report it, or ask "block on violation, or log-only to start?" — but do not quietly pick Log.
+1. Generate `BlockAction(...)` when the catalog default is `Block`; do not substitute `LogAction` for security-critical guardrails without explanation.
+2. Never silently downgrade Block → Log or requested escalation → Log/Block. State the downgrade and reason.
+3. Use Log instead of Block only for explicit observe-only/audit/log-first requests or high false-positive risk, such as PII `PERSON` flagging ordinary words; state which reason applies.
+4. When action preference is ambiguous, ask once or apply the catalog Block default and report it.
 
 ### Step 7 — Generate Code
 
-For each recommended guardrail, the catalog entry's `examples[].config` gives the scope/stage/action/parameter intent. Translate it to Python using the writing patterns in [guardrails.md](guardrails.md):
+Read [guardrails.md](guardrails.md) before writing Python. Use middleware spread with `*` inside `create_agent(middleware=[...])`; Tool middleware receives `tools=[<tool_obj>]`. For decorators, use `@guardrail(validator=..., action=..., stage=...)` above the `@tool` function, LLM factory, or agent factory as appropriate.
 
-- **Middleware** — spread the class with `*` into `create_agent(middleware=[...])`. For Tool scope, pass `tools=[<tool_obj>]`.
-- **Decorator** — place `@guardrail(validator=..., action=..., stage=...)` above the target (`@tool` function for Tool scope, LLM factory for LLM scope, agent factory for Agent scope).
-
-Use the action chosen in Step 6.
-
-Map catalog parameter shapes to Python:
+Translate catalog parameter types using names from SDK docs:
 
 | Catalog `$parameterType` | Python representation |
-|--------------------------|----------------------|
-| `enum-list` (e.g. `entities`) | List of enum members (e.g. `[PIIDetectionEntityType.EMAIL, PIIDetectionEntityType.PHONE_NUMBER]`) — names taken from SDK docs |
-| `map-enum` (e.g. `entityThresholds`) | Dict from enum member → number (e.g. `{PIIDetectionEntityType.EMAIL: 0.5}`) — keys must exactly match the `enum-list` parameter's values |
-| `number` (e.g. `threshold`) | Plain `float` / `int` constructor argument |
-| `text` (e.g. `guardrailText`) | Plain `str` constructor argument |
-| `enum` (e.g. `model`) | `str` value from the allowed options list. When the catalog shows an empty options list (as with `llm_as_judge`'s `model`), run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId` from the result. Ask the user for a model ID only if the command returns nothing or fails. |
-| `text-list` (e.g. `positiveExamples`, `negativeExamples`) | `List[str]` constructor argument |
+|---|---|
+| `enum-list` | list of enum members, e.g. `[PIIDetectionEntityType.EMAIL, PIIDetectionEntityType.PHONE_NUMBER]` |
+| `map-enum` | dict from enum member to number; keys must exactly match the `enum-list` values, e.g. `{PIIDetectionEntityType.EMAIL: 0.5}` |
+| `number` | plain `float` / `int` |
+| `text` | plain `str` |
+| `enum` | allowed `str`; if options are empty, run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId`; ask the user only if it returns nothing or fails |
+| `text-list` | `List[str]` |
 
-Use `BlockAction(...)`, `LogAction(severity_level=...)`, or `EscalateAction(app_name=..., app_folder_path=..., recipient=...)` for human-in-the-loop review — or any other action the SDK docs expose. Never invent action class names. For `EscalateAction`, the fetched SDK docs must expose the class/parameters, and the Action App must be deployed and declared in `bindings.json` using [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md) (see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop)).
-
-> Read [guardrails.md](guardrails.md) before writing any Python. The middleware spread, decorator stacking, and factory refactor rules cannot be safely inferred.
+Use only Action classes exposed by SDK docs: `BlockAction(...)`, `LogAction(severity_level=...)`, `EscalateAction(app_name=..., app_folder_path=..., recipient=...)`, or other documented classes. Escalation requires the Action App to be deployed and declared in `bindings.json` using [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md).
 
 ### Step 8 — Apply and Verify
 
-Write the recommended guardrails into the Python file using the patterns from [guardrails.md](guardrails.md). Then verify — in two stages, because syntax-valid does **not** mean active:
+Write changes using [guardrails.md](guardrails.md). Then run both checks; syntax alone is insufficient:
 
-1. **Syntax** — the file still parses:
+1. Run:
    ```bash
    python3 -c "import ast; ast.parse(open('graph.py').read())"
    ```
-2. **Runtime wiring (mandatory)** — the guardrails are actually attached. A guardrail whose symbols were imported from the wrong module parses fine but **silently never fires**. Run the adapter-registration and `_GuardedLLM` / `_GuardedTool` wrap checks from [guardrails.md § Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails). Do not report the guardrails as added until these pass.
+2. For LangChain, run the adapter-registration and `_GuardedLLM` / `_GuardedTool` wrap checks from [guardrails.md § Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired). Do not report success until runtime wiring passes.
 
-(Replace `graph.py` with the actual entrypoint file from Step 1.)
+Replace `graph.py` with the actual entrypoint file.
 
-Report to the user:
-- What was added (by validator name and Python class)
-- Why it was recommended (cite the catalog's `when_to_use` or a specific `use_cases` item that matched the agent's context)
-- Which scope and action were chosen and why. If you dropped an overlapping validator in Step 3, name it and the reason. If you used `LogAction` for a guardrail whose catalog default is `Block` (Step 6), call it out explicitly with the reason.
-- Which parameters were set and their meaning
-- Which style was used (middleware or decorator) and any refactor performed (e.g. wrapped LLM in a factory)
-
----
+Report:
+- validator name and Python class added;
+- catalog `when_to_use` or matching `use_cases` justification;
+- scope and action, including why; dropped overlapping validators and reasons;
+- any LogAction use where catalog default was Block and its reason;
+- parameter values and meanings;
+- middleware/decorator style and factory refactors;
+- verification results.
 
 ## Validate Mode
 
-Use when the agent already has guardrails and the user asks whether they are correctly configured or appropriate.
+Use when existing guardrails are being assessed. Fetch SDK docs first. They are authoritative for Python class, scope, and placement. Also run catalog and list for relevance and entitlement checks; they are not a hard prerequisite once SDK docs settle a scope fix.
 
-**Fetch the SDK docs first (WebFetch) — they are the authoritative source** for which Python class corresponds to which `validator_id` and which scopes/stages each class supports; a scope/placement diagnosis is grounded there. Also run the `catalog` and `list` fetches to support the Relevance (`when_not_to_use`) and entitlement checks below — recommended, but not a hard prerequisite once the SDK docs settle the scope question.
-
-For each existing guardrail discovered in the Python file (Step 1 from Recommend Mode):
+Discover existing decorators and middleware as in Step 1. For each, identify the referenced validator. If multiple list entries share its `Validator` name, determine whether code uses a BYO construct (`ByoValidator(...)` or `UiPathByoGuardrailMiddleware(...)`, identified by `validator_name`) or the plain SDK construct, then match `IsByo` before reading `Parameters` or scopes.
 
 ### Correctness Check
 
-From the SDK docs and the catalog, look up the validator class referenced in the code. **If the guardrails list has more than one entry sharing the referenced `Validator` name** (built-in plus BYOG), disambiguate by whether the code wires a BYO validator construct (`ByoValidator(...)` or `UiPathByoGuardrailMiddleware(...)`, identified by its `validator_name`) or the plain SDK validator/middleware class — match against the corresponding list entry's `IsByo` before reading `Parameters`/scopes for that entry.
+Using SDK docs and catalog, check:
 
-| Aspect | What to check |
-|--------|---------------|
-| Class import | Class is imported from the path the SDK docs specify (e.g. `from uipath_langchain.guardrails import UiPathPIIDetectionMiddleware`) — typos and stale imports fail at runtime |
-| Entity enums | Every entity/category passed (e.g. `PIIDetectionEntityType.EMAIL`) is a member listed in the SDK doc enum |
-| Threshold keys (`map-enum` parameters) | Every key in the threshold dict matches a member of the corresponding entity list — no extras, no missing |
-| Threshold values | Within the range and step the catalog parameter declares (e.g. harmful content severities must be `0`, `2`, `4`, or `6`) |
-| Action class | Action constructor (`BlockAction`, `LogAction`, ...) is one the SDK docs expose for this validator |
-| Required parameters | Any catalog parameter with `Required: true` is present in the constructor call |
+- **Class import:** matches the documented path, such as `from uipath_langchain.guardrails import UiPathPIIDetectionMiddleware`.
+- **Entity enums:** every passed entity/category is documented.
+- **Threshold keys:** every `map-enum` key is in the corresponding entity list, with no extras or missing keys.
+- **Threshold values:** satisfy catalog range and step; for example, harmful-content severities must be `0`, `2`, `4`, or `6`.
+- **Action class:** is documented for the validator.
+- **Required parameters:** every catalog parameter with `Required: true` is supplied.
 
 ### Actionability Check
 
-1. Read the validator's allowed scopes and per-scope stages from the **SDK docs** (authoritative for coded); cross-check against the `catalog` entry's `allowed_scopes` when it was fetched.
-2. Confirm the in-code scope is permitted:
-   - Middleware — every `GuardrailScope` in the `scopes=[...]` argument is in `allowed_scopes`.
-   - Decorator — the function the `@guardrail` decorates matches the implied scope: `@tool` for Tool scope, LLM factory for LLM scope, agent factory for Agent scope.
-3. Confirm the stage is permitted. **Middleware takes no `stage=` argument** — the validator fixes its stage (e.g. `intellectual_property` POST, `user_prompt_attacks` PRE), so do not flag a missing stage. The stage check applies only to the **decorator** `stage=`: `GuardrailExecutionStage.PRE` only where catalog allows pre-execution; `POST` only where catalog allows post-execution.
-4. For Tool-scoped middleware: `tools=[...]` must contain the actual `@tool` Python objects discovered in Step 1 — not strings, not undefined names.
-5. For decorator-style LLM/Agent scope: the decorated function must actually return a `UiPathChat(...)` / `create_agent(...)` — decorating an unrelated function silently no-ops.
+1. Read allowed scopes and per-scope stages from SDK docs; cross-check catalog `allowed_scopes` when available.
+2. Middleware `scopes=[...]` must contain only allowed scopes. Decorated functions must match scope: `@tool` for Tool, LLM factory for LLM, agent factory for Agent.
+3. Middleware takes no `stage=` argument; its validator fixes the stage, for example, `intellectual_property` POST or `user_prompt_attacks` PRE. Check stages only for decorator `stage=`: `GuardrailExecutionStage.PRE` or `POST` must be catalog-supported.
+4. Tool middleware `tools=[...]` must contain actual discovered `@tool` Python objects, not strings or undefined names.
+5. Decorated LLM/Agent functions must return `UiPathChat(...)` / `create_agent(...)`; unrelated functions silently no-op.
 
 ### Relevance Check
 
-1. Read the catalog entry's `when_not_to_use`.
-2. Compare against the agent's current context (system prompt, schemas, tool docstrings).
-3. If the agent matches a `when_not_to_use` condition, flag the guardrail as potentially misapplied and explain why.
+Read `when_not_to_use` and compare it with the prompt, schemas, and tool docstrings. Flag potentially misapplied guardrails and explain the conflict.
 
 ### Report and Fix
 
-Report per guardrail:
-- **OK** — no issues found
-- **Correctness issue** — describe the problem (e.g., "`harmfulContentEntityThresholds` has key `Sexual` but `Sexual` is not in `harmfulContentEntities` — keys must match the entity list") and the fix
-- **Actionability issue** — describe the problem (e.g., "`UserPromptAttacksValidator` is decorating `@tool def lookup_account_info` — the SDK docs say this validator only supports LLM scope; move the `@guardrail` above the LLM factory") and the fix
-- **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
+Report each guardrail as:
 
-If the user asks to fix identified issues: apply corrections to the Python file, then verify:
+- **OK** — no issues.
+- **Correctness issue** — problem and fix, such as a threshold key absent from the selected entity list.
+- **Actionability issue** — problem and fix, such as an LLM-only validator decorating a Tool function.
+- **Relevance issue** — why it may not apply and what to consider.
+
+If the user requests fixes, apply them and run:
 
 ```bash
 python3 -c "import ast; ast.parse(open('graph.py').read())"
 ```
 
----
-
 ## Critical Rules
 
-1. **Recommend mode / net-new adds:** fetch catalog first (use cache if fresh), guardrails list second (no cache), and the two SDK doc pages via WebFetch third (no cache) — all three required before any analysis or code edit. **Validate mode of an existing guardrail:** the SDK docs are the authoritative, sufficient grounding for a scope/placement fix; still fetch catalog + list for the Relevance and entitlement checks, but they are not a hard prerequisite.
-2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
-3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
-4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
-5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at LLM PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
-6. **Default the action to the catalog example's `action_type`; never silently downgrade Block → Log.** Security-critical guardrails (`adversarial_input`, `content_safety`) default to `Block`. If you use `LogAction` for a guardrail whose catalog default is `Block`, state it and the reason in the report (Step 6).
-7. **Block as early as possible — pick the outermost scope the validator allows.** For input protection (PII, jailbreak, injection) prefer `GuardrailScope.AGENT` · PRE over Llm over Tool, so the run halts before the LLM call. PII meant to stop the agent handling personal data goes at **Agent**, not Llm. Only narrow when the validator is scope-restricted (e.g. `prompt_injection` / `user_prompt_attacks` are Llm-only) or the user asks for a narrower scope. See Step 5.
-8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; the platform module exposes identical names but registers nothing, so guardrails silently no-op. For any other framework (LlamaIndex, OpenAI Agents, plain Python), no UiPath framework adapter is published yet — use `uipath.platform.guardrails` (the framework-agnostic SDK) directly. After writing for LangChain, verify runtime wiring (adapter registered + `_GuardedLLM`/`_GuardedTool` wrap), not just `ast.parse`. See [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) and [§ Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
-9. **For Tool scope**: verify the tool exists as a `@tool` function in the agent code before adding the guardrail. If the agent has no tools, do not add a Tool-scoped guardrail.
-10. **For LLM-scope decorator**: the LLM must be inside a named factory function. If it is assigned directly (`llm = UiPathChat(...)`), refactor into a factory first — never decorate a module-level assignment.
-11. **For Agent-scope decorator**: `create_agent(...)` must be inside a named factory function. If it is called at module level, refactor into a factory first.
-12. **The cache file is `.guardrails-catalog-cache.json`** in the working directory. Add it to `.gitignore` if one exists.
-13. **Class names and enum names come from the SDK docs** — never invent them. The SDK evolves; relying on memory produces stale code. For **import paths**, use the `langchain/guardrails/` page when the agent is LangChain (paths live in `uipath_langchain.guardrails`); for every other framework use the `core/guardrails/` page (paths live in `uipath.platform.guardrails`). See Rule 8.
-14. **Read [guardrails.md](guardrails.md) before writing any Python** — the middleware spread (`*`), decorator placement above `@tool` / factory, factory refactor, and import-source rules are specified there and cannot be safely inferred.
-15. **`EscalateAction` is the human-in-the-loop option only when the SDK docs expose it** — recommend it when the user wants a person to review/approve a flagged item rather than hard-block it. It requires a **deployed Action App** declared in `bindings.json` (`app_name` / `app_folder_path`) through the coded-agent bindings sync workflow; if the docs, app, or binding prerequisite is unavailable, fall back to Block/Log and say so — never silently drop the requested escalation. See Step 6 and [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop).
-16. **`Validator` is not unique — disambiguate built-in vs. BYO by `IsByo` before matching on name.** A tenant can have both a built-in and one or more BYOG entries sharing the same `Validator` name. Key any lookup on `(Validator, IsByo)`, and default recommendations/wiring to the built-in SDK validator/middleware unless the user names a BYO configuration or asks for BYO. Never fabricate the BYO validator construct from memory — see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).
+1. **Recommend mode / net-new adds:** fetch catalog first (use cache if fresh), guardrails list second (no cache), and the two SDK doc pages via WebFetch third (no cache) — all three required before any analysis or code edit. **Validate mode of an existing guardrail:** SDK docs are authoritative and sufficient for a scope/placement fix; still fetch catalog + list for Relevance and entitlement checks, but they are not a hard prerequisite.
+2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Never guess or use hardcoded recommendations.
+3. Recommend only `Available` validators; mention `Unauthorised` ones.
+4. Every recommendation must cite `when_to_use` or a matching `use_cases` item.
+5. Never recommend two validators with the same `security_category` at the same scope and stage. Derive deprecation and the best fit from catalog fields; mention the dropped alternative.
+6. Default action to catalog `examples[].config.action_type`; never silently downgrade Block → Log. Security-critical `adversarial_input` and `content_safety` default to Block. Explain any LogAction deviation.
+7. Block input at the earliest permitted outer scope: Agent · PRE over Llm over Tool; PII intended to stop personal-data handling belongs at Agent, not Llm, unless unsupported or narrowed by the user. See Step 5.
+8. For LangChain / LangGraph, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`; only the former registers the adapter. Other frameworks use `uipath.platform.guardrails` directly because no UiPath framework adapter is published. Verify adapter registration plus `_GuardedLLM`/`_GuardedTool` wrapping, not only `ast.parse`. See [guardrails.md § Imports Pattern](guardrails.md#imports-pattern) and [§ Verify Guardrails Are Actually Wired](guardrails.md#verify-guardrails-are-actually-wired).
+9. For Tool scope, verify an existing `@tool` function; if none exists, do not add Tool-scoped guardrails.
+10. LLM-scope decorators require a named factory containing the LLM; refactor direct `llm = UiPathChat(...)` assignments first.
+11. Agent-scope decorators require a named factory containing `create_agent(...)`; refactor module-level calls first.
+12. Cache catalog at `.guardrails-catalog-cache.json` in the working directory and add it to `.gitignore` if one exists.
+13. Take class and enum names from SDK docs. For LangChain imports use `https://uipath.github.io/uipath-python/langchain/guardrails/` and `uipath_langchain.guardrails`; for other frameworks use the core page and `uipath.platform.guardrails`.
+14. Read [guardrails.md](guardrails.md) before writing Python; it specifies middleware spread (`*`), decorator stacking, factory refactors, and import sources.
+15. Use `EscalateAction` only when SDK docs expose it, the user wants human review, and a deployed Action App is declared in `bindings.json` via the coded-agent bindings sync workflow. Otherwise fall back to Block/Log and say so; never silently drop escalation. See [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop).
+16. `Validator` is not unique: disambiguate built-in versus BYO by `IsByo`. Key lookups on `(Validator, IsByo)`. Default to built-in unless the user names or requests BYO. Never fabricate a BYO construct; see [guardrails.md § BYO (bring-your-own) validators](guardrails.md#byo-bring-your-own-validators).

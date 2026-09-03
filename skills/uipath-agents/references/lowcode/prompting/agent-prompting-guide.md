@@ -1,17 +1,17 @@
 # Agent Prompting Guide
 
-Robust prompts for low-code agents. This guide contains shared prompting details for autonomous and conversational agents, and then references the specific prompting guides for both variants.
+Guidance for robust low-code agent prompts, covering shared quality requirements and variant-specific guides.
 
 ## Shared
 
-This guide owns prompt **quality**; [agent-definition.md](../agent-definition.md#contenttokens-construction) owns the `contentTokens` **mechanics** (keep `content` ↔ `contentTokens` in sync after every edit here).
+This guide covers prompt **quality**; [agent-definition.md](../agent-definition.md#messages-and-contenttokens) covers `contentTokens` **mechanics**. Keep `content` and `contentTokens` synchronized after every edit.
 
-> Default scaffolds ship toy or empty prompts ("You are a helpful agentic assistant" / "What is the current date?" / ""). Replace them. A placeholder system prompt is the single biggest quality gap in a scaffolded agent.
+> Replace default toy or empty scaffolds ("You are a helpful agentic assistant" / "What is the current date?" / ""). A placeholder system prompt is the biggest quality gap in a scaffolded agent.
 
 ## Autonomous Agents
 
-When building a low-code autonomous agent, refer to [autonomous-agent-prompting-guide.md](autonomous-agent-prompting-guide.md) for the autonomous-specific prompting guide.
+For a low-code autonomous agent, follow [autonomous-agent-prompting-guide.md](autonomous-agent-prompting-guide.md).
 
 ## Conversational Agents
 
-When building a low-code conversational agent, refer to [conversational-agent-prompting-guide.md](conversational-agent-prompting-guide.md) for the conversational-specific prompting guide.
+For a low-code conversational agent, follow [conversational-agent-prompting-guide.md](conversational-agent-prompting-guide.md).
