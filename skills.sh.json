@@ -38,6 +38,7 @@
         "uipath-aops",
         "uipath-test",
         "uipath-governance",
+        "uipath-hol-guard",
         "uipath-insights",
         "uipath-process-mining",
         "uipath-tasks",

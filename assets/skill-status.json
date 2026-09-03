@@ -105,6 +105,14 @@
       },
       "last_synced": null
     },
+    "uipath-hol-guard": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-human-in-the-loop": {
       "status": "in-development",
       "confluence": {
