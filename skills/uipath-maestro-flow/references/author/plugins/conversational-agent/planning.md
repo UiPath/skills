@@ -86,9 +86,7 @@ That is a starting point, not the supported shape. Whatever else the conversatio
 | `uipath.conversational.send-message` | `input` | `output` |
 | `uipath.conversational.get-conversation-context` | `input` | `output` |
 
-**The inline agent has no `output` port** — it continues on `success`. Wiring it as `output` fails: `edge add` reports `Source port "output" not found on node`, and a hand-written edge referencing it fails validation.
-
-In-solution and published agents are the opposite: they continue on `output` and have no `success`. Read the ports off the node's own definition rather than carrying the inline rule across.
+Only the inline agent breaks the pattern: `success`, and no `output` port. In-solution and published have `output` and no `success`. Both mistakes are caught — `edge add` lists the real ports, validate reports `Edge references undeclared source handle`. Note `output` is also a variable namespace (`$vars.<id>.output.…`) on every node, which is why the inline agent has one without having the port.
 
 ## Output Variables
 

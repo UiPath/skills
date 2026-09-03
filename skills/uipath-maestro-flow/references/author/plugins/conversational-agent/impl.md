@@ -280,7 +280,7 @@ If the solution's `.uipx` already carries a `SolutionId`, the upload overwrites 
 - **Do not stop at `context` and `conversationId`.** That combination validates clean and still ships an agent with no chat history — write all five.
 - **Do not invent output paths.** `waitForMessage1.output.exchangeId` and `conversationalAgent1.output.response` do not exist, and validate accepts both.
 - **Do not use `=js:` strings** for bindings in a `.flow`.
-- **Do not wire the inline agent on `output`.** It continues on `success`. An in-solution or published one is the reverse.
+- **Do not carry one flavor's agent port across.** Inline continues on `success`, in-solution and published on `output`.
 - **Do not add a send-message just to deliver the agent's reply.** The agent streams it.
 - **Do not expect `flow debug` to run the conversation.** It hands off to Studio Web or the VS Code extension.
 - **Do not leave the manual trigger in place.** Without `core.trigger.conversation` the package is not marked conversational, and nothing errors.
