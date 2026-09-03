@@ -228,6 +228,23 @@ python3 scripts/check-skills-sh.py
 
 CI (`validate-skills-sh.yml`) fails if a skill is in no grouping, is listed in two, or is grouped but no longer exists on disk. `--fix` removes entries for deleted skills but will not place new ones — that is an editorial call.
 
+#### Renaming or removing a skill
+
+`skills.sh.json` is not derived from disk, so a rename or a deletion leaves it stale with no other symptom. Update it in the **same PR** as the folder change:
+
+| Change to `skills/` | Required edit |
+|---|---|
+| Add `skills/<new>/` | Add `<new>` to the matching grouping |
+| Rename `skills/<old>/` → `skills/<new>/` | Replace `<old>` with `<new>` — both halves (old name gone, new name ungrouped) are reported |
+| Delete `skills/<name>/` | Remove `<name>`, and drop the grouping if nothing survives in it |
+
+```bash
+python3 scripts/check-skills-sh.py --fix   # drops stale entries; will not place new ones
+python3 scripts/check-skills-sh.py         # confirm: "OK — N skills grouped across M section(s)."
+```
+
+The check reads the whole tree, so it also reports drift that was already on `main`. Those findings are labelled **pre-existing** and do not fail your PR — `--baseline-ref` scopes the exit code to drift your change introduces. Fixing pre-existing drift is welcome; being blocked by it is not the intent.
+
 ### 6. Add Reference Documents (Optional)
 
 Reference files go in `references/` and follow these conventions:
@@ -433,7 +450,7 @@ Before submitting your PR, verify:
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
-- [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`)
+- [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 
 ### References
 - [ ] File names use kebab-case

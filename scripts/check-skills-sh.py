@@ -29,6 +29,15 @@ exist on disk (and any grouping left empty as a result). It deliberately does
 NOT place newly added skills — which section a skill belongs to is an editorial
 judgement, not something a script should guess.
 
+--baseline-ref scopes the exit code to drift THIS change introduces. The check
+reads the whole tree, so drift already on the base branch otherwise fails every
+unrelated PR that touches any skills/*/SKILL.md. That is not hypothetical: when
+uipath-process-mining landed ungrouped on 2026-08-04 (#2252), the next 48 hours
+produced 65 failures across ~20 unrelated branches until an unrelated PR (#2498)
+happened to add the entry. With --baseline-ref, findings that also reproduce at
+the baseline are reported as warnings and do not fail the run; only new findings
+exit 1. Whole-tree visibility is kept — the blast radius is not.
+
 Outputs:
   - Default: one finding per line, human-readable; exit 1 if any.
   - --json : newline-delimited JSON for downstream tooling.
@@ -37,10 +46,13 @@ Usage:
     python3 scripts/check-skills-sh.py
     python3 scripts/check-skills-sh.py --json
     python3 scripts/check-skills-sh.py --fix
+    python3 scripts/check-skills-sh.py --baseline-ref origin/main
 """
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -184,6 +196,59 @@ def validate(manifest, on_disk):
     return schema_findings + check_coverage(groupings, on_disk)
 
 
+# --- baseline comparison ----------------------------------------------------
+
+
+def _git(*args):
+    """Run git in the repo. Returns stdout, or None if the command failed."""
+    try:
+        result = subprocess.run(("git", "-C", str(REPO_ROOT)) + args,
+                                capture_output=True, text=True, check=False)
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def baseline_state(ref):
+    """The manifest and skill set as of `ref`. Returns (manifest, on_disk) or
+    None when the ref is unreadable — a shallow clone, a missing base, or a
+    branch that predates skills.sh.json. Callers fall back to strict
+    whole-tree validation rather than silently passing."""
+    raw = _git("show", f"{ref}:{MANIFEST_PATH.name}")
+    if raw is None:
+        return None
+    try:
+        manifest = json.loads(raw)
+    except json.JSONDecodeError:
+        # A baseline that does not even parse cannot establish "pre-existing".
+        return None
+
+    listing = _git("ls-tree", "-r", "--name-only", ref, "--", SKILLS_DIR.name)
+    if listing is None:
+        return None
+    on_disk = {parts[1] for parts in
+               (line.split("/") for line in listing.splitlines())
+               if len(parts) == 3 and parts[0] == SKILLS_DIR.name and parts[2] == "SKILL.md"}
+    return (manifest, on_disk)
+
+
+def identity(finding):
+    """What makes two findings 'the same drift' across two commits."""
+    return (finding["key"], finding["error"])
+
+
+def split_by_baseline(findings, baseline):
+    """Partition findings into (new, preexisting) using the baseline state."""
+    baseline_manifest, baseline_on_disk = baseline
+    already = {identity(f) for f in validate(baseline_manifest, baseline_on_disk)}
+    new, preexisting = [], []
+    for finding in findings:
+        (preexisting if identity(finding) in already else new).append(finding)
+    return (new, preexisting)
+
+
 def fix(manifest, on_disk):
     """Drop grouped names that no longer exist, and any grouping left empty."""
     groupings = manifest.get("groupings")
@@ -238,6 +303,10 @@ def main():
                         help="Emit newline-delimited JSON instead of text")
     parser.add_argument("--fix", action="store_true",
                         help="Remove grouped names that no longer exist on disk")
+    parser.add_argument("--baseline-ref", metavar="REF",
+                        help="Git ref to treat as the baseline (e.g. origin/main). Findings "
+                             "that also reproduce at REF are warnings, not failures, so "
+                             "drift already on the base branch does not fail this change.")
     args = parser.parse_args()
 
     manifest = load_manifest()
@@ -247,20 +316,47 @@ def main():
         return fix(manifest, on_disk)
 
     findings = validate(manifest, on_disk)
+    preexisting = []
+
+    if args.baseline_ref:
+        baseline = baseline_state(args.baseline_ref)
+        if baseline is None:
+            # Fail closed: without a readable baseline every finding stays
+            # blocking, which is the pre---baseline-ref behaviour.
+            print(f"Warning: cannot read baseline {args.baseline_ref!r} — treating every "
+                  f"finding as new.", file=sys.stderr)
+        else:
+            findings, preexisting = split_by_baseline(findings, baseline)
 
     if args.json:
         for finding in findings:
-            print(json.dumps(finding))
+            print(json.dumps({**finding, "preexisting": False}))
+        for finding in preexisting:
+            print(json.dumps({**finding, "preexisting": True}))
         return 1 if findings else 0
+
+    annotate = os.environ.get("GITHUB_ACTIONS") == "true"
+
+    if preexisting:
+        print(f"{len(preexisting)} pre-existing finding(s) — already present at "
+              f"{args.baseline_ref}, not caused by this change:\n")
+        for finding in preexisting:
+            prefix = "::warning::" if annotate else "  "
+            print(f"{prefix}{finding['key']}: {finding['error']}")
+        print()
 
     if not findings:
         sections = len(manifest.get("groupings", []))
         print(f"OK — {len(on_disk)} skills grouped across {sections} section(s).")
+        if preexisting:
+            print("Pre-existing drift above still needs a fix — see CONTRIBUTING.md "
+                  "§ Register the skills.sh Grouping.")
         return 0
 
     print(f"{len(findings)} finding(s):\n")
     for finding in findings:
-        print(f"  {finding['key']}: {finding['error']}")
+        prefix = "::error::" if annotate else "  "
+        print(f"{prefix}{finding['key']}: {finding['error']}")
     return 1
 
 

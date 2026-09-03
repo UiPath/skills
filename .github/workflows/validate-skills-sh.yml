@@ -17,6 +17,11 @@ jobs:
     name: Validate skills.sh.json against skills/
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          # The baseline diff below needs the base commit in the local object
+          # store. Unshallow rather than guess a depth: the base can be far
+          # back on a long-lived branch.
+          fetch-depth: 0
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
@@ -26,5 +31,13 @@ jobs:
       # else fails when it drifts. Adding or renaming a skill without updating
       # it leaves the public page showing a stale grouping — this is the only
       # thing that notices.
+      #
+      # --baseline-ref keeps the whole-tree read (drift stays visible) but
+      # scopes the exit code to drift THIS PR introduces. Without it, one
+      # ungrouped skill on main fails every unrelated PR that touches any
+      # skills/*/SKILL.md: #2252 landed uipath-process-mining ungrouped on
+      # 2026-08-04 and cost ~20 unrelated branches 65 red runs over 48 hours.
       - name: Validate skills.sh grouping
-        run: python3 scripts/check-skills-sh.py
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 scripts/check-skills-sh.py --baseline-ref "$BASE_SHA"
