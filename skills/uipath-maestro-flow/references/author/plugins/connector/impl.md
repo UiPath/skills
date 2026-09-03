@@ -169,30 +169,38 @@ Omitting `bodyParameters`, `queryParameters`, or `pathParameters` removes prior 
 
 #### Step 6a — FilterBuilder parameters
 
-Scan every operation's `parameters[]` for `design.component === "FilterBuilder"`; this is not limited to list operations. Use the actual parameter `name` (`where`, `q`, or another connector-specific name).
+List the operation's FilterBuilder parameters before you author anything:
 
-Pass a structured tree under `--detail.filter`. The CLI writes runtime `queryParameters.<name>` and design-time `configuration.essentialConfiguration.savedFilterTrees.<name>`. Never pass a raw CEQL string under `queryParameters.<name>`; the CLI rejects it or leaves Studio Web's tree undefined.
-
-Dynamic operands may use `{ "value": {"value": "=js:$vars...", "isLiteral": false} }`.
-
-For dynamic-entity connectors, set the entity in the same configure call, such as `pathParameters.entityName`. Read exact, case-sensitive field names from `uip df entities list --output json` and `uip df entities get <entity-id> --output json`; unmatched leaves are silently dropped.
-
-If no FilterBuilder parameter exists, pass no `filter` and filter downstream.
-
-##### Hand-authored CEQL strings
-
-Prefer, in order:
-
-1. `node configure --detail.filter` with a structured tree.
-2. A hand-authored `=js:` string only when a runtime value requires it, using bare field names, single-quoted values, and no OData aliases. Map `eq`→`=`, `ne`→`!=`, `gt`→`>`, `ge`→`>=`, `lt`→`<`, and `le`→`<=`. See [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
-
-Canonical template for a dynamic value:
-
-```text
-=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
+```bash
+uip maestro flow registry get <node-type> --output json \
+  --output-filter "Node.connectorMethodInfo.parameters[?design.component=='FilterBuilder'].{name:name,type:type}"
 ```
 
-Single quotes delimit a value; double quotes mark a column reference. The whole value must start with `=js:` and wrap the interpolation — a plain string containing `${…}` is never resolved and silently matches nothing.
+FilterBuilder parameters are not limited to list operations. Use the `name` this returns (`where`, `q`, `queryExpression`, or another connector-specific name) — never a guessed one. Data Service `query-entity-records` returns `[{"name":"queryExpression","type":"query"}]`.
+
+Every name returned goes under the `filter` key of `--detail`, as a structured tree. Never pass a CEQL string under `queryParameters.<name>`; the CLI rejects it or leaves Studio Web's tree undefined. From the tree the CLI writes runtime `queryParameters.<name>` and design-time `configuration.essentialConfiguration.savedFilterTrees.<name>`. Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+
+Read path slots from the same registry output; never hand-type `endpoint`:
+
+```bash
+uip maestro flow registry get <node-type> --output json \
+  --output-filter "Node.{path:connectorMethodInfo.path,pathParams:connectorMethodInfo.parameters[?type=='path'].name}"
+```
+
+Data Service `query-entity-records` returns path `/v2/{entityName}/qer` with `entityName` as a path parameter, so set `pathParameters.entityName` in the same configure call.
+
+A runtime value goes in the tree, never in a hand-written string. Give the leaf operand a dynamic value with `"isLiteral": false`; the CLI compiles it to a `{var_<hash>}` placeholder plus a `filterVariables` entry:
+
+```json
+{ "id": "accountNumber", "operator": "Equals",
+  "value": { "value": "=js:$vars.<node>.output.<field>", "isLiteral": false } }
+```
+
+Read exact, case-sensitive field names from `uip df entities list --output json` and `uip df entities get <entity-id> --output json`; unmatched leaves are silently dropped.
+
+A whole-value `=js:` query string is not sanctioned. `flow validate` cannot read it, because it reads only a plain concatenation, and the CLI warns on it. If you find one in a flow, replace it with a filter tree.
+
+If no FilterBuilder parameter exists, pass no `filter` and filter downstream.
 
 #### Step 6b — Run configure
 
@@ -403,12 +411,10 @@ Never hardcode connection IDs; fetch them from IS at authoring time. Connector-t
 - **Missing method/path:** rerun `registry get` with `--connection-id` or use describe for generic activities.
 - **Malformed or stale `bindings_v2.json`:** never edit it; rerun `node configure` and debug/pack.
 - **Connector key not found:** run `uip is connectors list --output json`; keys are often prefixed with `uipath-`.
-- **FilterBuilder UI is `undefined`:** configure a structured `--detail.filter`, not a raw `queryParameters` string.
-- **FilterBuilder configure rejection:** move the value into `--detail.filter` as a structured tree.
+- **FilterBuilder UI is `undefined`:** configure a structured tree under the `filter` key of `--detail`, not a raw `queryParameters` string.
+- **FilterBuilder configure rejection:** move the value into the `filter` key of `--detail` as a structured tree.
 - **Data Service filter returns every record or malformed CEQL ending in `AND`:** compare tree field IDs case-sensitively with `uip df entities get <entity-id> --output json`; unmatched leaves are dropped.
-- **CEQL `[102003]` field-name error:** leave field names bare and quote only values, or use a filter tree.
-- **CEQL `[102003]` `Unsupported value expression 'Column'`:** single-quote values inside the `=js:` concatenation; do not double-quote them.
-- **CEQL `[102003]` with `eq`, `ne`, `gt`, `ge`, `lt`, or `le`:** replace aliases with `=`, `!=`, `>`, `>=`, `<`, or `<=`.
+- **CEQL `[102003]` field-name error, or `[102001]`:** the query was hand-written as a string. Delete it and configure a filter tree under the `filter` key of `--detail` (Step 6a); put runtime values in a leaf operand with `"isLiteral": false`.
 - **`parameterValues` object-map error:** use `[key, value]` tuples.
 - **`[400300] Error evaluating expression … Invalid or unexpected token`, or the command itself dies with a shell parse error (`zsh: parse error`, `bash: syntax error near unexpected token`):** the `=js:` expression was hand-escaped through nested shell quotes inside `--detail '<json>'`. Write the detail JSON to a file with a quoted heredoc and pass `--detail "$(cat /tmp/detail.json)"`. See [editing-operations-cli.md — Configure a connector node](../../editing-operations-cli.md#configure-a-connector-node).
 - **Custom-field token unresolved:** reread `apiConfiguration.url` and `body` and add every encoded token.
