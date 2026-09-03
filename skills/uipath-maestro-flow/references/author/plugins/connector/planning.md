@@ -13,9 +13,41 @@ Prefer higher tiers when connecting to external services:
 | Tier | Approach | When to Use |
 | --- | --- | --- |
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
-| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector's IS connection for auth |
-| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
-| 4 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
+| 2 | **Non-catalog activity generation** | A connector exists but lacks the curated activity, **and the connector reports `SupportsV4Activity`** — uses the connector's IS connection for auth |
+| 3 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the curated activity, and does **not** report `SupportsV4Activity` — uses the connector's IS connection for auth |
+| 4 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
+| 5 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
+
+**Tiers 2 and 3 answer the same question — the connector is there, the activity is
+not. Establish the gap FIRST, the same way you always have**
+([Sanity-check before deciding "no connector activity exists"](#sanity-check-before-deciding-no-connector-activity-exists)):
+`registry search`, and if it returns triggers but no activities, `registry pull
+--force` and search again. Only when the second search still shows no activity is
+the gap real.
+
+**Then** one connector metadata call decides which fallback:
+
+```bash
+uip is connectors metadata <connector-key> --output json
+```
+
+Read `Data[0].Flags.SupportsV4Activity`:
+
+| value | route |
+|---|---|
+| `true` | **Tier 2** — generate a non-catalog activity |
+| `false`, or the key is **absent** | **Tier 3** — Managed HTTP Request |
+
+Test for the value, not for the presence of `Flags`. `Flags` is `{}` on most
+connectors rather than missing, so `Flags && …` passes while
+`Flags.SupportsV4Activity` is `undefined`. Measured: `uipath-salesforce-slack`
+returns `{"SupportsV4Activity": true}`; `uipath-atlassian-jira`,
+`uipath-microsoft-teams` and `uipath-google-drive` all return `{}`.
+
+The flag is a **capability hint for choosing a node type, not an authorization
+decision** — it says the connector can host a generated activity, not that the
+caller may call anything. Auth is still the connector's IS connection, enforced
+at runtime.
 
 ### Prerequisites
 
@@ -73,7 +105,7 @@ uip maestro flow registry pull --force
 uip maestro flow registry search <service> --output json
 ```
 
-If the second search still returns no activities for that connector, the fallback to managed HTTP (Tier 2 below) is legitimate. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
+If the second search still returns no activities for that connector, falling through is legitimate — to Tier 2 or Tier 3 depending on `SupportsV4Activity`, as above. If the second search now lists activities, the cache was stale — proceed with the connector activity node as Tier 1.
 
 > **Why this matters**: a partial registry pull is an indirect failure — `registry pull` reports `Success` even when one node-source branch silently dropped its contribution. The shape (`triggers > 0 && activities == 0`) is the only local signal you have. Treat it like a stale-cache symptom, not a topology fact.
 
@@ -118,7 +150,16 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## HTTP Fallback (Managed HTTP Request)
 
-When a connector exists but lacks the specific curated activity, use `core.action.http.v2` (Managed HTTP Request). This node proxies through the `uipath-uipath-http` connector and uses the **target connector's** IS connection for authentication — you supply the API URL and payload.
+When a connector exists but lacks the specific curated activity **and does not
+report `SupportsV4Activity`** (Tier 3 — check the connector metadata first, see
+[Decision Order](#decision-order)), use `core.action.http.v2` (Managed HTTP
+Request). This node proxies through the `uipath-uipath-http` connector and uses
+the **target connector's** IS connection for authentication — you supply the API
+URL and payload.
+
+If the connector *does* report `SupportsV4Activity`, prefer Tier 2 instead: a
+generated non-catalog activity keeps the operation as a first-class activity
+node rather than a hand-supplied URL.
 
 > **Do NOT use individual connector HTTP request nodes** (e.g., `uipath.connector.<key>.http-request`). Always use the unified `core.action.http.v2` Managed HTTP Request node for non-curated API calls.
 

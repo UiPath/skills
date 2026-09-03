@@ -210,8 +210,11 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 When the flow needs to call an external service, use this decision order — prefer higher tiers:
 
 1. **Pre-built Integration Service connector** — Use when a connector exists and covers the use case. See [connector](plugins/connector/planning.md).
-2. **Managed HTTP Request** (`core.action.http.v2`) — connector mode: use when a connector exists but lacks the specific curated activity. Manual mode: use for one-off API calls to services without connectors. See [http](plugins/http/planning.md).
-3. **RPA workflow node** — Use only when the target system has no API (legacy desktop apps, terminals). See [rpa](plugins/rpa/planning.md).
+2. **Non-catalog activity generation** — Use when a connector exists but lacks the curated activity **and reports `SupportsV4Activity`**. See [connector](plugins/connector/planning.md#decision-order).
+3. **Managed HTTP Request** (`core.action.http.v2`) — connector mode: use when a connector exists, lacks the curated activity, and does **not** report `SupportsV4Activity`. Manual mode: use for one-off API calls to services without connectors. See [http](plugins/http/planning.md).
+4. **RPA workflow node** — Use only when the target system has no API (legacy desktop apps, terminals). See [rpa](plugins/rpa/planning.md).
+
+Tiers 2 and 3 are decided by one call — `uip is connectors metadata <key> --output json`, then `Data[0].Flags.SupportsV4Activity`.
 
 ---
 

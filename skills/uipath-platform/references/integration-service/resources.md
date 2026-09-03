@@ -11,6 +11,7 @@ Resources represent the data objects available through a connector (e.g., Salesf
 - Describe Failures
 - Parent-Field-Driven Custom Fields (api-type ObjectActions)
 - Execute Operations
+- Executing an Action Script (v4 activities)
 - Pagination
 - Execute Error Handling
 
@@ -136,6 +137,81 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 | `replace` | Full replacement (PUT) | Yes | Yes (`id=<RECORD_ID>`) |
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
+
+## Executing an Action Script
+
+A v4 activity is an action script, not a CRUD object, so `run <verb>` cannot
+execute it. Run it with:
+
+```bash
+uip is resources scripts execute \
+  --connection-id "<id>" \
+  --inline-script @<path-to-script>.js \
+  --body '{"field": "value"}' --output json
+```
+
+Three modes, exactly one per call:
+
+| flag | runs |
+|---|---|
+| `--inline-script <src\|@file\|->` | a local script — source directly, `@path` to read a file, `-` for stdin |
+| `--script-ref <name>` | a published script; needs `--connector-key` |
+| `--url <url> --method <verb>` | one direct vendor call, no script — the URL must be absolute |
+
+`--body` differs by mode: with a script it is the script's input
+(`context.request.body`); with `--url` it is the vendor's own payload. `--query`
+and `--header` fill the rest of the script's inbound request — `--header` is how a
+paging token is echoed back for the next page.
+
+### Reading the result
+
+```jsonc
+{ "Result": "Success", "Code": "ScriptExecuted",
+  "Data": { "Outcome": "vendor",        // `proxy_error` ⇒ never reached the vendor
+            "Status": 400,              // the VENDOR's status, verbatim
+            "Body": "{\"ok\":false,…}",  // a STRING — parse it yourself
+            "Diagnostics": { "VendorCallCount": 1, "ScriptCpuMs": 14 } } }
+```
+
+**Read `Data.Outcome`, not the status** — a vendor 404 and an infrastructure
+failure can both be 404. `Data.Body` is deliberately unparsed: a vendor may
+answer with something that is not JSON, and the raw text is what diagnoses a
+failure. Extract the payload with `jq -r '.Data.Body'`.
+
+**The command exits 0 for any vendor answer, whatever the status.** A vendor 400
+is a normal result, not a command failure — it exits 1 only when the request never
+reached the vendor, and 3 on a bad argument. So `set -e` will not stop a loop on a
+vendor rejection; branch on `Data.Status` and `Data.Body` yourself.
+
+| `ErrorCode` when `Outcome` is `proxy_error` | means |
+|---|---|
+| `credential` | the connection could not mint a token — check it is Enabled |
+| `guard_block` | the target is outside the connection's allowed origin |
+| `script_invalid` | the script did not compile — **or** inline source is not permitted |
+| `script_artifact_missing` | `--script-ref` unresolved, or `--connector-key` mismatched |
+| `script_quota` | the call or egress budget was exceeded |
+| `script_deadline` | CPU or wall-clock budget exceeded |
+
+`script_invalid` has two very different causes and the message does not always
+separate them. If the script compiles locally, suspect the second.
+
+### Resolving reference fields for a script
+
+Same discipline as [reference-resolution.md](reference-resolution.md), different
+mechanism. A v4 reference is **`scriptRef`-only** — it carries no `objectName`,
+`path` or `childPath` — so you do not list a referenced object, you **run a lookup
+script** and filter its output:
+
+```jsonc
+"reference": { "scriptRef": "ListChannels", "lookupValue": "id",
+               "lookupNames": ["name", "id"] }
+```
+
+Everything else carries over: reference IDs stay connection-scoped, you match on
+`lookupNames` and pass `lookupValue`, and dependency chains still run in order.
+Note there is no `filterPattern` equivalent, so a search-style reference against
+an object too large to list has no v4 form — the lookup script must take a filter
+as an input instead.
 
 ### Filtering Results with `--output-filter`
 

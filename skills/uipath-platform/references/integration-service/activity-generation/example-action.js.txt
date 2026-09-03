@@ -1,0 +1,45 @@
+// addUsersToUserGroup — adds users to a Slack user group, keeping existing members.
+//
+// usergroups.users.update REPLACES the whole member list, so this is a
+// read-merge-write and both halves belong in this ONE script.
+async function execute(context) {
+  const { usergroup, users, include_count, team_id } = context.request.body;
+  const toAdd = users ?? [];
+
+  // 1. Read current members. A relative `url` resolves UNDER the connection's
+  //    base.url, its path included (Slack: https://slack.com/api), so never
+  //    repeat the base's own path here. `query` is serialized for you.
+  const listed = await intsvc.http({
+    method: 'GET',
+    url: '/usergroups.users.list',
+    query: { usergroup, team_id },
+    headers: context.request.headers,
+  });
+
+  // FAILURE CHECK — vendor-specific, and this one is SLACK's. Slack signals
+  // failure in-band with HTTP 200 + { ok: false }, so a status check alone would
+  // miss it. `intsvc.http` does NOT throw on a vendor 4xx/5xx either — it returns
+  // that status — so an unguarded script treats failure as success.
+  //
+  // DO NOT copy this line for another vendor. An API with no `ok` field (Jira,
+  // most REST APIs) would throw here on every SUCCESSFUL call. Use that vendor's
+  // own signal instead: `if (resp.status >= 400)` for REST-conventional,
+  // `if (resp?.body?.error)` for Graph-style. Checking both is always safe.
+  if (!listed?.body?.ok) {
+    throw new Error('Failed to retrieve users list' + JSON.stringify(listed?.body ?? listed?.raw));
+  }
+
+  // 2. Merge with new members.
+  const current = listed.body.users ?? [];
+  const merged = Array.from(new Set([...current, ...toAdd]));
+
+  // 3. Write back the full list. Returning the `intsvc.http` result UNTOUCHED
+  //    relays the vendor's bytes verbatim — status, ordered
+  //    headers, body. Building a new object instead re-encodes it.
+  return await intsvc.http({
+    method: 'POST',
+    url: '/usergroups.users.update',
+    body: { usergroup, users: merged, include_count, team_id },
+    headers: context.request.headers,
+  });
+}
