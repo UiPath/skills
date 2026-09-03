@@ -8,9 +8,8 @@ with additionalProperties:false, so a renamed field faults the job before the ha
 edit touching a field outside ont:writes is refused at 'Preparing write statement'
 (SQL_GUARD_REJECTED) after the job has already executed.
 
-Two contract idioms are understood: zod (`input: z.object({...}).strict()`, what generation
-emits and the only idiom `uip functions pack` can lower) and type<T>() over plain interfaces
-(packable only by Studio Web). The input-strictness gate checks that a zod input object carries
+Contracts are declared with type<T>() over plain interfaces. The input-strictness gate lowers
+that contract with tools/entry_points.py and checks the result carries
 .strict(), since that is what emits additionalProperties:false; a type<T>() contract passes it
 with a note, because the SDK derivation supplies the flag itself.
 
@@ -80,28 +79,6 @@ export declare function defineFunction<I, O, R extends O>(config: {
   handler: (input: I) => R | Promise<R>;
 }): unknown;
 """
-
-# The zod-idiom stub: input/output are zod schemas, the handler sees and returns the schemas'
-# inferred types, and R extends z.output<O> keeps the op-widening trap detectable for the same
-# reason as above. Used only when zod itself is resolvable, since the job imports it for real.
-SDK_STUB_ZOD = """import type { z } from 'zod';
-export declare function type<T>(): T;
-export declare function defineFunction<I extends z.ZodType, O extends z.ZodType, R extends z.output<O>>(config: {
-  name: string;
-  description?: string;
-  method?: string;
-  path?: string;
-  input: I;
-  output: O;
-  handler: (input: z.output<I>) => R | Promise<R>;
-}): unknown;
-"""
-
-# TS scalar -> the xsd type the TTL declares. Anything else is reported rather than guessed at.
-XSD_TYPES = {"string": "xsd:string", "number": "xsd:integer", "boolean": "xsd:boolean"}
-# The zod scalar constructors that mark a field as a parameter rather than a read.
-ZOD_SCALARS = {"string": "xsd:string", "number": "xsd:integer", "boolean": "xsd:boolean"}
-
 
 # --------------------------------------------------------------------------- ttl text scanning
 
@@ -323,44 +300,6 @@ def interface_fields(src: str, name: str) -> list[str] | None:
     return fields
 
 
-def interface_field_types(src: str, name: str) -> dict[str, str] | None:
-    body = _interface_body(src, name)
-    if body is None:
-        return None
-    types: dict[str, str] = {}
-    depth = 0
-    for line in body.splitlines():
-        if depth == 0:
-            field = re.match(r"([A-Za-z_$][\w$]*)\s*\??\s*:\s*(.+?)\s*;?\s*$", line.strip())
-            if field:
-                types[field.group(1)] = field.group(2).rstrip(";").strip()
-        depth += line.count("{") - line.count("}")
-    return types
-
-
-def input_signature(src: str) -> dict:
-    """Split `interface Input` into reads and params.
-
-    A read is a field typed as an array of a *named interface*: a read returns rows, and rows are
-    objects. "Any array is a read" is wrong; `invoiceIds: string[]` is a parameter and
-    `lines: InvoiceLine[]` is a read, and only this distinction separates them.
-    """
-    types = interface_field_types(src, "Input")
-    if types is None:
-        return {"args": [], "reads": [], "params": [], "unknown": []}
-    reads, params, unknown = [], [], []
-    for field, decl in types.items():
-        array = decl.endswith("[]")
-        base = decl[:-2].strip() if array else decl
-        if array and base not in XSD_TYPES:
-            reads.append({"bind": field, "row_type": base})
-        elif base in XSD_TYPES:
-            params.append({"name": field, "xsd": XSD_TYPES[base], "multiple": array})
-        else:
-            unknown.append({"name": field, "type": decl})
-    return {"args": list(types.keys()), "reads": reads, "params": params, "unknown": unknown}
-
-
 def _mask_ts(src: str) -> str:
     """`src` with the contents of strings, template literals and comments blanked, same length.
 
@@ -446,156 +385,17 @@ def _identifier_keys(src: str, masked: str, ident: str) -> set[str]:
     return keys
 
 
-# --------------------------------------------------------------------------- zod idiom
-# Generated jobs declare their contract with zod (`input: z.object({...}).strict()`); the
-# type<T>() idiom above remains understood for existing sources. Same posture as the rest of this
-# file: regex plus depth scanning, never a TypeScript parser, and extraction failures are reported
-# rather than read as "nothing".
+def foreign_idiom(src: str) -> str | None:
+    """The Standard Schema library a job declares its contract with, or None for type<T>().
 
-
-def job_idiom(src: str) -> str:
-    """'zod' when the job imports zod, else 'typeT'."""
-    return "zod" if re.search(r"from\s+['\"]zod['\"]", src) else "typeT"
-
-
-def _matching_paren(text: str, open_idx: int) -> int:
-    depth = 0
-    for i in range(open_idx, len(text)):
-        if text[i] == "(":
-            depth += 1
-        elif text[i] == ")":
-            depth -= 1
-            if depth == 0:
-                return i
-    return -1
-
-
-def _object_entries(src: str, masked: str, open_idx: int, close_idx: int) -> dict:
-    """{key: value expression} for the top level of the object literal at [open_idx, close_idx]."""
-    segments, depth, seg_start = [], 0, open_idx + 1
-    for i in range(open_idx + 1, close_idx):
-        ch = masked[i]
-        if ch in "{[(":
-            depth += 1
-        elif ch in "}])":
-            depth -= 1
-        elif ch == "," and depth == 0:
-            segments.append((seg_start, i))
-            seg_start = i + 1
-    segments.append((seg_start, close_idx))
-    entries = {}
-    for a, b in segments:
-        match = re.match(r"\s*([A-Za-z_$][\w$]*)\s*:\s*", masked[a:b])
-        if match:
-            entries[match.group(1)] = src[a + match.end() : b].strip()
-    return entries
-
-
-def _zod_object_of(expr_src: str) -> tuple:
-    """(top-level {key: value-expr} of a z.object literal, whether its chain carries .strict()).
-
-    `expr_src` starts at the schema expression: inline after `input:`, or the right-hand side of
-    the const declaration the `input:` entry names. Returns (None, None) when no z.object /
-    z.strictObject literal starts the expression.
+    Only used to name the reason in a diagnostic. Such a contract carries its own schema and so
+    cannot be lowered into the manifest this pipeline stages, which is what makes it undeployable
+    here rather than merely unusual.
     """
-    masked = _mask_ts(expr_src)
-    match = re.match(r"\s*z\s*\.\s*(strictObject|object)\s*\(", masked)
-    if not match:
-        return None, None
-    strict = match.group(1) == "strictObject"
-    call_open = match.end() - 1
-    call_close = _matching_paren(masked, call_open)
-    if call_close < 0:
-        return None, None
-    brace_open = expr_src.find("{", call_open, call_close)
-    brace_close = _matching_brace(masked, brace_open) if brace_open >= 0 else -1
-    if brace_close < 0 or brace_close > call_close:
-        return None, None
-    entries = _object_entries(expr_src, masked, brace_open, brace_close)
-    # The method chain after the z.object(...) call, up to this expression's own end: a
-    # depth-zero `,`, `;` or closing bracket belongs to the surrounding context.
-    i, depth, chain = call_close + 1, 0, []
-    while i < len(masked):
-        ch = masked[i]
-        if ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            if depth == 0:
-                break
-            depth -= 1
-        elif ch in ",;" and depth == 0:
-            break
-        chain.append(ch)
-        i += 1
-    if re.search(r"\.\s*strict\s*\(", "".join(chain)):
-        strict = True
-    return entries, strict
-
-
-def _classify_zod_value(value: str) -> tuple:
-    """('read'|'param'|'unknown', detail) for one top-level field of the input z.object.
-
-    A read is an array of an object schema, z.array(z.object({...})...) or
-    z.array(SomeRowSchemaIdentifier), because a read returns rows and rows are objects. A param
-    is a scalar or an array of scalars (z.string(), z.array(z.string()), ...).
-    """
-    value = value.strip()
-    array = re.match(r"z\s*\.\s*array\s*\(", value)
-    if array:
-        masked = _mask_ts(value)
-        close = _matching_paren(masked, array.end() - 1)
-        inner = value[array.end() : close].strip() if close > 0 else value[array.end() :].strip()
-        scalar = re.match(r"z\s*\.\s*(\w+)\s*\(", inner)
-        if scalar and scalar.group(1) in ZOD_SCALARS:
-            return "param", (ZOD_SCALARS[scalar.group(1)], True)
-        if re.match(r"z\s*\.\s*(strictObject|object)\s*\(", inner):
-            return "read", None
-        if re.fullmatch(r"[A-Za-z_$][\w$]*", inner):
-            return "read", inner
-        return "unknown", None
-    scalar = re.match(r"z\s*\.\s*(\w+)\s*\(", value)
-    if scalar and scalar.group(1) in ZOD_SCALARS:
-        return "param", (ZOD_SCALARS[scalar.group(1)], False)
-    return "unknown", None
-
-
-def zod_input(src: str) -> dict:
-    """The zod-idiom counterpart of input_signature, plus the strictness of the input object.
-
-    {found, args, reads, params, unknown, strict}. The input schema is the `input:` entry of the
-    defineFunction config: an inline z.object({...}) chain, or an identifier whose const
-    declaration is then read.
-    """
-    result = {"found": False, "args": [], "reads": [], "params": [], "unknown": [], "strict": None}
-    masked = _mask_ts(src)
-    call = re.search(r"\bdefineFunction\s*\(", masked)
-    if not call:
-        return result
-    config_open = masked.find("{", call.end() - 1)
-    config_close = _matching_brace(masked, config_open) if config_open >= 0 else -1
-    if config_close < 0:
-        return result
-    expr = (_object_entries(src, masked, config_open, config_close).get("input") or "").strip()
-    if not expr:
-        return result
-    if re.fullmatch(r"[A-Za-z_$][\w$]*", expr):
-        decl = re.search(r"\b(?:const|let|var)\s+%s\s*(?::[^=\n]*)?=\s*" % re.escape(expr), masked)
-        if not decl:
-            return result
-        expr = src[decl.end() :]
-    fields, strict = _zod_object_of(expr)
-    if fields is None:
-        return result
-    result.update({"found": True, "strict": strict, "args": list(fields)})
-    for field, value in fields.items():
-        kind, detail = _classify_zod_value(value)
-        if kind == "read":
-            result["reads"].append({"bind": field, "row_type": detail})
-        elif kind == "param":
-            result["params"].append({"name": field, "xsd": detail[0], "multiple": detail[1]})
-        else:
-            result["unknown"].append({"name": field, "type": value})
-    return result
+    for module in ("zod", "arktype", "valibot"):
+        if re.search(r"from\s+['\"]%s['\"]" % module, src):
+            return module
+    return None
 
 
 def written_edits(src: str) -> dict:
@@ -731,26 +531,12 @@ def find_tsc(workdir: Path) -> tuple[list[str] | None, str]:
     return None, "no TypeScript compiler found (tried CODED_ACTION_TSC, PATH, node_modules/.bin, npx --no-install)"
 
 
-def find_zod(workdir: Path) -> Path | None:
-    """A real zod package near the workdir, for typechecking jobs that import it."""
-    for parent in [workdir.resolve(), *workdir.resolve().parents]:
-        candidate = parent / "node_modules" / "zod"
-        if (candidate / "package.json").is_file():
-            return candidate
-    return None
-
-
-def typecheck_job(job: Path, workdir: Path, idiom: str) -> tuple[str, str]:
+def typecheck_job(job: Path, workdir: Path) -> tuple[str, str]:
     """('passed'|'failed'|'skipped', detail) for one TypeScript job, compiled against an SDK stub.
 
-    A zod-idiom job imports zod for real, so the check needs the actual package; when it is not
-    resolvable the gate is skipped rather than failed, since the miss says nothing about the job.
+    The job imports nothing but the SDK, and the SDK is stubbed here, so nothing needs installing
+    for this to run.
     """
-    zod_dir = None
-    if idiom == "zod":
-        zod_dir = find_zod(workdir)
-        if zod_dir is None:
-            return "skipped", "zod not installed (the job imports 'zod'; no node_modules/zod found from the workdir upward)"
     command, reason = find_tsc(workdir)
     if command is None:
         return "skipped", reason
@@ -758,12 +544,10 @@ def typecheck_job(job: Path, workdir: Path, idiom: str) -> tuple[str, str]:
         root = Path(tmp)
         stub = root / "node_modules" / SDK_MODULE
         stub.mkdir(parents=True)
-        (stub / "index.d.ts").write_text(SDK_STUB_ZOD if idiom == "zod" else SDK_STUB, encoding="utf-8")
+        (stub / "index.d.ts").write_text(SDK_STUB, encoding="utf-8")
         (stub / "package.json").write_text(
             json.dumps({"name": SDK_MODULE, "version": "0.0.0", "types": "index.d.ts"}), encoding="utf-8"
         )
-        if zod_dir is not None:
-            os.symlink(zod_dir, root / "node_modules" / "zod")
         copy = root / job.name
         copy.write_text(job.read_text(encoding="utf-8"), encoding="utf-8")
         try:
@@ -916,8 +700,7 @@ def check_input(log: GateLog, name: str, marker_args: list[str], fields: list[st
         log.add("input-matches-marker", "passed")
 
 
-def check_strictness(log: GateLog, name: str, idiom: str, zod: dict | None,
-                     warnings: list[str], job_path=None) -> None:
+def check_strictness(log: GateLog, name: str, job_path, src: str) -> None:
     """input-strictness: additionalProperties:false is what faults a drifted Input before the
     handler runs, so every contract has to end up carrying it.
 
@@ -925,23 +708,8 @@ def check_strictness(log: GateLog, name: str, idiom: str, zod: dict | None,
     time, and that derivation is what supplies additionalProperties:false. Running the deriver
     here is therefore the real check: it fails on exactly the contracts that could not produce a
     manifest, and a job that cannot be lowered would otherwise fail at pack time with nothing
-    written. A zod contract carries its own schema and needs .strict() on the top-level object.
+    written.
     """
-    if idiom == "zod":
-        if zod is None or not zod["found"]:
-            log.add("input-strictness", "skipped", f"{name}: no z.object input schema to check")
-        elif zod["strict"]:
-            log.add("input-strictness", "passed")
-        else:
-            log.add(
-                "input-strictness",
-                "failed",
-                f"{name}: the top-level input z.object does not carry .strict(); .strict() is "
-                f"what emits additionalProperties:false, which faults a drifted Input before the "
-                f"handler runs, and a bare z.object() packs without it",
-            )
-        return
-
     module = _entry_points_module()
     if module is None:
         log.add("input-strictness", "skipped",
@@ -950,9 +718,23 @@ def check_strictness(log: GateLog, name: str, idiom: str, zod: dict | None,
     try:
         input_schema, _ = module.derive(job_path)
     except Exception as exc:
-        log.add("input-strictness", "failed",
-                f"{name}: the type<T>() contract cannot be lowered to a manifest, so the deploy "
-                f"step could not derive entry-points.json and pack would fail: {exc}")
+        library = foreign_idiom(src)
+        if library:
+            # Naming the library is not the point; naming what it costs at deploy time is. Such a
+            # contract carries its own schema and cannot be lowered, so the deploy step would keep
+            # whatever manifest is already in the project -- in template mode, the skeleton's
+            # exemplar contract -- and the job would deploy under the wrong input schema.
+            detail = (
+                f"the contract is declared with {library}, which this pipeline cannot deploy: it "
+                f"stages a derived entry-points.json and only the type<T>() idiom can be lowered. "
+                f"Declare the contract as plain interfaces behind type<T>()"
+            )
+        else:
+            detail = (
+                f"the type<T>() contract cannot be lowered to a manifest, so the deploy step could "
+                f"not derive entry-points.json and pack would fail: {exc}"
+            )
+        log.add("input-strictness", "failed", f"{name}: {detail}")
         return
     if input_schema.get("additionalProperties") is False:
         log.add("input-strictness", "passed")
@@ -1120,12 +902,10 @@ def main(argv: list[str] | None = None) -> int:
         action = check_ttl(log, name, pair)
         language, job = check_job_language(log, name, pair["jobs"])
 
-        src, edits, idiom, zod = None, None, None, None
+        src, edits = None, None
         if job is not None and language in SUPPORTED_JOB_LANGUAGES:
             src = job.read_text(encoding="utf-8")
             edits = written_edits(src)
-            idiom = job_idiom(src)
-            zod = zod_input(src) if idiom == "zod" else None
 
         marker_args = check_signature(log, name, action) if action else None
         if action is None:
@@ -1155,20 +935,18 @@ def main(argv: list[str] | None = None) -> int:
             log.add("writes-cover-edits", "skipped", job_reason)
             warnings.append(f"{name}: fields-exist-in-schema covered the TTL only; the job's edits were not read")
         else:
-            if idiom == "zod":
-                fields = zod["args"] if zod["found"] else None
-                missing_msg = (
-                    "could not find the z.object input schema in the job "
-                    "(an inline z.object after `input:`, or a const the `input:` entry names)"
-                )
-            else:
-                fields = interface_fields(src, "Input")
-                missing_msg = "could not find `interface Input { ... }` in the job"
+            fields = interface_fields(src, "Input")
             if marker_args is None:
                 log.add("input-matches-marker", "skipped", f"{name}: no marker arguments to compare Input against")
+            elif fields is None:
+                # One blame site. A contract this parser cannot read is input-strictness's failure
+                # to report, and duplicating it here would just make the author read two gates.
+                log.add("input-matches-marker", "skipped",
+                        f"{name}: the job's contract could not be read (see input-strictness)")
             else:
-                check_input(log, name, marker_args, fields, missing_msg)
-            check_strictness(log, name, idiom, zod, warnings, job)
+                check_input(log, name, marker_args, fields,
+                            "could not find `interface Input { ... }` in the job")
+            check_strictness(log, name, job, src)
             check_writes(log, name, action, edits)
 
         check_fields(log, name, action, edits, schema, schema_reason)
@@ -1180,7 +958,7 @@ def main(argv: list[str] | None = None) -> int:
         elif language != "typescript" or job is None:
             log.add("typecheck", "skipped", f"{name}: typecheck applies to typescript jobs only")
         else:
-            status, detail = typecheck_job(job, args.workdir, idiom)
+            status, detail = typecheck_job(job, args.workdir)
             log.add("typecheck", status, f"{name}: {detail}" if detail else "")
 
         reported.append(

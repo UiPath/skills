@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TOOL = ROOT / "tools" / "coded_action_preflight.py"
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "support"
 ZOD_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "support-zod"
+GOLDEN = Path(__file__).resolve().parent / "golden" / "support.json"
 ONTOLOGY = "support"
 ACTION = "tagOverdueTicket"
 
@@ -53,6 +54,22 @@ def failed_gates(payload: dict) -> set[str]:
 
 def gate(payload: dict, gate_id: str) -> dict:
     return next(item for item in payload["gate_results"] if item["id"] == gate_id)
+
+
+class GoldenPayloadTest(unittest.TestCase):
+    """The whole payload, diffed against a committed copy.
+
+    Every other test asserts one gate. This one pins the entire JSON shape: gate order, the
+    `skipped: ` prefixing, diagnostics ordering, the pairs[] key set, artifact_inventory. Those
+    are all ordering-sensitive and none of them is covered by a per-gate assertion, so a refactor
+    that reordered a log.add call would otherwise pass every test while changing what callers see.
+    """
+
+    def test_the_good_pair_payload_is_unchanged(self):
+        code, payload = run_preflight(FIXTURE, "--skip-typecheck")
+        self.assertEqual(code, 0, payload)
+        expected = json.loads(GOLDEN.read_text())
+        self.assertEqual(payload, expected, "payload drifted from tests/coded_action_preflight/golden/support.json")
 
 
 class CodedActionPreflightTests(unittest.TestCase):
@@ -185,30 +202,25 @@ class CodedActionPreflightTests(unittest.TestCase):
 
     # ---- the zod idiom ---------------------------------------------------------------
 
-    def test_zod_good_pair_passes_the_contract_gates(self):
+    def test_a_standard_schema_contract_is_refused(self):
+        """A zod (or arktype/valibot) contract carries its own schema and cannot be lowered into
+        the manifest this pipeline stages. It used to PASS here, which was the hazard: the deploy
+        step would then keep whatever manifest was already in the project, and in template mode
+        that is the skeleton's exemplar contract, so the job would deploy under the wrong input
+        schema and fault at invoke time."""
+        payload = self.assert_only_gate_fails(self.workdir(ZOD_FIXTURE), "input-strictness")
+        detail = payload["errors"]["input-strictness"][0]
+        self.assertIn("zod", detail)
+        self.assertIn("type<T>()", detail)
+
+    def test_an_unreadable_contract_reports_one_blame_site(self):
+        """input-matches-marker has no interfaces to read for such a job, but failing both gates
+        would make the author read two messages for one cause. It skips and points."""
         code, payload = run_preflight(self.workdir(ZOD_FIXTURE), "--skip-typecheck")
-        self.assertEqual(code, 0, payload)
-        self.assertEqual(payload["status"], "PASS")
-        for gate_id in ("input-matches-marker", "input-strictness", "writes-cover-edits",
-                        "signature-resolves", "fields-exist-in-schema", "job-language"):
-            self.assertEqual(gate(payload, gate_id)["status"], "passed", payload)
-
-    def test_zod_field_rename_fails_input_matches_marker(self):
-        workdir = self.workdir(ZOD_FIXTURE)
-        job = workdir / "jobs" / f"{ACTION}.ts"
-        job.write_text(job.read_text(encoding="utf-8").replace("ticketId", "ticketRef"), encoding="utf-8")
-        payload = self.assert_only_gate_fails(workdir, "input-matches-marker")
-        self.assertIn("ticketRef", payload["errors"]["input-matches-marker"][0])
-
-    def test_zod_input_without_strict_fails_input_strictness(self):
-        workdir = self.workdir(ZOD_FIXTURE)
-        self.edit(
-            workdir / "jobs" / f"{ACTION}.ts",
-            "  ticket: z.array(TicketRow),\n}).strict();",
-            "  ticket: z.array(TicketRow),\n});",
-        )
-        payload = self.assert_only_gate_fails(workdir, "input-strictness")
-        self.assertIn("additionalProperties", payload["errors"]["input-strictness"][0])
+        self.assertEqual(code, 1, payload)
+        marker = gate(payload, "input-matches-marker")
+        self.assertEqual(marker["status"], "skipped", payload)
+        self.assertIn("see input-strictness", marker["diagnostics"][0])
 
     def test_type_t_idiom_passes_strictness_by_lowering_the_contract(self):
         """The gate derives the manifest rather than assuming the SDK will. A type<T>() contract
