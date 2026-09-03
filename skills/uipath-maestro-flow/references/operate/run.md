@@ -21,7 +21,12 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir.
 
-> **Never run `flow debug` in the background or under a short tool timeout.** It takes 1 to 5 minutes and prints its JSON only when it exits. Run it in the foreground and wait for the process to end. If a tool cuts the wait short and reports "still running", poll that same process until it exits — do not start a second run, do not read the output file yet. An empty output file means the run is still going, not that it returned no result. If the process exits and stdout holds only `Debug polling timed out after <N>s`, the run is still executing server-side: take the instanceId from the stderr narration and check it with `uip maestro flow debug-instance status <INSTANCE_ID> --output json`. Never restart debug.
+> **Never run `flow debug` in the background.** It takes 1 to 5 minutes and prints its JSON only at exit.
+> 1. Run it in the foreground with a tool timeout of at least 10 minutes (most agent shells kill a command after 1 to 2 minutes).
+> 2. If the tool returns "still running", poll that same process until it exits. Do not read the output file yet — empty means still running.
+> 3. If stdout ends with `Debug polling timed out after <N>s`, the flow is still running on the server. Take the `instanceId` from stderr and run `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+> 4. Never start a second debug while the first is running — it uploads and executes the flow again.
+> 5. Re-run debug only after you changed the flow.
 
 Pass input arguments when the flow has input parameters:
 
