@@ -1130,3 +1130,143 @@ def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
     for cap, cli in caps:
         assert cap > 0, f"non-positive subprocess cap {cap}"
         assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"
+
+
+# ── INTERIM: Studio Web Overwrite 400/1001 rotation (UiPath/cli#3938) ────────
+# Delete this whole section with the _OVERWRITE_STUCK block in flow_check.py
+# once Studio Web's Solution/{id}/Overwrite accepts an existing solution again.
+
+
+# Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
+# Overwrite answering 400/1001 for an EXISTING solution (UiPath/cli#3938).
+_OVERWRITE_400_1001 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Overwrite failed (400): {\\"code\\":\\"1001\\",\\"message\\":'
+    '\\"An argument had an invalid value.\\",\\"translatedMessage\\":null}",\n'
+    '  "Instructions": "Check that the flow project is valid, the selected folder '
+    'is accessible, and Studio Web debug is available, then retry.",\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
+# The staged envelope the CLI emits since UiPath/cli#3951 (main 2026-09-02): the
+# refusal is reported against its stage, the raw body is no longer echoed.
+_OVERWRITE_STAGED_400_1001 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Failed during overwrite-solution: HTTP 400 on POST '
+    '/codereval/studio_/backend/api/Solution/5ebc2eff-4eab-45a5-df6a-08df093139b4/Overwrite '
+    '— An argument had an invalid value.",\n'
+    '  "Instructions": "Studio Web refused to replace the contents of solution 5ebc2eff-4eab-45a5-df6a-08df093139b4. '
+    'Nothing was uploaded and nothing ran, so the flow is not the cause.",\n'
+    '  "Context": {"HttpStatus": 400, "Stage": "overwrite-solution", '
+    '"Endpoint": "/codereval/studio_/backend/api/Solution/5ebc2eff-4eab-45a5-df6a-08df093139b4/Overwrite", '
+    '"Method": "POST", "ErrorCode": "1001"},\n'
+    '  "ErrorCode": "invalid_argument",\n  "Retry": "RetryWillNotFix"\n}'
+)
+# Same stage, a different platform code: a content refusal, never rotated.
+_OVERWRITE_STAGED_400_20001 = _OVERWRITE_STAGED_400_1001.replace(
+    '"ErrorCode": "1001"', '"ErrorCode": "20001"'
+).replace(
+    'An argument had an invalid value.',
+    'Archive is missing project directories referenced by solution metadata.',
+)
+# Another stage with the same code must not rotate either.
+_UPLOAD_STAGED_400_1001 = _OVERWRITE_STAGED_400_1001.replace(
+    'overwrite-solution', 'upload-solution'
+)
+# The 2026-08-26 shape: a real content error that must NOT be rotated around.
+_OVERWRITE_400_20001 = _OVERWRITE_400_1001.replace('1001', '20001').replace(
+    'An argument had an invalid value.',
+    'Archive is missing project directories referenced by solution metadata: [X/temp/project.uiproj].',
+)
+
+
+def _uipx_project(tmp_path, solution_id="79cda3cb-5a10-4f37-e091-08df08c2afbe"):
+    """A `uip solution init` shape: the `.uipx` beside the project directory."""
+    sol = tmp_path / "Sol"
+    proj = sol / "Proj"
+    proj.mkdir(parents=True)
+    (sol / "Sol.uipx").write_text(
+        '{\n  "SolutionId": "%s",\n  "Name": "Sol",\n  "Projects": []\n}\n' % solution_id
+    )
+    return sol, proj
+
+
+def test_run_debug_rotates_the_solution_id_on_overwrite_1001_then_imports(monkeypatch, tmp_path, capsys):
+    """INTERIM (UiPath/cli#3938): the Studio Web Overwrite 400/1001 regression is
+    met with ONE retry as a new import — the bundled SolutionId is rotated first."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001), _cp(0, _COMPLETED)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    payload = run_debug(retries=1)
+    assert calls["n"] == 2
+    assert collect_outputs(payload) == ["Sev1"]
+    text = (sol / "Sol.uipx").read_text()
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" not in text
+    assert flow_check._SOLUTION_ID_RE.search(text) is not None
+    err = capsys.readouterr().err
+    assert "INTERIM (UiPath/cli#3938" in err
+    assert "rotated the bundled SolutionId 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+    # The orphaned server id is named, because cleanup reads only the current one.
+    assert "previous: 79cda3cb-5a10-4f37-e091-08df08c2afbe" in err
+
+
+def test_run_debug_rotates_the_solution_id_on_the_staged_overwrite_envelope(monkeypatch, tmp_path, capsys):
+    """Same rotation, driven by the CLI's post-UiPath/cli#3951 envelope
+    (``Context.Stage == "overwrite-solution"``, ``Context.ErrorCode == "1001"``)."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_STAGED_400_1001), _cp(0, _COMPLETED)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    payload = run_debug(retries=1)
+    assert calls["n"] == 2
+    assert collect_outputs(payload) == ["Sev1"]
+    text = (sol / "Sol.uipx").read_text()
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" not in text
+    assert "INTERIM (UiPath/cli#3938" in capsys.readouterr().err
+
+
+def test_run_debug_rotates_only_once(monkeypatch, tmp_path):
+    _, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001), _cp(1, _OVERWRITE_400_1001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit) as exc:
+        run_debug(retries=1)
+    assert calls["n"] == 2
+    assert "Overwrite failed (400)" in str(exc.value)
+
+
+def test_run_debug_does_not_rotate_on_a_content_overwrite_error(monkeypatch, tmp_path):
+    """Code 20001 (2026-08-26) is the archive being wrong; rotating would hide it."""
+    sol, proj = _uipx_project(tmp_path)
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_20001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit):
+        run_debug(retries=1)
+    assert calls["n"] == 1
+    assert "79cda3cb-5a10-4f37-e091-08df08c2afbe" in (sol / "Sol.uipx").read_text()
+
+
+def test_run_debug_overwrite_1001_without_a_uipx_fails_plainly(monkeypatch, tmp_path):
+    proj = tmp_path / "Proj"
+    proj.mkdir()
+    calls = _stub_debug(monkeypatch, [_cp(1, _OVERWRITE_400_1001)])
+    monkeypatch.setattr(flow_check, "_find_project", lambda pattern: str(proj))
+    with pytest.raises(SystemExit):
+        run_debug(retries=1)
+    assert calls["n"] == 1
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _OVERWRITE_400_1001), True),
+        (_cp(1, _OVERWRITE_400_20001), False),
+        (_cp(0, _OVERWRITE_400_1001), False),
+        (_cp(1, _TRANSIENT_504), False),
+        # UiPath/cli#3951 staged envelope
+        (_cp(1, _OVERWRITE_STAGED_400_1001), True),
+        (_cp(1, _OVERWRITE_STAGED_400_20001), False),
+        (_cp(1, _UPLOAD_STAGED_400_1001), False),
+        (_cp(0, _OVERWRITE_STAGED_400_1001), False),
+    ],
+)
+def test_is_overwrite_stuck(cp, expected):
+    assert flow_check._is_overwrite_stuck(cp) is expected
