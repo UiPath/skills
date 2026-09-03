@@ -29,6 +29,7 @@ import json
 import pathlib
 import re
 import sys
+from _uip import described
 
 # The predicate, its quoted value, and the separator that follows. Matching the separator keeps
 # the rewritten line valid Turtle whichever of ; , . closed the original.
@@ -36,6 +37,17 @@ FOLDER_RE = re.compile(r'^(?P<indent>\s*)ont:processFolderId(?P<gap>\s+)"(?P<val
                        r'(?P<tail>\s*)(?P<sep>[;,.])(?P<rest>.*)$')
 URL_RE = re.compile(r'^(?P<indent>\s*)ont:processUrl(?P<gap>\s+)"(?P<value>[^"]*)"'
                     r'(?P<tail>\s*)(?P<sep>[;,.])(?P<rest>.*)$')
+
+
+DESCRIBE = {
+    "name": "patch_action_ttl",
+    "purpose": "Replace the PENDING_DEPLOY placeholder with the resolved folder id",
+    "phase": "5 - patch",
+    "inputs": {"env": [], "args": ["ttl", "--folder-id", "--execute"]},
+    "outputs": {"patched": "the file written", "folderId": "the id written into it"},
+    "mutates": True,
+    "exit_codes": {"0": "ok, result on stdout", "1": "refused or failed, reason on stderr"},
+}
 
 
 def die(message, **extra):
@@ -69,6 +81,8 @@ def rewrite_url(match, value):
 
 
 def main():
+    if described(DESCRIBE):
+        return
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("ttl", help="one per-action TTL file")

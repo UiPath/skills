@@ -45,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import uuid
+from _uip import described
 
 HERE = pathlib.Path(__file__).resolve().parent
 SKELETON = HERE.parent / "assets" / "solution-skeleton"
@@ -55,6 +56,20 @@ UIP = os.environ.get("UIP_CLI", "uip")
 # installer resolves at run time; writing a literal here would commit a credential to disk.
 NPMRC = ("@uipath:registry=https://npm.pkg.github.com/\n"
          "//npm.pkg.github.com/:_authToken=${GH_NPM_REGISTRY_TOKEN}\n")
+
+
+DESCRIBE = {
+    "name": "scaffold_solution",
+    "purpose": "Create the jobs Solution and one Function project per coded action",
+    "phase": "1 - scaffold",
+    "inputs": {"env": ["GH_NPM_REGISTRY_TOKEN (only if the CLI installs)", "UIP_CLI (optional)"],
+               "args": ["--workdir", "--solution-name", "--project NAME=PATH (repeatable)",
+                        "--template", "--execute"]},
+    "outputs": {"solutionDir": "where the solution was written",
+                "projects": "one entry per project, with its job source"},
+    "mutates": False,
+    "exit_codes": {"0": "ok, result on stdout", "1": "refused or failed, reason on stderr"},
+}
 
 
 def die(message, **extra):
@@ -362,6 +377,8 @@ def scaffold_template(workdir, solution_name, projects, execute):
 
 
 def main():
+    if described(DESCRIBE):
+        return
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--workdir", required=True, help="directory the solution folder is created in")
