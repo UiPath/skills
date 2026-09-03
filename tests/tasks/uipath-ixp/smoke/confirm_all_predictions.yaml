@@ -46,7 +46,7 @@ success_criteria:
     description: "the SAME confirm call carries project + document + the model version it read, unprompted (Critical Rule 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*my_invoices-f1afa9ef-ixp)(?=[^\r\n]*doc-abc-123)(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*my_invoices-f1afa9ef-ixp)(?=[^\r\n]*doc-abc-123)(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)).*)[^\r\n]*$
     weight: 4.0
     pass_threshold: 1.0
 

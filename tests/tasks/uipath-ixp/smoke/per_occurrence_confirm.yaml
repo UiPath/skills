@@ -62,7 +62,7 @@ success_criteria:
     description: "Confirms occurrences 0, 1 and 3 (Steel bolts, Copper wire, Pallet wrap) in ONE --group + --updates call, pinning the reviewed version (Critical Rules 13, 18, 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b)(?=[^\r\n]*--group\s+["']?Line Items["']?)(?=[^\r\n]*--updates)(?=[^\r\n]*"occurrence"\s*:\s*0\b)(?=[^\r\n]*"occurrence"\s*:\s*1\b)(?=[^\r\n]*"occurrence"\s*:\s*3\b)uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?[^\r\n]*$
+      (?m)^(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--group\s+["']?Line Items["']?)(?=[^\r\n]*--updates)(?=[^\r\n]*"occurrence"\s*:\s*0\b)(?=[^\r\n]*"occurrence"\s*:\s*1\b)(?=[^\r\n]*"occurrence"\s*:\s*3\b)uip\s+ixp\s+labellings\s+confirm\s+["']?freight_docs-df33115f-ixp["']?\s+["']?doc-freight-7["']?[^\r\n]*$
     weight: 8.0
     pass_threshold: 1.0
 

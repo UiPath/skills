@@ -34,7 +34,7 @@ success_criteria:
     description: "Agent confirmed EACH of doc-001/002/003 by id, every one pinning the reviewed -m/--model-version (Critical Rules 15, 19)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)\A(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-001\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-002\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-003\b(?=[^\r\n]*(?:-m|--model-version)[=\s]+["']?7\b))
+      (?m)\A(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-001\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-002\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))(?=[\s\S]*^uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-003\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)))
     weight: 5.0
     pass_threshold: 1.0
 
