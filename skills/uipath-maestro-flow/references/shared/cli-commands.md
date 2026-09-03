@@ -147,6 +147,7 @@ uip solution upload <SolutionDir> --output json
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
 <!--skill-flavor:upload-command-section:end-->
 
+<!--skill-flavor:flow-debug-command-usage:start-->
 ## uip maestro flow debug
 
 Debug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.**
@@ -164,6 +165,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
 ```
+<!--skill-flavor:flow-debug-command-usage:end-->
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. Always run `uip maestro flow validate` first.
 
@@ -183,7 +185,9 @@ The CLI does not validate `<variableId>` — a mismatch uploads successfully the
 
 > **Reading the bound file in a Script node.** A `file` variable hydrates at runtime as an object; read the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
 
+<!--skill-flavor:flow-debug-help-pointer:start-->
 Run `uip maestro flow debug --help` for other options.
+<!--skill-flavor:flow-debug-help-pointer:end-->
 
 ### Reporting the run back to the user
 
