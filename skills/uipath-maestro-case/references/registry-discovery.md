@@ -28,7 +28,7 @@ Direct cache-file inspection is the authoritative discovery method for this skil
 
 > **Design-time gate short-circuit.** When the same-session resolution ledger from the planner's Case Design Lane (SKILL.md Rule 15) carries a `gateDecision` for a resource, the gate below already ran — the USER answered it at the Case Review (`gateDecision` exists only for user-answered items; a defaulted `resolve at build` carries none and gets the full gate below). Execute the decision without re-asking: `pick:<name>` → bind that entry; `resolve-at-build` → placeholder path directly; `create-during-build` → the Create-on-Missing flow below as if the user picked `Create`. Re-ask ONLY when the entry is stale against the current SDD (carryover rules in [planning.md](planning.md)) or the cache no longer contains the picked entry.
 
-> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder T-entry.
+> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder element.
 
 Required prompt shape:
 
@@ -173,7 +173,7 @@ uip maestro case registry search "<Name>" --type <agent|api> --local --output js
 Then, in order:
 
 - **Verify** — reconcile the sibling's declared I/O (case-preserving names from `entry-points.json` per the warning above; agents: CLI-synced; api-workflows: build-kept-consistent — no CLI verb writes entry-point I/O, the builder back-fills it and `validate` won't flag drift) against the pinned contract → matched / missing-in-sibling / extra-in-sibling.
-- **Record** the reconciled contract into `tasks.md` + `registry-resolved.json` and resolve the task (taskTypeId/folder-path filled) — now a normal resolved task. `taskTypeId` holds the local audit-only `EntityKey` as a resolution marker only — **Phase 2 must NOT tenant-`tasks describe` it**; the I/O schema recorded here (from the sibling's `entry-points.json`) is authoritative, and [Phase 2 Step 9 Phase A](implementation.md) + the per-type Built-inline notes ([agent/impl-json.md](plugins/tasks/agent/impl-json.md), [api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md)) skip the gather for inline siblings. (The `caseplan.json` `data.inputs[]`/`data.outputs[]` write and the io-binding pass happen in Phase 2/3 when the resolved task is materialized, exactly like any other resolved resource — **NOT in Phase 1**.)
+- **Record** the reconciled contract into `registry-resolved.json` and resolve the task (taskTypeId/folder-path filled) — now a normal resolved task. `taskTypeId` holds the local audit-only `EntityKey` as a resolution marker only — **Phase 2 must NOT tenant-`tasks describe` it**; the I/O schema recorded here (from the sibling's `entry-points.json`) is authoritative, and [Phase 2 Step 9 Phase A](implementation.md) + the per-type Built-inline notes ([agent/impl-json.md](plugins/tasks/agent/impl-json.md), [api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md)) skip the gather for inline siblings. (The `caseplan.json` `data.inputs[]`/`data.outputs[]` write and the io-binding pass happen in Phase 2/3 when the resolved task is materialized, exactly like any other resolved resource — **NOT in Phase 1**.)
 - **Warn+diff** missing/extra into the completion report; **never block**. A **missing-in-sibling** pinned output means the Case Variable it feeds is never set — record in the completion report that any downstream reference (task input, condition, SLA) will resolve empty at runtime, so the user can decide to re-invoke the build to add the field or accept it. **Never auto-fabricate** the missing output to silence the warning.
 - **Bind** with `resourceKey="solution_folder.<Name>"` **and `folderPath` binding `default` = `""`** (runtime folder — empty = co-located; the `solution_folder` sentinel lives ONLY in `resourceKey`, NOT in `folderPath`, else runtime `folder not exist` — see [create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants)). It binds by name+folder, so `EntityKey` stays audit-only. **For a § 1c merged build, Record/resolve and Bind apply to EVERY task in the group** — one sibling; all N tasks bind to it, **sharing ONE deduped binding pair** (same resource → one pair, per [bindings § Deduplication](plugins/variables/bindings/impl-json.md#deduplication)), NOT N separate bindings.
 
@@ -253,7 +253,7 @@ If no match is found across all relevant cache files:
    # already executed during the gate's Force-pull branch:
    uip maestro case registry pull --force
    ```
-2. If still no match (or the user picked `Use placeholders for all`, and any creatable resource was not selected for Create), mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
+2. If still no match (or the user picked `Use placeholders for all`, and any creatable resource was not selected for Create), mark it in `registry-resolved.json`: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
 
 ### 4. Return All Matches
 
@@ -296,10 +296,10 @@ After registry pull, `uip maestro case spec` is the unified metadata endpoint fo
 
 ## Output Contract
 
-The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so `tasks.md` can reference it. For **connector** tasks the implementation agent writes this identifier into `data.typeId`. For **non-connector** tasks it is not written to the node — it stays in `registry-resolved.json` (audit) and the node references the resource via `data.name` / `data.folderPath` = `=bindings.<id>`.
+The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so Phase 2 can reference it. For **connector** tasks the implementation agent writes this identifier into `data.typeId`. For **non-connector** tasks it is not written to the node — it stays in `registry-resolved.json` (audit) and the node references the resource via `data.name` / `data.folderPath` = `=bindings.<id>`.
 
 ### `registry-resolved.json` content discipline
 
-Structured log only — per Rule 9, each entry uses exact keys `{stage, task, taskType, cacheFile, searchQuery, matches, selected, rationale}`. The file may be re-ingested as a performance cache only after association by `stage` + `task` and the strict SDD match in [planning.md § Design-lane carryover](planning.md#step-2--locate-and-parse-the-design-document); it never overrides the SDD. Any free-form prose written here gets parroted back into `tasks.md`. `rationale` MUST explain the selection choice (e.g., `"exact name match in caseManagement folder"`); never use it for verify-text drafts, SDD-vs-spec field translations, or downstream-plugin-behavior claims.
+Structured log only — per Rule 9, each entry uses exact keys `{stage, task, taskType, cacheFile, searchQuery, matches, selected, rationale}`. The file may be re-ingested as a performance cache only after association by `stage` + `task` and the strict SDD match in [planning.md § Design-lane carryover](planning.md#step-2--locate-and-parse-the-design-document); it never overrides the SDD. `rationale` MUST explain the selection choice (e.g., `"exact name match in caseManagement folder"`); never use it for verify-text drafts, SDD-vs-spec field translations, or downstream-plugin-behavior claims.
 
 <!-- END: registry-discovery.md -->

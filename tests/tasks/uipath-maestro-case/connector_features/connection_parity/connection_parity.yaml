@@ -116,7 +116,7 @@ initial_prompt: |
   ready to publish — every resource the case depends on must be declared at the
   solution level, not only inside caseplan.json.
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  Treat all build gates as pre-approved — do NOT block on the HARD
   STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug` and
   do NOT pack or publish (a connector activity executes for real). Do NOT ask
   for approval, confirmation, or feedback. Build end-to-end in a single pass.

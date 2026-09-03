@@ -1,125 +1,258 @@
 # `uip maestro flow eval` Command Reference
 
-Reference for `uip maestro flow eval`. Commands accept `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. **Always pass `--output json` when an agent parses the result.**
+Complete syntax reference for every subcommand under `uip maestro flow eval`. All commands accept the global flags `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. Repeated reminders below: always pass `--output json` when an agent will parse the result.
+
+## Command Tree
+
+```
+uip maestro flow eval
+├── add        — Add a data point to an evaluation set
+├── list       — List data points in an evaluation set
+├── remove     — Remove a data point from an evaluation set
+├── set
+│   ├── add    — Create an evaluation set
+│   ├── list   — List evaluation sets
+│   └── remove — Remove an evaluation set
+├── evaluator
+│   ├── add    — Add an evaluator to the flow project
+│   ├── list   — List evaluators in a flow project
+│   └── remove — Remove an evaluator from a flow project
+├── simulation
+│   ├── add    — Add or update a simulation on a data point
+│   ├── list   — List simulations on a data point
+│   └── remove — Remove a simulation from a data point
+└── run
+    ├── start    — Start a Studio Web evaluation run
+    ├── status   — Check the status of a run
+    ├── results  — Get detailed per-data-point results
+    ├── list     — List runs for an eval set
+    └── compare  — Compare two runs side-by-side
+```
+
+`add` / `remove` / `list` at the top level operate on **data points** (test cases) inside an eval set. Data points are stored inline within the eval set JSON, not as separate files.
 
 ## Common Options
 
-| Flag | Required | Description |
-|---|---|---|
-| `--path <path>` | No; defaults to `.` | Flow project directory, or a solution directory containing exactly one Flow project |
-| `--output <fmt>` | No; default `json` | `table`, `json`, `yaml`, or `plain` |
-| `--output-filter <expr>` | No | JMESPath expression applied to JSON output before printing |
-| `--log-level <debug\|info\|warn\|error>` | No | Logging level |
-| `--log-file <path>` | No | Log file |
+Every subcommand accepts:
 
-Top-level `add`, `list`, and `remove` operate on data points (test cases) inside an eval set. Data points are stored inline in the eval set JSON, not as separate files.
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--path <path>` | No (defaults to `.`) | Flow project directory, or a solution directory containing exactly one Flow project |
+| `--output <fmt>` | No (default `json`) | `table`, `json`, `yaml`, or `plain` |
+| `--output-filter <expr>` | No | JMESPath expression applied to JSON output before printing |
 
 ## Data Points (Test Cases)
 
 ### `uip maestro flow eval add <name>`
 
-Run `uip maestro flow eval add <name>` to add a data point.
+Add a data point to an eval set.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--inputs <json>` | No | Input values as a JSON object; keys must be declared as Flow input variables |
 | `--input-file <key=path>` | No | Attach a file as input `<key>`; **repeatable** |
 | `--expected <json>` | No | Expected output as a JSON object |
 | `--criteria <json>` | No | Per-evaluator criteria JSON object keyed by evaluator id |
 | `--search-text <text>` | No | Search text for `contains` evaluators |
-| `--path <path>` | No | Common option |
+| `--path <path>` | No | (see Common Options) |
 
-Run `uip maestro flow eval list --set "Smoke Tests" --path ./MySolution/MyFlow --output json` to list data points in an eval set.
+Example:
 
-Run `uip maestro flow eval remove <id>` to remove a data point. `<id>` accepts its UUID or `name`.
+```bash
+uip maestro flow eval add greeting-test \
+  --set "Smoke Tests" \
+  --inputs '{"name":"Alice"}' \
+  --expected '{"greeting":"Hello, Alice!"}' \
+  --path ./MySolution/MyFlow --output json
+```
+
+### `uip maestro flow eval list`
+
+List data points in an eval set.
+
+```bash
+uip maestro flow eval list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+```
+
+### `uip maestro flow eval remove <id>`
+
+Remove a data point. `<id>` accepts the data point's UUID or its `name`.
 
 ## Evaluation Sets
 
 ### `uip maestro flow eval set add <name>`
 
-Run `uip maestro flow eval set add <name>` to create an evaluation set.
+Create an evaluation set.
 
 | Flag | Required | Description |
-|---|---|---|
-| `--evaluators <refs>` | No; default: all | Comma-separated evaluator IDs or generated file base names; do not pass display names |
+|------|----------|-------------|
+| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or generated file base names; do not pass display names |
 | `--entry-point <id>` | No | Entry point node id stored as the eval set's `selectedEntrypoint` |
-| `--path <path>` | No | Common option |
+| `--path <path>` | No | (see Common Options) |
 
-When `--evaluators` is omitted, reference **all** evaluators present at creation time using their generated evaluator file refs. Prefer this when creating a set immediately after adding evaluator(s). When passing `--evaluators`, use the generated id/file base returned by `evaluator add/list`, not the evaluator display name.
+When `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time using their generated evaluator file refs. Prefer this when creating a set immediately after adding the evaluator(s). If passing `--evaluators`, use the generated id/file base returned by `evaluator add/list`, not the evaluator display name.
 
-Run `uip maestro flow eval set list` to list eval sets in the project.
+### `uip maestro flow eval set list`
 
-Run `uip maestro flow eval set remove <id>` to remove an eval set. `<id>` accepts its UUID, `name`, or file base name.
+List eval sets in the project.
+
+### `uip maestro flow eval set remove <id>`
+
+Remove an eval set. `<id>` accepts the eval set's UUID, `name`, or file base name.
 
 ## Evaluators
 
 ### `uip maestro flow eval evaluator add <name>`
 
-Run `uip maestro flow eval evaluator add <name>` to create an evaluator file in the project's evaluators directory.
+Create an evaluator file in the project's evaluators directory.
 
 | Flag | Required | Description |
-|---|---|---|
-| `--type <type>` | Yes | `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, or `llm-judge-trajectory-simulation` |
+|------|----------|-------------|
+| `--type <type>` | Yes | One of: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation` |
 | `--description <text>` | No | Evaluator description |
-| `--target-key <key>` | No | Output key scored against; defaults to `*` (the entire output) |
-| `--model <model>` | No; Yes for `llm-judge-*` | LLM model for LLM-judge evaluators, e.g. `gpt-4.1-2025-04-14` |
+| `--target-key <key>` | No | Output key the evaluator scores against (defaults to `*` — the entire output) |
+| `--model <model>` | No (Yes for llm-judge-*) | LLM model for LLM-judge evaluators (e.g. `gpt-4.1-2025-04-14`) |
 | `--prompt <prompt>` | No | Custom LLM judge prompt; defaults to a built-in template per type |
-| `--path <path>` | No | Common option |
+| `--path <path>` | No | (see Common Options) |
 
-Use only kebab-case `--type` values; PascalCase fails. For LLM-judge evaluators, `--model` is effectively required: the cloud worker rejects an empty `model` before sending to the LLM gateway. See [evaluators-guide.md](evaluators-guide.md) for the seven types in detail.
+Only kebab-case `--type` values are accepted; PascalCase fails with an error.
 
-Run `uip maestro flow eval evaluator list` to list evaluators in the project.
+For LLM-judge evaluators, `--model` is effectively required — the cloud worker rejects an empty `model` before sending to the LLM gateway. See [evaluators-guide.md](evaluators-guide.md) for the seven types in detail.
 
-Run `uip maestro flow eval evaluator remove <id>` to remove an evaluator. `<id>` accepts UUID, `name`, or file base name. Removing an evaluator does not auto-clean `evaluatorRefs` in eval sets; verify after removing.
+### `uip maestro flow eval evaluator list`
+
+List evaluators in the project.
+
+### `uip maestro flow eval evaluator remove <id>`
+
+Remove an evaluator. `<id>` accepts UUID, name, or file base name. Removing an evaluator does not auto-clean `evaluatorRefs` in eval sets — verify after removing.
 
 ## Simulations
 
-Simulations intercept specific nodes (connectors, agents, sub-flows) during an eval run and replace real execution with a controlled response. Each targets one component by `componentId` and uses `Llm` or `Static`.
+Simulations intercept specific nodes (connectors, agents, sub-flows) during an eval run and replace their real execution with a controlled response. Each simulation targets a single component by its `componentId` and applies one of three strategies.
 
 ### `uip maestro flow eval simulation add <component-id>`
 
-Run `uip maestro flow eval simulation add <component-id>` to add or replace a simulation on a data point. An existing simulation for `<component-id>` is overwritten.
+Add or replace a simulation on a data point. If a simulation for `<component-id>` already exists on the data point it is overwritten.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
 | `--strategy <strategy>` | Yes | `Llm` or `Static` |
-| `--component-type <type>` | Yes | Component type, e.g. `connector`, `agent`, `subflow` |
-| `--component-description <text>` | No | Human-readable component label |
-| `--simulation-instructions <text>` | No | LLM prompt describing the component's return value; for `Llm` |
-| `--mock-value <json>` | No | Static JSON output; for `Static` |
-| `--output-schema <json>` | No | JSON Schema describing expected output shape; constrains the LLM. For `Llm`, auto-resolved from the `.flow` file when omitted and fails if the node is not found or has no outputs; pass explicitly to override |
-| `--path <path>` | No | Common option |
+| `--component-type <type>` | No | Component type (e.g. `connector`, `agent`, `subflow`). Required unless `--parent` is used (defaults to `Node`). |
+| `--component-description <text>` | No | Human-readable label for the component |
+| `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |
+| `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |
+| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** (top-level simulations only; required when using `--parent`). |
+| `--parent <component-id>` | No | Parent agent node component ID. When set, the simulation is added as a child tool simulation nested inside the parent agent node's simulation. If no parent simulation exists yet, one is auto-created (type `agent`, strategy `Llm`). `--component-type` defaults to `Node`. |
+| `--path <path>` | No | (see Common Options) |
 
-Use `Llm` when output should be realistic but non-deterministic, with `--simulation-instructions` and optionally `--output-schema`. Use `Static` for fixed, deterministic output with `--mock-value`.
+**Strategy guide:**
 
-For omitted `--output-schema` with `Llm`, the CLI finds the node by `<component-id>` in the `.flow` file and derives its schema from connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`. It fails with an actionable error if the node is not found or has no outputs. The schema is sent with `--simulation-instructions` to constrain the LLM; without it, the LLM generates free-form text. Override it with JSON Schema, for example:
+| Strategy | When to use | Key flags |
+|----------|-------------|-----------|
+| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |
+| `Static` | Output is fixed and deterministic | `--mock-value` |
+
+**`--output-schema` auto-resolution for Llm simulations:** When omitted, the CLI reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`). Fails with an actionable error if the node is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text. For a connector that returns `{ status, message }` you would pass:
 
 ```bash
 --output-schema '{"type":"object","properties":{"status":{"type":"string"},"message":{"type":"string"}}}'
 ```
 
+Example — LLM strategy:
+
+```bash
+uip maestro flow eval simulation add connector-send-email \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Llm \
+  --component-type connector \
+  --simulation-instructions "Pretend to send the email and return a success confirmation." \
+  --path ./MySolution/MyFlow --output json
+```
+
+Example — Static strategy:
+
+```bash
+uip maestro flow eval simulation add agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Static \
+  --component-type agent \
+  --mock-value '{"result": "found", "items": []}' \
+  --path ./MySolution/MyFlow --output json
+```
+
+Example — Child simulation (tool inside an agent node):
+
+```bash
+# Add a child tool simulation. No separate parent simulation step needed —
+# --parent auto-creates the parent if it does not exist.
+uip maestro flow eval simulation add Web_Search \
+  --parent agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --strategy Static \
+  --mock-value '{"results": [{"title": "Example", "url": "https://example.com"}]}' \
+  --path ./MySolution/MyFlow --output json
+```
+
+The child's `<component-id>` is the tool's **runtime name** (e.g. `Web_Search`, `Send_Email`), not a `.flow` node ID. Child simulations are stored in the parent's `childSimulations` array.
+
 ### `uip maestro flow eval simulation list`
 
-Run `uip maestro flow eval simulation list` to list all simulations configured on a data point.
+List all simulations configured on a data point.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
-| `--path <path>` | No | Common option |
+| `--parent <component-id>` | No | Parent agent component ID. When set, lists child tool simulations on that parent instead of top-level simulations. |
+| `--path <path>` | No | (see Common Options) |
+
+```bash
+# List top-level simulations
+uip maestro flow eval simulation list \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+
+# List child simulations on an agent node
+uip maestro flow eval simulation list \
+  --parent agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+```
 
 ### `uip maestro flow eval simulation remove <component-id>`
 
-Run `uip maestro flow eval simulation remove <component-id>` to remove a simulation from a data point. Return an error if no simulation with `<component-id>` exists on that data point.
+Remove a simulation from a data point. Returns an error if no simulation with the given `<component-id>` exists on the data point.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--data-point <id>` | Yes | Data point name or ID |
-| `--path <path>` | No | Common option |
+| `--parent <component-id>` | No | Parent agent component ID. When set, removes a child tool simulation from the parent instead of a top-level simulation. |
+| `--path <path>` | No | (see Common Options) |
+
+```bash
+# Remove a top-level simulation
+uip maestro flow eval simulation remove connector-send-email \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+
+# Remove a child simulation from an agent node
+uip maestro flow eval simulation remove Web_Search \
+  --parent agent-lookup \
+  --set "Smoke Tests" \
+  --data-point "hello-test" \
+  --path ./MySolution/MyFlow --output json
+```
 
 ## Run
 
@@ -129,69 +262,78 @@ Run `uip maestro flow eval simulation remove <component-id>` to remove a simulat
 Start a Studio Web evaluation run. The Flow solution **must already exist in Studio Web** — see [upload-safety.md](upload-safety.md).
 <!--skill-flavor:upload-safety-run-start-prereq:end-->
 
-Run `uip maestro flow eval run start` to start a Studio Web evaluation run.
-
 | Flag | Required | Description | Default |
-|---|---|---|---|
+|------|----------|-------------|---------|
 | `--set <name>` | Yes | Eval set name or ID | — |
 | `--solution-id <id>` | No | Solution ID from Studio Web | Auto-resolved from project metadata |
 | `--project-id <id>` | No | Flow project ID from Studio Web | Auto-resolved |
-| `--path <path>` | No | Common option | `.` |
-| `--entry-point <entry>` | No | Flow entry point path, e.g. `/Main.bpmn#start`, or start node ID | Eval set's `selectedEntrypoint` |
+| `--path <path>` | No | (see Common Options) | `.` |
+| `--entry-point <entry>` | No | Flow entry point path (e.g. `/Main.bpmn#start`) or start node ID | Eval set's `selectedEntrypoint` |
 | `--folder-key <key>` | No | Orchestrator folder key | Personal workspace |
-| `--debug-mode <mode>` | No | Studio Web debug mode override | server default |
+| `--debug-mode <mode>` | No | Studio Web debug mode override | (server default) |
 | `--wait` | No | Block until terminal state, then print results | `false` |
-| `--timeout <seconds>` | No | Maximum time to block on `--wait` | `600` (10 min) |
+| `--timeout <seconds>` | No | Max time to block on `--wait` | `600` (10 min) |
 
-Without `--wait`, return immediately with `EvalSetRunId`. With `--wait`, poll until `Completed` or `Failed`, or until `--timeout` elapses; the server-side run continues regardless.
+Without `--wait`, returns immediately with `EvalSetRunId`. With `--wait`, the CLI polls until `Completed` or `Failed`, or `--timeout` elapses (the server-side run continues regardless).
 
-Run `uip maestro flow eval run status <evalSetRunId>` to get current status. Terminal states are `Completed` and `Failed`.
+### `uip maestro flow eval run status <evalSetRunId>`
+
+Get current status. Terminal states: `Completed`, `Failed`.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--solution-id <id>` | No | Override solution ID |
 | `--project-id <id>` | No | Override project ID |
-| `--path <path>` | No | Common option |
+| `--path <path>` | No | (see Common Options) |
 
-Run `uip maestro flow eval run results <evalSetRunId>` to get per-data-point results.
+### `uip maestro flow eval run results <evalSetRunId>`
+
+Per-data-point results.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--set <name>` | Yes | Eval set name or ID |
 | `--only-failed` | No | Show only failed/errored data points |
 | `--verbose` | No | Include evaluator justifications |
 | `--export-format <json\|csv>` | No | Export results to a file |
-| `--solution-id`, `--project-id`, `--path` | No | See `start` |
+| `--solution-id`, `--project-id`, `--path` | No | (see start) |
 
-Per-row fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, and `Error`; include `Justifications` with `--verbose`.
+Per-row output fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).
 
-Run `uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json` to list runs for an eval set.
+### `uip maestro flow eval run list`
+
+List runs for an eval set.
+
+```bash
+uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+```
 
 ### `uip maestro flow eval run compare <evalSetRunId>`
 
-Run `uip maestro flow eval run compare <evalSetRunId>` to compare two runs side-by-side.
+Compare two runs side-by-side.
 
 | Flag | Required | Description |
-|---|---|---|
+|------|----------|-------------|
 | `--compare-to <id>` | Yes | Second eval set run ID |
 | `--set <name>` | Yes | Eval set name or ID |
-| `--solution-id`, `--project-id`, `--path` | No | See `start` |
+| `--solution-id`, `--project-id`, `--path` | No | (see start) |
 
 `compare` aligns data points by `name` within the eval set. Comparing runs from different eval sets is meaningless.
 
 ## Output Codes
 
-The CLI emits a `Code` field on every JSON response. Use it for filtering or scripting:
+The CLI emits a `Code` field on every JSON response. Useful when filtering or scripting:
 
 | Subcommand | `Code` |
-|---|---|
+|------------|--------|
 | `eval add` | `FlowEvalAdd` |
 | `eval list` | `FlowEvalList` |
 | `eval remove` | `FlowEvalRemove` |
 | `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |
 | `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |
 | `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |
+| `eval simulation add --parent` / `list --parent` / `remove --parent` | `FlowEvalChildSimulationAdd` / `FlowEvalChildSimulationList` / `FlowEvalChildSimulationRemove` |
 | `eval run start` (no `--wait`) | `FlowEvalRunStarted` |
 | `eval run start --wait` (summary) | `FlowEvalRunCompleted` |
 | `eval run status` | `FlowEvalRunStatus` |
@@ -199,4 +341,4 @@ The CLI emits a `Code` field on every JSON response. Use it for filtering or scr
 | `eval run list` | `FlowEvalRunList` |
 | `eval run compare` | `FlowEvalRunComparison` |
 
-The `eval run *` codes dropped their `Maestro` prefix (for example, `MaestroFlowEvalRunResults` → `FlowEvalRunResults`) to match the rest of the `eval` family. Older CLI versions emit the `Maestro`-prefixed names. If actual emitted codes diverge from this table, trust the JSON output and file an issue.
+The `eval run *` codes dropped their `Maestro` prefix (e.g. `MaestroFlowEvalRunResults` → `FlowEvalRunResults`) to match the rest of the `eval` family. Older CLI versions emit the `Maestro`-prefixed names. If actual emitted codes diverge from the table above, trust the JSON output — file an issue.

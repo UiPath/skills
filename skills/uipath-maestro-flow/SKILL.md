@@ -4,6 +4,21 @@ description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build/edit r
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
+# Reasoning budget
+
+- Match reasoning to step difficulty; bias toward acting. For mechanical / IO / format steps, if a `uip` verb covers the task, run it — never hand-derive what the CLI emits (`node configure` detail and `bindings[]`, `format` layout, `registry get` node shapes).
+- Save deep reasoning for the judgments no verb can make for you: node-type selection (the external-service ladder), topology, and how data moves from one node's output into the next node's input.
+
+# Working style
+
+- **Understand first, then decide.** Read this file and the capability index for the work at hand, then plan against what the CLI verbs do — not a guess. `uip maestro flow <verb> --help` and `uip maestro flow registry get <node-type>` are ground truth for flags and node shapes.
+- **Plan the whole path up front, then chain.** Outline the sequence before running anything, batch independent steps into one turn, pipeline the rest (rule #10). Do not run turn-by-turn what could have been chained.
+- **Inspect an input ONCE.** To learn a shape — a node type's schema, a connector's fields, an existing `.flow`'s nodes — dump it once and search that output. Never re-read a file field-by-field or re-query the registry once per field.
+- **Don't repeat work.** Never rerun a command whose inputs and relevant state are unchanged, or re-read an unchanged file already in context. After a command may have rewritten a file (`node configure`, `format`), re-read it before relying on its contents.
+- **Prefer the CLI to ad-hoc code.** Scripting languages are a last resort for `.flow` edits and need user approval first (rule #9). When code is warranted, write it once with paths as arguments; no near-duplicate inline snippets across turns.
+- **Keep outputs small.** Extract with `--output json --output-filter` when you know the fields (rule #1). When the payload is large or the command is slow or side-effecting — `flow debug`, `job traces`, `registry get` — redirect the whole envelope to a file outside the solution tree (`uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json`) and search the file, so re-reading it never means re-running the command.
+- **Don't do anything unnecessary.** No tool call, file read, or result pulled into context before it is needed.
+
 # UiPath Flow Skill
 
 Guide for creating, editing, validating, debugging, publishing, diagnosing, and evaluating UiPath Flow projects with the `uip` CLI and `.flow` format.
@@ -75,7 +90,7 @@ Guide for creating, editing, validating, debugging, publishing, diagnosing, and 
 
 - Never use `--format json`; use `--output json`.
 - Do not pipe JSON to `python3 -c` or `jq` for simple extraction; use `--output-filter`, verify shape first, and use external parsers only for unsupported transforms. A valid but wrong filter can return `Data: []`; `keys(@)` fails on arrays, so probe with `type(@)` first. See [cli-conventions.md §3](references/shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
-- Never use `flow debug` for validation; use `flow validate`, because debug has real side effects.
+- Never use `flow debug` for validation, and never re-run a completed debug to reshape its output; use `flow validate`, because debug has real side effects and re-uploads the solution on every run. Extract report fields from the payload the completed run already returned.
 - Never silently choose the first registry match. Use the Connector Disambiguation ladder in [connector/planning.md — Disambiguation](references/author/plugins/connector/planning.md#disambiguation--when-search-returns-multiple-connectors-for-the-same-intent), deferring to Integration Service rules.
 - Never conclude that no connection exists from bare `uip is connections list`; use a registry-derived connector key and `--all-folders`.
 - Never represent `customFieldsRequestDetails.parameterValues` as an object map. Studio Web emits `Map<string,string|null>` as `[[key, value], ...]`; inner keys are camelCase (`objectActionName`, `parameterValues`). See [connector/impl.md Step 6c](references/author/plugins/connector/impl.md).

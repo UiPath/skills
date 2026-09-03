@@ -355,6 +355,19 @@ The compiler emits the product's `multipartParameters` envelope. This is a Flow
 artifact transport; the separate `uip is resources run` command does not expose
 a multipart flag and is not the execution surface for this wiring.
 
+Only a **file** part is an input. A string-typed part (Teams `body`, Gmail
+`body`, GenAI `RagRequest`) is the container the runtime composes from the
+operation's body fields — write those (`'body.content'`, `Body`, `prompt`), never
+the part itself; the compiler lists the part without a value, as the designer does.
+
+```ts
+.step('notify', connector(SendChannelMessage, {
+  team_id: lookup(SendChannelMessage, 'team_id').byDisplayName('Sales'),
+  channel_id: lookup(SendChannelMessage, 'channel_id').byDisplayName('alerts'),
+  body: { content: 'A request was routed to Sales.' },   // or 'body.content': …
+}, { connection: 'teams', folder: 'shared' }))
+```
+
 Preparation requires a working live connection. When a task explicitly uses
 offline/validate-only evidence and does not require connection-specific fields,
 use the baked descriptor with its published static inputs; do not run discovery
