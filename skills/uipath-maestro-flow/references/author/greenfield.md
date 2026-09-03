@@ -18,6 +18,8 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 - The flow is a straightforward linear pipeline (trigger → action → action → end)
 - The user has already described the exact topology they want
 
+**Skipping the plan never skips the node choice.** Two outcomes (*if … otherwise …*) = a `core.logic.decision` node with both `true`/`false` ports wired — never a Script ternary ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`; a named external service → the Step 3 registry ladder below.
+
 ### Examples
 
 **Plan:** "Build a flow that receives a Jira ticket, classifies it with an AI agent, routes urgent tickets to Slack and non-urgent to a queue, and logs everything to a Google Sheet."
