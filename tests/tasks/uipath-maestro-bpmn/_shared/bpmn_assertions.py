@@ -125,6 +125,15 @@ def descriptor_file_names(descriptor: dict) -> set[str]:
 
 
 def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -> None:
+    """Tolerant package check: accepts CLI output OR hand-authored metadata.
+
+    Deliberately NOT replaced by assert_generated_project_scaffold, which
+    requires the CLI-generated shape. `authoring/api_workflow_task.yaml`
+    documents that its assertions accept either shape, so tightening this
+    helper would break a stated task contract. Use the stricter helper for
+    tasks that mandate `uip maestro bpmn refresh`/`init`.
+    """
+
     project = load_json(project_dir / "project.uiproj")
     operate = load_json(project_dir / "operate.json")
     entry_points = load_json(project_dir / "entry-points.json")

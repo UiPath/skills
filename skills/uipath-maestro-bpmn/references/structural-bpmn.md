@@ -217,10 +217,12 @@ Sub-process-scoped variables go in that sub-process's own `<uipath:variables>`.
 
 ## Script tasks — Jint authoring contract
 
-`bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
+`bpmn:scriptTask scriptFormat="JavaScript"` (exact casing — the serializer is
+case-sensitive) runs under **Jint**, not Node.js or
 a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
 template, but the runtime contract is fixed — including one correction to that
-template, in the first rule below:
+template, in the first rule below (see the registry lookup and compatibility
+fallback contract further down for the discovery workflow):
 
 - Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,
   `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,
@@ -332,24 +334,6 @@ return score;
 ]]></bpmn:script>
 </bpmn:scriptTask>
 ```
-
-### ScriptTask registry lookup and compatibility fallback
-
-`BPMN.ScriptTask` is the registry lookup key. Retain the live `registry get`
-result as evidence and use it when it exposes the supported new-node shape.
-If it contains the known older
-`<uipath:type value="BPMN.ScriptTask">` mapping, use the bundled
-`extensionTypes["BPMN.ScriptTask"].xmlTemplate` in
-`validator/bpmn-spec.json` for that new node. The compatibility template
-supplies the supported `BPMN.Variables` mapping, `vars` / `metadata`
-arguments, and standard `scriptResponse` / `Error` outputs. Apply this
-fallback only to that recognized older registry shape: do not override an
-unfamiliar newer template, use it as evidence for a live resource, or use
-it to rewrite an existing ScriptTask. When applying the fallback, its
-serialized discriminator must remain
-`<uipath:type value="BPMN.Variables" version="v1" />`; do not replace it
-with the registry lookup key. The local validator can accept the older
-discriminator, so validation alone does not detect that substitution.
 
 ## Sequence flows, conditions, and gateway defaults (REGISTRY GAP)
 

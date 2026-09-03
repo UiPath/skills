@@ -65,14 +65,13 @@ Treat these JSON files as derived unless a CLI contract explicitly identifies a 
 After source validation, generate the complete set with:
 
 ```bash
-uip maestro bpmn \
-  refresh <project-path> --output json
+uip maestro bpmn refresh <project-path> --output json
 ```
 
-Refresh is the offline, provider-neutral source-to-derived boundary. It
-regenerates all four files as one atomic set from the authored BPMN and
-`project.uiproj`; it does not discover or import tenant resources. Local
-packaging then consumes that generated set. In particular,
+Refresh regenerates all four files as one atomic set and local packaging
+consumes that set — see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+In particular,
 `uip maestro bpmn pack <project-path> <OutputDir> --output json` does not create
 a missing descriptor from only the BPMN and `project.uiproj`.
 

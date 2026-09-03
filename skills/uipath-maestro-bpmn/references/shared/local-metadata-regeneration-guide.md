@@ -141,8 +141,12 @@ not patch generated JSON around the failure. The current contract requires
 exactly one project-root `.bpmn` file, one or more root processes, and at least
 one root manual start event overall. Each root manual start event must carry
 exactly one valid GUID `uipath:entryPointId`; refresh generates one
-`entry-points.json` entry for each such start event. It rejects unsupported
-binding-resource kinds instead of silently dropping them. If the installed CLI
+`entry-points.json` entry for each such start event. Root `uipath:binding`
+nodes whose `resource` is not `Connection` are silently dropped, not reported —
+what refresh does reject is a connector `connection` that is not a
+`=bindings.<id>` reference, a referenced binding that is missing, a connection
+binding `default` that is not a GUID, and one `resourceKey` reused across
+different connectors or connections. If the installed CLI
 does not expose this command, keep any stale generated files only as known
 comparison evidence and report package generation as blocked. A source-only
 project is not package-ready.
