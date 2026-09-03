@@ -73,6 +73,9 @@ success_criteria:
     command_pattern: '(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list|get)\b[^\n]*\b(ixp|document|extract))'
     min_count: 1
     suite_thresholds: {mean: 0.85}
+    # Armed latch-only: keeps this criterion gated on sentinel-cut runs (those
+    # gate on ARMED criteria only). Fail-stop is unreachable for a min_count.
+    stop_early: {}
 
   # Greps the actual .flow artifact rather than the command stream — the
   # command_executed checker truncates tool params at 2000 chars, which hides
@@ -85,6 +88,24 @@ success_criteria:
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
 
+  # Sentinel — ends the run early, never grades it. This suite fails on the
+  # clock, not the criteria: the node lands early, then ungraded wiring grinds
+  # into the turn ceiling (902-1203s deaths whose artifacts grade 1.0). Latches
+  # when a tool call writes the node literal (raw or JSON-escaped); the cut
+  # defers until the armed registry criterion above has live-passed.
+  # pass_threshold 0: a run that never latches (large writes exceed the checker's
+  # 2000-char window) completes and grades exactly as before. Keep the default
+  # weight — a zero-weight armed criterion collapses the pass-stop floor and
+  # would cut at the registry search, before the flow exists.
+  - type: command_executed
+    description: "sentinel: IxP/mock node literal written — ends the run early; never gates"
+    command_pattern: '\\?"type\\?"\s*:\s*\\?"(uipath\.ixp|core\.logic\.mock)'
+    min_count: 1
+    pass_threshold: 0
+    stop_early:
+      on_pass: stop
+
 run_limits:
   max_turns: 80
-  task_timeout: 900
+  turn_timeout: 1200
+  task_timeout: 1200

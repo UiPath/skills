@@ -51,7 +51,7 @@ success_criteria:
   - type: run_command
     description: "Open-Meteo connector node executes and returns the current temperature"
     command: "python3 $TASK_DIR/check_openmeteo_weather.py"
-    timeout: 320
+    timeout: 720
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

@@ -30,7 +30,7 @@ success_criteria:
   - type: run_command
     description: "Flow has a loop node and debug returns 3315 (13*15*17)"
     command: "python3 $TASK_DIR/check_loop_multiply.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

@@ -32,7 +32,7 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
   - Treat all hard stops after the supplied SDD as pre-approved, including
-    Phase 1 planning approval and Phase 2 publish-for-review. Choose the
+    the Phase 2 publish-for-review. Choose the
     continue / skip-publish path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - If the registry does not contain one of the named process resources, use
@@ -78,9 +78,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md preserves the authored Athena task-entry rules before JSON generation"
-    command: "python3 $TASK_DIR/check_athena_cm_event_plan.py"
+    description: "generated caseplan preserves the authored Athena task-entry rule on every task"
+    command: "python3 $TASK_DIR/check_athena_cm_event_rules.py"
     timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan covers every declaration in the staged sdd.md — no dropped stage, task, variable, condition or SLA row, and every task carries an entry rule (validate only warns; a miss hangs debug)"
+    command: >-
+      python3 $SKILLS_REPO_PATH/skills/uipath-maestro-case/scripts/audit_caseplan.py
+      AthenaCMEventCase/AthenaCMEventCase/caseplan.json --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1)
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

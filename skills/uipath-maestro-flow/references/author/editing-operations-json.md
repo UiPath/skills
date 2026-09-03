@@ -78,7 +78,7 @@ uip maestro flow validate <FILE>.flow --output json
 Read-only extractions on `--output json` results — use the CLI's built-in JMESPath filter, no external parser needed. Expressions start at the `Data` envelope (no `Data.` prefix). See [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the full pattern.
 
 ```bash
-uip solution upload --output json --output-filter "Url"
+uip solution upload --output json --output-filter "DesignerUrl"
 uip maestro flow registry get <node-type> --output json --output-filter "Node"
 ```
 

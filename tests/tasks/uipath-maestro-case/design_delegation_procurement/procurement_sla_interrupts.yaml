@@ -1,6 +1,6 @@
 task_id: skill-case-phase-0-procurement-sla-interrupts
 description: >
-  Design handoff (uipath-planner Case Design Lane, in-conversation) through maestro-case planning for a supplier application with global withdrawn and
+  Design handoff (uipath-planner Case Design Lane, in-conversation) for a supplier application with global withdrawn and
   SLA events, explicit sequential work, and design-rationale requirements.
   Verifies that global events enter interrupting secondary stages instead of
   being duplicated across every primary stage.
@@ -31,13 +31,12 @@ run_limits:
   turn_timeout: 5400
 
 initial_prompt: |
-  Design a "SupplierApplication" Maestro case and produce `sdd.md` plus the
-  implementation plan at `tasks/tasks.md`. Stop before creating caseplan.json.
-  This is a plan-only/no-build design exercise: do not query tenant registry,
-  connections, schemas, or users. Use concrete intended resource and system
-  names, mark identities `resolve at build`, and defer authoritative tenant
-  resolution to the later build run. After approval, use the compact no-build
-  planning shape for `tasks/tasks.md`; do not inspect plugin planning docs.
+  Design a "SupplierApplication" Maestro case and produce `sdd.md`. Stop after
+  the SDD — do not create caseplan.json. This is a design-only exercise: do not
+  query tenant registry, connections, schemas, or users. Use concrete intended
+  resource and system names, leave identities unresolved, and defer
+  authoritative tenant resolution to the later build run. Do not inspect plugin
+  planning docs.
 
   The primary stages are Intake, Supplier Setup, Compliance Review, Decision,
   and Close. In Supplier Setup, Verify Supplier Identity, then Set Supplier
@@ -57,13 +56,12 @@ initial_prompt: |
   before the application can close.
 
   Preserve why each stage kind, task type, activation mode, sequencing choice,
-  SLA behavior, and exception-routing choice was selected. Carry that rationale
-  from the SDD into the implementation plan.
+  SLA behavior, and exception-routing choice was selected.
 
 success_criteria:
   - type: run_command
-    description: "SDD and implementation plan were produced without building the case"
-    command: "test -f sdd.md && test -f tasks/tasks.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    description: "The SDD was produced without building the case"
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -81,11 +79,10 @@ success_criteria:
     description: "The design uses coherent global interrupt and escalation semantics"
     files:
       - sdd.md
-      - tasks/tasks.md
     max_file_chars: 180000
     include_agent_output: false
     prompt: |
-      Review the SupplierApplication SDD and implementation plan.
+      Review the SupplierApplication SDD.
 
       Score 1.0 only when:
       - Withdrawn is one interrupting secondary stage entered by the global
@@ -101,8 +98,7 @@ success_criteria:
         are consecutive single-task data.tasks sets rather than one parallel
         inner array.
       - The SDD explains the stage-kind, task-type, activation, sequencing,
-        SLA, and exception-routing choices, and tasks.md preserves those
-        rationales for implementation.
+        SLA, and exception-routing choices.
       - Global events are not modeled as repeated per-primary-stage exit rules.
 
       Grade routing SEMANTICS, not table presentation. The SLA Response Map is
@@ -114,7 +110,7 @@ success_criteria:
       may legitimately run parallel in one shared task set.
 
       Score 1.0 when all five criteria hold; deviations that are purely
-      presentation-level (display names, table rendering, plan formatting) do
+      presentation-level (display names, table rendering) do
       not reduce the score below 0.8. Score 0.5 for one semantic omission.
       Score 0.0 for duplicated per-stage routing, parallel Supplier Setup
       work, missing rationale, or SLA events represented only as
@@ -129,9 +125,9 @@ simulation:
     You are the procurement operations owner who supplied the complete
     requirements in the opening message.
   goal: |
-    Get an approved sdd.md and tasks/tasks.md, then stop before implementation.
+    Get an approved sdd.md, then stop before implementation.
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, owners, timing, or global-event behavior."
-    - "When shown the design confirmation, approve it and ask the assistant to continue through implementation planning only."
+    - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
     - "Do not authorize creating caseplan.json, running, publishing, or deploying."
   max_turns: 30

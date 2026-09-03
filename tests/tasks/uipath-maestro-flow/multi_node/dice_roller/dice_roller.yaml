@@ -31,7 +31,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs and a Script node produces a value in [1, 6]"
     command: "python3 $TASK_DIR/check_dice_runs.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

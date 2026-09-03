@@ -141,7 +141,7 @@ initial_prompt: |
   ```
 
   Resolve the connector event against the Integration Service registry and a
-  live Outlook 365 connection on the tenant. Treat the generated tasks.md plan
+  live Outlook 365 connection on the tenant. Treat all build gates
   as pre-approved — do NOT block on the HARD STOP / AskUserQuestion approval
   steps. Do NOT run `uip maestro case debug` (a wait-for-connector suspends on a
   real event). Do NOT ask for approval, confirmation, or feedback. Build
