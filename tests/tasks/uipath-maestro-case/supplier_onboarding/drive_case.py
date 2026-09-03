@@ -111,6 +111,12 @@ BREACH_TIMEOUT = 1500
 # A solution's first upload registers the solution and its process before any instance exists, so
 # the first route of a fresh build waits longer here than later ones. Measured: a re-uploaded
 # solution surfaces its instance inside a minute, a brand new one took over five.
+# `--as-admin` because the default view is the caller's own queue. Six runs reported the
+# gate task "never appeared" while the engine logged `HITL task created ... TaskId=...`
+# with the exact title: the task is raised against the action app's own recipient, which
+# is a role the driving identity does not belong to, so it never enters that queue.
+TASKS_LIST = ["uip", "tasks", "list", "--as-admin", "--output", "json"]
+
 INSTANCE_TIMEOUT = 600
 
 POLL_SLEEP = 10
@@ -222,7 +228,7 @@ def current_identity() -> str:
 
 def task_watermark() -> int:
     """Highest task id that exists before this run, so later lookups ignore older runs."""
-    ids = [int(r["Id"]) for r in run_list(["uip", "tasks", "list", "--output", "json"]) if r.get("Id")]
+    ids = [int(r["Id"]) for r in run_list(TASKS_LIST) if r.get("Id")]
     return max(ids) if ids else 0
 
 
@@ -269,7 +275,7 @@ def pending_task(watermark: int, title: str, done: set = frozenset(), instance_i
     driven are skipped, because a route that revisits a stage sees the same title twice and a
     just-completed task can still read as open for a moment.
     """
-    for row in run_list_checked(["uip", "tasks", "list", "--output", "json"]):
+    for row in run_list_checked(TASKS_LIST):
         if not row.get("Id") or int(row["Id"]) <= watermark:
             continue
         if str(row["Id"]) in done or row.get("Status") == "Completed":
@@ -290,7 +296,7 @@ def explain_missing_gate(watermark: int, title: str, done: set, instance_id: str
     rejected each candidate is what separates a task the case never raised from a task the
     lookup threw away.
     """
-    rows = [r for r in run_list(["uip", "tasks", "list", "--output", "json"])
+    rows = [r for r in run_list(TASKS_LIST)
             if (r.get("Title") or "") == title]
     print(f"  watermark {watermark}, instance {instance_id}, {len(rows)} task(s) carry this title")
     for row in sorted(rows, key=lambda r: int(r.get("Id") or 0))[-6:]:
