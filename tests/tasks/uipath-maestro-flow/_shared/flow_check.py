@@ -174,17 +174,44 @@ def _output_blob(result: subprocess.CompletedProcess) -> str:
 _OVERWRITE_STUCK_ISSUE = "UiPath/cli#3938"
 _OVERWRITE_STUCK_MARKER = "overwrite failed (400)"
 _OVERWRITE_STUCK_CODE = re.compile(r'\\?"code\\?":\s*\\?"1001\\?"')
+# Since UiPath/cli#3951 (main 2026-09-02, `016231474`) the CLI reports a refused
+# upload against its stage instead of echoing the raw body:
+#   Message: "Failed during overwrite-solution: HTTP 400 on POST …/Overwrite — An argument had an invalid value."
+#   Context: {"HttpStatus": 400, "Stage": "overwrite-solution", "ErrorCode": "1001"}
+# The rotation must recognise both envelopes: an image whose CLI carries #3951
+# but whose checker knows only the legacy text fails every second debug of a
+# project with a plain `flow debug exit 1` (seen 2026-09-03 on every
+# multi-debug task of the batch-A rerun, both arms).
+_OVERWRITE_STUCK_STAGE = "overwrite-solution"
 _OVERWRITE_STUCK_ATTEMPTS = 2  # the failed overwrite + one import-as-new retry
 _SOLUTION_ID_RE = re.compile(r'("SolutionId"\s*:\s*")([0-9a-fA-F-]{36})(")')
 
 
 def _is_overwrite_stuck(result: subprocess.CompletedProcess) -> bool:
     """True iff ``flow debug`` died on the Studio Web Overwrite 400/1001 regression
-    (see :data:`_OVERWRITE_STUCK_ISSUE`) — never on any other overwrite failure."""
+    (see :data:`_OVERWRITE_STUCK_ISSUE`) — never on any other overwrite failure.
+
+    Matches the legacy envelope (``Overwrite failed (400): {"code":"1001",…}``)
+    and the staged one the CLI emits since UiPath/cli#3951 (``Context.Stage ==
+    "overwrite-solution"`` with ``Context.ErrorCode == "1001"``, or HTTP 400 and
+    the platform's "invalid value" wording when the code is absent)."""
     if result.returncode == 0:
         return False
     blob = _output_blob(result)
-    return _OVERWRITE_STUCK_MARKER in blob and _OVERWRITE_STUCK_CODE.search(blob) is not None
+    if _OVERWRITE_STUCK_MARKER in blob and _OVERWRITE_STUCK_CODE.search(blob) is not None:
+        return True
+    data = _parse_json(result.stdout)
+    context = _get_ci(data or {}, "Context", default={})
+    if not isinstance(context, dict):
+        return False
+    stage = _get_ci(context, "Stage")
+    if not isinstance(stage, str) or stage.lower() != _OVERWRITE_STUCK_STAGE:
+        return False
+    code = _get_ci(context, "ErrorCode")
+    if str(code) == "1001":
+        return True
+    http = _get_ci(context, "HttpStatus")
+    return http == 400 and "invalid value" in blob
 
 
 def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
