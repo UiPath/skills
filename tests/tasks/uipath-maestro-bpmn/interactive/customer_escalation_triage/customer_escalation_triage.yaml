@@ -226,88 +226,14 @@ simulation:
     - "Keep replies concise and in character. Emit the stop token only after every revealed requirement is addressed and the agent reports successful local validation and packing."
   max_turns: 20
 
-# REQUIRED, not a preference: this is the repo's only task with an
-# `agent_judge` criterion, and coder_eval raises at setup resolution when an
-# enabled agent_judge meets `checker_context.api_route.route: litellm`, which
-# every experiment in tests/experiments/ sets as its default. `litellm`
-# dispatches llm_judge in-process, but agent_judge runs as a real Claude Code
-# subprocess needing an Anthropic-compatible endpoint, so the runner rejects
-# the pair rather than silently misrouting it
-# (coder_eval/orchestrator.py::_reject_litellm_agent_judge_if_unsupported).
-#
-# `direct` needs only ANTHROPIC_API_KEY, which CI already sets for the
-# reviewer, versus Bedrock's AWS_BEARER_TOKEN_BEDROCK + AWS_REGION pair.
-# Deleting this block, or dropping the route back to litellm, makes the whole
-# task fail before the agent starts.
-checker_context:
-  api_route:
-    route: direct
-    # Explicitly null, not merely absent: the task's api_route deep-merges with
-    # the experiment's, which sets litellm `params`/`env_params`. Inheriting
-    # those trips "params/env_params require route: litellm" and the task fails
-    # validation before it starts.
-    params: null
-    env_params: null
-
+# No `checker_context` block, and no judge criterion. The flow-side twin of
+# this same scenario grades the interview by its consequences rather than by a
+# rubric: the persona withholds policy facts, and the hidden scenarios fail if
+# the agent never elicited them. Following that, the interview signal comes
+# from the live matrix, which means this task needs no judge route at all --
+# and so cannot be blocked by the experiments' litellm default the way an
+# enabled agent_judge is.
 success_criteria:
-  - type: agent_judge
-    description: "Agent conducted a progressive requirements interview and incorporated the late correction before implementation"
-    prompt: |
-      Grade only the observable interaction trajectory in DIALOG and TOOL CALLS.
-      Do not inspect artifact contents and do not grade artifact correctness or
-      agent self-reports. Use tool chronology only to verify that no Write,
-      Edit, or artifact-producing Bash command occurred before DESIGN APPROVED.
-      Creating the project directory or registry-evidence files is
-      artifact-producing; registry commands inspected only through stdout are
-      read-only discovery.
-      Read through the DESIGN APPROVED exchange, then make
-      submit_verdict your first and only tool call. Return score 1.0 only when
-      1. Before creating or editing project artifacts, the agent completed at
-         least three substantive question rounds covering the typed contract
-         and normalization; validation/severity/routing/downstream policy;
-         visible subprocess/error/parallel/multi-instance semantics; and the
-         registry/live-connector/no-debug boundary.
-      2. The agent summarized the complete contract and topology for approval,
-         including exactly three data-only ScriptTasks (normalization,
-         per-item preparation inside a sequential attachment subprocess, and
-         post-loop reduction), real Jira/Drive/Slack activities on eligible
-         paths, visible policy decisions, and a JiraUnavailable guard requiring
-         both jiraAvailable=false and classified severity Sev1/Sev2 (not merely
-         a route proxy). Validation failures remained normal outcomes,
-         JiraUnavailable was the sole typed error, and all outcomes converged
-         before the three-workstream fan-out and one root end.
-      3. The simulated user then introduced the whitespace-only duplicate-key
-         correction; the agent explicitly incorporated it, updated its plan,
-         and obtained the exact DESIGN APPROVED response before implementation.
-      4. It did not guess an unasked category, rely on volunteered requirements,
-         or begin authoring and repair the interview afterward.
-      A user response that directly answers the agent's broader question in the
-      same area (for example intake/integration choices or execution/lifecycle
-      boundaries) is elicited, not volunteered. Penalize reliance on volunteered
-      requirements only when the user introduced an entirely unasked area.
-      Ignore duplicated SDK wrappers such as RateLimitEvent/RESULT markers.
-      Registry discovery and other read-only inspection are not implementation;
-      project file creation or modification is. Return 0.0 for any missing
-      condition.
-    include_dialog: true
-    include_agent_output: false
-    include_tool_calls: true
-    include_reference: false
-    # This dialog is deliberately long. Keep the corrected playback, late
-    # stakeholder change, and approval rather than grading only the rejection.
-    max_dialog_chars: 200000
-    # Cap repeated SDK wrappers per message while retaining the full dialog,
-    # including the late correction and approval.
-    max_file_chars: 9000
-    max_turns: 6
-    turn_timeout: 600
-    agent:
-      type: claude-code
-      allowed_tools: ["mcp__coder_eval_judge__submit_verdict"]
-      disallowed_tools: ["Bash", "Read", "Glob", "Grep", "Write", "Edit"]
-    weight: 4.0
-    pass_threshold: 1.0
-
   - type: skill_triggered
     description: "Agent loaded the uipath-maestro-bpmn skill"
     skill_name: "uipath-maestro-bpmn"

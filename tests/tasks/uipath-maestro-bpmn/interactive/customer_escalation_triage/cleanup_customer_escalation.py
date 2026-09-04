@@ -60,7 +60,9 @@ def main() -> int:
     grader.CLEANUP_JOURNAL = Path("/dev/null")
     # coder_eval caps a post_run step at 300s. Cap every CLI call just inside
     # that so an overrun reports what is left rather than dying mid-delete.
-    grader.ACTIVE_CLI_DEADLINE = time.monotonic() + POST_RUN_BUDGET_SECONDS
+    grader.bpmn_live.ACTIVE_CLI_DEADLINE = (
+        time.monotonic() + POST_RUN_BUDGET_SECONDS
+    )
     print(
         "cleanup: replaying journal "
         + ", ".join(f"{kind}={len(items)}" for kind, items in records.items())

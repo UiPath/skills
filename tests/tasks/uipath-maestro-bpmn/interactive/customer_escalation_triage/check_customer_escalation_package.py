@@ -4,11 +4,26 @@
 from __future__ import annotations
 
 import json
+import os
+import re
+import sys
 import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any, NoReturn
+
+# Walk up to the directory that holds `_shared` so the import works regardless
+# of how deep this task lives under tests/tasks/uipath-maestro-bpmn/.
+_directory = os.path.dirname(os.path.abspath(__file__))
+while _directory != os.path.dirname(_directory) and not os.path.isdir(
+    os.path.join(_directory, "_shared")
+):
+    _directory = os.path.dirname(_directory)
+sys.path.insert(0, _directory)
+
+from _shared import bpmn_live  # noqa: E402
+
 
 
 PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
@@ -21,24 +36,36 @@ EXPECTED_ARCHIVE_BASENAMES = {
 }
 
 
+UUID_PATTERN = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+STUB_UUID_PATTERN = re.compile(r"^0{8}-0{4}-0{4}-0{4}-")
+
+
+def is_real_connection_key(value: Any) -> bool:
+    """True only for a real connection id, not an unresolved stub."""
+
+    rendered = str(value or "").strip()
+    return bool(UUID_PATTERN.fullmatch(rendered)) and not STUB_UUID_PATTERN.match(
+        rendered
+    )
+
+
 def fail(message: str) -> NoReturn:
     raise SystemExit(f"FAIL: {message}")
 
 
 def parse_json_output(text: str) -> Any:
-    stripped = text.strip()
+    """Delegate to the shared parser, keeping this script's FAIL: convention.
+
+    Was a third verbatim copy of the same banner-tolerant parse.
+    """
+
     try:
-        return json.loads(stripped)
-    except json.JSONDecodeError:
-        pass
-    for index, character in enumerate(stripped):
-        if character not in "[{":
-            continue
-        try:
-            return json.loads(stripped[index:])
-        except json.JSONDecodeError:
-            continue
-    fail(f"pack did not return JSON: {text}")
+        return bpmn_live.parse_json_output(text, "pack")
+    except bpmn_live.CheckFailure as exc:
+        fail(str(exc))
 
 
 def main() -> None:
@@ -97,13 +124,27 @@ def main() -> None:
                 or any(
                     not isinstance(resource, dict)
                     or resource.get("resource") != "Connection"
-                    or not resource.get("key")
                     for resource in resources
                 )
             ):
                 fail(
                     "packed bindings_v2.json must contain exactly three "
                     "Connection resources"
+                )
+            # A truthy key is not enough: an all-zero UUID is what the CLI
+            # writes for an unresolved binding, so accepting any non-empty
+            # string lets a stub-bound project pass a criterion that is
+            # supposed to prove real wiring. Mirrors
+            # uipath-maestro-flow/_shared/check_bindings_no_stubs.py.
+            stubbed = [
+                resource.get("key")
+                for resource in resources
+                if not is_real_connection_key(resource.get("key"))
+            ]
+            if stubbed:
+                fail(
+                    "packed bindings_v2.json Connection keys must be real "
+                    f"connection ids, not unresolved stubs: {stubbed}"
                 )
 
         print(

@@ -108,11 +108,10 @@ class TaskParserTests(unittest.TestCase):
             self.assertIsInstance(value, int)
 
         criteria = task["success_criteria"]
-        self.assertEqual(len(criteria), 11)
+        self.assertEqual(len(criteria), 10)
         self.assertEqual(
             [c["type"] for c in criteria],
             [
-                "agent_judge",
                 "skill_triggered",
                 "command_executed",
                 "command_not_executed",
@@ -128,7 +127,7 @@ class TaskParserTests(unittest.TestCase):
         for criterion in criteria:
             self.assertIsInstance(criterion["weight"], float)
         self.assertEqual(
-            sum(c["weight"] for c in criteria), 25.5
+            sum(c["weight"] for c in criteria), 21.5
         )
         live = [
             c
@@ -668,10 +667,10 @@ class BehaviorCheckerTests(unittest.TestCase):
             stderr="",
         )
         with (
-            patch.object(checker, "ACTIVE_CLI_DEADLINE", 103.5),
-            patch.object(checker.time, "monotonic", return_value=100.0),
+            patch.object(checker.bpmn_live, "ACTIVE_CLI_DEADLINE", 103.5),
+            patch.object(checker.bpmn_live.time, "monotonic", return_value=100.0),
             patch.object(
-                checker.subprocess,
+                checker.bpmn_live.subprocess,
                 "run",
                 return_value=completed,
             ) as run,
@@ -682,8 +681,8 @@ class BehaviorCheckerTests(unittest.TestCase):
 
     def test_run_cli_refuses_new_work_after_absolute_deadline(self) -> None:
         with (
-            patch.object(checker, "ACTIVE_CLI_DEADLINE", 99.0),
-            patch.object(checker.time, "monotonic", return_value=100.0),
+            patch.object(checker.bpmn_live, "ACTIVE_CLI_DEADLINE", 99.0),
+            patch.object(checker.bpmn_live.time, "monotonic", return_value=100.0),
             patch.object(checker.subprocess, "run") as run,
             self.assertRaisesRegex(
                 checker.CheckFailure,
@@ -2055,7 +2054,7 @@ class MainSuccessPathTests(unittest.TestCase):
         """run_cli's capping is inert unless main() assigns the deadline."""
 
         source = Path(checker.__file__).read_text(encoding="utf-8")
-        self.assertIn("ACTIVE_CLI_DEADLINE = cleanup_deadline", source)
+        self.assertIn("bpmn_live.ACTIVE_CLI_DEADLINE = cleanup_deadline", source)
         self.assertIn("cleanup_deadline = (", source)
 
 
