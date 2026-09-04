@@ -10,16 +10,18 @@ user-invocable: true
 
 Send structured bug reports or improvement suggestions to UiPath with auto-captured troubleshooting via `uip feedback send`.
 
-> **Design principle: minimum friction.** The agent already knows what went wrong from the conversation. Don't re-ask what you already know. The only mandatory interaction is confirmation before sending.
+> **Design principle: minimum friction.** The agent already knows what went wrong from the conversation. Don't re-ask what you already know. The only mandatory interaction is confirmation before sending; the sole optional one is a single, always-skippable chance (Step 2h) to state Expected vs. Actual in the user's own words.
 
 ## Critical Rules
 
-1. **Minimum user interaction.** If the conversation already contains enough context (error, what the user was doing, what went wrong), go straight to confirm and send. Only ask clarifying questions when you genuinely cannot determine what happened.
+1. **Minimum user interaction.** If the conversation already contains enough context (error, what the user was doing, what went wrong), make the one optional offer in Step 2h, then go straight to confirm and send. Only ask further clarifying questions when you genuinely cannot determine what happened.
 2. **Never send without explicit user confirmation.** Always show a preview and wait for "yes".
 3. **Never include secrets, tokens, credentials, or customer data.** Sanitize all captured content before sending.
-4. **Never include full conversation history.** Summarize relevant context in 2-3 sentences. Sample prompts (Step 2e) are a curated max-5 selection — not a transcript.
+4. **Never include full conversation history.** Summarize relevant context in 2-3 sentences. Sample prompts (Step 2e) are a relevance-filtered selection, capped at 5 — not a transcript, and not a quota to fill.
 5. **Use `--output json`** on `uip feedback send` to parse the result programmatically.
 6. **If `uip feedback send` fails**, save the report to `./feedback-report.md` so the user does not lose the gathered context.
+7. **Omission beats padding.** `## Sample prompts` and `## Session retrospective` (and any bullet within them) are optional. Leave them out entirely when they'd otherwise be filled with generic, obvious, or off-topic content.
+8. **The Step 2h offer is opt-in, not required.** It always has a zero-typing skip path, and a skipped answer is a complete, valid input — never re-ask it.
 
 ## Workflow
 
@@ -35,7 +37,7 @@ uip --version 2>&1
 | `uip: command not found` | Tell user to install UiPath CLI. Stop. |
 | Other error | Show the error. Stop. |
 
-### Step 2 -- Introspect and capture (silent -- no user interaction)
+### Step 2 -- Introspect and capture (silent by default -- optional/fallback interaction only in 2h/2j)
 
 Gather all context automatically. Run these substeps silently.
 
@@ -100,27 +102,32 @@ If not identifiable, skip this section.
 
 #### 2e. Capture sample prompts
 
-Pick 3-5 user prompts from the conversation that show what the user was trying to do. These give triagers what the retrospective cannot: the user's actual words.
+Pick user prompts that **bear on the issue being reported** — not prompts that merely show what the user was trying to do this session. Those are different things: a session has one intent, but a bug can surface incidentally, unrelated to what the user asked for. An agent-discovered issue (found while doing something else, not something the user raised) often has **zero** relevant prompts. That's the normal case, not a gap to fill.
+
+**Relevance test** — apply to every candidate prompt: *would a triager who reads only this prompt and the `## Error` section learn something they didn't already know?* If no, drop it — even if the prompt is substantive and was clearly part of this session's topic.
 
 Selection rules:
-- Prefer prompts stating intent ("build a flow that…", "I need to…", "help me…") or describing failure ("this is broken", "wrong result").
+- Prefer prompts that describe the failure itself ("this is broken", "wrong result", "why did X happen"), or that state the specific input/configuration that reproduces the issue.
+- A prompt stating general session intent ("build a flow that…", "I need to…") qualifies ONLY if it also supplies information the triager needs — e.g., it names the exact data shape or config that triggers the bug. Intent by itself does not pass the relevance test.
 - Keep wording **verbatim**. Paraphrasing loses signal. Sanitization Rules apply.
 - Skip filler ("ok", "thanks", "try again").
-- If fewer than 3 substantive prompts exist, include what you have. Do not pad.
-- Maximum 5 prompts. Total length under 1000 characters across all prompts. Truncate any single prompt over 200 chars with `... [truncated]`; keep the most informative portion.
-- If no substantive prompts are available, omit the `## Sample prompts` section in Step 3 entirely.
+- **5 is a ceiling, not a target.** One genuinely relevant prompt outranks three topical-but-irrelevant ones. Never pad toward 3-5 to look thorough.
+- Total length under 1000 characters across all prompts. Truncate any single prompt over 200 chars with `... [truncated]`; keep the most informative portion.
+- **If no prompt passes the relevance test, omit the `## Sample prompts` section in Step 3 entirely.** Do not substitute an off-topic-but-substantive prompt just to avoid an empty section.
 
 #### 2f. Session retrospective
 
-Review the full conversation and produce a structured self-assessment. This is the most valuable part of the feedback -- it gives triagers context no manual bug report can provide.
+Review the full conversation for retrospective signal. This section earns its place only when it tells the triager something the `## Error`, `## Environment`, and `## Troubleshooting` sections don't already cover — it is not a mandatory five-part form.
 
-Answer each question concisely (1-3 sentences each). Reference actual tool names, errors, commands, and files from this session.
+Apply the same relevance test as Step 2e to each of the five questions below: *would a triager who has already read the rest of the report learn something new from this bullet?* If the honest answer is generic ("outcome matched what was asked", "no friction observed"), obvious from the title, or a restatement of the Error section, **omit that bullet**. Never write a placeholder ("N/A") to keep the list looking complete.
 
-1. **Intent**: What was the user trying to build/edit/fix? Was the goal clear from the start?
-2. **Outcome**: What was delivered vs. requested? Full / Partial / Failed.
-3. **Tool & Skill Gaps**: Which tools or CLI commands were called but unhelpful? Which should have been called but weren't? Any failures or workarounds?
-4. **Friction**: Where did the agent get stuck, retry, or misunderstand UiPath conventions? How many generate-validate-fix cycles?
-5. **Top 3 Improvements**: What skill/tool changes would have had the biggest impact on this session?
+1. **Intent**: What was the user trying to build/edit/fix? Include only if it isn't already obvious from the title and `## What happened`.
+2. **Outcome**: Full / Partial / Failed, vs. what was requested. Include only if it adds a reason beyond the label itself — a bare "Full, as expected" is not worth a bullet.
+3. **Tool & Skill Gaps**: Specific tools or CLI commands that were called but unhelpful, or that should have existed but didn't. Name them concretely. Omit if nothing concrete was identified.
+4. **Friction**: Where the agent got stuck, retried, or misunderstood a UiPath convention, and how many generate-validate-fix cycles it took. Omit entirely if the issue surfaced cleanly with no retries.
+5. **Top 3 Improvements**: Specific, actionable skill/tool changes, ranked by impact. **"Up to 3" is a ceiling, not a target.** One well-specified improvement beats three vague ones ("improve error messages", "add better docs"). Leave slots unfilled rather than padding with generic advice.
+
+**If fewer than two bullets clear the relevance test, omit the entire `## Session retrospective` section.** A tight two-bullet retrospective is more credible — and more useful to a triager — than five bullets where three are filler.
 
 #### 2g. Auto-detect type and priority
 
@@ -143,11 +150,25 @@ Default to `bug` when ambiguous.
 
 Default to `normal` when ambiguous.
 
-#### 2h. Sanitize everything
+#### 2h. Offer optional Expected/Actual framing
+
+Check whether the conversation already states, in the user's own words, what they expected vs. what actually happened (e.g., "I expected X but got Y", "this should have done A, instead it did B"). If so, use that text directly (sanitized) in `## What happened` at Step 3 — do not ask again.
+
+If it isn't already stated, offer the user one optional chance to add it, via AskUserQuestion, with a `Skip (Recommended)` option on each question that requires no typing:
+- **Expected outcome** — "What did you expect to happen? (optional)"
+- **What actually happened** — "What actually happened, in your own words? (optional)"
+
+Rules:
+- This offer is never mandatory and never blocks the report. If Steps 2a-2g already gave the agent enough to write `## What happened`, sending with both answers skipped is still a complete, valid report.
+- If the user answers one or both, quote their words verbatim (sanitized) in `## What happened` under `**Expected:**` / `**Actual:**` labels — only for the ones they actually answered. Add at most one sentence of agent framing, and only if it supplies something their words don't already cover.
+- If the user skips both, write `## What happened` as an agent-summarized 2-3 sentences, same as if this step didn't exist.
+- A `Skip` answer is a preference not to phrase it themselves, not a sign the agent lacks context — it does not trigger 2j's fallback by itself.
+
+#### 2i. Sanitize everything
 
 Apply all rules from the [Sanitization Rules](#sanitization-rules) section below to every piece of captured content before proceeding.
 
-#### 2i. Only if context is insufficient
+#### 2j. Only if context is insufficient
 
 If the agent genuinely cannot determine what happened (e.g., user typed `/uipath-feedback` with no prior context in the conversation), ask **one** structured question:
 
@@ -158,7 +179,7 @@ If the agent genuinely cannot determine what happened (e.g., user typed `/uipath
 
 Otherwise, skip directly to Step 3.
 
-### Step 3 -- Build and confirm (only user interaction)
+### Step 3 -- Build and confirm (mandatory confirmation)
 
 #### Title format
 
@@ -176,16 +197,16 @@ The CLI derives Jira labels from these leading `[Tag]` segments of the title, so
 
 #### Description body
 
-Build the `--description` content:
+Build the `--description` content. Sections marked *optional* are omitted entirely (header included) when their Step 2 criteria say so — do not leave an empty or placeholder-filled header in their place.
 
 ```
 ## What happened
-{User's problem -- in their own words or summarized from conversation}
+{If Step 2h captured Expected/Actual: **Expected:** {...} / **Actual:** {...} (only the ones answered), sanitized, plus at most one sentence of agent framing if it adds new information. Otherwise: 2-3 sentence agent summary.}
 
 ## Sample prompts
+{Optional -- include only if >=1 prompt passed the Step 2e relevance test.}
 1. "{prompt 1 -- verbatim, sanitized}"
 2. "{prompt 2 -- verbatim, sanitized}"
-3. "{prompt 3 -- verbatim, sanitized}"
 
 ## Error
 {The actual error message or validation output -- if available, otherwise omit this section}
@@ -203,6 +224,7 @@ Build the `--description` content:
 - Last failed command: {command + truncated output}
 
 ## Session retrospective
+{Optional -- include only if >=2 bullets passed the Step 2f relevance test. List only the bullets that passed.}
 - **Intent**: {what the user was trying to do}
 - **Outcome**: {Full | Partial | Failed -- what was delivered vs requested}
 - **Tool & Skill Gaps**: {tools/commands that failed, were missing, or needed workarounds}
@@ -213,25 +235,26 @@ Build the `--description` content:
 #### Formatting rules
 
 1. Use `## ` (two hashes + space) for EVERY section header. NEVER use numbered lists, letters, or bold text as section separators.
-2. Use the EXACT section names from the template above. Do not rename, reword, or add sections.
+2. Use the EXACT section names from the template above for any section you include. Do not rename, reword, or add sections. `## Sample prompts` and `## Session retrospective` are optional per Steps 2e/2f — omit the whole section (header included) when their omission criteria are met. Never include a section populated with placeholder or filler content just to match the template.
 3. Each `## ` header MUST be preceded by a blank line and followed by a blank line.
 4. Use `-` for unordered bullet points.
 5. For numbered items within a section body, use `1.`, `2.`, etc. on their own lines. Do not escape the dots.
 6. Do NOT escape markdown characters. No `\*`, `\#`, `\-`, `\.`. Write `**bold**`, not `\*\*bold\*\*`.
 7. The description MUST be plain markdown. No Jira wiki markup, no HTML, no ADF — the CLI converts this markdown to the tracker's native format (Jira wiki markup) on send, so it renders cleanly.
 8. Do NOT include the user's email in the description body. Pass it only via the `--email` flag.
+9. When Step 2h captured user-authored Expected/Actual text, present it under `## What happened` as `**Expected:** …` / `**Actual:** …` lines, quoted verbatim (sanitized) — do not paraphrase it into the agent's own words.
 
-#### Example of a well-formatted description
+#### Example: session-intent report (Sample prompts and partial retrospective apply)
 
 ```
 ## What happened
-When running `uip maestro flow validate` on a flow with nested loops, the CLI returned a generic "expression error" with no line number or variable name, making it impossible to locate the issue.
+**Expected:** Validation should point at the nested-loop expression that's wrong.
+**Actual:** `uip maestro flow validate` returned a generic "expression error" with no line number or variable name — impossible to locate.
 
 ## Sample prompts
 1. "Build a flow that iterates over invoice line items and flags duplicates."
 2. "Now add a nested loop to compare each item against the prior month's list."
 3. "I keep getting 'currentItem is not defined' — which variable should I use inside the nested loop?"
-4. "Run validate again and just tell me which line is broken."
 
 ## Error
 ExpressionError: Invalid expression at unknown location — currentItem is not defined
@@ -249,12 +272,36 @@ ExpressionError: Invalid expression at unknown location — currentItem is not d
 - Last failed command: uip maestro flow validate MyProcess.flow --output json
 
 ## Session retrospective
-- **Intent**: Build a flow that iterates over invoice line items and flags duplicates
-- **Outcome**: Partial — flow runs but the nested loop variable reference fails at runtime
-- **Tool & Skill Gaps**: (1) uip maestro flow validate gave no location info for expression errors. (2) No way to inspect available variables inside a loop scope.
+- **Tool & Skill Gaps**: uip maestro flow validate gave no location info for expression errors. No way to inspect available variables inside a loop scope.
 - **Friction**: Agent tried 8 generate-validate-fix cycles guessing the correct variable name. The error message never identified which expression failed.
-- **Top 3 Improvements**: (1) Include expression location (line/node) in validation errors. (2) Add a CLI command to list variables in scope at a given point. (3) Document loop variable naming conventions in the Flow skill.
+- **Top 3 Improvements**: (1) Include expression location (line/node) in validation errors. (2) Add a CLI command to list variables in scope at a given point.
 ```
+
+Note what's missing on purpose: `## What happened` quotes the user's own Step 2h answers instead of an agent paraphrase; no `Intent`/`Outcome` retrospective bullets (already covered above); and only 2 of 3 "Improvements" slots filled — a third, vaguer suggestion was dropped rather than included to round out the list.
+
+#### Example: agent-discovered issue (Sample prompts and Session retrospective both omitted)
+
+```
+## What happened
+While building an unrelated Flow, the agent noticed `uip is connections list --output json` returns `authType: null` for OAuth2 connections instead of the expected string enum, which breaks downstream filtering on that field.
+
+## Error
+TypeError: Cannot read properties of null (reading 'toLowerCase') at filterByAuthType (connections.js:42)
+
+## Environment
+- Area: Platform
+- uip version: 0.1.24
+- CLI tools: docsai-tool 0.1.12
+- OS: macOS 14.5
+- Tenant: demo (aro)
+
+## Troubleshooting
+- Project type: N/A -- issue is in `uip is connections list` output, not project files
+- Key files: N/A
+- Last failed command: uip is connections list --output json
+```
+
+Note what's missing on purpose: no `## Sample prompts` — nothing the user said bears on this bug, since the agent found it incidentally. No `## Session retrospective` — there is no friction, tool gap, or improvement here beyond "fix the CLI output," already captured in `## What happened` and `## Error`. The user declined Step 2h (nothing to add in their own words). This is a complete, well-formed report at three sections, not a partial one.
 
 <!--skill-flavor:feedback-description-budget:start-->
 Truncate the full description to 4000 characters max. Note if content was truncated.
@@ -367,11 +414,12 @@ Apply these rules to ALL content before it is included in the description or att
 5. **Never include**: `~/.uipath/.auth`, `.env`, `.git/config`, environment variables containing secrets, full conversation history
 6. **Never include customer data.** Strip customer names, email addresses, and organization-specific identifiers from project files unless they are the tenant/org from `uip login status`
 7. **Sanitize sample prompts.** Apply rules 1-3 and 6 to every captured prompt before including it under `## Sample prompts`. Replace customer names, email addresses, project codenames, account IDs, ticket IDs, internal URLs, and file paths revealing usernames with `<REDACTED>`. If a prompt cannot be sanitized without losing its signal (the prompt is mostly customer-specific data), drop that prompt and pick another from Step 2e. Never quote a prompt verbatim if it contains a secret, even if the user typed it.
+8. **Sanitize Step 2h answers.** Apply rules 1-3 and 6 to the user's Expected/Actual text before quoting it in `## What happened`. If it can't be sanitized without losing its meaning, fall back to the agent's own summary instead of quoting a stripped-down version — don't ask the user to rephrase.
 
 ## What NOT to Do
 
 1. **Do not ask questions you already know the answer to.** If the conversation contains the error, the context, and what the user was doing -- just confirm and send.
-2. **Do not include raw conversation dumps.** `## What happened` is a 2-3 sentence summary. `## Sample prompts` is a curated max-5 selection per Step 2e — not a transcript.
+2. **Do not include raw conversation dumps.** `## What happened` is a 2-3 sentence summary (or the user's own Step 2h answer, quoted). `## Sample prompts` is a relevance-filtered selection per Step 2e — not a transcript.
 3. **Do not send without confirmation.** Always preview first.
 4. **Do not include secrets, credentials, or PII.** When in doubt, redact.
 5. **Do not attach unsanitized files.** Always strip sensitive content before attaching.
@@ -380,3 +428,5 @@ Apply these rules to ALL content before it is included in the description or att
 8. **Do not send duplicate feedback.** If the user already sent feedback for the same issue in this session, confirm they want to send again before proceeding.
 9. **Do not use numbered lists as section headers.** Sections MUST use `## Header` format. Writing `1. What happened  2. Error  3. Environment` produces unreadable Jira issues.
 10. **Do not put the user email in the description body.** Pass it only via the `--email` flag. Including it in the description violates sanitization rule #6.
+11. **Do not pad Sample Prompts or the Session retrospective to hit a quota.** "3-5 prompts" and "5 retrospective questions" describe ceilings, not targets. Omitting a section, or a bullet within one, is the expected and normal outcome when nothing relevant clears the bar in Step 2e/2f — not a gap to patch with topical-but-irrelevant or generic filler. A report that's shorter because a section had nothing to say is a *better* report, not an incomplete one.
+12. **Do not treat Step 2h as mandatory or re-ask it if declined.** It exists so the user can phrase Expected/Actual in their own words when they want to — a skipped answer is a complete, valid input, not a stalled report.
