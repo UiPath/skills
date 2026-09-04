@@ -10,7 +10,9 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
+<!--skill-flavor:solution-commands-row:start-->
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+<!--skill-flavor:solution-commands-row:end-->
 | `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.json.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
 | `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory read (`list`) + atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
@@ -19,6 +21,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 ---
 
+<!--skill-flavor:solution-init-section:start-->
 ## uip solution init
 
 Create a new solution directory + `.uipx` file.
@@ -32,6 +35,7 @@ uip solution init <SolutionName>
 | `<SolutionName>` | **(required)** Solution name |
 
 Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's § Scaffold writes the project files separately.
+<!--skill-flavor:solution-init-section:end-->
 
 ---
 
@@ -39,17 +43,23 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
 
+<!--skill-flavor:case-init-command:start-->
 ```bash
 cd <SolutionDir> && uip maestro case init <ProjectName>
 ```
+<!--skill-flavor:case-init-command:end-->
 
 | Flag | Description |
 |------|-------------|
 | `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
 
+<!--skill-flavor:cd-mandatory-note:start-->
 > **The `cd <SolutionDir>` is mandatory; `&&`-chaining after `uip solution init` does NOT satisfy it.** `solution init` makes `<SolutionDir>` a *child* of cwd, so `uip solution init X && uip maestro case init X` still runs `case init` outside the new solution — with the auto-scaffold consequences described below.
+<!--skill-flavor:cd-mandatory-note:end-->
 
+<!--skill-flavor:case-init-semantics:start-->
 `case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution projects add` step — see `implementation.md` § Step 6.
+<!--skill-flavor:case-init-semantics:end-->
 
 ---
 
@@ -57,8 +67,10 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
+<!--skill-flavor:projects-add-scenarios:start-->
 1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
 2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
+<!--skill-flavor:projects-add-scenarios:end-->
 
 ```bash
 uip solution projects add <ProjectName> <SolutionName>.uipx

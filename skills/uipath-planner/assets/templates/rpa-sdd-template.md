@@ -869,6 +869,7 @@ Implementation tasks **do not live in this SDD** — they live in the planner's 
 
 The build is not finished when the project folder compiles — a bare `MyProject/` folder is not the deliverable. The terminal artefact follows the **Packaging** column of §11 Project Mode Decision:
 
+<!--skill-flavor:packaging-solution:start-->
 **Packaging = Solution (`.uipx`)** — required for multi-project (Master Project) builds and cross-product compositions. After the implementation specialist reports its tasks complete, load the **`uipath-solution`** skill and run:
 
 ```bash
@@ -877,6 +878,7 @@ uip solution projects add <PROJECT_PATH> [--solution-file <SOLUTION_FILE>]    # 
 uip solution resources refresh
 uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
 ```
+<!--skill-flavor:packaging-solution:end-->
 
 The `.uipx` promotes via `uip solution publish` / `uip solution deploy run`. Full lifecycle: `uipath-solution` skill.
 

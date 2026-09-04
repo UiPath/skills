@@ -15,6 +15,7 @@ on:
       - 'scripts/select-skill-package.mjs'
       - 'tests/scripts/compose-skill-flavor.test.mjs'
       - 'tests/scripts/manage-skill-flavors-skill.test.mjs'
+      - 'tests/scripts/studioweb-flavor-contract.test.mjs'
       - '.claude/skills/manage-skill-flavors/**'
       - '.cursor/rules/skill-structure.mdc'
       - '.gitignore'

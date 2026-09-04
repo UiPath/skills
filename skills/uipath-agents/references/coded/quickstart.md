@@ -189,12 +189,15 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
      | # | Label (≤5 words) | Description |
      |---|---|---|
      | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
+<!--skill-flavor:delivery-option-b-row:start-->
      | B | Studio Web — I package & upload | I run `uip solution init`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
+<!--skill-flavor:delivery-option-b-row:end-->
      | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
      | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
 
      On reply:
      - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
+<!--skill-flavor:delivery-option-b:start-->
      - **B** → run the local-solution flow. `uip solution init "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
 
        ```bash
@@ -205,6 +208,7 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
        ```
+<!--skill-flavor:delivery-option-b:end-->
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 

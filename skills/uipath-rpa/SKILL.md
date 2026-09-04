@@ -175,7 +175,9 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 
 ### Destination Preflight (Both Modes)
 
+<!--skill-flavor:studio-web-destination:start-->
 **Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution init <NAME>` → `uip solution projects import "<PROJECT_DIR>" --solutionFile <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and the Orchestrator package flow (`uip rpa pack` → `uip or packages upload` — there is no `uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
+<!--skill-flavor:studio-web-destination:end-->
 
 ### Execution Discipline (Both Modes)
 

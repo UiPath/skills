@@ -37,3 +37,7 @@ non-answer from it says nothing about where you can publish. Use the bare
 <!--skill-flavor:publish-feed-scope-row:start-->
 | `uip solution publish --location` | Which destination the package is published to. Studio Web intercepts publish, so `--feed` does not apply to it |
 <!--skill-flavor:publish-feed-scope-row:end-->
+
+<!--skill-flavor:upload-tabs:start-->
+`upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. A locally authored solution pushed with `upload` becomes a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
+<!--skill-flavor:upload-tabs:end-->
