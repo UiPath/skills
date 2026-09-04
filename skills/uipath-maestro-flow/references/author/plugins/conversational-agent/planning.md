@@ -18,7 +18,7 @@ The trigger and message nodes are identical whichever you pick. Only the agent n
 
 | Flavor | Node type | Where the agent lives | Choose it when |
 | --- | --- | --- | --- |
-| **Inline** | `uipath.agent.conversational` | A UUID subdirectory inside this flow project | The agent exists only to serve this chat, or you need [structured outputs](impl.md#structured-outputs) to route on — only inline has them. You scaffold it with `agent init --inline-in-flow`. |
+| **Inline** | `uipath.agent.conversational` | A UUID subdirectory inside this flow project | The agent exists only to serve this chat, or you need [structured outputs](impl.md#structured-outputs) to route on — only inline has them. You scaffold it with `agent init --inline-in-flow --conversational`. |
 | **In-solution** | `uipath.core.agent.<projectId>` | A sibling project in the same solution | The agent is its own project, versioned separately, maybe reused by other flows in the solution. Discover it with `registry list --local`. |
 | **Published** | `uipath.core.agent.<guid>` | The tenant, already published | The user names an existing agent, or one is already deployed. Discover it with `registry search`. Nothing to scaffold. |
 
