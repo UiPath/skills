@@ -65,6 +65,8 @@ For action nodes, the instance `outputs` block is documentation, not the runtime
 
 **Exceptions:** Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function) have their instance `outputs` read by the converter, which copies each `source` verbatim. A wrong `source` (for example, `=result.response`) breaks `$vars.{nodeId}.output`; declare `error` only there. End / terminate nodes also have their instance `outputs` consumed to map workflow-level `out` variables.
 
+**Data Fabric entity nodes (`core.datafabric.*`) carry no instance `outputs` block at all** — the canvas writes none, so author `inputs` only and let `flow format` regenerate `variables.nodes[]`. They are also the one action-node family with **no `error` port**: none declares `supportsErrorHandling`, so the skeleton's `outputs.error` and the implicit error port in [Standard ports](#standard-ports) do not apply to them. See [data-fabric/impl.md](../author/plugins/data-fabric/impl.md#no-error-port).
+
 `uip maestro flow format` regenerates `variables.nodes[]` from the current node graph, so running format after structural edits self-heals an omitted entry.
 
 ## Standard ports
@@ -73,7 +75,7 @@ For action nodes, the instance `outputs` block is documentation, not the runtime
 | --- | --- | --- |
 | Input (target) | `input` | Every action node accepts one input edge on `input`. |
 | Output (success, source) | `output`, `default`, or `success` | The name varies by plugin; `registry get` is authoritative. |
-| Output (error, source) | `error` | Implicit on every action node via `outputs.error`. |
+| Output (error, source) | `error` | Implicit on action nodes that declare `supportsErrorHandling`, via `outputs.error`. The `core.datafabric.*` family does not — it has no `error` port. |
 
 Plugins may add dynamic source ports, such as HTTP `branch-{id}` from `inputs.branches`; document these in the plugin's `impl.md`.
 

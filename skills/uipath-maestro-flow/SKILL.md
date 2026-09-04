@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build/edit requests, and adding or listing IXP model/document-extraction nodes for a Flow. Build, edit, run, debug, fix, evaluate a Maestro Flow (.flow): create/connect nodes (connector, approval, script, subflow, ixp), triggers, schedules, validate; upload, publish, manage runs/instances; diagnose errors, incidents, traces; design eval sets, evaluators, run Studio Web evals. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
+description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build/edit requests, and adding or listing IXP model/document-extraction nodes for a Flow. Build, edit, run, debug, fix, evaluate a Maestro Flow (.flow): create/connect nodes (connector, approval, script, subflow, ixp, data fabric entity), triggers, schedules, validate; upload, publish, manage runs/instances; diagnose errors, incidents, traces; design eval sets, evaluators, run Studio Web evals. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -25,7 +25,7 @@ Guide for creating, editing, validating, debugging, publishing, diagnosing, and 
 
 ## Capabilities
 
-- **Author** — Build and edit `.flow` files; add nodes, edges, variables, subflows, transforms, and triggers; explore the registry; validate and format locally; apply node ownership; configure connectors, triggers, managed HTTP, inline-agent scaffolding, IxP/document-extraction nodes, and IxP models; plan complex flows first. Read [references/author/CAPABILITY.md](references/author/CAPABILITY.md).
+- **Author** — Build and edit `.flow` files; add nodes, edges, variables, subflows, transforms, and triggers; explore the registry; validate and format locally; apply node ownership; configure connectors, triggers, managed HTTP, inline-agent scaffolding, IxP/document-extraction nodes, IxP models, and Data Fabric entity nodes; plan complex flows first. Read [references/author/CAPABILITY.md](references/author/CAPABILITY.md).
 <!--skill-flavor:project-creation-scope:start-->
   - Create projects with `uip maestro flow init`.
 <!--skill-flavor:project-creation-scope:end-->

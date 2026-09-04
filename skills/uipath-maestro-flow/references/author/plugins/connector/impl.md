@@ -262,6 +262,8 @@ Illustrative supported activities (confirm against `registry get` for the specif
 | `uipath-sap-s4hanacloud` | `Entity` | Create Entity | POST | method |
 | `uipath-google-bigquery` | `projects::table` | List All Records | GET | method |
 
+> **Data Fabric also has native nodes — check whether they exist before choosing.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so they are the lighter path **when the tenant has them**. Their flags default to off, so confirm with `uip maestro flow registry get core.datafabric.read` first. If that answers "Node not found" — or search reports `AvailableOnTenant: false` — these `uipath-uipath-dataservice` activities are the correct path; stay here. Stay here too when the entity is federated, since the native writes require a native entity.
+
 Run Step 3a and use the matched action's `name` and `apiConfiguration.{url,body}` tokens. Match `source: field` or `source: method` according to metadata; for operation-scoped lookup use the node definition's `model.context[].method`.
 
 Encode tokens longest-first: `:::` → `_sub_`; `[*]` → `_array`; `::` → `_sub_`; `.` → `_sub_`. Examples: `fields.project.key` → `fields_sub_project_sub_key`; `items[*]` → `items_array`; `tenantEntityName` → `tenantEntityName` (unchanged). Use camelCase keys and include every token from `apiConfiguration.url` and `body`:
