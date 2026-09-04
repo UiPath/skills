@@ -373,9 +373,9 @@ Authoring terminates here. Each option below hands off to Operate — read [oper
 
 | Option | What it does |
 | --- | --- |
-| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
-| **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first — debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
+| **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
+| **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
-Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any of these actions without explicit user selection. Once the option is settled, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
