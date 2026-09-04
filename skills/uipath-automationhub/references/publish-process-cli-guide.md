@@ -12,7 +12,7 @@ uip ah idea-flows list --output json
 
 - `Result: Success` → keep `Data` (flow names + ids) and tell the user "Connected to Automation Hub."
 - Auth failure → tell the user to run `uip login` (or, in Delegate, to sign in). Never ask for a raw token.
-- `Failure` mentioning the tenant/enablement → AH is not enabled on this tenant; stop.
+- `Failure` mentioning the tenant/enablement → AH is not available on this tenant. Report the matching message from [`cli-commands.md`](cli-commands.md) (**Automation Hub not available on this tenant**) — for the not-enabled case: *"Please contact your administrator to enable Automation Hub on this tenant."* — then **stop**; nothing later in this flow can succeed.
 
 ## Step 2: Pick the idea flow
 

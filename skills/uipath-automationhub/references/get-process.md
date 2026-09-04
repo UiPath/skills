@@ -21,7 +21,7 @@ curl -s -w "\n%{http_code}" -H "Authorization: Bearer $ACCESS_TOKEN" \
   "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID"
 ```
 - **200** → keep the record; project to the useful fields for display (name, status/phase, category, owner, description). The raw record is large — don't dump it all unless asked.
-- **401** → re-authenticate. **403** → the user can't view this process. **404** → no such process.
+- **401** → re-authenticate. **403** → the user can't view this process. **404** → no such process — *unless* the body says `not found in organization` (or the call 3xx-redirects to `portal_/unregistered`, or answers **422 tenant lookup**), which means AH itself is not available on this tenant: report the matching message from [`api-endpoints.md`](api-endpoints.md) (**Automation Hub not available on this tenant**) and stop.
 
 ## Step 3: Fetch the documents
 
