@@ -209,6 +209,27 @@ jobs:
             echo "::error::Glob matches $TOTAL tasks (> 50). Tick confirm_large_run to authorize."
             exit 1
           fi
+          # The flow suite's prompts carry no autonomy language; experiments/flow.yaml
+          # supplies it in the system prompt. Running flow tasks under any other config
+          # silently drops it, and running the simulated tasks under flow.yaml tells a
+          # task that HAS a user that nobody is present. Catch both here rather than
+          # discover them in the results. Word-split, not "${ARR[@]}": the arrays are
+          # empty on one platform and that is an unbound-variable error under `set -u`.
+          FLOW_N=0; SIM_N=0
+          for f in ${LINUX[*]:-} ${WINDOWS[*]:-}; do
+            case "$f" in
+              *tasks/uipath-maestro-flow/interactive/*) SIM_N=$((SIM_N + 1)) ;;
+              *tasks/uipath-maestro-flow/*)             FLOW_N=$((FLOW_N + 1)) ;;
+            esac
+          done
+          if [ "$FLOW_N" -gt 0 ] && [ "$EXPERIMENT_YAML" != "experiments/flow.yaml" ]; then
+            echo "::error::$FLOW_N flow task(s) selected under '$EXPERIMENT_YAML'. Flow task prompts carry no autonomy language; experiments/flow.yaml supplies it. Set the experiment input, and dispatch flow separately from other skills."
+            exit 1
+          fi
+          if [ "$SIM_N" -gt 0 ] && [ "$EXPERIMENT_YAML" = "experiments/flow.yaml" ]; then
+            echo "::error::$SIM_N task(s) under uipath-maestro-flow/interactive/ have a simulated user and must not run under experiments/flow.yaml, which states no user is present. Exclude that directory from the glob."
+            exit 1
+          fi
           # Space-separated; downstream jobs word-split on consumption.
           echo "linux_globs=${LINUX[*]:-}"     >> "$GITHUB_OUTPUT"
           echo "windows_globs=${WINDOWS[*]:-}" >> "$GITHUB_OUTPUT"

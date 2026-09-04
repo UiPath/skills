@@ -53,7 +53,8 @@ def _substantive(path: str) -> list[str]:
 
 
 def test_flow_config_carries_every_nightly_setting():
-    missing = [ln for ln in _substantive(_NIGHTLY) if ln not in _substantive(_FLOW)]
+    flow = set(_substantive(_FLOW))
+    missing = [ln for ln in _substantive(_NIGHTLY) if ln not in flow]
     assert not missing, (
         "experiments/flow.yaml has drifted from nightly.yaml. Copy these lines over "
         "(flow.yaml is a snapshot of nightly's runtime plus a headless system prompt):\n  "
