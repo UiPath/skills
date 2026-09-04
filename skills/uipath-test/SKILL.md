@@ -107,12 +107,12 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testsets update --test-set-key <TEST_SET_KEY> --name <TEST_SET_NAME>` | Update a test set name or description. |
 | `uip tm testsets delete --test-set-key <TEST_SET_KEY>` | Delete a test set by its key. |
 | `uip tm testsets list-testcases --project-key <PROJECT_KEY> --test-set-key <TEST_SET_KEY>` | List test cases assigned to a test set. |
-| `uip tm testsets run --test-set-key <TEST_SET_KEY>` | Run a test set and return the execution ID. Optional `--execution-type <automated\|manual\|mixed\|none>` (default `automated`), `--input-path <FILE>` for parameter overrides. For Playwright test sets, optional `--playwright-projects <names...>` — see the note below. |
+| `uip tm testsets run --test-set-key <TEST_SET_KEY>` | Run a test set and return the execution ID. Optional `--execution-type <automated\|manual\|mixed\|none>` (default `automated`), `--input-path <FILE>` for parameter overrides. For Playwright test sets, optional `--playwright-project <name>` — see the note below. |
 | `uip tm testsets playwright-context --test-set-key <TEST_SET_KEY>` | Probe whether a test set is a Playwright test set: returns `IsPlaywright` plus the available and selected Playwright project names. |
 
 > Keys use the format `PROJECT_KEY:NUMBER` (e.g., `INV:42`). To add or remove test cases in a test set, use `uip tm testcases add` / `uip tm testcases remove` — those verbs live under the `testcases` group, not under `testsets`.
 
-> **Playwright test sets:** `--playwright-projects <names...>` (space-separated, case-sensitive `playwright.config` project names) runs only the selected projects and persists the selection on the test set. It requires every test case in the set to come from one Playwright package; unknown names fail fast listing the valid ones. Probe first with `playwright-context` and branch on `IsPlaywright`. Both need a Test Manager with Playwright support and a CLI carrying the external-package commands — [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md) opens with the check to run and what to do when they are absent.
+> **Playwright test sets:** `--playwright-project <name>` (a single case-sensitive `playwright.config` project name) runs only that project and persists the selection on the test set — only one project may be selected per automated execution. It requires every test case in the set to come from one Playwright package; an unknown name fails fast listing the valid ones. Probe first with `playwright-context` and branch on `IsPlaywright`. Both need a Test Manager with Playwright support and a CLI carrying the external-package commands — [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md) opens with the check to run and what to do when they are absent.
 
 ### Executions Commands
 
