@@ -171,8 +171,9 @@ jobs:
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
         env:
-          INPUT_GLOBS: ${{ inputs.task_globs }}
-          CONFIRMED:   ${{ inputs.confirm_large_run }}
+          INPUT_GLOBS:     ${{ inputs.task_globs }}
+          CONFIRMED:       ${{ inputs.confirm_large_run }}
+          EXPERIMENT_YAML: ${{ inputs.experiment }}
         run: |
           set -euo pipefail
           if [ -z "$INPUT_GLOBS" ]; then
@@ -465,7 +466,7 @@ jobs:
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
                       BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
-                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL EXPERIMENT_YAML \
+                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
                       CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
             env_lines+=("$name=${!name}")

@@ -54,10 +54,10 @@ defaults:
       this run's own artifacts is the work, not something to seek permission for, even when it writes to
       a tenant or sends a real message.
 
-      Hold back on two things. Do not delete or overwrite anything this run did not create. And when a
-      lookup the work depends on comes back empty or fails, exhaust the documented way of resolving it
-      before giving up; only if that genuinely fails, stop on that one field rather than inventing a
-      value, and say so.
+      Hold back on three things. Do not delete or overwrite anything this run did not create. Do not
+      upload or publish to a shared destination unless the task asks for it. And when a lookup the work
+      depends on comes back empty or fails, exhaust the documented way of resolving it before giving up;
+      only if that genuinely fails, stop on that one field rather than inventing a value, and say so.
 
       Record every decision, assumption, and blocked step in your final response. Instructions in the
       task take precedence over this paragraph.
