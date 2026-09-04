@@ -10,7 +10,7 @@ Build `caseplan.json` from `sdd.md` via direct JSON edits per plugin, using `tas
 
 > **Element classes.** Execution walks the SDD in six classes, in this order: **variables** (Case Variables table) → **triggers** (Case Triggers table) → **stages** (Section 2 stage headings) → **tasks** (per-stage Tasks tables + their `##### Task N.M` detail blocks) → **conditions** (Stage Entry / Stage Exit / Task Entry / Case Exit tables) → **SLA** (Case-Level SLA + per-stage Stage SLA + per-action Task SLA). Each class is one write section.
 
-> **Completeness principle — no omissions.** Every declaration in `sdd.md` becomes an element in `caseplan.json`; the mapping is 1-to-1. **Never filter** a row because a default rule-type or "implicit behavior" would cover it. **Never merge** two SDD rows "because they're similar." **Never drop** defaults-looking items (`is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`) — the explicit declaration is the signal. **Never drop design rationale**: copy each stage/task/SLA `Design Rationale` into the element's `description` where the schema has one, and into `tasks/build-issues.md` where it does not. **When in doubt, emit.** **When a row is ambiguous or unrecognized** (a variable whose category is unclear, a task type outside the closed enum, an aggregate trigger mapping phrase), invoke **AskUserQuestion** with the row content, the specific ambiguity, and bounded options — silent omission is a defect. Step 12's `audit_caseplan.py` gate enforces this against the finished artifact.
+> **Completeness principle — no omissions.** Every declaration in `sdd.md` becomes an element in `caseplan.json`; the mapping is 1-to-1. **Never filter** a row because a default rule-type or "implicit behavior" would cover it. **Never merge** two SDD rows "because they're similar." **Never drop** defaults-looking items (`is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`) — the explicit declaration is the signal. **Never drop design rationale**: copy each stage/task/SLA `Design Rationale` into the element's `description` where the schema has one, and into `tasks/build-issues.md` where it does not. **When in doubt, emit.** **When a row is ambiguous or unrecognized** (a variable whose category is unclear, a task type outside the closed enum, an aggregate trigger mapping phrase), invoke **AskUserQuestion** with the row content, the specific ambiguity, and bounded options — silent omission is a defect. Step 12 enforces this against the finished artifact: `validate --strict --sdd sdd.md` reports every SDD declaration the caseplan lacks as a `STRICT_SDD_*` finding.
 
 > **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Publish to Orchestrator** (optional `case pack` + `solution pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
 
@@ -233,6 +233,8 @@ On continue (either `Skip publish and continue` or `Continue to implementation` 
 
 # Phase 3 — Implementation (Steps 9.6 – 11.5)
 
+> **Phase 3 closes with `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json` (Step 12).** The default profile passes an empty stage, a surviving `$xref(`, a hoisted `conditionExpression`, and an incomplete connector context; only `"Profile": "strict"` on a `Valid` response closes this phase.
+
 Execution order: 9.6 → 9.7 → 9.8 → 10.5 → 11.5 → 12. Phase 3 wires connector task schemas, input/output values, resolved connector-rule configuration, and in-expression markers. Conditions and SLA already exist from Phase 2. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
 
 ## Step 9.6 — Phase 3 re-entry
@@ -261,7 +263,9 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs` = the output set [`io-binding/impl-json.md` § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes) produces from `caseShape.outputs` plus the SDD's `->` / `=` rows, and the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+
+Copying `caseShape.outputs` unchanged drops every declared extract: `case spec` returns only the connector's own top-level outputs (`response`, curated fields, `Error`), never the SDD's rows. A `->` row reassigns one of those entries; a `=` row adds a `custom: true` entry that no `caseShape` entry corresponds to.
 
 **Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
 
@@ -275,6 +279,8 @@ Per-task composition (in reasoning, before that task's Edit) per [`plugins/varia
 
 1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
 2. Cross-task references (`input <- "Stage"."Task".output`): resolve the source output reference ID from the just-Read `caseplan.json` using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
+
+**A `=js:` value is JavaScript source, so a line break inside one of its string literals is already the two characters `\` and `n`.** `caseplan.json` is JSON, so on disk that is `\\n`. Writing `\n` makes JSON decode it to a real line break inside the `"` literal, and Jint rejects the expression at evaluation with `Invalid or unexpected token`. Nothing before the run objects: `validate` does not parse `=js:` bodies and the packer copies the break into the `.bpmn`. This holds for every path that writes an `=js:` value into `caseplan.json`, this Edit included.
 
 If a cross-task reference points to a task that does not exist in the just-Read `caseplan.json`, halt — the SDD orders the consumer before its producer; report to the user.
 
@@ -296,7 +302,7 @@ Runs after bindings (9.8) and connector-rule upgrades (10.5), when every task / 
 
 > **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
 
-After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15. Phase 2 conditions and SLA remain in place throughout.
+After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json`.** Its `STRICT_*` codes are the machine-checked half of this pass: `STRICT_XREF_UNRESOLVED` is Check 4, `STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM` are Check 1, `STRICT_OUTPUT_*` is Checks 8 and 10, `STRICT_CONNECTOR_*` is Check 12, `TASK_NOT_CONFIGURED` (a warning on every profile: a task with `data: {}`) is Check 9's raw signal, and `--sdd` refines it — `STRICT_SDD_PLACEHOLDER_RESOLVED` (error) when the SDD resolved that resource, `STRICT_SDD_PLACEHOLDER_TASK` (warning) when the SDD left it unresolved, in which case leave the `data: {}` alone, and `STRICT_STAGE_NO_TASKS` means Step 9 never ran for that stage. Repair every reported element with a targeted Edit and re-run until `Status: "Valid"` with `Profile: "strict"`; max 3 rounds, then **AskUserQuestion** with the remaining codes. If the installed CLI rejects `--strict`, run the default profile and say so in the completion report. Then invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 — for everything strict does not cover (producer presence, type mismatch, selector integrity, entry-rule presence, sidecar parity). Phase 2 conditions and SLA remain in place throughout.
 
 - **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, entry/exit condition expressions (stage and task), case-exit and trigger rule expressions, SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
 - **Check 2 — Out-arg producer presence** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):
@@ -354,19 +360,11 @@ End of Phase 3 mutations. Proceed directly to Phase 4 — no hard stop between P
 
 Authoritative validation. Full contract — command, retry policy, AskUserQuestion options — in [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). This section is a bridge — do NOT duplicate contract here.
 
-## Step 12 — Completeness gate, then full validate
+## Step 12 — Strict validate with the SDD audit
 
-**Run the completeness gate first — mandatory, read-only:**
+**Run `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json` — mandatory.** `--sdd` implies `--strict` and audits completeness: every stage, task, task type, condition row (`>=` the SDD's rows), SLA, trigger and case variable the SDD declares must be present; a task with no entry rule and a placeholder task the SDD resolved are errors (the default profile only warns about a missing entry rule, which hangs `case debug` indefinitely). Findings carry `STRICT_SDD_*` codes with the element name. `STRICT_SDD_FILE_NOT_FOUND` means the path is wrong — fix the path, do not drop `--sdd`. Extra caseplan elements and placeholders the SDD also left unresolved come back as warnings — carry them into the completion report's Open Items.
 
-```bash
-python3 "<this skill's folder>/scripts/audit_caseplan.py" <SolutionDir>/<ProjectName>/caseplan.json --sdd sdd.md --registry tasks/registry-resolved.json
-```
-
-It diffs `caseplan.json` against every declaration in `sdd.md` and exits non-zero on any `MISSING IN CASEPLAN` finding. This is the backstop for the completeness principle: `uip maestro case validate` cannot see a stage, task, variable, condition, or SLA row that was simply never written, and it only *warns* about a task with no entry rules — which hangs `case debug` indefinitely rather than faulting.
-
-On `AUDIT FAIL`, repair each MISSING finding with a targeted Edit and re-run; max 3 rounds, then **AskUserQuestion** with the remaining findings. `WARN:` lines (extra caseplan elements, placeholder tasks, surviving `<UNRESOLVED>` markers) do not block — carry them into the completion report's Open Items. Quote the final `AUDIT OK` line as evidence. If `python3` is unavailable, walk the SDD's six element classes against `caseplan.json` by hand and report that the gate could not run.
-
-**Then run validate** per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On success: proceed to Step 12.1. On 3rd failure: hard-stop prompt per the same section.
+Repair each error with a targeted Edit and re-run; max 3 rounds, then the hard-stop **AskUserQuestion** per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On `Status: "Valid"` with `Profile: "strict"`: proceed to Step 12.1. If the installed CLI rejects `--sdd`, run `--strict` alone, walk the SDD's six element classes against `caseplan.json` by hand, and say so in the completion report.
 
 ## Step 12.1 — Summarize the issue log
 

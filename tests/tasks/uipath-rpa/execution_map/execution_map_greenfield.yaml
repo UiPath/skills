@@ -7,7 +7,7 @@ description: >
   a hard 10-turn cap. Comparable pre-map task (skill-rpa-xaml-test-case)
   budgets 36-40 turns; this task fails if the skill regresses to per-activity
   discovery or validate-after-every-activity loops.
-tags: [uipath-rpa, windows, smoke, mode:build, lifecycle:generate]
+tags: [uipath-rpa, smoke, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 6
@@ -70,6 +70,7 @@ success_criteria:
   - type: run_command
     description: "Project actually compiles — independent build re-run exits 0 (primary validation; a garbage workflow that merely contains the expected strings fails here)"
     command: "uip rpa build TextReport --output json"
+    timeout: 120
     weight: 3.0
     pass_threshold: 1.0
 

@@ -134,6 +134,8 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 > **Zero matches on a user-supplied value** — if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching a value the user provided, do NOT configure the node with it silently. Ask the user, presenting the closest candidates as options plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../SKILL.md)). Proceed with the unverified value only if the user confirms it.
 
+> **The lookup call itself failed** — a 403/401 on an expired or revoked grant, or a 5xx, means you have no ID and no candidate list to offer. Do NOT configure the node with the display name, a vendor well-known alias, or an ID from memory; each passes `flow validate` and faults at runtime. Stop and report the failed resolve, naming the connection and the vendor error. See [reference-resolution.md — When the Lookup Call Fails](../../../../../uipath-platform/references/integration-service/reference-resolution.md#when-the-lookup-call-fails-critical).
+
 > **Filter server-side before paginating.** If the field's `reference` carries a `filterPattern` (e.g. Teams `userId`: `"$filter=startswith(userPrincipalName,'{filter}')"`), substitute the search term for `{filter}` and pass the result as `--query` — one targeted call instead of walking a large directory. `filterPattern` appears only in `is resources describe` output; the flow `registry get` reference object strips it (keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`), so read it from the Step 3 describe metadata. Guessed params (`searchTerm=`/`where=`/`filter=`) are silently ignored. See [reference-resolution.md — Search References (filterPattern)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern).
 
 > **Paginate only when there is no `filterPattern`.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../uipath-platform/references/integration-service/resources.md#pagination).
@@ -169,30 +171,47 @@ Omitting `bodyParameters`, `queryParameters`, or `pathParameters` removes prior 
 
 #### Step 6a — FilterBuilder parameters
 
-Scan every operation's `parameters[]` for `design.component === "FilterBuilder"`; this is not limited to list operations. Use the actual parameter `name` (`where`, `q`, or another connector-specific name).
+A filter is authored as a tree under the `filter` key of `--detail`. The CLI compiles the tree; you never write the query text. Five steps:
 
-Pass a structured tree under `--detail.filter`. The CLI writes runtime `queryParameters.<name>` and design-time `configuration.essentialConfiguration.savedFilterTrees.<name>`. Never pass a raw CEQL string under `queryParameters.<name>`; the CLI rejects it or leaves Studio Web's tree undefined.
+1. **Find the filter parameter and the path slots** — read them from the registry, never guess:
 
-Dynamic operands may use `{ "value": {"value": "=js:$vars...", "isLiteral": false} }`.
+   ```bash
+   uip maestro flow registry get <node-type> --output json \
+     --output-filter "Node.{filterParams:connectorMethodInfo.parameters[?design.component=='FilterBuilder'].name,path:connectorMethodInfo.path,pathParams:connectorMethodInfo.parameters[?type=='path'].name}"
+   ```
 
-For dynamic-entity connectors, set the entity in the same configure call, such as `pathParameters.entityName`. Read exact, case-sensitive field names from `uip df entities list --output json` and `uip df entities get <entity-id> --output json`; unmatched leaves are silently dropped.
+   Data Service `query-entity-records` returns `filterParams: ["queryExpression"]`, `path: "/v2/{entityName}/qer"`, `pathParams: ["entityName"]`. FilterBuilder parameters are not limited to list operations. If `filterParams` is empty, pass no `filter` and filter downstream.
 
-If no FilterBuilder parameter exists, pass no `filter` and filter downstream.
+2. **Read exact field names** — `uip df entities list --output json`, then `uip df entities get <ENTITY_ID> --output json`. Names are case-sensitive; a leaf whose `id` matches no field is dropped without an error.
 
-##### Hand-authored CEQL strings
+3. **Write the `--detail` JSON to a file** with a quoted heredoc. The value of `filter` IS the tree — `groupOperator`, `filters[]`, `groups[]` at its top level. Do not nest it under the parameter name; the CLI applies the tree to the FilterBuilder parameter it found in step 1 (the first one, if there are several). A runtime value is a leaf operand with `"isLiteral": false`:
 
-Prefer, in order:
+   ```json
+   {
+     "connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>",
+     "pathParameters": { "entityName": "<ENTITY_NAME>" },
+     "filter": {
+       "groupOperator": 0,
+       "filters": [
+         { "id": "accountNumber", "operator": "Equals",
+           "value": { "value": "=js:$vars.<node>.output.<field>", "isLiteral": false } }
+       ],
+       "groups": []
+     }
+   }
+   ```
 
-1. `node configure --detail.filter` with a structured tree.
-2. A hand-authored `=js:` string only when a runtime value requires it, using bare field names, single-quoted values, and no OData aliases. Map `eq`→`=`, `ne`→`!=`, `gt`→`>`, `ge`→`>=`, `lt`→`<`, and `le`→`<=`. See [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+   Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
-Canonical template for a dynamic value:
+4. **Configure** — `uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat /tmp/detail.json)" --output json` (Step 6b).
 
-```text
-=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
-```
+5. **Verify the compile** — read the node back. `queryParameters.<name>` must hold the compiled query with a placeholder, `accountNumber = '{var_<hash>}'`, and `filterVariables` must have that `var_<hash>` key. The CLI also writes `configuration.essentialConfiguration.savedFilterTrees.<name>`. An **empty** `queryParameters.<name>` means the tree was mis-shaped (step 3): the CLI found no `filters` at the top level and compiled an empty query with no error, so the flow would fetch the whole entity.
 
-Single quotes delimit a value; double quotes mark a column reference. The whole value must start with `=js:` and wrap the interpolation — a plain string containing `${…}` is never resolved and silently matches nothing.
+Never:
+
+- pass a CEQL string under `queryParameters.<name>` — the CLI rejects it or leaves Studio Web's tree undefined;
+- write the query as a whole-value `=js:` string — `flow validate` cannot read it (it reads only a plain concatenation) and the CLI warns on it; replace any you find with a tree;
+- hand-type `endpoint` or `pathParameters` names — take them from step 1.
 
 #### Step 6b — Run configure
 
@@ -403,12 +422,10 @@ Never hardcode connection IDs; fetch them from IS at authoring time. Connector-t
 - **Missing method/path:** rerun `registry get` with `--connection-id` or use describe for generic activities.
 - **Malformed or stale `bindings_v2.json`:** never edit it; rerun `node configure` and debug/pack.
 - **Connector key not found:** run `uip is connectors list --output json`; keys are often prefixed with `uipath-`.
-- **FilterBuilder UI is `undefined`:** configure a structured `--detail.filter`, not a raw `queryParameters` string.
-- **FilterBuilder configure rejection:** move the value into `--detail.filter` as a structured tree.
+- **FilterBuilder UI is `undefined`:** configure a structured tree under the `filter` key of `--detail`, not a raw `queryParameters` string.
+- **FilterBuilder configure rejection:** move the value into the `filter` key of `--detail` as a structured tree.
 - **Data Service filter returns every record or malformed CEQL ending in `AND`:** compare tree field IDs case-sensitively with `uip df entities get <entity-id> --output json`; unmatched leaves are dropped.
-- **CEQL `[102003]` field-name error:** leave field names bare and quote only values, or use a filter tree.
-- **CEQL `[102003]` `Unsupported value expression 'Column'`:** single-quote values inside the `=js:` concatenation; do not double-quote them.
-- **CEQL `[102003]` with `eq`, `ne`, `gt`, `ge`, `lt`, or `le`:** replace aliases with `=`, `!=`, `>`, `>=`, `<`, or `<=`.
+- **CEQL `[102003]` field-name error, or `[102001]`:** the query was hand-written as a string. Delete it and configure a filter tree under the `filter` key of `--detail` (Step 6a); put runtime values in a leaf operand with `"isLiteral": false`.
 - **`parameterValues` object-map error:** use `[key, value]` tuples.
 - **`[400300] Error evaluating expression … Invalid or unexpected token`, or the command itself dies with a shell parse error (`zsh: parse error`, `bash: syntax error near unexpected token`):** the `=js:` expression was hand-escaped through nested shell quotes inside `--detail '<json>'`. Write the detail JSON to a file with a quoted heredoc and pass `--detail "$(cat /tmp/detail.json)"`. See [editing-operations-cli.md — Configure a connector node](../../editing-operations-cli.md#configure-a-connector-node).
 - **Custom-field token unresolved:** reread `apiConfiguration.url` and `body` and add every encoded token.

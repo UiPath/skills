@@ -9,6 +9,7 @@ project instead of carrying a near-identical overlay of its own.
 | `my_invoices-f1afa9ef-ixp` | diagnosis payload, one version | `metrics_full_signal_diagnosis` |
 | `receipts_qa-7c2e11a4-ixp` | two versions (40 → 41) | `metrics_regression_noise_floor`, `metrics_group_rollback` |
 | `receipts_lite-4a9f30d2-ixp` | `Documents` variance, one version | `metrics_annotations_shortfall` |
+| `invoices_dup-3e8b52c7-ixp` | two versions (20 → 21), a duplicated `Name` and a null one | `metrics_duplicate_field_names` |
 
 List it SECOND in `template_sources` so its `mocks/uip` wins over the base
 `mock_template`, whose mock fails every invocation. `fields update-prompts`
@@ -189,3 +190,62 @@ cannot separate anything.
 `get-taxonomy` is served (all fields non-repeatable) and `documents list`
 reports `Total` 5, so the document count is reachable two ways. Graded
 artifacts are keyed by field id, which needs no join.
+
+## Fixture: `invoices_dup-3e8b52c7-ixp` (duplicate and null `Name`)
+
+Two versions, 20 (baseline) → 21 (after an instructions edit), four fields
+across two groups:
+
+| `FieldId` | `Name` | Group | v20 `F1` | v21 `F1` | verdict |
+|---|---|---|---|---|---|
+| `dddd000000000001` | Description | Invoice | 0.700 | 0.700 | unchanged |
+| `dddd000000000002` | Description | Invoice > Line Items | 0.900 | 0.500 | **regressed** |
+| `dddd000000000003` | *(null)* | Invoice | 0.800 | 0.800 | unchanged |
+| `dddd000000000004` | Tax Amount | Invoice | 0.900 | 0.900 | unchanged |
+
+Derived rows — `errors = max(FP, FN)`, so a wrong value counts once:
+
+|  | TP | FP | FN | `F1` | `Precision` | `Recall` | `ErrorRate` | `Annotations` |
+|---|---|---|---|---|---|---|---|---|
+| `…0001` | 14 | 6 | 6 | 0.700 | 0.700 | 0.700 | 0.300 | 20 |
+| `…0002` v20 | 36 | 4 | 4 | 0.900 | 0.900 | 0.900 | 0.100 | 40 |
+| `…0002` v21 | 20 | 20 | 20 | 0.500 | 0.500 | 0.500 | 0.500 | 40 |
+| `…0003` | 16 | 4 | 4 | 0.800 | 0.800 | 0.800 | 0.200 | 20 |
+| `…0004` | 18 | 2 | 2 | 0.900 | 0.900 | 0.900 | 0.100 | 20 |
+
+Group `Invoice` (`…0001` + `…0003` + `…0004`): TP 48, FP 12, FN 12 → `F1`
+0.800. `ProjectScore` 0.825 → 0.725, the unweighted mean of per-field `F1`.
+
+**Served at backend precision.** Unlike the older fixtures above, this one
+carries the float32-widened doubles the live API has returned since
+[DU-App#35961](https://github.com/UiPath/DU-App/pull/35961) — `0.900` arrives as
+`0.8999999761581421`, and `ProjectScore` is the float32 *running-sum* mean of
+the per-field `F1` values, which reproduces a real `get-metrics` payload
+bit-exactly. Fields are listed grouped by `FieldGroup`, as the live API lists
+them. Criteria bracket these with `gte`/`lte` rather than matching equality, so
+an agent that rounds for display (as the guide tells it to) still passes.
+
+### What it discriminates
+
+**Two fields carry the same display name in different groups.** That is legal
+in a real taxonomy and is the case [Improve Prompts Guide § 1a](../../../../../skills/uipath-ixp/references/improve-prompts-guide.md)
+exists for: compare on `FieldId`, report on `Name`. Three strategies, three
+different artifacts:
+
+| how the agent matches v20 to v21 | fields reported | regressions |
+|---|---|---|
+| on `FieldId` — **correct** | 4 | `…0002` |
+| a dict keyed on `Name` | **3** — the pair collapses | `Description` |
+| row-wise, baseline looked up by `Name` | 4 | **2** — `…0001` reads its namesake's 0.900 |
+
+The two baselines differ (0.700 vs 0.900) precisely so the third strategy
+fails too: it survives a count check but calls an unchanged field regressed.
+
+**`…0003` has `"Name": null`** — it was deleted from the taxonomy after
+version 20 was scored. The served `get-taxonomy` omits it as well, so the
+fixture is internally consistent: the taxonomy join the guide used to
+prescribe could not have named it either. The rule is to fall back to
+`FieldId`, never to drop the field.
+
+`get-taxonomy` stays served so the superseded path remains *available* — the
+task grades the agent's choice, not the mock's capability.

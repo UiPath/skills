@@ -18,9 +18,17 @@ tags:
   - feature:conversational
 
 run_limits:
-  task_timeout: 3300
+  # turn_timeout is the agent's real budget (see coder-eval's inversion warning):
+  # the design runs in one long turn, so the old 3300s task_timeout was never
+  # reachable behind a 2700s turn wall.
+  #
+  # Raised to 4800/4200 after run 33794565805: on claude-sonnet-5 the design
+  # turn hit the 3300s wall with no artifact written and the simulator never
+  # reached (codex finishes the same task in 149s). An ERROR at the wall is a
+  # no-measurement, so the wall has to clear the slowest supported harness.
+  task_timeout: 4800
   max_turns: 150
-  turn_timeout: 2700
+  turn_timeout: 4200
 
 initial_prompt: |
   We're designing a case-management solution for the candidate-interview process
@@ -40,9 +48,9 @@ initial_prompt: |
   Help me map this out end to end — about two tasks per stage, the key data we
   track, and the business rules. Call it "CandidateInterview".
 
-  I want a draft design document I can review before we commit to anything. Let's
-  get the draft down and stop there — we'll finalize and build it later, so don't
-  polish or validate it yet, just capture the design.
+  I want a draft design document I can review before we commit to anything. Put
+  the draft in `sdd.draft.md` in this folder and stop there — we'll finalize and
+  build it later, so don't polish or validate it yet, just capture the design.
 
 success_criteria:
   # The run grades the captured DESIGN, in whichever file the design lane leaves it:
@@ -51,7 +59,7 @@ success_criteria:
   # agent stopping at exactly the draft step.
   - type: run_command
     description: "design lane produced a design document (draft or finalized)"
-    command: "ls *sdd*.md 2>/dev/null | grep -q ."
+    command: "ls sdd.draft.md sdd.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -64,7 +72,7 @@ success_criteria:
       from pathlib import Path
       text = " ".join(
           path.read_text(encoding="utf-8", errors="ignore")
-          for path in sorted(Path(".").glob("*sdd*.md"))
+          for path in (Path("sdd.draft.md"), Path("sdd.md"))
           if path.is_file()
       ).lower()
       has_onsite = "onsite" in text or "loop" in text
@@ -82,7 +90,7 @@ success_criteria:
 
   - type: run_command
     description: "design declares all 3 exception lanes"
-    command: "cat *sdd*.md 2>/dev/null | grep -Eiq 'rejected' && cat *sdd*.md 2>/dev/null | grep -Eiq 'withdrawn' && cat *sdd*.md 2>/dev/null | grep -Eiq 'on hold'"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && grep -Eiq 'rejected' \"$f\" && grep -Eiq 'withdrawn' \"$f\" && grep -Eiq 'on hold' \"$f\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -90,7 +98,7 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 7 primary stages (not truncated)"
-    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -103,6 +111,14 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "(advisory, non-gating) the draft's data contract closes — every consumed `=vars.<name>` has a producer (Default, trigger source, or a `-> name` row)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/draft_lineage_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Captured design is domain-coherent for the candidate-interview process"
@@ -119,12 +135,33 @@ success_criteria:
       resource references, or minor rule-syntax issues. Focus on DOMAIN COHERENCE
       of the captured design.
 
+      This task STOPS AT THE DRAFT: `sdd.draft.md` is the deliverable and `sdd.md` is
+      expected to be absent (a separate criterion requires the run to stop at design).
+      Grade the draft; the absence of `sdd.md` is not a defect and must not reduce the
+      score.
+
+      SCOPE — the requester asked for a COMPACT design: roughly two tasks per stage,
+      the key data, and the stated business rules. Judge only the bullets below. Do
+      NOT deduct for controls, sub-processes, review steps, or tasks the requirement
+      never asked for — "it could have modeled more" is not a coherence defect here.
+
+      A DRAFT may legitimately leave one routing decision to the reviewer. If the draft
+      MODELS an outcome (it has an exit or route) and its Open items / Review Flags section
+      NAMES that outcome as a decision for the reviewer — e.g. "Offer declined ... decide
+      whether this routes to Withdrawn or stays a standalone disposition" — that is the
+      documented draft convention (unfixable business choices become review items, per the
+      skill's layer-closure rule) and is NOT a routing defect. An outcome left dangling with
+      no exit and no mention IS the defect this bullet is for.
+
       Judge:
       - Stage order is sensible for hiring (Application Received → Recruiter
         Screen → Technical Screen → Onsite Loop → Debrief → Offer → Hired).
-      - Task types fit the work (ATS sync, recruiter/HM screens, coding exercise,
-        interview scorecards, debrief decision, comp/offer, offer letter via
-        DocuSign, Workday HRIS handoff at Hired).
+      - The tasks that ARE present use types fitting their work. The parenthetical
+        here — ATS sync, recruiter/HM screens, coding exercise, interview scorecards,
+        debrief decision, comp/offer, offer letter via DocuSign, Workday HRIS handoff
+        — lists EXAMPLES of this domain, not an inventory the design must contain. At
+        about two tasks per stage a seven-stage design cannot hold all of them; a
+        missing example is not a defect, a present task carrying the wrong type is.
       - The 3 exception lanes (Rejected, Withdrawn, On Hold) are entered by a
         sensible trigger and correctly terminal (Rejected / Withdrawn) or
         resumable (On Hold).
@@ -136,9 +173,25 @@ success_criteria:
         handoff before Hired), or data a task needs that no upstream task
         produces.
 
-      Score 1.0 if the captured design is coherent and would finalize into a
-      working case with no major flaws; 0.5 if mostly coherent with minor gaps;
-      0.0 if there are major logical/domain errors.
+      Score against these anchors. They are calibrated to drafts this suite has
+      already accepted, so apply them literally rather than by feel:
+
+      - 1.0 — coherent; a reviewer would have nothing to resolve.
+      - 0.8 — the primary journey, every stated business rule, and every named
+        exception lane are modelled, AND the case can complete. One or two
+        residual gaps at this level are EXPECTED and must NOT drop the score:
+        a value consumed without a declared producer, an underspecified
+        event/fan-in, a single routing gap, a lane declared as a generic
+        connector wait. The request asked for an unpolished draft to review —
+        "would need a minor-to-moderate correction before finalization" is a
+        0.8, not a failure.
+      - 0.5 — the primary journey or a stated business rule is NOT correctly
+        modelled, or no path lets the case complete.
+      - 0.2 — several stages, rules, or lanes are wrong or absent.
+      - 0.0 — major domain errors throughout.
+
+      Name the anchor you picked. Deduct once per distinct defect, never twice
+      for the same one, and do not average.
     weight: 3.0
     pass_threshold: 0.7
 

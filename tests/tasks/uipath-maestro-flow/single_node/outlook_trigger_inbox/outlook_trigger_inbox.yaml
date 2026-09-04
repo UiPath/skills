@@ -68,7 +68,7 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
+    description: "Agent ran the MailFolder resolve against the current --connection-id (PR #348 regression). Outcome is proven by check_folder_id_fresh below, not here"
     tool_name: "Bash"
     # `[\s\S]` matches across newlines — agents often split `uip` commands with
     # backslash line-continuation, which `.*` would miss.
@@ -76,6 +76,19 @@ success_criteria:
     # and the legacy "execute" verb that older CLIs in the sandbox PATH may
     # still expose (MST-9674).
     command_pattern: 'uip\s+is\s+resources\s+(?:run|execute)\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
+    # Narrows, does NOT close, the hole seen 2026-09-03 (lookup 403'd, agent
+    # wrote the display name "Inbox" into the id field, criterion still scored
+    # 1.0). `require_success` reads the *wrapper's* exit status
+    # (codex_agent.py: `result_status = "success" if exit_code == 0`), so a
+    # batched `bash -lc` script whose MailFolder lookup fails but whose last
+    # command exits 0 still counts — the same limitation
+    # tests/tasks/uipath-review/_shared/check_review_cli_provenance.py:13-15
+    # documents. It does close the unbatched case, which is the shape the
+    # 2026-09-03 run took. Ground truth for whether the resolve SUCCEEDED is
+    # the `check_folder_id_fresh` criterion below: it re-resolves MailFolder on
+    # the trigger's bound connection and requires the written parentFolderId to
+    # be a live id there, which no skipped or failed resolve can produce.
+    require_success: true
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

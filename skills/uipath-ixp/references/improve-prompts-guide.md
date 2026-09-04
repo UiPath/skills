@@ -55,7 +55,7 @@ The values `get-metrics` returns are neither independent nor interchangeable —
 | `ErrorRate` | field, group | **Report — independent of `Precision`.** Wrong extractions over `Annotations`. A wrong value counts **once** (not as a false positive plus a false miss), and a miss counts even though it cannot lower `Precision` — so `Precision` 1.00 can still carry `ErrorRate` 0.20. Report it as the manual-correction burden; diagnose direction from `Precision`/`Recall`. |
 | `Quality` | field | **Ignore.** A coarse label derived from the numbers, on a scale inconsistent with `ProjectScoreQuality` (an `F1` of 1.00 still reads `good` while a `ProjectScore` of 0.91 reads `excellent`). Never gate on it and don't report it per field — if the user asks about the UI's label, explain the scales differ. |
 | `ProjectScoreQuality` | project | **Report on the project line only** (the label the UI shows beside the score) — different scale from field `Quality` (above). |
-| `FieldGroup`, `FieldId` | field | Identity. `FieldId` needs the taxonomy join for a human-readable name (see 1a). |
+| `FieldGroup`, `FieldId`, `Name` | field | Identity. Compare on `FieldId` (stable); report on `Name` (the current display name — `null` for a deleted field, fall back to `FieldId`, see 1a). |
 
 
 ## Waiting for retrain
@@ -89,12 +89,11 @@ Note the `ModelVersion` from this baseline read — later iterations check that 
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
-**Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `field` entries:
+**Field names:** each `Fields` entry carries both `FieldId` and `Name`, so report and compare fields straight from the metrics — do NOT fetch the taxonomy to build an id→name map. Three rules:
 
-- For each metric entry: `FieldGroup` = label_def name, `FieldId` = the field's `field_id`
-- Find the matching field entry in the taxonomy where `field_id == FieldId` — its `name` is the human-readable field name
-
-Build this mapping once and reuse it throughout the loop.
+- **Compare on `FieldId`, report on `Name`.** `FieldId` is stable; `Name` reflects the taxonomy as it is now, so a field renamed since an older version was scored reads back under its current name.
+- **`Name` is null** when the service could not resolve it (e.g. the field was deleted after that version was scored). Fall back to `FieldId` — never skip the field.
+- **When two fields share a `Name`, qualify it with `FieldGroup`.** Display names are unique only *within* a group, so the same label can sit under two of them — print those rows as `<FieldGroup> / <Name>` or the reader cannot tell which one a score belongs to. This changes how you print the row, nothing else: the comparison still keys on `FieldId`.
 
 ### 1b. Check model configuration
 

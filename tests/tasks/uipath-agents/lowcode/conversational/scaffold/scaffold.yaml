@@ -5,7 +5,7 @@ description: >
   Tests whether the skill teaches the 7-field Init Defaults to Fix
   workflow and the PROD-canonical conversational agent.json shape
   (anthropic.claude-sonnet-4-5, empty inputSchema, empty outputSchema,
-  static user-message placeholder).
+  static user-message placeholder, no maxIterations, no targetRuntime).
 tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:conversational]
 max_iterations: 1
 

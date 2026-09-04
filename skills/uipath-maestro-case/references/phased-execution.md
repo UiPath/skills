@@ -165,7 +165,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 After re-entry:
 
-1. **Connector task detail** — for each connector task in the SDD, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
+1. **Connector task detail** — for each connector task in the SDD, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting), with the SDD's `->` / `=` output rows applied over `data.outputs[]` per [`io-binding/impl-json.md` § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes).
 2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's Inputs table rows in SDD order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
 3. **Connector-bound condition-rule upgrade** — scan all four scopes for canonical stubs. For each resolved connector, run `case spec --type trigger --input-details` and replace only `rule.uipath`, preserving rule/condition IDs, expressions, scope, and placement. Unresolved connectors keep the stub and are reported.
 4. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
@@ -175,13 +175,15 @@ Phase 3 produces a `caseplan.json` that should pass authoritative validation. No
 
 ## Phase 4 — Validate
 
-End of detail mutations. Run full-mode validate (omit `--skeleton`; defaults to full):
+End of detail mutations. Run strict validate with the SDD audit:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --output json
+uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
 ```
 
-On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to the Phase 4 issue-log summary step.
+`--strict` runs the default profile plus the case-wide and per-task checks that `full` cannot see: a stage with no tasks (`STRICT_STAGE_NO_TASKS`), a surviving `$xref(` marker (`STRICT_XREF_UNRESOLVED`), a `conditionExpression` hoisted onto the condition instead of a rule (`STRICT_CONDITION_EXPR_HOISTED`), a connector task whose `caseShape.context` is incomplete or lacks its Activity Type ID (`STRICT_CONNECTOR_*`), a task with `data: {}` (`TASK_NOT_CONFIGURED`, a warning; with `--sdd` it becomes the error `STRICT_SDD_PLACEHOLDER_RESOLVED` when the SDD resolved that resource), a malformed output shape or formal-argument slot (`STRICT_OUTPUT_*`), and a task input that is unbound or not in `=vars.<id>` form (`STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM`). `--sdd <path>` implies `--strict` and adds the completeness audit: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present (`STRICT_SDD_*`). Each failure carries its code in `Data.Issues[]` with the element path — fix the named element with a targeted Edit and re-run. `--strict` cannot be combined with `--skeleton` / `--skeleton-v2`. If the installed CLI rejects `--strict` as an unknown option, re-run without it and record `strict validate unavailable` in the completion report; a `Valid` without `--strict` is not evidence the strict checks passed.
+
+On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid", Profile: "strict" } }` — proceed to the Phase 4 issue-log summary step.
 
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
 
