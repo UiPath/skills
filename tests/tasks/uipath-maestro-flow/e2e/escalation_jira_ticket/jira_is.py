@@ -82,6 +82,14 @@ def connection_id() -> str:
     return by_name[0]["Id"]
 
 
+def myself(conn_id: str) -> str:
+    """Return the connection user's Atlassian accountId."""
+    return _run(
+        "is", "resources", "run", "get", CONNECTOR, "myself",
+        "--connection-id", conn_id,
+    )["Data"]["accountId"]
+
+
 def create_issue(conn_id: str, summary: str) -> str:
     body = {"fields": {"project": {"key": PROJECT_KEY}, "issuetype": {"id": ISSUETYPE_ID}, "summary": summary}}
     return _run(

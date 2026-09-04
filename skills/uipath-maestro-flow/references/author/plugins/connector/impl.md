@@ -107,7 +107,7 @@ Then run `cat <metadataFile path from response>` and read the full cached metada
 
 Read `availableOperations[].method` and `availableOperations[].path` for method and endpoint; `parameters[]` for query/path parameters and `reference` objects; `requestFields[]` for body names, types, required status, descriptions, and `reference` objects; and `responseFields[]` for the response schema.
 
-> **Write only parameter names that `describe` listed, in the bucket it listed them under.** `requestFields[]` → `bodyParameters`; `parameters[]` → `queryParameters` or `pathParameters` by `type`. When a name you expect is missing from the body fields, look in `parameters[]`. Never guess a key. Slack `send_message_to_channel_v2`: `send_as` is a query parameter, not a body field, and `username` does not exist.
+> **Write only parameter names that `describe` listed, in the bucket it listed them under.** Never guess a key. Slack `send_message_to_channel_v2`: `send_as` is a required query parameter, not a body field; `username` is the bot display name, not a send-as switch.
 
 ### Step 3a — Resolve parent-field-driven custom fields
 
@@ -123,7 +123,7 @@ Check **BOTH `requestFields` AND `parameters`** from the metadata for entries wi
 
 > **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
 
-> **A field with a `reference` takes a looked-up id, not a raw value.** Resolve it against `reference.path` and read `reference.lookupValue` from the result. Never pass an email address, a display name, or prompt text. Leave an optional reference field out when the prompt did not ask for it. Jira `fields.reporter.id` wants an `accountId`, not `jane.doe@acmecorp.com`.
+> **A field with a `reference` takes a value a live lookup returned, never a value you typed.** Resolve it per [reference-resolution.md — Reference Fields](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-fields-critical). A plain word is right only when the lookup returns it (Slack `send_as` → `user` or `bot`). Jira `fields.reporter.id` wants the looked-up `accountId`, not `jane.doe@acmecorp.com`.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../SKILL.md).
 

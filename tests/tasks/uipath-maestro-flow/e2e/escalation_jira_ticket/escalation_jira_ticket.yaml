@@ -45,7 +45,8 @@ initial_prompt: |
      productionDown AND NOT workaroundAvailable; Sev2 = productionDown AND
      workaroundAvailable; Sev3 otherwise) plus engineeringNeeded.
   2. Create a Jira issue using the Atlassian Jira "Create Issue" connector activity.
-     Use the `project_key` and `issuetype_id` from `seed.json`. The issue summary
+     Use the `project_key`, `issuetype_id`, and `reporter_id` from `seed.json`
+     (`reporter_id` is the issue's reporter field). The issue summary
      MUST include the `correlationId` verbatim (e.g. "[<severity>] <correlationId>
      <subject>"). Use the Atlassian Jira connection in the `Shared/uipath-maestro-flow`
      folder. If the Atlassian Jira connector isn't in your registry, STOP rather than
