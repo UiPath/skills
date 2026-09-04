@@ -1,7 +1,7 @@
 ---
 name: uipath-ontology-coded-action-deploy
-description: "Use when an ontology's coded actions have been generated and their Orchestrator leg needs shipping: scaffolding the jobs Solution, staging each job source, publishing and deploying a new release, and patching the resolved folder id into every action TTL. Use when action TTLs still carry ont:processFolderId \"PENDING_DEPLOY\". Do not use to generate ontology artifacts, to upload any artifact to the ontology backend, or for existing-ontology CRUD. For artifact generation→uipath-ontology-modeler. For backend validation and artifact upload→uipath-ontology-authoring. For `uip ont` syntax→uipath-ontologies."
-when_to_use: "Coded-action TTLs and their job sources exist and the jobs must reach Orchestrator; user says 'deploy the coded actions', 'ship the jobs', 'publish a new release of the jobs solution', 'the TTLs still say PENDING_DEPLOY', 'the job changed, release it again'."
+description: "Use when an ontology's coded actions have been generated and their Orchestrator leg needs shipping: creating the jobs Solution, staging each job source, publishing, and deploying the release that creates the Orchestrator folder the ontology is then bound to. Use when coded-action TTLs and their jobs exist but no release is live. Do not use to generate ontology artifacts, to upload any artifact to the ontology backend, or for existing-ontology CRUD. For artifact generation→uipath-ontology-modeler. For backend validation and artifact upload→uipath-ontology-authoring. For `uip ont` syntax→uipath-ontologies."
+when_to_use: "Coded-action TTLs and their job sources exist and the jobs must reach Orchestrator; user says 'deploy the coded actions', 'ship the jobs', 'publish a new release of the jobs solution', 'the job changed, release it again', 'create the folder for this ontology'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 user-invocable: true
 ---
@@ -37,7 +37,8 @@ the sequencing and the traps, which are not in either skill.
 |---|---|
 | workdir | the ontology's own directory, the one holding the artifacts and the job sources |
 | ontology name | the exact slug; the Solution is named `{name}-jobs` |
-| coded-action pairs | one per action: a TTL carrying `ont:processFolderId "PENDING_DEPLOY"`, and the job source that implements it |
+| folder name and parent | the folder the deployment will CREATE, and what to create it under. Not an existing folder -- see phase 3 |
+| coded-action pairs | one per action: a TTL declaring `ont:language "CODED"` with `ont:processType "CODED_FUNCTION"`, and the job source that implements it |
 
 Org and tenant come from `uip login status --output json` and from nowhere else. This is the same
 security rule authoring enforces: the authenticated session is the only source of truth, and
@@ -56,19 +57,19 @@ Everything else is a convention rather than a coordinate, and the scripts defaul
 
 ## Dry run by default
 
-`publish_package.py`, `deploy_release.py` and `patch_action_ttl.py` print the exact command or the
+`publish_package.py` and `deploy_release.py` print the exact command or the
 exact change and do nothing without `--execute`. Show the printed plan, get an explicit yes, then
 re-run with `--execute`. Publish and deploy write to a live tenant and move every job in the
 Solution onto one version line, so the version transition (`1.0.2` to `1.0.3`, and which processes
 move) is what to show.
 
-`stage_jobs.py`, `resolve_folder_id.py` and `await_release.py` are read-only or
+`stage_jobs.py` and `await_release.py` are read-only or
 temp-directory-only. Run them freely; staging is the cheapest proof that a job change reaches the
 tree and that its contract lowers to a manifest.
 
 ## Service dependency
 
-Coded-action semantics, meaning an action whose `ont:language` is the wire literal `"IMPERATIVE"`,
+Coded-action semantics, meaning an action whose `ont:language` is `"CODED"`,
 require an ontology service build that supports them. Uploading the artifact does not: the upload
 leg accepts the TTL either way, and the action then resolves to nothing at invoke time. So a green
 run of this skill against a service without that support produces a correct folder id, a real
@@ -78,9 +79,8 @@ proof the action works.
 ## Phase 1: Create the jobs Solution
 
 One Solution per ontology, named `{name}-jobs`, one Function project per coded action. There is no
-script for this phase: it is four `uip` commands and two small files, and `uip solution` and
-`uip functions` already document the commands. What is written here is the order, because the order
-is not obvious and two of the steps fail quietly if it is wrong.
+script: it is two `uip` commands and one small file, and `uip solution` and `uip functions` already
+document the commands. What is written here is the order and the two surprises.
 
 Reuse an existing solution directory and existing project directories; create only what is missing.
 
@@ -89,34 +89,40 @@ cd {workdir}
 uip solution init {name}-jobs
 cd {name}-jobs
 
-# 1. .npmrc FIRST -- see below. Same content in the solution root and in each project.
-cat > .npmrc <<'EOF'
-@uipath:registry=https://npm.pkg.github.com/
-//npm.pkg.github.com/:_authToken=${GH_NPM_REGISTRY_TOKEN}
-EOF
-
-# 2. one project per coded action, PascalCase(actionName) + "Process"
+# one project per coded action, PascalCase(actionName) + "Process"
 uip functions new {ActionName}Process --language ts --empty
+```
 
-# 3. register it, or the package will not contain it
+**Verify the registration; add only what is missing.** Whether `uip functions new` writes the
+`.uipx` `Projects` entry itself is version-dependent — newer CLIs do, and `uip solution projects
+add` then fails with *"Project already exists in solution"*; on 1.200.0 it does not, and the entry
+has to be added. So do not run either command blindly. Read the `.uipx` first:
+
+```bash
+python3 -c "import json;print([p.get('ProjectRelativePath') for p in json.load(open('{name}-jobs.uipx')).get('Projects',[])])"
+```
+
+Every project you created must appear. For any that does not:
+
+```bash
 uip solution projects add ./{ActionName}Process ./{name}-jobs.uipx
 ```
 
-**`.npmrc` must exist before `uip functions new`.** That command shells out to an installer, and
-the `@uipath` scope resolves from GitHub Packages rather than npmjs, so without the file it fails
-with `GET https://registry.npmjs.org/@uipath%2fcoded-functions-js-sdk - 404`. The project directory
-is still created, which makes the failure easy to miss. Nothing later in the pipeline installs
-anything -- the SDK is a devDependency for local typechecking, `type<T>()` is erased at compile
-time, and `defineFunction` comes from the runtime -- so a 404 here is the only place the token
-matters. The token stays an `${GH_NPM_REGISTRY_TOKEN}` reference; a literal never goes in the file.
+A project that exists on disk but not in the manifest is absent from the package, and the package
+still builds. `stage_jobs.py` refuses in that case, naming the project — but finding it here is
+cheaper.
 
-**`--empty`, not the hello-world default.** A scaffolded sample job is a second copy of the entry
-point, free to drift from the job source phase 2 stages in.
+**The npmjs 404 during `uip functions new` is expected and harmless.** The command installs inside
+the project directory it is in the middle of creating, so no `.npmrc` you write beforehand can
+reach it, and the `@uipath` scope is not on npmjs:
 
-**`projects add` is not optional.** It writes the `.uipx` `Projects` entry and generates the
-`resources/solution_folder/**` descriptors that make the release a job rather than an HTTP
-endpoint. A project directory that exists but was never added is absent from the package, and the
-package still builds. `stage_jobs.py` refuses in that case, naming the project.
+```
+GET https://registry.npmjs.org/@uipath%2fcoded-functions-js-sdk - 404
+```
+
+The project directory is still created, and nothing downstream needs the SDK installed. Phase 2
+strips the dependency and the `.npmrc` from the staged copy on purpose, so `GH_NPM_REGISTRY_TOKEN`
+is not needed at any point in this pipeline. Do not chase this error.
 
 Then map each project to the job that supplies its code, in `{name}-jobs/jobs.map.json`:
 
@@ -126,20 +132,13 @@ Then map each project to the job that supplies its code, in `{name}-jobs/jobs.ma
 }
 ```
 
-Paths resolve against that file's own directory, so a job living beside its action TTL one level up
-is `../jobs/{action}.ts`. This is what phase 2 stages from, and the only place the pairing is
-recorded.
+Paths resolve against that file's own directory, so a job beside its action TTL one level up is
+`../jobs/{action}.ts`. This is what phase 2 stages from, and the only record of the pairing.
 
 **Do not hand-edit `uipath.json`.** `uip functions new --empty` leaves `"functions": {}`, and
-`uip solution pack` reports `No functions defined in uipath.json` and produces nothing. Phase 2
+`uip solution pack` then reports `No functions defined in uipath.json` and produces nothing. Phase 2
 writes that map into the staging copy, because the map, the staged source and the manifest all have
-to name the same file -- setting it here means it can drift from what is actually staged, and
-setting it by hand means it can be forgotten.
-
-**Verified end to end offline.** These commands plus phase 2 produce a package whose per-project
-nupkg is `{Solution}.Function.{Project}.{version}.nupkg` carrying `content/main.ts` and
-`content/entry-points.json`, which is the shape a Studio Web export produces. `uip solution init`
-is also where the fresh `SolutionId` comes from.
+to name one file.
 
 ## Phase 2: Stage each job as its project's main.ts, with a derived manifest
 
@@ -167,6 +166,14 @@ byte-identical to what Studio Web's own packer produced for the two verified job
 pack` only zips a directory and reads no TypeScript, which is why supplying the manifest alongside
 `main.ts` is enough. Nothing in this phase runs an installer.
 
+**Staging strips everything that would make the runtime install.** The serverless runtime runs a
+prepare step that installs whatever `package.json` declares, cannot resolve the `@uipath` scope, and
+then **every job faults** with `Serverless.JsFunction.PrepareEnvironmentError` / "Failed to prepare
+environment" -- a message naming nothing about dependencies, which surfaces at the invoke as only
+`ended in state Faulted`. So stage removes every dependency block, the `.npmrc` and any lockfile
+from the staged copy. Nothing is lost: `type<T>()` is erased at compile time and `defineFunction`
+comes from the runtime, so the shipped project declares no dependencies at all.
+
 **The job's interfaces are the contract.** The manifest is derived from them on every stage, so
 the two cannot drift. A contract the deriver cannot read is refused rather than approximated: a
 wrong manifest faults the job before its handler runs. Run `coded_action_preflight.py` to catch
@@ -182,12 +189,12 @@ Which projects the package contains comes from the manifest and never from a dir
 `SolutionStorage.json` is authoritative when present, which is the case for a Studio Web export;
 a CLI-scaffolded solution has only the `.uipx`, whose `Projects` array says the same thing.
 
-## Phase 3: Version, publish, deploy
+## Phase 3: Publish, then deploy — and the deployment creates the folder
 
 ```bash
 scripts/publish_package.py {version}                     # dry run: reports current, next, target
 scripts/publish_package.py {version} --execute           # tenant feed
-scripts/deploy_release.py  {version} {name}-jobs-{version-dashed} --execute
+scripts/deploy_release.py  {version} {deployment-name} --execute
 ```
 
 **Republishing an existing version is refused, not merely discouraged.** It is the most expensive
@@ -202,39 +209,52 @@ On a first release there is no deployment to read, so there is no `next` to enfo
 reports `firstRelease: true` and the version you pass is accepted. Pick a starting version and say
 so in the plan you show the user.
 
-A local zip needs no script: `stage_jobs.py` prints its staging path and leaves the tree in place,
-so `uip solution pack <staging> /tmp/pk -n {name}-jobs -v {version}` produces one without touching
-the tenant.
-
 **`publish` is asynchronous.** The script passes `--wait`. Deploying before the publish completes
 fails with a package-not-found error that never mentions publishing.
 
-**A new version means a new deployment, not an upgrade.** `deploy run` creates a deployment plus a
-new Orchestrator folder rather than upgrading one in place, so `ont:processFolderId` goes stale on
-every release and phase 5 is not optional. Deploying a version that is already live is a no-op that
-reports the existing folder rather than creating a second one. The CLI surface lists a
-`deploy upgrade` subcommand that no verified run has used; `references/pipeline.md` records it as
-the one remaining unverified path, and folder-per-version is what to assume until it is tested.
+### The deployment creates the folder, so it goes first
 
-**The folder must be created under `Shared`.** A folder created at the root has no user with
-unattended robot permissions, the job cannot start there, and the invoke reports only
-`"Unexpected error"` on the `Running job` step with no job record at all.
-`PARENT_FOLDER_PATH` defaults to `Shared` for this reason.
+This is the ordering, and it is not the intuitive one:
 
-Name the deployment after the version so which folder is which stays obvious. Old deployments are
-left running their old version, which is what makes a rollback a one-line TTL edit.
-
-## Phase 4: Resolve the folder and await every release
-
-```bash
-scripts/resolve_folder_id.py "Shared/{deployment}"      # -> {folderId, folderKey}
-scripts/await_release.py {ProcessName} {next} --folder-path "Shared/{deployment}"
+```
+1. publish the jobs solution
+2. deploy it            -> this CREATES the Orchestrator folder
+3. create the Data Fabric entities INSIDE that folder
+4. create the ontology against that folder's key
+5. upload the artifacts, then invoke
 ```
 
-`deploy run` reports a folder path and the TTL needs the numeric id, which is why `folder-id`
-exists: it lists the folder's processes and reads `OrganizationUnitId` from
-`uip or processes get --all-fields`, the one place the numeric id is exposed (`uip or folders get`
-takes only a GUID or key, never a path). `deploy --execute` prints it too.
+**A deployment cannot target an existing folder.** Every folder flag names a parent or a *new*
+folder. Given `--folder-name X` while a folder `X` already exists, the deploy creates `X 1` and puts
+the processes there — leaving anything bound to the original folder pointing at zero processes,
+which surfaces at invoke as `No Orchestrator process named '…' in Orchestrator folder N`. So the
+author picks the folder's **name and parent**, never an existing folder, and everything else follows
+the folder the deployment made. Data Fabric entities can be created inside a Solution-type folder,
+which is what makes this order workable.
+
+**The folder must be created under `Shared`.** A folder at the root has no user with unattended
+robot permissions, the job cannot start there, and the invoke reports only `"Unexpected error"` on
+the `Running job` step with no job record at all. `PARENT_FOLDER_PATH` defaults to `Shared`.
+
+`uip or folders get <path-or-key>` returns both the `Key` (GUID) and the numeric `Id`
+(`OrganizationUnitId`) in one response, so both representations come from one call.
+
+### Re-releasing is an in-place upgrade. Never uninstall
+
+`deploy run` with the **same deployment name** and a new `--package-version` upgrades that
+deployment in place: one folder throughout, the same folder key, no duplicate processes. Reusing the
+name is the correct path for a re-release, not a hazard.
+
+**`uninstall` deletes the folder and everything provisioned in it** — which now includes the
+ontology's Data Fabric entities, because they live in this folder. Uninstalling in order to
+re-release destroys the author's data. There is no situation in this pipeline where it is the right
+move.
+
+## Phase 4: Await every release
+
+```bash
+scripts/await_release.py {ProcessName} {version} --folder-path "{PARENT}/{deployment-name}"
+```
 
 `await` polls for up to ten minutes and distinguishes three outcomes.
 
@@ -250,40 +270,23 @@ indistinguishable from a fresh one at the API surface, and invoking against one 
 
 Await every release, not just the one that changed. A publish moves every job in the Solution.
 
-## Phase 5: Patch the TTLs
+## Phase 5: Hand back to the caller
 
-One call per action TTL, with the folder id phase 4 resolved.
-
-```bash
-scripts/patch_action_ttl.py {workdir}/{name}-{action}.ttl --folder-id {folderId} --execute
-```
-
-`ont:process` is never touched: a release is matched on Name or ProcessKey and never on version, so
-the process name survives a new release and only the folder moves.
-
-The script refuses when `ont:processFolderId` is absent, and when it appears more than once. Both
-refusals are deliberate and neither is to be worked around: an absent predicate means this is not a
-coded-action TTL, and a duplicated one means two definitions of the action merged in RDF and
-editing either is guesswork. It is idempotent, so a file already carrying the value is a reported
-no-op rather than a rewrite.
-
-Skipping this phase is the quiet failure: the new release exists, the action still names the old
-folder, the invoke succeeds, and the old code runs.
-
-## Phase 6: Hand back to the caller
-
-Return the patched TTL paths and the release inventory. Authoring uploads them in its Tier 2; this
-skill does not.
+Return the folder the deployment created and the release inventory. The action TTLs are handed back
+unchanged: nothing in them names a folder, so there is nothing to patch.
 
 ```text
-PATCHED_TTLS:   absolute path per action
-RELEASE:        package name, version, deployment name, folder id, folder key
+FOLDER:         name, path, key, numeric id -- the folder the deployment created
+RELEASE:        package name, version, deployment name
 AWAIT_RESULTS:  process name -> ready | stale | missing, one line per release
 ```
 
-**This skill has succeeded when every TTL carries a real folder id and every release reports
-`ready`.** Anything less is reported as what it is. A patched TTL beside a stale release is not a
-completed deploy, and neither is a green release beside a TTL that still says `PENDING_DEPLOY`.
+The caller needs the folder **key** next, because the ontology is created against it and the Data
+Fabric entities go inside it. Both representations come from one `uip or folders get`.
+
+**This skill has succeeded when the folder exists and every release reports `ready`.** Anything less
+is reported as what it is: a green release in a folder nothing is bound to yet is not a completed
+deploy, and neither is a folder whose releases are still stale.
 
 ## Scripts
 
@@ -299,38 +302,39 @@ python3 scripts/<script>.py --describe
 
 | Script | Phase | What it does | Mutates |
 |---|---|---|---|
-| `stage_jobs.py` | 2 | Stage each job as its project's `main.ts`, derive its manifest, set its functions map | no |
+| `stage_jobs.py` | 2 | Stage each job as `main.ts`, derive its manifest, set its functions map, strip install inputs | no |
 | `publish_package.py` | 3 | Enforce the next version, pack, and upload to the tenant feed | **yes** |
-| `deploy_release.py` | 3 | Deploy a published version into a new Orchestrator folder | **yes** |
-| `resolve_folder_id.py` | 4 | Resolve a folder path to its numeric `OrganizationUnitId` | no |
+| `deploy_release.py` | 3 | Deploy a version, creating the folder or upgrading the deployment in place | **yes** |
 | `await_release.py` | 4 | Poll a release until ready, stale, or missing | no |
-| `patch_action_ttl.py` | 5 | Replace the `PENDING_DEPLOY` placeholder with the resolved folder id | **yes** |
 
-Phase 1 has no script; it is four `uip` commands and two small files, documented above. There is a
-script only where a plain command would let a failure through silently.
+Phase 1 has no script; it is two `uip` commands and one small file, documented above. Phase 5 has
+none either: it is what you report. There is a script only where a plain command would let a failure
+through silently.
 
 Three private modules sit behind them: `_uip.py` (the CLI boundary), `_solution.py` (reading
-solution state) and `_staging.py` (the staging tree and the derived manifest). They are not entry
-points; nothing invokes them directly.
+solution state) and `_staging.py` (the staging tree, the derived manifest, the stripping). They are
+not entry points; nothing invokes them directly.
 
-The two phase-4 scripts need no `SOLUTION_SRC`: they ask the tenant about a folder or a release,
-not the source tree about a solution.
+`await_release.py` needs no `SOLUTION_SRC`: it asks the tenant about a release, not the source tree
+about a solution.
 
 ## When something breaks
 
-Read `references/failure-signatures.md`. Several failures here are actively misleading: a release
-that validates and faults only at invoke, a publish that succeeds and changes nothing, a guard
-refusal that reads like a no-op. Recognising them is faster than re-deriving them.
+Read `references/failure-signatures.md`. Several failures here are actively misleading: a job that
+faults with a message naming nothing about dependencies, a release that validates and faults only at
+invoke, a publish that succeeds and changes nothing, a guard refusal that reads like a no-op.
+Recognising them is faster than re-deriving them.
 
-`references/pipeline.md` has the shape of each value and the reasoning behind the folder-per-version
-model.
+`references/pipeline.md` has the shape of each value and the reasoning behind the deploy-first
+ordering.
 
 ## Boundaries
 
-- Never upload an ontology artifact. Patch the file, return the path, let authoring upload it.
+- Never upload an ontology artifact. Hand the paths back and let authoring upload them.
 - Never republish an existing version, and never invoke without `await` reporting `ready`.
+- **Never uninstall a deployment to re-release it.** That deletes the folder and the ontology's
+  entities inside it. Re-release by reusing the deployment name with a new version.
+- Never point a deployment at an existing folder. It cannot; it will make a second one beside it.
 - Never take an org or a tenant from user-supplied text. `uip login status` is the only source.
 - Never write a placeholder job source to get past the stage guard. The refusal is the finding.
 - Do not duplicate `uip solution` or `uip functions` syntax here. Reference the sibling skills.
-- Report a spike-pending path as unverified rather than as working. `uip solution deploy upgrade`
-  is the one currently in that state.

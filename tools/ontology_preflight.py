@@ -6,6 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
+
+# Turtle is whitespace-insensitive and both contract guides align their predicates in columns, so
+# a fixed-space literal misses every conformant file. It used to, and the consequence was silent:
+# an action file fell through to the fno:Function branch, `actions` came back empty, ACTION_CONTRACT
+# passed vacuously, and a caller consuming artifact_inventory uploaded actions as --type functions.
+ACTION_KIND = re.compile(r"""ont:kind\s+["']ACTION["']""")
 import sys
 from pathlib import Path
 
@@ -45,7 +51,7 @@ def read_files(workdir: Path) -> dict[str, list[tuple[Path, str]]]:
         elif suffix in {".ttl", ".turtle"}:
             if "sh:NodeShape" in text or "sh:targetClass" in text or "constraints" in path.name.lower():
                 artifacts["constraints"].append((path, text))
-            elif 'ont:kind "ACTION"' in text or "kind 'ACTION'" in text or "action" in path.name.lower():
+            elif ACTION_KIND.search(text) or "action" in path.name.lower():
                 artifacts["actions"].append((path, text))
             elif "fno:Function" in text:
                 artifacts["functions"].append((path, text))

@@ -23,12 +23,12 @@ sup:tagOverdueTicket
         rdfs:label          "Tag an overdue ticket" ;
         rdfs:comment        "Recomputes a ticket's due date from its priority (sev1 four hours, sev2 twenty hours, sev3 five days), correcting it if the stored value has fallen out of step, and adds TICKET_OVERDUE to its tags once that deadline has passed. Closed tickets are left alone, and a ticket with nothing to correct and nothing to tag is not written at all." ;
         ont:kind            "ACTION" ;
-        ont:language        "IMPERATIVE" ;
+        ont:language        "CODED" ;
+        ont:processType     "CODED_FUNCTION" ;
         ont:statements      ( "func:tagOverdueTicket(ticketId, ticket)" ) ;
         ont:reads           ( sup:read.tagOverdueTicket.ticket ) ;
         ont:writes          "Ticket.tags", "Ticket.dueAt" ;
         ont:process         "TagOverdueTicketProcess" ;
-        ont:processFolderId "PENDING_DEPLOY" ;
         fno:expects         ( sup:param.tagOverdueTicket.ticketId ) ;
         fno:returns         ( sup:out.tagOverdueTicket.rowsAffected ) .
 
@@ -57,7 +57,7 @@ Why the notable lines look like this:
 - `ont:reads` is a list containing one node; `ont:writes` on the next line is repeated triples. The two are written differently on purpose. `ont:writes ( "Ticket.tags" "Ticket.dueAt" )` would parse as a list node and the runtime would see zero writable targets.
 - `ont:writes` names both fields even though most runs write at most one. `dueAt` is only written when the stored value has drifted, and `tags` only when the deadline has passed and the tag is absent. The declaration is the union over both branches.
 - `ticketId` is the only `fno:expects` param because every other input to the decision (priority, creation time, existing tags) is a fact about stored data. A caller can lie about those, so they are read.
-- `ont:processFolderId "PENDING_DEPLOY"` is what generation always writes. The deploy skill replaces it with the numeric Orchestrator folder id after the job is published, and it goes stale again on the next release.
+- `ont:processType "CODED_FUNCTION"` names the runtime that computes the edits, and is required whenever the language is `"CODED"`. The artifact carries no folder and no URL: where the release is deployed is a tenant fact, and the runtime resolves it from the ontology at invoke time.
 - The `SELECT *` in the read is deliberate: it hands the job the whole row and keeps the SQL trivial, at the cost of the rows arriving under physical column names. The job absorbs that cost, in versioned TypeScript.
 
 ### jobs/tagOverdueTicket.ts
@@ -169,12 +169,12 @@ cls:flagBigOrder
         rdfs:label          "Classify invoices by order size" ;
         rdfs:comment        "For each of the given invoices, sets its status to 'Big Order' when its lines add up to more than 100 units total, and 'Small Order' otherwise. Writes one row per requested invoice, including invoices with no lines at all." ;
         ont:kind            "ACTION" ;
-        ont:language        "IMPERATIVE" ;
+        ont:language        "CODED" ;
+        ont:processType     "CODED_FUNCTION" ;
         ont:statements      ( "func:flagBigOrder(invoiceIds, lines)" ) ;
         ont:reads           ( cls:read.flagBigOrder.lines ) ;
         ont:writes          "ErpInvoice.status" ;
         ont:process         "FlagBigOrderProcess" ;
-        ont:processFolderId "PENDING_DEPLOY" ;
         fno:expects         ( cls:param.flagBigOrder.invoiceIds ) ;
         fno:returns         ( cls:out.flagBigOrder.rowsAffected ) .
 

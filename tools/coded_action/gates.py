@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from coded_action.action_model import PENDING_DEPLOY, marker_of
+from coded_action.action_model import PROCESS_TYPES, marker_of
 from coded_action.contract import foreign_idiom, load_deriver
 from coded_action.pairs import JOB_LANGUAGES, SUPPORTED_JOB_LANGUAGES
 from coded_action.verdict import GateLog
@@ -35,7 +35,7 @@ def check_ttl(log: GateLog, name: str, pair: dict) -> dict | None:
     )
     if action is None:
         others = ", ".join(sorted(model["actions"])) or "none"
-        failures.append(f"{name}: no fno:Function named '{name}' with ont:language \"IMPERATIVE\" (found: {others})")
+        failures.append(f"{name}: no fno:Function named '{name}' with ont:language \"CODED\" (found: {others})")
         for failure in failures:
             log.add("ttl-parses-and-well-formed", "failed", failure)
         return None
@@ -209,7 +209,7 @@ def check_fields(
     if schema is None:
         log.add("fields-exist-in-schema", "skipped", f"{name}: {reason}")
         return
-    classes, data_props = schema
+    classes, data_props, _keys = schema
     wanted = set(action["writes"])
     for read in action["read_nodes"].values():
         wanted.update(re.findall(r"\{\{([^}]+)\}\}", read["statement"]))
@@ -233,22 +233,64 @@ def check_fields(
         log.add("fields-exist-in-schema", "passed")
 
 
-def classify_folder_id(name: str, action: dict) -> tuple[bool, str]:
-    """(deployable, detail) for one action's ont:processFolderId. Not a gate.
+def check_process_type(log: GateLog, name: str, action: dict) -> None:
+    """process-type-declared: a coded action must name the runtime that computes it.
 
-    This used to log a gate that always passed, which is worse than no gate: a `passed` row
-    teaches the caller that a check ran and could have failed. It cannot. The placeholder is the
-    EXPECTED state between generation and deploy, so there is nothing here to fail on -- the
-    answer is a classification, and callers sequence on it through `pairs[].deployable`.
+    Required because `ont:language "CODED"` says only that a job computes the edits, not what kind
+    of job. Naming it here means a second runtime later needs no migration and no defaulting rule,
+    and the service rejects a coded action without it as a contract violation -- so catching it
+    offline is the difference between a refused upload and one line of prose.
     """
-    folder = action["processFolderId"]
-    if folder == PENDING_DEPLOY:
-        return False, f"{name}: ont:processFolderId is the {PENDING_DEPLOY} placeholder; publish first, then patch it"
-    if folder.isdigit():
-        return True, f"{name}: ont:processFolderId is {folder}"
-    if not folder:
-        return False, f"{name}: no ont:processFolderId; the service-wide fallback applies, which is rarely wanted"
-    return False, f"{name}: ont:processFolderId {folder!r} is neither numeric nor {PENDING_DEPLOY}"
+    declared = action.get("processType")
+    if declared in PROCESS_TYPES:
+        log.add("process-type-declared", "passed")
+    elif not declared:
+        log.add("process-type-declared", "failed",
+                f"{name}: no ont:processType. A coded action must declare the runtime that computes "
+                f"it; the only value today is {sorted(PROCESS_TYPES)[0]!r}")
+    else:
+        log.add("process-type-declared", "failed",
+                f"{name}: ont:processType {declared!r} is not a runtime this vocabulary knows "
+                f"(expected one of {sorted(PROCESS_TYPES)})")
+
+def check_identity(log: GateLog, name: str, action: dict,
+                   schema: tuple[set[str], set[str], set[str]] | None, reason: str) -> None:
+    """entity-identity-declared: every entity this action writes has exactly one key property.
+
+    The runtime resolves an edit's target row by the identity property's own NAME, so a written
+    entity needs exactly one property annotated `ont:datatype "key"`. Without it the write is
+    refused at `Preparing write statement` -- after the job has already run, reporting
+    `rowsAffected: 0`, which in a summary is indistinguishable from a legitimate no-op.
+
+    Nothing else catches this. The annotation is absent from a schema written strictly to the OWL
+    guide, the artifact uploads and validates cleanly, and the failure appears only at the first
+    invoke that tries to write.
+    """
+    if schema is None:
+        log.add("entity-identity-declared", "skipped", f"{name}: {reason}")
+        return
+    classes, _props, keys = schema
+    written = sorted({entry.partition(".")[0] for entry in action["writes"] if entry})
+    if not written:
+        log.add("entity-identity-declared", "skipped",
+                f"{name}: ont:writes names no entity, so there is no identity to require")
+        return
+    problems = []
+    for entity in written:
+        if entity not in classes:
+            continue  # fields-exist-in-schema owns that failure; do not report it twice
+        owned = sorted(k for k in keys if k.partition(".")[0] == entity)
+        if not owned:
+            problems.append(
+                f"{entity} has no property annotated ont:datatype \"key\", so the runtime cannot "
+                f"resolve which row an edit targets and the write is refused after the job runs")
+        elif len(owned) > 1:
+            problems.append(f"{entity} declares {len(owned)} key properties ({', '.join(owned)}); "
+                            f"identity must be exactly one")
+    if problems:
+        log.add("entity-identity-declared", "failed", f"{name}: " + "; ".join(problems))
+    else:
+        log.add("entity-identity-declared", "passed")
 
 
 def check_job_language(log: GateLog, name: str, jobs: list[Path]) -> tuple[str, Path | None]:

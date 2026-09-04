@@ -47,7 +47,7 @@ DEPLOYMENT_MODE: delegated; modeler returns local-preflighted artifacts; authori
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
 
-The modeler emits CODED actions per its coded-action contract guide, with the TTL carrying `ont:language "IMPERATIVE"` and `ont:processFolderId "PENDING_DEPLOY"`.
+The modeler emits CODED actions per its coded-action contract guide, with the TTL carrying `ont:language "CODED"` and `ont:processType "CODED_FUNCTION"`. No deployment coordinate appears in the artifact: the folder follows from the ontology at invoke time.
 
 `MAPPING_STATUS: supplied` means validate the provided mapping. `MAPPING_STATUS: generate` means generate it from handoff metadata; it is valid only with a machine-readable handoff JSON containing confirmed OFN classes/properties, `CLASS_MAP` entityName/entityId/folderId values, field metadata with exactly one identifier for every class, and explicit `RELATIONSHIPS` metadata (`[]` when none). The modeler must return `MAPPING_PATH`, `MAPPING_STATUS`, `MAPPING_GATE`, `UNRESOLVED_AMBIGUITIES`, and the exact preflight `artifact_inventory`. If a class, field, identifier, or relationship cannot be inferred uniquely, require a user decision and stop as `BLOCKED_AMBIGUITY`.
 
@@ -76,7 +76,54 @@ Trigger: user points to a folder of already-generated artifact files (`{oldName}
 3. **A rename (or "it already exists") is not sufficient.** Run the preflight command above against the exact files before uploading anything. It catches IRI drift, undeclared terms, missing object properties for FK joins, action output-contract failures, and non-global namespaces. Fix every failed gate locally and rerun preflight. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere.
 4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>`, not a per-ontology path.
 5. If the folder holds already-generated coded pairs (a `jobs/{actionName}.ts` beside its coded `{name}-{actionName}.ttl`), run Step 2b's deploy-then-patch delegation before any upload, exactly as a generated inventory does.
-6. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
+6. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.Valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
+
+---
+
+## Run checklist
+
+Everything below is a failure someone has already paid for. Each line is enforced by a gate, a
+guide rule, or a refusal further down; this is the short form to check a run against.
+
+**Before generating anything**
+
+- [ ] Ask which folder the ontology goes in — **its name and parent**, not an existing folder,
+      because the deployment creates it. Offer `Shared` as the parent: a folder at the root has no
+      user with unattended robot permissions and its jobs never start.
+- [ ] `uip login status` is the only source of org and tenant.
+
+**Schema**
+
+- [ ] Every class declares `{Class}.id`, annotated `ont:datatype "key"`, range `xsd:string`.
+- [ ] Every data property carries `ont:datatype`. Nothing is inferred from the XSD range.
+- [ ] No `xsd:anyURI` and no `xsd:boolean` — see the OWL guide for what each one breaks.
+- [ ] A reserved name cannot be a Data Fabric entity. Map the class to a differently-named entity
+      and record it in `CLASS_MAP`.
+- [ ] Integer columns are `DECIMAL` with `decimalPrecision: 0`. The server accepts `INTEGER` but
+      the UI cannot render, filter or edit the column.
+
+**Mapping**
+
+- [ ] `{Class}.id` binds to `$(Id)` in every mapping block, or the identity is declared and
+      unpopulated.
+- [ ] An inverse object property needs its own join, or the semantic gate reports it unaligned.
+
+**Coded actions**
+
+- [ ] `ont:language "CODED"` with `ont:processType "CODED_FUNCTION"`. No deployment coordinate in
+      the artifact.
+- [ ] A read that cannot be filtered carries `LIMIT`, and the job refuses a read that came back at
+      the limit rather than computing from a possibly truncated view.
+- [ ] No control characters in any written value.
+- [ ] Every edit carries `id`, and `ont:writes` is the union over every branch.
+
+**Deploy**
+
+- [ ] Publish, then deploy to create the folder, then the entities, then
+      `uip ont create --folder-key`.
+- [ ] Re-release by reusing the **same deployment name** with a new version. Never uninstall to
+      re-release: that deletes the folder and the entities in it.
+- [ ] Every release reports `ready` before any invoke.
 
 ---
 
@@ -370,8 +417,8 @@ Using the confirmed classes from Phase 3, extract all properties and relationshi
 | count, quantity, integer | `xsd:integer` |
 | date + time / timestamp | `xsd:dateTime` |
 | date only | `xsd:date` |
-| true/false, flag, boolean | `xsd:boolean` |
-| URL, link | `xsd:anyURI` |
+| true/false, flag, boolean | `xsd:string` with `ont:datatype "category"` |
+| URL, link | `xsd:string`, with the format in `rdfs:comment` |
 
 > **Wait for explicit user confirmation before moving to Phase 5.**
 
@@ -478,7 +525,7 @@ Gate ownership and execution:
 | G3 — Cross-file | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Every `ont:` term in mapping + constraints + functions/actions SPARQL/SQL bodies declared in schema | All found |
 | G4 — Annotation | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
 | G5 — Preflight | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Local preflight passes and returns exact `artifact_inventory` | preflight pass |
-| G6 — Backend validate + tiered upsert | Authoring — backend validation and tiered upsert | Authoring validates and uploads inventory in tiers (schema first, then constraints/functions/actions); mapping is held until authoring uploads it last | `Data.valid: true` + `ArtifactUpserted` each |
+| G6 — Backend validate + tiered upsert | Authoring — backend validation and tiered upsert | Authoring validates and uploads inventory in tiers (schema first, then constraints/functions/actions); mapping is held until authoring uploads it last | `Data.Valid: true` + `ArtifactUpserted` each |
 | G7 — Semantic consistency | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
 
 **Do not proceed to Step 3 until the modeler confirms preflight passed and returns every generated artifact in its exact `artifact_inventory`:**
@@ -503,17 +550,27 @@ A SQL-only inventory skips this step untouched and goes straight to Step 3. Run 
 - the ontology name `{name}`
 - every coded pair: `{workdir}/jobs/{actionName}.ts` with its `{workdir}/{name}-{actionName}.ttl`
 
-That skill publishes the `{name}-jobs` Solution, awaits the releases, patches the real `ont:processFolderId` into each coded TTL in place of `PENDING_DEPLOY`, and returns the patched TTL paths.
+That skill publishes the `{name}-jobs` Solution, deploys it — **which is what creates the Orchestrator folder** — and awaits every release. It returns that folder's name, path, key and numeric id. It patches nothing: a coded action names its release and says nothing about where the release is deployed, so the TTLs come back unchanged.
 
-> If the `uipath-ontology-coded-action-deploy` skill is not available, stop before upload and return: "Coded actions require the uipath-ontology-coded-action-deploy sibling skill. The artifacts are generated and locally preflighted, but every coded TTL still carries the PENDING_DEPLOY placeholder; activate that skill and retry the delegation."
+**This reorders the rest of the flow.** The folder does not exist until the deploy runs, and a deployment cannot be pointed at an existing folder. So:
 
-Then rerun the coded preflight against the patched files:
+1. delegate the deploy, and take the folder it created
+2. create the Data Fabric entities **in that folder**
+3. `uip ont create {name} --folder-key {that folder's key}`
+4. validate and upload the artifacts
+5. invoke
+
+Ask the author for the folder's **name and parent** before delegating, never for an existing folder. Offer `Shared` as the parent: a folder at the root has no user with unattended robot permissions and its jobs never start.
+
+> If the `uipath-ontology-coded-action-deploy` skill is not available, stop before upload and return: "Coded actions require the uipath-ontology-coded-action-deploy sibling skill. The artifacts are generated and locally preflighted, but no release is live and no folder exists to bind the ontology to; activate that skill and retry the delegation."
+
+Then rerun the coded preflight, which now has the process type to check:
 
 ```bash
 python3 tools/coded_action_preflight.py --workdir {workdir} --ontology-name {name}
 ```
 
-Before Step 3, require every coded pair in the preflight payload to report `deployable: true`. That field, not a gate status, is what says the placeholder is gone: the placeholder is the expected state until the deploy skill patches it, so no gate fails on it and a green preflight alone does not mean the TTLs are ready to upload.
+A green preflight here means the pairs are internally consistent, not that anything is deployed. Readiness is what the deploy skill reported: the folder exists and every release is `ready`.
 
 ---
 
@@ -535,16 +592,17 @@ Proceed only on `Code: OntologyCreated`. The modeler has not called the backend 
 
 ### 3b — Backend-validate the exact inventory
 
-Authoring backend-validates every artifact in `artifact_inventory`, the patched coded action TTLs returned by Step 2b included, and requires `Data.valid: true` for each response before uploading anything:
+Authoring backend-validates every artifact in `artifact_inventory`, the patched coded action TTLs returned by Step 2b included, and requires `Data.Valid: true` for each response before uploading anything. **The field is capitalised**, and the `{fileName}` positional is required exactly as it is for `upsert` — omit it and every call returns `error: missing required argument 'fileName'`, which still parses, so a naive check reads it as a validation failure and sends the session hunting a phantom artifact bug:
 
 ```bash
-uip ont artifact validate {name} \
+uip ont artifact validate {name} {fileName} \
   --type {schema|constraints|functions|actions|mapping} \
+  --media-type {text/owl-functional|text/turtle|application/yaml} \
   --file {absolute-path-from-artifact_inventory} \
   --output json
 ```
 
-Run the command once per returned inventory entry. If any `Data.valid` is not `true` (including a `422`), authoring owns the recovery: read `Data.violations`, repair the identified local artifact, rerun preflight, and repeat all inventory validation; do not upload a partial tier. Authoring may re-delegate only local artifact regeneration to the modeler, which returns a new local-preflighted inventory and makes no backend calls. Authoring then resumes this backend-validation and upload sequence.
+Run the command once per returned inventory entry. If any `Data.Valid` is not `true` (including a `422`), authoring owns the recovery: read `Data.violations`, repair the identified local artifact, rerun preflight, and repeat all inventory validation; do not upload a partial tier. Authoring may re-delegate only local artifact regeneration to the modeler, which returns a new local-preflighted inventory and makes no backend calls. Authoring then resumes this backend-validation and upload sequence.
 
 ### 3c — Upload Tier 1 and Tier 2
 

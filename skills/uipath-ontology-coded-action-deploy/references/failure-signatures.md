@@ -4,6 +4,83 @@ Read this when something breaks. Several failures in this system are actively mi
 present as a different problem than they are, and the obvious diagnosis is the wrong one. Each
 entry gives the symptom, the real cause, and the command that distinguishes it.
 
+## Every job faults with `Serverless.JsFunction.PrepareEnvironmentError`
+
+```
+ErrorCode: Serverless.JsFunction.PrepareEnvironmentError
+Info:      Failed to prepare environment
+```
+
+and the invoke shows only `Orchestrator job for process '...' ended in state Faulted`. Neither
+message says anything about dependencies, which is why this costs a cycle.
+
+The serverless runtime runs a prepare step that installs whatever the project's `package.json`
+declares. `uip functions new` declares the SDK as a devDependency, the runtime cannot resolve the
+`@uipath` scope, and the prepare step fails before the handler is ever reached — so **every** job in
+the package faults, not one.
+
+`stage_jobs.py` strips every dependency block, the `.npmrc` and any lockfile from the staged copy,
+so a package built through `stage` cannot hit this. Seeing it means something packed a tree that did
+not go through `stage`, or a dependency was added back. Nothing is lost by having none: `type<T>()`
+is erased at compile time and `defineFunction` comes from the runtime.
+
+## `GET https://registry.npmjs.org/@uipath%2f... - 404` during `uip functions new`
+
+Expected, and harmless. The install runs inside the project directory the command is in the middle
+of creating, so no `.npmrc` written beforehand can reach it, and the `@uipath` scope is not on
+npmjs. The project directory is still created and nothing downstream needs the SDK installed —
+staging removes the dependency anyway. Do not chase it, and do not add
+`GH_NPM_REGISTRY_TOKEN` to make it go away: a staged `.npmrc` carrying an unexpanded
+`${GH_NPM_REGISTRY_TOKEN}` reaches the runtime as a literal string and is useless there.
+
+## `Project already exists in solution: X/uipath.json`
+
+`uip functions new`, run inside a solution directory, writes the `.uipx` `Projects` entry itself, so
+a separate `uip solution projects add` is redundant and fails. Drop the command and verify instead:
+every project appears in the `.uipx` `Projects` array.
+
+## `Entity 'X' has no identity property` on `Preparing write statement`
+
+The write is refused **after the job has already run**, and reports `rowsAffected: 0` — which in a
+summary is indistinguishable from a legitimate no-op.
+
+The class has no data property annotated `ont:datatype "key"`. Property kind is annotation-only and
+is never inferred from the XSD range, so a schema written without that annotation gives every class
+a TEXT-only property set and no identity at all. The artifact uploads, validates and deploys
+cleanly; this is the first thing that notices.
+
+Fix in the schema, not the job: declare `{Class}.id`, annotate it `"key"`, range `xsd:string`, and
+bind it in the mapping to `$(Id)`. `coded_action_preflight.py`'s `entity-identity-declared` gate
+catches it offline.
+
+## `Parameter value contains illegal control character at position N`
+
+A `\n`, `\t` or `\r` in a written value fails the whole statement, after the job has run. An
+append-style audit trail must join with a visible separator (` | `) rather than a newline.
+
+## `No Orchestrator process named 'X' in Orchestrator folder N`
+
+The ontology is bound to a folder that has no processes. Almost always this is a deployment that
+was pointed at a folder name that already existed: `deploy run` cannot target an existing folder,
+so it created `<name> 1` and put the processes there, leaving the original folder — the one the
+ontology names — empty.
+
+Check which folder actually holds the releases (`uip or processes list --folder-path …`), and
+remember that the deployment creates the folder: everything else follows it, rather than the other
+way round.
+
+## `error: missing required argument 'fileName'` from `artifact validate`
+
+`validate` takes the artifact-name positional exactly as `upsert` does:
+
+```bash
+uip ont artifact validate {name} {fileName} --type … --media-type … --file …
+```
+
+Without it the call fails, but the response still parses — so a naive check reads it as a validation
+failure and sends the session hunting a phantom artifact bug. Note also that the success field is
+`Data.Valid`, capitalised; a lowercase read is always falsy.
+
 ## The job faults with `ValidationFailed` and your logs never appear
 
 The SDK validates input against the job's `Input` type with `additionalProperties: false`, before
@@ -160,8 +237,8 @@ Expected, and not a publish problem. Publishing adds a package version to the fe
 then has to run on it. `uip solution deploy list` shows `CurrentPackageVersion` (running) beside
 `NewPackageVersionAvailable` (published, not taken).
 
-The CLI's `deploy run` creates a new deployment rather than upgrading one, so the pipeline deploys
-into a new folder under `Shared` and repoints `ont:processFolderId` at it.
+`deploy run` with the same deployment name and a new version upgrades that deployment in place, so
+nothing is repointed: the folder does not move and no artifact names it.
 
 ## `Unexpected error` on the `Running job` step, and zero jobs in the folder
 
@@ -205,14 +282,3 @@ against every release rather than only the one that changed.
 project; that flag wants a Studio Web project name, and the name you passed is the deployment and
 package name, a different namespace. `publish_package.py` packs from `SOLUTION_SRC`
 instead and needs no cloud project. If you see this error, something is calling `uip` directly.
-
-## `patch_action_ttl.py` refused
-
-Two refusals, both deliberate.
-
-| Refusal | Cause | Fix |
-|---|---|---|
-| `ont:processFolderId not found` | not a coded-action TTL, or generation never emitted the `PENDING_DEPLOY` placeholder | check the file is the right one. If it is, the generation step is the bug; that belongs to the modeler. |
-| `ont:processFolderId appears N times` | two definitions of one action merged in RDF | the artifact has duplicated subjects. Editing either occurrence is guesswork, and RDF unions the writes of both, so a duplicate silently widens permissions. Deduplicate at the source. |
-
-A no-op report is not a refusal: the file already carried the requested id, and that is a pass.

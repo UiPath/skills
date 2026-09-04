@@ -101,6 +101,7 @@ class CodedActionPreflightTests(unittest.TestCase):
         self.assertEqual(failed_gates(payload), set(), payload)
         for gate_id in ("ttl-parses-and-well-formed", "signature-resolves", "input-matches-marker",
                         "input-strictness", "writes-cover-edits", "fields-exist-in-schema",
+                        "process-type-declared", "entity-identity-declared",
                         "job-language"):
             self.assertEqual(gate(payload, gate_id)["status"], "passed", payload)
         self.assertIn(gate(payload, "typecheck")["status"], ("passed", "skipped"), payload)
@@ -112,8 +113,7 @@ class CodedActionPreflightTests(unittest.TestCase):
                 "job": f"{ACTION}.ts",
                 "job_language": "typescript",
                 "process": "TagOverdueTicketProcess",
-                "process_folder_id": "3225065",
-                "deployable": True,
+                "process_type": "CODED_FUNCTION",
             }],
         )
 
@@ -125,20 +125,31 @@ class CodedActionPreflightTests(unittest.TestCase):
         self.assertEqual(gate(payload, "fields-exist-in-schema")["status"], "skipped", payload)
         self.assertIsNone(gate(payload, "fields-exist-in-schema")["passed"], payload)
 
-    def test_pending_deploy_placeholder_is_reported_as_state_not_failure(self):
-        """The placeholder is the EXPECTED state between generation and deploy, so nothing fails
-        on it. It is reported per pair, and there is deliberately no gate: a gate row that can
-        never fail teaches the caller that `passed` means a check ran."""
+    def test_coded_action_without_process_type_fails(self):
+        """`ont:language "CODED"` says a job computes the edits, not what kind of job. The service
+        refuses a coded action without the runtime named, so catching it offline is the difference
+        between a refused upload and one line of prose."""
         workdir = self.workdir()
-        self.edit(workdir / f"{ONTOLOGY}-{ACTION}.ttl", '"3225065"', '"PENDING_DEPLOY"')
-        code, payload = run_preflight(workdir, "--skip-typecheck")
-        self.assertEqual(code, 0, payload)
-        self.assertEqual(payload["status"], "PASS", payload)
-        self.assertFalse(payload["pairs"][0]["deployable"], payload)
-        self.assertTrue(
-            any("PENDING_DEPLOY" in w for w in payload["warnings"]), payload["warnings"]
-        )
-        self.assertNotIn("folder-id-status", [g["id"] for g in payload["gate_results"]], payload)
+        self.edit(workdir / f"{ONTOLOGY}-{ACTION}.ttl",
+                  '        ont:processType "CODED_FUNCTION" ;\n', "")
+        payload = self.assert_only_gate_fails(workdir, "process-type-declared")
+        self.assertIn("CODED_FUNCTION", payload["errors"]["process-type-declared"][0])
+
+    def test_unknown_process_type_fails(self):
+        workdir = self.workdir()
+        self.edit(workdir / f"{ONTOLOGY}-{ACTION}.ttl", '"CODED_FUNCTION"', '"LAMBDA"')
+        payload = self.assert_only_gate_fails(workdir, "process-type-declared")
+        self.assertIn("LAMBDA", payload["errors"]["process-type-declared"][0])
+
+    def test_written_entity_without_a_key_property_fails(self):
+        """Identity is annotation-only: no ont:datatype "key" means the runtime cannot resolve
+        which row an edit targets, and the write is refused AFTER the job has run, reporting
+        rowsAffected 0 -- indistinguishable in a summary from a legitimate no-op."""
+        workdir = self.workdir()
+        self.edit(workdir / f"{ONTOLOGY}.ofn",
+                  'AnnotationAssertion(:datatype :Ticket.id "key")\n', "")
+        payload = self.assert_only_gate_fails(workdir, "entity-identity-declared")
+        self.assertIn("Ticket", payload["errors"]["entity-identity-declared"][0])
 
     # ---- one mutation per gate -------------------------------------------------------
 

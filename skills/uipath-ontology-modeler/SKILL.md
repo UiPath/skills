@@ -36,7 +36,7 @@ CLASS_MAP: class -> entityName, entityId, folderId, readOnly
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
-OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and a CODED action additionally carries its reads (bind name + SELECT statement), its writes union, and its process name. TTL emission maps CODED to the wire value ont:language "IMPERATIVE".
+OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and a CODED action additionally carries its reads (bind name + SELECT statement), its writes union, its process type (`CODED_FUNCTION`), and its process name. TTL emission writes ont:language "CODED" plus ont:processType "CODED_FUNCTION", and emits no deployment coordinate.
 DEPLOYMENT_MODE: delegated; generate artifacts and run local preflight only; authoring owns backend validation and all uploads
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
@@ -102,7 +102,7 @@ Produce a reviewable summary containing:
 - query operations grouped by functional area;
 - write actions with name, entity, operation, target fields, identifier, and inputs.
 
-Use `xsd:string`, `xsd:decimal`, `xsd:integer`, `xsd:dateTime`, `xsd:date`, `xsd:boolean`, or `xsd:anyURI` according to meaning. Keep cardinality enforcement in SHACL; OWL 2 QL does not use exact/min/max cardinality axioms.
+Use `xsd:string`, `xsd:decimal`, `xsd:integer`, `xsd:dateTime` or `xsd:date` according to meaning. Not `xsd:boolean` (the reasoner drops the range) and not `xsd:anyURI` (the ontology refuses to compile against the mapping) — see the OWL guide. Every data property additionally carries an `ont:datatype` annotation, and every class declares an identity property; both are load-bearing and neither is inferred. Keep cardinality enforcement in SHACL; OWL 2 QL does not use exact/min/max cardinality axioms.
 
 ## Step 3 — Generate artifacts
 
@@ -146,7 +146,7 @@ Fix failures before backend calls. A `DEPLOYED` state does not prove that relati
 
 ## Step 5 — Validate and upload
 
-After local preflight passes, use `artifact_inventory` as the exact artifact list. In standalone mode only, create the ontology stub, then validate every inventory artifact in parallel with `uip ont artifact validate --output json`; require `Data.valid: true` for each artifact, not merely HTTP success. If any backend validation fails, repair the local artifact and rerun preflight before validating again.
+After local preflight passes, use `artifact_inventory` as the exact artifact list. In standalone mode only, create the ontology stub, then validate every inventory artifact in parallel with `uip ont artifact validate --output json`; require `Data.Valid: true` for each artifact, not merely HTTP success. If any backend validation fails, repair the local artifact and rerun preflight before validating again.
 
 ```bash
 uip ont create {name} --display-name "{display name}" --description "{description}" --folder-key {folder key} --output json

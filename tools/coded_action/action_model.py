@@ -9,6 +9,10 @@ from __future__ import annotations
 
 import re
 
+# The runtimes a coded action can name. One today; the point of the predicate is that adding a
+# second needs no migration and no defaulting rule.
+PROCESS_TYPES = frozenset({"CODED_FUNCTION"})
+
 from coded_action.turtle import (
     first_quoted,
     is_directive,
@@ -19,7 +23,6 @@ from coded_action.turtle import (
 )
 
 
-PENDING_DEPLOY = "PENDING_DEPLOY"
 
 
 def ttl_model(text: str) -> dict:
@@ -38,7 +41,7 @@ def ttl_model(text: str) -> dict:
         body = "\n".join(bodies)
         if not re.search(r"(?:^|;|\s)a\s+[^;]*\bfno:Function\b", body):
             continue
-        if first_quoted(body, "ont:language") != "IMPERATIVE":
+        if first_quoted(body, "ont:language") != "CODED":
             continue
         actions[subject] = parse_action(subject, body, nodes)
     return {"nodes": nodes, "actions": actions, "unterminated": unterminated}
@@ -75,7 +78,7 @@ def parse_action(subject: str, body: str, nodes: dict[str, list[str]]) -> dict:
         "writes": quoted_objects(body, "ont:writes"),
         "writes_is_list": list_items(body, "ont:writes") is not None,
         "process": first_quoted(body, r"ont:process(?![A-Za-z])"),
-        "processFolderId": first_quoted(body, "ont:processFolderId"),
+        "processType": first_quoted(body, "ont:processType"),
         "returns": list_items(body, "fno:returns") or [],
     }
 

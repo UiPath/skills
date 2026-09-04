@@ -39,6 +39,12 @@
     },
     {
       "diagnostics": [],
+      "id": "process-type-declared",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
       "id": "writes-cover-edits",
       "passed": true,
       "status": "passed"
@@ -46,6 +52,12 @@
     {
       "diagnostics": [],
       "id": "fields-exist-in-schema",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "entity-identity-declared",
       "passed": true,
       "status": "passed"
     },
@@ -67,16 +79,13 @@
   "pairs": [
     {
       "action": "tagOverdueTicket",
-      "deployable": true,
       "job": "tagOverdueTicket.ts",
       "job_language": "typescript",
       "process": "TagOverdueTicketProcess",
-      "process_folder_id": "3225065",
+      "process_type": "CODED_FUNCTION",
       "ttl": "support-tagOverdueTicket.ttl"
     }
   ],
   "status": "PASS",
-  "warnings": [
-    "tagOverdueTicket: ont:processFolderId is 3225065"
-  ]
+  "warnings": []
 }

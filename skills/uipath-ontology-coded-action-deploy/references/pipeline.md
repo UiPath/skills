@@ -107,39 +107,40 @@ scripts/stage_jobs.py                                 # build + validate, temp o
 uip solution pack <staging> /tmp/pk -n support-jobs -v 1.0.3  # local .zip, no tenant writes
 scripts/publish_package.py 1.0.3                         # prints the steps
 scripts/publish_package.py 1.0.3 --execute               # pack, then upload to the feed
-scripts/deploy_release.py  1.0.3 support-jobs-1-0-3 --execute
-scripts/resolve_folder_id.py "Shared/support-jobs-1-0-3" # -> ont:processFolderId
-scripts/await_release.py TagOverdueTicketProcess 1.0.3 --folder-path "Shared/support-jobs-1-0-3"
+scripts/deploy_release.py  1.0.3 <deployment-name> --execute   # creates the folder, or upgrades in place
+uip or folders get "<PARENT>/<deployment-name>"          # -> Key and numeric Id, in one call
+scripts/await_release.py <ProcessName> 1.0.3 --folder-path "<PARENT>/<deployment-name>"
 ```
 
 **Never reuse a version number.** Publishing the same version is a silent no-op everywhere:
 publish succeeds, deploy reports Successful, nothing changes, and no output distinguishes it from
-a real release. `version` computes `next = current + 1` from the live deployment, filtering
-tombstones, precisely so nobody has to remember what was last shipped.
+a real release. `publish_package.py` computes `next = current + 1` from the live deployment,
+filtering tombstones, and refuses any other version unless `--force-version` is passed.
 
 **`publish` is asynchronous.** `--wait` polls until the package is Ready. Deploying before it
 finishes fails with a package-not-found error that says nothing about publishing.
 
-**A new version means a new deployment, not an upgrade.** `publish` uploads a package version to
-the feed; the deployment then has to run on it. `uip solution deploy run` does not upgrade. It
-creates a deployment plus a new Orchestrator folder (`-n` required, fresh `DeploymentKey`). Treat
-the folder as moving on every release and repoint the TTL in phase 5.
+**The first deploy creates the folder. Every later one upgrades it in place.** `publish` uploads a
+package version to the feed; the deployment then has to run on it. `deploy run` with the **same
+deployment name** and a new `--package-version` upgrades that deployment: one folder throughout,
+the same folder key, no duplicate processes, `ActivationStatus: SuccessfulActivate` each time.
+Verified across three consecutive versions.
 
-The old deployment is left alone, still serving its old version, which makes rollback trivial: put
-the previous folder id back in the TTL.
+There is no `uip solution deploy upgrade`. The subcommands are activate, config, list, run, status
+and uninstall. `deploy run` *is* the upgrade path, so nothing here is pending a spike.
 
-**SPIKE-PENDING.** `uip solution deploy upgrade` exists in the CLI help as an in-place upgrade of
-an existing deployment, but no verified run has used it: test whether upgrading a live deployment
-to a new package version keeps the same Orchestrator folder id, which would remove phase 5 from
-the repeat path and nothing else. Until then, assume folder-per-version and repoint the TTL every
-release.
+**A deployment cannot target an existing folder.** `--folder-name` is documented as the name *for
+the new folder created for this deployment*, and the other folder flags name only a parent. Given a
+name that already exists, the deploy creates `<name> 1` and puts the processes there, leaving
+anything bound to the original folder pointing at zero processes -- which surfaces at invoke as
+`No Orchestrator process named '...' in Orchestrator folder N`. This is why the deployment goes
+first and everything else follows the folder it made.
 
-So folders accumulate one per release. Deploy the new version, repoint the TTL, confirm with
-`await`, and only then consider retiring the previous deployment. Uninstalling deletes the folder,
-so doing it before the TTL is repointed destroys the folder the live action still names. Name the
-folder after the version so which is which stays obvious.
+**Never uninstall to re-release.** `uninstall` removes all provisioned resources *and the solution
+folder*, and the ontology's Data Fabric entities live in that folder. Uninstalling to get a clean
+deploy destroys the author's data. Reusing the deployment name is the correct path.
 
-**The new folder MUST be created under `Shared`.** A solution folder created at the ROOT gets no
+**The folder MUST be created under `Shared`.** A solution folder created at the ROOT gets no
 user with unattended robot permissions, so the service cannot start the job in it:
 
 ```
@@ -156,21 +157,25 @@ point it at a different parent only if that parent has robot permissions to inhe
 `NewPackageVersionAvailable` is a published package the deployment has not taken. Seeing `1.0.2` /
 `1.0.3` there means publish succeeded and only the deploy is outstanding.
 
-### Repointing the action at the new folder
+### Binding the ontology to the folder
 
-`deploy --execute` prints the new folder id; `folder-id <path>` resolves it separately, because
-`deploy run` reports only a FolderPath and the TTL needs the numeric Id. The one place the CLI
-exposes that Id is `OrganizationUnitId` in `uip or processes get --all-fields`: `uip or folders
-get` takes only a GUID or key, never a path, and `uip or processes list` returns only the GUID
-`FolderKey`. `folder-id` therefore lists the folder's processes by path and reads the numeric id
-off one of them.
+Nothing is patched into an artifact. The action names its release with `ont:process` and says
+nothing about where that release is deployed, so a re-release changes no file.
+
+What the caller needs from this phase is the folder itself, and one call returns both
+representations:
 
 ```bash
-scripts/patch_action_ttl.py {workdir}/{name}-{action}.ttl --folder-id <id> --execute
+uip or folders get "<PARENT>/<deployment-name>"   # -> Key (GUID) and Id (numeric OrganizationUnitId)
 ```
 
-`ont:process` does not change: the release Name and ProcessKey are identical in the new folder, and
-only the folder differs.
+The **Key** is what the ontology is created against (`uip ont create --folder-key`) and what the
+Data Fabric entities are created in. The numeric **Id** is what Orchestrator's
+`X-UIPATH-OrganizationUnitId` header wants. They are two representations of one folder, returned
+together, so neither has to be derived from the other.
+
+`ont:process` does not change across releases either: the release Name and ProcessKey are identical
+after an in-place upgrade.
 
 ### Await
 

@@ -9,18 +9,22 @@ Ontology(<https://ontology.uipath.com/support>
     AnnotationAssertion(rdfs:comment :Ticket "A support ticket.")
 
     Declaration(DataProperty(:Ticket.id))
+    AnnotationAssertion(:datatype :Ticket.id "key")
     DataPropertyDomain(:Ticket.id :Ticket)
     DataPropertyRange(:Ticket.id xsd:string)
 
     Declaration(DataProperty(:Ticket.tags))
+    AnnotationAssertion(:datatype :Ticket.tags "text")
     DataPropertyDomain(:Ticket.tags :Ticket)
     DataPropertyRange(:Ticket.tags xsd:string)
 
     Declaration(DataProperty(:Ticket.dueAt))
+    AnnotationAssertion(:datatype :Ticket.dueAt "datetime")
     DataPropertyDomain(:Ticket.dueAt :Ticket)
     DataPropertyRange(:Ticket.dueAt xsd:dateTime)
 
     Declaration(DataProperty(:Ticket.owner))
+    AnnotationAssertion(:datatype :Ticket.owner "text")
     DataPropertyDomain(:Ticket.owner :Ticket)
     DataPropertyRange(:Ticket.owner xsd:string)
 )

@@ -23,7 +23,7 @@ python3 tools/ontology_preflight.py \
 ## `coded_action_preflight.py`
 
 `coded_action_preflight.py` is the neutral, dependency-free validator for coded-action pairs: a
-`{workdir}/{ontology}-{action}.ttl` declaring `ont:language "IMPERATIVE"` plus the job at
+`{workdir}/{ontology}-{action}.ttl` declaring `ont:language "CODED"` plus the job at
 `{workdir}/jobs/{action}.ts`. It cross-checks the two files against each other and against the
 ontology's `.ofn` schema, which is the offline authority on which entities and fields exist. It
 does not log in, call UiPath Cloud, upload anything, or modify the workdir.
@@ -36,15 +36,19 @@ python3 tools/coded_action_preflight.py \
 ```
 
 Gates: `ttl-parses-and-well-formed`, `signature-resolves`, `input-matches-marker`,
-`input-strictness`, `writes-cover-edits`, `fields-exist-in-schema`,
-`job-language`, `typecheck`.
+`input-strictness`, `process-type-declared`, `writes-cover-edits`, `fields-exist-in-schema`,
+`entity-identity-declared`, `job-language`, `typecheck`.
 A gate reports `passed`, `failed`, or `skipped` (a skip carries its reason and never counts as a
 pass); the exit code is 0 only when nothing failed.
 
-Whether an action is ready to deploy is NOT a gate, and deliberately: the `PENDING_DEPLOY`
-placeholder is the expected state between generation and deploy, so there is nothing to fail on.
-It is reported per pair as `pairs[].deployable`, with the reason in `warnings`. Callers sequence
-on that field, not on a gate status.
+`process-type-declared` requires `ont:processType`, which the service demands whenever the language
+is `"CODED"`. `entity-identity-declared` requires every written entity to have exactly one property
+annotated `ont:datatype "key"` -- identity is annotation-only and never inferred from the XSD range,
+so a schema without it uploads and validates cleanly and then refuses every write *after* the job
+has run, reporting `rowsAffected: 0`, which in a summary is indistinguishable from a no-op.
+
+No gate reports deployment readiness, because nothing in an action names where its job is deployed.
+The artifact is portable; the folder is resolved at invoke time.
 
 Contracts are declared with `type<T>()` over plain interfaces. `input-strictness` runs
 `entry_points.py` and inspects what it derives, so it checks the property that actually matters --

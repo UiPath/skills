@@ -117,10 +117,6 @@ def live_at_version(name, version):
     return None
 
 
-def name_taken(deploy_name):
-    return any(r.get("Name") == deploy_name and not tombstone(r) for r in deployments())
-
-
 def release_records(folder_path, allow_fail=False):
     data = uip_json(["or", "processes", "list", "--folder-path", folder_path],
                     allow_fail=allow_fail) or {}
@@ -130,29 +126,3 @@ def release_records(folder_path, allow_fail=False):
 def release_version(record):
     # `uip or processes list` reports the release version as ProcessVersion. Verified live.
     return record.get("ProcessVersion")
-
-
-def folder_id(fully_qualified_name, required=True):
-    """Resolve a folder path to the numeric Id that ont:processFolderId wants.
-
-    The deploy output gives a FolderPath; the TTL needs the numeric Id, and the one place the CLI
-    exposes it is OrganizationUnitId in `uip or processes get --all-fields`. `uip or folders get`
-    takes only a GUID or key, never a path, and `uip or processes list` returns only the GUID
-    FolderKey. So: list the folder's processes by path, then get one of them with all fields.
-    A deployed jobs folder always carries at least one release, so the route is total here.
-    """
-    records = release_records(fully_qualified_name, allow_fail=not required)
-    if not records:
-        if not required:
-            return None
-        die("no processes in folder %r; cannot resolve its numeric id "
-            "(OrganizationUnitId comes from `uip or processes get --all-fields`)"
-            % fully_qualified_name)
-    detail = uip_json(["or", "processes", "get", records[0].get("Key", ""), "--all-fields"]) or {}
-    data = detail.get("Data") or {}
-    numeric_id = data.get("OrganizationUnitId")
-    if numeric_id is None:
-        die("`uip or processes get --all-fields` returned no OrganizationUnitId for %r"
-            % records[0].get("Name"))
-    return {"ok": True, "folderId": numeric_id, "folderKey": records[0].get("FolderKey"),
-            "path": fully_qualified_name}

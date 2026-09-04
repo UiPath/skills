@@ -33,7 +33,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from coded_action.gates import (  # noqa: E402
     check_fields,
-    classify_folder_id,
+    check_identity,
+    check_process_type,
     check_input,
     check_job_language,
     check_signature,
@@ -86,7 +87,9 @@ def main(argv: list[str] | None = None) -> int:
 
         marker_args = check_signature(log, name, action) if action else None
         if action is None:
-            for gate in ("input-matches-marker", "input-strictness", "writes-cover-edits", "fields-exist-in-schema"):
+            for gate in ("input-matches-marker", "input-strictness", "process-type-declared",
+                             "writes-cover-edits", "fields-exist-in-schema",
+                             "entity-identity-declared"):
                 log.add(gate, "skipped", f"{name}: the action could not be read from the TTL")
             reported.append(
                 {
@@ -95,8 +98,7 @@ def main(argv: list[str] | None = None) -> int:
                     "job": job.name if job else None,
                     "job_language": language or None,
                     "process": None,
-                    "process_folder_id": None,
-                    "deployable": False,
+                    "process_type": None,
                 }
             )
             continue
@@ -127,8 +129,8 @@ def main(argv: list[str] | None = None) -> int:
             check_writes(log, name, action, edits)
 
         check_fields(log, name, action, edits, schema, schema_reason)
-        deployable, folder_detail = classify_folder_id(name, action)
-        warnings.append(folder_detail)
+        check_identity(log, name, action, schema, schema_reason)
+        check_process_type(log, name, action)
 
         if args.skip_typecheck:
             log.add("typecheck", "skipped", f"{name}: --skip-typecheck")
@@ -145,8 +147,7 @@ def main(argv: list[str] | None = None) -> int:
                 "job": job.name if job else None,
                 "job_language": language or None,
                 "process": action["process"],
-                "process_folder_id": action["processFolderId"],
-                "deployable": deployable,
+                "process_type": action.get("processType"),
             }
         )
 

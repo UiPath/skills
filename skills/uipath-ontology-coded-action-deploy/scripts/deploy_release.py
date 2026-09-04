@@ -9,14 +9,8 @@ cannot start. The folder id this produces is what Phase 5 patches into each acti
 import argparse
 import os
 
-from _solution import (
-    PARENT_FOLDER_PATH,
-    folder_id,
-    live_at_version,
-    name_taken,
-    solution_name,
-)
-from _uip import UIP, described, die, emit, uip_json
+from _solution import PARENT_FOLDER_PATH, live_at_version, solution_name
+from _uip import UIP, described, emit, uip_json
 
 DESCRIBE = {
     "name": 'deploy_release',
@@ -30,40 +24,46 @@ DESCRIBE = {
 
 
 def deploy_release(name, version, deploy_name, execute):
-    """`deploy run` does NOT upgrade an existing deployment: it CREATES one, plus a new
-    Orchestrator folder (-n required, fresh DeploymentKey returned). So a new version means a NEW
-    deployment in a NEW folder, and the action's ont:processFolderId is then repointed at it.
+    """Deploy a published version. The SAME deployment name upgrades in place.
 
-    PARENT_FOLDER_PATH matters and defaults to Shared for a reason. A solution folder created at
-    the ROOT gets no user with unattended robot permissions, so the service cannot start the job
-    there: Orchestrator answers StartJobs with HTTP 409, errorCode 1671, "Couldn't find any user
-    with unattended robot permissions in the current folder", and the invoke reports a bare
-    "Unexpected error" on the Running job step. A folder created UNDER Shared inherits Shared's
-    assignments and runs the job. Verified both ways.
+    `deploy run` with an existing deployment name and a new --package-version upgrades that
+    deployment: one folder throughout, same folder key, no duplicate processes. Reusing the name is
+    the correct path for a re-release, not a hazard.
+
+    NEVER uninstall to re-release. `uninstall` removes the solution folder and everything
+    provisioned in it -- which includes the ontology's Data Fabric entities, because those are
+    created inside this folder. Uninstalling to get a clean deploy destroys the author's data.
+
+    The folder cannot be chosen, only named: every folder flag names a parent or a NEW folder. Given
+    --folder-name X while a folder X already exists, it creates "X 1" and puts the processes there,
+    leaving anything bound to the original folder pointing at zero processes. So the deployment
+    creates the folder, and everything else follows it -- which is why this runs before the entities
+    and before the ontology is created.
+
+    PARENT_FOLDER_PATH defaults to Shared, and that matters. A solution folder created at the ROOT
+    gets no user with unattended robot permissions, so the service cannot start the job there:
+    Orchestrator answers StartJobs with HTTP 409, errorCode 1671, "Couldn't find any user with
+    unattended robot permissions in the current folder", and the invoke reports a bare "Unexpected
+    error" on the Running job step. Verified both ways.
     """
-    # Idempotence first. Deploying a version that is ALREADY running is a no-op, not a new folder;
-    # otherwise a repeated deploy quietly multiplies folders, each carrying the same processes,
-    # and only one of them is the folder the TTL names.
+    # Deploying a version that is already running is a no-op rather than a second folder.
     already = live_at_version(name, version)
     if already:
-        return {"ok": True, "noop": True, "reason": "already deployed",
-                "deployment": already, "version": version,
-                "folder": folder_id("%s/%s" % (PARENT_FOLDER_PATH, already), required=False)}
-
-    if name_taken(deploy_name):
-        die("a deployment named %r already exists at a different version; pass a different name, "
-            "or uninstall the old one. Reusing the name would create a duplicate rather than "
-            "upgrade it." % deploy_name)
+        return {"ok": True, "noop": True, "reason": "already deployed at this version",
+                "deployment": already, "version": version}
 
     argv = ["solution", "deploy", "run", "-n", deploy_name, "--package-name", name,
             "--package-version", version, "--folder-name", deploy_name,
             "--parent-folder-path", PARENT_FOLDER_PATH]
     if not execute:
-        return {"ok": True, "dryRun": True, "command": [UIP] + argv}
+        return {"ok": True, "dryRun": True, "command": [UIP] + argv,
+                "note": "reusing an existing deployment name upgrades it in place; never uninstall "
+                        "to re-release, because that deletes the folder and the entities in it"}
     uip_json(argv)
-    # The folder id is what the TTL patch needs, and deploy run reports only the path.
     return {"ok": True, "deployment": deploy_name, "version": version,
-            "folder": folder_id("%s/%s" % (PARENT_FOLDER_PATH, deploy_name))}
+            "folderPath": "%s/%s" % (PARENT_FOLDER_PATH, deploy_name),
+            "next": "read the folder's Key and Id with `uip or folders get`; the ontology is "
+                    "created against that Key"}
 
 
 def main():

@@ -13,8 +13,10 @@ GATES = (
     "signature-resolves",
     "input-matches-marker",
     "input-strictness",
+    "process-type-declared",
     "writes-cover-edits",
     "fields-exist-in-schema",
+    "entity-identity-declared",
     "job-language",
     "typecheck",
 )

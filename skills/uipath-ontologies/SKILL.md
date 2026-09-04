@@ -177,7 +177,7 @@ uip ont artifact validate <idOrName> <fileName> --type <type> --media-type <mime
 uip ont artifact delete <idOrName> <fileName> --yes --reason <reason>
 ```
 
-`validate` always returns HTTP 200 once reached — check `Data.valid`, not exit code.
+`validate` always returns HTTP 200 once reached — check `Data.Valid` (capitalised), not the exit code.
 
 `delete` (ontology and artifact) requires both `--yes` and `--reason`. No confirmation prompt.
 

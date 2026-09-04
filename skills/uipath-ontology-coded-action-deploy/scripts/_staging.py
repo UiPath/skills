@@ -92,11 +92,44 @@ def write_functions_map(project_dir):
     return "written"
 
 
+def strip_install_inputs(project_dir):
+    """Remove everything that would make the runtime try to install a dependency.
+
+    The serverless runtime runs a prepare step that installs whatever `package.json` declares.
+    `uip functions new` declares the SDK as a devDependency, the runtime cannot resolve it, and
+    EVERY job then faults with `Serverless.JsFunction.PrepareEnvironmentError` / "Failed to prepare
+    environment" -- a message that names nothing about dependencies, surfacing at the invoke as
+    only "ended in state Faulted". Nothing is lost by removing it: type<T>() is erased at compile
+    time and defineFunction comes from the runtime, so the shipped project needs no dependencies
+    at all.
+
+    `.npmrc` goes for a related reason. It carries an unexpanded ${GH_NPM_REGISTRY_TOKEN}, which
+    reaches the runtime as a literal string and is useless there, so shipping it can only mislead.
+    """
+    removed = []
+    manifest = project_dir / "package.json"
+    if manifest.is_file():
+        doc = json.loads(manifest.read_text())
+        for key in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+            if doc.pop(key, None):
+                removed.append(key)
+        manifest.write_text(json.dumps(doc, indent=2) + "\n")
+    for junk in (".npmrc", "package-lock.json", "bun.lockb", "node_modules"):
+        path = project_dir / junk
+        if path.is_dir():
+            shutil.rmtree(path, ignore_errors=True); removed.append(junk)
+        elif path.exists():
+            path.unlink(); removed.append(junk)
+    return "stripped: %s" % ", ".join(removed) if removed else "nothing to strip"
+
+
 def stage(src):
     """Build the staging tree and validate every entry point. Returns the staging path."""
     staging = pathlib.Path(tempfile.mkdtemp(prefix="ontology-solution-"))
     shutil.copytree(src, staging, dirs_exist_ok=True)
-    for junk in ("jobs.map.json", "README.md", "AGENTS.md", "CLAUDE.md"):
+    # .npmrc at the solution root goes for the same reason as the per-project one: it carries an
+    # unexpanded token reference that means nothing to the runtime.
+    for junk in ("jobs.map.json", "README.md", "AGENTS.md", "CLAUDE.md", ".npmrc"):
         (staging / junk).unlink(missing_ok=True)
 
     projects, authority = manifest_projects(src)
@@ -131,9 +164,10 @@ def stage(src):
         shutil.copyfile(source, target)
         manifest_status = write_entry_points(staging / project, target)
         map_status = write_functions_map(staging / project)
+        deps_status = strip_install_inputs(staging / project)
         staged.append({"project": project, "from": rel, "to": "main.ts",
                        "bytes": source.stat().st_size, "entryPoints": manifest_status,
-                       "functionsMap": map_status})
+                       "functionsMap": map_status, "installInputs": deps_status})
 
     # Belt and braces: check EVERY project, not just the mapped ones. An unmapped project with a
     # missing or empty main.ts is the same silent failure, and pack will not catch it.

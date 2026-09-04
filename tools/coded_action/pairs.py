@@ -19,10 +19,22 @@ SUPPORTED_JOB_LANGUAGES = ("typescript",)
 JOB_LANGUAGES = {".ts": "typescript", ".js": "javascript", ".py": "python", ".cs": "csharp", ".java": "java"}
 
 
-def schema_terms(schema_text: str) -> tuple[set[str], set[str]]:
+def schema_terms(schema_text: str) -> tuple[set[str], set[str], set[str]]:
+    """(classes, data properties, identity properties) declared by the local .ofn.
+
+    Identity is the third one because it is annotation-only: PropertyKind is read from
+    `AnnotationAssertion(:datatype :X.y "key")` and is never inferred from the XSD range. A
+    property carrying no `ont:datatype` is TEXT, so a schema with no annotated key gives its class
+    no identity at all -- and every write then dies AFTER the job has run, with
+    `Entity 'X' has no identity property` on the `Preparing write statement` step.
+    """
     classes = set(re.findall(r"Declaration\(Class\(:([\w.-]+)\)\)", schema_text))
     data_props = set(re.findall(r"Declaration\(DataProperty\(:([\w.-]+)\)\)", schema_text))
-    return classes, data_props
+    # The annotation is matched by local name, so any prefix bound to the ontology's own namespace
+    # is correct; only the property it targets and the "key" token matter here.
+    keys = set(re.findall(r'AnnotationAssertion\(\s*:?[\w.-]*datatype\s+:([\w.-]+)\s+"key"\s*\)',
+                          schema_text))
+    return classes, data_props, keys
 
 
 def discover(workdir: Path, ontology: str, wanted: list[str]) -> tuple[list[dict], list[str], list[str]]:
@@ -44,10 +56,10 @@ def discover(workdir: Path, ontology: str, wanted: list[str]) -> tuple[list[dict
         pairs.append({"action": action, "ttl": path, "model": model, "jobs": jobs})
     found = {pair["action"] for pair in pairs}
     errors.extend(
-        f"--action {action}: no {ontology}-{action}.ttl declaring ont:language \"IMPERATIVE\" in {workdir}"
+        f"--action {action}: no {ontology}-{action}.ttl declaring ont:language \"CODED\" in {workdir}"
         for action in wanted
         if action not in found
     )
     if not wanted and not pairs:
-        errors.append(f"no coded-action pairs found: no {ontology}-*.ttl declares ont:language \"IMPERATIVE\"")
+        errors.append(f"no coded-action pairs found: no {ontology}-*.ttl declares ont:language \"CODED\"")
     return pairs, other, errors

@@ -8,12 +8,12 @@ sup:tagOverdueTicket
         rdfs:label      "Tag an overdue ticket";
         rdfs:comment    "Recomputes a ticket's due date from its priority (sev1 four hours, sev2 twenty hours, sev3 five days), correcting it when the stored value has fallen out of step, and adds TICKET_OVERDUE to its tags once that deadline has passed. Closed tickets are left alone.";
         ont:kind        "ACTION";
-        ont:language    "IMPERATIVE";
+        ont:language    "CODED";
+        ont:processType "CODED_FUNCTION" ;
         ont:statements  ( "func:tagOverdueTicket(ticketId, ticket)" );
         ont:reads       ( sup:read.tagOverdueTicket.ticket ) ;
         ont:writes      "Ticket.tags", "Ticket.dueAt" ;
         ont:process     "TagOverdueTicketProcess" ;
-        ont:processFolderId "3225065" ;
         fno:expects     ( sup:param.tagOverdueTicket.ticketId ) ;
         fno:returns     ( sup:out.tagOverdueTicket.rowsAffected ) .
 

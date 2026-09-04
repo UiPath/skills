@@ -35,8 +35,14 @@ def uip_json(argv, allow_fail=False):
     of those lines contains a literal "{solutionKey}"; folding stderr in makes the first brace in
     the stream a log line, so the JSON parse silently yields nothing.
     """
-    proc = subprocess.run([UIP] + argv + ["--output", "json", "--log-level", "error"],
-                          capture_output=True, text=True)
+    try:
+        proc = subprocess.run([UIP] + argv + ["--output", "json", "--log-level", "error"],
+                              capture_output=True, text=True)
+    except OSError as error:
+        # An unresolvable binary is a setup problem, and it has to arrive as JSON on stderr like
+        # every other failure here. A raw traceback reads as a bug in the script.
+        die("could not run %r: %s" % (UIP, error),
+            hint="set UIP_CLI to the uip binary, or put it on PATH")
     if proc.returncode != 0:
         if allow_fail:
             return None

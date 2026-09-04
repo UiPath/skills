@@ -17,7 +17,8 @@ Each coded action pairs two files: the TTL definition `{name}-{actionName}.ttl` 
 | Which fields can the job ever write? | `ont:writes`, repeated triples | The union over every branch, not the fields one run happens to touch. See the ont:writes declaration section |
 | How is a written row identified? | `id` in each edit's `properties` | The job returns the primary key on every edit, creates included; the platform builds the WHERE clause from it |
 | What inputs does the caller provide? | `fno:expects` list + `{ns}:param.*` blocks | Only facts the caller legitimately owns. Facts about stored data come from reads |
-| Which Orchestrator release holds the job? | `ont:process` + `ont:processFolderId` | Process name is `PascalCase(actionName) + "Process"`; the folder id is written as `"PENDING_DEPLOY"` at generation time |
+| Which Orchestrator release holds the job? | `ont:process` | `PascalCase(actionName) + "Process"`. Nothing about where it is deployed belongs in the artifact |
+| What runtime computes it? | `ont:processType "CODED_FUNCTION"` | Required whenever `ont:language` is `"CODED"`. One value today; naming it means a second runtime later needs no migration |
 | What does an AI agent need to know to pick this action? | `rdfs:comment` on the action node | What it changes, how many rows, the branch that writes nothing, when to use it over alternatives |
 
 ## PDD table format (when structured)
@@ -50,12 +51,13 @@ Coded action: {Human-readable title}
 | Writes | `ont:writes "{Entity.field}", ...` as repeated triples | Union over every branch. Each `{Entity.field}` must match a DataProperty in `{name}.ofn` |
 | Identifier | The `id` key in each edit's `properties` | Not a separate TTL construct; the job supplies it, and it is exempt from `ont:writes` |
 | Inputs | `fno:expects` list + `{ns}:param.*` blocks | Types derived from the field's XSD type in `{name}.ofn`. A multi-valued input adds `ont:paramMultiple true` and binds with `IN :param` in the read |
-| Process | `ont:process "{value}"` + `ont:processFolderId "PENDING_DEPLOY"` | Derive the value as `PascalCase(Name) + "Process"` when the PDD leaves it blank. The folder id is always the placeholder at generation time |
+| Process | `ont:process "{value}"` | Derive as `PascalCase(Name) + "Process"` when the PDD leaves it blank |
+| Process type | `ont:processType "CODED_FUNCTION"` | Constant today, and required |
 | Description | `rdfs:comment` on the action node | Use value directly; ensure it covers scope, the multi-row case, and the no-op branch |
 
 ## Generated TTL structure
 
-**Two prefixes required.** `ont:` = platform namespace (`https://ontology.uipath.com/ont#`), carrying every platform predicate: `kind`, `language`, `statements`, `reads`, `bindsTo`, `statement`, `writes`, `process`, `processFolderId`, `paramName`, `paramType`, `paramMultiple`, `required`, and the `ont:Read` class. A separate `{ns}:` prefix carries the ontology's own terms: the action node and its read, param, and output nodes. The parser resolves platform predicates by full URI, so the wrong namespace silently drops the action.
+**Two prefixes required.** `ont:` = platform namespace (`https://ontology.uipath.com/ont#`), carrying every platform predicate: `kind`, `language`, `statements`, `reads`, `bindsTo`, `statement`, `writes`, `process`, `processType`, `paramName`, `paramType`, `paramMultiple`, `required`, and the `ont:Read` class. A separate `{ns}:` prefix carries the ontology's own terms: the action node and its read, param, and output nodes. The parser resolves platform predicates by full URI, so the wrong namespace silently drops the action.
 
 `func:` in the marker is not a declared prefix. The marker is app-level syntax matched by regex inside the string literal, and no `@prefix func:` line belongs in the file.
 
@@ -70,12 +72,12 @@ Coded action: {Human-readable title}
         rdfs:label          "{Action title}" ;
         rdfs:comment        "{What it changes, how many rows, the branch that writes nothing, when to use it.}" ;
         ont:kind            "ACTION" ;
-        ont:language        "IMPERATIVE" ;
+        ont:language        "CODED" ;
+        ont:processType     "CODED_FUNCTION" ;
         ont:statements      ( "func:{name}({arg1}, {arg2})" ) ;
         ont:reads           ( {ns}:read.{name}.{bind1} ) ;
         ont:writes          "{Entity}.{field1}", "{Entity}.{field2}" ;
         ont:process         "{PascalCaseName}Process" ;
-        ont:processFolderId "PENDING_DEPLOY" ;
         fno:expects         ( {ns}:param.{name}.{p1} ) ;
         fno:returns         ( {ns}:out.{name}.rowsAffected ) .
 
@@ -100,12 +102,12 @@ Coded action: {Human-readable title}
 
 Construct-by-construct:
 
-- `ont:language "IMPERATIVE"` is the wire value the backend parser matches. It is the one place the old word survives; everywhere else the feature is called coded actions.
+- `ont:language "CODED"` is the wire value the backend parser matches. There is no alias: the service refuses anything else for a job-computed action.
+- `ont:processType "CODED_FUNCTION"` names the runtime that computes the edits, and is **required** whenever the language is `"CODED"`. `ont:language` says only that a job computes them; this says what kind of job. Absent on declarative (SQL) actions.
 - `ont:statements` holds exactly one marker, `func:{name}(arg1, arg2)`. It is the job's whole input signature: nothing it does not name reaches the job. Marker arguments resolve by name, never by position. Each argument must match either a declared `fno:expects` param (the caller supplies it) or a read's `ont:bindsTo` (the platform runs that read and supplies the rows). A param consumed only inside a read's WHERE clause is legal and simply never reaches the job.
 - `ont:reads` is an RDF list, written `( ... )`, of read nodes. So are `ont:statements`, `fno:expects`, and `fno:returns`.
 - `ont:writes` is repeated triples, `ont:writes "A.x", "A.y" ;`, and never a list. `ont:writes ( "A.x" "A.y" )` parses as a list node, and the runtime then sees zero writable targets.
-- `ont:process` names the Orchestrator release, matched on Name or ProcessKey and never on version.
-- `ont:processFolderId` is the numeric Orchestrator folder id. Generation always writes the placeholder `"PENDING_DEPLOY"`; the deploy skill patches the real id in after the job is published.
+- `ont:process` names the Orchestrator release, matched on Name or ProcessKey and never on version. **Nothing in the artifact says where that release is deployed.** The folder follows from the ontology at invoke time, so a portable artifact carries no tenant coordinate and survives a re-release unchanged.
 - `fno:returns` is constant across every coded action: one output node with paramName `rowsAffected`, paramType `xsd:integer`, required true. It does not vary with what the action writes.
 
 ## Job contract
@@ -202,10 +204,51 @@ Resolve every entity and field against the local `{name}.ofn` schema. No live se
 7. Input types must match the field's XSD type from `{name}.ofn`. A multi-valued input declares `ont:paramMultiple true` and binds with `IN :param`.
 8. `ont:writes` must be repeated triples, never an RDF list.
 9. `ont:statements` must hold exactly one `func:` marker.
-10. `ont:language` must be the literal `"IMPERATIVE"`, and `ont:kind` the literal `"ACTION"`.
-11. `ont:process` must be present, and `ont:processFolderId` must be `"PENDING_DEPLOY"` in a generated artifact.
+10. `ont:language` must be the literal `"CODED"`, and `ont:kind` the literal `"ACTION"`.
+11. `ont:process` must be present. `ont:processFolderId` and `ont:processUrl` are **not part of the vocabulary** and must not be emitted.
+11a. `ont:processType` must be present and must be `"CODED_FUNCTION"`.
 12. `fno:returns` with the `rowsAffected` output is mandatory and constant.
 13. Param/output nodes use `ont:paramName`/`ont:paramType`/`ont:required`, resolved via the shared platform `ont:` namespace (`https://ontology.uipath.com/ont#`).
+
+## What a read can and cannot do
+
+A read is one `SELECT` against one entity, run before the job starts. Three constraints close off
+the route a generating agent will reach for first, and it is worth stating all three because each
+one alone looks like it has a workaround:
+
+1. **Reads all run before the job.** A parent's storage id is therefore unknown when a child read
+   that would need it is issued. There is no chaining and no second round of reads.
+2. **`{{Entity.field}}` resolves data properties only.** An object property is not addressable, so
+   the foreign key cannot be named even though the column exists:
+   `Template references unknown field: {Child}.{objectProperty}`.
+3. **A read statement is scoped to one entity.** `IN` parses, but a cross-entity subquery fails
+   with `Unable to validate SQL: … Object '{Parent}' not found`.
+
+And an unbounded scan is refused outright: `Selecting all columns without a WHERE or LIMIT clause
+is not supported` (`SQL_PARSING`).
+
+So a child that can only be identified through its parent is read as
+`SELECT * FROM {{Child}} LIMIT {n}` and filtered **inside the job**.
+
+**A job reading at the limit must refuse rather than compute.** If the row count comes back equal to
+the limit, the view may be truncated and any total derived from it is wrong. A short total written
+confidently is worse than a failed invocation, so return no edits and say why:
+
+```typescript
+if (input.lines.length >= LIMIT) {
+  throw new Error(`read hit the ${LIMIT}-row limit; refusing to compute from a possibly truncated view`);
+}
+```
+
+## Values a write cannot carry
+
+**No control characters.** A `\n`, `\t` or `\r` anywhere in a written value fails the whole
+statement — `Parameter value contains illegal control character at position N` — and it fails
+*after* the job has run. An append-style audit trail therefore joins with a visible separator:
+
+```typescript
+const notes = [existing, entry].filter(Boolean).join(" | ");   // not "\n"
+```
 
 ## The ont:writes declaration
 
@@ -226,11 +269,10 @@ Complete pairs, `tagOverdueTicket` (single row, corrective no-op) and `flagBigOr
 | More than one `func:` marker in `ont:statements` | Exactly one marker; it is the whole input signature |
 | Marker argument matching neither a param nor a bind | Every argument resolves by name to a `fno:expects` param or a read's `ont:bindsTo` |
 | Declaring only the fields the happy path writes | Declare the union over every branch |
-| A real folder id in a generated artifact | `ont:processFolderId "PENDING_DEPLOY"`; the deploy skill patches it |
-| `ont:language "SQL"` on a coded action | `ont:language "IMPERATIVE"` |
+| Any deployment coordinate in the artifact | Neither `ont:processFolderId` nor `ont:processUrl` exists. The artifact names the release, never its folder |
+| `ont:language "CODED"` with no `ont:processType` | Add `ont:processType "CODED_FUNCTION"`; the service refuses the action without it |
+| `ont:language "SQL"` on a coded action | `ont:language "CODED"` |
 | A type outside the lowerable grammar | keep to the grammar above; `tools/entry_points.py` refuses the rest, and it runs as a preflight gate |
-| Bare `z.object()` for the input schema | `.strict()` on the top-level `Input` object; without it `additionalProperties: false` is lost from the packed schema |
-| Row schema without `.passthrough()` | End row objects with `.passthrough()`; reads are `SELECT *` and rows carry undeclared physical columns |
 | Edits returned as inline object literals | Build them through `const edits: DeclaredEdit[] = [...]` |
 | Deriving a value from a caller parameter that the data already holds | Read it, then compute; a caller can lie about any fact concerning the data |
 | Omitting `id` from a CREATE edit's properties | Every op carries the primary key; the platform never assigns keys |
