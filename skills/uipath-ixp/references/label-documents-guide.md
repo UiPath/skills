@@ -5,9 +5,11 @@ Reusable workflow for labelling documents in an IXP project. Used by:
 - [Project Setup](project-setup-guide.md) — initial labelling after creating a project
 - [Improve Prompts](improve-prompts-guide.md) — reviewing predictions during optimization
 
-You act as a **reviewer** — IXP generates predictions, you validate them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
+Act as a **reviewer**: IXP generates predictions; validate them field-by-field against the document. Confirm only correct fields. Leave wrong fields unannotated. Correct only OCR-mangled values when IXP found the right location.
 
 ## Step 1 — Get Documents and Taxonomy
+
+Run:
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
@@ -15,85 +17,69 @@ uip ixp documents list <project-name> --output json
 uip ixp projects get-taxonomy <project-name> --output json
 ```
 
-Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
-
-From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents.
+Save the taxonomy as `/tmp/ixp/<project-name>/taxonomies/v1.json`; increment the version on each re-fetch. Review raw snake_case field groups and fields under `Data.dataset.label_groups`, and types under `Data.dataset.entity_defs`.
 
 ## Step 2 — Process Each Document
 
-For each document from the list, process one at a time: get predictions, download image/text, review, confirm.
+Process documents one at a time: get predictions, download or reuse the file, review every field, and confirm only approved fields.
 
-### 2a. Get predictions for this document
+### 2a. Get predictions
+
+Run:
 
 ```bash
 uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
-This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
+Read `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`; each field has `FieldId`, `FieldName`, `FormattedValue`.
 
-The response also carries `ModelVersion` — the model version that produced these predictions. Note it: pass it to `confirm --model-version` in step 2d so a retrain mid-review can't silently change the values `confirm` stamps.
+Treat `Occurrence` as the explicit 0-based index for `--occurrence`/`--updates`, valid **for this read only**; see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped). Record `ModelVersion` and pass it to every `confirm --model-version` call so a retrain cannot silently change reviewed values.
 
-### 2b. Download the document file
+### 2b. Download the document
 
-- **If the file already exists** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse it — do NOT re-download.
-- **Otherwise, download:**
+If the file exists in `/tmp/ixp/<project-name>/docs/`, reuse it and do NOT re-download. Otherwise run:
 
 ```bash
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
-Use the document ID as the filename. Pass `-o` **without an extension** — the CLI detects the actual format (PDF, PNG, JPG, …) from the file content and appends the correct extension. Read the resolved `Path` from the response and use that for the next step. Files persist across sessions — check for existing files before downloading.
+Pass `-o` without an extension. Read the response's resolved `Path` and use it next; the CLI detects the content format and appends the correct extension. Files persist across sessions.
 
-### 2c. Review predictions field-by-field
+### 2c. Review every predicted field
 
-Use the **Read tool** to view the document file (read the whole document in one call, no `pages` parameter — a full Read returns text + image natively for digital and scanned PDF/PNG/JPG docs; no PDF tools to install), then review each predicted field against the document:
+Use the **Read tool** once on the whole file with no `pages` parameter. A full Read returns text + image natively for digital and scanned PDF/PNG/JPG documents; do not install PDF tools. Understand the layout, then evaluate every predicted field.
 
-1. **Look at the document** to understand the layout and where field values appear.
-2. **For each predicted field**, assign one of four verdicts:
-   - **CONFIRMED** — the predicted value matches what is in the document, literally or in its data type's normalized form. Minor OCR-level differences (capitalization, whitespace) are acceptable, as is any difference that is purely the type's normalization — a `Date` reads back as `2022-06-21T00:00:00Z` for a page showing `21-JUN-22`, a `Monetary Quantity` as `114.91 AUD` for a page showing `114.91`. Compare the values by reading them; do not write a script to convert or check formats. See [CLI Reference § Normalized output formats](cli-reference.md#normalized-output-formats).
-   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or a misread digit in a number — page `£7,300.00` predicted as `£730.00`). The reference is correct, only the literal characters need fixing. **A number whose magnitude differs from the page is OCR garble, never type normalization** (Rule 8). Do NOT use CORRECTED to restore a page's date or amount formatting, for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
-   - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
-   - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
-3. **Report your verdict for every field.** Print a table per document:
+Use exactly one verdict per field:
+
+- **CONFIRMED** — the value matches literally or in the data type's normalized form. Capitalization, whitespace, and type normalization are acceptable. For example, a `Date` may read back as `2022-06-21T00:00:00Z` for `21-JUN-22`, and a `Monetary Quantity` as `114.91 AUD`. Compare by reading; do not write a conversion/checking script. See [CLI Reference § Normalized output formats](cli-reference.md#normalized-output-formats).
+- **CORRECTED** — OCR mangling only: the prediction found the right field and location, the bytes-on-page are correct, and only the transcription is garbled. A magnitude difference is OCR garble, never type normalization (Rule 8). Do not correct formatting, wrong booleans, wrong inferred/computed values, or wrong source selection.
+- **MISSING** — IXP predicted an empty `FormattedValue` **and** the field is genuinely absent. Both conditions are required. A non-empty prediction for an absent field is NOT CONFIRMED, never MISSING (Critical Rule 12).
+- **NOT CONFIRMED** — every other error: wrong literal value, wrong source, hallucination, wrong boolean, wrong inferred/computed value, or a value not present in the document. Leave it unannotated and do not use `--corrections`; improve the prompt instead. `--corrections` is OCR-only (Critical Rule 8).
+
+Report every field in a table per document:
 
 ```text
 Document: <document-id>
 
 Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
-Invoice Number           | CORRECTED     | OCR mangled "MSIÓÓÓ601020/" → "MSI0601020", top-right of page 1
-Invoice Date             | CONFIRMED     | Predicted "2018-02-28" matches document
-Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
-Has Signature            | NOT CONFIRMED | Predicted "false" but signature visible bottom-right (boolean came back wrong — NOT CORRECTED)
-Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax = "$1210.00" (inferred value wrong — NOT CORRECTED)
-Terms of Payment         | MISSING       | IXP predicted no value AND field not visible in document
-Discount                 | MISSING       | IXP predicted no value AND no discount section on the page
-Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
+<field>                  | <verdict>     | <comparison, correction, or absence evidence>
 ```
 
-**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1. Read `Occurrence` directly — on an unlabelled document it matches document order, but once part of the group is confirmed it does not (see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)), so match rows to the document by their values, not by index. When validation differs across rows, give per-occurrence verdicts:
+For CORRECTED, state the mangled value, corrected value, and location; the error must be character-level in the same field and location. For MISSING, state that the prediction was empty and how absence was verified. For NOT CONFIRMED, state the predicted value, actual value if visible, and location.
 
-```text
-Line Items > Description (occurrence 0) | CONFIRMED     | "Widget A" matches line 1
-Line Items > Description (occurrence 1) | CONFIRMED     | "Widget B" matches line 2
-Line Items > Description (occurrence 3) | NOT CONFIRMED | Predicted "Widget D" but line 4 shows "Widget Z"
-```
+Repeatable field groups produce one extraction per row. `get-predictions` returns one label per row with a 0-based `Occurrence`; read it directly, but match rows to the document by values, not index. On an unlabelled document it matches document order; after partial confirmation it may not. Report differing rows separately.
 
-For **CORRECTED** fields: state the mangled predicted value, the corrected value, and where it appears. The mistake must be at the character level — same field, same location, garbled bytes.
-For **MISSING** fields: state that the prediction was empty AND describe how you verified the field is absent (e.g., "no payment-terms section anywhere in the document").
-For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location. Includes any non-OCR mistake — wrong source, wrong boolean, wrong inferred value, hallucination, value the document doesn't contain. **Do NOT use `--corrections` to fix these** — improve the field's prompt instructions instead.
+Build:
 
-4. **Build two lists from the table:**
-   - **Submit field IDs** — all CONFIRMED + CORRECTED + MISSING fields (one combined list — the CLI applies the right semantic per field based on IXP's prediction)
-   - **Corrections JSON** — only CORRECTED fields: `[{"field_id":"...","value":"corrected text"}]`
+- **Submit field IDs**: all CONFIRMED, CORRECTED, and MISSING fields in one combined list.
+- **Corrections JSON**: CORRECTED fields only, `[{'field_id':'...','value':'corrected text'}]` (use valid JSON with double quotes in the command).
 
 ### 2d. Confirm and correct
 
-Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
+Pass the reviewed `ModelVersion` as `-m <model_version>` to every `confirm` call, including narrowed `--occurrence`/`--updates` calls. If confirmation returns `PredictionVersionChangedError`, run 2a again, re-review, and confirm again.
 
-**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
-
-**If there are corrections:**
+With corrections, run:
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
@@ -103,24 +89,22 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-The `--fields` list includes CONFIRMED, CORRECTED, and MISSING field IDs together — the CLI writes the right annotation per field based on IXP's prediction (content → confirm, content with override → correct, empty → missing marker). The `--corrections` JSON overrides the predicted value for corrected fields while keeping their document references (bounding boxes).
-
-**If there are no corrections (all approved fields are exact matches):**
+Without corrections, run:
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" -m <model_version> --output json
 ```
 
-If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm every predicted field on **that one document** in a single call:
+`--fields` may contain CONFIRMED, CORRECTED, and MISSING IDs. The CLI confirms content, applies a correction override while retaining document references/bounding boxes, or writes a missing marker when the prediction is empty. If every reviewed prediction is correct, run the per-document form:
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> -m <model_version> --output json
 ```
 
-This per-document form is fine **once you've reviewed the document and every field is correct** (2c). What you must NOT do is run `confirm` **without a `<document-id>`** — that confirms every document in the project at once, bypassing the per-document review loop. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric reports 1.00 even when the confirmed values are wrong**. F1 alone is never evidence the values are correct.
+Never run `confirm` without `<document-id>`: that confirms every project document without review. Wrong labels can make F1 report 1.00, so F1 alone is never evidence of correctness.
 
-**If there are missing fields**, include their IDs in the same `--fields` list as the CONFIRMED and CORRECTED IDs. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
+Include a MISSING field only when `get-predictions` shows no value (Critical Rule 12). For mixed approved fields, run:
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
@@ -130,11 +114,15 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it).
+Run this when a missing marker must be written directly, including when `confirm --fields` cannot reach a field with a prior annotation:
 
-Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to record a genuinely-missing field. It marks the listed fields directly, so it also handles the case where `confirm --fields` no-ops — a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain), which `confirm` can't reach. Either records the missing marker; only do so when `get-predictions` shows IXP predicted no value for the field — never to override a wrong prediction.
+```bash
+uip ixp labellings mark-missing <project-name> <document-id> --fields <ids>
+```
 
-**Per-occurrence confirm for repeatable groups.** When a repeatable group's verdicts differ across occurrences (some lines correct, some not), `confirm --fields a7c3e9105f2b4d86` is the wrong shape — it confirms `a7c3e9105f2b4d86` in **every** occurrence, including the wrong ones. Target each correct occurrence by index:
+Use it only when IXP predicted no value; never override a wrong prediction.
+
+For repeatable groups with differing verdicts, do not use unscoped `--fields`; it applies to every occurrence. Target occurrences by index:
 
 ```bash
 # All predicted fields in occurrence 0:
@@ -146,9 +134,7 @@ uip ixp labellings confirm <project-name> <document-id> \
   --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 -m <model_version> --output json
 ```
 
-Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated).
-
-**Confirm all the correct rows in one `--updates` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
+Confirm all correct rows in one `--updates` call, not separate `--occurrence` calls:
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
@@ -157,9 +143,9 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 13.
+Every index in one call resolves against the same read. See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 13.
 
-**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+Run `unconfirm` with the same `--group`/`--occurrence`/`--updates` scope to roll back an incorrect confirmation. Unscoped `unconfirm --fields a7c3e9105f2b4d86` affects that field in every occurrence; scope it to one or several occurrences to limit the rollback. Without `--fields`, roll back every annotated field in the target occurrence(s). Use a fresh `get-predictions` index because partial confirmation can reorder occurrences. See Critical Rule 14.
 
 ```bash
 # Roll back only occurrence 2 of Line Items (every field in that line):
@@ -167,59 +153,46 @@ uip ixp labellings unconfirm <project-name> <document-id> \
   --group "Line Items" --occurrence 2 --output json
 ```
 
-Take the index from a **fresh** `get-predictions`: on a partly-confirmed group, the index that confirmed a row is usually not the index that rolls it back.
-
 ### 2e. Move to the next document
 
-Repeat steps 2a–2d for all documents in the list.
+Repeat steps 2a–2d for every document in the list.
 
 ### Occurrence numbers are read-scoped
 
-`get-predictions` does not return a repeatable group's rows in a fixed order. The server pairs each annotation with its prediction and lists the **matched pairs first**, then the still-unmatched predictions. So on a partly-confirmed group:
+`get-predictions` lists matched annotation/prediction pairs first, then unmatched predictions. Confirmed rows therefore move to the front, as in the IXP UI; values and page locations are retained. Only a group with no annotations or with every row annotated reads in document order.
 
-- confirmed rows sort to the front — confirm the third row of four and it reads back as `Occurrence` 0, with the other three shifted to 1, 2, 3;
-- the same holds in the IXP UI, which shows the confirmed row first;
-- nothing is lost or mis-assigned: the confirmed row keeps its own values and page location, it is only positioned differently in the read.
+An `Occurrence` is valid only for the read that produced it, and any write invalidates it:
 
-Only two states read back in document order: a document with no annotations on the group, and one where every row is annotated.
-
-The consequence for labelling: **an `Occurrence` value is only valid for the read that produced it, and any write to that group invalidates it.** So
-
-- put every occurrence you want to confirm (or unconfirm) in ONE `--updates` call — all of its indices resolve against the same read;
-- if sequential per-occurrence calls are unavoidable, re-run `get-predictions` between them and re-locate each row by its field values;
-- never reuse an index across a write, and report rows to the user by value ("the row with Description `Widget B`"), not as "row 3".
+- put all target occurrences in one `--updates` call;
+- if sequential calls are unavoidable, run `get-predictions` between them and re-locate rows by field values;
+- never reuse an index after a write;
+- report rows by value, not as a row number.
 
 ### Removing a document from the project
 
-If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
+For a wrong type, corruption, or duplicate, run deletion instead of confirming or skipping:
 
 ```bash
 uip ixp documents delete <project-name> <document-id> -y --output json
 ```
 
-`-y/--yes` is required (the CLI never prompts). `<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.
+`-y/--yes` is required. Use the whole `DocumentId` from `documents list`, not AttachmentRef or Filename. Deletion is irreversible and triggers model retraining; do not delete merely to skip labelling.
 
-**Finding the DocumentId:**
+Find the `DocumentId` as follows:
 
 | You have | How to get the DocumentId |
 |----------|---------------------------|
-| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
-| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | `uip ixp documents list <project-name> --output json` for the ids, then `uip ixp labellings get-predictions <project-name> <document-id> --output json` per id until a `Labels[].Fields[].FormattedValue` matches. One call per document, so stop at the first match. |
-| Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
+| Filename | Run `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` in a paged envelope). |
+| A distinctive predicted field value | Run `uip ixp documents list <project-name> --output json`, then run `uip ixp labellings get-predictions <project-name> <document-id> --output json` per ID until `Labels[].Fields[].FormattedValue` matches; stop at the first match. |
+| Nothing — need to find by content | Run `uip ixp documents list <project-name> --output json`, download candidates with `documents download`, and read them with the Read tool. |
 
-`documents list` returns `Filename` alongside `DocumentId` (the original upload filename, or `null` if none was sent at upload time). When filenames aren't unique within the project, the JMESPath filter returns multiple IDs — review them with `documents download` before deleting.
-
-Deletion is irreversible and triggers a model retrain. Do NOT use deletion to skip documents you simply don't want to label — leave those unconfirmed instead.
+`documents list` returns `Filename` with `DocumentId`; it may be the original upload filename or `null`. If filenames are not unique, review all IDs returned before deleting.
 
 ## Step 3 — Summary
 
-After processing all documents, track progress and errors:
+Do not stop at the first error. Continue with remaining documents. If download or text fetch fails, skip the document and record the failure. If confirmation fails, log the error and UID, then continue.
 
-- Do NOT stop on the first error — continue with remaining documents
-- If a download or text fetch fails, skip the document and note the failure
-- If confirmation fails, log the error and UID, then continue
-
-At the end, report a full summary:
+Report:
 
 ```text
 Labelling complete.
@@ -228,15 +201,14 @@ Documents: N processed, M confirmed, K skipped (no predictions)
 Fields: X confirmed, Y corrected, W marked missing, Z not confirmed
 
 OCR Corrections Applied:
-  Doc <uid-1>: Invoice Number "MSIÓÓÓ601020/" → "MSI0601020"
-  Doc <uid-1>: Vendor Name "INGRAM NTCRO INC" → "INGRAM MICRO INC"
-  Doc <uid-3>: Bill-To Address "123 Mam St" → "123 Main St"
+  Doc <uid-1>: <field> "<mangled>" → "<corrected>"
+  Doc <uid-3>: <field> "<mangled>" → "<corrected>"
 
 Marked Missing (IXP predicted empty AND field absent from document):
-  Doc <uid-2>: Terms of Payment
-  Doc <uid-4>: Discount
+  Doc <uid-2>: <field>
+  Doc <uid-4>: <field>
 
 Not Confirmed (skipped):
-  Doc <uid-3>: Total Amount — predicted "500.00" but actual is "5000.00" (bottom-right, page 1)
-  Doc <uid-5>: Vendor Address — predicted "123 Main St" but actual is "456 Oak Ave"
+  Doc <uid-3>: <field> — predicted "<value>" but actual is "<value>" (<location>)
+  Doc <uid-5>: <field> — predicted "<value>" but actual is "<value>"
 ```
