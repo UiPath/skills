@@ -1,31 +1,16 @@
 """Every zero-shot flow task states the run is headless, in one exact wording.
 
-Task prompts used to carry hand-copied lines like "Do NOT ask for approval,
-confirmation, or feedback". That phrasing forbids *asking* without saying nobody
-is there to ask, so an agent could honor it and still stop at a consent gate
-waiting for a reply that never arrives. On 2026-09-04, 5 of 8 `skill-flow-*`
-tasks built and validated a flow, reported success, and never executed it —
-every one of those prompts contained that line.
+Kept in the task prompt rather than an experiment config because flow tasks run
+under nightly.yaml, smoke.yaml, default.yaml and dispatch-selected configs, and
+coder_eval has no pattern-scoped defaults — a config would either miss a runner
+or reach another skill's simulated tasks.
 
-Measured across the suite at the time: 0 tasks said the run was headless, 51 of
-the 119 non-simulated tasks said nothing about autonomy at all, and the 68 that
-did were spread across 8 wording variants.
-
-The text lives in the task prompt rather than an experiment config because flow
-tasks run under several configs — `nightly.yaml` via `daily.sh`, `smoke.yaml` on
-every PR, `default.yaml` locally, and whatever a dispatch selects. `coder_eval`
-has no pattern-scoped defaults, so a config carrying this would either miss
-those runners or reach the simulated tasks of every other skill.
-
-A task with a `simulation:` block has a live simulated user. Telling it nobody is
-present contradicts its own premise, so this asserts the absence there.
-
-Regex, not PyYAML: CI installs only pytest, and a module-level `import yaml`
-would error at collection and take the suite with it (see test_criterion_budgets).
+Regex, not PyYAML: CI installs only pytest (see test_criterion_budgets).
 """
 
 from __future__ import annotations
 
+import functools
 import glob
 import os
 import re
@@ -48,13 +33,15 @@ decision, assumption, and blocked step in your final response."""
 _SUPERSEDED = re.compile(r"Do NOT ask for approval|Do NOT pause between planning")
 
 
+@functools.lru_cache(maxsize=1)
 def _tasks():
     """(path, text, is_simulated) for every task file in the suite."""
+    out = []
     for path in sorted(glob.glob(os.path.join(_SUITE, "**", "*.yaml"), recursive=True)):
         text = open(path, encoding="utf-8").read()
-        if not re.search(r"^success_criteria:", text, re.M):
-            continue
-        yield path, text, bool(re.search(r"^simulation:", text, re.M))
+        if re.search(r"^success_criteria:", text, re.M):
+            out.append((path, text, bool(re.search(r"^simulation:", text, re.M))))
+    return tuple(out)
 
 
 def _rel(path: str) -> str:
@@ -63,13 +50,8 @@ def _rel(path: str) -> str:
 
 def test_every_zero_shot_task_states_the_run_is_headless():
     """Absent, an agent stops at a consent gate nobody is there to answer."""
-    # Indentation varies by file, so compare on the unindented sentences.
-    needles = [ln for ln in CANONICAL.split("\n") if ln]
-    missing = [
-        _rel(p)
-        for p, text, sim in _tasks()
-        if not sim and not all(n in " ".join(text.split()) for n in [" ".join(needles).split(". ")[0]])
-    ]
+    marker = CANONICAL.split("\n")[0]
+    missing = [_rel(p) for p, text, sim in _tasks() if not sim and marker not in text]
     assert not missing, "tasks missing the headless preamble:\n  " + "\n  ".join(missing)
 
 
