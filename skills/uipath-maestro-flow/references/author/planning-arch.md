@@ -169,7 +169,7 @@ Prefer, in order:
 2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
 3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
 
-**Data Fabric is not on this ladder.** Entity records have two paths — the `uipath-uipath-dataservice` connector activities and the native `core.datafabric.*` nodes — and availability decides, not preference. See [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--availability-decides).
+**Data Fabric is not on this ladder.** Entity records have two paths — the `uipath-uipath-dataservice` connector activities and the native `core.datafabric.*` nodes — and availability decides, not preference. The native flags default to off, so **when `registry get core.datafabric.<op>` answers "Node not found", or search reports `AvailableOnTenant: false`, build with the connector activities**: do not retry, do not `uip tools update`, and never hand-write a `definitions[]` entry for a node the registry will not return. Rationale and the federated-entity case in [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--availability-decides).
 
 ## Standard Port Reference
 

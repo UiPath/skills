@@ -38,7 +38,9 @@ If `registry get` reports **"Node not found"**, the node is not available to you
 | `core.datafabric.update` | `canvas.nodes.update-entity` |
 | `core.datafabric.delete` | `canvas.nodes.delete-entity` |
 
-`registry search` is not a substitute for `registry get` here. A flag-gated node can still appear in search with `AvailableOnTenant: false` while `registry get` refuses it — and without `registry get` you cannot source the `definitions[]` entry, which must never be hand-written ([Author capability, rule 6](../../CAPABILITY.md#critical-rules)). Treat `AvailableOnTenant: false` as unavailable and stop.
+`registry search` is not a substitute for `registry get` here. A flag-gated node can still appear in search with `AvailableOnTenant: false` while `registry get` refuses it — and without `registry get` you cannot source the `definitions[]` entry, which must never be hand-written ([Author capability, rule 6](../../CAPABILITY.md#critical-rules)).
+
+**When the node is unavailable, switch to the connector and stop.** `AvailableOnTenant: false` is a decision, not an obstacle: build the flow with the `uipath-uipath-dataservice` activities ([connector/impl.md](../connector/impl.md)) and say in the final report that the native nodes were unavailable. Do not retry `registry get`, do not run `uip tools update` hoping for a newer manifest, and above all **do not hand-author a `definitions[]` entry from this doc's field list to stand in for the missing one** — a hand-written definition carries the wrong port schema, passes `flow validate`, and fails at runtime.
 
 ## Add or edit the node
 
