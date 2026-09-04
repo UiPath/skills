@@ -2,7 +2,7 @@
 # Metrics-serving `uip` mock for the uipath-ixp metrics smokes. Overlays the
 # base mock_template (list it SECOND in template_sources so this file wins).
 #
-# ONE overlay, THREE fixture projects - the mock dispatches on the project
+# ONE overlay, FOUR fixture projects - the mock dispatches on the project
 # name found in the arguments, so every metrics smoke shares this folder
 # instead of growing a near-identical overlay per scenario:
 #
@@ -10,6 +10,7 @@
 #   receipts_qa-7c2e11a4-ixp   two versions 40/41 (metrics_regression_noise_floor,
 #                                                  metrics_group_rollback)
 #   receipts_lite-4a9f30d2-ixp Documents variance (metrics_annotations_shortfall)
+#   parcel_docs-6e2b91c8-ixp   group-vs-field     (metrics_group_routing)
 #
 # Fixture tables, confusion matrices, and what each one discriminates are in
 # README.md. Every row derives from an explicit confusion matrix; ErrorRate is
@@ -183,6 +184,69 @@ exit 0
         ;;
     *)
         printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+;;
+"parcel_docs-6e2b91c8-ixp")
+METRICS='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":17,"ValidatedDocuments":10,"ProjectScore":0.55,"ProjectScoreQuality":"average","FieldGroups":[{"FieldGroup":"Shipping Address","F1":0.433,"Precision":0.433,"Recall":0.433,"ErrorRate":0.567,"Documents":10},{"FieldGroup":"Invoice Header","F1":0.667,"Precision":0.667,"Recall":0.667,"ErrorRate":0.333,"Documents":10}],"Fields":[{"FieldGroup":"Shipping Address","FieldId":"dddd000000000001","F1":0.4,"Precision":0.4,"Recall":0.4,"ErrorRate":0.6,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Shipping Address","FieldId":"dddd000000000002","F1":0.5,"Precision":0.5,"Recall":0.5,"ErrorRate":0.5,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Shipping Address","FieldId":"dddd000000000003","F1":0.4,"Precision":0.4,"Recall":0.4,"ErrorRate":0.6,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"dddd000000000004","F1":0.2,"Precision":0.2,"Recall":0.2,"ErrorRate":0.8,"Documents":10,"Annotations":10,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"dddd000000000005","F1":0.8,"Precision":0.8,"Recall":0.8,"ErrorRate":0.2,"Documents":10,"Annotations":10,"Quality":"good"},{"FieldGroup":"Invoice Header","FieldId":"dddd000000000006","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":10,"Annotations":10,"Quality":"good"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"6e2b91c8-4d07-4f2a-b833-9a1c5e7d0f42","Name":"parcel_docs-6e2b91c8-ixp","Title":"Parcel_Docs","CreatedAt":"2026-07-15T10:30:00Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"parcel_docs-6e2b91c8-ixp","Title":"Parcel_Docs","Description":"Parcel shipping documents","CreatedTime":"2026-07-15T10:30:00Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":17,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-20T16:44:09.310000+00:00","Description":""}],"Tags":[],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"name":"Exact Text"},{"name":"Inferred Text"}],"label_groups":[{"name":"Shipping Address","repeatable":false,"instructions":"The delivery destination block.","field":[{"field_id":"dddd000000000001","name":"Street"},{"field_id":"dddd000000000002","name":"City"},{"field_id":"dddd000000000003","name":"Postal Code"}]},{"name":"Invoice Header","repeatable":false,"instructions":"The document header block.","field":[{"field_id":"dddd000000000004","name":"Reference Number"},{"field_id":"dddd000000000005","name":"Issue Date"},{"field_id":"dddd000000000006","name":"Carrier Name"}]}]}}}
+EOF
+exit 0
+;;
+"ixp documents list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpDocumentsList","Data":{"Documents":[{"Id":"p01"},{"Id":"p02"},{"Id":"p03"},{"Id":"p04"},{"Id":"p05"},{"Id":"p06"},{"Id":"p07"},{"Id":"p08"},{"Id":"p09"},{"Id":"p10"}],"Total":10,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    ""|latest|17)
+        printf '%s
+' "$METRICS"
+        ;;
+    *)
+        printf '%s
+' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
         exit 1
         ;;
     esac

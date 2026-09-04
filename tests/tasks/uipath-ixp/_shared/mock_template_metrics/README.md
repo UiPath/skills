@@ -9,6 +9,7 @@ project instead of carrying a near-identical overlay of its own.
 | `my_invoices-f1afa9ef-ixp` | diagnosis payload, one version | `metrics_full_signal_diagnosis` |
 | `receipts_qa-7c2e11a4-ixp` | two versions (40 → 41) | `metrics_regression_noise_floor`, `metrics_group_rollback` |
 | `receipts_lite-4a9f30d2-ixp` | `Documents` variance, one version | `metrics_annotations_shortfall` |
+| `parcel_docs-6e2b91c8-ixp` | group-vs-field routing, one version | `metrics_group_routing` |
 
 List it SECOND in `template_sources` so its `mocks/uip` wins over the base
 `mock_template`, whose mock fails every invocation. `fields update-prompts`
@@ -189,3 +190,42 @@ cannot separate anything.
 `get-taxonomy` is served (all fields non-repeatable) and `documents list`
 reports `Total` 5, so the document count is reachable two ways. Graded
 artifacts are keyed by field id, which needs no join.
+
+## Fixture: `parcel_docs-6e2b91c8-ixp` (group vs field)
+
+Project `parcel_docs-6e2b91c8-ixp`, `ValidatedDocuments` **10**, target `F1`
+0.7, two non-repeatable groups. Every `Annotations` is 10, so each field's
+regression threshold collapses to the flat 0.1 — no noise-floor interference
+with the routing question.
+
+| group | `FieldId` | field | TP | FP | FN | `F1` | correct rewrite |
+|---|---|---|---|---|---|---|---|
+| Shipping Address | `dddd000000000001` | Street | 4 | 6 | 6 | 0.400 | **group** |
+| Shipping Address | `dddd000000000002` | City | 5 | 5 | 5 | 0.500 | **group** |
+| Shipping Address | `dddd000000000003` | Postal Code | 4 | 6 | 6 | 0.400 | **group** |
+| Invoice Header | `dddd000000000004` | Reference Number | 2 | 8 | 8 | 0.200 | **field** |
+| Invoice Header | `dddd000000000005` | Issue Date | 8 | 2 | 2 | 0.800 | — |
+| Invoice Header | `dddd000000000006` | Carrier Name | 10 | 0 | 0 | 1.000 | — |
+
+Group rows aggregate the matrices: Shipping Address TP 13, FP 17, FN 17 →
+`F1` 0.433; Invoice Header TP 20, FP 10, FN 10 → `F1` 0.667. `ProjectScore` is
+the unweighted mean of per-field `F1` (0.550).
+
+### What it discriminates
+
+**Both group rows sit below the 0.7 target — that is the point.** Neither
+level of the payload answers alone:
+
+- An agent routing on **group-row `F1` alone** reads both groups as "entire
+  group low" and rewrites Invoice Header's group instructions to fix what is
+  one field's problem — disturbing two fields at 0.800 and 1.000.
+- An agent routing on **per-field `F1` alone** emits four field rewrites and
+  misses that the three Shipping fields fail *together* — the shared-cause
+  case the guide routes to `--groups`.
+
+The correct read is the guide's 2a order: check `FieldGroups` first, then look
+*inside* a low group — every field low means the group instructions, one field
+low means that field.
+
+`get-taxonomy` is served (field names and existing group instructions);
+graded artifacts are keyed by group name and field id, which need no join.
