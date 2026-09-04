@@ -92,7 +92,13 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           set -euo pipefail
-          python3 scripts/check-skill-verbs.py --json "$SKILL" > findings.ndjson || true
+          # No `|| true`: in --json mode the checker returns 0 unconditionally
+          # (scripts/check-skill-verbs.py), so findings are graded by the jq
+          # counts below, not by exit status. Swallowing the exit status only
+          # ever hid a real crash — a missing or malformed catalog, an argparse
+          # error, an unhandled exception — which then produced an empty
+          # findings.ndjson, zero counts, and a green leg that checked nothing.
+          python3 scripts/check-skill-verbs.py --json "$SKILL" > findings.ndjson
 
           # Block only on Stale findings where no valid catalog prefix
           # matched at all. When matched_prefix is non-null, the trailing
@@ -149,6 +155,19 @@ jobs:
           # `needs.<matrix job>.result` is already the rollup of every leg:
           # 'success' only when all legs succeeded, 'failure' when any failed.
           # 'skipped' is the healthy no-op path and must pass.
+          #
+          # ALLOW-list the two good values rather than deny-listing the two bad
+          # ones. This is the repo's merge gate: an empty result, or a value
+          # GitHub adds later, must fail closed rather than fall through to
+          # "passed".
+          for result in "$DETECT_RESULT" "$GATE_RESULT"; do
+            case "$result" in
+              success|skipped) ;;
+              failure|cancelled) ;;
+              *) echo "::error::unrecognized job result '$result' — failing closed"; exit 1 ;;
+            esac
+          done
+
           if [ "$DETECT_RESULT" = "failure" ] || [ "$DETECT_RESULT" = "cancelled" ]; then
             echo "::error::CLI verb gate could not determine which skills to gate (detect: $DETECT_RESULT)"
             exit 1

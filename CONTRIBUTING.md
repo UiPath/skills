@@ -519,8 +519,9 @@ open PR, not just yours:
 
 - **Renaming a job** whose name is a required context — the context never
   reports again.
-- **Adding an `on.pull_request.paths:` filter** to a workflow that produces one
-  — when the filter excludes a PR the workflow doesn't run, so no check is
+- **Narrowing a producing workflow's PR trigger** — `paths:`, `paths-ignore:`,
+  `branches:`, `branches-ignore:`, or a `types:` list without `synchronize`.
+  When the trigger excludes a PR the workflow doesn't run, so no check is
   reported and the PR stays pending forever. Always trigger, and short-circuit
   inside the job instead: a *skipped* job counts as a pass.
 
