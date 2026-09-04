@@ -111,9 +111,9 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Fire-and-forget robot work |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Robot work with result wait |
 | `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Inline human review, approval, or data entry |
-| `uipath.conversational.wait-for-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Pause until the user sends a chat message; returns the conversation context |
+| `uipath.conversational.wait-for-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Pause until the user sends a chat message (initiates an exchange); returns the conversation context |
 | `uipath.conversational.send-message` | [conversational-agent](plugins/conversational-agent/planning.md) | Write a message the flow composes itself into the chat |
-| `uipath.conversational.get-conversation-context` | [conversational-agent](plugins/conversational-agent/planning.md) | Read recent exchanges without waiting for a new message |
+| `uipath.conversational.get-conversation-context` | [conversational-agent](plugins/conversational-agent/planning.md) | Read latest conversation context without waiting for a new user message |
 | `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | Dial an outbound phone call and emit its `callContext` (outbound voice topology) |
 | `uipath.conversational.voice.end-call` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | End the active call in a voice flow |
 
@@ -139,7 +139,7 @@ Connector nodes are Integration Service nodes, not built-in. They appear after `
 | --- | --- | --- |
 | `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent scaffolded inside this flow via `uip agent init --inline-in-flow`, tightly coupled, not independently reused |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Separate in-solution or published agent, reusable and independently versioned |
-| `uipath.agent.conversational` | [conversational-agent](plugins/conversational-agent/planning.md) | AI agent that holds a text chat, streaming its replies to the conversation. In-solution and published chat agents use `uipath.core.agent.{key}` above |
+| `uipath.agent.conversational` | [conversational-agent](plugins/conversational-agent/planning.md) | AI agent that runs a single response turn given a chat-history, streaming its messages and tool-calls to the conversation. In-solution and published chat agents use `uipath.core.agent.{key}` above |
 | `uipath.agent.voice` | [inline-voice-agent](plugins/inline-voice-agent/planning.md) | AI agent that converses in real time on a live phone call — an inline conversational agent (`settings.voice` in its `agent.json`) wired to a `callContext` |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table).
@@ -323,7 +323,7 @@ Before presenting the plan, validate every rule:
 - **Wait:** duration or date -> [delay](plugins/delay/planning.md); external robot result -> [queue](plugins/queue/planning.md) `create-and-wait`.
 - **Human:** approval or data entry -> [hitl](plugins/hitl/planning.md), or `core.logic.mock` if unavailable.
 - **Agent:** tightly coupled low-code agent inside flow -> [inline-agent](plugins/inline-agent/planning.md), `uipath.agent.autonomous`; coded or separate in-solution/published agent -> [agent](plugins/agent/planning.md), `uipath.core.agent.{key}`.
-- **Text conversation:** chat the flow holds turn by turn -> [conversational-agent](plugins/conversational-agent/planning.md), `core.trigger.conversation` plus `uipath.conversational.wait-for-message` and a chat agent; agent inside this flow -> `uipath.agent.conversational`; sibling or published agent -> [agent](plugins/agent/planning.md), `uipath.core.agent.{key}` with `isConversational`; one typed answer with no back-and-forth -> [hitl](plugins/hitl/planning.md).
+- **Chat:** text-based conversation the flow holds turn by turn -> [conversational-agent](plugins/conversational-agent/planning.md), `core.trigger.conversation` plus `uipath.conversational.wait-for-message` with responding chat agent(s) and `send-message` node(s); agent inside this flow -> `uipath.agent.conversational`; sibling or published agent -> [agent](plugins/agent/planning.md), `uipath.core.agent.{key}` with `isConversational`; single approval or data-entry without a full conversation -> [hitl](plugins/hitl/planning.md).
 - **LLM over CSV/document:** CSV row columns -> [batch-transform](plugins/batch-transform/planning.md), `uipath.pattern.batch-transform`; one-document synthesis/Q&A/citations -> [summarize](plugins/summarize/planning.md), `uipath.pattern.deep-rag`; multi-step tool reasoning -> inline or published agent; ordinary reshaping -> transform.
 - **Document extraction:** variable-layout PDF, scan, photo, or attachment -> [ixp](plugins/ixp/planning.md), `uipath.ixp.{modelName}.{fullyQualifiedName}`; structured source -> script or transform; free-form reasoning -> agent; untrained IxP model -> `core.logic.mock` plus Open Question.
 - **Missing capability:** use `core.logic.mock`; identify the needed artifact and owning skill (`uipath-rpa` for desktop/browser or coded C# workflows, `uipath-agents` for agents). Phase 2 replaces the mock if published.

@@ -53,7 +53,7 @@ A **conversational** agent — one that holds a text chat — uses this same nod
 | `inputDefaults` | the agent's own input schema | `isConversational: true`, `conversationalAgentSettings: {}` |
 | Usable as another agent's tool | yes | no — no `uipath.agent.resource.tool.agent.<id>` sibling is emitted |
 
-The agent node is only part of a chat. The trigger, the wait-for-message loop, the `conversationalAgentSettings` wiring, and the node JSON for all three agent flavors live in [conversational-agent/planning.md](../conversational-agent/planning.md) — start there for any chat flow.
+The conversational agent node is only part of a chat. The conversation trigger, the wait-for-message loop, the `conversationalAgentSettings` wiring, and the node JSON for all three agent flavors live in [conversational-agent/planning.md](../conversational-agent/planning.md) — start there for any chat flow.
 
 A published conversational agent gets its `isConversational` flag from its Orchestrator release; an in-solution one gets it from the sibling project's `agent.json`. Either way the registry reports it, so trust `registry get` rather than guessing from the name.
 

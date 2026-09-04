@@ -1,6 +1,6 @@
-# Conversational (Text Chat) Nodes — Implementation
+# Chat (Text-based Conversation) Nodes — Implementation
 
-Wire whatever shape the conversation needs, inside the rules in [planning.md](planning.md#rules-any-chat-flow-must-follow).
+Wire whatever shape the conversation needs, inside the rules in [planning.md](planning.md#critical-rules-any-conversational-flow-must-follow).
 
 For a phone conversation, use [inline-voice-agent/impl.md](../inline-voice-agent/impl.md) instead.
 
@@ -121,7 +121,7 @@ Editing the `.flow` directly carries the usual obligations — chiefly a `variab
 
 ### Conversation trigger
 
-Replace the default manual trigger — `flow init` scaffolds `core.trigger.manual`, and the conversation trigger is what makes the packaged flow conversational.
+Replace the default manual trigger — `flow init` scaffolds `core.trigger.manual`, and the conversation trigger is what makes the packaged flow conversational and exposed as a chat experience.
 
 ```bash
 uip maestro flow node delete ChatFlow/ChatFlow.flow start
@@ -168,22 +168,7 @@ Same settings block, different node type, and `isConversational` alongside it in
 
 An in-solution agent needs its `definitions[]` entry fetched with `--local`; a published one comes from the pulled tenant registry.
 
-### Get conversation context (rarely needed)
-
-Reads recent exchanges without waiting. wait-for-message already returns the same context, so reach for this only when the flow needs the history at a point where it is not waiting — and note an unconnected one is legal and does not fail validation.
-
-```json
-{
-  "id": "getConversationContext1",
-  "type": "uipath.conversational.get-conversation-context",
-  "inputs": {
-    "conversationId": { "type": "jsExpression", "expression": "$vars.conversationTrigger1.output.conversationId", "fieldType": "string" },
-    "exchangeLimit": 20
-  }
-}
-```
-
-### Send message (only when the flow itself speaks)
+### Send message (for flow-composed messages)
 
 `conversationId`, `exchangeId`, `content`, `role` and `mimeType` are all required. `role` and `mimeType` each accept exactly one value, so write them as shown. `content` is normally a literal — the agent's own replies are streamed, not routed through this node.
 
@@ -201,9 +186,23 @@ Reads recent exchanges without waiting. wait-for-message already returns the sam
 }
 ```
 
+### Get conversation context (usually not needed)
+
+Reads recent exchanges without waiting. wait-for-message already returns the same context, so reach for this only when the flow needs the history at a point where it is not waiting - see [planning.md § Get Conversation Context](planning.md#get-conversation-context).
+```json
+{
+  "id": "getConversationContext1",
+  "type": "uipath.conversational.get-conversation-context",
+  "inputs": {
+    "conversationId": { "type": "jsExpression", "expression": "$vars.conversationTrigger1.output.conversationId", "fieldType": "string" },
+    "exchangeLimit": 20
+  }
+}
+```
+
 ## Structured Outputs
 
-An **inline** agent can return named fields for a downstream node to route on. Published and in-solution agents cannot.
+In addition to responding to the chat, an **inline** conversational agent can also return named fields for a downstream node to route on. Published and in-solution agents cannot.
 
 Declare each field in two places or it yields nothing at run time:
 
@@ -256,7 +255,9 @@ Confirm the marker in the packaged `content/operate.json`:
 "runtimeOptions": { "isConversational": true }
 ```
 
-Absent means the flow does not start on `core.trigger.conversation`, and it will not be listed as a Conversational Agent.
+The marker is the contract with the runtime chat channels: a headless SDK lists any deployed process carrying it, and every OOTB integration on that SDK (e.g. web-chat, iframe embedding, UiPath Assistant, Microsoft Teams, Slack) plus custom UIs pick it up automatically.
+
+Absent means the flow does not start on `core.trigger.conversation`, and it will not be listed as a Conversational Agent in the channels.
 
 ## Debug — the CLI Hands Off
 
@@ -281,6 +282,6 @@ If the solution's `.uipx` already carries a `SolutionId`, the upload overwrites 
 - **Do not invent output paths.** `waitForMessage1.output.exchangeId` and `conversationalAgent1.output.response` do not exist, and validate accepts both.
 - **Do not use `=js:` strings** for bindings in a `.flow`.
 - **Do not carry one flavor's agent port across.** Inline continues on `success`, in-solution and published on `output`.
-- **Do not add a send-message just to deliver the agent's reply.** The agent streams it.
+- **Do not add a send-message just to deliver the conversational agent's reply.** The conversational agent already streams it.
 - **Do not expect `flow debug` to run the conversation.** It hands off to Studio Web or the VS Code extension.
 - **Do not leave the manual trigger in place.** Without `core.trigger.conversation` the package is not marked conversational, and nothing errors.

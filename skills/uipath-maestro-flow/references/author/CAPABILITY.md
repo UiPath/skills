@@ -107,7 +107,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](plugins/rpa/), [agent](plugins/agent/), [agentic-process](plugins/agentic-process/), [flow](plugins/flow/), [api-workflow](plugins/api-workflow/), [hitl](plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](plugins/inline-agent/) |
-| **Build a chat agent flow (the user types)** | [plugins/conversational-agent/](plugins/conversational-agent/) — the conversation trigger and message nodes, plus an inline, in-solution, or published chat agent |
+| **Build a chat agent flow (model a text-based chat experience)** | [plugins/conversational-agent/](plugins/conversational-agent/) — the conversation trigger and message nodes, plus inline, in-solution, or published chat agent(s) |
 | **Build a voice agent flow (answer or place phone calls)** | [plugins/inline-voice-agent/](plugins/inline-voice-agent/) — `uipath.agent.voice` plus the nodes that start, place, and end the call |
 | **Extract structured fields from documents** | [plugins/ixp/](plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
 | **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
@@ -183,7 +183,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [hitl](plugins/hitl/) — human input via UiPath Apps
   - [agent](plugins/agent/) — published AI agent resources
   - [inline-agent](plugins/inline-agent/) — autonomous agent embedded in flow
-  - [conversational-agent](plugins/conversational-agent/) — text chat the user types to: conversation trigger, message nodes, and an inline, in-solution, or published chat agent
+  - [conversational-agent](plugins/conversational-agent/) — model a text-based chat experience: conversation trigger, message nodes, and an inline, in-solution, or published chat agent
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
