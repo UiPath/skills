@@ -18,8 +18,8 @@ run_limits:
 
 initial_prompt: |
   Build a flow named "BindingsRegression" — Manual Trigger → IS connector
-  node → End — saved as `BindingsRegression/flow_files/BindingsRegression.flow`
-  with `BindingsRegression/project.uiproj`.
+  node → End — in a solution of the same name, so the layout is the canonical
+  `BindingsRegression/BindingsRegression/BindingsRegression.flow`.
 
   Configure the connector node exactly once. Do not invoke any "refresh
   schema" workaround afterwards — the bindings shape immediately after
