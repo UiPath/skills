@@ -116,6 +116,11 @@ export declare class BpmnBuilder extends ScopeBuilder {
     name(n: string): this;
     /** Process-level metadata — see `ProcessMetadata`. */
     metadata(meta: ProcessMetadata): this;
+    /**
+     * Declare the Canvas SCHEMA generation this document targets
+     * (`uipath:migrationVersion`).
+     */
+    schemaVersion(version: string): this;
     /** Name a JSON Schema once so several variables can share it. */
     schema(id: string, schema: unknown): this;
     /**
