@@ -19,9 +19,7 @@ Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live 
 were given when this skill was invoked: join the two and `Read` the file directly. Do NOT
 `Glob`, `find`, or `ls` to locate a reference, template, or script — the search costs a turn
 and returns a path you already hold. `scripts/*` are RUN, never read: their output is the
-interface. Read each reference or template **whole** in one call (`Read` with no offset/limit,
-or one `cat <path>`), never in `head`/`sed -n` slices — gate commands and the later tables sit
-past line 400, and a slice never reaches them.
+interface.
 
 The skill has three paths, decided by the **Entry Guard**:
 
