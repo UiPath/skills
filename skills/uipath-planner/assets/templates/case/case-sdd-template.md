@@ -607,9 +607,12 @@ there. Pass --draft so the gate also checks inventory parity, verbatim `=js:` pr
 executable threshold encoding. What the DRAFT specifically needs repaired on the way through is the
 lane guide's § Resumption; the shape is here.
 
-Gate: run  <py> "<skill folder>/scripts/case/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
-on-disk file BEFORE the Status: ready flip — in every mode. `<py>` = the first of `python3`, `python`,
-`py` that runs (Windows usually has no `python3` alias); only if all three are absent verify manually. RUN it, never open the script source —
+Gate: run  python3 "<skill folder>/scripts/case/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
+on-disk file BEFORE the Status: ready flip — in every mode. `<skill folder>` is the path you read this
+template from with `/assets/templates/case/case-sdd-template.md` removed: substitute the path you already
+hold, never `ls`/`find`/`which` to discover the folder, the script, or an interpreter (a probe costs a turn
+and finds nothing you don't have). Run `python3` straight away; only if that call itself fails, retry the
+same line with `python`, then `py` (Windows usually has no `python3` alias); only if all three fail verify manually. RUN it, never open the script source —
 its findings are the interface. Minting charset is ADVISORY — it never gates, and a name the user, the
 source, or a draft supplied is kept verbatim (pass --draft so the validator knows). ':' gates always. Repair findings with Edit, re-run to AUDIT OK
 (max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like

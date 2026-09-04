@@ -274,9 +274,14 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 10. Write, gate, flip per §Terminal step (the draft on disk is also a recovery point, so a compaction means re-finalizing from it), then the audit with the draft comparison:
 
     ```bash
-    python3 "<this skill's folder>/scripts/case/audit_sdd.py" <final SDD path> --draft <draft path>
-    # python3 absent (common on Windows) → retry the same line with `python`, then `py`
+    python3 "<skill folder>/scripts/case/audit_sdd.py" <final SDD path> --draft <draft path>
     ```
+
+    `<skill folder>` is the path you read THIS guide from with `/references/case/case-design-lane-guide.md`
+    removed — you already hold it, so substitute it directly. Do not `ls`, `find`, or `which` to discover the
+    folder, the script, or an interpreter, and do not open the script (§ reading set): each probe costs a turn
+    and the gate's findings are the only interface. Run `python3` straight away; only if that call itself
+    fails, retry the same line with `python`, then `py` (Windows usually has no `python3` alias).
 
     The `ready` flip is forbidden until this prints `AUDIT OK`; repair each finding with Edit and re-run, max 3 rounds, then stop and present what remains. All three of `python3` / `python` / `py` unavailable → verify by hand against the template's § Validation footer, every item. Quote the final `AUDIT OK` line as evidence, then stop.
 
