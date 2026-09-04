@@ -25,7 +25,7 @@ A clean `validate` + `build` does NOT prove runtime behavior. Known silent failu
 
 ## Journey: Greenfield XAML (no UIA)
 
-Skip the project-discovery subagent — nothing to discover yet ([environment-setup.md § Skip gate](environment-setup.md): no `project.json` before T1, only the untouched scaffold after it). Write `project-context.md` + `AGENTS.md` yourself at T5.
+Skip the project-discovery subagent — nothing to discover yet ([environment-setup.md § Skip gate](environment-setup.md): no `project.json` before T1, only the untouched scaffold after it). The emptiness check itself (`ls` of the parent dir) is the first link of the T1 `Bash` chain, not its own turn. Write `project-context.md` + `AGENTS.md` yourself at T5.
 
 | Turn | Emit in ONE assistant message |
 |---|---|

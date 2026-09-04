@@ -482,7 +482,7 @@ Container activities have body or branch slots typed `Activity` or `ActivityActi
 
 **Cheapest enforcement.** For card-listed containers (`If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`), copy the wrapped shape from the common-activity card. For off-card containers (`Pick`, `Parallel`, `ParallelForEach<T>`, package-specific body activities), run `uip rpa activities get-default-xaml --activity-class-name "<FullClassName>"` after the Rule 21 doc read and copy the wrapped shape from the starter. See SKILL.md Rules 21, 21a, 24.
 
-**Worked example.** [§ Example 1: Basic Activities (LogMessage, If/Else, Assign)](#example-1-basic-activities-logmessage-ifelse-assign) below — `If.Then` and `If.Else` each carry a `<Sequence>`.
+**Worked example.** [xaml-editing-catalog.md § Example 1: Basic Activities (LogMessage, If/Else, Assign)](xaml-editing-catalog.md#example-1-basic-activities-logmessage-ifelse-assign) — `If.Then` and `If.Else` each carry a `<Sequence>`.
 
 **Editing existing files.** When inserting an activity into an empty or bare `If.Then` / `Catch` / `Body` slot, add the `<Sequence>` wrapper in the same edit.
 

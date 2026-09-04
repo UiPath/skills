@@ -246,7 +246,7 @@ VB project with core workflow activities. Shows If/Then/Else branching and Assig
 **Key patterns:**
 - `ui:LogMessage` uses `xmlns:ui="http://schemas.uipath.com/workflow/activities"`
 - VB expressions: `OrElse` instead of `||`, no brackets on simple values
-- `If.Then` and `If.Else` each wrap content in a `Sequence` — required, not optional. See [§ Container Activity Bodies — Wrap in Sequence](#container-activity-bodies--wrap-in-sequence) for the full slot list
+- `If.Then` and `If.Else` each wrap content in a `Sequence` — required, not optional. See [xaml-basics-and-rules.md § Container Activity Bodies — Wrap in Sequence](xaml-basics-and-rules.md#container-activity-bodies--wrap-in-sequence) for the full slot list
 - `Assign` uses `Assign.To` (OutArgument) and `Assign.Value` (InArgument) with explicit `x:TypeArguments`
 
 ### Example 2: Package Connector Activity (Office 365 Get Newest Email)
