@@ -1031,7 +1031,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 **Action App ID:** c20d48bf-4860-420c-b629-3ec8284acdc1
 **Deployment Folder:** Shared/uipath-maestro-case/Procurement Director Sign-off
 **actionType:** spend-tier-signoff
-**Recipient:** Role:Procurement Director
+**Recipient:** Role:Procurement Leadership
 **Priority:** High · **Task Title:** Sign off on a high-value supplier application · **Labels:** compliance, signoff
 
 **Input Schema:**
@@ -1074,7 +1074,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 **Action App ID:** 1229c1ed-ca6b-4a89-9776-883bd0669684
 **Deployment Folder:** Shared/uipath-maestro-case/Supplier Compliance Review
 **actionType:** —
-**Recipient:** Role:Compliance Reviewer
+**Recipient:** Role:Compliance
 **Priority:** High · **Task Title:** Decide whether the supplier application goes to setup or is rejected · **Labels:** compliance, decision
 
 **Input Schema:**
@@ -1919,7 +1919,7 @@ task IS the confirmation and there is no second outcome to route. -->
 **Action App ID:** fb171d7c-33a1-4bb6-b09a-030044a7c0b6
 **Deployment Folder:** Shared/uipath-maestro-case
 **actionType:** overall-sla-review
-**Recipient:** Role:Procurement Director
+**Recipient:** Role:Procurement Leadership
 **Priority:** Critical · **Task Title:** Review a supplier application that missed its overall 120-minute target · **Labels:** sla, director-review
 
 **Input Schema:**
