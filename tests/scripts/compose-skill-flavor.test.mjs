@@ -504,13 +504,18 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   assert.match(builtContract, /RunProject/);
   assert.match(builtContract, /explicit (?:user )?consent[\s\S]*RunProject/);
   assert.match(builtContract, /actual (?:host )?tool result as execution evidence/);
-  assert.match(builtContract, /uip solution publish --help/);
+  assert.doesNotMatch(builtContract, /uip solution publish --help/);
   assert.match(builtContract, /explicit user publish request or approval/);
   assert.match(builtContract, /active Studio Web solution is implicit/);
   assert.match(
     builtContract,
-    /uip solution publish \[--description <text>\].*\[--release-notes <text>\].*\[--version <version>\].*\[--location <value>\].*\[--location-name <value>\].*\[--personal-workspace\]/,
+    /ask the user which destination to use \(personal workspace vs shared location\)/,
   );
+  assert.match(
+    builtContract,
+    /uip solution publish --location "<key or name>" \[--description <text>\] \[--release-notes <text>\] \[--version <version>\]/,
+  );
+  assert.match(builtContract, /--personal-workspace/);
   assert.match(builtContract, /request was accepted[\s\S]*Publish history/);
   assert.doesNotMatch(builtContract, /--input-arguments/);
   assert.doesNotMatch(builtContract, /uip is resources run/);
@@ -564,6 +569,42 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
     ),
     /--input-arguments '\{"name":"Alice","count":3\}'/,
   );
+});
+
+test("Studio Web replaces the solution lifecycle with the destination-choice publish flow", () => {
+  const canonicalPath = join(REPO_ROOT, "skills", "uipath-solution", "SKILL.md");
+  const overridePath = join(
+    REPO_ROOT,
+    "skill-flavors",
+    "studioweb",
+    "uipath-solution",
+    "SKILL.md",
+  );
+  const canonical = readFileSync(canonicalPath, "utf8");
+  const override = readFileSync(overridePath, "utf8");
+  const findings = [];
+  const composed = stripMarkerBoundaries(
+    composeText(
+      canonical,
+      parseMarkerBlocks(canonicalPath, canonical, findings),
+      parseMarkerBlocks(overridePath, override, findings),
+    ),
+  );
+
+  assert.deepEqual(findings, []);
+  assert.ok(!containsFlavorMarker(composed));
+  assert.match(canonical, /4\. pack\s+→ Produce deployable \.zip package/);
+  assert.doesNotMatch(composed, /pack\s+→ Produce deployable \.zip package/);
+  assert.doesNotMatch(composed, /`restore` is an optimization/);
+  assert.match(
+    composed,
+    /3\. publish\s+→ uip solution publish \(packaging and auth handled by Studio Web\)/,
+  );
+  assert.match(composed, /\*\*Publish destination — the user's choice\.\*\*/);
+  assert.match(composed, /ask the user in chat which destination to use/);
+  assert.match(composed, /--location "<key or name>"/);
+  assert.match(composed, /`--personal-workspace`/);
+  assert.match(composed, /verify the terminal state in Studio Web's Publish history/i);
 });
 
 test("new canonical skills are automatically included in existing flavors", (t) => {
