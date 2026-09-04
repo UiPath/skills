@@ -185,7 +185,7 @@ Returns the library with `key` = `<PackageId>:<Version>` and `projectType: "Proc
 
 ```bash
 uip or libraries download "<PackageId>:<Version>" --destination "<LOCAL_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
-uip rpa build "<CONSUMER_PROJECT_DIR>" --nuget-sources-config-path "<SOURCES_JSON>" --output json
+uip rpa build "<CONSUMER_PROJECT_DIR>" --nuget-sources-config-path "<SOURCES_JSON>" --output markdown
 ```
 
 `<SOURCES_JSON>` content:

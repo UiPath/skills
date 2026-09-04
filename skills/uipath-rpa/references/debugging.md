@@ -51,7 +51,7 @@ The mid-session verbs (`break`, `continue`, `resume`, `continue-retry`, `continu
 | `--wait-timeout-seconds` | Maximum seconds a mid-session verb waits for the next stable state before returning `DebugState: "Running"` instead of hanging. Default 120 (0 for `debug state`, making it an instant probe). Headless backend only |
 | `--log-level` | Minimum log level: `Verbose`, `Trace` (default), `Information`, `Warning`, `Error`, `Critical` |
 | `--skip-build` | Skip the pre-run build step (use only when you've just built) |
-| `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
+| `--output` | Output format: `json`, `table`, `yaml`, `plain`, `markdown`. **Keep `json` for every verb in this table** — the verdict is read off `Data.errors` / `Data.output` (see [Output Format](#output-format)) and `markdown` drops the envelope. `markdown` is for read-only output such as `validate` diagnostics ([cli-reference.md § Output format](cli-reference.md#output-format)) |
 | `--profiling` | Collect per-activity timings and runtime screenshots — verifies UI automation correctness and workflow performance. Only effective on start verbs (`run`, `debug start`, `debug test-activity`, `debug start-from-here`); ignored on stepping / breakpoint verbs. Boolean flag (no value needed). See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
 ### Debug Verbs
@@ -368,7 +368,7 @@ Use debugging to verify that a fix actually works at runtime, beyond what `valid
 
 ```bash
 # 1. Run static validation first
-uip rpa validate --file-path "MyWorkflow.xaml" --output json
+uip rpa validate --file-path "MyWorkflow.xaml" --output markdown
 
 # 2. If 0 static errors, start a debug session to validate runtime behavior
 uip rpa debug start --file-path "MyWorkflow.xaml" --output json

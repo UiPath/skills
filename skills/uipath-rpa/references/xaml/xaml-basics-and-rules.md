@@ -232,8 +232,8 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 **MUST** repeat until 0-error state from **both** `validate` and `build`, or max 5 fix attempts per loop. After 5 attempts, stop and present remaining errors to the user. The canonical two-phase loop (per-file `validate` → project-level `build`), what each phase covers, and the smoke-test procedure: [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop) — read it before your first fix iteration.
 
 ```bash
-uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output json
-uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output markdown
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output markdown
 ```
 
 `--file-path` must be **relative to the project directory**. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop. A clean gate is still not runtime proof: for observable-output workflows, end with one `uip rpa run` and check the outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).

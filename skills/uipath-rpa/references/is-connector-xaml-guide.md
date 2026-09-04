@@ -305,7 +305,7 @@ The name-encoding rules above apply to expanded fields too — reference them by
 ### Step 7 — Validate and run
 
 ```bash
-uip rpa validate --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output json
+uip rpa validate --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output markdown
 uip rpa run --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --output json
 ```
 
