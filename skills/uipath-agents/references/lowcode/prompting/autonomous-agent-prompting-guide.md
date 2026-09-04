@@ -16,8 +16,8 @@ Scope:
 - Out of scope: <what to refuse or escalate>
 
 Tools:
-- <toolName>: call when <explicit condition>. Do not call when <condition>. Call at most <N> times (N ≤ 3 for a single decision).
-- <toolName>: ...
+- @{tools.<Name>}: call when <explicit condition>. Do not call when <condition>. Call at most <N> times (N ≤ 3 for a single decision).
+- @{tools.<Name>}: ...
 Stop calling tools once <stop condition>; then produce the final answer.
 If a tool result does not cover a detail, say so in <rationaleField>, lower <confidenceField>, and still return every outputSchema field. Never end a run without a final answer.
 

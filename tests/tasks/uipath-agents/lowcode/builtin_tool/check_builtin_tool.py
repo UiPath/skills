@@ -10,6 +10,12 @@ B. agent.json declares inputSchema.definitions["job-attachment"] (object),
    at least one top-level property is either a direct job-attachment reference
    or an array whose items use that reference, and every such input is
    referenced as {{input.<name>}} in messages[].content.
+
+C. Some message content references the Analyze Files tool as
+   `@{tools.<Name>}` and that message's contentTokens carries a matching
+   `{type: "expression", rawString: "tools.<Name>"}` token. `<Name>` is the
+   tool resource's `name`; the runtime resolves the reference by `name`,
+   case-insensitively, and renders an unresolved reference as raw text.
 """
 
 import json
@@ -103,14 +109,17 @@ def assert_builtin_shape(path: Path, resource: dict) -> str:
     return tool_type
 
 
-def assert_builtin_tool_enabled() -> None:
+def assert_builtin_tool_enabled() -> str:
     files = find_resource_jsons()
     builtin_tool_types_seen = []
+    analyze_files_name = None
     for f in files:
         resource = load(f)
         if is_builtin_tool(resource):
             tt = assert_builtin_shape(f, resource)
             builtin_tool_types_seen.append(tt)
+            if tt == "analyze-attachments":
+                analyze_files_name = resource.get("name")
 
     if not builtin_tool_types_seen:
         sys.exit(
@@ -124,7 +133,13 @@ def assert_builtin_tool_enabled() -> None:
             f'(toolType "analyze-attachments"), but none was enabled. '
             f'Got toolTypes: {builtin_tool_types_seen}'
         )
+    if not isinstance(analyze_files_name, str) or not analyze_files_name.strip():
+        sys.exit(
+            "FAIL: the analyze-attachments tool resource has no non-empty "
+            f"`name`, got {analyze_files_name!r}"
+        )
     print('OK: "Analyze Files" (toolType="analyze-attachments") is enabled')
+    return analyze_files_name
 
 
 def assert_job_attachment_input(agent: dict) -> None:
@@ -206,10 +221,80 @@ def assert_job_attachment_input(agent: dict) -> None:
     )
 
 
+def assert_prompt_references_tool(agent: dict, tool_name: str) -> None:
+    expected_raw = f"tools.{tool_name}"
+    literal_pattern = re.compile(
+        r"@\{\s*tools\.([^}]+?)\s*\}", re.IGNORECASE
+    )
+
+    messages = agent.get("messages")
+    if not isinstance(messages, list):
+        sys.exit(f"FAIL: agent.json.messages is not a list: {messages!r}")
+
+    referencing = []
+    wrong_names = set()
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        for m in literal_pattern.finditer(msg.get("content", "")):
+            if m.group(1).strip().lower() == tool_name.lower():
+                referencing.append(msg)
+                break
+            wrong_names.add(m.group(1).strip())
+
+    if not referencing:
+        detail = ""
+        if wrong_names:
+            detail = (
+                f" Found @{{tools.…}} references to {sorted(wrong_names)}, but the "
+                f"runtime resolves the reference by the resource `name` "
+                f"({tool_name!r}), not by folder or toolType."
+            )
+        contents = {
+            m.get("role"): m.get("content")
+            for m in messages
+            if isinstance(m, dict)
+        }
+        sys.exit(
+            f"FAIL: no message content references @{{{expected_raw}}}.{detail} "
+            f"messages={contents!r}"
+        )
+
+    for msg in referencing:
+        tokens = msg.get("contentTokens")
+        if not isinstance(tokens, list):
+            sys.exit(
+                f"FAIL: {msg.get('role')} message contentTokens is not a list: "
+                f"{tokens!r}"
+            )
+        matched = any(
+            isinstance(t, dict)
+            and t.get("type") == "expression"
+            and isinstance(t.get("rawString"), str)
+            and t["rawString"].strip().lower() == expected_raw.lower()
+            for t in tokens
+        )
+        if not matched:
+            sys.exit(
+                f"FAIL: {msg.get('role')} message content references "
+                f"@{{{expected_raw}}} but contentTokens has no matching "
+                f'{{"type": "expression", "rawString": "{expected_raw}"}} token '
+                "(Critical Rule 6 — `@{ }` references are `expression` tokens, "
+                "not `variable`; keep content and contentTokens in sync)\n"
+                f"  got tokens: {json.dumps(tokens, indent=2)}"
+            )
+    roles = ", ".join(str(m.get("role")) for m in referencing)
+    print(
+        f"OK: prompt references @{{{expected_raw}}} with a synced expression "
+        f"token (message roles: {roles})"
+    )
+
+
 def main() -> None:
-    assert_builtin_tool_enabled()
+    tool_name = assert_builtin_tool_enabled()
     agent = load(AGENT_JSON)
     assert_job_attachment_input(agent)
+    assert_prompt_references_tool(agent, tool_name)
 
 
 if __name__ == "__main__":
