@@ -10,23 +10,24 @@ user-invocable: true
 
 A coded action is two artifacts that must agree: a job that computes the writes, and a TTL that
 declares what the job may be given and what it may touch. This skill owns exactly one half of
-getting them live. The job reaches Orchestrator, the folder it landed in is patched into the TTL,
-and the patched TTL goes back to the caller. Nothing here talks to the ontology backend.
+getting them live: the job reaches Orchestrator as a live release, and the folder the deployment
+created goes back to the caller. The TTLs are handed back untouched — nothing in them names a
+folder — so this skill writes no artifact and never talks to the ontology backend.
 
 ## Routing boundary
 
 | Concern | Owner |
 |---|---|
 | Generating the action TTL and the job source | `uipath-ontology-modeler` |
-| Uploading any ontology artifact, including the patched action TTLs | `uipath-ontology-authoring`, in its Tier 2 |
+| Uploading any ontology artifact, the action TTLs included | `uipath-ontology-authoring`, in its Tier 2 |
 | Getting the job into Orchestrator and resolving its folder | this skill |
 | `uip solution` syntax | the `uipath-solution` skill |
 | `uip functions` syntax | the `uipath-functions` skill |
 | Existing-ontology CRUD and `uip ont` syntax | `uipath-ontologies` |
 
-**This skill never uploads an ontology artifact.** It mirrors the modeler's never-upload rule: it
-patches files on disk and hands the paths back. A run that calls `uip ont artifact upsert` has
-crossed into authoring's job.
+**This skill never uploads an ontology artifact, and never edits one.** It mirrors the modeler's
+never-upload rule: it stages a copy of the job, deploys it, and hands back the folder it created.
+A run that calls `uip ont artifact upsert` has crossed into authoring's job.
 
 Reference the CLI skills for command syntax rather than restating it. What is written here is only
 the sequencing and the traps, which are not in either skill.
@@ -149,7 +150,7 @@ source tree is never mutated and a job has exactly one home. The consequence: th
 directory is not directly packable, so always go through the script.
 
 ```bash
-SOLUTION_SRC={workdir}/{name}-jobs scripts/stage_jobs.py
+SOLUTION_SRC={workdir}/{name}-jobs python3 <SKILL_DIR>/scripts/stage_jobs.py
 ```
 
 **`main.ts` at the project root is the verified layout.** It is what the Studio Web export that
@@ -192,9 +193,9 @@ a CLI-scaffolded solution has only the `.uipx`, whose `Projects` array says the 
 ## Phase 3: Publish, then deploy — and the deployment creates the folder
 
 ```bash
-scripts/publish_package.py {version}                     # dry run: reports current, next, target
-scripts/publish_package.py {version} --execute           # tenant feed
-scripts/deploy_release.py  {version} {deployment-name} --execute
+python3 <SKILL_DIR>/scripts/publish_package.py {version}                     # dry run: reports current, next, target
+python3 <SKILL_DIR>/scripts/publish_package.py {version} --execute           # tenant feed
+python3 <SKILL_DIR>/scripts/deploy_release.py  {version} {deployment-name} --execute
 ```
 
 **Republishing an existing version is refused, not merely discouraged.** It is the most expensive
@@ -253,7 +254,7 @@ move.
 ## Phase 4: Await every release
 
 ```bash
-scripts/await_release.py {ProcessName} {version} --folder-path "{PARENT}/{deployment-name}"
+python3 <SKILL_DIR>/scripts/await_release.py {ProcessName} {version} --folder-path "{PARENT}/{deployment-name}"
 ```
 
 `await` polls for up to ten minutes and distinguishes three outcomes.
@@ -293,11 +294,16 @@ deploy, and neither is a folder whose releases are still stale.
 All emit JSON on stdout, put errors on stderr, and exit non-zero on failure. python3, standard
 library only, no shell.
 
+**`<SKILL_DIR>` is the folder holding this `SKILL.md`.** Invoke every script through `python3` with
+that prefix, exactly as written: the files are not marked executable, and Phase 1 has you working
+in `{workdir}`, where a relative `scripts/` does not exist. `<TOOLS_DIR>` is `<SKILL_DIR>/../../tools`,
+the shared tree the modeler validator and this skill's staging step both read.
+
 One script per action. Each answers `--describe` with its own contract as JSON, so what it takes
 and returns comes from the script rather than from this table:
 
 ```bash
-python3 scripts/<script>.py --describe
+python3 <SKILL_DIR>/scripts/<script>.py --describe
 ```
 
 | Script | Phase | What it does | Mutates |

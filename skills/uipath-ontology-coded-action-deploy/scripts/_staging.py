@@ -47,11 +47,11 @@ def write_entry_points(project_dir, job_source):
     """Derive the project's entry-points.json from the staged job. Returns a status string.
 
     A contract that cannot be lowered is fatal here, and deliberately so. This used to fall back to
-    "keep whatever manifest is already in the project", which is wrong in the one case it fires:
-    the template skeleton ships a manifest, so an unlowerable job inherited the EXEMPLAR's input
-    schema and deployed under a contract that has nothing to do with it -- passing every check and
-    faulting at invoke time on additionalProperties. A schema that was not derived from this job
-    cannot be attributed to it, so there is nothing safe to keep.
+    "keep whatever manifest is already in the project", which is wrong in the one case it fires: any
+    manifest already sitting there came from some other job, so an unlowerable job inherited a
+    foreign input schema and deployed under a contract that has nothing to do with it -- passing
+    every check and faulting at invoke time on additionalProperties. A schema that was not derived
+    from this job cannot be attributed to it, so there is nothing safe to keep.
 
     Only the entry point's identity survives from an existing manifest: uniqueId, which the
     project's bindings reference, and which module.manifest carries over.

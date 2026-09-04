@@ -2,7 +2,7 @@
 name: uipath-ontology-authoring
 description: "Use when a user provides an SDD, PDD, domain specification, or ontology artifact files and asks to create, validate, clone, map, wire the domain to Data Fabric entities, or deploy a new UiPath Ontology. Use for missing mapping generation, unresolved class/field/relationship ambiguity, and deployment sequencing. Do not use for plain domain prompts or CRUD operations on an existing ontology."
 when_to_use: "User provides an SDD or domain spec and wants to author/publish an ontology end-to-end; user says 'create an ontology from this SDD', 'generate ontology artifacts', 'deploy ontology', 'wire ontology to Data Fabric', 'generate mapping'."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 user-invocable: true
 ---
 
@@ -57,8 +57,10 @@ If the modeler is unavailable or returns an incomplete handoff, stop before depl
 
 First validate the provided mapping when `MAPPING_STATUS: supplied`, or generate it from handoff metadata when `MAPPING_STATUS: generate`; then run local preflight. Do not create the ontology stub or upload an artifact before this succeeds. Run the neutral validator against the exact workdir and intended upload set:
 
+`<TOOLS_DIR>` is the plugin's shared `tools/` directory — `<SKILL_DIR>/../../tools`, where `<SKILL_DIR>` is the folder holding this `SKILL.md`. Invoke it through `python3` with that prefix: the file is not marked executable, and a relative `tools/` does not resolve from the `{workdir}` these steps run in.
+
 ```bash
-python3 tools/ontology_preflight.py \
+python3 <TOOLS_DIR>/ontology_preflight.py \
   --workdir {workdir} --ontology-name {name} --mapping-mode auto \
   --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
 ```
@@ -75,7 +77,7 @@ Trigger: user points to a folder of already-generated artifact files (`{oldName}
 2. If cloning from a different ontology: copy each file into `{workdir}`, renaming `{oldName}` → `{name}` in the filename and, inside every file, every occurrence of the old slug — schema/constraints/functions/mapping IRIs, SPARQL `PREFIX ont:` lines, and (for `functions`/`actions`) the `ont:statement`/`ont:statements` bodies. If mapping is absent, set `MAPPING_STATUS: generate` and provide the modeler with the schema/entity metadata needed to create it. If deploying files as originally authored, use `MAPPING_STATUS: supplied` when present.
 3. **A rename (or "it already exists") is not sufficient.** Run the preflight command above against the exact files before uploading anything. It catches IRI drift, undeclared terms, missing object properties for FK joins, action output-contract failures, and non-global namespaces. Fix every failed gate locally and rerun preflight. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere.
 4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>`, not a per-ontology path.
-5. If the folder holds already-generated coded pairs (a `jobs/{actionName}.ts` beside its coded `{name}-{actionName}.ttl`), run Step 2b's deploy-then-patch delegation before any upload, exactly as a generated inventory does.
+5. If the folder holds already-generated coded pairs (a `jobs/{actionName}.ts` beside its coded `{name}-{actionName}.ttl`), run Step 2b's deploy delegation before any upload, exactly as a generated inventory does.
 6. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.Valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
 
 ---
@@ -87,9 +89,11 @@ guide rule, or a refusal further down; this is the short form to check a run aga
 
 **Before generating anything**
 
-- [ ] Ask which folder the ontology goes in — **its name and parent**, not an existing folder,
-      because the deployment creates it. Offer `Shared` as the parent: a folder at the root has no
-      user with unattended robot permissions and its jobs never start.
+- [ ] Settle the folder, and note that the question differs by path (Phase 1). A SQL-only
+      inventory picks an **existing** folder. An inventory with any CODED action cannot: the
+      deployment creates the folder and cannot be aimed at one that exists, so ask for **a name and
+      a parent** instead. Offer `Shared` as the parent: a folder at the root has no user with
+      unattended robot permissions and its jobs never start.
 - [ ] `uip login status` is the only source of org and tenant.
 
 **Schema**
@@ -245,7 +249,33 @@ Once all three pass, continue **silently** — do not print a confirmation messa
 
 ## Phase 1 — Folder selection (blocking gate, runs in parallel with SDD reading)
 
-Start this phase at the same time as SDD reading — they are independent. But **do not advance to Phase 2 until the user has confirmed a folder.**
+Start this phase at the same time as SDD reading — they are independent. But **do not advance to Phase 2 until the folder question is settled.**
+
+**Which question you are asking depends on Step 1's classification, so read that first.**
+
+| Step 1 classified | The folder | Phase 1 does |
+|---|---|---|
+| no write as CODED | already exists, or you create it here | **Path A** below: list, pick, record `PRIMARY_FOLDER_KEY` |
+| any write as CODED | does not exist yet, and Step 2b's deploy is what creates it | **Path B** below: collect a name and a parent, and leave `PRIMARY_FOLDER_KEY` unset |
+
+A deployment cannot be aimed at an existing folder — every folder flag names a parent or a new folder, and given a name already in use the CLI creates `"X 1"` beside it and puts the processes there. That is why Path B cannot pick a folder, and why on that path Phase 2's entity creation and Step 3a's `uip ont create` both wait for Step 2b. Nothing else in Phases 3–6 is affected.
+
+### Path B — any CODED action
+
+Ask for two things and record them; do not list folders and do not create one:
+
+```
+FOLDER_NAME:   the folder the deployment will create (a fresh name, not one that exists)
+PARENT_FOLDER: Shared, unless the author names another
+```
+
+Offer `Shared` as the parent and say why: a solution folder created at the root gets no user with unattended robot permissions, so Orchestrator answers `StartJobs` with HTTP 409 / errorCode 1671 and the invoke reports a bare "Unexpected error". Verified both ways.
+
+Then run the cross-folder name-collision check below — it is tenant-wide, so it applies unchanged. Only its *different-folder* branch can fire on this path: the folder is new, so a same-folder collision is impossible.
+
+`PRIMARY_FOLDER_KEY` is set in Step 2b, from the folder the deploy created. **Advance to Phase 2 on `FOLDER_NAME` and `PARENT_FOLDER` being confirmed; Phase 2 will tell you what it can and cannot do without the key.**
+
+### Path A — no CODED action
 
 Fetch all available folders from Orchestrator — not from entity references, which only surface folders that already have entities:
 
@@ -280,9 +310,11 @@ To nest it under an existing folder, add `--parent "<ParentName>"` (name or key)
 
 Record the selected folder key as `PRIMARY_FOLDER_KEY`.
 
-**Gate: do not move to Phase 2 until `PRIMARY_FOLDER_KEY` is confirmed and is not `"default"`.**
+**Gate (Path A): do not move to Phase 2 until `PRIMARY_FOLDER_KEY` is confirmed and is not `"default"`.** On Path B the key does not exist yet; its gate is `FOLDER_NAME` and `PARENT_FOLDER`.
 
-**Cross-folder name collision check** — run after `PRIMARY_FOLDER_KEY` is confirmed:
+### Cross-folder name collision check — both paths
+
+Run this on Path A once `PRIMARY_FOLDER_KEY` is confirmed, and on Path B once `FOLDER_NAME` is. The query is tenant-wide, so it needs no folder:
 ```bash
 uip ont list --output json
 ```
@@ -294,13 +326,15 @@ Scan the result for any ontology whose name matches `{name}` (case-insensitive):
 
 **Convergence gate — do not move to Phase 2 until both tracks are complete:**
 - Track A: SDD reading done and class names extracted
-- Track B: Login verified → `PRIMARY_FOLDER_KEY` confirmed (not `"default"`, not `00000000-0000-0000-0000-000000000000`)
+- Track B: Login verified, then — on Path A, `PRIMARY_FOLDER_KEY` confirmed (not `"default"`, not `00000000-0000-0000-0000-000000000000`); on Path B, `FOLDER_NAME` and `PARENT_FOLDER` confirmed
 
 ---
 
 ## Phase 2 — Entity matching and creation
 
 Now that the SDD class names are known (from Step 1), match each SDD class against entities in `PRIMARY_FOLDER_KEY`. All entity operations in this phase are scoped to that folder only — do not list or create entities outside it.
+
+**On Phase 1's Path B there is no `PRIMARY_FOLDER_KEY` yet, so this phase splits in two.** Build the matching table now from the SDD alone — a folder that does not exist holds no entities, so every class is **Create new (native)** and there is nothing to match against. Federated classes are the exception worth stating to the author early: they cannot be created at all, by CLI or API, so an SDD needing one is blocked on someone building it in the Data Fabric UI first, and it will live in its own folder rather than the new one. Then **defer every `uip df entities create` until Step 2b has returned the folder key**, and run them against that key. Phases 3–6 need no folder and proceed normally.
 
 ```bash
 uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json
@@ -514,7 +548,7 @@ The modeler generates each artifact following its canonical pattern file:
 | `{workdir}/jobs/{actionName}.ts` | Modeler's coded-action guide | 0 or more, one per coded action | None, jobs are never ontology artifacts |
 | `{name}-mapping.yarrrml.yml` | Modeler's mapping guide | 1 (always) | Tier 3 — upload last as deploy trigger |
 
-Row note: coded `{name}-{actionName}.ttl` files are held out of Tier 2 until Step 2b below returns them patched.
+Row note: coded `{name}-{actionName}.ttl` files are held out of Tier 2 until Step 2b below reports its releases live. The files themselves are not modified — they name a release, not a folder — but uploading one before its job is deployable leaves an action that resolves to nothing at invoke.
 
 Gate ownership and execution:
 
@@ -545,7 +579,7 @@ UNRESOLVED_AMBIGUITIES: none
 
 A SQL-only inventory skips this step untouched and goes straight to Step 3. Run it only when the returned inventory contains coded actions.
 
-**Delegate to the `uipath-ontology-coded-action-deploy` skill** and pass it:
+**Invoke the `uipath-ontology-coded-action-deploy` skill** with the `Skill` tool and pass it:
 - `{workdir}` from Step 1
 - the ontology name `{name}`
 - every coded pair: `{workdir}/jobs/{actionName}.ts` with its `{workdir}/{name}-{actionName}.ttl`
@@ -554,29 +588,34 @@ That skill publishes the `{name}-jobs` Solution, deploys it — **which is what 
 
 **This reorders the rest of the flow.** The folder does not exist until the deploy runs, and a deployment cannot be pointed at an existing folder. So:
 
-1. delegate the deploy, and take the folder it created
-2. create the Data Fabric entities **in that folder**
-3. `uip ont create {name} --folder-key {that folder's key}`
-4. validate and upload the artifacts
-5. invoke
+1. delegate the deploy, passing Phase 1 Path B's `FOLDER_NAME` and `PARENT_FOLDER`
+2. **set `PRIMARY_FOLDER_KEY` to the key of the folder it created.** Everything downstream reads that one variable, so from here on both paths are identical
+3. run the `uip df entities create` calls Phase 2 deferred, against `PRIMARY_FOLDER_KEY`
+4. `uip ont create {name} --folder-key {PRIMARY_FOLDER_KEY}` (Step 3a)
+5. validate and upload the artifacts (Steps 3b, 3c)
+6. invoke
 
-Ask the author for the folder's **name and parent** before delegating, never for an existing folder. Offer `Shared` as the parent: a folder at the root has no user with unattended robot permissions and its jobs never start.
+Phase 1 Path B already collected the folder's name and parent. Do not ask for an existing folder here, and do not create the folder yourself with `uip or folders create` — the deploy creates it, and a folder that already exists makes the CLI create `"{FOLDER_NAME} 1"` beside it and deploy the processes there, leaving the ontology bound to a folder holding zero processes.
+
+Prose telling the user to run the deploy skill is not a substitute for the `Skill` call — the flow
+does not continue until that skill has reported its releases live.
 
 > If the `uipath-ontology-coded-action-deploy` skill is not available, stop before upload and return: "Coded actions require the uipath-ontology-coded-action-deploy sibling skill. The artifacts are generated and locally preflighted, but no release is live and no folder exists to bind the ontology to; activate that skill and retry the delegation."
 
-Then rerun the coded preflight, which now has the process type to check:
+**Do not rerun the coded preflight here.** Nothing about the pair changed: the deploy skill stages
+a copy of each job and edits no artifact, and `ont:processType` was written by the modeler at
+generation time and already checked by its gate. A rerun would re-report the modeler's own verdict
+and read as fresh evidence of readiness, which it is not.
 
-```bash
-python3 tools/coded_action_preflight.py --workdir {workdir} --ontology-name {name}
-```
-
-A green preflight here means the pairs are internally consistent, not that anything is deployed. Readiness is what the deploy skill reported: the folder exists and every release is `ready`.
+Readiness is what the deploy skill reported, and only that: the folder exists and every release is
+`ready`. A release reported `stale` or `missing` is the gate — stop and say which process, rather
+than uploading an action that resolves to nothing at invoke.
 
 ---
 
 ## Step 3 — Validate and deploy
 
-> **Trigger:** The modeler returned a passing preflight inventory, and any coded actions came back patched from Step 2b. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
+> **Trigger:** The modeler returned a passing preflight inventory, and any coded actions have a live release from Step 2b. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
 
 ### 3a — Create the ontology stub
 
@@ -588,11 +627,13 @@ uip ont create {name} \
   --output json
 ```
 
+`PRIMARY_FOLDER_KEY` is Phase 1 Path A's selected folder, or — on Path B — the folder Step 2b's deploy created. Either way it is a confirmed key by the time this runs; if it is unset, an earlier gate was skipped.
+
 Proceed only on `Code: OntologyCreated`. The modeler has not called the backend and has not uploaded any artifact.
 
 ### 3b — Backend-validate the exact inventory
 
-Authoring backend-validates every artifact in `artifact_inventory`, the patched coded action TTLs returned by Step 2b included, and requires `Data.Valid: true` for each response before uploading anything. **The field is capitalised**, and the `{fileName}` positional is required exactly as it is for `upsert` — omit it and every call returns `error: missing required argument 'fileName'`, which still parses, so a naive check reads it as a validation failure and sends the session hunting a phantom artifact bug:
+Authoring backend-validates every artifact in `artifact_inventory`, the coded action TTLs cleared by Step 2b included, and requires `Data.Valid: true` for each response before uploading anything. **The field is capitalised**, and the `{fileName}` positional is required exactly as it is for `upsert` — omit it and every call returns `error: missing required argument 'fileName'`, which still parses, so a naive check reads it as a validation failure and sends the session hunting a phantom artifact bug:
 
 ```bash
 uip ont artifact validate {name} {fileName} \
@@ -614,7 +655,7 @@ uip ont artifact upsert {name} {name}.ofn \
   --file {workdir}/{name}.ofn --output json
 ```
 
-Tier 2 — constraints, functions, and actions, the patched coded action TTLs from Step 2b included; they ride Tier 2 exactly like declarative action files, media type `text/turtle`, `--type actions` (parallel where present):
+Tier 2 — constraints, functions, and actions, the coded action TTLs cleared by Step 2b included; they ride Tier 2 exactly like declarative action files, media type `text/turtle`, `--type actions` (parallel where present):
 
 ```bash
 uip ont artifact upsert {name} {artifact-name} \

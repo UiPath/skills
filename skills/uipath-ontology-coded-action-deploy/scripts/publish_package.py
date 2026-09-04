@@ -27,7 +27,7 @@ DESCRIBE = {
     "name": 'publish_package',
     "purpose": 'Pack and upload the package to the tenant feed',
     "phase": '3 - release',
-    "inputs": {'env': ['SOLUTION_SRC', 'UIP_CLI (optional)'], 'args': ['version', '--execute']},
+    "inputs": {'env': ['SOLUTION_SRC', 'UIP_CLI (optional)'], 'args': ['version', '--force-version', '--execute']},
     "outputs": {'published': 'the package name', 'version': 'the version published'},
     "mutates": True,
     "exit_codes": {"0": "ok, result on stdout", "1": "refused or failed, reason on stderr"},

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Create a deployment for a published version, in a NEW Orchestrator folder. MUTATES a live tenant.
+"""Deploy a published version, creating its Orchestrator folder. MUTATES a live tenant.
 
-A new version means a new deployment in a new folder under Shared -- the POC found no upgrade
-verb, and the folder must be under Shared or it has no unattended robot permissions and the job
-cannot start. The folder id this produces is what Phase 5 patches into each action TTL.
+A NEW deployment name creates a new folder; the SAME name with a new --package-version upgrades
+that deployment in place, one folder throughout. See deploy_release() for why reusing the name is
+the correct path for a re-release and why uninstalling is never one.
+
+The folder must be under Shared or it has no user with unattended robot permissions and the job
+cannot start. The folder this creates is what Phase 5 reports; no artifact is edited.
 """
 
 import argparse
@@ -14,7 +17,7 @@ from _uip import UIP, described, emit, uip_json
 
 DESCRIBE = {
     "name": 'deploy_release',
-    "purpose": 'Deploy a published version into a new Orchestrator folder',
+    "purpose": 'Deploy a version, creating the folder or upgrading the deployment in place',
     "phase": '3 - release',
     "inputs": {'env': ['SOLUTION_SRC or SOLUTION_NAME', 'PARENT_FOLDER_PATH (optional)', 'DEPLOY_NAME (optional)'], 'args': ['version', 'deployment_name (optional)', '--execute']},
     "outputs": {'deployment': 'the deployment name', 'folderPath': 'the folder created'},

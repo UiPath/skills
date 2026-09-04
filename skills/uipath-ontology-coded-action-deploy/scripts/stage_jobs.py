@@ -25,8 +25,8 @@ DESCRIBE = {
 def main():
     if described(DESCRIBE):
         return
-    ap = argparse.ArgumentParser(description=__doc__)
-    args = ap.parse_args()
+    # Takes no arguments; the parser is here for -h and to reject a stray one.
+    argparse.ArgumentParser(description=__doc__).parse_args()
     staging, report = stage(solution_src())
     report.update({"ok": True, "staging": str(staging)})
     emit(report)

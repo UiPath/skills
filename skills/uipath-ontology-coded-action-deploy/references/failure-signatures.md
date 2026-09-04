@@ -33,11 +33,19 @@ staging removes the dependency anyway. Do not chase it, and do not add
 `GH_NPM_REGISTRY_TOKEN` to make it go away: a staged `.npmrc` carrying an unexpanded
 `${GH_NPM_REGISTRY_TOKEN}` reaches the runtime as a literal string and is useless there.
 
+This can only happen while `uip functions new` is scaffolding, which is the one command in the
+pipeline that installs. Stage, pack, publish and deploy run no installer: the SDK is a devDependency
+for local typechecking only, `type<T>()` is erased at compile time, and `defineFunction` comes from
+the runtime. A 404 from any of those phases means something is running a command this pipeline does
+not.
+
 ## `Project already exists in solution: X/uipath.json`
 
-`uip functions new`, run inside a solution directory, writes the `.uipx` `Projects` entry itself, so
-a separate `uip solution projects add` is redundant and fails. Drop the command and verify instead:
-every project appears in the `.uipx` `Projects` array.
+`uip functions new`, on a CLI version that writes the `.uipx` `Projects` entry itself, has already
+registered the project, so a separate `uip solution projects add` is redundant and fails. This is
+**version-dependent** — 1.200.0 does not write the entry, and there the command is required. So do
+not drop it as a rule: read the manifest first and add only what is missing, per SKILL.md Phase 1.
+Seeing this error means the entry was already there, which is the good case.
 
 ## `Entity 'X' has no identity property` on `Preparing write statement`
 
@@ -102,8 +110,11 @@ Two causes, and the message distinguishes them.
 **`must have required property 'X'`** — the row interface declared `X`, and the read did not return
 a column by that name. A `SELECT *` read's physical column shape is not knowable at authoring time:
 the same entity answered `Tags` through the Data Fabric records API and its schema field name
-through the ontology's read. A row interface must therefore declare **no** fields, only
-`[column: string]: unknown`, and the handler picks columns defensively. Fix the job, not the entity.
+through the ontology's read. Every field on a row interface must therefore be **optional**
+(`Tags?: string`) above its `[column: string]: unknown`, and the handler picks columns defensively.
+Optional rather than absent: the manifest still documents the shape the job expects, while a
+differently-spelled column arrives as `undefined` instead of a rejection. Fix the job, not the
+entity. See the contract guide's row-interface rule.
 
 **A renamed or extra top-level input field** — the marker and the job's `Input` have drifted apart.
 `coded_action_preflight.py`'s `input-matches-marker` catches this offline; reaching it at runtime
@@ -113,7 +124,7 @@ The third cause is a **stale release**: the deployed job is older than the contr
 version rather than assuming.
 
 ```bash
-scripts/await_release.py <ProcessName> <expected-version> --folder-path "<PARENT>/<deployment>"
+python3 <SKILL_DIR>/scripts/await_release.py <ProcessName> <expected-version> --folder-path "<PARENT>/<deployment>"
 ```
 
 ## `await` says `missing` when you expected `stale`
@@ -126,8 +137,8 @@ They are different failures and the fix differs.
 | `missing` | no release by that name in that folder at all | the folder id is wrong, or the project never made it into the package. The reported `available` list is the diagnosis: if the other releases are there and yours is not, the project is missing from the manifest. |
 
 A `missing` right after a successful deploy usually means the folder path names the previous
-deployment. Await against `"Shared/<new-deployment>"`, and re-resolve the id with
-`folder-id "Shared/<new-deployment>"`.
+deployment. Await against `"Shared/<new-deployment>"`, and re-read the folder with
+`uip or folders get`, which returns both its `Key` and its numeric `Id`.
 
 ## The job deployed fine but the action faults, and the source looks right
 
@@ -140,7 +151,7 @@ pack the solution directory directly. To confirm after the fact, unzip the packa
 the per-project nupkg. The job belongs at `content/main.ts`:
 
 ```bash
-scripts/stage_jobs.py          # prints its staging path
+python3 <SKILL_DIR>/scripts/stage_jobs.py          # prints its staging path
 uip solution pack <staging> /tmp/pk -n <SolutionName> -v <version>
 cd /tmp/pk && unzip -q <SolutionName>_<version>.zip
 unzip -p files/*/<SolutionName>.Function.<ProjectName>.<version>.nupkg 'content/main.ts' | head
@@ -178,19 +189,6 @@ earlier and on purpose: the type is outside the grammar the contract guide manda
 interface to that grammar rather than hand-writing a manifest, because a manifest that disagrees
 with the interfaces faults the job before its handler runs.
 
-## `GET https://registry.npmjs.org/@uipath%2f... - 404` during scaffolding
-
-The `@uipath` npm scope is on GitHub Packages, not npmjs. The project needs an `.npmrc` mapping
-the scope to `https://npm.pkg.github.com/` with `${GH_NPM_REGISTRY_TOKEN}` as the token reference,
-and the environment needs `GH_NPM_REGISTRY_TOKEN` exported. Phase 1 writes that `.npmrc`
-**before** `uip functions new`, because that command installs; a 404 means either the file was
-written after the command, or the token is missing from the environment.
-
-This can only happen during scaffolding, when `uip functions new` installs. Stage, pack, publish
-and deploy run no installer: the SDK is a devDependency for local typechecking, `type<T>()` is
-erased at compile time, and `defineFunction` comes from the runtime. A 404 from those phases means
-something is running a command this pipeline does not.
-
 ## `stage` refused and the run reports as clean
 
 It did not run. The guard refusals are:
@@ -198,8 +196,8 @@ It did not run. The guard refusals are:
 ```
 mapped job source missing: ...
 mapped job source is empty: ...
-<Project>/functions holds no .ts source and the project is not in jobs.map.json; pack would publish an empty function
-<Project>/functions/<file>.ts is empty; pack would publish an empty function
+<Project>/main.ts is missing and the project is not in jobs.map.json; pack would publish an empty function
+<Project>/main.ts is empty; pack would publish an empty function
 ```
 
 Every one exits non-zero. Reporting a run as complete when a guard stopped it is the worst possible
@@ -297,7 +295,7 @@ against every release rather than only the one that changed.
 ## `HTTP 400: Project with name '<name>' not found` on publish
 
 `projectName` error 2003, `RetryWillNotFix`. Something is calling
-`uip solution projects publish --project-name <name>`, which publishes an existing *cloud* solution
+`uip solution projects publish --project-name <name>`, which publishes an existing *cloud* solution <!-- uip-check-skip -->
 project; that flag wants a Studio Web project name, and the name you passed is the deployment and
 package name, a different namespace. `publish_package.py` packs from `SOLUTION_SRC`
 instead and needs no cloud project. If you see this error, something is calling `uip` directly.

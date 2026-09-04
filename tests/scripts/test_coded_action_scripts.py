@@ -10,6 +10,7 @@ So the scripts are the source of truth (`--describe`) and this test makes the pr
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import subprocess
@@ -107,6 +108,48 @@ class ScriptContractTests(unittest.TestCase):
                         hits.append("%s:%d names %s" % (doc.relative_to(ROOT), number, name))
         self.assertFalse(hits, "docs name scripts that no longer exist:\n  " + "\n  ".join(hits))
 
+    def test_no_removed_design_survives_in_the_prose(self):
+        """Filenames were not the only thing a refactor invalidated.
+
+        Each term below named a mechanism that was removed, and each was left behind in prose that
+        still read as instruction: a patch phase that no longer runs, a scaffold that no longer
+        writes an `.npmrc`, a `folder-id` subcommand that no longer exists, a template skeleton
+        that is no longer shipped, a `functions/` layout that became `main.ts`. Every one of them
+        would have been caught by one grep, so this is that grep.
+
+        Each entry carries the phrasing that is still legitimate, because most of these words have
+        a correct use: "nothing is patched" is the fact, "is patched into the TTL" is the stale
+        claim.
+        """
+        removed = {
+            "patched into": "the deploy patches no artifact; say so, or say nothing",
+            "deploy-then-patch": "there is no patch phase",
+            "PENDING_DEPLOY": "the concept is gone",
+            "SPIKE-PENDING": "resolved: `uip solution deploy upgrade` does not exist",
+            "folder-id ": "removed subcommand; `uip or folders get` returns Key and Id",
+            "solution-skeleton": "no longer shipped",
+            "template mode": "no longer exists",
+            "/functions holds": "the staged layout is main.ts, not functions/",
+            "writes each project's `.npmrc`": "nothing writes an .npmrc",
+            "scaffold owns the project's `.npmrc`": "nothing writes an .npmrc",
+        }
+        allowed = ("Nothing is patched", "nothing to patch", "It patches nothing", "patches nothing")
+        hits = []
+        roots = [SKILL_DIR,
+                 ROOT / "skills" / "uipath-ontology-authoring",
+                 ROOT / "skills" / "uipath-ontology-modeler",
+                 ROOT / "tools"]
+        candidates = [f for root in roots for pattern in ("*.md", "*.py", "*.json")
+                      for f in root.rglob(pattern)]
+        for doc in sorted(set(candidates)):
+            for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
+                if any(ok in line for ok in allowed):
+                    continue
+                for term, why in removed.items():
+                    if term in line:
+                        hits.append("%s:%d — %r (%s)" % (doc.relative_to(ROOT), number, term, why))
+        self.assertFalse(hits, "prose describes a mechanism that was removed:\n  " + "\n  ".join(hits))
+
     def test_every_suite_in_this_area_actually_runs_tests(self):
         """A suite whose `unittest.main()` block is gone exits 0 having run nothing, which reads
         as a pass. That happened once during this refactor, when a regex removing the last test in
@@ -115,6 +158,7 @@ class ScriptContractTests(unittest.TestCase):
             ROOT / "tests" / "scripts" / "test_entry_points.py",
             ROOT / "tests" / "scripts" / "test_coded_action_scripts.py",
             ROOT / "tests" / "coded_action_preflight" / "test_coded_action_preflight.py",
+            ROOT / "tests" / "scripts" / "test_ontology_skill_structure.py",
         ]
         for suite in suites:
             with self.subTest(suite=suite.name):
@@ -129,6 +173,50 @@ class ScriptContractTests(unittest.TestCase):
         for module in sorted(SCRIPTS.glob("_*.py")):
             with self.subTest(module=module.name):
                 self.assertNotIn('if __name__ == "__main__"', module.read_text())
+
+
+    def test_every_argparse_option_is_declared_in_describe(self):
+        """`--describe` is the contract, so a flag missing from it is an undocumented flag.
+
+        Read statically from the argparse calls rather than by running the script, so a flag added
+        behind a condition still counts. This caught `--force-version` on publish_package.py -- the
+        one flag that overrides the version guard, and the one most worth having written down.
+        """
+        for script in entry_points():
+            declared = describe(script)["inputs"].get("args", [])
+            # 'deployment_name (optional)' declares 'deployment_name'; match on the first token.
+            declared_names = {entry.split()[0] for entry in declared}
+            tree = ast.parse(script.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                        and node.func.attr == "add_argument"):
+                    continue
+                for arg in node.args:
+                    if not isinstance(arg, ast.Constant) or not isinstance(arg.value, str):
+                        continue
+                    with self.subTest(script=script.name, option=arg.value):
+                        self.assertIn(
+                            arg.value, declared_names,
+                            "%s takes %r but --describe does not list it in inputs.args (%s)"
+                            % (script.name, arg.value, sorted(declared_names)))
+
+    def test_describe_declares_no_argument_the_script_does_not_take(self):
+        """The other direction: a stale entry is as misleading as a missing one."""
+        for script in entry_points():
+            declared = {e.split()[0] for e in describe(script)["inputs"].get("args", [])}
+            tree = ast.parse(script.read_text(encoding="utf-8"))
+            actual = {
+                arg.value
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "add_argument"
+                for arg in node.args
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+            }
+            with self.subTest(script=script.name):
+                self.assertEqual(
+                    declared - actual, set(),
+                    "%s --describe lists argument(s) argparse does not define" % script.name)
 
 
 if __name__ == "__main__":

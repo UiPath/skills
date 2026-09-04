@@ -144,9 +144,9 @@ def check_strictness(log: GateLog, name: str, job_path, src: str) -> None:
         library = foreign_idiom(src)
         if library:
             # Naming the library is not the point; naming what it costs at deploy time is. Such a
-            # contract carries its own schema and cannot be lowered, so the deploy step would keep
-            # whatever manifest is already in the project -- in template mode, the skeleton's
-            # exemplar contract -- and the job would deploy under the wrong input schema.
+            # contract carries its own schema and cannot be lowered. The deploy step refuses
+            # rather than keeping whatever manifest is already in the project, because such a
+            # manifest came from another job and would deploy this one under a foreign schema.
             detail = (
                 f"the contract is declared with {library}, which this pipeline cannot deploy: it "
                 f"stages a derived entry-points.json and only the type<T>() idiom can be lowered. "
@@ -204,7 +204,7 @@ def check_writes(log: GateLog, name: str, action: dict, edits: dict) -> None:
 
 
 def check_fields(
-    log: GateLog, name: str, action: dict, edits: dict | None, schema: tuple[set[str], set[str]] | None, reason: str
+    log: GateLog, name: str, action: dict, edits: dict | None, schema: tuple[set[str], set[str], set[str]] | None, reason: str
 ) -> None:
     if schema is None:
         log.add("fields-exist-in-schema", "skipped", f"{name}: {reason}")

@@ -2,7 +2,7 @@
 name: uipath-ontology-modeler
 description: "Use when the user describes an ontology domain in plain language and wants local ontology artifact files, or when authoring supplies a confirmed delegated handoff for artifact generation. Do not use for SDD/PDD ingestion, Data Fabric entity setup, new-ontology deployment orchestration, or existing-ontology CRUD."
 when_to_use: "Use for plain-domain modeling, local artifact generation, artifact regeneration, and delegated generation after a confirmed CLASS_MAP and workdir are supplied by ontology authoring."
-allowed-tools: Bash, Read, Write, Edit
+allowed-tools: Bash, Read, Write, Edit, Skill
 user-invocable: true
 ---
 
@@ -123,8 +123,10 @@ Generate schema, constraints, mapping, optional functions, and optional actions.
 
 Before returning artifacts or uploading tier-2 artifacts, invoke the neutral preflight utility against the exact workdir and upload set:
 
+`<TOOLS_DIR>` is the plugin's shared `tools/` directory — `<SKILL_DIR>/../../tools`, where `<SKILL_DIR>` is the folder holding this `SKILL.md`. Invoke it through `python3` with that prefix: the file is not marked executable, and a relative `tools/` does not resolve from the `{workdir}` these steps run in.
+
 ```bash
-python3 tools/ontology_preflight.py \
+python3 <TOOLS_DIR>/ontology_preflight.py \
   --workdir {workdir} --ontology-name {name} --mapping-mode auto \
   --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
 ```
@@ -140,7 +142,7 @@ Run all gates against the exact files that will be uploaded:
 5. **Class deployability gate:** every class is the domain of at least one property and is instantiated in the mapping.
 6. **Relationship gate:** every FK-shaped relationship has an object property and mapping join, or an explicit packed-FK exemption.
 7. **Semantic gate:** check domain completeness, constraint coverage, column alignment, policy coherence, and function/action consistency.
-8. **Coded-action contract gate:** run `tools/coded_action_preflight.py` against every coded action's TTL+job pair.
+8. **Coded-action contract gate:** run `<TOOLS_DIR>/coded_action_preflight.py` against every coded action's TTL+job pair.
 
 Fix failures before backend calls. A `DEPLOYED` state does not prove that relationships were modeled.
 
@@ -181,3 +183,15 @@ After deployment, verify both `uip ont get {name}` reports `DEPLOYED` and `uip o
 - Plain domain description → this skill.
 - Existing ontology/artifact CRUD or SDK operations → `uipath-ontologies`.
 - Deploying already-generated files → `uipath-ontology-authoring`, which owns the deployment gates.
+- Getting a coded action's job into Orchestrator → `uipath-ontology-coded-action-deploy`. This skill
+  generates the pair and gates it locally; it never publishes, deploys, or awaits a release.
+
+**Standalone mode must not upload a CODED action without a live release.** A coded action's TTL
+names an Orchestrator process by `ont:process`, and nothing about the artifact reveals whether that
+process exists. Upload one whose job was never deployed and the ontology reaches `DEPLOYED` looking
+correct, then every invoke fails at the `Running job` step against a release that is not there. So
+in standalone mode, on generating any coded pair: stop before Step 5's upload, invoke
+`uipath-ontology-coded-action-deploy` for the pairs, and upload only once it reports every release
+`ready`. If that skill is unavailable, return the generated and preflighted artifacts with the
+upload explicitly withheld, and say that a coded action cannot be completed without it — do not
+upload the declarative artifacts and leave the coded one out silently, and do not upload it anyway.

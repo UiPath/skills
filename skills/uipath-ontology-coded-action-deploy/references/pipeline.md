@@ -17,7 +17,8 @@ Solution source      $SOLUTION_SRC       the solution directory phase 1 created,
                                          resources/solution_folder/** descriptors
 Deployment           $DEPLOY_NAME        created by `deploy`, one per version
 Orchestrator folder                      created by `deploy` under $PARENT_FOLDER_PATH;
-                                         `folder-id "Shared/<name>"` resolves its numeric Id
+                                         `uip or folders get` returns both its Key (GUID) and
+                                         its numeric Id (the OrganizationUnitId)
 Release shape                            ProcessType=Function,
                                          ProcessKey=$SOLUTION_NAME.Function.<ProjectName>,
                                          TargetFramework=Portable
@@ -38,10 +39,15 @@ That is why republishing needs no `ont:process` change, and why only the folder 
 Phase 1 creates it. There are two routes and the same output shape.
 
 **Scaffold first.** `uip solution init` creates the directory and the `.uipx`, which is also where
-the fresh `SolutionId` comes from. `uip functions new --empty` creates each Function project, and
-`uip solution projects add` registers it in the manifest. One project per coded action. The
-scaffold also writes each project's `.npmrc`: the `@uipath` scope resolves from GitHub Packages,
-not npmjs, via `${GH_NPM_REGISTRY_TOKEN}`, and the CLI's own scaffolding writes no `.npmrc`.
+the fresh `SolutionId` comes from. `uip functions new --empty` creates each Function project, one
+per coded action. Whether that command also registers the project in the `.uipx` `Projects` array
+is version-dependent, so read the manifest and run `uip solution projects add` only for what is
+missing — SKILL.md Phase 1 has the check and the exact reason.
+
+**No `.npmrc` is written, at any point.** The `@uipath` scope does resolve from GitHub Packages
+rather than npmjs, but nothing in this pipeline needs the SDK installed, and `stage_jobs.py` strips
+any `.npmrc` from the staged copy on purpose: it would reach the runtime carrying an unexpanded
+`${GH_NPM_REGISTRY_TOKEN}`. The npmjs 404 during `uip functions new` is expected and harmless.
 
 **Verified live.** A CLI-scaffolded solution deploys a real job-capable release
 (`ProcessType=Function`), with `projects add` generating the
@@ -49,9 +55,9 @@ not npmjs, via `${GH_NPM_REGISTRY_TOKEN}`, and the CLI's own scaffolding writes 
 `SolutionStorage.json` and needs none: the staging step reads the `.uipx` `Projects` array.
 `uip or processes list` reports the release version as `ProcessVersion`.
 
-**Template fallback.** `assets/solution-skeleton` is a known-good Studio Web export's manifests,
-no longer shipped. `uip solution init` plus `uip functions new --empty` plus
-`uip solution projects add` is verified to produce the same shape, and the export carried a
+**There is no template fallback, and the CLI scaffold is the only route.** An earlier revision
+shipped a known-good Studio Web export's manifests to copy from; it is gone. `uip solution init`
+plus `uip functions new --empty` is verified to produce the same shape, and the export carried a
 `SolutionId` that was not ours to reuse.
 
 ### The manifest is authoritative, not the directory listing
@@ -102,14 +108,14 @@ Pack from the solution directory and upload the `.zip`. No cloud project, no Stu
 no `uip functions push`.
 
 ```bash
-scripts/publish_package.py 1.0.3                         # dry run: current, next, target
-scripts/stage_jobs.py                                 # build + validate, temp only
+python3 <SKILL_DIR>/scripts/publish_package.py 1.0.3                         # dry run: current, next, target
+python3 <SKILL_DIR>/scripts/stage_jobs.py                                 # build + validate, temp only
 uip solution pack <staging> /tmp/pk -n support-jobs -v 1.0.3  # local .zip, no tenant writes
-scripts/publish_package.py 1.0.3                         # prints the steps
-scripts/publish_package.py 1.0.3 --execute               # pack, then upload to the feed
-scripts/deploy_release.py  1.0.3 <deployment-name> --execute   # creates the folder, or upgrades in place
+python3 <SKILL_DIR>/scripts/publish_package.py 1.0.3                         # prints the steps
+python3 <SKILL_DIR>/scripts/publish_package.py 1.0.3 --execute               # pack, then upload to the feed
+python3 <SKILL_DIR>/scripts/deploy_release.py  1.0.3 <deployment-name> --execute   # creates the folder, or upgrades in place
 uip or folders get "<PARENT>/<deployment-name>"          # -> Key and numeric Id, in one call
-scripts/await_release.py <ProcessName> 1.0.3 --folder-path "<PARENT>/<deployment-name>"
+python3 <SKILL_DIR>/scripts/await_release.py <ProcessName> 1.0.3 --folder-path "<PARENT>/<deployment-name>"
 ```
 
 **Never reuse a version number.** Publishing the same version is a silent no-op everywhere:
@@ -126,7 +132,7 @@ deployment name** and a new `--package-version` upgrades that deployment: one fo
 the same folder key, no duplicate processes, `ActivationStatus: SuccessfulActivate` each time.
 Verified across three consecutive versions.
 
-There is no `uip solution deploy upgrade`. The subcommands are activate, config, list, run, status
+There is no `uip solution deploy upgrade`. The subcommands are activate, config, list, run, status <!-- uip-check-skip -->
 and uninstall. `deploy run` *is* the upgrade path, so nothing here is pending a spike.
 
 **A deployment cannot target an existing folder.** `--folder-name` is documented as the name *for
@@ -193,11 +199,11 @@ job at `content/main.ts`, which is what `entry-points.json`'s `filePath` refers 
 
 ### Two dead ends, so nobody re-walks them
 
-**`uip solution projects publish --project-name <name>` does not work.** That publishes an existing
+**`uip solution projects publish --project-name <name>` does not work.** That publishes an existing <!-- uip-check-skip -->
 *cloud* solution project, and `--project-name` wants a Studio Web project name, and the name you
 know is the name of the deployment and of the package, a different namespace. It fails
 `HTTP 400: Project with name '<name>' not found` (`projectName`, error 2003, `RetryWillNotFix`).
-Nor can the CLI enumerate cloud project names: `uip solution projects list` reads only the on-disk
+Nor can the CLI enumerate cloud project names: `uip solution projects list` reads only the on-disk <!-- uip-check-skip -->
 manifest. Packing from source needs none of it.
 
 **`uip functions publish` is not a substitute.** The `uipath-functions` skill states JS/TS

@@ -20,8 +20,8 @@ PARENT_FOLDER_PATH = os.environ.get("PARENT_FOLDER_PATH", "Shared")
 
 
 def solution_src():
-    """Resolved lazily, and only by the subcommands that pack, so `version`, `folder-id` and
-    `await` still work without it."""
+    """Resolved lazily, and only by the scripts that pack, so `await_release.py` still works
+    without it."""
     if not SOLUTION_SRC:
         die("SOLUTION_SRC is not set; the caller must supply it, nothing is baked into this script")
     path = pathlib.Path(SOLUTION_SRC).expanduser().resolve()

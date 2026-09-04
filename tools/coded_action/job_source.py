@@ -61,7 +61,11 @@ def _mask_ts(src: str) -> str:
             quote, i = ch, i + 1
             while i < n:
                 if src[i] == "\\":
-                    out[i] = out[i + 1] = " " if i + 1 < n else " "
+                    # Blank the escape and what it escapes. A source ending on a backslash inside
+                    # an unterminated string has nothing after it, so guard the second write.
+                    out[i] = " "
+                    if i + 1 < n:
+                        out[i + 1] = " "
                     i += 2
                     continue
                 if src[i] == quote:
