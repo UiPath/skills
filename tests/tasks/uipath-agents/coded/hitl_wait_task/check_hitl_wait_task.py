@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""HITL `interrupt(WaitTask)` shape check.
+"""HITL `interrupt(WaitTask)` / `interrupt(WaitEscalation)` shape check.
 
 This is the "wait on a task that already exists" pattern, distinct from
-`CreateTask` / `CreateEscalation` (which open a new task). Asserts:
+`CreateTask` / `CreateEscalation` (which open a new task). Both wait
+classes are accepted: `WaitEscalation` subclasses `WaitTask` in the SDK
+(same fields, same `action=` target); they differ only in the resume
+payload (`WaitTask` -> task `data`, `WaitEscalation` -> full `Task` incl.
+`action`). The prompt asks the agent to read the reviewer's decision,
+which either class can serve, so the choice is not graded. Asserts:
 
   1. `main.py` imports `interrupt` from `langgraph.types`.
-  2. `main.py` imports `WaitTask` from `uipath.platform.common`.
-  3. At least one `interrupt(WaitTask(...))` call exists.
+  2. `main.py` imports `WaitTask` or `WaitEscalation` from
+     `uipath.platform.common`.
+  3. At least one `interrupt(WaitTask(...))` or
+     `interrupt(WaitEscalation(...))` call exists.
   4. `main.py` does NOT use `CreateTask` / `CreateEscalation` — the
      scenario is monitoring an existing task, not creating one.
   5. A top-level `graph =` variable is exported (LangGraph entrypoint).
@@ -30,6 +37,10 @@ from _shared.langgraph_assertions import assert_langgraph_config  # noqa: E402
 
 ROOT = find_project_root("purchase-gate")
 
+# `WaitEscalation` is a subclass of `WaitTask` (uipath.platform.common);
+# either is a valid "wait on an existing task" interrupt.
+WAIT_CLASSES = ("WaitTask", "WaitEscalation")
+
 
 def fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
@@ -44,7 +55,8 @@ def find_graph_module() -> Path:
     raise SystemExit(1)  # unreachable, for type checkers
 
 
-def has_interrupt_wait_task(tree: ast.Module) -> bool:
+def find_interrupt_wait_class(tree: ast.Module) -> str | None:
+    """Return the wait class name used inside `interrupt(...)`, if any."""
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
@@ -54,9 +66,9 @@ def has_interrupt_wait_task(tree: ast.Module) -> bool:
         if not node.args:
             continue
         inner = node.args[0]
-        if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name) and inner.func.id == "WaitTask":
-            return True
-    return False
+        if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name) and inner.func.id in WAIT_CLASSES:
+            return inner.func.id
+    return None
 
 
 def main() -> None:
@@ -74,20 +86,25 @@ def main() -> None:
         fail("missing `from langgraph.types import interrupt`")
     print("OK: imports `interrupt` from langgraph.types")
 
-    if not re.search(r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\bWaitTask\b|\([^)]*\bWaitTask\b)", text):
+    imported = re.search(
+        r"from\s+uipath\.platform\.common\s+import\s+(?:[^\n]*\b(WaitTask|WaitEscalation)\b|\([^)]*\b(WaitTask|WaitEscalation)\b)",
+        text,
+    )
+    if not imported:
         fail(
-            "missing `from uipath.platform.common import WaitTask`. "
-            "The scenario is `WaitTask` (wait on an existing Action Center task), "
+            "missing `from uipath.platform.common import WaitTask` (or `WaitEscalation`). "
+            "The scenario waits on an existing Action Center task, "
             "not `CreateTask` (which opens a new one)."
         )
-    print("OK: imports WaitTask from uipath.platform.common")
+    print(f"OK: imports {imported.group(1) or imported.group(2)} from uipath.platform.common")
 
-    if not has_interrupt_wait_task(tree):
+    wait_cls = find_interrupt_wait_class(tree)
+    if wait_cls is None:
         fail(
-            "no `interrupt(WaitTask(...))` call site found. "
+            "no `interrupt(WaitTask(...))` / `interrupt(WaitEscalation(...))` call site found. "
             "The agent must pause on the existing task via `interrupt(WaitTask(action=...))`."
         )
-    print("OK: graph node calls interrupt(WaitTask(...))")
+    print(f"OK: graph node calls interrupt({wait_cls}(...))")
 
     if re.search(r"\bCreateTask\s*\(", text) or re.search(r"\bCreateEscalation\s*\(", text):
         fail(
@@ -108,7 +125,7 @@ def main() -> None:
         fail("module-level UiPath* construction (C4): " + " | ".join(violations))
     print("OK: no module-level UiPath* construction")
 
-    print("OK: WaitTask HITL shape verified")
+    print(f"OK: {wait_cls} HITL shape verified")
 
 
 if __name__ == "__main__":

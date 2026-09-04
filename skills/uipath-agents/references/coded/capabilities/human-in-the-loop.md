@@ -15,11 +15,11 @@ If the user has not named one, your ENTIRE response must be a question that list
 | API trigger | Resumed via an Orchestrator inbox URL; no Action Center involved | `interrupt({...})` | `InputRequiredEvent(...)` |
 | Action Center task | Structured form for a human reviewer, described as a normal review / sign-off task. Resume delivers only the task `data` | `interrupt(CreateTask(...))` | `CreateTaskEvent(...)` |
 | Escalation task | The request calls the hand-off an escalation (`escalate`, `escalation`, "needs sign-off above a limit"), or the agent must branch on the reviewer's approve/reject outcome. Resume delivers the full `Task` (incl. `action`) | `interrupt(CreateEscalation(...))` | use `CreateTaskEvent` (no event-level distinction) |
-| Wait for existing task | A task was already created elsewhere; resume when it completes | `interrupt(WaitTask(...))` | `WaitTaskEvent(...)` |
+| Wait for existing task | A task was already created elsewhere; resume when it completes. Same split as above: `WaitTask` resumes with the task `data`; `WaitEscalation` resumes with the full `Task` (incl. `action`) | `interrupt(WaitTask(...))` / `interrupt(WaitEscalation(...))` | `WaitTaskEvent(...)` |
 | Invoke a process | Trigger an RPA process; resume on completion | `interrupt(InvokeProcess(...))` | `InvokeProcessEvent(...)` |
 | Wait for existing job | A job is running elsewhere; resume on its completion | `interrupt(WaitJob(...))` | `WaitJobEvent(...)` |
 
-**CreateTask vs CreateEscalation is decided by the request's wording, not by preference.** "Escalate" / "escalation" → `CreateEscalation`. "Review task" / "sign-off" / "not an escalation" → `CreateTask`. Never substitute one for the other: they resume with different payloads (see § Escalation Variant).
+**Task vs Escalation is decided by the request's wording, not by preference — for both the create pair and the wait pair.** "Escalate" / "escalation" / must act on the approve-reject decision → `CreateEscalation` / `WaitEscalation`. "Review task" / "sign-off" / "not an escalation" / only carry the reviewer's input forward → `CreateTask` / `WaitTask`. Never substitute one for the other: they resume with different payloads (see § Escalation Variant).
 
 OpenAI Agents has no first-class HITL support. Coded Function (no framework) has no checkpoint/resume — call `sdk.tasks.create()` then `sdk.tasks.retrieve()` synchronously if a synchronous human step is needed.
 
@@ -114,6 +114,8 @@ async def monitor_task(state: GraphState) -> Command:
     task_output = interrupt(WaitTask(action=state["existing_task"]))
     return Command(update={"task_result": task_output})
 ```
+
+`WaitTask` resumes with the task's `data` only. Swap in `WaitEscalation` (same fields, `from uipath.platform.common import WaitEscalation`) when the existing task is an escalation, or the agent must branch on the reviewer's approve/reject `action` — it resumes with the full `Task`. Same rule as `CreateTask` vs `CreateEscalation`.
 
 **LlamaIndex equivalent:** `ctx.write_event_to_stream(WaitTaskEvent(action=...))`
 
