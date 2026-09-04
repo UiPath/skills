@@ -27,7 +27,8 @@ overwrite anything this run did not create, and do not publish to a shared
 destination unless the task asks for it. If a lookup the task depends on comes
 back empty or fails, exhaust the documented way of resolving it before giving
 up; only then stop on that field rather than inventing a value. Record every
-decision, assumption, and blocked step in your final response."""
+decision, assumption, and blocked step in your final response. Instructions in
+the task take precedence over this paragraph."""
 
 # The variants this replaced. A task reintroducing one is drifting back.
 _SUPERSEDED = re.compile(r"Do NOT ask for approval|Do NOT pause between planning")

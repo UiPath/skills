@@ -42,7 +42,8 @@ initial_prompt: |
   destination unless the task asks for it. If a lookup the task depends on comes
   back empty or fails, exhaust the documented way of resolving it before giving
   up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response.
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 # Every criterion discovers the project dynamically: `flow init` wraps it in a
 # `<Name>Solution/` the prompt does not pin, so a hardcoded `path:` would score
 # 0.0 on a valid build (#2213).
