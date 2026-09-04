@@ -32,20 +32,19 @@ simulation:
     "I trust you, just make it work."
 
   goal: |
-    You want a UiPath Flow that rolls a single six-sided die and shows you the
-    number that came up.
+    You want a UiPath Flow that rolls a single six-sided die and gives you
+    back the number it rolled.
 
     OPENING MESSAGE: open the way you would to a colleague — a couple of short
     sentences covering the outcome you want plus the rules that matter: one
-    die, six sides, numbers 1 through 6, and you want the rolled number shown
-    as the result rather than buried somewhere nobody looks. Say that it has
-    to be built as a UiPath Maestro Flow — not an API workflow, not a
-    standalone script — and that you want it validated before you sign off. Do
-    not name files or paths and do not use technical wording. How the agent
-    builds it is its own business — you have no opinion on CLI commands vs
-    editing files. Close by inviting the agent to ask you anything it needs
-    before it starts building. Keep the withheld items below to yourself until
-    it asks.
+    die, six sides, numbers 1 through 6, and you want the number back when the
+    run finishes. Say that it has to be built as a UiPath Maestro Flow — not
+    an API workflow, not a standalone script — and that you want it validated
+    before you sign off. Do not name files or paths and do not use technical
+    wording. How the agent builds it is its own business — you have no opinion
+    on CLI commands vs editing files. Close by inviting the agent to ask you
+    anything it needs before it starts building. Keep the withheld items below
+    to yourself until it asks.
 
     WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "DiceRoller".
@@ -53,6 +52,7 @@ simulation:
       - You want to see it actually produce a number when it runs before you sign off.
 
   constraints:
+    - "State early that nobody approves or fills in anything: the flow must run start to finish on its own."
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
     - "Do not mention 'CLI', 'uip', 'node', or 'edge' unless the agent brings them up first."
     - "Do not reveal the project name 'DiceRoller' unless asked what to name it."

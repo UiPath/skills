@@ -2,6 +2,8 @@
 
 The flow needs to pause for a human to review, approve, or fill in data. Two node types serve this need — choose based on form complexity and whether an app already exists.
 
+**A HITL node stops the run until a person or an API completes the Action Center task**, so `flow debug` and unattended runs wait there until they time out. Add one only when a person must decide, approve, or supply data the flow does not have — to return a value the flow already knows, use an End node output (`variables.globals`, direction `out`).
+
 ---
 
 ## Which HITL Node to Use
@@ -30,6 +32,7 @@ Available: always — no `uip login` or registry pull required.
 | Need a quick form with specific fields and outcomes | Yes |
 | Existing coded/Action Center app should be used | No — use Option 2 |
 | Fully automated processing, no human involvement | No |
+| Show, confirm, or log a value for the user | No — return it from an End node output |
 
 ### Ports
 
