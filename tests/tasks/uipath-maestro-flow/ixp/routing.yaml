@@ -56,13 +56,23 @@ initial_prompt: |
   Scope: this is a routing check, not a build-to-run task. The deliverable is
   the flow artifact itself — the `.flow` file. A skeleton whose nodes cover the
   steps of the request is enough: leave a node unconfigured rather than
-  leaving a step out or stopping to ask. Do NOT ask for approval,
-  confirmation, or missing details; pick a sensible default and state it in
-  your final report. Do not iterate on validation errors to make the flow
+  leaving a step out or stopping to ask; pick a sensible default for any
+  missing detail and state it in your final report. Do not iterate on validation errors to make the flow
   runnable — a broken skeleton is acceptable, as long as the `.flow` file has
   been produced. Work inside the current working directory: create the
   solution and project here, never in a parent directory.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   # What this checks: did the agent search the registry for IxP nodes?
   # Passes (case-insensitive) when the agent ran either:
