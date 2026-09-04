@@ -9,7 +9,9 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
+<!--skill-flavor:cli-bookends:start-->
 Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+<!--skill-flavor:cli-bookends:end-->
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -33,7 +35,9 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 
 ### Pre-flight
 
+<!--skill-flavor:preflight-solution-exists:start-->
 1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
+<!--skill-flavor:preflight-solution-exists:end-->
 2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
 3. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```

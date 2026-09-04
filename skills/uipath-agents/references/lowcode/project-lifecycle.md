@@ -166,19 +166,23 @@ Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId
 
 ## Solution Commands
 
+<!--skill-flavor:create-solution:start-->
 ### Create Solution
 
 ```bash
 uip solution init "<SOLUTION_NAME>" --output json
 ```
+<!--skill-flavor:create-solution:end-->
 
 ### Register Project with Solution
 
+<!--skill-flavor:register-project:start-->
 `uip agent init` always lands the project inside a solution — no manual `solution init` needed:
 
 - **Inside a solution directory** — auto-registers the project with the parent `.uipx`.
 - **Outside any solution** — auto-scaffolds a parent solution: creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/`. The response adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and reports `SolutionRegistration.Status: Registered`. Idempotent — re-running reuses the existing `.uipx` (`AlreadyRegistered`). If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<Name>Solution/<Name>/`, not the existing directory.
 - **`--skip-solution-registration`** — opts out of **both** auto-scaffold and registration. No discovery, no sibling solution dir; the project lands at the bare path with `Status: OptedOut`.
+<!--skill-flavor:register-project:end-->
 
 Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
 
@@ -328,6 +332,7 @@ If not logged in, prompt the user to run `uip login`.
 
 All commands run from the same working directory — no `cd` needed. Pass paths explicitly.
 
+<!--skill-flavor:e2e-scaffold:start-->
 ```bash
 uip solution init "<SOLUTION_NAME>" --output json
 # `agent init` auto-registers the project in the parent `.uipx` because
@@ -343,6 +348,7 @@ uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 The explicit `uip solution init` is optional: running `uip agent init "<AGENT_NAME>"` alone outside any solution auto-scaffolds `<AGENT_NAME>Solution/<AGENT_NAME>/` and registers the project (response carries `Data.AutoCreatedSolution`). Keep the explicit `solution init` when you want a solution name distinct from the agent name.
 
 When the fallback is needed, `uip solution projects add` automatically finds the nearest `.uipx` by searching up from the agent path.
+<!--skill-flavor:e2e-scaffold:end-->
 
 ### Step 3 — Configure agent.json
 
@@ -424,7 +430,9 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Task | Command | Run From | Terminal states |
 |------|---------|----------|-----------------|
 | Login check | `uip login status --output json` | Any directory | — |
+<!--skill-flavor:create-solution-row:start-->
 | Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
+<!--skill-flavor:create-solution-row:end-->
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
