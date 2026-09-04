@@ -4,23 +4,23 @@
 The checker intentionally has no local BPMN interpreter. It validates the
 submitted source, imports that exact project into one ephemeral solution, runs
 hidden business scenarios in the Alpha runtime, inspects variables, element
-executions, and incidents, and deletes every returned solution id in a finally
-block. Repeated scenarios overwrite the same ephemeral solution rather than
-creating tenant clutter.
+executions, and incidents. Repeated scenarios overwrite the same ephemeral
+solution rather than creating tenant clutter.
 
-Cleanup is unconditional by default. Set `BPMN_E2E_CLEANUP=never` only for a
-deliberate manual inspection: the run then prints the surviving solution ids
-and whoever asked for the Alpha link owns deleting them. Connector side
-effects are always cleaned, whatever the policy.
+Cleanup is post_run's job, not this module's: `_shared/cleanup_solutions.py`
+deletes the solution from the `.uipx` under the sandbox CWD (honouring
+`BPMN_E2E_CLEANUP=never` for a deliberate manual inspection), and
+`cleanup_customer_escalation.py` replays this run's journal to remove the
+Jira issues, Drive copies, and Slack messages no `.uipx` glob can reach. Only
+post_run survives coder_eval SIGKILLing the graded command, so the one
+in-band sweep here is a best-effort head start, never the guarantee.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import contextlib
 import os
-import re
 import subprocess
 import sys
 import time
@@ -43,7 +43,6 @@ from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     UIPATH_NS,
     CheckFailure,
-    connector_context,
     connector_response_values,
     delete_target_is_absent,
     element_output_records,
@@ -412,6 +411,15 @@ class RecordingSet(set):
     def add(self, value: Any) -> None:
         super().add(value)
         record_created_id(self.kind, value)
+
+    def update(self, *others: Any) -> None:
+        # set.update does NOT route through an overridden add, so the ids
+        # harvested by capture_connector_outputs_for_cleanup -- the ones the
+        # journal exists for, since they are only visible in a variables read
+        # that may then fail -- silently skipped the journal.
+        for other in others:
+            for value in other:
+                self.add(value)
 
 
 @dataclass(frozen=True)
@@ -1164,7 +1172,11 @@ def attachment_marker_order(
             f"{case.name}: live attachment marker collection expected "
             f"{expected!r}, got {marker_values!r}"
         )
-    return tuple(expected)
+    # The OBSERVED order, not `expected`. Returning expected made the
+    # downstream `marker_order != case.attachment_iterations` guard in
+    # assert_ordered_drive_copies compare a value with itself, so it could
+    # never fire.
+    return tuple(distinct[0])
 
 
 def assert_ordered_drive_copies(
@@ -1674,135 +1686,162 @@ def main() -> int:
                         "deadlines here) or shorten the matrix; entering "
                         "graceful cleanup."
                     )
-                log_file = root / f"{index:02d}-{case.name}.log"
-                update_issue_key = None
-                if case.outputs["jiraAction"] == "UpdateExisting":
-                    seed_started = time.monotonic()
-                    update_issue_key = create_seed_jira_issue(
+                # One scenario's run failure must not forfeit the nine after
+                # it. Everything that touches Alpha lives inside this try:
+                # the Jira seed, debug, the variables read, and incidents can
+                # each fail transiently, and the partial-credit families exist
+                # precisely so that costs one scenario rather than the matrix.
+                # The budget-overrun raise above stays outside -- that one must
+                # stop the loop.
+                try:
+                    log_file = root / f"{index:02d}-{case.name}.log"
+                    update_issue_key = None
+                    if case.outputs["jiraAction"] == "UpdateExisting":
+                        seed_started = time.monotonic()
+                        update_issue_key = create_seed_jira_issue(
+                            case,
+                            environment,
+                            side_effects,
+                        )
+                        print(
+                            f"BENCHMARK scenario={case.name} stage=jira-seed "
+                            "duration_seconds="
+                            f"{time.monotonic() - seed_started:.3f}"
+                        )
+                    inputs = scenario_inputs(
                         case,
                         environment,
-                        side_effects,
+                        duplicate_key=(
+                            f"  {update_issue_key}\t "
+                            if update_issue_key is not None
+                            else None
+                        ),
+                    )
+                    correlation = case.inputs["correlationId"]
+                    debug_started = time.monotonic()
+                    (
+                        debug,
+                        debug_payload,
+                        debug_data,
+                        instance_id,
+                    ) = run_debug(
+                        [
+                            "uip",
+                            "maestro",
+                            "bpmn",
+                            "debug",
+                            str(imported_project),
+                            "--poll-interval",
+                            "500",
+                            "--inputs",
+                            json.dumps(inputs, separators=(",", ":")),
+                        ],
+                        log_file=log_file,
+                        case_name=case.name,
                     )
                     print(
-                        f"BENCHMARK scenario={case.name} stage=jira-seed "
+                        f"BENCHMARK scenario={case.name} stage=debug "
                         "duration_seconds="
-                        f"{time.monotonic() - seed_started:.3f}"
+                        f"{time.monotonic() - debug_started:.3f}"
                     )
-                inputs = scenario_inputs(
-                    case,
-                    environment,
-                    duplicate_key=(
-                        f"  {update_issue_key}\t "
-                        if update_issue_key is not None
-                        else None
-                    ),
-                )
-                correlation = case.inputs["correlationId"]
-                debug_started = time.monotonic()
-                (
-                    debug,
-                    debug_payload,
-                    debug_data,
-                    instance_id,
-                ) = run_debug(
-                    [
-                        "uip",
-                        "maestro",
-                        "bpmn",
-                        "debug",
-                        str(imported_project),
-                        "--poll-interval",
-                        "500",
-                        "--inputs",
-                        json.dumps(inputs, separators=(",", ":")),
-                    ],
-                    log_file=log_file,
-                    case_name=case.name,
-                )
-                print(
-                    f"BENCHMARK scenario={case.name} stage=debug "
-                    "duration_seconds="
-                    f"{time.monotonic() - debug_started:.3f}"
-                )
 
-                evidence_started = time.monotonic()
-                _variables_payload, variables_data = read_variables_all(
-                    instance_id,
-                    case.name,
-                    contract,
-                    environment,
-                    side_effects,
-                )
-
-                incidents = run_cli(
-                    [
-                        "uip",
-                        "maestro",
-                        "bpmn",
-                        "debug-instance",
-                        "incidents",
+                    evidence_started = time.monotonic()
+                    _variables_payload, variables_data = read_variables_all(
                         instance_id,
-                    ],
-                    timeout=180,
-                )
-                _incidents_payload, incidents_data = payload_data(
-                    incidents,
-                    f"{case.name} incidents",
-                )
-                print(
-                    f"BENCHMARK scenario={case.name} "
-                    "stage=runtime-evidence "
-                    "duration_seconds="
-                    f"{time.monotonic() - evidence_started:.3f}"
-                )
-
-                assertion_started = time.monotonic()
-                try:
-                    assert_scenario(
-                        case,
+                        case.name,
                         contract,
-                        debug_data,
-                        variables_data,
-                        incidents_data,
                         environment,
                         side_effects,
-                        update_issue_key=update_issue_key,
+                    )
+
+                    incidents = run_cli(
+                        [
+                            "uip",
+                            "maestro",
+                            "bpmn",
+                            "debug-instance",
+                            "incidents",
+                            instance_id,
+                        ],
+                        timeout=180,
+                    )
+                    _incidents_payload, incidents_data = payload_data(
+                        incidents,
+                        f"{case.name} incidents",
+                    )
+                    print(
+                        f"BENCHMARK scenario={case.name} "
+                        "stage=runtime-evidence "
+                        "duration_seconds="
+                        f"{time.monotonic() - evidence_started:.3f}"
+                    )
+
+                    assertion_started = time.monotonic()
+                    try:
+                        assert_scenario(
+                            case,
+                            contract,
+                            debug_data,
+                            variables_data,
+                            incidents_data,
+                            environment,
+                            side_effects,
+                            update_issue_key=update_issue_key,
+                        )
+                    except CheckFailure as exc:
+                        # Record and keep going. A failed scenario must not hide
+                        # the verdict of the nine that come after it.
+                        detail = (
+                            f"{exc}; debug exit={debug.returncode}; "
+                            f"debug={json.dumps(debug_payload)[:5000]}; "
+                            f"variables={json.dumps(variables_data)[:5000]}; "
+                            f"incidents={json.dumps(incidents_data)[:3000]}; "
+                            f"log={tail_log(log_file)}"
+                        )
+                        scenario_results[case.name] = {
+                            "passed": False,
+                            "error": detail[:4000],
+                        }
+                        print(f"FAIL live Alpha {index}/{len(SCENARIOS)}: "
+                              f"{case.name}: {exc}")
+                    else:
+                        scenario_results[case.name] = {"passed": True}
+                    side_effect_cleanup = side_effects.cleanup()
+                    if side_effect_cleanup:
+                        cleanup_failures.append(
+                            f"{case.name}: connector cleanup failed: "
+                            f"{'; '.join(side_effect_cleanup)}"
+                        )
+                    print(
+                        f"BENCHMARK scenario={case.name} "
+                        "stage=assert-and-cleanup "
+                        "duration_seconds="
+                        f"{time.monotonic() - assertion_started:.3f}"
                     )
                 except CheckFailure as exc:
-                    # Record and keep going. A failed scenario must not hide
-                    # the verdict of the nine that come after it.
-                    detail = (
-                        f"{exc}; debug exit={debug.returncode}; "
-                        f"debug={json.dumps(debug_payload)[:5000]}; "
-                        f"variables={json.dumps(variables_data)[:5000]}; "
-                        f"incidents={json.dumps(incidents_data)[:3000]}; "
-                        f"log={tail_log(log_file)}"
+                    scenario_results.setdefault(
+                        case.name, {"passed": False, "error": str(exc)[:4000]}
                     )
-                    scenario_results[case.name] = {
-                        "passed": False,
-                        "error": detail[:4000],
-                    }
                     print(f"FAIL live Alpha {index}/{len(SCENARIOS)}: "
                           f"{case.name}: {exc}")
-                else:
-                    scenario_results[case.name] = {"passed": True}
-                side_effect_cleanup = side_effects.cleanup()
-                if side_effect_cleanup:
-                    cleanup_failures.append(
-                        f"{case.name}: connector cleanup failed: "
-                        f"{'; '.join(side_effect_cleanup)}"
+                except Exception as exc:  # noqa: BLE001 - see comment above
+                    # Includes subprocess.TimeoutExpired and any unexpected
+                    # payload shape. Recorded, not raised: an infrastructure
+                    # hiccup on one scenario is not a verdict on the rest.
+                    scenario_results.setdefault(
+                        case.name,
+                        {"passed": False,
+                         "error": f"{type(exc).__name__}: {exc}"[:4000]},
                     )
-                print(
-                    f"BENCHMARK scenario={case.name} "
-                    "stage=assert-and-cleanup "
-                    "duration_seconds="
-                    f"{time.monotonic() - assertion_started:.3f}"
-                )
+                    print(f"ERROR live Alpha {index}/{len(SCENARIOS)}: "
+                          f"{case.name}: {type(exc).__name__}: {exc}")
                 elapsed = time.monotonic() - scenario_started
-                scenario_results[case.name]["duration_seconds"] = round(
-                    elapsed, 3
+                result = scenario_results.setdefault(
+                    case.name,
+                    {"passed": False, "error": "scenario produced no verdict"},
                 )
-                if scenario_results[case.name]["passed"]:
+                result["duration_seconds"] = round(elapsed, 3)
+                if result["passed"]:
                     print(
                         f"PASS live Alpha {index}/{len(SCENARIOS)}: "
                         f"{case.name} duration_seconds={elapsed:.3f}"

@@ -2095,6 +2095,96 @@ class MainSuccessPathTests(unittest.TestCase):
         self.assertIn("cleanup_deadline = (", source)
 
 
+class JournalCompletenessTests(unittest.TestCase):
+    """Every route into a RecordingSet must reach the journal."""
+
+    def test_update_is_journalled_like_add(self) -> None:
+        """`set.update` does not route through an overridden `add`.
+
+        The ids harvested by capture_connector_outputs_for_cleanup arrive via
+        `.update()`, and those are exactly the ids the journal exists for --
+        they are only visible in a variables read that may then fail. They
+        silently skipped the journal.
+        """
+
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            with patch.object(checker, "CLEANUP_JOURNAL", journal):
+                issues = checker.RecordingSet("jira_issue")
+                issues.add("first")
+                issues.update(["second", "third"])
+                issues.update({"fourth"}, ["fifth"])
+            values = [
+                json.loads(line)["value"]
+                for line in journal.read_text(encoding="utf-8").splitlines()
+            ]
+
+        self.assertEqual(
+            sorted(values),
+            ["fifth", "first", "fourth", "second", "third"],
+        )
+        self.assertEqual(len(values), len(set(values)))
+
+    def test_capture_on_read_journals_harvested_ids(self) -> None:
+        """The end-to-end path BUG 1 actually broke."""
+
+        environment = BehaviorCheckerTests.environment()
+        contract = BehaviorCheckerTests.contract()
+        variables_data = {
+            "Variables": [
+                {
+                    "Elements": [
+                        {
+                            "ElementId": contract.jira_create_id[0],
+                            "Outputs": {"response": {"id": "10007"}},
+                        },
+                        {
+                            "ElementId": contract.drive_copy_id[0],
+                            "Outputs": {"response": {"id": "drive-9"}},
+                        },
+                    ]
+                }
+            ]
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Path(directory) / "cleanup.jsonl"
+            with patch.object(checker, "CLEANUP_JOURNAL", journal):
+                side_effects = checker.ConnectorSideEffectLease(environment)
+                checker.capture_connector_outputs_for_cleanup(
+                    variables_data, contract, environment, side_effects
+                )
+            journalled = {
+                json.loads(line)["value"]
+                for line in journal.read_text(encoding="utf-8").splitlines()
+            }
+
+        self.assertIn("10007", journalled)
+        self.assertIn("drive-9", journalled)
+
+
+class MarkerOrderTests(unittest.TestCase):
+    def test_returns_the_observed_order_not_the_expectation(self) -> None:
+        """Returning `expected` made the downstream guard self-comparing."""
+
+        case = next(
+            c for c in checker.SCENARIOS if len(c.attachment_iterations) == 2
+        )
+        contract = replace(
+            BehaviorCheckerTests.contract(),
+            marker_collection_id="MarkerCollection",
+        )
+        observed = list(case.attachment_iterations)
+        variables_data = {
+            "Variables": [{"Globals": {"MarkerCollection": observed}}]
+        }
+        order = checker.attachment_marker_order(
+            case, variables_data, contract
+        )
+        self.assertEqual(order, tuple(observed))
+        # Same object identity as the expectation would hide a real defect.
+        self.assertIsNot(order, case.attachment_iterations)
+
+
 class ScenarioResultsTests(unittest.TestCase):
     """Partial credit must survive a failing run and cover every scenario."""
 
