@@ -40,18 +40,7 @@ See [Action Node Structure — Adding and editing procedures](../../../shared/ac
 6. **No external calls** — use the HTTP node or a connector node for API calls.
 7. **30-second timeout** — long-running computations will be killed.
 8. **Never name a variable `aggregate`** — reserved host global. On any `Identifier 'X' has already been declared`, rename `X`.
-9. **Run the body against the real upstream payload before shipping it.** Any script that indexes, slices, splits, or maps is one off-by-one away from a fault that `flow validate` cannot see and a syntax check passes. You already have the payload: the `uip is resources run` / `registry get` call that told you the field names is the same shape `$vars.<nodeId>.output` carries at runtime. Feed it to the body.
-
-   ```bash
-   # $vars is a global at runtime; supply it as the one parameter to test.
-   node -e '
-     const payload = require("/tmp/upstream.json");                    # the real response, not a hand-written stub
-     const body    = require("fs").readFileSync("/tmp/script.js", "utf8");
-     console.log(new Function("$vars", body)({ myNode: { output: payload } }));
-   '
-   ```
-
-   A hand-written stub tests the script against what you assumed the field held, which is the thing being checked. `"700 Bellevue Way NE, Suite 2000, Bellevue, WA 98004".split(",")[length - 3]` is `"Suite 2000"`, not the city — correct-looking, syntactically fine, and a runtime fault two nodes later when the lookup it feeds finds nothing.
+9. **Run the body against the real upstream payload before shipping.** An index or key that is wrong for the actual shape parses cleanly and faults at runtime — `flow validate` does not execute script bodies, and neither does a `new Function` parse check. Use the payload the `uip is resources run` / `registry get` call already returned, not a stub: a stub tests the script against what you assumed the field held.
 
 ## Common patterns
 
