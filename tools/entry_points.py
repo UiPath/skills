@@ -161,13 +161,6 @@ def manifest(job_path, existing=None, file_path="content/main.ts"):
     return {"$schema": SCHEMA_URL, "$id": "entry-points.json", "entryPoints": [entry]}
 
 
-def schemas_of(doc):
-    points = doc.get("entryPoints") or []
-    if not points:
-        return None, None
-    return points[0].get("input"), points[0].get("output")
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("job", help="the job's .ts source")

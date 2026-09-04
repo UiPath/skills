@@ -22,12 +22,11 @@ from _uip import die, uip_json
 
 
 def entry_points_module():
-    """Load tools/entry_points.py, the shared contract deriver.
+    """Load tools/entry_points.py, the shared contract deriver (see the module docstring for why).
 
-    `uip solution pack` requires each project's entry-points.json and never produces one. Studio
-    Web's packer derives it; `uip functions pack` cannot, and fails outright on the type<T>()
-    idiom the contract guide mandates. So we derive it here from the job's own interfaces, which
-    keeps them the single source of truth and keeps this pipeline on `uip solution pack` alone.
+    Path-loaded rather than imported: the modeler's validator loads the same file the same way, and
+    it lives in tools/ precisely so neither skill reads the other's. ENTRY_POINTS_TOOL overrides the
+    parent walk.
     """
     override = os.environ.get("ENTRY_POINTS_TOOL")
     candidates = [pathlib.Path(override)] if override else [
@@ -190,12 +189,8 @@ def stage(src):
 def pack(src, name, version, outdir):
     staging, report = stage(src)
     try:
-        # No `uip functions pack` here. It exists to derive entry-points.json, which stage has
-        # already written from the job's interfaces, and it cannot lower the type<T>() contract
-        # idiom at all. `uip solution pack` only zips the tree and reads no TypeScript, so a
-        # manifest supplied alongside main.ts is exactly what the verified pipeline shipped.
-        # (A project with no entry-points.json fails solution pack with an error naming
-        # 'uipath-functions pack', a binary that does not exist. stage guards against that.)
+        # No `uip functions pack` step: stage has already written each manifest, for the reason
+        # in the module docstring, and stage refuses a project without one.
         # -n is mandatory. Without it the package is named after the staging directory, which
         # would publish a package the deployment does not recognise.
         result = uip_json(["solution", "pack", str(staging), str(outdir), "-n", name,

@@ -2,6 +2,10 @@
 
 This directory contains repository-level utilities shared by the UiPath ontology skills.
 
+Keep them here. CLAUDE.md forbids a skill reading another skill's files, and each of these has
+more than one consumer, so moving one inside a skill would create exactly that dependency.
+`tools/` is on `package.json`'s `files` list because a shipped script hard-requires it.
+
 ## `ontology_preflight.py`
 
 `ontology_preflight.py` is the neutral, dependency-free validator for ontology artifact workdirs. It is shared by:
@@ -22,11 +26,10 @@ python3 tools/ontology_preflight.py \
 
 ## `coded_action_preflight.py`
 
-`coded_action_preflight.py` is the neutral, dependency-free validator for coded-action pairs: a
-`{workdir}/{ontology}-{action}.ttl` declaring `ont:language "CODED"` plus the job at
-`{workdir}/jobs/{action}.ts`. It cross-checks the two files against each other and against the
-ontology's `.ofn` schema, which is the offline authority on which entities and fields exist. It
-does not log in, call UiPath Cloud, upload anything, or modify the workdir.
+The same, for coded-action pairs: a `{workdir}/{ontology}-{action}.ttl` declaring
+`ont:language "CODED"` beside its job at `{workdir}/jobs/{action}.ts`. It cross-checks the two
+against each other and against the ontology's `.ofn`, which is the offline authority on which
+entities and fields exist. It calls no service and modifies nothing.
 
 ```bash
 python3 tools/coded_action_preflight.py \
@@ -35,38 +38,17 @@ python3 tools/coded_action_preflight.py \
   [--action <actionName>]... [--skip-typecheck]
 ```
 
-Gates: `ttl-parses-and-well-formed`, `signature-resolves`, `input-matches-marker`,
-`input-strictness`, `process-type-declared`, `writes-cover-edits`, `fields-exist-in-schema`,
-`entity-identity-declared`, `job-language`, `typecheck`.
-A gate reports `passed`, `failed`, or `skipped` (a skip carries its reason and never counts as a
-pass); the exit code is 0 only when nothing failed.
+Ten gates, each reporting `passed`, `failed` or `skipped` — a skip carries its reason and never
+counts as a pass — with exit 0 only when nothing failed. `--describe`-style detail is not
+duplicated here: the gate list is in the payload, and what each one enforces and why is in
+`uipath-ontology-modeler`'s `references/coded-action-contract-guide.md`.
 
-`process-type-declared` requires `ont:processType`, which the service demands whenever the language
-is `"CODED"`. `entity-identity-declared` requires every written entity to have exactly one property
-annotated `ont:datatype "key"` -- identity is annotation-only and never inferred from the XSD range,
-so a schema without it uploads and validates cleanly and then refuses every write *after* the job
-has run, reporting `rowsAffected: 0`, which in a summary is indistinguishable from a no-op.
+No gate reports deployment readiness, because nothing in an action names where its job is
+deployed. The artifact is portable; the folder is resolved at invoke time.
 
-No gate reports deployment readiness, because nothing in an action names where its job is deployed.
-The artifact is portable; the folder is resolved at invoke time.
-
-Contracts are declared with `type<T>()` over plain interfaces. `input-strictness` runs
-`entry_points.py` and inspects what it derives, so it checks the property that actually matters --
-that the input schema carries `additionalProperties: false` -- rather than assuming the SDK will
-supply it. A contract the deriver cannot lower fails here, at authoring time, instead of at pack
-time with nothing written.
-
-A Standard-Schema contract (zod, arktype, valibot) fails that gate by design: it carries its own
-schema and so cannot be lowered into the manifest the deploy step stages. The diagnostic names the
-library and the consequence.
-
-The typecheck gate compiles the job against a stub of the Coded Functions SDK, and is skipped with
-a reason when no TypeScript compiler is available (set `CODED_ACTION_TSC` to point it at one). The
-job imports nothing but the SDK, and the SDK is stubbed, so no package needs installing.
-
-Implementation lives in `coded_action/` -- turtle lexing, the action model, job-source scanning,
-the deriver bridge, pair discovery, typecheck, the verdict shape, and the gates -- with this file's
-CLI as the only public surface.
+Implementation is in `coded_action/` — turtle lexing, the action model, job-source scanning, the
+deriver bridge, pair discovery, typecheck, the verdict shape, the gates — with the CLI as the only
+public surface.
 
 ## `entry_points.py`
 
@@ -79,24 +61,16 @@ python3 tools/entry_points.py JOB.ts --check MANIFEST     # compare, exit 1 on d
 ```
 
 `type<T>()` is inert at runtime, so the schema the platform validates against has to come from
-somewhere. Studio Web's packer derives it from the interfaces; `uip functions pack` cannot and
-refuses outright on the idiom. This tool does that derivation, which keeps the interfaces as the
-single source of truth and keeps the pipeline on `uip solution pack`, a command that only zips a
-directory and reads no TypeScript.
+somewhere: Studio Web's packer derives it and `uip functions pack` refuses the idiom outright. This
+does that derivation, which keeps the interfaces the single source of truth and the pipeline on
+`uip solution pack`. The deploy skill's staging step and `coded_action_preflight`'s
+`input-strictness` gate are both callers.
 
-The lowering reproduces byte-for-byte the manifests Studio Web produced for the two verified jobs;
-those are committed as goldens under
-`tests/tasks/uipath-ontology-modeler/_shared/fixtures/entry-points/` and are the only evidence of
-what the platform accepts. The accepted grammar is `string`, `number`, `boolean`, a union of
-string literals, `Record<string, unknown>`, an array of any of those, and interfaces declared in
-the same file. An interface's `[key: string]: unknown` index signature lowers to a permissive
-`additionalProperties`, which is what read rows need because `SELECT *` carries columns the job
-never declared; its absence lowers to `additionalProperties: false`, which is what faults a
-drifted input before the handler runs. Anything outside the grammar is refused rather than
-approximated: a manifest that disagrees with the interfaces faults the job at invoke time.
+Output is byte-identical to Studio Web's for the two verified jobs, committed as goldens under
+`tests/tasks/uipath-ontology-modeler/_shared/fixtures/entry-points/` — the only evidence of what
+the platform accepts. The lowerable grammar, and why anything outside it is refused rather than
+approximated, is in the contract guide.
 
 `--out` preserves an existing entry point's `uniqueId`, which the project's bindings reference.
-`--check` re-derives and compares, so a manifest edited by hand or left behind by an interface
-change is caught.
-
-Keep these utilities at the repository level. Do not place them inside a consuming skill; doing so would create an unnecessary structural dependency between the skills.
+`--check` re-derives and compares, catching a manifest edited by hand or left behind by an
+interface change.

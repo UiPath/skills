@@ -1,12 +1,18 @@
+// A contract declared with zod instead of type<T>(), which is the one thing this fixture is for.
+//
+// The pipeline stages a manifest derived from plain interfaces, and a Standard Schema carries its
+// own schema instead, so there is nothing to lower. `input-strictness` must fail and
+// `input-matches-marker` must skip and point at it rather than blame the job twice.
+//
+// The handler is deliberately shape-only: it assigns exactly the two fields the action declares in
+// ont:writes, so writes-cover-edits still passes and the zod contract is the only thing under test.
+// How a real job computes those values is the worked examples' job, not this file's.
 import { defineFunction } from '@uipath/coded-functions-js-sdk';
 import { z } from 'zod';
 
 const TicketRow = z.object({
   TicketId: z.string(),
-  TicketNumber: z.string(),
-  Subject: z.string(),
   Sev: z.string(),
-  Status: z.string(),
   CreatedAt: z.string(),
   DueAt: z.string(),
   Labels: z.string(),
@@ -23,53 +29,23 @@ const DeclaredEdit = z.object({
   properties: z.record(z.string(), z.unknown()),
 }).strict();
 
-const Output = z.object({
-  edits: z.array(DeclaredEdit),
-}).strict();
+const Output = z.object({ edits: z.array(DeclaredEdit) }).strict();
 
 type DeclaredEdit = z.infer<typeof DeclaredEdit>;
 
-const SLA_HOURS: Record<string, number> = {
-  sev1: 4,
-  sev2: 20,
-  sev3: 120, // five days
-};
-
-const OVERDUE_TAG = 'TICKET_OVERDUE';
-const HOUR_MS = 60 * 60 * 1000;
-
-const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19) + 'Z';
-
 export default defineFunction({
   name: 'tagOverdueTicket',
-  description:
-    'Recomputes a ticket due date from its severity and appends TICKET_OVERDUE once that deadline has passed. Closed tickets are left alone.',
+  description: 'Declares its contract with zod, which this pipeline cannot deploy.',
   method: 'POST',
   path: '/tagOverdueTicket',
   input: Input,
   output: Output,
   handler: async (input) => {
     const row = input.ticket[0];
-    if (row.Status === 'closed') {
-      return { edits: [] };
-    }
-
-    const dueAt = Date.parse(row.CreatedAt) + SLA_HOURS[row.Sev] * HOUR_MS;
     const properties: Record<string, unknown> = { id: input.ticketId };
-
-    if (Date.parse(row.DueAt) !== dueAt) {
-      properties.dueAt = iso(dueAt);
-    }
-
+    properties.dueAt = row.DueAt;
     const tags = row.Labels.split(',').filter(Boolean);
-    if (Date.now() > dueAt && !tags.includes(OVERDUE_TAG)) {
-      properties.tags = [...tags, OVERDUE_TAG].join(',');
-    }
-
-    if (Object.keys(properties).length === 1) {
-      return { edits: [] };
-    }
-
+    properties.tags = tags.join(',');
     const edits: DeclaredEdit[] = [{ op: 'UPDATE', entity: 'Ticket', properties }];
     return { edits };
   },

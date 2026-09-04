@@ -67,7 +67,6 @@ def parse_action(subject: str, body: str, nodes: dict[str, list[str]]) -> dict:
             "paramName": first_quoted(node_body, "ont:paramName"),
         }
     return {
-        "subject": subject,
         "name": subject.split(":", 1)[-1],
         "statements": statements,
         "statements_is_list": statements is not None,
@@ -79,7 +78,6 @@ def parse_action(subject: str, body: str, nodes: dict[str, list[str]]) -> dict:
         "writes_is_list": list_items(body, "ont:writes") is not None,
         "process": first_quoted(body, r"ont:process(?![A-Za-z])"),
         "processType": first_quoted(body, "ont:processType"),
-        "returns": list_items(body, "fno:returns") or [],
     }
 
 

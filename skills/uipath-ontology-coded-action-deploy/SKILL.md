@@ -158,27 +158,17 @@ deployed and ran on a live tenant shipped, what `uipath.json`'s functions map na
 (`main: main.ts:default`), and what the manifest's `filePath: content/main.ts` refers to. The
 three have to agree; the scaffold writes the first two and stage writes the third.
 
-**`uip solution pack` requires each project's `entry-points.json` and never produces one.**
-Without it, pack fails with `entry-points.json not found. Run 'uipath-functions pack' to generate
-it.` (an error naming a binary that does not exist). `uip functions pack` is the command that
-would generate it, and it **cannot lower the `type<T>()` contract idiom at all**, on any SDK
-version. So stage derives the manifest instead, with `tools/entry_points.py`, whose output is
-byte-identical to what Studio Web's own packer produced for the two verified jobs. `uip solution
-pack` only zips a directory and reads no TypeScript, which is why supplying the manifest alongside
-`main.ts` is enough. Nothing in this phase runs an installer.
+**`uip solution pack` requires each project's `entry-points.json` and never produces one**, and
+`uip functions pack` — the command that would — cannot lower the `type<T>()` idiom on any SDK
+version. So stage derives the manifest with `tools/entry_points.py`, on every run, which is also
+what stops the interfaces and the manifest drifting. A contract the deriver cannot read is refused
+rather than approximated. `references/pipeline.md` has the errors and the evidence.
 
-**Staging strips everything that would make the runtime install.** The serverless runtime runs a
-prepare step that installs whatever `package.json` declares, cannot resolve the `@uipath` scope, and
-then **every job faults** with `Serverless.JsFunction.PrepareEnvironmentError` / "Failed to prepare
-environment" -- a message naming nothing about dependencies, which surfaces at the invoke as only
-`ended in state Faulted`. So stage removes every dependency block, the `.npmrc` and any lockfile
-from the staged copy. Nothing is lost: `type<T>()` is erased at compile time and `defineFunction`
-comes from the runtime, so the shipped project declares no dependencies at all.
-
-**The job's interfaces are the contract.** The manifest is derived from them on every stage, so
-the two cannot drift. A contract the deriver cannot read is refused rather than approximated: a
-wrong manifest faults the job before its handler runs. Run `coded_action_preflight.py` to catch
-that at authoring time instead of at pack time.
+**Staging strips everything that would make the runtime install** — every dependency block, the
+`.npmrc`, any lockfile. The serverless prepare step installs whatever `package.json` declares,
+cannot resolve the `@uipath` scope, and faults *every* job in the package. Nothing is lost:
+`type<T>()` is erased at compile time and `defineFunction` comes from the runtime. The full
+signature is in `references/failure-signatures.md`.
 
 **A project with a missing or empty `main.ts` must refuse to pack.** `uip solution pack` reports
 `Status: Valid` for exactly that case and publishes an empty function which faults only at invoke

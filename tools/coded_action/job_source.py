@@ -146,12 +146,10 @@ def written_edits(src: str) -> dict:
     """
     masked = _mask_ts(src)
     pairs: set[tuple[str, str]] = set()
-    entities: set[str] = set()
     unresolved: list[str] = []
 
     for match in re.finditer(r"\bentity\s*:\s*['\"]([^'\"]+)['\"]", src):
         entity = match.group(1)
-        entities.add(entity)
         open_idx, close_idx = _enclosing_object(masked, match.start())
         if open_idx < 0:
             unresolved.append(entity)
@@ -185,4 +183,4 @@ def written_edits(src: str) -> dict:
         for key in keys:
             pairs.add((entity, key))
 
-    return {"pairs": sorted(pairs), "entities": sorted(entities), "unresolved": sorted(set(unresolved))}
+    return {"pairs": sorted(pairs), "unresolved": sorted(set(unresolved))}
