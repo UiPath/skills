@@ -10,6 +10,12 @@ import subprocess
 import sys
 
 
+# Page size for every list call. `uip or ... list` defaults to 50; pass this
+# instead so cleanup keeps working on a shared tenant that has accumulated
+# more than a page of anything.
+PAGE = "200"
+
+
 def uip(*args):
     r = subprocess.run(
         ["uip", *args, "--output", "json"],
@@ -50,31 +56,46 @@ if not uuid8:
 # step they pile up across runs.
 folder = seed.get("folder_a_path") or seed.get("folder_path") or ""
 if folder:
-    for a in items_of(uip("or", "assets", "list", "--folder-path", folder)):
+    # Every list below is explicitly paged. `uip or ... list` defaults to
+    # --limit 50, so an unpaged loop silently stops cleaning once the shared
+    # folder holds more than 50 of a resource — which is exactly the state a
+    # leaky cleanup produces, so the bug hides its own cause.
+    for a in items_of(uip("or", "assets", "list", "--folder-path", folder,
+                          "--limit", PAGE)):
         if has_uuid(a, uuid8) and a.get("Key"):
             uip("or", "assets", "delete", str(a["Key"]), "--yes")
-    for q in items_of(uip("or", "queues", "list", "--folder-path", folder)):
+    for q in items_of(uip("or", "queues", "list", "--folder-path", folder,
+                          "--limit", PAGE)):
         if has_uuid(q, uuid8) and q.get("Key"):
             uip("or", "queues", "delete", str(q["Key"]), "--yes", "--force")
-    for b in items_of(uip("or", "buckets", "list", "--folder-path", folder)):
+    for b in items_of(uip("or", "buckets", "list", "--folder-path", folder,
+                          "--limit", PAGE)):
         if has_uuid(b, uuid8) and (b.get("Identifier") or b.get("Key")):
             uip("or", "buckets", "delete", str(b.get("Identifier") or b["Key"]),
                 "--folder-path", folder, "--yes", "--force")
-    for tr in items_of(uip("or", "triggers", "list", "--folder-path", folder)):
-        if has_uuid(tr, uuid8) and tr.get("Key"):
-            uip("or", "triggers", "delete", str(tr["Key"]),
-                "--folder-path", folder, "--yes")
+    # Triggers are type-scoped on BOTH ends: `triggers list` AND
+    # `triggers delete` default to `--type time`. Without an explicit --type
+    # this loop never enumerated an api or queue trigger, and could not have
+    # deleted one if it had. That is how 50+ `e2e-trigger-api-*` triggers piled
+    # up in the seeded folder until they filled the first page of
+    # check_trigger_api.py's lookup and it stopped finding its own trigger.
+    for trigger_type in ("time", "queue", "api"):
+        for tr in items_of(uip("or", "triggers", "list", "--type", trigger_type,
+                               "--folder-path", folder, "--limit", PAGE)):
+            if has_uuid(tr, uuid8) and tr.get("Key"):
+                uip("or", "triggers", "delete", str(tr["Key"]),
+                    "--type", trigger_type, "--folder-path", folder, "--yes")
 
 
 # 1) Tenant-scoped roles
-for r in items_of(uip("or", "roles", "list")):
+for r in items_of(uip("or", "roles", "list", "--limit", PAGE)):
     if has_uuid(r, uuid8):
         key = r.get("Key") or r.get("Id")
         if key:
             uip("or", "roles", "delete", str(key), "--yes")
 
 # 2) Tenant-scoped webhooks
-for w in items_of(uip("or", "webhooks", "list")):
+for w in items_of(uip("or", "webhooks", "list", "--limit", PAGE)):
     if has_uuid(w, uuid8):
         key = w.get("Key") or w.get("Id")
         if key:
