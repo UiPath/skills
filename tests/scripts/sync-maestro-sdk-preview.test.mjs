@@ -160,19 +160,19 @@ function createInitialSnapshot(skillsRoot, upstreamRoot, pin) {
     [
       'uipath-maestro-flow',
       'typescript/sdk/skill/SKILL.md',
-      'preview/uipath-maestro-flow/SKILL.md',
+      'preview/skills/uipath-maestro-flow/SKILL.md',
       adaptFlowSkill,
     ],
     [
       'uipath-maestro-case',
       'typescript/sdk/skill/SKILL-case.md',
-      'preview/uipath-maestro-case/SKILL.md',
+      'preview/skills/uipath-maestro-case/SKILL.md',
       adaptCaseSkill,
     ],
     [
       'uipath-maestro-bpmn',
       'typescript/sdk/skill/SKILL-bpmn.md',
-      'preview/uipath-maestro-bpmn/SKILL.md',
+      'preview/skills/uipath-maestro-bpmn/SKILL.md',
       adaptBpmnSkill,
     ],
   ];
@@ -186,52 +186,52 @@ function createInitialSnapshot(skillsRoot, upstreamRoot, pin) {
 
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/references/api.md',
+    'preview/skills/uipath-maestro-flow/references/api.md',
     adaptFlowApi(read(upstreamRoot, 'typescript/sdk/skill/references/api.md')),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/references/guide.md',
+    'preview/skills/uipath-maestro-flow/references/guide.md',
     read(upstreamRoot, 'typescript/sdk/skill/references/guide.md'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/references/api.md',
+    'preview/skills/uipath-maestro-case/references/api.md',
     read(upstreamRoot, 'typescript/sdk/skill/references/case-api.md'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-bpmn/references/api.md',
+    'preview/skills/uipath-maestro-bpmn/references/api.md',
     read(upstreamRoot, 'typescript/sdk/skill/references/bpmn-api.md'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/examples/Foo.flow.ts',
+    'preview/skills/uipath-maestro-flow/examples/Foo.flow.ts',
     read(upstreamRoot, 'typescript/sdk/example-eval/Foo.flow.ts'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-flow/examples/bindings.json',
+    'preview/skills/uipath-maestro-flow/examples/bindings.json',
     read(upstreamRoot, 'typescript/sdk/example-eval/bindings.json'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/examples/Other.case.ts',
+    'preview/skills/uipath-maestro-case/examples/Other.case.ts',
     read(upstreamRoot, 'typescript/sdk/example/Other.case.ts'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts',
+    'preview/skills/uipath-maestro-case/examples/NotifyOnApproval.case.ts',
     adaptCaseExample(read(upstreamRoot, 'typescript/sdk/example/NotifyOnApproval.case.ts')),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-case/examples/bindings.json',
+    'preview/skills/uipath-maestro-case/examples/bindings.json',
     read(upstreamRoot, 'typescript/sdk/example/case-bindings.json'),
   );
   write(
     skillsRoot,
-    'preview/uipath-maestro-bpmn/examples/NotifyChannel.bpmn.ts',
+    'preview/skills/uipath-maestro-bpmn/examples/NotifyChannel.bpmn.ts',
     read(upstreamRoot, 'typescript/sdk/example/NotifyChannel.bpmn.ts'),
   );
 }
@@ -302,56 +302,56 @@ test('syncSnapshots three-way merges drift and reapplies only snapshot adaptatio
       { oldPin, newPin, changed: true },
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-flow/references/api.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/references/api.md'),
       '# Flow API v2\n\nWorked example: `examples/Foo.flow.ts`\n',
     );
     assert.equal(
-      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/guide.md')),
+      fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references/guide.md')),
       false,
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-flow/references/new.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/references/new.md'),
       '# New reference\n',
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-flow/examples/Foo.flow.ts'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/examples/Foo.flow.ts'),
       'export const value = 2;\n',
     );
     assert.match(
-      read(skillsRoot, 'preview/uipath-maestro-flow/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-flow/SKILL.md'),
       /\| Script action \|.*`examples\/Foo\.flow\.ts`/,
     );
     assert.match(
-      read(skillsRoot, 'preview/uipath-maestro-case/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-case/SKILL.md'),
       /New upstream Case guidance/,
     );
     assert.match(
-      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-bpmn/SKILL.md'),
       /# BPMN fixture v2[\s\S]*`examples\/NotifyChannel\.bpmn\.ts`/,
     );
     assert.doesNotMatch(
-      read(skillsRoot, 'preview/uipath-maestro-bpmn/SKILL.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-bpmn/SKILL.md'),
       /representative process/,
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-case/references/case-runtime.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-case/references/case-runtime.md'),
       '# Case runtime\n\nSee [Case API](api.md).\n',
     );
     assert.equal(
-      read(skillsRoot, 'preview/uipath-maestro-bpmn/references/bpmn-runtime.md'),
+      read(skillsRoot, 'preview/skills/uipath-maestro-bpmn/references/bpmn-runtime.md'),
       '# BPMN runtime\n\nSee [BPMN API](api.md).\n',
     );
     assert.equal(
-      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/case-runtime.md')),
+      fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references/case-runtime.md')),
       false,
     );
     assert.equal(
-      fs.existsSync(path.join(skillsRoot, 'preview/uipath-maestro-flow/references/bpmn-runtime.md')),
+      fs.existsSync(path.join(skillsRoot, 'preview/skills/uipath-maestro-flow/references/bpmn-runtime.md')),
       false,
     );
     for (const skill of ['flow', 'case', 'bpmn']) {
       assert.match(
-        read(skillsRoot, `preview/uipath-maestro-${skill}/SKILL.md`),
+        read(skillsRoot, `preview/skills/uipath-maestro-${skill}/SKILL.md`),
         new RegExp(`@ ${newPin}\\. Canonical source`),
       );
     }
