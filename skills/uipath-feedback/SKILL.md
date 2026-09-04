@@ -113,6 +113,7 @@ Selection rules:
 - Skip filler ("ok", "thanks", "try again").
 - **5 is a ceiling, not a target.** One genuinely relevant prompt outranks three topical-but-irrelevant ones. Never pad toward 3-5 to look thorough.
 - Total length under 1000 characters across all prompts. Truncate any single prompt over 200 chars with `... [truncated]`; keep the most informative portion.
+- **Don't requote what Step 2h already placed under `## What happened`.** If the user's Expected/Actual answer (or a conversation statement 2h reused) already quotes this prompt in full or near-verbatim, leave it out here — repeating it adds nothing for a triager who just read it above.
 - **If no prompt passes the relevance test, omit the `## Sample prompts` section in Step 3 entirely.** Do not substitute an off-topic-but-substantive prompt just to avoid an empty section.
 
 #### 2f. Session retrospective
@@ -161,6 +162,7 @@ If it isn't already stated, offer the user one optional chance to add it, via As
 Rules:
 - This offer is never mandatory and never blocks the report. If Steps 2a-2g already gave the agent enough to write `## What happened`, sending with both answers skipped is still a complete, valid report.
 - If the user answers one or both, quote their words verbatim (sanitized) in `## What happened` under `**Expected:**` / `**Actual:**` labels — only for the ones they actually answered. Add at most one sentence of agent framing, and only if it supplies something their words don't already cover.
+- The conversation often states both halves as one compound sentence ("I expected X, but it did Y") rather than two separate answers. Split it at the natural clause boundary between the two labels — don't force an artificial split, and don't duplicate the same clause under both labels.
 - If the user skips both, write `## What happened` as an agent-summarized 2-3 sentences, same as if this step didn't exist.
 - A `Skip` answer is a preference not to phrase it themselves, not a sign the agent lacks context — it does not trigger 2j's fallback by itself.
 
@@ -229,7 +231,7 @@ Build the `--description` content. Sections marked *optional* are omitted entire
 - **Outcome**: {Full | Partial | Failed -- what was delivered vs requested}
 - **Tool & Skill Gaps**: {tools/commands that failed, were missing, or needed workarounds}
 - **Friction**: {where the agent got stuck, retried, or misunderstood conventions}
-- **Top 3 Improvements**: {specific skill/tool changes that would have helped most}
+- **Top 3 Improvements**: {up to 3 specific changes -- a ceiling, not a target; 1 concrete item beats 3 padded ones}
 ```
 
 #### Formatting rules
