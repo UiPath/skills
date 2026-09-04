@@ -20,8 +20,6 @@ initial_prompt: |
   ("f2i", "i2f", "y2f"); each branch applies the corresponding conversion
   (in a Script node) and converges on a single End node that returns the result.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command

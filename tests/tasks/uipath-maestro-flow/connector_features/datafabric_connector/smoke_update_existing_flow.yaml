@@ -31,9 +31,6 @@ initial_prompt: |
   3. Then revert both changes so the activity is back to no
      filter, no ordering, and its original settings.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a
-  single pass.
   The flow is not complete until the final state matches the initial
   state on those three fields and `uip maestro flow validate` passes.
 

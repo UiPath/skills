@@ -97,9 +97,7 @@ initial_prompt: |
   - The `uip` CLI is already available and the runner is logged in.
   - Use `--output json` on all uip commands.
   - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
-  - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-    planning and implementation. Build it end-to-end in a single pass.
-
+  -
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-maestro-flow Skill"

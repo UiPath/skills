@@ -1,9 +1,13 @@
-.PHONY: help install all smoke smoke_rpa e2e tags
+.PHONY: help install all smoke smoke_rpa e2e tags flow
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
 CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
 TASKS := $(shell find tasks -name '*.yaml' -type f)
+# Flow's zero-shot config states the run is headless, which is false for the
+# simulated tasks under interactive/. The exclusion is the config's contract,
+# so it lives with the target rather than in a comment someone has to find.
+FLOW_TASKS := $(shell find tasks/uipath-maestro-flow -name '*.yaml' -type f -not -path '*/interactive/*')
 TASK_PARALLELISM ?= 1
 
 help:  ## Show available commands
@@ -37,6 +41,9 @@ smoke_rpa:  ## Run all Windows RPA smoke tests (tempdir)
 
 e2e:  ## Run all end-to-end tests
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags e2e -j $(TASK_PARALLELISM) -v
+
+flow:  ## Run the flow suite zero-shot (headless system prompt; excludes interactive/)
+	$(CODER_EVAL) run $(FLOW_TASKS) -e experiments/flow.yaml -j $(TASK_PARALLELISM) -v
 
 tags:  ## Run tests matching one or more tags: make tags TAGS="connector-feature" [EXPERIMENT=experiments/default.yaml]
 	@if [ -z "$(TAGS)" ]; then echo "Usage: make tags TAGS=\"tag1 tag2\" [EXPERIMENT=experiments/<file>.yaml]"; exit 2; fi

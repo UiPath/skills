@@ -32,9 +32,7 @@ initial_prompt: |
 
   The task is not complete until `uip maestro flow validate` passes.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build and validate the complete flow end-to-end
-  in a single pass. Do NOT substitute a mock or a manual
+  Do NOT substitute a mock or a manual
   HTTP request for the connector.
 
 success_criteria:

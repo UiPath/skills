@@ -26,8 +26,6 @@ initial_prompt: |
   from that Script node's output.
 
   Validate the flow.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a single pass.
 
   Do not reuse any folder ID you may have seen before.
 

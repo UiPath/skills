@@ -32,8 +32,6 @@ initial_prompt: |
   does not exist and the API returns an error), the flow must instead
   return the literal string `Article not found`.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command

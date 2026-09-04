@@ -23,6 +23,14 @@ on:
         description: 'REQUIRED. Space-separated globs under tests/. E.g. tasks/uipath-agents/**/*.yaml'
         type: string
         required: true
+      # Per-skill configs differ only in defaults the runtime shares, so the
+      # file is a parameter rather than a fork of this workflow. Scope it with
+      # task_globs: a config's defaults apply to whatever that run selects.
+      experiment:
+        description: 'Experiment YAML under tests/. E.g. experiments/flow.yaml for the flow zero-shot config.'
+        type: string
+        required: false
+        default: 'experiments/nightly.yaml'
       # Host-level concurrency for the Linux job's `coder-eval -j`. Default 4:
       # ubuntu-latest is 4 vCPU, and j=20 oversubscribes ~5:1 — agents miss the
       # 1200s turn timeout and ERROR (false negatives, including a bindings
@@ -409,6 +417,7 @@ jobs:
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
+          EXPERIMENT_YAML:          ${{ inputs.experiment }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
@@ -456,7 +465,7 @@ jobs:
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
                       BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
-                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
+                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL EXPERIMENT_YAML \
                       CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
             env_lines+=("$name=${!name}")
@@ -465,7 +474,7 @@ jobs:
           # Args appended to `coder-eval run`, ONE PER LINE, each verbatim — no
           # word splitting, no pathname expansion. That is what the delegate `-D`
           # override needs: to bash its `[...]` list is a character class.
-          args=(-e experiments/nightly.yaml)
+          args=(-e "${EXPERIMENT_YAML}")
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),

@@ -16,7 +16,6 @@ initial_prompt: |
   All connections for this task live in Orchestrator folder `Shared/uipath-maestro-flow`.
 
   Validate the flow, then run `uip maestro flow debug` and iterate until it completes without incidents.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: run_command

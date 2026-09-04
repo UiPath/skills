@@ -54,8 +54,7 @@ initial_prompt: |
      correlationId), and jiraIssueKey (the created issue's key).
 
   Validate the flow. Do NOT run or debug the flow — the grader executes it with the
-  seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end in a
-  single pass. Before starting, load the uipath-maestro-flow skill and follow its
+  seeded inputs.Before starting, load the uipath-maestro-flow skill and follow its
   workflow.
 
 success_criteria:

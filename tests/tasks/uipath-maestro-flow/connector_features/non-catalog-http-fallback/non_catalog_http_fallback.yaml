@@ -28,8 +28,6 @@ initial_prompt: |
   Validate the final flow file.
 
   Use `--output json` on every `uip` command whose output you parse.
-  Do NOT ask for approval, confirmation, or feedback — build and validate the
-  flow end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed

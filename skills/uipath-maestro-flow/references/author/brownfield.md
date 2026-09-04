@@ -81,7 +81,7 @@ Authoring ends here. For any selected option, read [operate/CAPABILITY.md](../op
 
 | Option | What it does |
 |---|---|
-| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
+| **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
 | **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first because debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen; see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it. |

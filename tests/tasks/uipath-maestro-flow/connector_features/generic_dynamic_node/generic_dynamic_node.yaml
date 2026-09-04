@@ -38,9 +38,7 @@ initial_prompt: |
 
   Use the connection present in Shared/uipath-maestro-flow.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build, validate, and run end-to-end in a single
-  pass. Do NOT substitute a mock for the
+  Do NOT substitute a mock for the
   connector.
 
 success_criteria:

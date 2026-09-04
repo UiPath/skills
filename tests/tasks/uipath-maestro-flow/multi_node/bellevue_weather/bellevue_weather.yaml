@@ -17,7 +17,6 @@ initial_prompt: |
   Use a Managed HTTP Request node (core.action.http.v2) to call the open-meteo API directly — do not use an Integration Service connector.
 
   Validate the flow.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────

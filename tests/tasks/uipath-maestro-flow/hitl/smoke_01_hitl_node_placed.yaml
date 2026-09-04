@@ -40,7 +40,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-
   - type: run_command
     description: "uip flow validate passes"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"

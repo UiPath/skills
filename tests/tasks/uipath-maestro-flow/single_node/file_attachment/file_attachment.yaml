@@ -30,9 +30,7 @@ initial_prompt: |
   file to the input. The task is not complete until the debug run reports
   `finalStatus: "Completed"` and the output reflects the attached file's name.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build, validate, and run end-to-end in a single
-  pass. Before starting, follow the documented
+  Before starting, follow the documented
   workflow steps exactly — in particular the file-attachment binding pre-flight
   and the requirement to run `solution resources refresh` before debug.
 

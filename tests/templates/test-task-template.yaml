@@ -34,9 +34,11 @@ initial_prompt: |
   Goal-oriented prompt — describe what to build, not how. Let the skill
   teach the agent the workflow.
 
+  Do not tell the agent not to ask for approval or to avoid pausing. The
+  experiment config's system_prompt states that the run is headless; a task
+  that repeats it drifts from the wording every other task uses.
+
   For e2e tests, append:
-    Do NOT ask for approval, confirmation, or feedback.
-    Do NOT pause between planning and implementation.
     Before starting, load the <uipath-skill-name> skill and follow its workflow.
 
 success_criteria:

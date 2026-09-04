@@ -37,8 +37,6 @@ initial_prompt: |
       skill's workflow teaches how to read the registry).
 
   Do NOT run flow debug — just validate the flow.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, follow the documented workflow steps exactly — in particular, the transform plugin's Map JSON
   shape and the `collection` path contract.
 

@@ -1,0 +1,79 @@
+experiment_id: skill-flow-zero-shot
+description: >
+  Flow zero-shot config — identical runtime to nightly.yaml, with a system
+  prompt that states the run is headless. Pair it with a task glob that
+  excludes tests/tasks/uipath-maestro-flow/interactive/**, whose tasks have a
+  simulated user and must not be told nobody is present.
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    # A single turn can chain several cold-runner `uip rpa` calls (each 30-90s);
+    # per-turn budget tracks the slowest external call, not the suite's intent.
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:latest
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - E2E_PROCESS_KEY
+        - E2E_LONG_PROCESS_KEY
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
+  agent:
+    # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    # Task YAMLs used to carry hand-copied "Do NOT ask for approval" lines for
+    # this. That phrasing forbids asking without saying nobody is there to ask,
+    # so an agent could honor it and still stop at a consent gate waiting for a
+    # reply that never arrives — 5 of 8 flow tasks did exactly that on
+    # 2026-09-04. Stated once here instead, and removed from the tasks.
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+
+      This run is headless. No user is present, and nobody will answer a question or grant an approval.
+      Do not wait for input and do not stop to ask. Take the best available option, supply the most
+      defensible value where one is missing, and keep going. Stop only when proceeding would be unsafe
+      or irreversible, or when you could not resolve a fact the work depends on — never substitute a
+      guess for it. Record every decision, assumption, and blocked step in your final response.
+      Instructions in the task take precedence over this paragraph.
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  checker_context:
+    api_route:
+      route: litellm
+      model: gpt-5.6-luna
+      params:
+        api_version: "2024-05-01"
+        num_retries: 5
+      env_params:
+        api_base: CODEX_BASE_URL
+        api_key: CODEX_API_KEY
+
+  # Sandbox cleanup between tasks. Tasks that upload Studio Web solutions
+  # wire cleanup_solutions.py into their own post_run — that must run before
+  # this step (still needs npm-installed CLIs).
+  post_run:
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default

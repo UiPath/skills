@@ -37,9 +37,6 @@ initial_prompt: |
   at expansionLevel=1, expansionLevel=2, and expansionLevel=3. Delete when
   done.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a
-  single pass.
   The Flow is not complete until `uip maestro flow validate` passes.
 
 success_criteria:

@@ -54,9 +54,7 @@ initial_prompt: |
   - Local CRUD only. Do NOT call `uip login`. Do NOT call `uip solution
     upload`. Do NOT call `uip maestro flow eval run *`. Do NOT run
     `uip maestro flow debug`.
-  - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-    planning and implementation. Build it end-to-end in a single pass.
-
+  -
 success_criteria:
   - type: command_executed
     description: "Agent scaffolded the inline agent with uip agent init --inline-in-flow"

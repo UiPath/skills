@@ -39,9 +39,6 @@ initial_prompt: |
   tree, sort, and limit, but use offset/start 2 for the next page. Query 3 must
   filter active equals true, sort by score descending, and use a limit of 4.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a
-  single pass.
   The Flow is not complete until `uip maestro flow validate` passes.
 
 success_criteria:
