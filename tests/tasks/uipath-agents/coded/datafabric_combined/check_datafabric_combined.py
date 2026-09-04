@@ -90,10 +90,17 @@ def check_entity_config(text: str) -> None:
         sys.exit("FAIL: no id= parameter found in DataFabricEntityItem configuration")
     print(f"OK: entity ID configured ({uuids[0][:8]}...)")
 
-    # Verify folder_key= parameter exists (inline or constant)
-    if not re.search(r'\bfolder_key\s*=', text):
-        sys.exit("FAIL: no folder_key= parameter found in DataFabricEntityItem configuration")
-    print(f"OK: folder key configured")
+    # Verify the folder is configured (inline or constant). The SDK model's
+    # field is `folder_key`, but its constructor alias is `folderId` (the
+    # exact name `uip df entities list` prints), so both spellings are
+    # valid Python and both must pass.
+    m = re.search(r'\b(folder_key|folderId)\s*=', text)
+    if not m:
+        sys.exit(
+            "FAIL: no folder_key= / folderId= parameter found in "
+            "DataFabricEntityItem configuration"
+        )
+    print(f"OK: folder key configured ({m.group(1)}=)")
 
 
 def check_prompt_forwarding(text: str) -> None:
