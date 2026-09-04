@@ -2,11 +2,13 @@ task_id: skill-agent-coded-hitl-wait-task
 description: >
   Coded-agent HITL via `interrupt(WaitTask(...))` — the "wait for an
   already-created Action Center task" pattern. Verifies the agent
-  imports `interrupt` from `langgraph.types` and `WaitTask` from
-  `uipath.platform.common`, wires a graph node that pauses on a task
-  the caller passes in, and keeps the resume payload available for a
-  downstream node. Distinct from `CreateTask` / `CreateEscalation`
-  (those make a new task).
+  imports `interrupt` from `langgraph.types` and `WaitTask` (or its
+  SDK subclass `WaitEscalation` — same fields, resume returns the full
+  `Task` instead of `data`) from `uipath.platform.common`, wires a
+  graph node that pauses on a task the caller passes in, and keeps the
+  resume payload available for a downstream node. Either wait class is
+  accepted; the choice is not graded. Distinct from `CreateTask` /
+  `CreateEscalation` (those make a new task).
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
 max_iterations: 1
 
@@ -42,7 +44,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "LangGraph config, interrupt(WaitTask) shape, correct imports, no CreateTask/CreateEscalation, graph exported"
+    description: "LangGraph config, interrupt(WaitTask|WaitEscalation) shape, correct imports, no CreateTask/CreateEscalation, graph exported"
     command: "python3 $TASK_DIR/check_hitl_wait_task.py"
     timeout: 30
     expected_exit_code: 0
@@ -50,5 +52,5 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 36
+  expected_turns: 55
   turn_timeout: 1200

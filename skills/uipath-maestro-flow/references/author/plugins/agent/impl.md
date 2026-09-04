@@ -5,7 +5,7 @@ Agent nodes invoke UiPath AI agents through `uipath.core.agent.{key}`. Coded (Py
 Agents are either:
 
 - **In this solution**: a sibling project. `{key}` is the local `resource.key` minted by `uip solution projects add` and written to `resources/solution_folder/process/agent/<CodedAgentProject>.json`. Runtime resolution uses the Studio Web projects API after `uip solution upload`; `definitions[]` uses `model.section: "In this solution"`.
-- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `model.section: "Published"`.
+- **Published**: an Orchestrator tenant resource. `{key}` is the Orchestrator-assigned resource key, discoverable with `uip maestro flow registry search`; `definitions[]` uses `category: "agent.published"` (registry output omits `model.section`).
 
 The `nodes[]` shape is the same; only the `definitions[]` manifest differs.
 
