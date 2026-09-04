@@ -33,22 +33,26 @@
       "title": "Platform & Operations",
       "description": "Operate the platform via the uip CLI: Orchestrator, Integration Service, Data Fabric, Admin, source control and CI/CD pipelines, governance, testing, tasks, analytics, and MCP servers.",
       "skills": [
-        "uipath-platform",
         "uipath-admin",
         "uipath-aops",
-        "uipath-test",
+        "uipath-automationhub",
+        "uipath-cve-findings",
         "uipath-governance",
         "uipath-insights",
+        "uipath-mcp-servers",
+        "uipath-platform",
         "uipath-process-mining",
         "uipath-tasks",
-        "uipath-mcp-servers",
-        "uipath-automationhub"
+        "uipath-test"
       ]
     },
     {
       "title": "Diagnostics & Feedback",
       "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
-      "skills": ["uipath-troubleshoot", "uipath-feedback"]
+      "skills": [
+        "uipath-feedback",
+        "uipath-troubleshoot"
+      ]
     }
   ]
 }

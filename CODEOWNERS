@@ -189,6 +189,8 @@
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
+/skills/uipath-cve-findings/ @rahul-sharma-uipath
+/tests/tasks/uipath-cve-findings/ @rahul-sharma-uipath
 /skills/uipath-insights/ @UiPath/insights
 /tests/tasks/uipath-insights/ @UiPath/insights
 /tests/tasks/activation/uipath-insights.jsonl @UiPath/insights
