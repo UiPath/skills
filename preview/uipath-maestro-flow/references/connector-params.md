@@ -4,10 +4,14 @@
 
 Call a curated or generic Integration Service operation.
 
-**Data Service is an Integration Service connector, not Data Fabric.** For a
-task that names a Data Service entity, use connector key
-`uipath-uipath-dataservice` (for example, action `query-entity-records`) and
-never replace it with `dataFabricRead()` / `core.datafabric.read`.
+**Data Fabric entity operations are Integration Service connector actions.**
+"Data Fabric" and "Data Service" name one product — the tenant displays connector
+key `uipath-uipath-dataservice` as *UiPath Data Fabric* — so a task naming either
+one routes here for every entity operation EXCEPT read-one
+(`dataFabricRead()`) and update-one (`dataFabricUpdate()`), the only two verbs
+`core.datafabric.*` has. Create, delete, get-by-id, query-many with a row limit
+and the file record fields are connector actions; see
+[`data-fabric.md`](data-fabric.md) for the routing table.
 
 Signatures:
 

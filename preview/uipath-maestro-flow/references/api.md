@@ -450,6 +450,11 @@ Behavior and worked examples: [document-pipeline.md](document-pipeline.md).
 ## dataFabricRead (function)
 
 ````ts
+/**
+ * Read ONE entity record from Data Fabric (`core.datafabric.read`). The record
+ * publishes to the step's `output`; downstream references re-fetch fresh data
+ * at activation time (the engine re-runs the query rather than caching).
+ */
 export declare function dataFabricRead(inputs: DataFabricReadInputs): ActionSpec;
 ````
 
@@ -471,6 +476,7 @@ Behavior and worked examples: [data-fabric.md](data-fabric.md).
 ## queueItem (function)
 
 ````ts
+/** Declare an Orchestrator QUEUE ITEM step. */
 export declare function queueItem(inputs: QueueItemInputs): ActionSpec;
 ````
 
@@ -926,6 +932,12 @@ declare class FlowBuilder extends StepList {
     triggerId(id: string): this;
     /** Set the flow's version. */
     version(vsn: string): this;
+    /**
+     * Declare the `.flow` FILE-FORMAT (schema) version this flow targets.
+     *
+     * @defaultValue `'1.9'` — `FLOW_FORMAT_PROFILE.version`, the fleet write floor.
+     */
+    schemaVersion(version: string): this;
     /** Declare the flow's inputs. Read them with `input('<name>')`. */
     input(shape: Record<string, TypeDesc | VarSpec>): this;
     /** Declare the flow's outputs — what `.return(...)` binds values to. */
@@ -2283,6 +2295,10 @@ export declare abstract class FlowResource extends FlowNode<never> {
 ## rawNode (function)
 
 ````ts
+/**
+ * Place a node this SDK has no factory for, carrying its definition verbatim
+ * (`uipath.exotic.thing@2.1` and the manifest the platform served for it).
+ */
 export declare function rawNode(spec: {
     /** The definition's `nodeType`, verbatim. */
     nodeType: string;
@@ -2551,6 +2567,7 @@ export interface BuiltFlow {
     name: string;
     description?: string;
     version: string;
+    schemaVersion?: string;
     inputs: VarDecl[];
     outputs: VarDecl[];
     vars: VarDecl[];

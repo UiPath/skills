@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 9856764. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 4aa3d67. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -174,7 +174,7 @@ under `examples/` resolve inside this skill folder.
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [Transform](#transform) | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
-| Integration Service action | `uipath.connector.<key>.<action>` (Data Service: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric / Data Service entity ops — create, delete, get-by-id, query-many: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [Integration Service connectors](#integration-service-connectors) | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
 | Data Fabric read | `core.datafabric.read` | `dataFabricRead(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Data Fabric update | `core.datafabric.update` | `dataFabricUpdate(...)` | [Data Fabric](#data-fabric) | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [Subflow](#subflow) | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
@@ -550,11 +550,14 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 
 ## Data Fabric
 
-Use native Data Fabric nodes only when the scenario names Data Fabric
-(`core.datafabric.read` / `.update`). “Data Service” instead names the
-`uipath-uipath-dataservice` connector; route it to `connector(...)`.
-Signatures: `dataFabricRead({ entity, filters? })` and
-`dataFabricUpdate({ entity, record, set })` — `record` is exactly one of `{ byId }` or `{ fromRead: '<read step name>' }`.
+**Route on the VERB, not the name in the prompt.** "Data Fabric" and "Data
+Service" are one product (key `uipath-uipath-dataservice` shows as *UiPath Data Fabric*).
+`core.datafabric.*` has two verbs and no output schema: `dataFabricRead({ entity, filters? })`
+and `dataFabricUpdate({ entity, record, set })` (`record` is one of `{ byId }` /
+`{ fromRead: '<read step>' }`). **Create, delete, get-by-id, query-many with a row
+limit, file fields, declared outputs and events are
+`connector('uipath-uipath-dataservice', …)`** even when the scenario says "Data
+Fabric" — `registry prepare … -f entityName=<Entity>` first.
 
 ```ts
 .step('lookup', dataFabricRead({ entity: 'Invoices',
@@ -563,10 +566,7 @@ Signatures: `dataFabricRead({ entity, filters? })` and
   record: { fromRead: 'lookup' }, set: { Status: 'Paid' } }))
 ```
 
-Filters default to `operator: '='`; `or: true` joins a row with OR. No local
-rung reads a real entity — offline validate is the acceptance bar.
-
-**Reference: [`references/data-fabric.md`](references/data-fabric.md)**
+Filters default to `=`; `or: true` joins with OR. **Reference: [`references/data-fabric.md`](references/data-fabric.md)**
 
 ## Error handling
 
@@ -802,8 +802,8 @@ Signatures: `connector(descriptor, inputs, opts?)`;
   { connection: 'jira', folder: 'shared' }))
 ```
 
-Data Service uses connector key `uipath-uipath-dataservice`; never substitute
-`dataFabricRead`. Discover tenant-specific fields and ids; preserve every scenario-named input.
+Data Fabric is key `uipath-uipath-dataservice`: every entity operation but
+read-one/update-one lives here ([Data Fabric](#data-fabric)). Discover tenant-specific fields and ids; preserve every scenario-named input.
 
 **Reference: [`references/connector-params.md`](references/connector-params.md)**
 

@@ -129,6 +129,12 @@ declare class CaseBuilder {
     name(n: string): this;
     /** Set the case plan's schema version during the compatibility window. */
     version(v: string): this;
+    /**
+     * Declare the Case JSON SCHEMA version this plan targets.
+     *
+     * @defaultValue `'30.0.0'` — `CASE_FORMAT_PROFILE.writeVersion`.
+     */
+    schemaVersion(version: string): this;
     /** Describe the case plan. */
     description(text: string): this;
     /** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`). */

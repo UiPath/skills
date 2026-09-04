@@ -90,8 +90,20 @@ whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
 
-Two findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …` (and `--strict` turns the first into an error):
+## The file's schema version comes back out
+
+`decompile` emits `.schemaVersion("<the file's version>")` as the first line of
+the chain, so the recompile declares the version the file had — not the SDK's
+own floor. Most deployed flows are `1.8`; the writable band is `1.6`–`1.10`.
+Leave that call alone unless you mean to retarget the document, and note that
+`check` warns either way off the `1.9` floor (`SCHEMA_VERSION_ABOVE_FLOOR`: a
+reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
+migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
+job, not an edit to this call.
+
+Three findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …` (and `--strict` turns the first and third into an
+error):
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
@@ -102,6 +114,10 @@ Two findings the source cannot carry are printed on stderr as
   serves `core.trigger.manual@1.0`, the SDK ships `1.0.0`, and versions resolve
   exactly. The source keeps the file's pair, so `compile` refuses it until you
   drop that `{ version }`; the node then takes the SDK's pinned version.
+- A **file-format version outside the writable band** (below `1.6`) — the source
+  omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
+  recompiling writes `1.9`. Migrate the file first, or keep the original and
+  merge into it: `merge` preserves the original's declared version.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
