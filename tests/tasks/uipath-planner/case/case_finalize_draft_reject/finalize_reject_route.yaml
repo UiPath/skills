@@ -11,9 +11,13 @@ description: >
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 run_limits:
-  task_timeout: 1800
+  # Matched to the finalize family (finalize_from_draft is 4200/3600): run
+  # 33794565805 hit the old 1500s turn wall on claude-sonnet-5 with the
+  # simulator never reached, while codex finishes in 64s. A finalize task
+  # should not carry a wall 2.4x tighter than its siblings.
+  task_timeout: 4200
   max_turns: 60
-  turn_timeout: 1500
+  turn_timeout: 3600
 
 sandbox:
   template_sources:

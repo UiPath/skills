@@ -21,9 +21,14 @@ run_limits:
   # turn_timeout is the agent's real budget (see coder-eval's inversion warning):
   # the design runs in one long turn, so the old 3300s task_timeout was never
   # reachable behind a 2700s turn wall.
-  task_timeout: 3900
+  #
+  # Raised to 4800/4200 after run 33794565805: on claude-sonnet-5 the design
+  # turn hit the 3300s wall with no artifact written and the simulator never
+  # reached (codex finishes the same task in 149s). An ERROR at the wall is a
+  # no-measurement, so the wall has to clear the slowest supported harness.
+  task_timeout: 4800
   max_turns: 150
-  turn_timeout: 3300
+  turn_timeout: 4200
 
 initial_prompt: |
   We're designing a case-management solution for the candidate-interview process

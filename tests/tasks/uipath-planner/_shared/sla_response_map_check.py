@@ -185,6 +185,13 @@ def check(text: str) -> list[str]:
             # `case: root`, which names the same target. Closure is about the
             # target, not the vocabulary — the template-conformance gate owns
             # wording. Run 33448258234 failed on exactly this.
+            #
+            # The cell may equally carry the target's slug as a trailing
+            # qualifier — `case (`root`)` — which is the same annotation
+            # dialect the stage branch below strips. Run 33794565805 was told
+            # every row titled 'Case SLA' was "scoped ['case (`root`)']" and
+            # so did not match target 'root', which is the same target.
+            scope = re.sub(r"\s*\([^)]*\)\s*$", "", scope).strip().strip("`")
             return bool(re.fullmatch(r"case(?:\s*:\s*(?:root|case))?", scope))
         match = re.match(r"stage\s*:\s*(.+)", scope)
         if not match:

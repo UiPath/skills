@@ -241,3 +241,23 @@ def test_case_scope_does_not_swallow_a_stage_scoped_row():
     )
     assert any("targets 'root'" in issue for issue in check(text)), check(text)
 
+
+def test_case_scope_may_carry_the_root_slug_as_a_qualifier():
+    """`case (`root`)` names the same target as bare `case`.
+
+    Run 33794565805 produced a map the checker itself called closed once this
+    matched ("2 notify-only Triage row(s), 1 non-interrupting start-task, 1
+    interrupting enter-stage lane"), but failed on
+    `sla-status-change("root","Case SLA")` targets 'root' but every row ... is
+    scoped ['case (`root`)']. The trailing slug is annotation, and the stage
+    branch already strips it.
+    """
+    for scope in ("case (`root`)", "case (root)", "case: root (`root`)"):
+        text = sdd(
+            f"| {scope} | Case Resolution SLA | Breached | enter-stage "
+            "| Case SLA Oversight | Yes | takeover |\n",
+            "#### Stage Entry Conditions\n"
+            "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+            '| sla-status-change("root","Case Resolution SLA","breached") | - | Yes |\n',
+        )
+        assert check(text) == [], f"{scope!r} should satisfy a root-targeted call"
