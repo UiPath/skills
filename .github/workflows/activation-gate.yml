@@ -115,3 +115,45 @@ jobs:
           # baselines are model-specific, so re-baseline when this moves.
           AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         run: python tests/scripts/activation_gate.py --skill "$SKILL"
+
+  # Fixed-name aggregator. The `gate` job above is named `${{ matrix.skill }}`,
+  # so its check name changes with every skill added or renamed — 61 distinct
+  # names in one quarter. Required-status-check contexts are literal strings, so
+  # a matrix leg can never be required: a name that doesn't run leaves the
+  # context pending forever. This job's name is constant, so require THIS one.
+  # It rolls up `detect` + every `gate` leg into a single pass/fail.
+  gate-summary:
+    name: Skill activation gate
+    needs: [detect, gate]
+    # Always run: without this the summary is skipped whenever `gate` is skipped
+    # (no frontmatter changed, or the PR is a draft) and the required context
+    # would never report.
+    if: always()
+    runs-on: uipath-ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Roll up gate results
+        # Job results via env, not inline ${{ }} in run: — these are workflow-
+        # controlled values, but the repo keeps every interpolation out of the
+        # shell body regardless.
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          GATE_RESULT: ${{ needs.gate.result }}
+        run: |
+          set -euo pipefail
+          echo "detect=$DETECT_RESULT gate=$GATE_RESULT"
+
+          # `needs.<matrix job>.result` is already the rollup of every leg:
+          # 'success' only when all legs succeeded, 'failure' when any failed.
+          # 'skipped' is the healthy no-op path and must pass.
+          if [ "$DETECT_RESULT" = "failure" ] || [ "$DETECT_RESULT" = "cancelled" ]; then
+            echo "::error::activation gate could not determine which skills to gate (detect: $DETECT_RESULT)"
+            exit 1
+          fi
+
+          if [ "$GATE_RESULT" = "failure" ] || [ "$GATE_RESULT" = "cancelled" ]; then
+            echo "::error::at least one activation gate leg failed — see the per-skill jobs above"
+            exit 1
+          fi
+
+          echo "Activation gate passed."
