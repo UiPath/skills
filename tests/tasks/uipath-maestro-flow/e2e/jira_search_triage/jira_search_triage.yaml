@@ -1,4 +1,4 @@
-task_id: skill-flow-ipe-jira-search-triage
+task_id: skill-flow-jira-search-triage
 description: >
   E2E live Jira coverage of a JQL-search-driven triage flow: a manual-trigger
   Flow that searches for issues matching a seeded JQL and, for each match, adds
@@ -9,7 +9,7 @@ description: >
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project, with
   issue-search scope. Targets live in `jira_is.py`.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, connector, e2e, uipath-atlassian-jira, mode:build]
 
 run_limits:
   expected_turns: 45
