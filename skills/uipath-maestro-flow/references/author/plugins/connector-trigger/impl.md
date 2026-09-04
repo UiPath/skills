@@ -166,6 +166,8 @@ uip is resources run list "<connector-key>" "<reference.objectName>" \
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `run list` call — in the trigger's event parameter configuration.
 
+> **If the `run list` call fails, you have no ID.** Do not fall back to the display name, a vendor well-known alias, or an ID from memory — each validates clean and faults at runtime. Stop and report the failed resolve. See [reference-resolution.md — When the Lookup Call Fails](../../../../../uipath-platform/references/integration-service/reference-resolution.md#when-the-lookup-call-fails-critical).
+
 > **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).

@@ -51,7 +51,7 @@ def find_graph_module() -> Path:
 
 def check_tool_factory_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath_langchain\.agent\.tools\s+import\s+[^\n]*\bcreate_datafabric_tool\b",
+        r"from\s+uipath_langchain\.agent\.tools\s+import\s+(?:[^\n]*\bcreate_datafabric_tool\b|\([^)]*\bcreate_datafabric_tool\b)",
         text,
     ):
         sys.exit(
@@ -63,7 +63,7 @@ def check_tool_factory_import(text: str) -> None:
 
 def check_entity_item_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath\.platform\.entities\s+import\s+[^\n]*\bDataFabricEntityItem\b",
+        r"from\s+uipath\.platform\.entities\s+import\s+(?:[^\n]*\bDataFabricEntityItem\b|\([^)]*\bDataFabricEntityItem\b)",
         text,
     ):
         sys.exit(

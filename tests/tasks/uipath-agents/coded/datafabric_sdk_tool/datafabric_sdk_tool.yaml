@@ -12,9 +12,11 @@ run_limits:
 initial_prompt: |
   Build me a coded agent called `order-lookup` that can look up
   customer orders. The data lives in Data Fabric — find the right
-  entity by listing what's available. The agent should take a
-  customer name and return their open orders — the query is always
-  the same shape.
+  entity by listing what's available. Users ask in plain language
+  ("what's still open for Acme?", "any outstanding orders from the
+  O'Brien account?") — the agent should work out which customer they
+  mean, fetch that customer's open orders (that query is always the
+  same shape), and summarize the results conversationally.
 
   Scaffold and init only — don't run or deploy.
 

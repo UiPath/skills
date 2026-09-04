@@ -207,6 +207,25 @@ def _sdd_template_shape_issues(text: str, source: str = "sdd.md") -> list[str]:
     return issues
 
 
+def _name_only(cell: str) -> str:
+    """Strip provenance/qualifier annotations so a NAME check sees only the name.
+
+    SDD table cells carry the template's provenance dialect — e.g.
+    ``LoanOrigination Case SLA _(source: inferred-default:no title stated)_`` —
+    and may carry a trailing parenthetical qualifier. Neither is part of the
+    authored name, but both contain ':' and so tripped the ':' ban: nightly
+    2026-08-31 failed a finalized SDD with "SLA title contains ':'" for a title
+    that was plainly ``LoanOrigination Case SLA``. The stage and task checks
+    below already strip a trailing parenthetical before testing; this applies
+    the same rule to the SLA-title cells. A colon in the name itself still
+    fails, which is the invariant the ban exists to protect.
+    """
+    value = cell.strip()
+    value = re.sub(r"_\([^)]*\)_\s*$", "", value).strip()
+    value = re.sub(r"\s*\([^)]*\)\s*$", "", value).strip()
+    return value
+
+
 def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
     """Mirror the deterministic stage/task/SLA checks performed by PO.Frontend."""
     issues: list[str] = []
@@ -264,7 +283,7 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
                     f"{source}:{line_no}"
                 )
             if stage_variable_sla:
-                display = cells[3].strip().strip("\"'") if len(cells) >= 4 else ""
+                display = _name_only(cells[3].strip().strip("\"'")) if len(cells) >= 4 else ""
                 if not display or display in {"—", "-"}:
                     issues.append(
                         f"naming: SLA title is missing at {source}:{line_no}"
@@ -304,7 +323,7 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
         # onto the caseplan SLA/escalation element.
         sla_title = re.match(r"^\|\s*SLA Title\s*\|\s*([^|]*)\|", line, re.I)
         if sla_title:
-            value = sla_title.group(1).strip()
+            value = _name_only(sla_title.group(1))
             if not value or value in {"—", "-"}:
                 issues.append(f"naming: SLA title is missing at {source}:{line_no}")
             if ":" in value:

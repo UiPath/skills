@@ -43,18 +43,34 @@ if not uuid8 or not folder_path:
 expected_name = f"e2e-trigger-api-{uuid8}-renamed"
 expected_slug = f"e2e-trigger-api-{uuid8}-slug"
 
-envelope = uip_json("or", "triggers", "list", "--type", "api", "--folder-path", folder_path)
-if envelope.get("Result") != "Success":
-    sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
-items = envelope.get("Data")
-if isinstance(items, dict):
-    items = _pick(items, "Value", "Items", "Results") or []
-items = items or []
+def list_api_triggers(*extra: str) -> list:
+    envelope = uip_json("or", "triggers", "list", "--type", "api",
+                        "--folder-path", folder_path, *extra)
+    if envelope.get("Result") != "Success":
+        sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
+    items = envelope.get("Data")
+    if isinstance(items, dict):
+        items = _pick(items, "Value", "Items", "Results") or []
+    return items or []
+
+
+# Look the trigger up by name server-side (`--name` is an OData
+# `contains(Name, ...)`), NOT by scanning a page. `triggers list` defaults to
+# --limit 50, so the old unfiltered scan only ever saw the first 50 triggers
+# in the folder and started reporting "not found" for a trigger that existed,
+# once the folder had accumulated more than that.
+items = list_api_triggers("--name", expected_name)
 
 match = next((t for t in items if _pick(t, "Name") == expected_name), None)
 if not match:
-    names = [_pick(t, "Name") for t in items]
-    sys.exit(f"FAIL: no trigger named {expected_name!r} in {folder_path!r}; saw {names}")
+    # Diagnostic only: show a page of what IS there, and say so, so a real
+    # miss can't be mistaken for the paging bug above ever again.
+    sample = [_pick(t, "Name") for t in list_api_triggers("--limit", "200")][:20]
+    sys.exit(
+        f"FAIL: no api trigger named {expected_name!r} in {folder_path!r}. "
+        f"Name-filtered lookup returned {len(items)} row(s). "
+        f"First {len(sample)} api trigger name(s) in the folder: {sample}"
+    )
 
 slug = _pick(match, "Slug")
 method = _pick(match, "Method")

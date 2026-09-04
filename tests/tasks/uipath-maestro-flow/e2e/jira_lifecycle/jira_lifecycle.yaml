@@ -1,4 +1,4 @@
-task_id: skill-flow-ipe-jira-lifecycle
+task_id: skill-flow-jira-lifecycle
 description: >
   E2E live Jira coverage of a composite loop-and-switch flow. The agent builds
   ONE Flow (manual trigger) that iterates a seeded batch of issues and, per
@@ -16,7 +16,7 @@ description: >
   `Shared/uipath-maestro-flow` (currently the single Jira connection there),
   reaching the `CE` / "Coder Eval" project (issue type Task). Targets live in
   the task's `jira_is.py`.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, node:switch, node:decision, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, node:switch, node:decision, connector, e2e, uipath-atlassian-jira, mode:build]
 
 run_limits:
   expected_turns: 55

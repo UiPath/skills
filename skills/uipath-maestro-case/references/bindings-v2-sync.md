@@ -52,14 +52,14 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
   "resource": "Connection",
   "key": "<connectionId>",
   "value": {
-    "connectionId": { "defaultValue": "<connectionId>" },
+    "ConnectionId": { "defaultValue": "<connectionId>" },
     "folderKey": { "defaultValue": "<folderKey>" }
   },
   "metadata": { "connector": "<connectorKey>" }
 }
 ```
 
-> **Known CLI bug:** `syncConnectionResources` reads `value.connectionId` (lowercase c) but `flow-schema` writes `value.ConnectionId` (uppercase C). Use **lowercase `connectionId`** until fixed.
+> **Casing is `ConnectionId` (capital C).** The reader is `@uipath/solution-sdk` `sync-resources-from-bindings.ts`, which looks up `value.ConnectionId.defaultValue` and falls back to the entry's `key`; the api-workflow bindings writer emits the same capital form. The earlier note here about a lowercase reader named `syncConnectionResources` was wrong — no such function exists in the CLI.
 
 File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ ] }`
 

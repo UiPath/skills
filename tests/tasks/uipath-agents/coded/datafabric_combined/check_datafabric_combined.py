@@ -55,7 +55,7 @@ def find_graph_module() -> Path:
 
 def check_nl_tool_factory(text: str) -> None:
     if not re.search(
-        r"from\s+uipath_langchain\.agent\.tools\s+import\s+[^\n]*\bcreate_datafabric_tool\b",
+        r"from\s+uipath_langchain\.agent\.tools\s+import\s+(?:[^\n]*\bcreate_datafabric_tool\b|\([^)]*\bcreate_datafabric_tool\b)",
         text,
     ):
         sys.exit(
@@ -67,7 +67,7 @@ def check_nl_tool_factory(text: str) -> None:
 
 def check_entity_item_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath\.platform\.entities\s+import\s+[^\n]*\bDataFabricEntityItem\b",
+        r"from\s+uipath\.platform\.entities\s+import\s+(?:[^\n]*\bDataFabricEntityItem\b|\([^)]*\bDataFabricEntityItem\b)",
         text,
     ):
         sys.exit(
@@ -90,10 +90,17 @@ def check_entity_config(text: str) -> None:
         sys.exit("FAIL: no id= parameter found in DataFabricEntityItem configuration")
     print(f"OK: entity ID configured ({uuids[0][:8]}...)")
 
-    # Verify folder_key= parameter exists (inline or constant)
-    if not re.search(r'\bfolder_key\s*=', text):
-        sys.exit("FAIL: no folder_key= parameter found in DataFabricEntityItem configuration")
-    print(f"OK: folder key configured")
+    # Verify the folder is configured (inline or constant). The SDK model's
+    # field is `folder_key`, but its constructor alias is `folderId` (the
+    # exact name `uip df entities list` prints), so both spellings are
+    # valid Python and both must pass.
+    m = re.search(r'\b(folder_key|folderId)\s*=', text)
+    if not m:
+        sys.exit(
+            "FAIL: no folder_key= / folderId= parameter found in "
+            "DataFabricEntityItem configuration"
+        )
+    print(f"OK: folder key configured ({m.group(1)}=)")
 
 
 def check_prompt_forwarding(text: str) -> None:
@@ -110,7 +117,7 @@ def check_prompt_forwarding(text: str) -> None:
 
 def check_sdk_import(text: str) -> None:
     if not re.search(
-        r"from\s+uipath\.platform\s+import\s+[^\n]*\bUiPath\b", text
+        r"from\s+uipath\.platform\s+import\s+(?:[^\n]*\bUiPath\b|\([^)]*\bUiPath\b)", text
     ):
         sys.exit("FAIL: must import UiPath from `uipath.platform`")
     print("OK: imports UiPath from uipath.platform")

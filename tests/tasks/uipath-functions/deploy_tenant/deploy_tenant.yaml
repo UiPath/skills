@@ -8,19 +8,26 @@ description: >
   non-interactive tenant-feed publish (pending uipath/cli#2778), so
   requiring an interactive `publish` made this task nondeterministic
   (the agent either fumbled the feed picker or exhausted its turns).
+  The prompt pins Python: grading (the `uip function init` criterion and
+  the pyproject.toml checker) is Python-specific, while TypeScript is the
+  CLI default — an unpinned prompt let a correct TS solution fail. The
+  prompt also states the pack success bar: without it, an agent that
+  set packOptions and ran locally stopped before ever packing.
 tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
 initial_prompt: |
-  Build a UiPath Coded Function named `tenant-echo`
-  that takes a `message` (string) and returns
-  `{"echoed": message}`. No LLM, no SDK calls.
+  Build a UiPath Coded Function named `tenant-echo`,
+  implemented in Python, that takes a `message` (string) and
+  returns `{"echoed": message}`. No LLM, no SDK calls.
 
   Alongside the source, the project includes a `data/` directory
   with fixture JSON used during local development only — create it
   as `data/fixtures.json` containing `{"sample": "value"}`. The
   `data/` directory must NOT end up in the packaged output.
 
+  Package the project locally — the task is not complete until
+  packaging has produced the `.nupkg` artifact.
   Do NOT publish, upload, or deploy.
   Complete it in a single pass.
 

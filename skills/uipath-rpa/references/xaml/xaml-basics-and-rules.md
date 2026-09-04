@@ -239,7 +239,7 @@ uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --project-dir "<PROJECT
   && uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-`--file-path` must be **relative to the project directory**. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop. A clean gate is still not runtime proof: for observable-output workflows, end with one `uip rpa run` and check the outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
+`--file-path` must be **relative to the project directory**. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop. A clean gate is still not runtime proof: for observable-output workflows, end with one `uip rpa run --skip-build` and check the outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
 
 **Fix order:** Package → Structure → Type → Activity Properties → Logic.
 
