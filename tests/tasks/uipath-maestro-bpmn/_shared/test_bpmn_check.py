@@ -73,3 +73,46 @@ def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
     ]
     assert "<bpmn:extensionElements>" not in start_agent["xmlTemplate"]
     assert "releaseKey" not in start_agent["xmlTemplate"]
+
+
+def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
+    repo_root = Path(__file__).parents[4]
+    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    activity = spec["extensionTypes"]["Intsvc.ActivityExecution"]
+
+    assert [field["name"] for field in activity["contextFields"]] == [
+        "activityConfigurationVersion",
+        "connectorKey",
+        "connection",
+        "folderKey",
+        "operation",
+        "objectName",
+        "method",
+        "path",
+        "metadata",
+    ]
+    assert activity["outputName"] == "response"
+    assert activity["outputType"] == "jsonSchema"
+    assert activity["outputSource"] == "=response"
+    assert activity["xmlTemplate"].startswith("<bpmn:sendTask")
+    assert "=bindings.{connectionBindingId}" in activity["xmlTemplate"]
+
+
+def test_bundled_intsvc_event_contracts_match_cli_manifest() -> None:
+    repo_root = Path(__file__).parents[4]
+    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+
+    for extension_type in ("Intsvc.EventTrigger", "Intsvc.WaitForEvent"):
+        event = spec["extensionTypes"][extension_type]
+        connection = next(
+            field for field in event["inputFields"] if field["name"] == "connectionId"
+        )
+        assert connection["bindingInfo"] == {
+            "resource": "Connection",
+            "resourceKeyPattern": "${resourceKey}",
+            "propertyAttribute": "ConnectionId",
+        }
+        assert "<uipath:context>" in event["xmlTemplate"]
+        assert "=bindings.{connectionBindingId}" in event["xmlTemplate"]

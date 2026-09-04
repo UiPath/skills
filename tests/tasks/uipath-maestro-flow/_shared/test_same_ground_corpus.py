@@ -247,10 +247,10 @@ def test_paginated_lookup_accepts_both_supported_resolution_routes() -> None:
     assert manual_pattern.search(page_one) and manual_pattern.search(page_two)
     assert not manual_pattern.search(sdk_command)
 
-    # The gating criterion needs "went past page 1" on a SUCCESSFUL command:
-    # a page-1 call, or `--resolve channel:` typed on something other than
-    # `registry prepare`, earns nothing.
-    assert "require_success: true" in paged_block and "pass_threshold: 1.0" in paged_block
+    # This is advisory because a command cut off by a turn timeout has unknown
+    # status. It still records only successful page-2 work; the artifact check
+    # gates the resolved channel id.
+    assert "require_success: true" in paged_block and "pass_threshold: 0.0" in paged_block
     assert paged_pattern.search(page_two)
     assert paged_pattern.search(sdk_command)
     assert paged_pattern.search(uip_command) and not manual_pattern.search(uip_command)

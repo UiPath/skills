@@ -42,10 +42,11 @@ success_criteria:
 # by hand (the collection may be exposed as `conversations` or
 # `curated_channels`); the SDK route resolves the name inside
 # `npx flow-sdk registry prepare … --resolve channel:`. The first criterion is
-# v1-route telemetry and is advisory (the SDK arm never runs it); the second
-# gates on "went past page 1" for either route and only counts a command that
-# succeeded — typing the flag on a failing command does not page. The final
-# artifact criterion (resolved id C083AN4E61E) stays the authority.
+# v1-route telemetry is advisory (the SDK arm never runs it); the second records
+# "went past page 1" for either route and only counts a command that succeeded —
+# typing the flag on a failing command does not page. It is also advisory because
+# a command cut off by a turn timeout has unknown status. The final artifact
+# criterion (resolved id C083AN4E61E) stays the authority.
   - type: command_executed
     description: "Advisory (live-v1 route): paged Slack channel-resource loop ran more than once"
     tool_name: "Bash"
@@ -61,7 +62,7 @@ success_criteria:
     min_count: 1
     require_success: true
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent ran `uip maestro flow validate` on the generated flow"

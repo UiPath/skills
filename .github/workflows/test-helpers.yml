@@ -6,6 +6,7 @@ on:
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/tasks/uipath-maestro-bpmn/**'
+      - 'skills/uipath-maestro-bpmn/validator/bpmn-spec.json'
       - 'tests/tasks/uipath-planner/**'
       - 'tests/tasks/uipath-agents/**'
       - 'tests/tasks/uipath-admin/**'

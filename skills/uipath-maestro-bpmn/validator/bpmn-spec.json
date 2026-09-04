@@ -310,20 +310,24 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "activity",
-          "displayName": "Activity",
+          "name": "activityConfigurationVersion",
+          "displayName": "Activity configuration version",
           "type": "string",
-          "required": true,
-          "hidden": false,
-          "isPrimaryKey": true,
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": "v1",
+          "enum": [
+            "v1"
+          ],
+          "description": "Marks the Integration Service activity format used by this template"
         },
         {
           "name": "connectorKey",
           "displayName": "Connector key",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
           "binding": false,
@@ -337,7 +341,12 @@
           "hidden": true,
           "isPrimaryKey": false,
           "binding": true,
-          "defaultValue": null
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "Connection",
+            "resourceKeyPattern": "${resourceKey}",
+            "propertyAttribute": "ConnectionId"
+          }
         },
         {
           "name": "folderKey",
@@ -346,43 +355,85 @@
           "required": false,
           "hidden": true,
           "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "Connection",
+            "resourceKeyPattern": "${resourceKey}",
+            "propertyAttribute": "folderKey"
+          }
+        },
+        {
+          "name": "operation",
+          "displayName": "Operation",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": true,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": null,
+          "description": "Activity catalog Name used as the runtime operation"
+        },
+        {
+          "name": "objectName",
+          "displayName": "Object name",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Activity catalog ObjectName"
         },
         {
           "name": "method",
           "displayName": "Method",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": null,
+          "description": "Activity catalog MethodName"
         },
         {
           "name": "path",
           "displayName": "Path",
           "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Request path returned by resource metadata"
+        },
+        {
+          "name": "metadata",
+          "displayName": "Metadata",
+          "type": "json",
           "required": false,
           "hidden": true,
           "isPrimaryKey": false,
           "binding": false,
-          "defaultValue": null
+          "defaultValue": {},
+          "description": "Optional activity metadata"
         }
       ],
+      "inputFields": [],
       "inputPattern": "separateInputs",
       "inputName": "body",
       "inputTarget": "body",
-      "outputSource": ".",
-      "outputType": "custom",
-      "outputName": "result",
+      "outputSource": "=response",
+      "outputType": "jsonSchema",
+      "outputName": "response",
       "useRelativeSource": false,
       "bindingPattern": "connection",
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
-      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections. Activity/connector metadata comes from Integration Service catalog.",
-      "inputNotes": "isSplitInputs=false in design schema; inputs are sent as separate <uipath:input> elements, not merged into a single JSON body",
+      "xmlTemplate": "<bpmn:sendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"=bindings.{folderBindingId}\" />\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\n        <uipath:input name=\"method\" type=\"string\" value=\"{method}\" />\n        <uipath:input name=\"path\" type=\"string\" value=\"{path}\" />\n        <uipath:input name=\"activityConfigurationVersion\" type=\"string\" value=\"v1\" />\n        <uipath:input name=\"metadata\" type=\"json\"><![CDATA[{}]]></uipath:input>\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:sendTask>",
+      "discoveryNotes": "Use `uip is activities list <connector-key> --output json` to select an activity. Set operation from Name, then describe ObjectName to get its current path, parameters, and fields.",
+      "inputNotes": "Add each request field from the selected operation as its own uipath:input. Keep the field's type and target: path, query, body, or file.",
+      "contextFieldNotes": "connection points to a root binding for a Connection resource. When folder scoping is required, folderKey points to a second binding for the same resourceKey. Use propertyAttribute ConnectionId for connection and folderKey for folderKey. Omit folderKey when the selected activity has no folder scoping, and omit both fields only when it does not use a connection.",
       "extensionTagNotes": "In isExecution array, NOT in isEvents array, so uses uipath:activity"
     },
     "Intsvc.HttpExecution": {
@@ -585,7 +636,7 @@
       "bindingPattern": "connection",
       "requiresDiscovery": true,
       "isDynamic": false,
-      "xmlTemplate": "<bpmn:ReceiveTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.WaitForEvent\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ReceiveTask>",
+      "xmlTemplate": "<bpmn:ReceiveTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.WaitForEvent\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connectionId\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\n        <uipath:input name=\"folderId\" type=\"string\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"{folderPath}\" />\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"{folderKey}\" />\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\n      </uipath:context>\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ReceiveTask>",
       "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
       "inputNotes": "isSplitInputs=false; inputs are defined in input.fields (not jsonBody). Sent as separate <uipath:input> elements.",
       "contextFieldNotes": "Context fields are empty in design schema; all field definitions are in inputFields below",
@@ -600,7 +651,12 @@
           "isPrimaryKey": false,
           "binding": true,
           "defaultValue": null,
-          "description": "Connection ID for the IS connector (bindable)"
+          "description": "Connection ID for the IS connector (bindable)",
+          "bindingInfo": {
+            "resource": "Connection",
+            "resourceKeyPattern": "${resourceKey}",
+            "propertyAttribute": "ConnectionId"
+          }
         },
         {
           "name": "connectorKey",
@@ -714,7 +770,7 @@
       "bindingPattern": "connection",
       "requiresDiscovery": true,
       "isDynamic": false,
-      "xmlTemplate": "<bpmn:StartEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.EventTrigger\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:StartEvent>",
+      "xmlTemplate": "<bpmn:StartEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.EventTrigger\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connectionId\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\n        <uipath:input name=\"folderId\" type=\"string\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"{folderPath}\" />\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"{folderKey}\" />\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\n      </uipath:context>\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:StartEvent>",
       "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
       "inputNotes": "isSplitInputs=false; inputs defined in input.fields. Sent as separate <uipath:input> elements.",
       "contextFieldNotes": "Context fields are empty in design schema; all field definitions are in inputFields below",
@@ -729,7 +785,12 @@
           "isPrimaryKey": false,
           "binding": true,
           "defaultValue": null,
-          "description": "Connection ID for the IS connector (bindable)"
+          "description": "Connection ID for the IS connector (bindable)",
+          "bindingInfo": {
+            "resource": "Connection",
+            "resourceKeyPattern": "${resourceKey}",
+            "propertyAttribute": "ConnectionId"
+          }
         },
         {
           "name": "connectorKey",
@@ -1827,8 +1888,8 @@
       "isDynamic": false,
       "xmlTemplate": "<bpmn:Task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:Task>",
       "inputNotes": "Variable mappings use uipath:mapping with direct input/output elements, not a jsonBody pattern",
-      "bpmnElementNotes": "Also used on bpmn:StartEvent and bpmn:EndEvent for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.",
-      "extensionTagNotes": "Uses uipath:mapping (not uipath:activity). createExtensionTask checks for serviceType=BPMN.Variables on StartEvent/EndEvent/Task and routes to createModdleExtensionVariableMapping."
+      "bpmnElementNotes": "Also used on bpmn:StartEvent, bpmn:EndEvent, bpmn:ScriptTask, and bpmn:SubProcess for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.",
+      "extensionTagNotes": "Uses uipath:mapping (not uipath:activity). BPMN.Variables mappings are supported on StartEvent, EndEvent, Task, ScriptTask, and SubProcess owners."
     },
     "BPMN.ScriptTask": {
       "extensionType": "BPMN.ScriptTask",
