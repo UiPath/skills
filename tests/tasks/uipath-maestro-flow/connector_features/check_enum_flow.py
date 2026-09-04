@@ -8,7 +8,7 @@ Checks:
   structure   — flow file exists, is valid JSON, has `nodes` and `edges`
   body_params — at least one node's `inputs.detail.bodyParameters` carries the
                 expected to / subject / body / importance values
-  control     — flow contains at least one Decision and one Terminate node
+  control     — flow contains at least one Terminate node
 """
 
 from __future__ import annotations
@@ -112,11 +112,9 @@ def _check_body_params(flow_path: str, flow: dict[str, Any]) -> None:
 
 def _check_control(flow_path: str, flow: dict[str, Any]) -> None:
     types = [str(node.get("type", "")).lower() for node in flow.get("nodes", []) or []]
-    if not any("decision" in t for t in types):
-        _fail(f"No Decision node found in {flow_path}")
     if not any("terminate" in t for t in types):
         _fail(f"No Terminate node found in {flow_path}")
-    print("OK: Decision and Terminate nodes present")
+    print("OK: Terminate node present")
 
 
 def main() -> None:

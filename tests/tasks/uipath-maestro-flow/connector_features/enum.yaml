@@ -18,7 +18,6 @@ initial_prompt: |
     - subject:   "weather today"
     - body:      "Weather update for today."
     - importance: "high"
-  Add a Decision node to check whether the call succeeded.
   Route failure to a Terminate node with error message "Enum test failed".
   Route success to a final action that logs "Enum test passed".
   Validate the final flow file.
@@ -66,7 +65,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow has Decision and Terminate nodes"
+    description: "Flow has a Terminate node"
     command: "python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' control"
     timeout: 10
     expected_exit_code: 0
