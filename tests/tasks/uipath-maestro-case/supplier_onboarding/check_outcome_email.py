@@ -90,7 +90,9 @@ def external_id(instance_id: str, folder_key: str) -> tuple[str, str]:
         return "", "drive_case recorded no folder for it"
     reply = uip(["maestro", "case", "instance", "get", instance_id, "-f", folder_key])
     if reply.get("Result") != "Success":
-        return "", f"the lookup failed: {str(reply.get('Message'))[:120]}"
+        detail = " | ".join(
+            str(reply[k]) for k in ("Message", "Code", "Instructions") if reply.get(k))
+        return "", f"the lookup failed: {detail[:200]}"
     token = str((reply.get("Data") or {}).get("ExternalId") or "")
     return (token, "") if token else ("", "the instance reports no ExternalId")
 

@@ -191,6 +191,19 @@ def run(args: list[str], *, timeout: int = 120) -> dict:
     return envelope(args, timeout=timeout).get("Data") or {}
 
 
+def envelope_detail(reply: dict) -> str:
+    """Every field the CLI puts a reason in, joined.
+
+    `Message` is a generic one-liner (`Error listing tasks`, `Error assigning task`); the
+    reason the call was refused rides in `Instructions`. Reading only `Message` names the
+    symptom and hides the cause.
+    """
+    return " | ".join(
+        str(reply[key]) for key in ("Message", "Code", "ErrorCode", "Instructions")
+        if reply.get(key)
+    ) or str(reply)
+
+
 def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
     """`run_list`, but a failed CLI call raises instead of reading as an empty result.
 
@@ -199,8 +212,10 @@ def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
     """
     reply = envelope(args, timeout=timeout)
     if reply.get("Result") != "Success":
-        raise RuntimeError(
-            f"`{' '.join(args[:3])}` failed: {reply.get('Message') or reply.get('Code') or reply}")
+        # `Message` is the generic one-liner (`Error listing tasks`); the reason the call was
+        # refused rides in `Instructions`. Reporting only `Message` cost a route its whole
+        # budget and named nothing actionable.
+        raise RuntimeError(f"`{' '.join(args[:3])}` failed: {envelope_detail(reply)}")
     return _rows_of(reply.get("Data") or {})
 
 
@@ -339,7 +354,7 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
     assigned = envelope(["uip", "tasks", "assign", task_id, *by_id, "--output", "json"])
     if assigned.get("Result") != "Success":
         fail(f"assigning task {task_id} to {who} failed: "
-             f"{assigned.get('Message') or assigned.get('Code') or assigned}")
+             f"{envelope_detail(assigned)}")
     # The assign lands on `AssignedToUserId`, but completion is gated on the task's
     # assignment criteria, which is a separate field. `AppTasksFacade.cs:782` maps a group
     # recipient to `AllUsers`, and Orchestrator then answers `tasks complete` with "this
@@ -445,7 +460,7 @@ def send_stage_selection(instance_id: str, from_stage: str, to_stage: str) -> No
         "-f", CASE_FOLDER_KEY, "--inputs", json.dumps(message), "--output", "json",
     ])
     if reply.get("Result") != "Success":
-        fail(f"stage selection {from_stage!r} -> {to_stage!r} was rejected: {reply.get('Message') or reply}")
+        fail(f"stage selection {from_stage!r} -> {to_stage!r} was rejected: {envelope_detail(reply)}")
 
 
 def run_status(instance_id: str) -> str:
