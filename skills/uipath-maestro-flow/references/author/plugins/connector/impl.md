@@ -35,8 +35,8 @@ Definitions in `definitions[]` are CLI-owned. `uip maestro flow node add` copies
 
 An activity is `4.0.0` when its `configuration` JSON reports `"version":"4.0.0"`. Author it through the Configuration workflow below like any other connector activity; `describe`/version mechanics are in [/uipath:uipath-platform — resources.md § `--activity-version`](../../../../../uipath-platform/references/integration-service/resources.md#--activity-version). Four deltas:
 
-1. **No `objectName` in `--detail`** — resolved from the configuration's `activityName` (`model.context.objectName` is empty).
-2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <activity-name> --activity-version 4.0.0`).
+1. **`objectName` source** — read the definition's `configuration` `objectName` (the `model.context[]` `objectName` entry is declared with no value). It is the `describe` positional, but do NOT pass it in `--detail` — `node configure` reads it from the definition itself. If configuration carries no `objectName`, the registry copy is stale: run `uip maestro flow registry pull --force`, delete the `definitions[]` entry, and re-add the node.
+2. **`method` / `endpoint`** — from `connectorMethodInfo` (`registry get`) or `availableOperations[]` (`is resources describe <connector-key> <object-name> --activity-version 4.0.0`).
 3. **Operation label ≠ HTTP verb** — a semantic operation (e.g. `Update`) pairs with any verb (e.g. `POST /usergroups.users.update`). `flow validate` accepts it; do not "fix" the method to match the label.
 4. **Not connection-scoped** — `--connection-id` on `registry get` adds no custom fields.
 
@@ -103,7 +103,7 @@ uip is resources describe "<connector-key>" "<objectName>" \
 
 Then run `cat <metadataFile path from response>` and read the full cached metadata. Pass `--operation` as the node definition's `model.context[].method` verbatim. E.g. Jira `curated_get_issue` → `GETBYID`; Data Service `QueryEntityRecordsCurated` → `POST`. Do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method` as the describe lookup key.
 
-> **`4.0.0` activities** — positional is the `activityName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<activityName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
+> **`4.0.0` activities** — positional is the `objectName`, `--activity-version 4.0.0` is mandatory, `--operation` takes the verb from `model.context[].method` (never a guessed semantic label), and `--connection-id` is ignored: `uip is resources describe "<connector-key>" "<objectName>" --activity-version 4.0.0 --operation <method> --output json`. See [§ 4.0.0 Activities](#400-activities).
 
 Read `availableOperations[].method` and `availableOperations[].path` for method and endpoint; `parameters[]` for query/path parameters and `reference` objects; `requestFields[]` for body names, types, required status, descriptions, and `reference` objects; and `responseFields[]` for the response schema.
 
