@@ -39,7 +39,7 @@ ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
 CLASS_MAP: class -> entityName, entityId, folderId, readOnly
-MAPPING_STATUS: supplied | generate
+MAPPING_STATUS: supplied | generate | defer (Path B only: generate it in Step 2b, once entity ids exist)
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
 OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and every CODED action also carries its reads, its writes union, and its process name
@@ -418,7 +418,7 @@ Using the confirmed classes from Phase 3, extract all properties and relationshi
 | Class | Property name | XSD type | Required? |
 |---|---|---|---|
 | `Doctor` | `Doctor.licenseNo` | `xsd:string` | required |
-| `Doctor` | `Doctor.active` | `xsd:boolean` | required |
+| `Doctor` | `Doctor.active` | `xsd:string` + `ont:datatype "category"` | required |
 | `Prescription` | `Prescription.status` | `xsd:string` | required |
 
 **Object properties (relationships):**
@@ -533,6 +533,15 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 - `CLASS_MAP` from Phase 2 (entityId + folderId per class)
 - `{workdir}` from Step 1 (the ontology's own `{name}/` subfolder, already created) as the working directory for output
 
+**On Phase 1's Path B, hold the mapping back.** A mapping binds each class to an `entityId` and a
+`folderId` read from `uip df entities list`, and on Path B the entities do not exist yet — Phase 2
+deferred creating them until Step 2b has the folder. So Path B's `CLASS_MAP` carries no ids, and
+generating a mapping from it would write placeholders that preflight cannot detect and upload
+would bind to nothing. Pass `MAPPING_STATUS: defer` instead: the modeler generates every other
+artifact, and its preflight reports `mapping_status: GENERATE_MAPPING` under `--mapping-mode auto`,
+which is a pass. The mapping is generated in Step 2b, from real ids. On Path A the entities already
+exist, so nothing changes.
+
 > If the `uipath-ontology-modeler` skill is not available, stop before deployment and return: "Artifact generation requires the uipath-ontology-modeler sibling skill. The domain model and setup are prepared; activate that skill and retry the delegation."
 
 The modeler skips its standalone setup and domain-gathering phases. It uses the confirmed handoff directly, validates the provided mapping when `MAPPING_STATUS: supplied` or generates it from handoff metadata when `MAPPING_STATUS: generate`, and runs local preflight with `--handoff` before any backend call. It returns the exact `artifact_inventory`; authoring alone creates the stub, validates, and uploads the inventory in tiers, holding `{name}-mapping.yarrrml.yml` until last.
@@ -588,12 +597,14 @@ That skill publishes the `{name}-jobs` Solution, deploys it — **which is what 
 
 **This reorders the rest of the flow.** The folder does not exist until the deploy runs, and a deployment cannot be pointed at an existing folder. So:
 
-1. delegate the deploy, passing Phase 1 Path B's `FOLDER_NAME` and `PARENT_FOLDER`
+1. delegate the deploy, passing Phase 1 Path B's `FOLDER_NAME` as the **deployment name** and `PARENT_FOLDER` as its parent. The deployment name *is* the folder name — see that skill's input table
 2. **set `PRIMARY_FOLDER_KEY` to the key of the folder it created.** Everything downstream reads that one variable, so from here on both paths are identical
 3. run the `uip df entities create` calls Phase 2 deferred, against `PRIMARY_FOLDER_KEY`
-4. `uip ont create {name} --folder-key {PRIMARY_FOLDER_KEY}` (Step 3a)
-5. validate and upload the artifacts (Steps 3b, 3c)
-6. invoke
+4. **read the new entities' ids** — `uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json` — and complete `CLASS_MAP` with each class's `Data[].ID` and `Data[].FolderKey`
+5. **now generate the mapping**, by delegating to the modeler again with the completed `CLASS_MAP` and `MAPPING_STATUS: generate`, then rerun `ontology_preflight.py` and require `mapping_status: PRESENT_VALID`. This is the step Step 2 deferred; a mapping written before item 4 would carry ids that do not exist
+6. `uip ont create {name} --folder-key {PRIMARY_FOLDER_KEY}` (Step 3a)
+7. validate and upload the artifacts (Steps 3b, 3c), mapping last
+8. invoke
 
 Phase 1 Path B already collected the folder's name and parent. Do not ask for an existing folder here, and do not create the folder yourself with `uip or folders create` — the deploy creates it, and a folder that already exists makes the CLI create `"{FOLDER_NAME} 1"` beside it and deploy the processes there, leaving the ontology bound to a folder holding zero processes.
 

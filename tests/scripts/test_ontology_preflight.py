@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """Behavioral tests for the neutral ontology preflight CLI."""
 
+# `X | None` in a signature is evaluated at def time, so without this the suite cannot even
+# import on Python < 3.10. CI runs 3.13, which hid it; the tool itself already does this.
+from __future__ import annotations
+
 import json
+import shutil
 import subprocess
+import tempfile
 import sys
 import unittest
 from pathlib import Path
@@ -18,6 +24,20 @@ COMPLETE_HANDOFF = {
     "FIELD_METADATA": {"Order": {"id": {"identifier": True}, "status": {}}},
     "RELATIONSHIPS": [],
 }
+
+
+def run_preflight_at(workdir: Path, mapping_mode: str = "auto", handoff: dict | None = None) -> tuple[int, dict]:
+    """run_preflight against an arbitrary directory, for tests that mutate a copied fixture."""
+    command = [sys.executable, str(TOOL), "--workdir", str(workdir),
+               "--ontology-name", "demo", "--mapping-mode", mapping_mode]
+    if handoff is not None:
+        command.extend(("--handoff", json.dumps(handoff)))
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        payload = {"status": "TOOL_MISSING", "gate_results": [], "mapping_status": None, "errors": {}}
+    return result.returncode, payload
 
 
 def run_preflight(case: str, mapping_mode: str = "auto", handoff: dict | None = None) -> tuple[int, dict]:
@@ -39,6 +59,14 @@ def run_preflight(case: str, mapping_mode: str = "auto", handoff: dict | None = 
 
 
 class OntologyPreflightTests(unittest.TestCase):
+    def copy_fixture(self, case: str) -> Path:
+        """A writable copy of a fixture, for tests that need to mutate one."""
+        temp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, temp, True)
+        workdir = temp / case
+        shutil.copytree(FIXTURES / case, workdir)
+        return workdir
+
     def assert_gate_fails(self, case: str, gate_id: str) -> dict:
         code, payload = run_preflight(case)
         self.assertNotEqual(code, 0)
@@ -185,6 +213,60 @@ class OntologyPreflightTests(unittest.TestCase):
         iri_gate = next(item for item in payload["gate_results"] if item["id"] == "IRI_CONSISTENCY")
         self.assertTrue(iri_gate["passed"], payload)
 
+
+    def test_supplied_mapping_agreeing_with_the_handoff_stays_valid(self):
+        """The happy path: the mapping's ids are the ones the handoff declares."""
+        code, payload = run_preflight("supplied-mapping", "auto", COMPLETE_HANDOFF)
+        self.assertEqual(code, 0, payload)
+        self.assertEqual(payload["mapping_status"], "PRESENT_VALID")
+
+    def test_mapping_binding_an_undeclared_entity_id_is_invalid(self):
+        """A mapping generated before its entities existed carries ids nothing declares.
+
+        This is the state the coded-action path used to force: entity creation waits for the
+        deployment to make the folder, so a mapping written at generation time can only hold
+        placeholders. The terms gate passes them -- the `ont:` names are all declared -- so
+        without this check preflight reported PRESENT_VALID over bindings that resolve to
+        nothing, and the first symptom was a deployed ontology with dead bindings.
+        """
+        handoff = json.loads(json.dumps(COMPLETE_HANDOFF))
+        handoff["CLASS_MAP"]["Order"]["entityId"] = "00000000-0000-0000-0000-00000000e001"
+        code, payload = run_preflight("supplied-mapping", "auto", handoff)
+        self.assertNotEqual(code, 0, payload)
+        self.assertEqual(payload["mapping_status"], "PRESENT_INVALID")
+        detail = payload["errors"]["MAPPING_TERMS"][0]
+        self.assertIn("order-id", detail)
+        self.assertIn("entityId", detail)
+
+    def test_mapping_bindings_are_unchecked_without_a_handoff(self):
+        """No handoff means no declared ids to compare against, so the gate holds no opinion --
+        a missing handoff is already the generation branch's error to report, not this one's."""
+        code, payload = run_preflight("supplied-mapping", "auto")
+        self.assertEqual(code, 0, payload)
+        self.assertEqual(payload["mapping_status"], "PRESENT_VALID")
+
+    def test_a_term_iri_under_the_right_base_is_consistent(self):
+        """The OWL guide's section-header comments write terms as full IRIs, e.g.
+        `# Data Property: <https://ontology.uipath.com/demo#Order.status> (...)`. Terms are
+        normally prefixed, so a full one only appears in such a comment, and the gate used to
+        reject it as "old or inconsistent" when it was neither -- a false positive on the form
+        the guide itself prescribes."""
+        workdir = self.copy_fixture("supplied-mapping")
+        schema = workdir / "demo.ofn"
+        schema.write_text(schema.read_text()
+                          + "\n# Data Property: <https://ontology.uipath.com/demo#Order.status> (Status)\n")
+        code, payload = run_preflight_at(workdir, handoff=COMPLETE_HANDOFF)
+        self.assertEqual(code, 0, payload)
+
+    def test_a_term_iri_under_the_wrong_base_still_fails(self):
+        """The other half: judging by base must not become judging by nothing."""
+        workdir = self.copy_fixture("supplied-mapping")
+        schema = workdir / "demo.ofn"
+        schema.write_text(schema.read_text()
+                          + "\n# Data Property: <https://ontology.uipath.com/oldname#Order.status> (stale)\n")
+        code, payload = run_preflight_at(workdir, handoff=COMPLETE_HANDOFF)
+        self.assertNotEqual(code, 0, payload)
+        self.assertIn("oldname", payload["errors"]["IRI_CONSISTENCY"][0])
 
 if __name__ == "__main__":
     unittest.main()

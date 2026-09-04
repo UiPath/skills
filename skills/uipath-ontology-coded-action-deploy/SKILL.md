@@ -38,7 +38,7 @@ the sequencing and the traps, which are not in either skill.
 |---|---|
 | workdir | the ontology's own directory, the one holding the artifacts and the job sources |
 | ontology name | the exact slug; the Solution is named `{name}-jobs` |
-| folder name and parent | the folder the deployment will CREATE, and what to create it under. Not an existing folder -- see phase 3 |
+| folder name and parent | the folder the deployment will CREATE, and what to create it under. Not an existing folder -- see phase 3. **The folder name is the deployment name**: `deploy_release.py` passes one value to both `-n` and `--folder-name`, so pass the caller's folder name as the `{deployment-name}` positional. Omit it and `DEPLOY_NAME` falls back to `SOLUTION_NAME` (`{name}-jobs`), which silently creates a folder by that name instead -- nothing downstream notices |
 | coded-action pairs | one per action: a TTL declaring `ont:language "CODED"` with `ont:processType "CODED_FUNCTION"`, and the job source that implements it |
 
 Org and tenant come from `uip login status --output json` and from nowhere else. This is the same
@@ -52,7 +52,7 @@ Everything else is a convention rather than a coordinate, and the scripts defaul
 |---|---|---|
 | `SOLUTION_SRC` | none, required by the packing subcommands | the solution directory phase 1 created |
 | `SOLUTION_NAME` | the solution directory's name | the package name follows the directory |
-| `DEPLOY_NAME` | `SOLUTION_NAME` | a name this skill creates, not one it discovers |
+| `DEPLOY_NAME` | `SOLUTION_NAME` | a name this skill creates, not one it discovers. It also becomes the folder name, so pass the caller's folder name explicitly rather than taking the default |
 | `PARENT_FOLDER_PATH` | `Shared` | the Orchestrator folder that carries robot permissions |
 | `UIP_CLI` | `uip` | the binary on PATH |
 
@@ -182,7 +182,12 @@ a CLI-scaffolded solution has only the `.uipx`, whose `Projects` array says the 
 
 ## Phase 3: Publish, then deploy — and the deployment creates the folder
 
+Both scripts read `SOLUTION_SRC`, so export it once for the phase rather than prefixing each line —
+without it they exit with `SOLUTION_SRC is not set; the caller must supply it`. Pass the caller's
+folder name as `{deployment-name}`: it becomes the folder name too.
+
 ```bash
+export SOLUTION_SRC={workdir}/{name}-jobs
 python3 <SKILL_DIR>/scripts/publish_package.py {version}                     # dry run: reports current, next, target
 python3 <SKILL_DIR>/scripts/publish_package.py {version} --execute           # tenant feed
 python3 <SKILL_DIR>/scripts/deploy_release.py  {version} {deployment-name} --execute

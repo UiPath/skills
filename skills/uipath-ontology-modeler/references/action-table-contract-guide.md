@@ -62,7 +62,7 @@ PDD uses business-friendly types. Map to XSD:
 | Number | `xsd:decimal` |
 | Date | `xsd:date` |
 | DateTime | `xsd:dateTime` |
-| Boolean | `xsd:boolean` |
+| Boolean | `xsd:string` + `ont:datatype "category"` — **not** `xsd:boolean`, whose range the reasoner silently drops (see the OWL guide) |
 
 ## Generated TTL structure
 

@@ -14,8 +14,9 @@ import pathlib
 from _uip import die, uip_json
 
 SOLUTION_SRC = os.environ.get("SOLUTION_SRC", "")
-# A new version means a new deployment in a new folder. The folder must be created UNDER Shared,
-# or it has no unattended robot permissions and the job cannot start.
+# The folder must be created UNDER Shared, or it has no unattended robot permissions and the job
+# cannot start. A new version does NOT mean a new folder: reusing the deployment name upgrades it
+# in place, one folder throughout -- see deploy_release.deploy_release().
 PARENT_FOLDER_PATH = os.environ.get("PARENT_FOLDER_PATH", "Shared")
 
 

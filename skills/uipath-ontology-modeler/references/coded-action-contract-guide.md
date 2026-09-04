@@ -249,6 +249,7 @@ the rest are additions:
 10. `ont:language` must be the literal `"CODED"`, and `ont:kind` the literal `"ACTION"`.
 11. `ont:process` must be present. `ont:processFolderId` and `ont:processUrl` are **not part of the vocabulary** and must not be emitted.
 12. `ont:processType` must be present and must be `"CODED_FUNCTION"`.
+13. **Every entity a job edit targets needs exactly one identity property** — a `{Class}.id` annotated `ont:datatype "key"` in `{name}.ofn`. That is a schema rule, which is why it lives in [`owl-patterns-guide.md`](owl-patterns-guide.md), but the `entity-identity-declared` gate fails the coded pair without it, and the runtime otherwise refuses every write *after* the job has run, reporting `rowsAffected: 0` — indistinguishable in a summary from a legitimate no-op.
 
 ## What a read can and cannot do
 
