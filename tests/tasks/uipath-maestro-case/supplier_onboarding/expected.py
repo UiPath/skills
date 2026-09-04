@@ -525,6 +525,28 @@ def _sdd_recipients(sdd: str) -> dict[str, str]:
     return out
 
 
+_CUSTOM_OUTPUT_RE = re.compile(
+    r"^\|\s*(?:—|-|\s)*\s*\|\s*([A-Za-z][\w]*)\s*=\s*([^|]+?)\s*\|", re.M
+)
+
+
+def _sdd_custom_outputs(sdd: str) -> dict[str, list[str]]:
+    """Task name -> the case variables its Outputs table assigns with `=`.
+
+    An Outputs row shaped `| — | someVar = <expr> |` is a custom output: it writes a case
+    variable rather than extracting a task field into one. `->` rows are the other kind and
+    are covered elsewhere.
+    """
+    headings = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
+    out: dict[str, list[str]] = {}
+    for index, (start, name) in enumerate(headings):
+        end = headings[index + 1][0] if index + 1 < len(headings) else len(sdd)
+        names = [m.group(1) for m in _CUSTOM_OUTPUT_RE.finditer(sdd, start, end)]
+        if names:
+            out.setdefault(name, []).extend(names)
+    return out
+
+
 def sdd_facts() -> dict:
     """Re-derive the volatile facts from the fixture, and refuse a thin parse.
 
@@ -579,6 +601,12 @@ def sdd_facts() -> dict:
 
     bound_inputs = _bound_inputs(sdd)
     recipients = _sdd_recipients(sdd)
+    custom_outputs = _sdd_custom_outputs(sdd)
+    if len(custom_outputs) < 4:
+        raise SystemExit(
+            f"expected.py: parsed only {len(custom_outputs)} task(s) with a custom `=` output "
+            f"from sdd.md; the fixture declares more. Got {sorted(custom_outputs)}"
+        )
     if len(recipients) < 10:
         raise SystemExit(
             f"expected.py: parsed only {len(recipients)} Recipient line(s) from sdd.md; the "
@@ -600,4 +628,5 @@ def sdd_facts() -> dict:
         "var_reads": var_reads,
         "bound_inputs": bound_inputs,
         "recipients": recipients,
+        "custom_outputs": custom_outputs,
     }

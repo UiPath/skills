@@ -318,6 +318,28 @@ def main() -> int:
                     f"person or nobody instead of the role"
                 )
 
+    # ---- 8c. the SDD's `=` custom outputs are emitted ----------------------
+    # An Outputs row shaped `| — | buyerDecision = <expr> |` writes a case variable when
+    # the task completes. A run where the task was completed by hand and the variable
+    # stayed None showed `taskCompletedOutputs: null` for that task while an agent task in
+    # the same instance returned its outputs in full, so the channel works and the entry
+    # is what is missing. `->` extracts are assertion 3; this is the other kind.
+    for name, wanted in sorted(facts["custom_outputs"].items()):
+        task = names_to_task.get(name)
+        if task is None:
+            continue
+        written = {
+            str(entry.get("var") or entry.get("name") or "")
+            for entry in P.task_outputs(task)
+        }
+        missing = sorted(v for v in wanted if v not in written)
+        if missing:
+            problems.append(
+                f"task {name!r} emits no output for {missing}; the SDD's Outputs table "
+                f"assigns each with `=`, and without the entry the case variable stays "
+                f"unset however the task is completed"
+            )
+
     # ---- 9. every task carries an entry rule -------------------------------
     # An empty `entryConditions` means the runtime never tells the task to start. The
     # stage's exit condition can then never be satisfied, so `case debug` sits there until

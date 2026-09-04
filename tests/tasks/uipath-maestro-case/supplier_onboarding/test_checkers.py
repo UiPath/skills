@@ -1006,6 +1006,20 @@ class TasksIoTests(CheckerBase):
         }
         self.accepts(plan)
 
+    def test_rejects_a_dropped_custom_output(self):
+        # A run completed this gate by hand and BuyerDecision stayed None, while the
+        # agent task in the same instance returned its outputs in full.
+        plan = baseline_plan()
+        item = task(plan, "Record buyer review decision")
+        item["data"]["outputs"] = [
+            o for o in item["data"]["outputs"]
+            if (o.get("var") or o.get("name")) != "buyerDecision"
+        ]
+        self.rejects(plan, "emits no output for")
+
+    def test_accepts_the_custom_output_when_present(self):
+        self.accepts(baseline_plan())
+
     def test_rejects_a_placeholder_recipient(self):
         # The engine logged `ConfiguredAssignee=---` and `Recipient=---`, called the
         # assignment a success, and the task sat in nobody's queue for the whole run.
