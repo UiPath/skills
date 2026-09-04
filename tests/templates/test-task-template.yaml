@@ -34,9 +34,11 @@ initial_prompt: |
   Goal-oriented prompt — describe what to build, not how. Let the skill
   teach the agent the workflow.
 
-  Do not tell the agent not to ask for approval or to avoid pausing. The
-  experiment config's system_prompt states that the run is headless; a task
-  that repeats it drifts from the wording every other task uses.
+  Autonomy language depends on the experiment the task runs under. Under
+  experiments/flow.yaml the system prompt already states the run is headless,
+  so do not repeat it — a task that does drifts from the wording every other
+  task uses. Under experiments/default.yaml or nightly.yaml it does not, so an
+  e2e task that must not stall on a consent gate still needs to say so itself.
 
   For e2e tests, append:
     Before starting, load the <uipath-skill-name> skill and follow its workflow.

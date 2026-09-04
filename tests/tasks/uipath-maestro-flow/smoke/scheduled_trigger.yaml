@@ -48,7 +48,6 @@ initial_prompt: |
     - The `uip` CLI is already available; use `--output json` on uip commands.
     - Validate locally with `uip maestro flow validate` — do NOT run
       `uip maestro flow debug` (the schedule fires only in a live engine).
-    -
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command

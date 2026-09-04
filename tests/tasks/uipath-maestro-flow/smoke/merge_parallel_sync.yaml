@@ -60,7 +60,6 @@ initial_prompt: |
       layout/variables, then validate with `uip maestro flow validate` — do NOT
       run `uip maestro flow debug` (the parallel join only synchronizes in a
       live engine).
-    -
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command

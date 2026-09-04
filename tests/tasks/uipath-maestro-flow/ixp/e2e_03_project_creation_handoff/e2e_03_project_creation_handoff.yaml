@@ -97,7 +97,6 @@ initial_prompt: |
   - The `uip` CLI is already available and the runner is logged in.
   - Use `--output json` on all uip commands.
   - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
-  -
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-maestro-flow Skill"
