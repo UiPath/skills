@@ -40,6 +40,18 @@ See [Action Node Structure — Adding and editing procedures](../../../shared/ac
 6. **No external calls** — use the HTTP node or a connector node for API calls.
 7. **30-second timeout** — long-running computations will be killed.
 8. **Never name a variable `aggregate`** — reserved host global. On any `Identifier 'X' has already been declared`, rename `X`.
+9. **Run the body against the real upstream payload before shipping it.** Any script that indexes, slices, splits, or maps is one off-by-one away from a fault that `flow validate` cannot see and a syntax check passes. You already have the payload: the `uip is resources run` / `registry get` call that told you the field names is the same shape `$vars.<nodeId>.output` carries at runtime. Feed it to the body.
+
+   ```bash
+   # $vars is a global at runtime; supply it as the one parameter to test.
+   node -e '
+     const payload = require("/tmp/upstream.json");                    # the real response, not a hand-written stub
+     const body    = require("fs").readFileSync("/tmp/script.js", "utf8");
+     console.log(new Function("$vars", body)({ myNode: { output: payload } }));
+   '
+   ```
+
+   A hand-written stub tests the script against what you assumed the field held, which is the thing being checked. `"700 Bellevue Way NE, Suite 2000, Bellevue, WA 98004".split(",")[length - 3]` is `"Suite 2000"`, not the city — correct-looking, syntactically fine, and a runtime fault two nodes later when the lookup it feeds finds nothing.
 
 ## Common patterns
 
@@ -91,6 +103,7 @@ Property access is **case-sensitive** — these casings resolve: `.FullName`, `.
 | Return value is not an object | Returned a scalar (`return 42`) | Wrap in object: `return { value: 42 }` |
 | `$vars.nodeId` is undefined | Upstream node not connected or wrong ID | Check edges and node IDs |
 | Timeout after 30s | Script too expensive | Simplify logic or split into multiple scripts |
+| `[300501] Error invoking script task` with **no** `Unexpected token` | Logic, not syntax: an index, key, or guard that is wrong for the real payload. The script parses, runs, and throws — or returns a value that faults a downstream node | Run the body against the real upstream response (rule 9), not a stub |
 | `console is not defined` | Used `console.log()` | Remove — use `return { debug: val }` instead |
 | `fetch is not defined` | Tried to make HTTP call | Use an HTTP node or connector node instead |
 | `[300501] Error invoking script task` with `Unexpected token` | Malformed JavaScript — `flow validate` does not parse script bodies, so syntax errors surface only at runtime. Common slip: one missing `)` in chained `(((a \|\| {}).b \|\| {}).c \|\| [])` guards | Balance parentheses; check with `node -e "new Function(<script>)"` before validate |
