@@ -20,8 +20,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow named "BindingsRegression" with a Manual Trigger, an Integration
-  Service connector node, and an End node.
+  Build a flow named "BindingsRegression" inside a solution of the same name,
+  with a Manual Trigger, an Integration Service connector node, and an End node.
 
   Configure the connector node exactly once. Do not apply any schema-refresh
   workaround afterwards — the bindings shape immediately after configuration

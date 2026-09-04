@@ -200,6 +200,14 @@ Equivalent: use the absolute project dir reported by `flow init` in `Data.Path` 
 
 If the file does not exist at the absolute double-nested path, Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
 
+**Then assert it is the only one.** `cd` does not persist between tool calls, so a later `uip maestro flow init` issued outside the solution auto-scaffolds `<Project>Solution/` beside the real project rather than failing. Nothing downstream objects: `flow validate` passes on either file, `format` and `node configure` operate on whichever path you hand them, and the duplicate surfaces only when something globs and resolves to two.
+
+```bash
+find . -name project.uiproj -o -name '*.flow' | sort   # expect exactly one of each
+```
+
+More than one → **delete the stray scaffold.** Do not `mv` it into place: moving the auto-created project leaves the original where it was, which is how one build ends up shipping two `.flow` files that both validate. This check is rule #6's "finish with one `project.uiproj`; remove strays".
+
 See [shared/file-format.md](../shared/file-format.md) for the full project structure.
 <!--skill-flavor:project-creation:end-->
 
