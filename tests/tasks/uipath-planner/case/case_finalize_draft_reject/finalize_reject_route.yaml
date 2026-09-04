@@ -44,6 +44,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Planner Handoff header records the conformance-checklist verdict (Template validation: passed) — the ready flip ran the gate"
+    command: "grep -Eiq 'Template validation[*| ]+passed' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Application Rejected is entered from the reviewDecision fact, not user-selected-stage"
     command: "python3 $TASK_DIR/check_reject_route.py --scope lane"
     timeout: 30
