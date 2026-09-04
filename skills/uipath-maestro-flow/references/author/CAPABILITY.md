@@ -33,6 +33,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Human-in-the-loop | `uipath.human-in-the-loop.quick-form` (inline form), `uipath.human-in-the-loop.coded-action-app` (app-based) |
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
+| Chat | `core.trigger.conversation`, `uipath.conversational.wait-for-message`, `uipath.conversational.send-message`, `uipath.conversational.get-conversation-context`, plus the agent — `uipath.agent.conversational` (inline; after `uip agent init --inline-in-flow --conversational`) or `uipath.core.agent.*` (in-solution / published) |
 | Voice | `core.trigger.voice`, `uipath.agent.voice` (inline; after `uip agent init --inline-in-flow --conversational`), `uipath.conversational.voice.create-outgoing-call`, `uipath.conversational.voice.end-call` |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
 | Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |
@@ -106,6 +107,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](plugins/rpa/), [agent](plugins/agent/), [agentic-process](plugins/agentic-process/), [flow](plugins/flow/), [api-workflow](plugins/api-workflow/), [hitl](plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](plugins/inline-agent/) |
+| **Build a chat agent flow (the user types)** | [plugins/conversational-agent/](plugins/conversational-agent/) — the conversation trigger and message nodes, plus an inline, in-solution, or published chat agent |
 | **Build a voice agent flow (answer or place phone calls)** | [plugins/inline-voice-agent/](plugins/inline-voice-agent/) — `uipath.agent.voice` plus the nodes that start, place, and end the call |
 | **Extract structured fields from documents** | [plugins/ixp/](plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
 | **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
@@ -181,6 +183,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [hitl](plugins/hitl/) — human input via UiPath Apps
   - [agent](plugins/agent/) — published AI agent resources
   - [inline-agent](plugins/inline-agent/) — autonomous agent embedded in flow
+  - [conversational-agent](plugins/conversational-agent/) — text chat the user types to: conversation trigger, message nodes, and an inline, in-solution, or published chat agent
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
