@@ -41,6 +41,10 @@ initial_prompt: |
   up; only then stop on that field rather than inventing a value. Record every
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-microsoft-outlook365'
+    timeout: 120
+
 success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
   - type: run_command
