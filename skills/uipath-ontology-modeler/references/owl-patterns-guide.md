@@ -163,12 +163,61 @@ ObjectPropertyRange(:primaryDoctor :Doctor)
 AnnotationAssertion(rdfs:label :{ClassName}.{propName} "{human label}")
 AnnotationAssertion(rdfs:comment :{ClassName}.{propName} "{See comment forms below.}")
 AnnotationAssertion(skos:altLabel :{ClassName}.{propName} "{synonym}")
+AnnotationAssertion(:datatype :{ClassName}.{propName} "{kind}")
 DataPropertyDomain(:{ClassName}.{propName} :{ClassName})
 DataPropertyRange(:{ClassName}.{propName} xsd:{type})
 ```
 
 - Add `skos:altLabel` only when the SDD names a synonym or alias; omit if none
 - `rdfs:comment` is required — pick the form that matches what the data contains
+- **`ont:datatype` is required on every data property**, and is the subject of the next section
+
+### ont:datatype, and why every class needs an identity property
+
+The property kind is read from this annotation and is **never inferred from the XSD range**. A
+property carrying no `ont:datatype` is TEXT. So a schema written without it gives every class a
+TEXT-only property set and **no identity at all** — and then every write dies, after the job has
+already run:
+
+```
+Preparing write statement ✗  Entity '{ClassName}' has no identity property
+```
+
+Nothing earlier catches it. The artifact uploads, validates and deploys cleanly; the failure appears
+only at the first invoke that tries to write, and it reports `rowsAffected: 0`, which in a summary
+reads like a legitimate no-op.
+
+**Every class declares exactly one identity property, named `{ClassName}.id`, annotated `"key"`:**
+
+```
+# Data Property: <https://ontology.uipath.com/{name}#{ClassName}.id> (Identifier)
+
+AnnotationAssertion(rdfs:label :{ClassName}.id "Identifier")
+AnnotationAssertion(rdfs:comment :{ClassName}.id "Stable identifier for a {ClassName}.")
+AnnotationAssertion(:datatype :{ClassName}.id "key")
+DataPropertyDomain(:{ClassName}.id :{ClassName})
+DataPropertyRange(:{ClassName}.id xsd:string)
+```
+
+The name matters, not just the annotation: the runtime resolves an edit's target row by the identity
+property's own name, which is why a coded job's `properties: { id: … }` convention works only when
+the property is named exactly `{ClassName}.id`. The mapping must bind it — `- - ont:{ClassName}.id`
+/ `- $(Id)` — or the identity is declared and unpopulated.
+
+The annotation is matched by **local name**, so `:datatype` in the ontology's own namespace is
+correct.
+
+| Token | Use for |
+|---|---|
+| `key` | the identity property. Exactly one per class |
+| `text` | free text |
+| `category` | a controlled vocabulary, and any true/false flag |
+| `number` | numeric values |
+| `date`, `datetime` | dates and timestamps |
+| `region_code`, `geo_lat`, `geo_lon` | location values |
+
+`tools/coded_action_preflight.py` gates this: `entity-identity-declared` fails when an entity a
+coded action writes has no `key` property, or more than one.
 
 Examples: `:Doctor.licenseNo`, `:Patient.birthDate`, `:Prescription.status`
 
@@ -218,8 +267,21 @@ AnnotationAssertion(rdfs:comment :Order.isPaid "Compare true/false, never 1/0.")
 | count, quantity, number of | `xsd:integer` |
 | date, timestamp, created at | `xsd:dateTime` |
 | date only (no time) | `xsd:date` |
-| true/false, flag, enabled | `xsd:boolean` |
-| URL, link, URI | `xsd:anyURI` |
+| true/false, flag, enabled | `xsd:string` with `ont:datatype "category"` |
+| URL, link, URI | `xsd:string`, with the format recorded in `rdfs:comment` |
+
+**Two types are absent on purpose.**
+
+`xsd:anyURI` cannot compile. The mapping binds such a value as a plain literal and the mapping guide
+forbids adding `~xsd:string` on the other side, so the pair is unsatisfiable and the ontology is
+rejected: *"declared as …XMLSchema#anyURI in the ontology, but is used as …#string in the
+triplesMap"*. Every read of that object then 500s. Use `xsd:string` and record the format in
+`rdfs:comment`.
+
+`xsd:boolean` is dropped by the reasoner — *"Axiom does not belong to OWL 2 QL:
+DataPropertyRange(… xsd:boolean) (unsupported datatype: XSD_BOOLEAN)"*. A warning rather than an
+error, but the range is silently lost. A flag is `xsd:string` carrying `ont:datatype "category"`,
+which keeps it rendering as a flag in the Explorer.
 
 ---
 

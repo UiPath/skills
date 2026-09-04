@@ -2,7 +2,7 @@
 name: uipath-ontology-authoring
 description: "Use when a user provides an SDD, PDD, domain specification, or ontology artifact files and asks to create, validate, clone, map, wire the domain to Data Fabric entities, or deploy a new UiPath Ontology. Use for missing mapping generation, unresolved class/field/relationship ambiguity, and deployment sequencing. Do not use for plain domain prompts or CRUD operations on an existing ontology."
 when_to_use: "User provides an SDD or domain spec and wants to author/publish an ontology end-to-end; user says 'create an ontology from this SDD', 'generate ontology artifacts', 'deploy ontology', 'wire ontology to Data Fabric', 'generate mapping'."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 user-invocable: true
 ---
 
@@ -14,6 +14,7 @@ user-invocable: true
 - Artifact folder intended for a new deployment or clone → this skill.
 - Plain-language domain description with no files → `uipath-ontology-modeler`.
 - Existing ontology CRUD, API, SDK, or artifact operations → `uipath-ontologies`.
+- Write operations needing computation the write surface cannot express route through this skill's classification; the coded leg's Orchestrator work belongs to `uipath-ontology-coded-action-deploy`.
 
 The words **new**, **clone**, **publish**, **deploy**, **mapping missing**, or **artifact folder** indicate authoring when the request concerns a new ontology. Do not hand such requests to existing-ontology CRUD.
 
@@ -37,14 +38,16 @@ Runtime delegation to `uipath-ontology-modeler` is intentional and is the only s
 ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
-CLASS_MAP: class -> entityName, entityId, folderId, readOnly (federated only)
-MAPPING_STATUS: supplied | generate
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly
+MAPPING_STATUS: supplied | generate | defer (Path B only: generate it in Step 2b, once entity ids exist)
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
-OPERATIONS: grouped query operations and structured write actions, if any
+OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and every CODED action also carries its reads, its writes union, and its process name
 DEPLOYMENT_MODE: delegated; modeler returns local-preflighted artifacts; authoring validates and uploads the inventory, with mapping as the final deploy trigger
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
+
+The modeler emits CODED actions per its coded-action contract guide, with the TTL carrying `ont:language "CODED"` and `ont:processType "CODED_FUNCTION"`. No deployment coordinate appears in the artifact: the folder follows from the ontology at invoke time.
 
 `MAPPING_STATUS: supplied` means validate the provided mapping. `MAPPING_STATUS: generate` means generate it from handoff metadata; it is valid only with a machine-readable handoff JSON containing confirmed OFN classes/properties, `CLASS_MAP` entityName/entityId/folderId values, field metadata with exactly one identifier for every class, and explicit `RELATIONSHIPS` metadata (`[]` when none). The modeler must return `MAPPING_PATH`, `MAPPING_STATUS`, `MAPPING_GATE`, `UNRESOLVED_AMBIGUITIES`, and the exact preflight `artifact_inventory`. If a class, field, identifier, or relationship cannot be inferred uniquely, require a user decision and stop as `BLOCKED_AMBIGUITY`.
 
@@ -54,8 +57,10 @@ If the modeler is unavailable or returns an incomplete handoff, stop before depl
 
 First validate the provided mapping when `MAPPING_STATUS: supplied`, or generate it from handoff metadata when `MAPPING_STATUS: generate`; then run local preflight. Do not create the ontology stub or upload an artifact before this succeeds. Run the neutral validator against the exact workdir and intended upload set:
 
+`<TOOLS_DIR>` is the plugin's shared `tools/` directory — `<SKILL_DIR>/../../tools`, where `<SKILL_DIR>` is the folder holding this `SKILL.md`. Invoke it through `python3` with that prefix: the file is not marked executable, and a relative `tools/` does not resolve from the `{workdir}` these steps run in.
+
 ```bash
-python3 tools/ontology_preflight.py \
+python3 <TOOLS_DIR>/ontology_preflight.py \
   --workdir {workdir} --ontology-name {name} --mapping-mode auto \
   --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
 ```
@@ -72,7 +77,57 @@ Trigger: user points to a folder of already-generated artifact files (`{oldName}
 2. If cloning from a different ontology: copy each file into `{workdir}`, renaming `{oldName}` → `{name}` in the filename and, inside every file, every occurrence of the old slug — schema/constraints/functions/mapping IRIs, SPARQL `PREFIX ont:` lines, and (for `functions`/`actions`) the `ont:statement`/`ont:statements` bodies. If mapping is absent, set `MAPPING_STATUS: generate` and provide the modeler with the schema/entity metadata needed to create it. If deploying files as originally authored, use `MAPPING_STATUS: supplied` when present.
 3. **A rename (or "it already exists") is not sufficient.** Run the preflight command above against the exact files before uploading anything. It catches IRI drift, undeclared terms, missing object properties for FK joins, action output-contract failures, and non-global namespaces. Fix every failed gate locally and rerun preflight. Do this even though a cloned source ontology may already be `DEPLOYED` elsewhere.
 4. Check `{name}-constraints.ttl`'s `@prefix shape:` is the global `<https://ontology.uipath.com/shapes#>`, not a per-ontology path.
-5. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
+5. If the folder holds already-generated coded pairs (a `jobs/{actionName}.ts` beside its coded `{name}-{actionName}.ttl`), run Step 2b's deploy delegation before any upload, exactly as a generated inventory does.
+6. After preflight passes, create the ontology stub using Step 3a's `uip ont create`. Run backend validation for every artifact and require `Data.Valid: true`; then upsert schema first, constraints/functions/actions in parallel, and mapping last (triggers `DRAFT → DEPLOYED`). Verify `uip ont get {name}` is `DEPLOYED` and `uip ont artifact list {name}` matches the exact upload set. `DEPLOYED` only means internally consistent, not "relationships modeled"; the preflight relationship gate guarantees that.
+
+---
+
+## Run checklist
+
+Everything below is a failure someone has already paid for. Each line is enforced by a gate, a
+guide rule, or a refusal further down; this is the short form to check a run against.
+
+**Before generating anything**
+
+- [ ] Settle the folder, and note that the question differs by path (Phase 1). A SQL-only
+      inventory picks an **existing** folder. An inventory with any CODED action cannot: the
+      deployment creates the folder and cannot be aimed at one that exists, so ask for **a name and
+      a parent** instead. Offer `Shared` as the parent: a folder at the root has no user with
+      unattended robot permissions and its jobs never start.
+- [ ] `uip login status` is the only source of org and tenant.
+
+**Schema**
+
+- [ ] Every class declares `{Class}.id`, annotated `ont:datatype "key"`, range `xsd:string`.
+- [ ] Every data property carries `ont:datatype`. Nothing is inferred from the XSD range.
+- [ ] No `xsd:anyURI` and no `xsd:boolean` — see the OWL guide for what each one breaks.
+- [ ] A reserved name cannot be a Data Fabric entity. Map the class to a differently-named entity
+      and record it in `CLASS_MAP`.
+- [ ] Integer columns are `DECIMAL` with `decimalPrecision: 0`. The server accepts `INTEGER` but
+      the UI cannot render, filter or edit the column.
+
+**Mapping**
+
+- [ ] `{Class}.id` binds to `$(Id)` in every mapping block, or the identity is declared and
+      unpopulated.
+- [ ] An inverse object property needs its own join, or the semantic gate reports it unaligned.
+
+**Coded actions**
+
+- [ ] `ont:language "CODED"` with `ont:processType "CODED_FUNCTION"`. No deployment coordinate in
+      the artifact.
+- [ ] A read that cannot be filtered carries `LIMIT`, and the job refuses a read that came back at
+      the limit rather than computing from a possibly truncated view.
+- [ ] No control characters in any written value.
+- [ ] Every edit carries `id`, and `ont:writes` is the union over every branch.
+
+**Deploy**
+
+- [ ] Publish, then deploy to create the folder, then the entities, then
+      `uip ont create --folder-key`.
+- [ ] Re-release by reusing the **same deployment name** with a new version. Never uninstall to
+      re-release: that deletes the folder and the entities in it.
+- [ ] Every release reports `ready` before any invoke.
 
 ---
 
@@ -95,6 +150,49 @@ While reading the SDD, also scan for:
 **Query operations (functions — zero or more files):** natural-language questions the SDD says the system or an AI agent should answer (e.g. "how many X in state Y", "list X with their Y", dashboards, summaries, counts). If found, record the described operations and identify natural groupings by functional area (querying, analytics, validation, etc.). Pass one `.ttl` file per functional area to the delegated modeler — there is no limit on the number of function files.
 
 **Write operations (actions — zero or more files, one per action):** mutations the SDD describes (e.g. "update status", "create record", "delete entry"). For each, record: action name, target entity, SQL operation (UPDATE / INSERT / DELETE), fields affected, identifier field, and input parameters. Pass one `{name}-{actionName}.ttl` per action to the delegated modeler — there is no limit on the number of action files.
+
+Classify each recorded write operation as `kind: SQL` or `kind: CODED`.
+
+**The question is whether producing the edit needs computation the write surface cannot express.**
+It is not whether the rule is a "business rule" or a "constraint" — neither term is defined here,
+and classifying on them puts the boundary in the wrong place. Anything that reaches past a single
+statement of literal values, and needs any computation to arrive at what to write, belongs on the
+coded leg. The write surface is literals-only SQL today, and the tests below would not move if it
+grew procedural extensions: what the coded leg buys is a Turing-complete language, not more SQL
+grammar.
+
+Apply these tests in order; first match wins:
+
+1. CODED if the new value must be computed from stored data, the clock, or arithmetic/string construction. The SQL surface is literals-only: no `GETDATE`, no expressions, enforced by Data Fabric's own parser (`SET x = x + 0` and `SET x = CASE...` are both rejected with "Only literal values supported").
+2. CODED if the operation reads before writing, branches on what it finds, iterates over rows or items (any per-row loop), may write several rows or several entities, or may legitimately write nothing (converged no-op).
+3. CODED if a rule depends on a fact the caller must not be trusted to assert. Values derived from data are computed from declared reads, never from caller parameters: a caller can lie about any fact concerning the data.
+4. Otherwise SQL: single entity, single record, caller-supplied literal values. Ambiguous cases default to SQL. Declarative by default; a job in a high-level language (currently supported: TypeScript) only when the edit cannot be expressed before it is computed.
+
+**Refuse rather than classify: an operation that reads after it writes.** A coded action's declared
+reads all run before the job starts, and its edits all apply after the job returns. There is no
+point at which a job can observe its own writes, or interleave a read between two of them. An SDD
+asking for that describes a sequence this shape cannot express, so stop at this gate and say which
+operation and which ordering — do not generate a job that would silently read pre-write state and
+look correct.
+
+Worked classifications:
+
+| Operation | Verdict | Why |
+|---|---|---|
+| `updateAccountDescription(id, text)` | SQL | one row, caller supplies the value |
+| `setStatus(id, status)` | SQL | same |
+| `tagOverdueTicket(ticketId)` | CODED | clock arithmetic, list append, converged no-op |
+| `flagBigOrder(invoiceIds)` | CODED | per-row loop over lines, multi-row write |
+| `setInvoiceDecision(id, decision, approver)` | CODED | boundary case: looks like a parameter write, but composes a rationale string and screens caller-asserted facts |
+| `approveIfUnderLimit(id, amount)` | CODED | rule 3: the amount must come from a read, not the caller |
+
+Two of these are real and worked end to end, TTL beside job, in
+`uipath-ontology-modeler`'s `references/coded-action-example.md`: `tagOverdueTicket` and
+`flagBigOrder`. The rest are named for their shape only — each verdict follows from the rubric
+above, not from a file to open. Two worked pairs are enough context to generate from; more would
+be volume without a new shape.
+
+For every CODED operation additionally record: its **reads** (one bind name plus the SELECT intent per read), its **writes union** (every field any branch could touch, not one predicted run), and its **process name** (`PascalCase(actionName)` + `Process`).
 
 If neither is present in the SDD, note that explicitly — no functions or action files will be generated.
 
@@ -151,7 +249,33 @@ Once all three pass, continue **silently** — do not print a confirmation messa
 
 ## Phase 1 — Folder selection (blocking gate, runs in parallel with SDD reading)
 
-Start this phase at the same time as SDD reading — they are independent. But **do not advance to Phase 2 until the user has confirmed a folder.**
+Start this phase at the same time as SDD reading — they are independent. But **do not advance to Phase 2 until the folder question is settled.**
+
+**Which question you are asking depends on Step 1's classification, so read that first.**
+
+| Step 1 classified | The folder | Phase 1 does |
+|---|---|---|
+| no write as CODED | already exists, or you create it here | **Path A** below: list, pick, record `PRIMARY_FOLDER_KEY` |
+| any write as CODED | does not exist yet, and Step 2b's deploy is what creates it | **Path B** below: collect a name and a parent, and leave `PRIMARY_FOLDER_KEY` unset |
+
+A deployment cannot be aimed at an existing folder — every folder flag names a parent or a new folder, and given a name already in use the CLI creates `"X 1"` beside it and puts the processes there. That is why Path B cannot pick a folder, and why on that path Phase 2's entity creation and Step 3a's `uip ont create` both wait for Step 2b. Nothing else in Phases 3–6 is affected.
+
+### Path B — any CODED action
+
+Ask for two things and record them; do not list folders and do not create one:
+
+```
+FOLDER_NAME:   the folder the deployment will create (a fresh name, not one that exists)
+PARENT_FOLDER: Shared, unless the author names another
+```
+
+Offer `Shared` as the parent and say why: a solution folder created at the root gets no user with unattended robot permissions, so Orchestrator answers `StartJobs` with HTTP 409 / errorCode 1671 and the invoke reports a bare "Unexpected error". Verified both ways.
+
+Then run the cross-folder name-collision check below — it is tenant-wide, so it applies unchanged. Only its *different-folder* branch can fire on this path: the folder is new, so a same-folder collision is impossible.
+
+`PRIMARY_FOLDER_KEY` is set in Step 2b, from the folder the deploy created. **Advance to Phase 2 on `FOLDER_NAME` and `PARENT_FOLDER` being confirmed; Phase 2 will tell you what it can and cannot do without the key.**
+
+### Path A — no CODED action
 
 Fetch all available folders from Orchestrator — not from entity references, which only surface folders that already have entities:
 
@@ -186,9 +310,11 @@ To nest it under an existing folder, add `--parent "<ParentName>"` (name or key)
 
 Record the selected folder key as `PRIMARY_FOLDER_KEY`.
 
-**Gate: do not move to Phase 2 until `PRIMARY_FOLDER_KEY` is confirmed and is not `"default"`.**
+**Gate (Path A): do not move to Phase 2 until `PRIMARY_FOLDER_KEY` is confirmed and is not `"default"`.** On Path B the key does not exist yet; its gate is `FOLDER_NAME` and `PARENT_FOLDER`.
 
-**Cross-folder name collision check** — run after `PRIMARY_FOLDER_KEY` is confirmed:
+### Cross-folder name collision check — both paths
+
+Run this on Path A once `PRIMARY_FOLDER_KEY` is confirmed, and on Path B once `FOLDER_NAME` is. The query is tenant-wide, so it needs no folder:
 ```bash
 uip ont list --output json
 ```
@@ -200,13 +326,15 @@ Scan the result for any ontology whose name matches `{name}` (case-insensitive):
 
 **Convergence gate — do not move to Phase 2 until both tracks are complete:**
 - Track A: SDD reading done and class names extracted
-- Track B: Login verified → `PRIMARY_FOLDER_KEY` confirmed (not `"default"`, not `00000000-0000-0000-0000-000000000000`)
+- Track B: Login verified, then — on Path A, `PRIMARY_FOLDER_KEY` confirmed (not `"default"`, not `00000000-0000-0000-0000-000000000000`); on Path B, `FOLDER_NAME` and `PARENT_FOLDER` confirmed
 
 ---
 
 ## Phase 2 — Entity matching and creation
 
 Now that the SDD class names are known (from Step 1), match each SDD class against entities in `PRIMARY_FOLDER_KEY`. All entity operations in this phase are scoped to that folder only — do not list or create entities outside it.
+
+**On Phase 1's Path B there is no `PRIMARY_FOLDER_KEY` yet, so this phase splits in two.** Build the matching table now from the SDD alone — a folder that does not exist holds no entities, so every class is **Create new (native)** and there is nothing to match against. Federated classes are the exception worth stating to the author early: they cannot be created at all, by CLI or API, so an SDD needing one is blocked on someone building it in the Data Fabric UI first, and it will live in its own folder rather than the new one. Then **defer every `uip df entities create` until Step 2b has returned the folder key**, and run them against that key. Phases 3–6 need no folder and proceed normally.
 
 ```bash
 uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json
@@ -217,16 +345,17 @@ Identify each entity's type from the response: `externalFields: []` → **Native
 | SDD class | Suggested entity | Type | Match | Entity ID | Folder ID | Action |
 |---|---|---|---|---|---|---|
 | `Doctor` | `Doctor` | Native | exact | `b5b4bd01-...` | `751e18c5-...` | Use existing |
-| `Contact` | `Contact` | Federated | exact | `9f1a2c44-...` | `751e18c5-...` | Use existing (read-only) |
+| `Contact` | `Contact` | Federated | exact | `9f1a2c44-...` | `751e18c5-...` | Use existing |
 | `Prescription` | — | — | none | — | — | **Create new (native)** |
 
 **Matching rules:** exact name match first; then case-insensitive match; then present candidates if partial match. If no match at all, mark as **Create new (native)**.
 
 **Federated entity rules:**
 - **Use existing only** — federated entities connect to external systems (SQL Server, Salesforce, SAP, etc.) via UiPath Integration Service. New federated entities cannot be created via CLI or API — the connection must be set up through the Data Fabric UI. If an SDD class needs a federated entity that doesn't exist yet, stop and tell the user to create it in the portal first.
-- **Read-only** — federated entity data is managed by the external system. Mark these classes as `readOnly: true` in CLASS_MAP. SHACL constraints will apply structurally but violations cannot be fixed by writing through the platform.
-- **No write actions** — SQL write actions (`{name}-{actionName}.ttl`) cannot target federated entities. If the SDD describes write operations on a federated class, flag this to the author — those writes must go through the external system directly.
-- **YARRRML mapping is identical** — the mapping syntax for a federated entity (`access: datafabric`, `entityId`, `folderId`) is the same as native. The FQS runtime handles the federation transparently. Functions (SPARQL reads) work with federated entities.
+- **Readable and writable** — a federated class is a first-class target for both. Reads and writes traverse FQS, which resolves the external connection and routes the statement to the source system. Treat native and federated classes the same when planning operations; do not mark a class `readOnly` merely because it is federated.
+- **`readOnly` is an exception the author states, not a property of federation.** Set it on a class only when the author says that specific source rejects writes; a connection configured read-only, or a system that exposes no write API. It is never inferred, so most CLASS_MAPs carry it on no class at all.
+- **Write actions are allowed** — both SQL write actions (`{name}-{actionName}.ttl`) and coded actions may target a federated class. The write is compiled to bounded DML and executed against the source through its connector, so the source system remains the authority on whether a given write succeeds: a rejection (permissions, a type mismatch, a constraint, a connection configured read-only) surfaces as an upstream error on the failing step, not as a refusal by the platform. Set `readOnly: true` in CLASS_MAP only when the author states a specific source rejects writes — never inferred from federation.
+- **YARRRML mapping is identical** — the mapping syntax for a federated entity (`access: datafabric`, `entityId`, `folderId`) is the same as native. The FQS runtime handles the federation transparently, for reads and writes alike. Functions (SPARQL reads) work with federated entities.
 
 **How federated entity connections work:**
 A federated entity is backed by an external data source configured in the Data Fabric UI:
@@ -248,7 +377,7 @@ A federated entity is backed by an external data source configured in the Data F
 Record the completed mapping — all entities must be in `PRIMARY_FOLDER_KEY`:
 ```
 CLASS_MAP:
-  {ClassName}: entityId={uuid}  folderId={PRIMARY_FOLDER_KEY}  [readOnly: true]  ← federated only
+  {ClassName}: entityId={uuid}  folderId={PRIMARY_FOLDER_KEY}  [readOnly: true]  ← only if the source rejects writes
 ```
 
 > **Wait for CLASS_MAP confirmation before moving to Phase 3.**
@@ -289,7 +418,7 @@ Using the confirmed classes from Phase 3, extract all properties and relationshi
 | Class | Property name | XSD type | Required? |
 |---|---|---|---|
 | `Doctor` | `Doctor.licenseNo` | `xsd:string` | required |
-| `Doctor` | `Doctor.active` | `xsd:boolean` | required |
+| `Doctor` | `Doctor.active` | `xsd:string` + `ont:datatype "category"` | required |
 | `Prescription` | `Prescription.status` | `xsd:string` | required |
 
 **Object properties (relationships):**
@@ -322,8 +451,8 @@ Using the confirmed classes from Phase 3, extract all properties and relationshi
 | count, quantity, integer | `xsd:integer` |
 | date + time / timestamp | `xsd:dateTime` |
 | date only | `xsd:date` |
-| true/false, flag, boolean | `xsd:boolean` |
-| URL, link | `xsd:anyURI` |
+| true/false, flag, boolean | `xsd:string` with `ont:datatype "category"` |
+| URL, link | `xsd:string`, with the format in `rdfs:comment` |
 
 > **Wait for explicit user confirmation before moving to Phase 5.**
 
@@ -404,6 +533,15 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 - `CLASS_MAP` from Phase 2 (entityId + folderId per class)
 - `{workdir}` from Step 1 (the ontology's own `{name}/` subfolder, already created) as the working directory for output
 
+**On Phase 1's Path B, hold the mapping back.** A mapping binds each class to an `entityId` and a
+`folderId` read from `uip df entities list`, and on Path B the entities do not exist yet — Phase 2
+deferred creating them until Step 2b has the folder. So Path B's `CLASS_MAP` carries no ids, and
+generating a mapping from it would write placeholders that preflight cannot detect and upload
+would bind to nothing. Pass `MAPPING_STATUS: defer` instead: the modeler generates every other
+artifact, and its preflight reports `mapping_status: GENERATE_MAPPING` under `--mapping-mode auto`,
+which is a pass. The mapping is generated in Step 2b, from real ids. On Path A the entities already
+exist, so nothing changes.
+
 > If the `uipath-ontology-modeler` skill is not available, stop before deployment and return: "Artifact generation requires the uipath-ontology-modeler sibling skill. The domain model and setup are prepared; activate that skill and retry the delegation."
 
 The modeler skips its standalone setup and domain-gathering phases. It uses the confirmed handoff directly, validates the provided mapping when `MAPPING_STATUS: supplied` or generates it from handoff metadata when `MAPPING_STATUS: generate`, and runs local preflight with `--handoff` before any backend call. It returns the exact `artifact_inventory`; authoring alone creates the stub, validates, and uploads the inventory in tiers, holding `{name}-mapping.yarrrml.yml` until last.
@@ -416,7 +554,10 @@ The modeler generates each artifact following its canonical pattern file:
 | `{name}-constraints.ttl` | Modeler's SHACL guide | 1 (always) | Tier 2 (parallel with functions + actions) |
 | `{name}-[area-]functions.ttl` | Modeler's functions guide | 0 or more — one per functional area | Tier 2 (each file uploaded in parallel) |
 | `{name}-{actionName}.ttl` | Modeler's action guide | 0 or more — one per write action | Tier 2 (each file uploaded in parallel) |
+| `{workdir}/jobs/{actionName}.ts` | Modeler's coded-action guide | 0 or more, one per coded action | None, jobs are never ontology artifacts |
 | `{name}-mapping.yarrrml.yml` | Modeler's mapping guide | 1 (always) | Tier 3 — upload last as deploy trigger |
+
+Row note: coded `{name}-{actionName}.ttl` files are held out of Tier 2 until Step 2b below reports its releases live. The files themselves are not modified — they name a release, not a folder — but uploading one before its job is deployable leaves an action that resolves to nothing at invoke.
 
 Gate ownership and execution:
 
@@ -427,7 +568,7 @@ Gate ownership and execution:
 | G3 — Cross-file | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Every `ont:` term in mapping + constraints + functions/actions SPARQL/SQL bodies declared in schema | All found |
 | G4 — Annotation | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Every declared class and property has `rdfs:label` and `rdfs:comment` | All covered |
 | G5 — Preflight | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | Local preflight passes and returns exact `artifact_inventory` | preflight pass |
-| G6 — Backend validate + tiered upsert | Authoring — backend validation and tiered upsert | Authoring validates and uploads inventory in tiers (schema first, then constraints/functions/actions); mapping is held until authoring uploads it last | `Data.valid: true` + `ArtifactUpserted` each |
+| G6 — Backend validate + tiered upsert | Authoring — backend validation and tiered upsert | Authoring validates and uploads inventory in tiers (schema first, then constraints/functions/actions); mapping is held until authoring uploads it last | `Data.Valid: true` + `ArtifactUpserted` each |
 | G7 — Semantic consistency | Modeler — local QL/naming/cross-file/annotation/semantic/preflight gates | LLM judge: domain completeness, constraint coverage, column alignment, USAGE POLICY coherence | All checks `✓` |
 
 **Do not proceed to Step 3 until the modeler confirms preflight passed and returns every generated artifact in its exact `artifact_inventory`:**
@@ -443,9 +584,49 @@ UNRESOLVED_AMBIGUITIES: none
 
 ---
 
+## Step 2b — Deploy coded action jobs (delegate to `uipath-ontology-coded-action-deploy`)
+
+A SQL-only inventory skips this step untouched and goes straight to Step 3. Run it only when the returned inventory contains coded actions.
+
+**Invoke the `uipath-ontology-coded-action-deploy` skill** with the `Skill` tool and pass it:
+- `{workdir}` from Step 1
+- the ontology name `{name}`
+- every coded pair: `{workdir}/jobs/{actionName}.ts` with its `{workdir}/{name}-{actionName}.ttl`
+
+That skill publishes the `{name}-jobs` Solution, deploys it — **which is what creates the Orchestrator folder** — and awaits every release. It returns that folder's name, path, key and numeric id. It patches nothing: a coded action names its release and says nothing about where the release is deployed, so the TTLs come back unchanged.
+
+**This reorders the rest of the flow.** The folder does not exist until the deploy runs, and a deployment cannot be pointed at an existing folder. So:
+
+1. delegate the deploy, passing Phase 1 Path B's `FOLDER_NAME` as the **deployment name** and `PARENT_FOLDER` as its parent. The deployment name *is* the folder name — see that skill's input table
+2. **set `PRIMARY_FOLDER_KEY` to the key of the folder it created.** Everything downstream reads that one variable, so from here on both paths are identical
+3. run the `uip df entities create` calls Phase 2 deferred, against `PRIMARY_FOLDER_KEY`
+4. **read the new entities' ids** — `uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json` — and complete `CLASS_MAP` with each class's `Data[].ID` and `Data[].FolderKey`
+5. **now generate the mapping**, by delegating to the modeler again with the completed `CLASS_MAP` and `MAPPING_STATUS: generate`, then rerun `ontology_preflight.py` and require `mapping_status: PRESENT_VALID`. This is the step Step 2 deferred; a mapping written before item 4 would carry ids that do not exist
+6. `uip ont create {name} --folder-key {PRIMARY_FOLDER_KEY}` (Step 3a)
+7. validate and upload the artifacts (Steps 3b, 3c), mapping last
+8. invoke
+
+Phase 1 Path B already collected the folder's name and parent. Do not ask for an existing folder here, and do not create the folder yourself with `uip or folders create` — the deploy creates it, and a folder that already exists makes the CLI create `"{FOLDER_NAME} 1"` beside it and deploy the processes there, leaving the ontology bound to a folder holding zero processes.
+
+Prose telling the user to run the deploy skill is not a substitute for the `Skill` call — the flow
+does not continue until that skill has reported its releases live.
+
+> If the `uipath-ontology-coded-action-deploy` skill is not available, stop before upload and return: "Coded actions require the uipath-ontology-coded-action-deploy sibling skill. The artifacts are generated and locally preflighted, but no release is live and no folder exists to bind the ontology to; activate that skill and retry the delegation."
+
+**Do not rerun the coded preflight here.** Nothing about the pair changed: the deploy skill stages
+a copy of each job and edits no artifact, and `ont:processType` was written by the modeler at
+generation time and already checked by its gate. A rerun would re-report the modeler's own verdict
+and read as fresh evidence of readiness, which it is not.
+
+Readiness is what the deploy skill reported, and only that: the folder exists and every release is
+`ready`. A release reported `stale` or `missing` is the gate — stop and say which process, rather
+than uploading an action that resolves to nothing at invoke.
+
+---
+
 ## Step 3 — Validate and deploy
 
-> **Trigger:** The modeler returned a passing preflight inventory. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
+> **Trigger:** The modeler returned a passing preflight inventory, and any coded actions have a live release from Step 2b. Authoring creates the stub, validates every inventory artifact, uploads schema first, uploads constraints/functions/actions next. Upload mapping last — it transitions `DRAFT → DEPLOYED`.
 
 ### 3a — Create the ontology stub
 
@@ -457,20 +638,23 @@ uip ont create {name} \
   --output json
 ```
 
+`PRIMARY_FOLDER_KEY` is Phase 1 Path A's selected folder, or — on Path B — the folder Step 2b's deploy created. Either way it is a confirmed key by the time this runs; if it is unset, an earlier gate was skipped.
+
 Proceed only on `Code: OntologyCreated`. The modeler has not called the backend and has not uploaded any artifact.
 
 ### 3b — Backend-validate the exact inventory
 
-Authoring backend-validates every artifact in `artifact_inventory` and requires `Data.valid: true` for each response before uploading anything:
+Authoring backend-validates every artifact in `artifact_inventory`, the coded action TTLs cleared by Step 2b included, and requires `Data.Valid: true` for each response before uploading anything. **The field is capitalised**, and the `{fileName}` positional is required exactly as it is for `upsert` — omit it and every call returns `error: missing required argument 'fileName'`, which still parses, so a naive check reads it as a validation failure and sends the session hunting a phantom artifact bug:
 
 ```bash
-uip ont artifact validate {name} \
+uip ont artifact validate {name} {fileName} \
   --type {schema|constraints|functions|actions|mapping} \
+  --media-type {text/owl-functional|text/turtle|application/yaml} \
   --file {absolute-path-from-artifact_inventory} \
   --output json
 ```
 
-Run the command once per returned inventory entry. If any `Data.valid` is not `true` (including a `422`), authoring owns the recovery: read `Data.violations`, repair the identified local artifact, rerun preflight, and repeat all inventory validation; do not upload a partial tier. Authoring may re-delegate only local artifact regeneration to the modeler, which returns a new local-preflighted inventory and makes no backend calls. Authoring then resumes this backend-validation and upload sequence.
+Run the command once per returned inventory entry. If any `Data.Valid` is not `true` (including a `422`), authoring owns the recovery: read `Data.violations`, repair the identified local artifact, rerun preflight, and repeat all inventory validation; do not upload a partial tier. Authoring may re-delegate only local artifact regeneration to the modeler, which returns a new local-preflighted inventory and makes no backend calls. Authoring then resumes this backend-validation and upload sequence.
 
 ### 3c — Upload Tier 1 and Tier 2
 
@@ -482,7 +666,7 @@ uip ont artifact upsert {name} {name}.ofn \
   --file {workdir}/{name}.ofn --output json
 ```
 
-Tier 2 — constraints, functions, and actions (parallel where present):
+Tier 2 — constraints, functions, and actions, the coded action TTLs cleared by Step 2b included; they ride Tier 2 exactly like declarative action files, media type `text/turtle`, `--type actions` (parallel where present):
 
 ```bash
 uip ont artifact upsert {name} {artifact-name} \
@@ -531,6 +715,7 @@ After `DEPLOYED`, run `uip ont artifact list {name} --output json`. Confirm that
 | `{name}-constraints.ttl` | `constraints` | `text/turtle` | delegated modeler | 1 | Yes |
 | `{name}-[area-]functions.ttl` | `functions` | `text/turtle` | delegated modeler | 0 or more — one per functional area | No — freely add/removable without breaking a deployed ontology |
 | `{name}-{actionName}.ttl` | `actions` | `text/turtle` | delegated modeler | 0 or more — one per write action | No — freely add/removable |
+| `{workdir}/jobs/{actionName}.ts` | never uploaded | n/a | delegated modeler (coded-action guide) | 0 or more — one per coded action | No — deployed to Orchestrator by `uipath-ontology-coded-action-deploy` in Step 2b |
 | `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | delegated modeler | 1 | Yes — upload last, triggers `DRAFT → DEPLOYED` |
 
 ---

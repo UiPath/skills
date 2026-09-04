@@ -104,6 +104,10 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-maestro-case` | In-development |
 | `uipath-maestro-flow` | In-development |
 | `uipath-mcp-servers` | In-development |
+| `uipath-ontologies` | In-development |
+| `uipath-ontology-authoring` | In-development |
+| `uipath-ontology-coded-action-deploy` | In-development |
+| `uipath-ontology-modeler` | In-development |
 | `uipath-planner` | Preview |
 | `uipath-platform` | Preview |
 | `uipath-review` | Preview |

@@ -30,6 +30,7 @@
     "agents",
     "commands",
     "hooks",
+    "tools",
     "assets",
     ".claude-plugin",
     "version-manifest.json",

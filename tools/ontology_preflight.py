@@ -6,6 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
+
+# Turtle is whitespace-insensitive and both contract guides align their predicates in columns, so
+# a fixed-space literal misses every conformant file. It used to, and the consequence was silent:
+# an action file fell through to the fno:Function branch, `actions` came back empty, ACTION_CONTRACT
+# passed vacuously, and a caller consuming artifact_inventory uploaded actions as --type functions.
+ACTION_KIND = re.compile(r"""ont:kind\s+["']ACTION["']""")
 import sys
 from pathlib import Path
 
@@ -45,7 +51,7 @@ def read_files(workdir: Path) -> dict[str, list[tuple[Path, str]]]:
         elif suffix in {".ttl", ".turtle"}:
             if "sh:NodeShape" in text or "sh:targetClass" in text or "constraints" in path.name.lower():
                 artifacts["constraints"].append((path, text))
-            elif 'ont:kind "ACTION"' in text or "kind 'ACTION'" in text or "action" in path.name.lower():
+            elif ACTION_KIND.search(text) or "action" in path.name.lower():
                 artifacts["actions"].append((path, text))
             elif "fno:Function" in text:
                 artifacts["functions"].append((path, text))
@@ -179,6 +185,45 @@ def generation_metadata_errors(handoff: dict | None, classes: set[str], data_pro
     return errors
 
 
+def mapping_binding_errors(mapping: str, handoff: dict | None) -> list[str]:
+    """Every entityId/folderId the mapping binds must be one the handoff's CLASS_MAP declares.
+
+    Without this, a mapping generated before its Data Fabric entities existed passes: the terms
+    gate only checks that `ont:` names are declared, so placeholder GUIDs read as PRESENT_VALID
+    and the first thing to notice is a deployed ontology whose bindings point at nothing.
+
+    Only checkable when a handoff supplies the real ids, so no handoff means no opinion -- a
+    missing handoff is already the mapping-generation branch's error to report.
+    """
+    if not isinstance(handoff, dict):
+        return []
+    class_map = handoff.get("CLASS_MAP")
+    if not isinstance(class_map, dict) or not class_map:
+        return []
+    known: dict[str, set[str]] = {"entityId": set(), "folderId": set()}
+    for entry in class_map.values():
+        if isinstance(entry, dict):
+            for key in known:
+                value = entry.get(key)
+                if isinstance(value, str) and value.strip():
+                    known[key].add(value.strip().lower())
+    errors = []
+    # Not line-anchored: the mapping guide's own example is YAML flow style, several keys to a
+    # line -- `sources: [{table: X, entityId: a, folderId: b}]`.
+    body = yaml_without_comments(mapping)
+    for key in ("entityId", "folderId"):
+        if not known[key]:
+            continue
+        for match in re.finditer(r"\b%s\s*:\s*[\"']?([^\s\"'#,}\]]+)" % key, body):
+            found = match.group(1)
+            if found.lower() not in known[key]:
+                errors.append(
+                    "mapping binds %s %s, which no --handoff.CLASS_MAP entry declares; "
+                    "generate the mapping after the entities exist" % (key, found)
+                )
+    return sorted(set(errors))
+
+
 def yaml_without_comments(text: str) -> str:
     return "\n".join(line.split("#", 1)[0] for line in text.splitlines())
 
@@ -245,8 +290,14 @@ def main(argv: list[str] | None = None) -> int:
             f"{expected_base}/action",
             PLATFORM_ONTOLOGY.rstrip("#"),
         }
+        # A fully-written term IRI -- `{base}#{Term}` -- is consistent when its base is. Terms are
+        # normally written prefixed (`:Ticket.id`), so full ones show up in the documentation
+        # comments the OWL guide prescribes; rejecting those was a false positive, and the
+        # diagnostic called them "old or inconsistent" when they were neither. Compare the base.
+        allowed_bases = {value.rstrip("#/") for value in allowed_iris}
         for uri in sorted(observed):
-            if uri.rstrip("#/") not in {value.rstrip("#/") for value in allowed_iris}:
+            base_part = uri.split("#", 1)[0] if "#" in uri else uri
+            if base_part.rstrip("#/") not in allowed_bases:
                 iri_errors.append(f"artifact references old or inconsistent IRI: {uri}")
         if iri_errors:
             errors["IRI_CONSISTENCY"] = iri_errors
@@ -301,6 +352,12 @@ def main(argv: list[str] | None = None) -> int:
         if unknown:
             mapping_status = "PRESENT_INVALID"
             errors["MAPPING_TERMS"] = [f"mapping references undeclared schema term ont:{term}" for term in unknown]
+        else:
+            handoff, _ = parse_handoff(args.handoff)
+            binding_errors = mapping_binding_errors(mapping, handoff)
+            if binding_errors:
+                mapping_status = "PRESENT_INVALID"
+                errors["MAPPING_TERMS"] = binding_errors
     mapping_gate_ok = "MAPPING_TERMS" not in errors
     results.append(gate("MAPPING_TERMS", mapping_gate_ok, errors.get("MAPPING_TERMS", [])))
 

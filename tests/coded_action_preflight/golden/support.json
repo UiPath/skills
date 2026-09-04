@@ -1,0 +1,91 @@
+{
+  "artifact_inventory": {
+    "actions": [
+      "support-tagOverdueTicket.ttl"
+    ],
+    "jobs": [
+      "tagOverdueTicket.ts"
+    ],
+    "other": [],
+    "schema": [
+      "support.ofn"
+    ]
+  },
+  "errors": {},
+  "gate_results": [
+    {
+      "diagnostics": [],
+      "id": "ttl-parses-and-well-formed",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "signature-resolves",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "input-matches-marker",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "input-strictness",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "process-type-declared",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "writes-cover-edits",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "fields-exist-in-schema",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "entity-identity-declared",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [],
+      "id": "job-language",
+      "passed": true,
+      "status": "passed"
+    },
+    {
+      "diagnostics": [
+        "skipped: tagOverdueTicket: --skip-typecheck"
+      ],
+      "id": "typecheck",
+      "passed": null,
+      "status": "skipped"
+    }
+  ],
+  "pairs": [
+    {
+      "action": "tagOverdueTicket",
+      "job": "tagOverdueTicket.ts",
+      "job_language": "typescript",
+      "process": "TagOverdueTicketProcess",
+      "process_type": "CODED_FUNCTION",
+      "ttl": "support-tagOverdueTicket.ttl"
+    }
+  ],
+  "status": "PASS",
+  "warnings": []
+}

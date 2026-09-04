@@ -2,7 +2,7 @@
 name: uipath-ontology-modeler
 description: "Use when the user describes an ontology domain in plain language and wants local ontology artifact files, or when authoring supplies a confirmed delegated handoff for artifact generation. Do not use for SDD/PDD ingestion, Data Fabric entity setup, new-ontology deployment orchestration, or existing-ontology CRUD."
 when_to_use: "Use for plain-domain modeling, local artifact generation, artifact regeneration, and delegated generation after a confirmed CLASS_MAP and workdir are supplied by ontology authoring."
-allowed-tools: Bash, Read, Write, Edit
+allowed-tools: Bash, Read, Write, Edit, Skill
 user-invocable: true
 ---
 
@@ -22,6 +22,7 @@ Artifacts:
 - `{name}-mapping.yarrrml.yml` — YARRRML bindings
 - `{name}-functions*.ttl` — optional SPARQL read functions
 - `{name}-{actionName}.ttl` — optional SQL write actions
+- `{workdir}/jobs/{actionName}.ts` — job source for a coded action, written in a high-level language (currently supported: TypeScript)
 
 ## Delegated handoff contract
 
@@ -31,11 +32,11 @@ When called by ontology authoring, require one complete handoff object. Do not r
 ONTOLOGY_NAME: exact slug
 ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 WORKDIR: dedicated {name}/ output directory
-CLASS_MAP: class -> entityName, entityId, folderId, readOnly (federated only)
+CLASS_MAP: class -> entityName, entityId, folderId, readOnly
 MAPPING_STATUS: supplied | generate
 DOMAIN_MODEL: confirmed classes, properties, relationships, rules
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, and grain
-OPERATIONS: grouped query operations and structured write actions, if any
+OPERATIONS: grouped query operations and structured write actions, if any; every write action carries kind: SQL | CODED, and a CODED action additionally carries its reads (bind name + SELECT statement), its writes union, its process type (`CODED_FUNCTION`), and its process name. TTL emission writes ont:language "CODED" plus ont:processType "CODED_FUNCTION", and emits no deployment coordinate.
 DEPLOYMENT_MODE: delegated; generate artifacts and run local preflight only; authoring owns backend validation and all uploads
 PREFLIGHT_HANDOFF_JSON: machine-readable JSON with CLASS_MAP, FIELD_METADATA, and explicit RELATIONSHIPS ([] when none)
 ```
@@ -85,7 +86,7 @@ ONTOLOGY_IRI = https://ontology.uipath.com/{name}#
 WORKDIR      = {base directory}/{name}/
 ```
 
-All artifacts go in `WORKDIR`. In standalone mode, perform login, folder selection, collision checking, and entity matching/creation before artifact generation. Do not create the ontology stub until the supplied mapping is validated or the mapping is generated from handoff metadata, and local preflight passes. Exclude the default folder, confirm the target folder, and record native versus federated entities. Federated entities are read-only.
+All artifacts go in `WORKDIR`. In standalone mode, perform login, folder selection, collision checking, and entity matching/creation before artifact generation. Do not create the ontology stub until the supplied mapping is validated or the mapping is generated from handoff metadata, and local preflight passes. Exclude the default folder, confirm the target folder, and record native versus federated entities. Federated entities are readable and writable through FQS, the same as native ones; treat `readOnly` as an explicit per-source exception, not a property of federation.
 
 Show the structured domain model and wait for confirmation before writing. Derive artifact filenames from the slug; do not use fixed names.
 
@@ -101,7 +102,7 @@ Produce a reviewable summary containing:
 - query operations grouped by functional area;
 - write actions with name, entity, operation, target fields, identifier, and inputs.
 
-Use `xsd:string`, `xsd:decimal`, `xsd:integer`, `xsd:dateTime`, `xsd:date`, `xsd:boolean`, or `xsd:anyURI` according to meaning. Keep cardinality enforcement in SHACL; OWL 2 QL does not use exact/min/max cardinality axioms.
+Use `xsd:string`, `xsd:decimal`, `xsd:integer`, `xsd:dateTime` or `xsd:date` according to meaning. Not `xsd:boolean` (the reasoner drops the range) and not `xsd:anyURI` (the ontology refuses to compile against the mapping) — see the OWL guide. Every data property additionally carries an `ont:datatype` annotation, and every class declares an identity property; both are load-bearing and neither is inferred. Keep cardinality enforcement in SHACL; OWL 2 QL does not use exact/min/max cardinality axioms.
 
 ## Step 3 — Generate artifacts
 
@@ -112,6 +113,7 @@ Read only the references needed for the artifact being generated:
 - [YARRRML mapping](references/mapping-yarrrml-guide.md)
 - [Functions and actions](references/functions-patterns-guide.md)
 - [Action contract](references/action-table-contract-guide.md)
+- [Coded action contract](references/coded-action-contract-guide.md)
 
 Use the same build → preview → local check → user confirmation → write sequence for each artifact. Present one combined draft summary and obtain one batch confirmation before writing.
 
@@ -121,8 +123,10 @@ Generate schema, constraints, mapping, optional functions, and optional actions.
 
 Before returning artifacts or uploading tier-2 artifacts, invoke the neutral preflight utility against the exact workdir and upload set:
 
+`<TOOLS_DIR>` is the plugin's shared `tools/` directory — `<SKILL_DIR>/../../tools`, where `<SKILL_DIR>` is the folder holding this `SKILL.md`. Invoke it through `python3` with that prefix: the file is not marked executable, and a relative `tools/` does not resolve from the `{workdir}` these steps run in.
+
 ```bash
-python3 tools/ontology_preflight.py \
+python3 <TOOLS_DIR>/ontology_preflight.py \
   --workdir {workdir} --ontology-name {name} --mapping-mode auto \
   --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
 ```
@@ -138,12 +142,13 @@ Run all gates against the exact files that will be uploaded:
 5. **Class deployability gate:** every class is the domain of at least one property and is instantiated in the mapping.
 6. **Relationship gate:** every FK-shaped relationship has an object property and mapping join, or an explicit packed-FK exemption.
 7. **Semantic gate:** check domain completeness, constraint coverage, column alignment, policy coherence, and function/action consistency.
+8. **Coded-action contract gate:** run `<TOOLS_DIR>/coded_action_preflight.py` against every coded action's TTL+job pair.
 
 Fix failures before backend calls. A `DEPLOYED` state does not prove that relationships were modeled.
 
 ## Step 5 — Validate and upload
 
-After local preflight passes, use `artifact_inventory` as the exact artifact list. In standalone mode only, create the ontology stub, then validate every inventory artifact in parallel with `uip ont artifact validate --output json`; require `Data.valid: true` for each artifact, not merely HTTP success. If any backend validation fails, repair the local artifact and rerun preflight before validating again.
+After local preflight passes, use `artifact_inventory` as the exact artifact list. In standalone mode only, create the ontology stub, then validate every inventory artifact in parallel with `uip ont artifact validate --output json`; require `Data.Valid: true` for each artifact, not merely HTTP success. If any backend validation fails, repair the local artifact and rerun preflight before validating again.
 
 ```bash
 uip ont create {name} --display-name "{display name}" --description "{description}" --folder-key {folder key} --output json
@@ -161,7 +166,7 @@ In delegated mode, stop after local preflight and return:
 
 ```text
 ARTIFACTS: absolute paths
-GATES: all seven gate results
+GATES: all eight gate results
 ARTIFACT_INVENTORY: exact preflight artifact_inventory
 BACKEND_VALIDATION: not run
 UPLOADED: none
@@ -178,3 +183,15 @@ After deployment, verify both `uip ont get {name}` reports `DEPLOYED` and `uip o
 - Plain domain description → this skill.
 - Existing ontology/artifact CRUD or SDK operations → `uipath-ontologies`.
 - Deploying already-generated files → `uipath-ontology-authoring`, which owns the deployment gates.
+- Getting a coded action's job into Orchestrator → `uipath-ontology-coded-action-deploy`. This skill
+  generates the pair and gates it locally; it never publishes, deploys, or awaits a release.
+
+**Standalone mode must not upload a CODED action without a live release.** A coded action's TTL
+names an Orchestrator process by `ont:process`, and nothing about the artifact reveals whether that
+process exists. Upload one whose job was never deployed and the ontology reaches `DEPLOYED` looking
+correct, then every invoke fails at the `Running job` step against a release that is not there. So
+in standalone mode, on generating any coded pair: stop before Step 5's upload, invoke
+`uipath-ontology-coded-action-deploy` for the pairs, and upload only once it reports every release
+`ready`. If that skill is unavailable, return the generated and preflighted artifacts with the
+upload explicitly withheld, and say that a coded action cannot be completed without it — do not
+upload the declarative artifacts and leave the coded one out silently, and do not upload it anyway.

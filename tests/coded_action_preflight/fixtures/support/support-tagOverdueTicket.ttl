@@ -1,0 +1,40 @@
+@prefix ont:  <https://ontology.uipath.com/ont#> .
+@prefix sup:  <https://ontology.uipath.com/support#> .
+@prefix fno:  <https://w3id.org/function/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+sup:tagOverdueTicket
+        a               fno:Function;
+        rdfs:label      "Tag an overdue ticket";
+        rdfs:comment    "Recomputes a ticket's due date from its priority (sev1 four hours, sev2 twenty hours, sev3 five days), correcting it when the stored value has fallen out of step, and adds TICKET_OVERDUE to its tags once that deadline has passed. Closed tickets are left alone.";
+        ont:kind        "ACTION";
+        ont:language    "CODED";
+        ont:processType "CODED_FUNCTION" ;
+        ont:statements  ( "func:tagOverdueTicket(ticketId, ticket)" );
+        ont:reads       ( sup:read.tagOverdueTicket.ticket ) ;
+        ont:writes      "Ticket.tags", "Ticket.dueAt" ;
+        ont:process     "TagOverdueTicketProcess" ;
+        fno:expects     ( sup:param.tagOverdueTicket.ticketId ) ;
+        fno:returns     ( sup:out.tagOverdueTicket.rowsAffected ) .
+
+#   SELECT *, not a column list. The read hands the job the whole row and lets it
+#   decide what it needs. The cost is that the rows carry the entity's physical
+#   column names, not the logical field names above; the job maps them, and the
+#   edit it returns is written in the logical names.
+sup:read.tagOverdueTicket.ticket
+        a              ont:Read ;
+        ont:bindsTo    "ticket" ;
+        ont:statement  "SELECT * FROM {{Ticket}} WHERE {{Ticket.id}} = :ticketId" .
+
+sup:param.tagOverdueTicket.ticketId
+        a              fno:Parameter;
+        ont:paramName  "ticketId";
+        ont:paramType  "xsd:string";
+        rdfs:comment   "The ticket to check. The only thing the caller supplies." ;
+        ont:required   true .
+
+sup:out.tagOverdueTicket.rowsAffected
+        a              fno:Output;
+        ont:paramName  "rowsAffected";
+        ont:paramType  "xsd:integer";
+        ont:required   true .

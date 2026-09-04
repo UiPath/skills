@@ -1,0 +1,104 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "content/main.ts",
+      "uniqueId": "ff3b02aa-609b-4a54-9fa4-a63225e9f7e3",
+      "type": "function",
+      "input": {
+        "type": "object",
+        "properties": {
+          "invoiceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ErpInvoiceLineId": {
+                  "type": "string"
+                },
+                "InvoiceId": {
+                  "type": "string"
+                },
+                "Sku": {
+                  "type": "string"
+                },
+                "Description": {
+                  "type": "string"
+                },
+                "Quantity": {
+                  "type": "number"
+                },
+                "UnitPrice": {
+                  "type": "number"
+                },
+                "PoUnitPrice": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "ErpInvoiceLineId",
+                "InvoiceId",
+                "Sku",
+                "Description",
+                "Quantity",
+                "UnitPrice",
+                "PoUnitPrice"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "invoiceIds",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "edits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "CREATE",
+                    "UPDATE",
+                    "DELETE"
+                  ]
+                },
+                "entity": {
+                  "type": "string"
+                },
+                "properties": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "op",
+                "entity",
+                "properties"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "edits"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
