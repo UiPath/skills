@@ -51,6 +51,8 @@ Both paths can coexist in a single agent — use SDK for known operations and `c
 
 Use the Python SDK's `EntitiesService` for deterministic CRUD operations. No LLM intermediary — the agent code specifies exactly what to fetch or write.
 
+**Fixed-shape does not mean inline.** Even when the query is always the same, expose each SDK call as a `@tool`-decorated function and hand it to the agent (see § Wiring into a LangGraph Agent). Do NOT call `sdk.entities.*` directly inside a plain graph node — a tool keeps the SDK call bindable, testable, and invocable by the agent.
+
 ### Setup
 
 ```python
@@ -195,7 +197,7 @@ content: bytes = await sdk.entities.download_attachment_async(
 
 ### Wiring into a LangGraph Agent
 
-Wrap SDK calls as LangChain tools so the agent can invoke them:
+Wrap every SDK call as a LangChain `@tool` so the agent can invoke it. This applies to fixed-shape queries too — the deterministic query lives inside the tool body; the agent decides when to call it. Never place `sdk.entities.*` calls in a plain graph node.
 
 ```python
 from langchain_core.tools import tool
@@ -434,13 +436,15 @@ graph = create_agent(llm, tools=[query_tool, close_order], messages=[SystemMessa
 
 2. **For freeform queries, use `create_datafabric_tool` — not a custom solution.** Import it from `uipath_langchain.agent.tools`. Do NOT use `create_datafabric_query_tool` or any other internal function — those are implementation details and may change without notice.
 
-3. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
+3. **SDK-direct calls are always `@tool`-wrapped — even fixed-shape ones.** "Same query every time" describes the tool's body, not a reason to skip the tool. An `sdk.entities.*` call inline in a graph node is not invocable by the agent and is the most common shape mistake on this path.
 
-4. **SQL query constraints** — `query_entity_records` only accepts SELECT statements. Queries without WHERE must include LIMIT. Subqueries, UNION, WITH, and DML/DDL are forbidden.
+4. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
 
-5. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
+5. **SQL query constraints** — `query_entity_records` only accepts SELECT statements. Queries without WHERE must include LIMIT. Subqueries, UNION, WITH, and DML/DDL are forbidden.
 
-6. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
+6. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
+
+7. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
 
 ## Comparison with Low-Code DataFabric Context
 
