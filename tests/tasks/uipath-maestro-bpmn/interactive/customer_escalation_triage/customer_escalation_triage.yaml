@@ -62,6 +62,38 @@ sandbox:
 # Pure simulation mode: the simulator creates the opening request and reveals
 # the contract progressively. Nothing below is present in the coding agent's
 # initial prompt.
+# Turn 1 is pinned rather than simulator-generated. With no `initial_prompt`,
+# coder_eval asks the simulator for an opener in a single turn
+# (`communicate(..., max_turns=1)`); observed live, that call returns an empty
+# error result about two times in three, and the coding agent then spends a
+# full turn answering nothing. Pinning turn 1 removes the only step that has
+# to succeed in one turn, and the simulator still drives turns 2..N where it
+# has the dialog for context.
+#
+# Deliberately withholds every graded specific -- no variable names, enum
+# tokens, thresholds, precedence, or connection names -- because with the
+# judge removed the hidden scenarios are the only thing punishing an agent
+# that skips the interview. It says only what a stakeholder would volunteer.
+initial_prompt: |
+  I need help building a UiPath Maestro BPMN process orchestration project
+  called CustomerEscalationTriage.
+
+  The broad picture: we handle inbound customer escalations that have to be
+  triaged, routed, and acted on — creating or updating an issue in our
+  engineering tracker, copying any attachments to a shared drive, and
+  alerting a channel, each depending on how the case classifies. There is an
+  acknowledgement step whose behaviour also depends on the outcome.
+
+  I would rather not front-load the policy. The data, the validation rules,
+  the routing logic, the integration boundaries, and the error semantics all
+  have specific requirements, several of them interdependent in ways that
+  trip up an early design, and I have stakeholder constraints on how the
+  process structure should look — not only what it does, but how the
+  decisions are made visible.
+
+  Ask me what you need to understand first and we will work through it.
+  Do not write any files until I have approved the design.
+
 simulation:
   enabled: true
   persona: |
