@@ -20,7 +20,7 @@ Use an IxP node when the flow needs to extract **named fields** (invoice totals,
 | --- | --- |
 | Source is a PDF, scanned document, photo, or email attachment | Source is already structured (CSV, JSON, database row) — use [Script](../script/planning.md) |
 | Fields have variable layout across documents (e.g. invoices from many vendors) | Layout is fixed and parseable by regex/XPath — use [Script](../script/planning.md) |
-| A trained IxP model exists for this document type | No model exists — flag as a prerequisite and use `core.logic.mock` until the model is trained |
+| A trained IxP model exists for this document type | No model exists AND no documents were supplied — flag as a prerequisite and use `core.logic.mock`. With documents in hand the model can be built instead (see [No published model](#no-published-model-branch-on-documents)) |
 | Need field-level extraction with per-field confidence scores for downstream HITL review | Need free-form summarization, classification, or reasoning over text — use [Agent](../agent/planning.md) |
 
 ### Anti-Pattern
@@ -29,7 +29,7 @@ Don't use IxP as a generic OCR. IxP is field-oriented — it extracts named fiel
 
 ### When NOT to Use
 
-- **Model not yet trained or published** — use `core.logic.mock` and surface in Open Questions that a model must be trained on the IxP product before the flow can run.
+- **Model not yet trained or published** — branch on documents: see [No published model](#no-published-model-branch-on-documents).
 - **Structured input (CSV/JSON/DB row)** — use [Script](../script/planning.md) or [Decision](../decision/planning.md). IxP adds latency and model-inference cost for no gain.
 - **Free-form summarization, classification, or reasoning** — use [Agent](../agent/planning.md). An IxP model trained for field extraction will not produce useful output for those tasks.
 - **Manual external API call** — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md).
@@ -38,7 +38,7 @@ Don't use IxP as a generic OCR. IxP is field-oriented — it extracts named fiel
 
 - `uip login` — IxP nodes only appear in the registry after authentication.
 - `uip maestro flow registry pull --force` must be run to cache IxP model node types locally.
-- A trained, published IxP extraction model must exist on the tenant. If none exists, surface it in the **Open Questions** section of the architectural plan so the user can train one while reviewing.
+- A trained IxP model must be **deployed to an Orchestrator folder** — the flow registry lists folder deployments only. Create one via the `uipath-ixp` skill. If none exists, see [No published model](#no-published-model-branch-on-documents).
 
 ## Ports
 
@@ -58,11 +58,16 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
 
-Requires `uip login`. Only published IxP models from your tenant appear. The returned node type uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike `uipath.core.*` siblings which use a single-segment tail. Both tail segments are sanitized: lowercase, then runs of any character outside `[a-z0-9]` → single `-`. So an FQN of `Shared/invoice-model` lands as `shared-invoice-model`. See [impl.md](impl.md) for the full rule and worked examples.
+Requires `uip login`. Only models with a folder deployment on your tenant appear — publishing alone does not surface a model here. The returned node type uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike `uipath.core.*` siblings which use a single-segment tail. Both tail segments are sanitized: lowercase, then runs of any character outside `[a-z0-9]` → single `-`. So an FQN of `Shared/invoice-model` lands as `shared-invoice-model`. See [impl.md](impl.md) for the full rule and worked examples.
 
-### If `Data: []` → plan for a mock + Open Question
+### No published model: branch on documents
 
-If the search returns no `uipath.ixp.*` nodes, no IxP extraction model is published on this tenant. Plan the architecture around a `core.logic.mock` placeholder for the extraction step, and surface the missing model in **Open Questions** so the user can train and publish it. Do not iterate on registry searches — the mock is the planning answer until the model exists. See [impl.md — If the Model Does Not Exist Yet](impl.md#if-the-model-does-not-exist-yet) for the implementer-side procedure.
+No `uipath.ixp.*` nodes means no IxP extraction model is published on this tenant. Either way, **stop searching** — do not iterate on registry searches.
+
+| Situation | Plan |
+| --- | --- |
+| **Documents supplied** (files in the workspace, an attached batch, a named folder of samples) | The extractor can be built. Plan a real `uipath.ixp.*` node and note that the project must be created and folder-deployed first — that work belongs to the `uipath-ixp` skill — invoke it rather than running `uip ixp` commands from here; it creates the project and folder-deploys it, which is what puts the model in this registry. See [impl.md — If the Model Does Not Exist Yet](impl.md#if-the-model-does-not-exist-yet). |
+| **No documents** | Plan a `core.logic.mock` placeholder for the extraction step and surface the missing model in **Open Questions** so the user can train one and deploy it to a folder. The mock is the planning answer until documents or a model exist. |
 
 ## Listing Available Models / Runtime Projects
 
@@ -87,4 +92,4 @@ If `Data: []`, answer directly that no IxP models are published on the tenant. D
 In the architectural plan:
 
 - If the model exists: note as `resource: <model-name> (ixp-extraction)` with the intended document type (e.g. "resource: vendor-invoices (ixp-extraction) — extract invoice header + line items")
-- If it does not exist: note as `[CREATE NEW] <description>` and flag in Open Questions that an IxP model must be trained before the flow can run
+- If it does not exist: note as `[CREATE NEW] <description>`. With documents supplied, the model can be built as part of this work (see [No published model](#no-published-model-branch-on-documents)); without them, flag in Open Questions that one must be trained before the flow can run

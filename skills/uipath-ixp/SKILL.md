@@ -27,6 +27,8 @@ This skill covers standalone IXP-project work. STOP and invoke the `uipath-maest
 
 Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follow the commands it documents. This overrides Critical Rule 1.
 
+**Exception — an inbound handoff from `uipath-maestro-flow`:** when that skill delegates because the user supplied documents and no published extractor covers them, the IXP work belongs here even though the surrounding context is a flow build. The handoff supplies the target Orchestrator folder — that is the caller's contract, not a question to re-ask. Create the project from the documents, deploy a trained version to that folder ([Deployment Guide](references/deployment-guide.md) — including the exit when no folder arrived), report the deployment, and hand control back — do not wire or edit the flow from this skill.
+
 ## Critical Rules
 
 1. **Verify `uip ixp` syntax before running a command** — use a targeted lookup in [CLI Reference](references/cli-reference.md) and copy the exact subcommand and options; never guess. If the request is not covered, report that the skill has no documented CLI path rather than improvising. Do NOT use curl, call REST APIs directly, or explore source code. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
@@ -64,6 +66,7 @@ Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follo
 2. To create a new project: follow [Project Setup Guide](references/project-setup-guide.md)
 3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts-guide.md)
 4. To label documents on an existing project: follow [Label Documents Guide](references/label-documents-guide.md)
+5. To deploy a model so an automation can call it from an Orchestrator folder (Maestro Flow, other folder-resolving callers): `projects create` → `list-models` → `deployments create --folder-key`. Neither labelling nor `publish` is required — see [Deployment Guide](references/deployment-guide.md).
 
 If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the Project Setup guide).
 
