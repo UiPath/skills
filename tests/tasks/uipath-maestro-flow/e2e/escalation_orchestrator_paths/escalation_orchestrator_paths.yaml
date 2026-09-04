@@ -82,7 +82,7 @@ initial_prompt: |
   Salesforce/Jira/Drive are NOT part of this task — the match status is an input.
 
   Validate the flow. Do NOT run or debug the flow — the grader executes it with
-  seeded inputs.  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+  seeded inputs. Before starting, load the uipath-maestro-flow skill and follow its workflow.
 
 success_criteria:
   - type: command_executed
