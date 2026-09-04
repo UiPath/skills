@@ -18,9 +18,9 @@
 /skill-flavors/studioweb/ @astridstaicu
 
 # preview skills
-/preview/uipath-maestro-flow/ @UiPath/maestro-cli-team
-/preview/uipath-maestro-case/ @UiPath/maestro-cli-team
-/preview/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-flow/ @UiPath/maestro-cli-team
+/preview/skills/uipath-maestro-case/ @dmetzgar @tmatup
+/preview/skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
@@ -137,6 +137,7 @@
 /skills/uipath-maestro-flow/references/author/plugins/connector-trigger/ @chandusailella @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/author/plugins/agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/author/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
+/skills/uipath-maestro-flow/references/author/plugins/data-fabric/ @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
 

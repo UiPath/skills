@@ -33,6 +33,7 @@ For edits touching multiple top-level arrays, follow [parallel same-file Edit ru
 |---|---|
 | **Change a script body or node inputs** | Use `Edit` on `inputs`; do not delete/re-add because node IDs and `$vars` expressions must remain stable. Script nodes must return an object (`return { key: value }`). See [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
 | **Add a node between two existing nodes** | Remove the connecting edge; add the node; wire upstream → new → downstream. See [Edit/Write: Insert a node](editing-operations-json.md#insert-a-node-between-two-existing-nodes). |
+| **Move / reorder a node** | Re-wire the edges, then re-point every `$vars.<node>` read inside the moved node (a Decision's `expression`, a script body, input fields) to a node that still runs **before** it; a reference to a node that now runs later evaluates against nothing at runtime (`[400302]`/`[400300]`) even though `flow validate` passes. Nodes the branches rejoin at read the Decision as `$vars.<decisionId>.matchedCaseId` (see [decision/impl.md — Outputs](plugins/decision/impl.md#outputs)). See [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge) and [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
 | **Add a branch (decision node)** | Remove an edge; add the decision; wire true/false branches. See [Edit/Write: Insert a decision branch](editing-operations-json.md#insert-a-decision-branch). |
 | **Remove a node** | Remove the node; sweep edges/definitions/variables; reconnect upstream to downstream. See [Edit/Write: Remove a node](editing-operations-json.md#remove-a-node-and-reconnect). |
 | **Remove an edge** | Find and remove its edge ID. See [Edit/Write: Delete an edge](editing-operations-json.md#delete-an-edge). |
@@ -81,9 +82,9 @@ Authoring ends here. For any selected option, read [operate/CAPABILITY.md](../op
 
 | Option | What it does |
 |---|---|
-| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
-| **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first because debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
+| **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
+| **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen; see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it. |
 
-Do not run any option without explicit user selection.
+When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any option without explicit user selection.

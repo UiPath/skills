@@ -1,11 +1,13 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-eval-local-crud
 description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill's evaluate
   capability to scaffold a Flow project and exercise local eval CRUD —
-  evaluator add (exact-match), eval set add, data point add, list. No login,
-  no upload, no run. Tests whether the skill teaches the correct local-CRUD
-  workflow and `--output json` discipline on every `uip maestro flow eval`
-  command.
+  an exact-match evaluator, an eval set, and a data point. No authentication,
+  upload, or evaluation run. Tests whether the skill teaches the correct
+  local-CRUD workflow and persists the expected artifacts.
 tags: [uipath-maestro-flow, mode:build, lifecycle:generate, feature:eval]
 
 run_limits:
@@ -17,34 +19,36 @@ initial_prompt: |
   same name, then build the eval scaffolding for it — purely local, no Studio
   Web round-trip.
 
-  Steps:
-  1. Create the solution and the Flow project. The flow file MUST live at
-     `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked
-     via `uip solution project add`.
+  Create the solution and the Flow project, keeping the Flow inside a solution
+  of the same name; the flow file is `SmokeEval.flow`.
 
-  2. Declare a string input variable named `name` on
-     `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The
-     eval data point below uses `{"name":"Alice"}`, and `eval add` rejects
-     input keys that are not declared in the flow.
+  Declare a string input variable named `name` before adding data points. The
+  eval data point below uses `{"name":"Alice"}`, so its input must be declared
+  in the flow.
 
-  3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to
-     the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.
+  Add an evaluator named `greeting-match` of type `exact-match`.
 
-  4. Create an eval set named `Smoke Set` in the same project. (No
-     `--entry-point`, no `--evaluators` — defaults are fine.)
+  Create an eval set named `Smoke Set` in the same project and let it use the
+  project's default entry point and current evaluators.
 
-  5. Add one data point named `hello` to that eval set with inputs
-     `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
+  Add one data point named `hello` to that eval set with inputs
+  `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
 
-  6. List evaluators and eval sets to confirm both were created.
+  Inspect the local evaluator and eval-set artifacts to confirm they were
+  created. Keep all work local: do not authenticate, upload the solution, or
+  start an evaluation run.
 
-  Important:
-  - Use `--output json` on every `uip maestro flow eval ...` command.
-  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
-    `uip maestro flow eval run *` — this task tests local CRUD only.
-  - Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this
-    is not a flow-authoring test.
-
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
     description: "Agent created a solution"
@@ -55,54 +59,56 @@ success_criteria:
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
-    description: "Agent initialized a Flow project"
+    description: "Flow-project initialization telemetry (report only; the artifact is graded below)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
-  - type: file_exists
-    description: "Flow file was created at the double-nested path"
-    path: "SmokeEval/SmokeEval/SmokeEval.flow"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent added an evaluator with kebab-case --type exact-match"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+exact-match'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created an eval set"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent added a data point with --inputs and --expected"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed evaluators or eval sets to verify"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(evaluator\s+list|set\s+list)'
-    min_count: 1
+  - type: run_command
+    description: "SmokeEval Flow artifact exists"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SmokeEval"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Exact-match evaluator artifact exists"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py --check evaluator"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Smoke Set eval-set artifact exists"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py --check eval-set"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Smoke Set contains the hello data point with inputs and expected output"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py --check data-point"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Local-list telemetry (report only; persisted artifacts are graded directly)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(evaluator\s+list|set\s+list)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
     description: "Evaluator + eval-set JSON files exist on disk with correct shape"
-    command: "python3 $TASK_DIR/check_local_crud.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

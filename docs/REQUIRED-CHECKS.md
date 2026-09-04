@@ -80,6 +80,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `Validate skills.sh.json against skills/` | `validate-skills-sh.yml` |
 | `Build and inspect every skill package` | `validate-skill-flavors.yml` |
 | `maestro-flow checker unit tests` | `test-helpers.yml` |
+| `maestro-bpmn checker unit tests` | `test-helpers.yml` |
 | `maestro-case checker unit tests` | `test-helpers.yml` |
 | `uipath-agents checker unit tests` | `test-helpers.yml` |
 | `uipath-planner checker unit tests` | `test-helpers.yml` |

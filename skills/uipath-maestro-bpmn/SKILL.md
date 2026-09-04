@@ -289,10 +289,14 @@ and honestly surfaced to the user as gaps when asked.
    and the process structure with the user (AskUserQuestion).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
-6. **Node type is a child element, never an attribute.** Every `uipath:activity`
-   / `uipath:event` / `uipath:mapping` declares its type as
-   `<uipath:type value="<Type>" version="v1" />` inside the wrapper. Never write
-   `<uipath:activity type="…">` — the canvas will not recognize the node.
+6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
+   `uipath:event` / `uipath:mapping` templates declare their type as a nested
+   `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
+   templates use the payload's `type` attribute instead; notably,
+   `Orchestrator.StartAgentJob` is a direct child of `bpmn:ServiceTask` with
+   `<uipath:activity type="Orchestrator.StartAgentJob" version="v1">`. Both
+   declarations are supported. Paste the selected registry template literally
+   and do not normalize one form into the other.
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as

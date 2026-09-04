@@ -54,11 +54,11 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-maestro-case skill (not planner Lane A)"
+    description: "Advisory: agent invoked the uipath-maestro-case skill (not planner Lane A)"
     skill_name: "uipath-maestro-case"
     expected_skill: "uipath-maestro-case"
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: llm_judge
     description: "Final reply names both unresolved resource identities as deferred to the build machine"

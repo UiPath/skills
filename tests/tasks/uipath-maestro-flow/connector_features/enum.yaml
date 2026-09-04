@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-ipe-enum
 description: >
   Tests the enum IS feature — configures a connector node with an enum
@@ -21,18 +24,29 @@ initial_prompt: |
   Validate the final flow file.
   Use the connection present in Shared/uipath-maestro-flow.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip is connections list` to discover available connections"
+    description: "Advisory: live-v1 agent listed connections before choosing one"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "Tenant has at least one Gmail connection (precondition for `node configure`)"
-    command: "python3 $TASK_DIR/check_connection_available.py uipath-google-gmail"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_connection_available.py uipath-google-gmail"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0
@@ -40,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' structure"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_enum_flow.py '**/EnumTest*.flow' structure"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -48,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow uses Gmail connector or task-specific managed HTTP fallback"
-    command: "python3 $TASK_DIR/check_managed_http_fallback.py '**/EnumTest*.flow' uipath-google-gmail enum"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_managed_http_fallback.py '**/EnumTest*.flow' uipath-google-gmail enum"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -56,16 +70,16 @@ success_criteria:
 
   - type: run_command
     description: "Connector node has inputs.detail.bodyParameters with to and importance"
-    command: "python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' body_params"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_enum_flow.py '**/EnumTest*.flow' body_params"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
