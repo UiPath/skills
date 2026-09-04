@@ -175,13 +175,15 @@ Phase 3 produces a `caseplan.json` that should pass authoritative validation. No
 
 ## Phase 4 — Validate
 
-End of detail mutations. Run full-mode validate (omit `--skeleton`; defaults to full):
+End of detail mutations. Run strict validate with the SDD audit:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --output json
+uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
 ```
 
-On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to the Phase 4 issue-log summary step.
+`--strict` runs the default profile plus the case-wide and per-task checks that `full` cannot see: a stage with no tasks (`STRICT_STAGE_NO_TASKS`), a surviving `$xref(` marker (`STRICT_XREF_UNRESOLVED`), a `conditionExpression` hoisted onto the condition instead of a rule (`STRICT_CONDITION_EXPR_HOISTED`), a connector task whose `caseShape.context` is incomplete or lacks its Activity Type ID (`STRICT_CONNECTOR_*`), a task with `data: {}` (`TASK_NOT_CONFIGURED`, a warning; with `--sdd` it becomes the error `STRICT_SDD_PLACEHOLDER_RESOLVED` when the SDD resolved that resource), a malformed output shape or formal-argument slot (`STRICT_OUTPUT_*`), and a task input that is unbound or not in `=vars.<id>` form (`STRICT_INPUT_UNBOUND` / `STRICT_INPUT_REF_FORM`). `--sdd <path>` implies `--strict` and adds the completeness audit: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present (`STRICT_SDD_*`). Each failure carries its code in `Data.Issues[]` with the element path — fix the named element with a targeted Edit and re-run. `--strict` cannot be combined with `--skeleton` / `--skeleton-v2`. If the installed CLI rejects `--strict` as an unknown option, re-run without it and record `strict validate unavailable` in the completion report; a `Valid` without `--strict` is not evidence the strict checks passed.
+
+On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid", Profile: "strict" } }` — proceed to the Phase 4 issue-log summary step.
 
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
 
