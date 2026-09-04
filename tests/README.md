@@ -52,6 +52,10 @@ make smoke_rpa
 # Run e2e-tagged tests under the default config
 make e2e
 
+# Run the flow suite zero-shot: experiments/flow.yaml states the run is headless,
+# and the glob excludes interactive/, whose tasks have a simulated user
+make flow
+
 # Run tests matching a combination of tags (AND semantics — tasks must carry all listed tags) (defaults to experiments/default.yaml):
 make tags TAGS="integration connector-feature"
 # Optionally override the experiment config 
@@ -176,6 +180,7 @@ Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 | `default.yaml` | tempdir | Devs locally, ad-hoc runs | 200 | 1200s | 900s |
 | `nightly.yaml` | docker | Nightly cron (`daily.sh`) | 200 | 1200s | 900s |
 | `smoke.yaml` | docker | PR-gate smoke (Linux) | 40 | 900s | 900s |
+| `flow.yaml` | docker | `make flow` / flow dispatches — nightly's runtime plus a system prompt stating the run is headless | 200 | 1200s | 900s |
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
