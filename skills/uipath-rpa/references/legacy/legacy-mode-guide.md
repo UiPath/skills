@@ -13,7 +13,7 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 3. **Absolute paths only** — store `{projectRoot}` as an absolute path at Phase 0. Pass it to every CLI command. **Never use `cd`.**
 4. **Fix by category** — Package → Structure → Type → Properties → Logic. This order prevents cascading errors.
 5. **Activity docs for gotchas, CLI for precision** — read package docs (Excel.md, Mail.md) for gotchas before using those packages. Run `find-activities` only for activities not in `_BUILT-IN-ACTIVITIES.md`.
-6. **Always use `--output json`** — for any CLI output you need to parse. **Never suppress stderr** (`2>/dev/null`) — error details are in the JSON output.
+6. **Always use `--output json`** — for any CLI output you need to parse; `--output markdown` for output you only read, such as `docsai ask`. **Never suppress stderr** (`2>/dev/null`) — error details are in the JSON output.
 7. **Never guess enum values or property names** — always use `find-activities` + `type-definition`. CLI discovery is mandatory for valid XAML.
 8. **Never use modern assemblies** — use `assembly=mscorlib` (not `System.Private.CoreLib`). Use `[bracket]` expressions in VB.NET projects, `<mca:CSharpValue>` in C# projects.
 9. **Never generate Flowchart/StateMachine without ViewState** — Studio stacks all nodes at (0,0) without it.
@@ -216,7 +216,7 @@ See [cli-reference.md](./cli-reference.md) for all options.
 | `uip rpa-legacy find-package --query "..." --output json` | Search NuGet feeds for packages |
 | `uip rpa-legacy pack <path> -o <dir>` | Package into .nupkg (optional) |
 | `uip rpa-legacy debug <xaml-path> -i '...'` | Execute via UiRobot |
-| `uip docsai ask "question" --output json` | Search UiPath documentation |
+| `uip docsai ask "question" --output markdown` | Search UiPath documentation |
 
 Full reference: [cli-reference.md](./cli-reference.md)
 

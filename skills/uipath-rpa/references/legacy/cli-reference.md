@@ -18,7 +18,7 @@ uip rpa-legacy validate --help             # parameters for validate
 ## Path and Output Rules
 
 - **Always use absolute paths** — store `{projectRoot}` at Phase 0, pass it to every command. **Never use `cd`.**
-- **Always use `--output json`** for programmatic parsing (global option on all `uip` subcommands).
+- **Always use `--output json`** for `rpa-legacy` commands (global option on all `uip` subcommands) — the rules below read the response envelope, which no other format emits. `--output markdown` is for output you only read, such as `docsai ask`: prose passes through verbatim instead of arriving as an escaped JSON string. Available when `uip --help` lists `markdown` among the `--output` values; an older `uip` silently falls back to `json`.
 - **NEVER suppress stderr** (`2>/dev/null`) — error details are in the JSON output on stderr when exit code is non-zero.
 - Check the `Result` field in output: `"Success"` or `"Failure"`.
 - On failure, read `Message` and `Instructions` for diagnostics.
@@ -316,7 +316,7 @@ uip rpa-legacy debug "C:/Projects/MyLegacyProject/Main.xaml" \
 
 | Action | How | Key Parameters |
 |--------|-----|----------------|
-| **Search UiPath docs** | `Bash`: `uip docsai ask "your question" --output json` | `<query>` (required) |
+| **Search UiPath docs** | `Bash`: `uip docsai ask "your question" --output markdown` | `<query>` (required) |
 
 ### docsai ask
 
@@ -324,16 +324,16 @@ Searches official UiPath documentation and returns relevant answers including be
 
 ```bash
 # Best practices and guidelines
-uip docsai ask "best practices for error handling in legacy UiPath workflows" --output json
+uip docsai ask "best practices for error handling in legacy UiPath workflows" --output markdown
 
 # Troubleshooting
-uip docsai ask "ExcelApplicationScope validation error ActivityAction body" --output json
+uip docsai ask "ExcelApplicationScope validation error ActivityAction body" --output markdown
 
 # Platform concepts
-uip docsai ask "Orchestrator queue item priority and deadline" --output json
+uip docsai ask "Orchestrator queue item priority and deadline" --output markdown
 
 # Configuration details
-uip docsai ask "REFramework MaxRetryNumber and retry logic" --output json
+uip docsai ask "REFramework MaxRetryNumber and retry logic" --output markdown
 ```
 
 | Parameter | Description |
@@ -761,8 +761,8 @@ Also works for arbitrary .NET packages (e.g., `CsvHelper`, `HtmlAgilityPack`). A
 ### Step 6: Search UiPath Documentation (Fallback)
 
 ```bash
-uip docsai ask "best practices for Excel automation in legacy projects" --output json
-uip docsai ask "ExcelApplicationScope ActivityAction body validation error" --output json
+uip docsai ask "best practices for Excel automation in legacy projects" --output markdown
+uip docsai ask "ExcelApplicationScope ActivityAction body validation error" --output markdown
 ```
 
 Use when: bundled docs + CLI tools don't cover the topic, need best practices/guidelines/troubleshooting, unfamiliar error, platform concepts (Orchestrator, queues, triggers).

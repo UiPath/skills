@@ -32,13 +32,17 @@ The same pattern works for every tool and depth (`uip rpa uia <verb> --help`, `u
 
 ## Output format
 
-`--output` defaults to **`json`**. Accepted: `json`, `table`, `yaml`, `plain`. Keep `json` for anything parsed programmatically — `table` pads columns and can balloon to 100 KB+.
+`--output` defaults to **`json`**. Accepted: `json`, `table`, `yaml`, `plain`, and `markdown` — the last available when `uip --help` lists `markdown` among the `--output` values; an older `uip` silently falls back to `json` with no error to observe.
 
-`--output-filter "<JMESPath>"` applies a JMESPath expression to the response envelope's `Data` field — use it to slice large responses instead of post-processing in the shell.
+- **`json`** — use whenever you *parse* the output: extract a named field, branch on a flag, or post-process the payload in the shell. Required for `run` / `debug` (§ Reading run / debug results) and for anything you pipe through `ConvertFrom-Json`.
+- **`markdown`** — use when you only *read* the output. Prose passes through verbatim instead of arriving as an escaped JSON string, and record lists render as GFM tables. `validate` and `build` diagnostics are the standard case: one formatted line per finding rather than `{"Data":{"Message":"…\n…"}}` to unescape. A failure renders as `**Failed:** <Message>` with `Instructions` as a block quote, so the failure path stays readable — but the `{Result, Code}` envelope itself is dropped, which is why the verdict rule for `run` / `debug` needs `json`.
+- **`table`** pads columns and can balloon to 100 KB+.
+
+`--output-filter "<JMESPath>"` applies a JMESPath expression to the response envelope's `Data` field — use it to slice large responses instead of post-processing in the shell. It runs *before* the format is applied, so it composes with any `--output` value.
 
 `--log-level <debug|info|warn|error>` and `--log-file <path>` are global. Raise log level or add `--verbose` when diagnosing a failure.
 
-Most response envelopes share the shape `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not on stdout text.
+Under `--output json`, most response envelopes share the shape `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not on stdout text.
 
 ---
 
@@ -280,15 +284,15 @@ Phase 1 — per-file `validate` after every edit. Phase 2 — one project-level 
 PHASE 1 — validate-clean (per-file):
   FOR each file created or edited in this session:
     REPEAT:
-      1. uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+      1. uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output markdown
       2. IF validate has errors -> fix one root cause, GOTO 1
       3. EXIT inner loop when validate is clean
 
 PHASE 2 — build-clean (per-project, once per edit session):
   REPEAT:
-    1. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+    1. uip rpa build "<PROJECT_DIR>" --log-level Warn --output markdown
     2. IF build has errors -> identify offending file from build output
-       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json   # cheap targeted re-check
+       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output markdown   # cheap targeted re-check
        b. fix one root cause, GOTO 1
     3. EXIT to Smoke Test
 ```
@@ -315,7 +319,7 @@ Full `validate` and `run` command documentation: [§ validate](#validate) and [�
 Every project returned to the user must compile. Phase 2 of the iteration loop above is this gate — when Phase 2 exits clean, the gate is satisfied. The standalone command below also satisfies it (for example, when re-verifying after a small fix outside an iteration loop):
 
 ```bash
-uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output markdown
 ```
 
 If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally.

@@ -591,7 +591,7 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 - **Resolve paths portably** — accept file/dir paths as arguments and resolve relative to the run-time working directory (`Directory.GetCurrentDirectory()`, `Path.Combine`); a machine-specific absolute path baked into code or a default value breaks on every other machine
 
 ### Validation Loop (Critical Rule #14)
-uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output markdown
 Full loop (phases, exit criteria, error recovery): [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop)
 
 ### Error Handling
