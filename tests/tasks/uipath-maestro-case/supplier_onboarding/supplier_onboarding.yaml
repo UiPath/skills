@@ -98,7 +98,7 @@ success_criteria:
     description: >
       sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
       that edits its own input has moved the goalposts rather than met them
-    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 12b4c04f1911a02920cc350709c7cbba30410586553081a6f157514d1729cbe6"
+    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 53edbb9d5ea2a8a05f83f1d162658c003ab5e39509cc01602259905183ae4403"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5

@@ -11,6 +11,7 @@
 | 1.0 | 2026-08-26 | uipath-planner | Initial case design |
 | 1.1 | 2026-08-30 | uipath-planner | SLA revision: overall and phase targets restated in minutes at the source's proportions, scaled to the smallest whole multiple clearing the platform minimum; case at-risk threshold re-derived |
 | 1.2 | 2026-08-30 | uipath-planner | Representative `In` defaults added so a case started with no caller data still describes a real supplier; the four `file` arguments stay blank per the platform contract |
+| 1.3 | 2026-09-03 | uipath-planner | Forward routing corrected: the three review phases park on the stage picker, so `Buyer review`, `Compliance and risk review` and `Setting up the supplier` are entered by the pick itself, guarded on the decision already recorded. Keying them on their origin phase completing entered them no matter which destination the person picked, so a withdrawal started the next phase as well |
 
 ---
 
@@ -229,7 +230,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary and required — every application gets this once-over before anyone spends time reviewing it, and the phase is re-entered when the buyer sends the application back for corrections, so it is main-flow rather than an exception lane. Its completion is user-routed (`wait-for-user`) so the supplier's withdrawal lane stays reachable while the application is being checked; the guarded forward entry on `Buyer review` (`buyer_review`) still advances the application on its own when nobody picks the withdrawal lane. Re-entry is a new attempt — corrected and resubmitted — so every task here is re-runnable.
+**Design Rationale:** Primary and required — every application gets this once-over before anyone spends time reviewing it, and the phase is re-entered when the buyer sends the application back for corrections, so it is main-flow rather than an exception lane. Its completion is user-routed (`wait-for-user`) so the supplier's withdrawal lane stays reachable while the application is being checked, and the picker it parks on is what routes the application: `Buyer review` (`buyer_review`) and `Application withdrawn` (`application_withdrawn`) are the two stages offered there, and only the one picked is entered. Re-entry is a new attempt — corrected and resubmitted — so every task here is re-runnable.
 **Description:** Checks the application details, pulls the company's records, and confirms the offering matches the category the supplier selected, so that a broken or duplicate application never reaches the buyer.
 **Required for Case Completion:** Yes
 
@@ -537,14 +538,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary and required — the buyer assigned to this category is the first real decision point, and the application can leave this phase four ways. Approval completes the stage; declining and sending back for corrections are guarded diverting exits carrying the exact complements of the approval guard, so a decision can never dual-fire into two destinations. Completion is user-routed so the supplier's withdrawal lane stays reachable while the buyer holds the application.
+**Design Rationale:** Primary and required — the buyer assigned to this category is the first real decision point, and the application can leave this phase four ways. Approval completes the stage; declining and sending back for corrections are guarded diverting exits carrying the exact complements of the approval guard, so a decision can never dual-fire into two destinations. The phase is entered from the stage picker `Checking the application` (`checking_application`) parks on, guarded so that it is offered only while the buyer has not yet approved. An entry keyed on the checks completing fires no matter which destination the person picks, so an application the supplier had just withdrawn would still be put in front of the buyer. Completion is user-routed so the supplier's withdrawal lane stays reachable while the buyer holds the application.
 **Description:** Puts the application in front of the buyer assigned to this category, who reviews it, adds comments, and decides whether to approve it, decline it, or send it back to the supplier to fix something.
 
 #### Stage Entry Conditions
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| selected-stage-completed("Checking the application") | — | No | Checks passed |
+| user-selected-stage | =js:vars.buyerDecision !== "approve" | No | Checks passed |
 
 #### Stage Exit Conditions
 
@@ -840,14 +841,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary and required — the deeper look every application gets before the supplier goes anywhere near our systems. The stage deliberately carries no unguarded completion: both of its exits are guarded on the compliance reviewer's own recorded choice, so the application never advances on its own from here. Rejection is a guarded diverting exit carrying the exact complement of the send-to-setup guard. Completion is user-routed so the supplier's withdrawal lane stays reachable during the review.
+**Design Rationale:** Primary and required — the deeper look every application gets before the supplier goes anywhere near our systems. The stage deliberately carries no unguarded completion: both of its exits are guarded on the compliance reviewer's own recorded choice, so the application never advances on its own from here. Rejection is a guarded diverting exit carrying the exact complement of the send-to-setup guard. The phase is entered from the stage picker `Buyer review` (`buyer_review`) parks on, guarded on the buyer's recorded approval so no other picker offers it, and guarded off again once the compliance reviewer has recorded their own call so the picker never offers the phase back to itself. Completion is user-routed so the supplier's withdrawal lane stays reachable during the review.
 **Description:** Checks the application against company policy, produces a risk rating, works out the level of sign-off the expected spend requires, and puts the whole picture in front of a compliance reviewer who explicitly chooses whether the application goes to setup or is rejected.
 
 #### Stage Entry Conditions
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| selected-stage-completed("Buyer review") | =js:vars.$xref('Buyer review','Record buyer review decision','Action') === "approve" | No | Buyer approved |
+| user-selected-stage | =js:vars.buyerDecision === "approve" && vars.complianceDecision !== "approve" | No | Buyer approved |
 
 #### Stage Exit Conditions
 
@@ -1229,14 +1230,14 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** Stage
 **Stage Kind:** primary
-**Design Rationale:** Primary and required — the phase that turns an approved application into a real supplier record. Unlike the three review phases it deliberately does **not** expose the withdrawal picker, because the source allows withdrawal only before setup begins; its completion is therefore a plain `exit-only`. Failed bank verification is a guarded diverting exit carrying the exact complement of the completion guard, so a failed verification can never also complete the stage.
+**Design Rationale:** Primary and required — the phase that turns an approved application into a real supplier record. It is entered from the stage picker `Compliance and risk review` (`compliance_risk_review`) parks on, guarded on the compliance reviewer's recorded approval so no other picker offers it. Unlike the three review phases it deliberately does **not** expose a withdrawal picker of its own, because the source allows withdrawal only before setup begins; its completion is therefore a plain `exit-only`. Failed bank verification is a guarded diverting exit carrying the exact complement of the completion guard, so a failed verification can never also complete the stage.
 **Description:** Creates the supplier's record and payment details in the ERP system, optionally opens a linked contract-negotiation case, and waits for the supplier to confirm their portal access works before setup is marked complete.
 
 #### Stage Entry Conditions
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| selected-stage-completed("Compliance and risk review") | =js:vars.$xref('Compliance and risk review','Record compliance review decision','Action') === "approve" | No | Compliance approved |
+| user-selected-stage | =js:vars.complianceDecision === "approve" | No | Compliance approved |
 
 #### Stage Exit Conditions
 
@@ -1742,7 +1743,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 **Type:** Stage
 **Stage Kind:** secondary
-**Design Rationale:** The supplier can pull out during any of the three review phases, so this is an interrupting exception lane a person launches from the stage picker rather than a fixed point in the flow — no connector, app or event in the source signals a withdrawal. The three review phases expose it by completing `wait-for-user`; `Setting up the supplier` (`supplier_setup`) deliberately does not, because the source allows withdrawal only before setup begins. It is terminal — `exit-only`, and the root case-exit row it feeds does not mark the case complete, so a withdrawn application closes and can never move anywhere else.
+**Design Rationale:** The supplier can pull out during any of the three review phases, so this is an interrupting exception lane a person launches from the stage picker rather than a fixed point in the flow — no connector, app or event in the source signals a withdrawal. The three review phases expose it by completing `wait-for-user`; `Setting up the supplier` (`supplier_setup`) deliberately does not, because the source allows withdrawal only before setup begins. Each of those phases offers the person exactly two destinations — the phase that would come next, and this lane — so picking this one is what stops the application moving on. It is terminal — `exit-only`, and the root case-exit row it feeds does not mark the case complete, so a withdrawn application closes and can never move anywhere else.
 **Description:** Confirms the withdrawal to the supplier and tidies up anything still in motion — pending reviews are cancelled, countdown timers are switched off, and the application is marked withdrawn.
 **Required for Case Completion:** No
 **Interrupting:** Yes
@@ -2063,7 +2064,7 @@ director's overall-target review without either borrowing the other's dispatch. 
 | Buyer declines | Buyer picks Decline | Buyer review exits without completing, `Application rejected` enters on the decline guard, rejection notice sent and audit logged, case closed **not** marked complete |
 | Compliance rejects | Compliance reviewer picks Reject | Compliance and risk review exits without completing, `Application rejected` enters on the reject guard, case closed not marked complete |
 | Bank details fail verification | ERP registration returns bankVerificationStatus failed | Setup exits without completing, portal confirmation never starts, `Application rejected` enters on the verification guard, case closed not marked complete |
-| Supplier withdraws mid-review | Supplier withdraws while the application is in each of Checking the application, Buyer review, and Compliance and risk review | `Application withdrawn` enters from the stage picker in all three phases, confirmation sent, pending reviews cancelled and timers switched off, case closed not marked complete |
+| Supplier withdraws mid-review | Supplier withdraws while the application is in each of Checking the application, Buyer review, and Compliance and risk review | `Application withdrawn` enters from the stage picker in all three phases and the phase that would have followed does not start, confirmation sent, pending reviews cancelled and timers switched off, case closed not marked complete |
 | Withdrawal blocked after setup begins | Attempt to withdraw while the application is in Setting up the supplier | The withdrawal lane is not offered — setup exposes no stage picker |
 | Sent back for corrections and resubmitted | Buyer picks Send back for corrections, the supplier fixes the issues and adds a document, the application is re-checked and approved | Buyer review exits without completing, `Checking the application` re-enters on the send-back guard, its tasks re-run, and the application reaches a decision again |
 | Phase deadline missed | Hold each of the four in-flight phases past its target in turn | The breached stage's own `Escalate delayed <phase>` task activates on that stage's SLA event and reaches the procurement operations lead, then `Send delay note for the <phase>` sends the supplier a note naming that phase and carrying the lead's revised date; the phase's own work continues meanwhile and its required tasks are unaffected |
