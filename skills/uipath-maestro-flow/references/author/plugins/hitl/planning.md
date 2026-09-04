@@ -30,6 +30,11 @@ Available: always — no `uip login` or registry pull required.
 | Need a quick form with specific fields and outcomes | Yes |
 | Existing coded/Action Center app should be used | No — use Option 2 |
 | Fully automated processing, no human involvement | No |
+| The user wants to **see** a value the flow produced | No — see below |
+
+**A form collects input from a human. It does not display output to one.** "Show me the result", "display the number", "surface it where I can see it" is an `out` variable mapped on the End node, which is what the run returns — not a form to look at.
+
+Using a form for this parks the flow forever: the task sits unassigned in Action Center until a human opens and submits it, so an unattended run (a `flow debug`, a schedule, an eval) burns its whole timeout with the instance still `Running` and no output. That is not a wiring mistake — the `outcome-completed` port can be wired correctly and the flow still never reaches its End node.
 
 ### Ports
 
