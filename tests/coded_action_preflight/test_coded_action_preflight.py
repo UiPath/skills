@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TOOL = ROOT / "tools" / "coded_action_preflight.py"
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "support"
-ZOD_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "support-zod"
+VARIANT_JOBS = Path(__file__).resolve().parent / "fixtures" / "variant-jobs"
 GOLDEN = Path(__file__).resolve().parent / "golden" / "support.json"
 ONTOLOGY = "support"
 ACTION = "tagOverdueTicket"
@@ -80,6 +80,20 @@ class CodedActionPreflightTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, temp, True)
         workdir = temp / "artifacts"
         shutil.copytree(fixture, workdir)
+        return workdir
+
+    def workdir_with_job(self, variant: str) -> Path:
+        """The good pair with its job swapped for a variant, so only the job differs.
+
+        The variant used to be a whole parallel fixture directory whose `.ofn` and `.ttl` were
+        byte-identical copies. Only the job ever differed, and a duplicated schema is a second
+        thing to keep in step for no coverage.
+        """
+        workdir = self.workdir()
+        source = VARIANT_JOBS / ("%s.%s.ts" % (ACTION, variant))
+        self.assertTrue(source.is_file(), "no such job variant: %s" % source)
+        (workdir / "jobs" / ("%s.ts" % ACTION)).write_text(
+            source.read_text(encoding="utf-8"), encoding="utf-8")
         return workdir
 
     def edit(self, path: Path, old: str, new: str) -> None:
@@ -228,7 +242,7 @@ class CodedActionPreflightTests(unittest.TestCase):
         step would then keep whatever manifest was already in the project -- a manifest belonging to
         some other job -- so this one would deploy under a foreign input schema and fault at invoke
         time. Staging now refuses instead; this gate catches it a phase earlier."""
-        payload = self.assert_only_gate_fails(self.workdir(ZOD_FIXTURE), "input-strictness")
+        payload = self.assert_only_gate_fails(self.workdir_with_job("standard-schema"), "input-strictness")
         detail = payload["errors"]["input-strictness"][0]
         self.assertIn("zod", detail)
         self.assertIn("type<T>()", detail)
@@ -236,7 +250,7 @@ class CodedActionPreflightTests(unittest.TestCase):
     def test_an_unreadable_contract_reports_one_blame_site(self):
         """input-matches-marker has no interfaces to read for such a job, but failing both gates
         would make the author read two messages for one cause. It skips and points."""
-        code, payload = run_preflight(self.workdir(ZOD_FIXTURE), "--skip-typecheck")
+        code, payload = run_preflight(self.workdir_with_job("standard-schema"), "--skip-typecheck")
         self.assertEqual(code, 1, payload)
         marker = gate(payload, "input-matches-marker")
         self.assertEqual(marker["status"], "skipped", payload)
