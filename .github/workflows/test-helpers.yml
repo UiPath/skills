@@ -1,18 +1,23 @@
 name: Test Helpers
 
 on:
+  # No `paths:` filter on purpose, for the same two reasons as
+  # validate-version-sync.yml, validate-skills-sh.yml and smoke-rpa-skills.yml:
+  #
+  # 1. Required-check safety: these jobs are wired as required status checks.
+  #    If `paths:` excluded a PR the workflow wouldn't run, no check would be
+  #    reported, and merge would block forever. Every job here is a checkout,
+  #    a Python setup and a sub-30s pytest run, so just always run them.
+  # 2. A path list is not a reliable trigger for the regressions these guard.
+  #    The checkers under test import from `tests/`, `scripts/` and `hooks/`,
+  #    and a suite can break from an edit to a file no list anticipated — the
+  #    same way validate-skills-sh.yml's old filter stayed silent on #2252,
+  #    the PR that introduced the very drift that guard exists to catch.
   pull_request:
-    paths:
-      - 'tests/tasks/uipath-maestro-flow/**'
-      - 'tests/tasks/uipath-maestro-case/**'
-      - 'tests/tasks/uipath-planner/**'
-      - 'tests/tasks/uipath-agents/**'
-      - 'tests/tasks/uipath-admin/**'
-      - 'tests/scripts/**'
-      - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
-      - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
-      - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   pytest-flow-check:
@@ -184,3 +189,25 @@ jobs:
       # sanitization).
       - name: Run telemetry hook tests
         run: pytest tests/scripts/test_send_telemetry_hook.py tests/scripts/test_set_session_env_hook.py -v
+
+  required-checks-contract:
+    runs-on: uipath-ubuntu-latest
+    name: required-check contract guard
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest pyyaml
+
+      # Pins docs/REQUIRED-CHECKS.md § Current target set to the actual job
+      # names and triggers. Renaming a required job, or re-adding a `paths:`
+      # filter to a workflow that produces one, stops its context from ever
+      # reporting — which blocks every open PR until someone edits the ruleset
+      # by hand. Nothing else in the repo reads that table, so this is the only
+      # place the drift is visible.
+      - name: Run required-check contract tests
+        run: pytest tests/scripts/test_required_checks_contract.py -v
