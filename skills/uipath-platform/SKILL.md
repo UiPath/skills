@@ -307,7 +307,9 @@ Every `uip` command accepts:
 - **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/orchestrator/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
+<!--skill-flavor:solutions-index-row:start-->
 - **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`)
+<!--skill-flavor:solutions-index-row:end-->
 - **[Planner](/uipath:uipath-planner)** — PDD/SDD design + multi-skill task planning (Process → Solution Design Document → task list)
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments

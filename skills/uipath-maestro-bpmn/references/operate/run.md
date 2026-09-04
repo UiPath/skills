@@ -19,6 +19,7 @@ Before any debug or process run:
 Use debug when the user wants to upload a local BPMN project to Studio Web and run a debug session with full Studio Web
 visibility.
 
+<!--skill-flavor:local-debug-solution:start-->
 For local project debug, prefer a solution context so generated resources,
 bindings, and debug metadata are available. Initialize a solution, import the
 BPMN project, refresh resources, and run debug from the solution directory:
@@ -29,6 +30,7 @@ uip solution projects import <ProjectDir> --solutionFile <SolutionName>/<Solutio
 uip solution resources refresh --solution-folder <SolutionName> --output json
 cd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json
 ```
+<!--skill-flavor:local-debug-solution:end-->
 
 ```bash
 uip maestro bpmn debug [project-path] --output json
