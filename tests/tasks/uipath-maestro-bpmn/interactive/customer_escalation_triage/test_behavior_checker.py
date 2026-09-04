@@ -108,11 +108,13 @@ class TaskParserTests(unittest.TestCase):
             self.assertIsInstance(value, int)
 
         criteria = task["success_criteria"]
-        self.assertEqual(len(criteria), 9)
+        self.assertEqual(len(criteria), 11)
         self.assertEqual(
             [c["type"] for c in criteria],
             [
                 "agent_judge",
+                "skill_triggered",
+                "command_executed",
                 "command_not_executed",
                 "run_command",
                 "run_command",
@@ -126,7 +128,7 @@ class TaskParserTests(unittest.TestCase):
         for criterion in criteria:
             self.assertIsInstance(criterion["weight"], float)
         self.assertEqual(
-            sum(c["weight"] for c in criteria), 23.0
+            sum(c["weight"] for c in criteria), 25.5
         )
         live = [
             c
@@ -2018,6 +2020,43 @@ class PostRunConformanceTests(unittest.TestCase):
         self.assertIn("BPMN_E2E_CLEANUP", text)
         self.assertIn("SolutionId", text)
         self.assertNotIn("import yaml", text)
+
+
+class MainSuccessPathTests(unittest.TestCase):
+    """The all-pass path had a NameError nothing covered.
+
+    Every other test exercises a failure or a helper; `main()`'s victory print
+    referenced a lease that the cleanup refactor deleted, so a run where all
+    12 scenarios passed would raise NameError and fail the strict criterion.
+    Compiling the module is not enough -- the name only resolves at runtime --
+    so assert on the source of that specific branch instead of re-running a
+    live matrix.
+    """
+
+    def test_success_print_references_only_live_names(self) -> None:
+        source = Path(checker.__file__).read_text(encoding="utf-8")
+        marker = "exact-artifact Alpha scenarios"
+        self.assertIn(marker, source)
+        start = source.rindex("        print(", 0, source.index(marker))
+        end = source.index(")\n", source.index(marker))
+        branch = source[start:end]
+        module_names = set(vars(checker))
+        for token in re.findall(r"\b([a-z_][a-z0-9_]*)\.", branch):
+            with self.subTest(name=token):
+                self.assertIn(
+                    token,
+                    module_names | {"time", "f"},
+                    f"{token!r} in the success print is not a module-level "
+                    "name; if it is a local it must exist in main()",
+                )
+        self.assertNotIn("lease.", branch)
+
+    def test_cleanup_deadline_is_actually_armed(self) -> None:
+        """run_cli's capping is inert unless main() assigns the deadline."""
+
+        source = Path(checker.__file__).read_text(encoding="utf-8")
+        self.assertIn("ACTIVE_CLI_DEADLINE = cleanup_deadline", source)
+        self.assertIn("cleanup_deadline = (", source)
 
 
 class ScenarioResultsTests(unittest.TestCase):

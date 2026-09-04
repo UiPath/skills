@@ -87,35 +87,6 @@ SCENARIO_BUNDLES = {
         "informational-auto-disabled-high-impact-context",
     ),
 }
-SCENARIO_RESULTS = Path(".customer-escalation-results.json")
-# Working directory for the ephemeral solution and per-scenario debug logs.
-# Under the sandbox CWD so the standard post_run sweep can glob the .uipx.
-LIVE_RUN_DIR = Path(".customer-escalation-live")
-# Outcome families. Each is graded as its own criterion so a submission that
-# gets, say, classification right but attachments wrong scores accordingly.
-SCENARIO_BUNDLES = {
-    "classification": (
-        "mixed-case-sev1-new-two-attachments",
-        "whitespace-duplicate-degraded",
-        "standard-tier-unavailable-no-workaround-sev2",
-        "existing-sev1-jira-available",
-    ),
-    "precedence": (
-        "crm-zero-precedes-agent-and-jira",
-        "crm-ambiguous-precedes-agent",
-        "invalid-agent-single-match",
-    ),
-    "fault_recovery": (
-        "existing-sev3-jira-unavailable",
-        "jira-unavailable-sev2-typed-boundary",
-        "jira-unavailable-sev1-typed-boundary",
-    ),
-    "attachments_and_comms": (
-        "informational-auto-send-one-attachment",
-        "informational-auto-disabled-high-impact-context",
-    ),
-}
-# Timeout budget. The single load-bearing number is the run_command
 # `timeout` in customer_escalation_triage.yaml, mirrored here as
 # GRADER_TIMEOUT_SECONDS — coder_eval SIGKILLs this process there, and nothing
 # below can outlive it. Everything else is derived from the observed worst case
@@ -2124,14 +2095,14 @@ def main() -> int:
         checker_started_monotonic + LIVE_CLEANUP_DEADLINE_SECONDS
     )
     stage_started = time.monotonic()
-    print(
-        "BENCHMARK stage=structural-preflight "
-        f"duration_seconds={time.monotonic() - stage_started:.3f}"
-    )
     if not BPMN_FILE.is_file():
         raise CheckFailure(f"missing {BPMN_FILE}")
     contract = load_runtime_contract()
     original_hash = sha256(BPMN_FILE)
+    print(
+        "BENCHMARK stage=contract-resolution "
+        f"duration_seconds={time.monotonic() - stage_started:.3f}"
+    )
     checker_hash = sha256(Path(__file__).resolve())
     target = assert_live_target()
     print(
@@ -2381,6 +2352,9 @@ def main() -> int:
             # chased here. A failure to clean is reported, never raised over
             # a scenario verdict -- post_run replays the journal regardless,
             # and it is the only sweep that survives a SIGKILL.
+            # Arm the absolute cap so a hung connector delete cannot eat the
+            # window coder_eval leaves before it SIGKILLs this process.
+            ACTIVE_CLI_DEADLINE = cleanup_deadline
             stage_started = time.monotonic()
             try:
                 cleanup_failures.extend(side_effects.cleanup())
@@ -2390,6 +2364,7 @@ def main() -> int:
                 "BENCHMARK stage=connector-cleanup "
                 f"duration_seconds={time.monotonic() - stage_started:.3f}"
             )
+            ACTIVE_CLI_DEADLINE = None
 
         write_scenario_results(scenario_results)
         if cleanup_failures:
@@ -2413,10 +2388,9 @@ def main() -> int:
                 f"failed: {failed}. Per-scenario verdicts and per-family "
                 f"partial credit are in {SCENARIO_RESULTS}."
             )
-        deleted = ", ".join(sorted(lease.solution_ids))
         print(
             f"PASS: {len(SCENARIOS)} exact-artifact Alpha scenarios; "
-            f"ephemeral solution deleted ({deleted}); "
+            f"solution left to the post_run sweep from {LIVE_RUN_DIR}; "
             "total_duration_seconds="
             f"{time.monotonic() - checker_started_monotonic:.3f}"
         )

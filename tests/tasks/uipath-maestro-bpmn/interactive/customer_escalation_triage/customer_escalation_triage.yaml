@@ -12,7 +12,7 @@ description: >
   outputs, traces, and external side effects, then delete every created issue,
   file, message, and ephemeral Alpha solution whose identifier the harness
   recovers.
-tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:setup, shape:multi-node, node:decision, node:subflow, node:loop, connector, feature:connections, feature:activities, feature:registry, feature:transform, feature:escalation, feature:conversational, feature:approval-gate, path-to-ga]
+tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, node:subflow, node:loop, connector, feature:connections, feature:activities, feature:registry, feature:transform, feature:escalation, feature:conversational, feature:approval-gate, path-to-ga, outcome-graded]
 
 run_limits:
   # Timeout headroom, largest number first. task_timeout is the only ceiling
@@ -235,11 +235,10 @@ simulation:
 # the pair rather than silently misrouting it
 # (coder_eval/orchestrator.py::_reject_litellm_agent_judge_if_unsupported).
 #
-# `bedrock` matches how CI routes the agent (smoke-skills.yml sets
-# API_BACKEND: bedrock) and sources its credentials from
-# AWS_BEARER_TOKEN_BEDROCK + AWS_REGION. Deleting this block, or dropping the
-# route back to litellm, makes the whole task fail before the agent starts.
-# Switch to `direct` (needs ANTHROPIC_API_KEY) only if Bedrock is unavailable.
+# `direct` needs only ANTHROPIC_API_KEY, which CI already sets for the
+# reviewer, versus Bedrock's AWS_BEARER_TOKEN_BEDROCK + AWS_REGION pair.
+# Deleting this block, or dropping the route back to litellm, makes the whole
+# task fail before the agent starts.
 checker_context:
   api_route:
     route: direct
@@ -307,6 +306,21 @@ success_criteria:
       allowed_tools: ["mcp__coder_eval_judge__submit_verdict"]
       disallowed_tools: ["Bash", "Read", "Glob", "Grep", "Write", "Edit"]
     weight: 4.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent loaded the uipath-maestro-bpmn skill"
+    skill_name: "uipath-maestro-bpmn"
+    expected_skill: "uipath-maestro-bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the generated BPMN itself before finishing"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+validate'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
