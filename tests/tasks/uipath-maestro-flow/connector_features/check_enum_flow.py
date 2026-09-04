@@ -47,7 +47,7 @@ def _check_structure(flow_path: str, flow: dict[str, Any]) -> None:
 _JSONSTRING_PREFIX = "=jsonString:"
 
 _EXPECTED_BODY = {
-    "to": "baishali13@gmail.com",
+    "to": "is-test@uipath.com",
     "importance": "high", # this is the enum field under test
 }
 
