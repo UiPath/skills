@@ -2162,6 +2162,40 @@ class JournalCompletenessTests(unittest.TestCase):
         self.assertIn("drive-9", journalled)
 
 
+class FamilyMembershipTests(unittest.TestCase):
+    """A family must contain scenarios that can actually prove its claim."""
+
+    def test_attachments_family_can_detect_an_ordering_defect(self) -> None:
+        by_name = {case.name: case for case in checker.SCENARIOS}
+        family = checker.SCENARIO_BUNDLES["attachments_and_comms"]
+        counts = sorted(
+            len(by_name[name].attachment_iterations) for name in family
+        )
+        # Order needs at least two items; with only 0- and 1-attachment cases
+        # the criterion named for ordered copies graded nothing about order.
+        self.assertGreaterEqual(
+            max(counts), 2, f"attachment counts in family: {counts}"
+        )
+        alerts = {by_name[name].outputs["slackAction"] for name in family}
+        self.assertIn("PostAlert", alerts)
+        self.assertIn("NoAlert", alerts)
+
+    def test_seed_bundle_bijection_is_enforced_at_grade_time(self) -> None:
+        """Not just in CI: a seed edit must not grade the wrong families."""
+
+        payload = seed_module.build_seed()
+        payload["cases"] = payload["cases"][:-1]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "seed.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(
+                checker.CheckFailure, "SCENARIO_BUNDLES disagree"
+            ):
+                checker.load_scenarios(path)
+        # Restore the good matrix for the rest of the suite.
+        checker.load_scenarios(_SEED_PATH)
+
+
 class MarkerOrderTests(unittest.TestCase):
     def test_returns_the_observed_order_not_the_expectation(self) -> None:
         """Returning `expected` made the downstream guard self-comparing."""

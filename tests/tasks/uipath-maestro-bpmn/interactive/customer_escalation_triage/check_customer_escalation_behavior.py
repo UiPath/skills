@@ -92,7 +92,6 @@ LIVE_RUN_DIR = Path(".customer-escalation-live")
 # gets, say, classification right but attachments wrong scores accordingly.
 SCENARIO_BUNDLES = {
     "classification": (
-        "mixed-case-sev1-new-two-attachments",
         "whitespace-duplicate-degraded",
         "standard-tier-unavailable-no-workaround-sev2",
         "existing-sev1-jira-available",
@@ -108,6 +107,11 @@ SCENARIO_BUNDLES = {
         "jira-unavailable-sev1-typed-boundary",
     ),
     "attachments_and_comms": (
+        # The only case with two attachments, so the only one that can prove
+        # ORDER, and the only PostAlert in this family. It used to sit in
+        # `classification`, which meant the criterion named for ordered
+        # attachments could not detect an ordering defect at all.
+        "mixed-case-sev1-new-two-attachments",
         "informational-auto-send-one-attachment",
         "informational-auto-disabled-high-impact-context",
     ),
@@ -233,6 +237,18 @@ def load_scenarios(path: Path = SEED_FILE) -> tuple[str, tuple[Scenario, ...]]:
     names = [case.name for case in scenarios]
     if len(set(names)) != len(names):
         raise CheckFailure(f"{path} has duplicate case names: {names}")
+
+    # Enforced here, not only in the unit tests: a seed edited without
+    # rerunning them would otherwise grade against silently wrong families,
+    # scoring a partial-credit criterion on scenarios it does not contain.
+    bundled = [name for family in SCENARIO_BUNDLES.values() for name in family]
+    if sorted(bundled) != sorted(names):
+        raise CheckFailure(
+            "seeded cases and SCENARIO_BUNDLES disagree; partial credit would "
+            f"grade the wrong families. seeded-not-bundled="
+            f"{sorted(set(names) - set(bundled))} bundled-not-seeded="
+            f"{sorted(set(bundled) - set(names))}"
+        )
 
     global RUN_NONCE, SCENARIOS
     RUN_NONCE = run_id

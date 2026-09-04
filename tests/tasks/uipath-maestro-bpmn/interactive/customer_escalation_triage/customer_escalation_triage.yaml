@@ -31,12 +31,22 @@ run_limits:
   # check_customer_escalation_behavior.py — change the two together, and note
   # that adding scenarios spends the agent's authoring window.
   #
-  # turn_timeout caps one pathological turn so it cannot eat the authoring
-  # window; it is not a per-turn budget (interview turns use far less) and 900
-  # is the value every experiment config in tests/experiments/ uses.
+  # turn_timeout is 2400 on MEASURED evidence, not convention. A local run on
+  # 2026-09-04 produced the first real numbers for this task:
+  #
+  #   9 interview turns: 690s total, mean 77s, max 226s
+  #   the authoring turn after DESIGN APPROVED: exceeded 900s and was killed
+  #
+  # I had previously lowered this to 900 because that is what every
+  # experiment config uses; that killed the run at iteration 10 with the
+  # design approved and nothing authored. Interview turns peak at 226s, so
+  # 2400 only ever binds on the authoring turn, and 690 + 2400 = 3090s fits
+  # inside the 4440s agent window (task_timeout - grader - the two 180s
+  # graders). Do not lower this to match the experiment default again without
+  # a measured authoring turn under it.
   expected_turns: 100
   max_turns: 180
-  turn_timeout: 900
+  turn_timeout: 2400
   task_timeout: 14400
 
 agent:
@@ -250,6 +260,13 @@ simulation:
     - "Before authoring, require the agent to summarize the complete contract and intended topology for confirmation. On its first otherwise-complete summary, introduce the stakeholder correction that whitespace-only duplicateIssueKey counts as empty and must therefore follow the no-duplicate route. Ask the agent to update its plan."
     - "Treat the playback as a design review, not a courtesy. Compare every stated guard, assignment, token, and path to the goal and reject any omission or contradiction before approval; identify only the concrete discrepancies and ask for a corrected playback."
     - "Audit precedence-bearing exclusive gateways for overlapping true guards. In particular, ExistingIssue must outrank NewEscalation when duplicateIssueKey is non-empty; require mutually exclusive predicates or cascaded gateways rather than relying on first-match engine order."
+    - "Once the agent reports the BPMN is authored and validated, the
+      conversation is over: reply with exactly <<<END>>> on its own line.
+      That literal is coder_eval's default simulation stop_token; without it
+      the dialog runs to max_turns even after the design is settled and the
+      work is done. Do not ask for a rebuild, polish, or re-checks, and do
+      not raise a requirement you have not already mentioned — the grader
+      verifies the result from here."
     - "Only after the agent incorporates the whitespace correction, uses exactly three data-only ScriptTasks (normalization, per-item preparation inside the sequential attachment subprocess, and post-loop final-item reduction), places real Jira/Drive/Slack activities only on their eligible workstream paths, preserves every routing and action decision in visible gateways and Variables tasks, shows at least six diverging exclusive gateways inside the assessment phase with explicit Degraded and Unavailable conditions, keeps validation outcomes normal, uses JiraUnavailable as the sole typed error, visibly restores both possible classified severities and engineeringNeeded on the parent boundary path, converges all outcomes before the three-way fan-out and one root end, states the exact severity-qualified JiraUnavailable guard, and asks again for confirmation, respond with the exact phrase DESIGN APPROVED and permit authoring."
     - "If the agent writes project files before DESIGN APPROVED, reject the work and do not compensate by dumping missing requirements."
     - "If the agent asks how to encode XML, expressions, mappings, iterator syntax, or registry payloads, restate the business/process outcome and direct it to the BPMN skill and live registry. Never provide implementation snippets, node ids, or a reference graph."
@@ -334,7 +351,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Severity and routing are correct, including each conjunct of the Sev1 rule"
+    description: "Severity, routing and Jira action are correct across tier, service-state and duplicate-key variation"
     path: ".customer-escalation-results.json"
     assertions:
       - expression: "families.classification.all_passed"
