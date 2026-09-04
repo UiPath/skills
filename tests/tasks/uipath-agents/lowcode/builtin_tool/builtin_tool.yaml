@@ -6,7 +6,11 @@ description: >
   resource.json uses `type: "internal"`, `referenceKey: null`, and
   `properties.toolType` set to one of the four documented built-in
   tool keys (analyze-attachments, load-attachments, deep-rag,
-  batch-transform).
+  batch-transform). Also covers the `@{ }` -> `expression` contentToken
+  path: a prompt message must reference the tool via `@{tools.<Name>}`
+  with a matching expression token, where `<Name>` is the tool
+  resource's `name` (the runtime resolves the reference by `name`,
+  case-insensitively).
 tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
@@ -16,8 +20,9 @@ run_limits:
 initial_prompt: |
   Create a UiPath low-code agent "DocAnalystAgent" that helps users understand
   uploaded documents. Enable the built-in "Analyze Files" tool so the
-  agent can analyze PDF and image attachments. The solution should be
-  named "DocsSol".
+  agent can analyze PDF and image attachments. In the agent's prompt,
+  reference that tool with an `@{ }` resource expression so the model is
+  told to use it. The solution should be named "DocsSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -88,7 +93,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Built-in tool resource shape + job-attachment input wiring + canonical x-uipath-resource-kind"
+    description: "Built-in tool resource shape + job-attachment input wiring + canonical x-uipath-resource-kind + @{tools.<Name>} prompt reference with synced expression token"
     command: "python3 $TASK_DIR/check_builtin_tool.py"
     timeout: 30
     expected_exit_code: 0
