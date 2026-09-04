@@ -28,6 +28,8 @@ The argument is the **project directory path** (the folder containing `project.u
 > 4. Never start a second debug while the first is running — it uploads and executes the flow again.
 > 5. Re-run debug only after you changed the flow.
 
+> **Do not pass `--folder-path` or `--folder-key` to `flow debug`.** Debug provisions into your personal workspace. A shared or team folder fails with `HTTP 500` at `Stage: prepare-custom-debug` and no instance starts. Shared resources the flow uses (indexes, buckets, connections) reach the run through `uip solution resources refresh`, not through the debug folder. Use the flag only when your account has no personal workspace or the flow needs folder-scoped assets or queues that exist only in that folder.
+
 Pass input arguments when the flow has input parameters:
 
 ```bash
