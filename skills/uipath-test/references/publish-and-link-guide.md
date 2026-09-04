@@ -72,7 +72,7 @@ uip tm testcases link-automation \
 
 The output should show `Result: "Linked"`. `link-automation` is idempotent on the `(test-case-key, package-name, test-name)` triple — re-running with the same triple replaces the previous link.
 
-**Alternative — link by id.** Pass `--entry-point-id <PackageEntryPointId>` (from Step 4) instead of `--test-name` to bind by id. `--test-name` is then ignored (the label is taken from the entry point). Supply one of `--test-name` / `--entry-point-id`.
+**Alternative — link by id.** In addition to the required `--test-name`, pass `--entry-point-id <PackageEntryPointId>` (from Step 4) to bind by id. `--test-name` stays required but is ignored (the label is taken from the entry point) — pass the name shown in `list-automations`.
 
 ```bash
 uip tm testcases link-automation \
@@ -80,6 +80,7 @@ uip tm testcases link-automation \
   --test-case-key <TEST_CASE_KEY> \
   --folder-key <FOLDER_UUID> \
   --package-name <PACKAGE_ID> \
+  --test-name <TEST_NAME> \
   --entry-point-id <PACKAGE_ENTRY_POINT_ID> \
   --output json
 ```
