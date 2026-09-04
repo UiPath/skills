@@ -224,7 +224,7 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 **UI Automation — Target Configuration Gate (MANDATORY).** Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first. **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
-**For CREATE requests:** author the workflow complete in one `Write` (SKILL.md Rule 18 — every activity sourced card → memory → discovery triple), then gate in Phase 3. Use the `Write` tool to create the `.xaml` file per [§ XAML File Anatomy](#xaml-file-anatomy). Infer the file path from folder conventions; use descriptive filenames.
+**For CREATE requests:** do not `Read` the scaffolded `Main.xaml` first — the `Write` replaces it wholesale, and the data files the workflow needs (`mkdir` + sample inputs) go in the same assistant message as that `Write`. Author the workflow complete in one `Write` (SKILL.md Rule 18 — every activity sourced card → memory → discovery triple), then gate in Phase 3. Use the `Write` tool to create the `.xaml` file per [§ XAML File Anatomy](#xaml-file-anatomy). Infer the file path from folder conventions; use descriptive filenames.
 
 **For EDIT requests:** always `Read` current content before editing; use `Edit` with exact, unique `old_string` matches.
 
@@ -232,9 +232,11 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 **MUST** repeat until 0-error state from **both** `validate` and `build`, or max 5 fix attempts per loop. After 5 attempts, stop and present remaining errors to the user. The canonical two-phase loop (per-file `validate` → project-level `build`), what each phase covers, and the smoke-test procedure: [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop) — read it before your first fix iteration.
 
+One `Bash` call for the whole gate — chain the phases with `&&` so a `validate` failure stops before `build` and the pass path costs one turn, never one turn per command (the journey map's gate row in [execution-maps-guide.md](../execution-maps-guide.md)):
+
 ```bash
-uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output json
-uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --project-dir "<PROJECT_DIR>" --output json \
+  && uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
 `--file-path` must be **relative to the project directory**. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop. A clean gate is still not runtime proof: for observable-output workflows, end with one `uip rpa run` and check the outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
