@@ -109,3 +109,5 @@ Requests outside this skill include creating a project/model with no documents, 
 - [Project Setup Guide](references/project-setup-guide.md) — new projects, uploads, taxonomy, and initial labeling
 - [Improve Prompts Guide](references/improve-prompts-guide.md) — iterative optimization and regression detection
 - [Label Documents Guide](references/label-documents-guide.md) — prediction review and confirmation workflow
+- [Deployment Guide](references/deployment-guide.md) — deploy a trained version to an Orchestrator folder
+- [Unsupported Capabilities](references/unsupported-capabilities.md) — out-of-scope requests and their standard responses
