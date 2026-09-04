@@ -22,7 +22,9 @@ RULESET_ID="${RULESET_ID:-14795269}"
 # cannot satisfy a required context by publishing the same name.
 ACTIONS_APP_ID=15368
 
-DOC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/REQUIRED-CHECKS.md"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOC="$REPO_ROOT/docs/REQUIRED-CHECKS.md"
+PARSER="$REPO_ROOT/scripts/parse-required-checks.py"
 
 DRY_RUN=0
 WITH_RELEASE=0
@@ -33,12 +35,12 @@ for arg in "$@"; do
     --dry-run)                DRY_RUN=1 ;;
     --with-release-branches)  WITH_RELEASE=1 ;;
     --list)                   LIST_ONLY=1 ;;
-    -h|--help)                sed -n '3,16p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help)                sed -n '/^# Usage:/,/^$/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
 
-for bin in gh jq; do
+for bin in gh jq python3; do
   command -v "$bin" >/dev/null || { echo "Required tool not found: $bin" >&2; exit 1; }
 done
 
@@ -50,21 +52,18 @@ fi
 
 [ -f "$DOC" ] || { echo "Cannot find $DOC" >&2; exit 1; }
 
-# Parse the "Current target set" table: rows between that heading and the next
-# heading, first pipe-delimited column, stripped of backticks. The header and
-# separator rows have no backticks, so they drop out on their own.
-CONTEXTS=$(
-  awk '
-    /^## Current target set/     { intable = 1; next }
-    intable && /^## /            { exit }
-    intable && /^\| *`/ {
-      line = $0
-      sub(/^\| *`/, "", line)
-      sub(/` *\|.*/, "", line)
-      print line
-    }
-  ' "$DOC"
-)
+# Parse via scripts/parse-required-checks.py — THE single parser for the table.
+# tests/scripts/test_required_checks_contract.py imports the same module, so the
+# set applied here is by construction the set the contract guard validated. This
+# script used to carry its own awk parser, which accepted rows the guard's regex
+# dropped: a context could be PUT to the ruleset having never been checked
+# against the workflows, or applied as a mangled string GitHub waits for forever.
+# The parser raises on a malformed row rather than silently skipping it, and
+# rejects duplicates.
+if ! CONTEXTS=$(python3 "$PARSER" --contexts); then
+  echo "Failed to parse the target set from $DOC" >&2
+  exit 1
+fi
 
 if [ -z "$CONTEXTS" ]; then
   echo "Parsed zero contexts from $DOC — has the table format changed?" >&2
@@ -72,13 +71,6 @@ if [ -z "$CONTEXTS" ]; then
 fi
 
 COUNT=$(printf '%s\n' "$CONTEXTS" | wc -l | tr -d ' ')
-
-DUPES=$(printf '%s\n' "$CONTEXTS" | sort | uniq -d)
-if [ -n "$DUPES" ]; then
-  echo "Duplicate contexts in the table:" >&2
-  printf '  %s\n' "$DUPES" >&2
-  exit 1
-fi
 
 if [ "$WITH_RELEASE" -eq 1 ]; then
   REF_INCLUDE='["~DEFAULT_BRANCH", "refs/heads/release/*"]'
@@ -136,7 +128,9 @@ if [ -n "$RECENT_SHAS" ]; then
     echo "WARNING: not reported on any of the 10 most recent open PR heads:" >&2
     printf '  %s\n' "$MISSING" >&2
     echo "Requiring a context that never reports blocks every PR. Continue? [y/N]" >&2
-    read -r reply
+    # `read` returns non-zero at EOF (piped stdin, </dev/null, a CI job), and
+    # `set -e` would kill the script here before the explicit "Aborted." line.
+    read -r reply || reply=n
     [ "$reply" = "y" ] || { echo "Aborted."; exit 1; }
   fi
 fi

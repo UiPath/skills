@@ -15,7 +15,7 @@ A required context is a literal string GitHub waits for. If the check never repo
 
 | Cause | Effect | Fix |
 |---|---|---|
-| `on.pull_request.paths:` excludes the PR | Workflow never runs, no check reported | Drop the filter; short-circuit inside the job instead |
+| A narrowed PR trigger excludes the PR — `paths:`, `paths-ignore:`, `branches:`, `branches-ignore:`, or a `types:` list missing `synchronize` | Workflow never runs, no check reported | Drop the filter; short-circuit inside the job instead |
 | Job name is an expression (`${{ matrix.skill }}`) | Name changes per PR, so the fixed context never matches | Add a fixed-name aggregator job and require that |
 
 A job that runs and is **skipped** by an `if:` condition reports `skipped`, which GitHub counts as a pass. That is the supported way to keep a required check cheap — not a `paths:` filter.
@@ -47,7 +47,9 @@ So a required job needs one of:
   two `gate-summary` aggregators do).
 
 `test_required_job_needs_are_covered` in
-`tests/scripts/test_required_checks_contract.py` enforces this.
+`tests/scripts/test_required_checks_contract.py` enforces this — including that an
+`always()` job actually reads each `needs.<job>.result`, since a job that always
+runs and ignores its needs reports green whatever they did.
 
 > This is the one place the 2026-09-03 audit was wrong. It recommended dropping
 > `Detect changed RPA skills` as "a detect job, not a gate … it only guards its
@@ -61,6 +63,8 @@ Do not require: LLM output (`Claude Code Review`, `Lint changed task YAMLs`, `co
 ## Current target set
 
 Renaming a job here renames its check and **breaks the ruleset**. Update both in the same PR.
+
+This table is machine-read. `scripts/parse-required-checks.py` is its only parser — `apply-required-checks.sh` shells out to it and the contract guard imports it, so what gets applied is by construction what got validated. Both cells of every row must be backticked; the parser errors on a row it cannot read rather than dropping it.
 
 | Check | Workflow |
 |---|---|
@@ -98,7 +102,7 @@ Adding a context before the job has reported once blocks every open PR. Sequence
 2. Confirm the check reports on a PR opened **after** that merge:
 
    ```bash
-   gh api "repos/UiPath/skills/commits/$(gh pr view <PR> --json headRefOid -q .headRefOid)/check-runs?filter=latest" \
+   gh api "repos/UiPath/skills/commits/$(gh pr view <PR> --json headRefOid -q .headRefOid)/check-runs?per_page=100&filter=latest" \
      --jq '.check_runs[].name' | sort
    ```
 

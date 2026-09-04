@@ -33,7 +33,14 @@ jobs:
           BASE_REF: ${{ github.base_ref || 'main' }}
         run: |
           set -euo pipefail
-          FILES=$(git diff "origin/$BASE_REF"...HEAD --name-only --diff-filter=ACM | grep 'skills/.*/SKILL\.md$' || true)
+
+          # Two steps, not one pipeline with a trailing `|| true`. `grep`
+          # exits 1 when nothing matches, which is the normal no-op case, but
+          # a single `|| true` over the whole pipeline also swallows a FAILED
+          # `git diff` (unresolvable ref, shallow clone) — leaving FILES empty
+          # and reporting this required check green having validated nothing.
+          CHANGED=$(git diff "origin/$BASE_REF"...HEAD --name-only --diff-filter=ACM)
+          FILES=$(printf '%s\n' "$CHANGED" | grep 'skills/.*/SKILL\.md$' || true)
 
           # Explicit no-op instead of falling through to the hook with zero
           # args: with no arguments the hook switches to pre-commit mode and
