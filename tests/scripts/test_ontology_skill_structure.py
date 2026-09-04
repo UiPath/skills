@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Static contract tests for the delegated ontology skill family."""
 
-import unittest
 import json
+import re
+import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ROOT / "skills"
+ONTOLOGY_SKILLS = sorted(SKILLS.glob("uipath-ontolog*"))
 
 
 def _body(path: Path) -> str:
@@ -88,7 +90,9 @@ class OntologySkillStructureTests(unittest.TestCase):
         modeler = _body(SKILLS / "uipath-ontology-modeler" / "SKILL.md")
         authoring = _body(SKILLS / "uipath-ontology-authoring" / "SKILL.md")
         for text in (modeler, authoring):
-            self.assertIn("tools/ontology_preflight.py", text)
+            # <TOOLS_DIR> is the shared tools/ tree; the bare relative form does not
+            # resolve from the {workdir} these steps run in. ShippedPathTests enforces that.
+            self.assertIn("<TOOLS_DIR>/ontology_preflight.py", text)
             self.assertIn("--mapping-mode auto", text)
             self.assertIn("PRESENT_VALID", text)
             self.assertIn("BLOCKED_AMBIGUITY", text)
@@ -171,6 +175,79 @@ class OntologySkillStructureTests(unittest.TestCase):
             joined = "\n".join(row["prompt"] for row in rows).lower()
             for marker in prompts:
                 self.assertIn(marker.lower(), joined)
+
+
+
+class ShippedPathTests(unittest.TestCase):
+    """Every path the ontology skills invoke must exist AND be published.
+
+    `package.json:files` is an allowlist. A path that resolves in the git checkout but sits under a
+    directory not on that list is absent on every installed machine, and this family invokes Python
+    from `tools/` that the deploy skill's own `_staging.py` hard-requires -- so omitting it did not
+    degrade the skill, it stopped Phase 2 at its first script with `cannot find tools/entry_points.py`.
+    Nothing else in the suite would have noticed: the tests run from the checkout, where it is there.
+
+    `tools/` cannot move under `skills/` to dodge this. CLAUDE.md rule 5 forbids a skill reading
+    another skill's files, and `entry_points.py` is read by both the deploy skill's staging step and
+    the modeler validator's contract gate, so shared code has to live outside `skills/` and ship.
+    """
+
+    def published_roots(self):
+        return set(json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["files"])
+
+    def invoked_paths(self):
+        """Every Python path a shipped ontology file names, placeholders resolved.
+
+        `<SKILL_DIR>` is the skill's own folder and `<TOOLS_DIR>` the shared `tools/` tree, both
+        defined in the SKILL.md that uses them. A bare `tools/x.py` or `scripts/x.py` counts too --
+        it is the form that does not resolve from `{workdir}`, so it must not creep back in.
+        """
+        pattern = re.compile(
+            r"(?:<SKILL_DIR>/|<TOOLS_DIR>/|(?<![\w./-]))((?:tools/|scripts/)?[\w/]+\.py)")
+        for skill in ONTOLOGY_SKILLS:
+            for path in sorted(skill.rglob("*")):
+                if path.suffix not in (".md", ".py") or not path.is_file():
+                    continue
+                text = path.read_text(encoding="utf-8")
+                for line in text.splitlines():
+                    for match in pattern.finditer(line):
+                        named = match.group(1)
+                        prefix = match.group(0)[: -len(named)]
+                        if prefix == "<TOOLS_DIR>/":
+                            yield path, "tools/" + named, line
+                        elif prefix == "<SKILL_DIR>/":
+                            yield path, named, line
+                        elif named.startswith(("tools/", "scripts/")):
+                            yield path, named, line
+
+    def test_every_invoked_path_exists_and_is_published(self):
+        published = self.published_roots()
+        seen = 0
+        for source, invoked, line in self.invoked_paths():
+            seen += 1
+            with self.subTest(source=str(source.relative_to(ROOT)), invoked=invoked):
+                # A skill-relative `scripts/...` resolves inside its own skill; `tools/...` at root.
+                candidates = [ROOT / invoked]
+                skill = next(s for s in ONTOLOGY_SKILLS if s in source.parents or s == source.parent)
+                candidates.append(skill / invoked)
+                resolved = next((c for c in candidates if c.is_file()), None)
+                self.assertIsNotNone(
+                    resolved, "%s names %s, which is not a file at %s" % (
+                        source.relative_to(ROOT), invoked,
+                        " or ".join(str(c.relative_to(ROOT)) for c in candidates)))
+                if invoked.startswith(("tools/", "scripts/")) and "python3 " in line \
+                        and "<SKILL_DIR>/" not in line and "<TOOLS_DIR>/" not in line:
+                    self.fail(
+                        "%s invokes a bare %s. Steps run from {workdir}, where that path does not "
+                        "exist, and the file is not executable. Use python3 <SKILL_DIR>/scripts/... "
+                        "or python3 <TOOLS_DIR>/... instead.\n    %s"
+                        % (source.relative_to(ROOT), invoked, line.strip()))
+                root_dir = resolved.relative_to(ROOT).parts[0]
+                self.assertIn(root_dir, published,
+                              "%s invokes %s, but %r is absent from package.json:files, so the file "
+                              "does not exist on an installed machine"
+                              % (source.relative_to(ROOT), invoked, root_dir))
+        self.assertGreater(seen, 5, "found almost no invocations -- the regex probably stopped matching")
 
 
 if __name__ == "__main__":
