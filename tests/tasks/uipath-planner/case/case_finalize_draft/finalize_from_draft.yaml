@@ -62,6 +62,14 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "Planner Handoff header records the conformance-checklist verdict (Template validation: passed) — the ready flip ran the gate"
+    command: "grep -Eiq 'Template validation[*| ]+passed' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "sdd.draft.md is still in place — finalization renders beside the draft, never consumes it"
     path: "sdd.draft.md"

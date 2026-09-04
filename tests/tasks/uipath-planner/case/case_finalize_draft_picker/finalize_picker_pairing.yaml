@@ -50,6 +50,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "Planner Handoff header records the conformance-checklist verdict (Template validation: passed) — the ready flip ran the gate"
+    command: "grep -Eiq 'Template validation[*| ]+passed' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Compliance Hold keeps its user-selected-stage entry and every eligible primary stage exposes it through wait-for-user"
     command: "python3 $TASK_DIR/check_picker_pairing.py"
     timeout: 30
