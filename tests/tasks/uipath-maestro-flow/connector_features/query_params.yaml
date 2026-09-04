@@ -20,6 +20,16 @@ initial_prompt: |
   an HTTP fallback for the same REST call and finish after validation.
   Do not keep searching for a connector node that the registry does not expose.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response.
 success_criteria:
   - type: run_command
     description: "Flow file exists and is valid JSON"

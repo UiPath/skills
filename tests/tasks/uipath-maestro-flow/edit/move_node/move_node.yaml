@@ -17,8 +17,17 @@ initial_prompt: |
   Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message ('nice day' or 'bring a jacket') based on which branch the decision took.
 
   Validate the flow.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response.
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"

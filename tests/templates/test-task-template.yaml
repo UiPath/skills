@@ -34,9 +34,15 @@ initial_prompt: |
   Goal-oriented prompt — describe what to build, not how. Let the skill
   teach the agent the workflow.
 
+  Do not hand-write autonomy language ("Do NOT ask for approval", "single
+  pass"). It forbids asking without saying nobody is there to ask, so the agent
+  can honor it and still stop at a consent gate. Flow tasks carry one canonical
+  headless paragraph instead, enforced by
+  tests/tasks/uipath-maestro-flow/_shared/test_headless_preamble.py — copy it
+  from there. Tasks with a `simulation:` block have a live user and must not
+  carry it.
+
   For e2e tests, append:
-    Do NOT ask for approval, confirmation, or feedback.
-    Do NOT pause between planning and implementation.
     Before starting, load the <uipath-skill-name> skill and follow its workflow.
 
 success_criteria:
