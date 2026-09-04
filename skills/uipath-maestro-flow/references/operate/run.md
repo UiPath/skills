@@ -13,7 +13,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 
 ## Debug — controlled end-to-end run
 
-> **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate. Never debug a solution this run did not scaffold: debug overwrites the Studio Web solution matching the local `.uipx` `SolutionId`. See rule #2 in [SKILL.md](../../SKILL.md).
+> **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate. Never debug a solution this run did not scaffold: debug overwrites the Studio Web solution matching the local `.uipx` `SolutionId`. See the `flow debug` consent rule in [SKILL.md](../../SKILL.md).
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
