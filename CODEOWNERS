@@ -145,12 +145,12 @@
 /tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 
 # Chat — inline conversational agent node + the conversation trigger and message nodes
-/skills/uipath-maestro-flow/references/author/plugins/conversational-agent/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
-/tests/tasks/uipath-maestro-flow/conversational/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
+/skills/uipath-maestro-flow/references/author/plugins/conversational-agent/ @UiPath/jarvis
+/tests/tasks/uipath-maestro-flow/conversational/ @UiPath/jarvis
 
 # Voice — inline voice agent node + the trigger, dial, and end-call nodes
-/skills/uipath-maestro-flow/references/author/plugins/inline-voice-agent/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
-/tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis @joshparksj @maxduu @scottcmg @andrewwan-uipath @norman-le
+/skills/uipath-maestro-flow/references/author/plugins/inline-voice-agent/ @UiPath/jarvis
+/tests/tasks/uipath-maestro-flow/voice/ @UiPath/jarvis
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
