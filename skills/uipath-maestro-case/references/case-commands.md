@@ -185,6 +185,8 @@ uip solution publish <packagePath> --wait --output json
 Validate a case management JSON file against case management rules.
 
 ```bash
+uip maestro case validate <file> --strict --sdd sdd.md --output json
+uip maestro case validate <file> --strict --output json
 uip maestro case validate <file> --output json
 uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
@@ -193,6 +195,8 @@ uip maestro case validate <file> --skeleton --output json
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
+| `--strict` | Authoritative Phase 3-exit and Phase 4 profile: the default checks plus case-wide completeness rules (empty stage, surviving `$xref(`, hoisted `conditionExpression`, incomplete connector context, empty task `data`, output-shape and input-reference form). Failures carry `STRICT_*` codes in `Data.Issues[]`. Mutually exclusive with `--skeleton` / `--skeleton-v2`. |
+| `--sdd <path>` | Audit completeness against the SDD that specifies the case: every stage, task, task type, condition row, SLA, trigger and case variable the SDD declares must be present. Implies `--strict`; findings are `STRICT_SDD_*`. Use whenever an `sdd.md` exists. |
 | `--skeleton-v2` | Preferred Phase 2 preview profile: structure plus entry/exit rules, SLA, and escalation, while task values and connector schemas are still incomplete. Availability depends on the installed CLI. |
 | `--skeleton` | Legacy structural profile. Skips tasks, SLAs, escalations, and entry/exit rules. Used only as the Phase 2 fallback when `--skeleton-v2` is unavailable. |
 
