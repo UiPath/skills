@@ -6,6 +6,7 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 ## Contents
 - Reference IDs Are Connection-Scoped (CRITICAL)
+- When the Lookup Call Fails (CRITICAL)
 - Reference Fields (CRITICAL)
 - Scope Filtering (CRITICAL)
 - Search References (filterPattern)
@@ -28,6 +29,33 @@ A reused reference ID:
 - Surfaces as a silent fault or generic "no matching resource" error — hard to diagnose without tracing back to the authoring step.
 
 **Rule:** resolve every reference ID fresh, against the current connection, every time. Treat any ID from your context or memory as unverified until re-listed.
+
+---
+
+## When the Lookup Call Fails (CRITICAL)
+
+The rules above assume `uip is resources run list` returns. When the call itself fails — `403`/`401` (expired, revoked, or reauthorization-required grant), a `5xx`, or a connector error — you have **no ID**, and there is no value you may write in its place.
+
+**Never substitute:**
+
+| Substitute | Why it is wrong |
+|---|---|
+| The display name you searched by | `reference.lookupValue` names the field to write; `lookupNames` only names the fields to match *against*. |
+| A vendor "well-known" alias | Accepted by some vendor APIs directly, but the connector stores what you write and the field is typed as an ID. |
+| An ID from context, memory, or another connection | See [Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical). |
+| A plausible-looking placeholder | Passes `describe` / `node configure` / `flow validate`; faults at runtime. |
+
+Every one of these produces an artifact that validates clean and fails later, with the original cause no longer visible.
+
+**Do this instead:**
+
+1. Retry per [agent-workflow.md — Error Recovery](agent-workflow.md#error-recovery) (max 2 semantic retries).
+2. On an auth failure, ping the connection (`uip is connections ping <id>`) to confirm the diagnosis.
+3. If it still fails, **stop and report**: name the connection, the object you could not list, and the vendor error. The fix is the user's (reauthorize, widen scopes, wait out an outage), not a value you choose.
+
+Non-interactively (CI/headless), stop and report the blocked step. Do not proceed with a value you could not verify.
+
+Say the resolve failed. Reporting a substituted value as "resolved" hides the fault from the only person who can fix it.
 
 ---
 

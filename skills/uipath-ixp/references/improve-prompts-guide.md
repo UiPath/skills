@@ -41,7 +41,7 @@ A trained version's metrics can be reread with `--model-version <N>`; retaining 
 | `ErrorRate` | field, group | Report only and independent of `Precision`: wrong extractions count once, and misses count even when they do not lower `Precision`. Report manual-correction burden; diagnose direction with `Precision`/`Recall`. |
 | `Quality` | field | Ignore. It is a coarse scale inconsistent with `ProjectScoreQuality`; never gate or report it per field. If asked, explain that the scales differ. |
 | `ProjectScoreQuality` | project | Report only on the project line, using the UI's project label. |
-| `FieldGroup`, `FieldId` | field | Identity. Join `FieldId` to taxonomy for the human-readable name (1a). |
+| `FieldGroup`, `FieldId`, `Name` | field | Identity. Compare on `FieldId` (stable); report on `Name` (current display name — `null` for a deleted field, fall back to `FieldId`; see 1a). |
 
 ## Waiting for Retrain
 
@@ -68,7 +68,11 @@ uip ixp projects get-metrics <project-name> --model-version latest --output json
 
 Use `--model-version latest`, not `live`: the baseline must be the latest trained version that instruction edits retrain (Critical Rule 21: the version follows the question). Record `ModelVersion` and save the complete per-field `Fields` array as `baseline_metrics`. If the result is unvalidated (`Data: { Metrics: null }`), refetch under the bounded wait. If it resembles a known pre-labelling version, refetch under the bounded wait and use the returned result.
 
-Metrics `Fields` contain `FieldId` but not names. Join each entry's `FieldGroup` and `FieldId` to the taxonomy field where `field_id == FieldId`; reuse the resulting name mapping.
+**Field names:** each `Fields` entry carries both `FieldId` and `Name`, so report and compare straight from the metrics — do NOT fetch the taxonomy to build an id→name map. Three rules:
+
+- **Compare on `FieldId`, report on `Name`.** `FieldId` is stable; `Name` reflects the current taxonomy, so a field renamed since an older version was scored reads back under its current name.
+- **`Name` is `null`** when the service could not resolve it (e.g. the field was deleted after that version was scored). Fall back to `FieldId`; never skip the field.
+- **When two fields share a `Name`, qualify it as `<FieldGroup> / <Name>`.** Display names are unique only within a group. This changes only how you print the row — the comparison still keys on `FieldId`.
 
 ### 1b. Check Model Configuration
 
