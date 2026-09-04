@@ -97,5 +97,6 @@ Guide for creating, editing, validating, debugging, publishing, diagnosing, and 
 - Never represent `customFieldsRequestDetails.parameterValues` as an object map. Studio Web emits `Map<string,string|null>` as `[[key, value], ...]`; inner keys are camelCase (`objectActionName`, `parameterValues`). See [connector/impl.md Step 6c](references/author/plugins/connector/impl.md).
 - Never treat validation exit code 0 as completion when warnings remain. Resolve every warning. A connector-keyword warning about generic `core.action.http.v2` without a connection binding means a brand-name shortcut was used; bind the connector before shipping or debugging.
 - Never issue setup or finalization CLI calls one per turn; chain them per rule 10 and the [Three-turn execution map](references/author/greenfield.md#three-turn-execution-map).
+- Never write a reference field you could not resolve. If `uip is resources run list` fails (403/401 on an expired grant, 5xx), you have no ID: do not substitute the display name, a well-known alias, or a remembered ID — stop and report the failed resolve. See [reference-resolution.md — When the Lookup Call Fails](../uipath-platform/references/integration-service/reference-resolution.md#when-the-lookup-call-fails-critical).
 
 > **Trouble?** Use `/uipath-feedback` to report unexpected behavior.
