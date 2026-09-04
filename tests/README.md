@@ -261,6 +261,44 @@ Running these tasks (locally, or a docker-driven experiment) requires:
 - The `coder-eval[litellm]` extra installed wherever the checker actually executes: on the **host** for `driver: tempdir` (`make install` includes it — see `tests/Makefile`), or **baked into the agent image** for `driver: docker` (coder_eval's own `coder-eval-agent` image bakes `--extra litellm` in as of 0.11.4; a custom overlay image needs it too if built from an older pin).
 - `CODEX_BASE_URL`/`CODEX_API_KEY` set in the environment the checker runs in — exported to the job for `tempdir`, or listed under `sandbox.docker.env_passthrough_extra` for `docker` (see `smoke.yaml`/`nightly.yaml`).
 
+### Running a judge-free task locally with no credentials
+
+The two requirements above apply to tasks that actually resolve a checker
+route — i.e. those with an `llm_judge` or `agent_judge` criterion. A task with
+**neither** needs no credentials at all and runs against your own logged-in
+`claude` CLI:
+
+```bash
+cd tests && make install          # once
+SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run <task.yaml> \
+  -e experiments/default.yaml -v
+```
+
+Why it works: with no judge criteria, `resolve_checker_route`'s credential
+check never runs, so `resolve_evaluation_route` sees no `backend_override` and
+an agent on `DirectRoute` and simply reuses it. `DirectRoute` deliberately
+injects no key (it only neutralises inherited Bedrock vars), so the agent and
+the simulated user both run as plain Claude Code subprocesses on cached CLI
+auth. Verified on coder-eval 0.11.6 with `route=DirectRoute,
+model=claude-sonnet-4-6` and none of `ANTHROPIC_API_KEY` /
+`AWS_BEARER_TOKEN_BEDROCK` / `CODEX_API_KEY` set.
+
+Two traps:
+
+- **Do not set `ANTHROPIC_API_KEY` or `AWS_BEARER_TOKEN_BEDROCK`** to "help".
+  Either one overrides the cached auth, and a stale or wrong value then fails
+  at call time rather than falling back.
+- **Pinning the same route explicitly does not work.** A task-level
+  `checker_context.api_route.route: direct` goes through
+  `_resolve_backend_route`, which *does* demand `ANTHROPIC_API_KEY`. Absent
+  and inherited succeeds where explicit and identical fails.
+
+An `agent_judge` criterion additionally cannot run on the experiments'
+`route: litellm` default at all — coder_eval raises at setup
+(`_reject_litellm_agent_judge_if_unsupported`), so such a task must override
+`checker_context.api_route` to `bedrock`/`direct` and therefore always needs
+credentials.
+
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
