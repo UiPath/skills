@@ -113,12 +113,13 @@ success_criteria:
     description: "Read the other `Description` field's own baseline — unchanged at 0.700, not regressed against its namesake's 0.900"
     path: "comparison.json"
     assertions:
+      # Wanted: this row named `Description` and qualified with the `Invoice`
+      # group, NOT the `Invoice > Line Items` one — separator and word order are
+      # free. A regex because `contains` cannot express that exclusion, and
+      # coder_eval rejects `contains` literals under 8 characters anyway.
       - expression: "fields[1].name"
-        operator: contains
-        expected: "Description"
-      - expression: "fields[1].name"
-        operator: contains
-        expected: "Invoice"
+        operator: regex
+        expected: "(?i)^(?!.*line[ _-]*items)(?=.*description)(?=.*invoice).*$"
       - expression: "fields[1].baseline_f1"
         operator: gte
         expected: 0.69
