@@ -27,7 +27,7 @@ interface Output {
   edits: DeclaredEdit[];
 }
 
-const SLA_HOURS: Record<string, number> = {
+const SLA_HOURS: Record<string, number | undefined> = {
   sev1: 4,
   sev2: 20,
   sev3: 120, // five days
@@ -37,6 +37,20 @@ const OVERDUE_TAG = 'TICKET_OVERDUE';
 const HOUR_MS = 60 * 60 * 1000;
 
 const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19) + 'Z';
+
+/**
+ * The first of `names` the row actually carries, as a string, or '' if it carries none.
+ *
+ * Row fields are optional because a `SELECT *` read's physical column spelling is not
+ * knowable at authoring time, so every read goes through here rather than off the interface.
+ */
+function column(row: TicketRow, ...names: string[]): string {
+  for (const name of names) {
+    const value = row[name];
+    if (value !== undefined && value !== null) return String(value);
+  }
+  return '';
+}
 
 export default defineFunction({
   name: 'tagOverdueTicket',
@@ -48,18 +62,31 @@ export default defineFunction({
   output: type<Output>(),
   handler: async (input) => {
     const row = input.ticket[0];
-    if (row.Status === 'closed') {
+    if (column(row, 'Status', 'status') === 'closed') {
       return { edits: [] };
     }
 
-    const dueAt = Date.parse(row.CreatedAt) + SLA_HOURS[row.Sev] * HOUR_MS;
+    // Severity and creation time are the two the job cannot proceed without, so they are
+    // checked here, where the error can name the column and what the row did carry.
+    const createdAt = Date.parse(column(row, 'CreatedAt', 'createdAt'));
+    const sev = column(row, 'Sev', 'sev');
+    const slaHours = SLA_HOURS[sev];
+    if (Number.isNaN(createdAt) || slaHours === undefined) {
+      throw new Error(
+        `ticket ${input.ticketId}: no due date is computable from CreatedAt=` +
+          `${column(row, 'CreatedAt', 'createdAt')} Sev=${sev}; the row carried ` +
+          Object.keys(row).join(', '),
+      );
+    }
+
+    const dueAt = createdAt + slaHours * HOUR_MS;
     const properties: Record<string, unknown> = { id: input.ticketId };
 
-    if (Date.parse(row.DueAt) !== dueAt) {
+    if (Date.parse(column(row, 'DueAt', 'dueAt')) !== dueAt) {
       properties.dueAt = iso(dueAt);
     }
 
-    const tags = row.Labels.split(',').filter(Boolean);
+    const tags = column(row, 'Labels', 'labels').split(',').filter(Boolean);
     if (Date.now() > dueAt && !tags.includes(OVERDUE_TAG)) {
       properties.tags = [...tags, OVERDUE_TAG].join(',');
     }

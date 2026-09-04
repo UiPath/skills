@@ -9,6 +9,7 @@ without it and accepts either a passed or a skipped typecheck.
 
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,7 @@ ZOD_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "support-zod"
 GOLDEN = Path(__file__).resolve().parent / "golden" / "support.json"
 ONTOLOGY = "support"
 ACTION = "tagOverdueTicket"
+MODELER_REFS = ROOT / "skills" / "uipath-ontology-modeler" / "references"
 
 
 def load_tool():
@@ -164,8 +166,8 @@ class CodedActionPreflightTests(unittest.TestCase):
         workdir = self.workdir()
         self.edit(
             workdir / "jobs" / f"{ACTION}.ts",
-            "    const tags = row.Labels",
-            "    properties.owner = 'unassigned';\n    const tags = row.Labels",
+            "    const tags = column(row, 'Labels'",
+            "    properties.owner = 'unassigned';\n    const tags = column(row, 'Labels'",
         )
         payload = self.assert_only_gate_fails(workdir, "writes-cover-edits")
         self.assertIn("Ticket.owner", payload["errors"]["writes-cover-edits"][0])
@@ -223,9 +225,9 @@ class CodedActionPreflightTests(unittest.TestCase):
     def test_a_standard_schema_contract_is_refused(self):
         """A zod (or arktype/valibot) contract carries its own schema and cannot be lowered into
         the manifest this pipeline stages. It used to PASS here, which was the hazard: the deploy
-        step would then keep whatever manifest was already in the project, and in template mode
-        that is the skeleton's exemplar contract, so the job would deploy under the wrong input
-        schema and fault at invoke time."""
+        step would then keep whatever manifest was already in the project -- a manifest belonging to
+        some other job -- so this one would deploy under a foreign input schema and fault at invoke
+        time. Staging now refuses instead; this gate catches it a phase earlier."""
         payload = self.assert_only_gate_fails(self.workdir(ZOD_FIXTURE), "input-strictness")
         detail = payload["errors"]["input-strictness"][0]
         self.assertIn("zod", detail)
@@ -289,6 +291,50 @@ class CodedActionPreflightTests(unittest.TestCase):
         code, payload = run_preflight(self.workdir(), "--action", "noSuchAction", "--skip-typecheck")
         self.assertNotEqual(code, 0, payload)
         self.assertIn("discovery", payload["errors"])
+
+
+
+class WorkedExampleTests(unittest.TestCase):
+    """Every complete job in the modeler's references must compile under the typecheck gate.
+
+    The worked examples are what an agent copies, so a job that does not compile is generation
+    that fails preflight. This caught the real case: making row fields optional (a required field
+    is rejected before the handler runs) left both examples reading `row.CreatedAt` off the
+    interface, which is `string | undefined` under --strict.
+
+    Templates and fragments are excluded by construction -- a block qualifies only if it declares
+    `export default defineFunction` and carries no `{Placeholder}` outside a `${...}` interpolation -- so the contract guide's
+    skeleton and its one-liners are not held to compiling.
+    """
+
+    def complete_jobs(self):
+        for md in sorted(MODELER_REFS.glob("*.md")):
+            for index, block in enumerate(re.findall(r"```typescript\n(.*?)```", md.read_text(encoding="utf-8"), re.S)):
+                if "export default defineFunction" in block and not re.search(r"(?<!\$)\{[A-Za-z][\w ,]*\}", block):
+                    yield md.name, index, block
+
+    def test_the_references_contain_the_worked_examples(self):
+        """A refactor that renamed the fence or moved the file must not silently empty this suite."""
+        found = [(name, index) for name, index, _ in self.complete_jobs()]
+        self.assertEqual(len(found), 2, "expected both worked examples, found %s" % (found,))
+
+    def test_every_worked_example_compiles(self):
+        tool = load_tool()
+        if tool.find_tsc(FIXTURE)[0] is None:
+            self.skipTest("no TypeScript compiler available")
+        typecheck = importlib.util.spec_from_file_location(
+            "coded_action_typecheck", ROOT / "tools" / "coded_action" / "typecheck.py")
+        module = importlib.util.module_from_spec(typecheck)
+        typecheck.loader.exec_module(module)
+
+        temp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, temp, True)
+        for name, index, block in self.complete_jobs():
+            with self.subTest(reference=name, block=index):
+                job = temp / ("%s-%d.ts" % (name, index))
+                job.write_text(block, encoding="utf-8")
+                status, detail = module.typecheck_job(job, ROOT)
+                self.assertEqual(status, "passed", "%s block %d: %s" % (name, index, detail))
 
 
 if __name__ == "__main__":

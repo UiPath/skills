@@ -57,8 +57,19 @@ jobs:
         with:
           python-version: '3.13'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
       - name: Install pytest
         run: pip install pytest
+
+      # The validator's `typecheck` gate compiles each job against a stub of the SDK, and skips
+      # itself with a reason when no compiler is reachable. Without tsc here the gate would skip
+      # on every run and stay green through a job that does not compile -- which is exactly what
+      # it did, until a fixture whose row reads were `string | undefined` went unnoticed.
+      - name: Install TypeScript
+        run: npm install --global typescript
 
       # The deriver must reproduce, byte for byte, the entry-points manifests Studio Web itself
       # produced for two jobs that deployed and ran on a tenant. Those goldens are the only

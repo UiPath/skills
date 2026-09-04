@@ -92,7 +92,7 @@ interface Output {
   edits: DeclaredEdit[];
 }
 
-const SLA_HOURS: Record<string, number> = {
+const SLA_HOURS: Record<string, number | undefined> = {
   sev1: 4,
   sev2: 20,
   sev3: 120, // five days
@@ -102,6 +102,20 @@ const OVERDUE_TAG = 'TICKET_OVERDUE';
 const HOUR_MS = 60 * 60 * 1000;
 
 const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19) + 'Z';
+
+/**
+ * The first of `names` the row actually carries, as a string, or '' if it carries none.
+ *
+ * Row fields are optional because a `SELECT *` read's physical column spelling is not knowable at
+ * authoring time, so every read goes through here rather than straight off the interface.
+ */
+function column(row: TicketRow, ...names: string[]): string {
+  for (const name of names) {
+    const value = row[name];
+    if (value !== undefined && value !== null) return String(value);
+  }
+  return '';
+}
 
 export default defineFunction({
   name: 'tagOverdueTicket',
@@ -113,18 +127,31 @@ export default defineFunction({
   output: type<Output>(),
   handler: async (input) => {
     const row = input.ticket[0];
-    if (row.Status === 'closed') {
+    if (column(row, 'Status', 'status') === 'closed') {
       return { edits: [] };
     }
 
-    const dueAt = Date.parse(row.CreatedAt) + SLA_HOURS[row.Sev] * HOUR_MS;
+    const createdAt = Date.parse(column(row, 'CreatedAt', 'createdAt'));
+    const sev = column(row, 'Sev', 'sev');
+    const slaHours = SLA_HOURS[sev];
+    // The two columns the job cannot proceed without are checked here, where the error can
+    // name them and say what the row did carry. A manifest rejection could not.
+    if (Number.isNaN(createdAt) || slaHours === undefined) {
+      throw new Error(
+        `ticket ${input.ticketId}: no due date is computable from CreatedAt=` +
+          `${column(row, 'CreatedAt', 'createdAt')} Sev=${sev}; the row carried ` +
+          Object.keys(row).join(', '),
+      );
+    }
+
+    const dueAt = createdAt + slaHours * HOUR_MS;
     const properties: Record<string, unknown> = { id: input.ticketId };
 
-    if (Date.parse(row.DueAt) !== dueAt) {
+    if (Date.parse(column(row, 'DueAt', 'dueAt')) !== dueAt) {
       properties.dueAt = iso(dueAt);
     }
 
-    const tags = row.Labels.split(',').filter(Boolean);
+    const tags = column(row, 'Labels', 'labels').split(',').filter(Boolean);
     if (Date.now() > dueAt && !tags.includes(OVERDUE_TAG)) {
       properties.tags = [...tags, OVERDUE_TAG].join(',');
     }
@@ -218,18 +245,22 @@ import { defineFunction, type } from '@uipath/coded-functions-js-sdk';
  * Ontology's declared read is a bare `SELECT * FROM ErpInvoiceLine WHERE InvoiceId IN (...)`, so
  * these are the real physical Data Fabric column names, not the ontology's logical field names
  * (`quantity`, `lineId`). The SQL stays a plain `SELECT *`; adapting to the physical shape is this
- * file's job. The index signature covers the extra system columns `SELECT *` carries along — the
- * SDK validates input against this interface with `additionalProperties: false`, so an undeclared
- * column would otherwise fault the job before the handler runs.
+ * file's job. The index signature covers the extra system columns `SELECT *` carries along, so an
+ * undeclared column is legal rather than a fault.
+ *
+ * Every field is optional. A required field becomes `required` in the derived manifest and the
+ * platform rejects the input before the handler runs, and a `SELECT *` column's physical spelling
+ * is not knowable at authoring time. Optional keeps the documentation and moves the check into the
+ * handler, where a failure can say which column was missing.
  */
 interface InvoiceLine {
-  ErpInvoiceLineId: string;
-  InvoiceId: string;
-  Sku: string;
-  Description: string;
-  Quantity: number;
-  UnitPrice: number;
-  PoUnitPrice: number;
+  ErpInvoiceLineId?: string;
+  InvoiceId?: string;
+  Sku?: string;
+  Description?: string;
+  Quantity?: number;
+  UnitPrice?: number;
+  PoUnitPrice?: number;
   [column: string]: unknown;
 }
 
@@ -254,6 +285,21 @@ interface Output {
 }
 
 const BIG_ORDER_THRESHOLD = 100;
+
+/** The first of `names` the row carries, as a string, or '' if it carries none. */
+function column(row: InvoiceLine, ...names: string[]): string {
+  for (const name of names) {
+    const value = row[name];
+    if (value !== undefined && value !== null) return String(value);
+  }
+  return '';
+}
+
+/** The first of `names` the row carries as a finite number, or 0. */
+function numeric(row: InvoiceLine, ...names: string[]): number {
+  const parsed = Number(column(row, ...names));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 /**
  * FlagBigOrderProcess
@@ -286,12 +332,13 @@ export default defineFunction({
       totalByInvoice.set(invoiceId, 0);
     }
     for (const line of input.lines) {
-      const running = totalByInvoice.get(line.InvoiceId);
+      const invoiceId = column(line, 'InvoiceId', 'invoiceId');
+      const running = totalByInvoice.get(invoiceId);
       // A line whose invoice was not asked for is ignored rather than silently classified.
       if (running === undefined) {
         continue;
       }
-      totalByInvoice.set(line.InvoiceId, running + line.Quantity);
+      totalByInvoice.set(invoiceId, running + numeric(line, 'Quantity', 'quantity'));
     }
 
     const edits: DeclaredEdit[] = [];
@@ -312,6 +359,7 @@ export default defineFunction({
 
 Why the notable lines look like this:
 
+- Every `InvoiceLine` field is optional and read through `column`/`numeric`, for the reason the contract guide gives: a required row field is a guess at a physical column spelling, and a wrong guess faults the job before the handler runs. A line missing `Quantity` contributes 0 rather than `NaN`, which would otherwise poison the whole invoice's total.
 - `invoiceIds: string[]` mirrors the multi-valued param; `lines: InvoiceLine[]` is the flat row set the one read returned, not a per-invoice grouping. The regrouping is the first thing the handler does.
 - The map is seeded from `input.invoiceIds` before any line is summed. That is what makes an invoice with zero lines classify as 'Small Order' instead of vanishing from the output, and it is why the action's row count matches the caller's request count.
 - Lines whose invoice was not requested are skipped rather than classified, because the read's `IN` clause is the only thing scoping the row set and a widened read should not widen the writes.
