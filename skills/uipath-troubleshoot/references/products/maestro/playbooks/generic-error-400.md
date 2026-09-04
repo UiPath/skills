@@ -16,10 +16,10 @@ What can cause it:
 - Request headers too long (HA setups with mismatched token-signing certs)
 - Invalid `Content-Type` (must be `application/json`)
 - Expired auth token
-- Maestro frontend bug — historically `MST-4535` "actionable messages" feature surfaced as generic 400 when a new app version was available
+- Known defect in the Action App "actionable messages" feature — surfaced as a generic 400 when a new app version was available
 
 What to look for:
-- Whether actionable messages toggle is enabled on the failing app — if yes, this is the known frontend bug
+- Whether actionable messages toggle is enabled on the failing app — if yes, this is the known defect
 - Whether the workflow uses a custom HTTP request task with hand-crafted headers/body
 - Whether the issue is tied to a specific HA tenant
 
@@ -30,12 +30,12 @@ What to look for:
 
 1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — capture any HTTP body returned upstream
 2. Pull the activity inputs to see what was actually sent: `uip maestro <type> instance variables <instance-id> -f <folder-key> --output json`
-3. If the failing element is an Action App task with actionable messages enabled, jump straight to the `MST-4535` resolution
+3. If the failing element is an Action App task with actionable messages enabled, jump straight to the actionable-messages resolution below
 4. For HA setups, request platform logs from the Maestro service — generic 400 here often points to token-signing certificate mismatch across nodes
 
 ## Resolution
 
-- **If actionable messages bug (`MST-4535`):** turn OFF the "Enable actionable messages" toggle on the Action App task. Frontend fix is deployed to disable by default — re-publish to pick it up
+- **If the actionable-messages defect:** turn OFF the "Enable actionable messages" toggle on the Action App task. A fix that disables it by default has shipped — re-publish to pick it up
 - **If malformed JSON:** validate the payload structure
 - **If Content-Type:** set `application/json`
 - **If expired token:** rotate the auth token and retry

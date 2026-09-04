@@ -231,6 +231,12 @@ Distinct fields. Confusing them is the failure mode this command split exists to
 
 Required on both `create` and `upgrade`; passed in the body, never as a path. The same name can be deployed in several folders, so the folder is part of the deployment identity — there is no tenant-level or default-folder deploy. Get keys from `uip or folders list --output json`. There is no `--folder-path` form, and the key format is not validated client-side (the backend owns what a valid key is), so a malformed key fails server-side.
 
+When filtering the folder list, pass an explicit `--limit` — `--output-filter` without one is rejected on current CLIs (older builds silently filter a single page):
+
+```bash
+uip or folders list --limit 500 --output json --output-filter "[?Path=='Shared'].Key"
+```
+
 Omitting either required option fails locally with exit `3` / `Result: ValidationError` before any auth or backend call. `--version 0` is valid — versions are 0-based.
 
 ### Deployment errors

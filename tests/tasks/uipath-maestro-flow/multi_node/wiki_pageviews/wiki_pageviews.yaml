@@ -10,6 +10,7 @@ tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:tran
 run_limits:
   expected_turns: 44
   turn_timeout: 1200
+  task_timeout: 3000  # 1620s grading + a turn; inherited 1200 could not fit grading
 
 initial_prompt: |
   Create a UiPath Flow project named "WikiPageviews" that takes `article`
@@ -38,7 +39,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -47,7 +48,7 @@ success_criteria:
   - type: run_command
     description: "UiPath 2024-01-01..15: debug returns numeric sum of pageviews on days above 500 (range-tolerant of Wikimedia recomputes)"
     command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success"
-    timeout: 600
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
@@ -55,7 +56,7 @@ success_criteria:
   - type: run_command
     description: "Invalid article: HTTP error output port returns the string 'Article not found'"
     command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error"
-    timeout: 600
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

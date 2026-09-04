@@ -1,0 +1,92 @@
+task_id: skill-api-workflow-diagnose-base64-helper-namespace
+description: >
+  Diagnose (file helpers): the workflow's File to Base64 task calls
+  `$helpers.fileToBase64(...)` — the `.file.` namespace is missing. `validate`
+  reports a single error at `.../run/script/code` ("does not call
+  $helpers.file.fileToBase64("); at runtime it would fail with `is not a function`.
+  Tests whether the skill teaches rule 23's exact helper shape and the
+  troubleshooting entry for it, and whether the agent repairs the call instead of
+  relabelling the task as JavaScript (which validates but is no longer the File to
+  Base64 activity in Studio Web) or deleting the conversion.
+
+  The fixture's only fault is the namespace: fixing that one token makes it Valid.
+  Grading keeps the activityType and requires the namespaced, awaited call. Running
+  is out of scope (needs a session). `validate` only knows the
+  activity type from the CLI release bundling executor 12.26+.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py base64_helper_namespace"
+    timeout: 30
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+
+initial_prompt: |
+  The API workflow in ./Workflow.json takes a file input `document`, converts it to
+  base64 with the File to Base64 activity and returns the result. It currently
+  fails validation.
+
+  Fix it so it validates, keeping it a File to Base64 activity. Do NOT run the
+  workflow (no session here) and do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The task is still a File to Base64 activity (not relabelled as JsInvoke, not deleted)"
+    command: >-
+      python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
+      sys.exit(0 if '\"activityType\": \"FileToBase64\"' in t else 'FileToBase64 activity is gone')"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The script now calls the namespaced helper and awaits it"
+    command: "grep -q 'await $helpers.file.fileToBase64(' Workflow.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The un-namespaced call is gone"
+    command: "! grep -q '$helpers.fileToBase64(' Workflow.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used validate to confirm the fix (not gated)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Agent did not run the workflow (no session; prompt forbids it)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?![^\n]*--help)'
+    weight: 1.0
+    pass_threshold: 1.0

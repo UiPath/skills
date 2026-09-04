@@ -11,7 +11,8 @@ every voice step is keyed by.
 export default flow('support-line')
   .trigger(voiceTrigger())
   .step('greet', voiceAgent({
-    systemPrompt: 'Greet the caller and find out why they called.',
+    systemPrompt: 'Greet {{input.customerName}} and find out why they called.',
+    inputs: { customerName: input('customerName') },
     callContext: out('start', 'callContext'),
     voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' },
   }))
@@ -20,7 +21,11 @@ export default flow('support-line')
 
 // Outbound: the flow places the call.
 .step('dial', createOutgoingCall({ from: '+15550001111', to: input('customerPhone') }))
-.step('talk', voiceAgent({ systemPrompt: '…', callContext: out('dial', 'callContext') }))
+.step('talk', voiceAgent({
+  systemPrompt: 'Remind {{input.customerName}} about {{input.amount}}.',
+  inputs: { customerName: input('customerName'), amount: input('amount') },
+  callContext: out('dial', 'callContext'),
+}))
 ```
 
 ## The call context
@@ -49,8 +54,10 @@ the flow is validated. `endCall` reads `out('<step>', 'ended')`.
 
 Omit `voice` entirely for the platform default. `maxIterations` is capped at
 **8**, tighter than a text agent's 100, because a caller is waiting on the turn.
-There is no prompt templating and no declared `returns`: the turn arrives as
-audio and the definition declares what comes back. Compile writes a
+The caller's turn arrives as audio, but the system prompt can use flow context.
+Declare each value under `inputs` and reference it as `{{input.<name>}}`; compile
+emits the runtime bindings and matching sidecar schema. There are no declared
+`returns`: the definition declares what comes back. Compile writes a
 voice-dialect `<source>/agent.json` sidecar (`settings.mode: 'voice'`) beside
 the `.flow`.
 

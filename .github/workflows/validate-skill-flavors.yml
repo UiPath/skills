@@ -52,6 +52,9 @@ jobs:
       - name: Validate source contracts
         run: npm run skills:validate
 
+      - name: Check every relative Markdown link resolves
+        run: npm run skills:check-links
+
       - name: Build complete trees and real npm tarballs
         run: npm run skills:pack
 

@@ -33,7 +33,6 @@ Describe capability at the category level and route to UIA docs for concrete syn
 - "the internal `uip rpa uia` CLIs that `uia-configure-target` uses" — not an enumerated subcommand list
 - "the OR CLI" — not `object-repository get-screens` / `get-elements`
 - "the indication commands" — not `indicate-application` / `indicate-element`
-- "recover mode" — not `--mode recover`
 - "the target definition file" — not `Target_Definition.json`
 - Doc pointers: `ui-automation-guide.md` (installed path `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) is the ONLY package file skill files may reference by path — the authoring entry point; its § Documentation routes to every other package doc. Point at other package content by name plus the guide section that routes to it (e.g. "the target-capture orchestration reference the guide mandates"), never by path — deep links couple the skill to the package's doc layout, which evolves with the package
 
@@ -51,11 +50,11 @@ Describe capability at the category level and route to UIA docs for concrete syn
 
 | New content | Home |
 |-------------|------|
-| UIA authoring guidance (capture flows, pitfalls, coded/XAML patterns, control-specific interaction) | UIA package: `docs/ui-automation-guide.md` (or the reference it routes to) |
+| UIA authoring guidance (capture flows, pitfalls, coded/XAML patterns, control-specific interaction, improvement, recovery) | UIA package: `docs/ui-automation-guide.md` (or the reference it routes to) |
 | Target-capture orchestration + `uia-configure-target` invocation modes | UIA package: `docs/references/uia-configure-target-guide.md` |
-| CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/references/cli-reference.md` (searched for specific sections — never read in full) |
+| CLI subcommand syntax, full flag tables, troubleshooting | UIA package: `docs/cli-reference.md` (searched for specific sections — never read in full) |
 | Single-purpose CLI task recipe (window baseline, input methods, advancing UI state, …) | UIA package: `docs/references/<purpose>-guide.md`, listed with a purpose description in `docs/overview.md` § References |
-| Skill invocation guide for callers | UIA package: `docs/references/<skill>-guide.md` (`uia-configure-target-guide.md`, `uia-improve-selector-guide.md`) — skills ship no USAGE.md |
+| Skill invocation guide for callers | UIA package: `docs/references/<skill>-guide.md` (`uia-configure-target-guide.md`) — skills ship no USAGE.md |
 | Skill internal procedure | UIA package: `docs/skills/<skill>/SKILL.md` — the only file under `docs/skills/<skill>/` |
 | uipath-rpa-owned UIA policy (prerequisites/consent, run/debug orchestration, stub deliverables, UI Library publishing) | `skills/uipath-rpa/references/` with pointers to package docs for concrete syntax |
 

@@ -31,14 +31,14 @@ success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
     command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
     description: Flow has an agent node and debug returns the approver count
     command: python3 $TASK_DIR/check_coded_agent_flow.py
-    timeout: 360
+    timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

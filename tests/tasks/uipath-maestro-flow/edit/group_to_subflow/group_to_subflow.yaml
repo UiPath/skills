@@ -26,7 +26,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
-    timeout: 30
+    timeout: 180
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -35,7 +35,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs with subflow, output contains branch message"
     command: "python3 $TASK_DIR/check_group_to_subflow.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

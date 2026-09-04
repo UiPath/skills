@@ -5,7 +5,7 @@ description: >
   via process-index.json, and direct caseplan.json write of a `type: "rpa"`
   task. Validates the resulting case file and runs `uip maestro case debug`
   end-to-end, asserting only that the case finalStatus is `Completed`.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:operate, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
 run_limits:
@@ -30,7 +30,7 @@ initial_prompt: |
   | Property | Value |
   |---|---|
   | Case Name | RpaSingleCase |
-  | Case Description | Single-node case that runs the ProjectEuler RPA workflow on a fixed problem number. |
+  | Case Description | Single-node case that runs the HelpDeskLookup RPA workflow on a fixed ticket id. |
   | Case Identifier | Prefix: RSC, Type: constant |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
@@ -48,14 +48,14 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | in_ProblemNumber | In | number | | | 123 | Project Euler problem number to solve. |
-  | problemTitle | Variable | string | | | | Problem title returned by the ProjectEuler RPA workflow; populated by Run RPA. |
+  | in_TicketId | In | number | | | 123 | Help desk ticket id to look up. |
+  | ticketTitle | Variable | string | | | | Ticket title returned by the HelpDeskLookup RPA workflow; populated by Run RPA. |
 
   ## Section 2: Stages & Tasks
 
   ### Stage 1: Run RPA (`runRpa`)
   **Type:** Stage
-  **Description:** Execute the ProjectEuler RPA workflow on the input problem number.
+  **Description:** Execute the HelpDeskLookup RPA workflow on the input ticket id.
   **Required for Case Completion:** Yes
 
   #### Stage Entry Conditions
@@ -71,12 +71,12 @@ initial_prompt: |
   #### Tasks
   | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
   |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `runRpa.runProjectEuler` | Run ProjectEuler RPA workflow | rpa | Yes | No | system | — |
+  | 1 | `runRpa.runHelpDeskLookup` | Run HelpDeskLookup RPA workflow | rpa | Yes | No | system | — |
 
-  ##### Task 1.1: Run ProjectEuler RPA workflow (`runRpa.runProjectEuler`)
+  ##### Task 1.1: Run HelpDeskLookup RPA workflow (`runRpa.runHelpDeskLookup`)
 
   **Type:** rpa
-  **Description:** Run the ProjectEuler RPA workflow to fetch the problem title for the given problem number.
+  **Description:** Run the HelpDeskLookup RPA workflow to fetch the ticket title for the given ticket id.
 
   **Entry Condition**
 
@@ -86,21 +86,21 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "RPA Workflow", Folder "Shared/uipath-maestro-flow/ProjectEuler RPA" |
+  | Process Reference | Name "HelpDeskLookup", Folder "Shared/uipath-maestro-case/HelpDeskLookup RPA" |
   | Component Type | RPA |
 
   **Inputs**
   | Variable | Type | Binding |
   |---|---|---|
-  | in_ProblemNumber | number | 123 |
+  | in_TicketId | number | 123 |
 
   **Outputs**
   | Variable | Type | Binding |
   |---|---|---|
-  | problemTitle | string | -> problemTitle |
+  | ticketTitle | string | -> ticketTitle |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
