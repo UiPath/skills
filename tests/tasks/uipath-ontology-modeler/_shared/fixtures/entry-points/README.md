@@ -8,3 +8,9 @@ row interface, and a per-row loop reading one entity to write another).
 
 `uniqueId` and `filePath` are identity rather than contract, so the tests compare the `input` and
 `output` schemas only.
+
+Note these two jobs declare their row fields as REQUIRED, which the contract guide now tells
+authors not to do — a required row field is rejected before the handler if the read spells the
+column differently. They are kept verbatim on purpose: their whole value is proving the deriver
+reproduces what Studio Web produced for these exact inputs, and changing the input would destroy
+the comparison. The rule they predate is documented where authors read it, not here.

@@ -83,19 +83,38 @@ failure and sends the session hunting a phantom artifact bug. Note also that the
 
 ## The job faults with `ValidationFailed` and your logs never appear
 
-The SDK validates input against the job's `Input` type with `additionalProperties: false`, before
-the handler runs. So this is a contract mismatch, not a bug in the handler: a field the marker
-declares and the job does not, or the reverse.
-
-The other cause, and the one this skill owns, is a **stale release**: the deployed job is older
-than the contract. Check the version rather than assuming.
-
-```bash
-scripts/await_release.py <ProcessName> <expected-version> --folder-path "Shared/<deployment>"
+```
+ErrorCode: JsCodedFunction.ValidationFailed
+Info:      Input validation failed
+           ticket.0.Tags: must have required property 'Tags'
 ```
 
-Three consecutive faults of this shape came from invoking before the release had moved. Await is
-the guard; a run that skipped it has not ruled this out.
+The platform validates the job's input against the manifest before the handler runs, so nothing the
+job would have logged exists. Read the `Info` field on the Orchestrator job — it names the exact
+property — with:
+
+```bash
+uip or jobs list --folder-path "<PARENT>/<deployment>" --all-fields --output json
+```
+
+Two causes, and the message distinguishes them.
+
+**`must have required property 'X'`** — the row interface declared `X`, and the read did not return
+a column by that name. A `SELECT *` read's physical column shape is not knowable at authoring time:
+the same entity answered `Tags` through the Data Fabric records API and its schema field name
+through the ontology's read. A row interface must therefore declare **no** fields, only
+`[column: string]: unknown`, and the handler picks columns defensively. Fix the job, not the entity.
+
+**A renamed or extra top-level input field** — the marker and the job's `Input` have drifted apart.
+`coded_action_preflight.py`'s `input-matches-marker` catches this offline; reaching it at runtime
+means preflight was skipped.
+
+The third cause is a **stale release**: the deployed job is older than the contract. Check the
+version rather than assuming.
+
+```bash
+scripts/await_release.py <ProcessName> <expected-version> --folder-path "<PARENT>/<deployment>"
+```
 
 ## `await` says `missing` when you expected `stale`
 

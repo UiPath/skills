@@ -132,7 +132,9 @@ TypeScript is currently the only supported language for coded-action jobs. Contr
 import { defineFunction, type } from '@uipath/coded-functions-js-sdk';
 
 interface {Entity}Row {
-  // physical column names, exactly as the read's SELECT * returns them
+  // Physical column names, and every one OPTIONAL. See below: a required row field is rejected
+  // before the handler runs if the read spells the column differently.
+  {PhysicalColumn}?: string;
   [column: string]: unknown;
 }
 
@@ -167,6 +169,40 @@ export default defineFunction({
 **`type<T>()` is inert on its own, and something has to lower it.** The marker carries no runtime schema; the JSON Schema the platform validates against lives in the project's `entry-points.json`. Studio Web's packer derives that file from the interfaces, and `uip functions pack` cannot (it refuses with `A function declares a type<T>() contract that was not lowered to a JSON Schema`, on every tested SDK version). So the deploy skill derives it instead, with `tools/entry_points.py`, whose output is byte-identical to Studio Web's for both verified jobs. `uip solution pack` reads no TypeScript, so the derived manifest alongside the job is all it needs. **The interfaces are therefore the contract, and the manifest is generated from them on every stage** rather than being written by hand.
 
 **The interfaces must stay inside the grammar the deriver can lower**: `string`, `number`, `boolean`, a union of string literals, `Record<string, unknown>`, an array of any of those, or another interface declared in the same file. Anything else (a `Date`, an inline object type, a generic, an undeclared name, a recursive interface) is refused rather than approximated, because a manifest that disagrees with the interfaces faults the job before its handler runs. `coded_action_preflight.py` runs the deriver as its `input-strictness` gate, so an unlowerable contract fails at authoring time instead of at pack time.
+
+**Every field on a row interface is OPTIONAL — `Tags?: string`, never `Tags: string`.** This is the
+one rule here learned by breaking it against a live tenant. A required field becomes `required` in
+the derived manifest, the platform validates the job's input against that manifest *before the
+handler runs*, and a `SELECT *` read's physical column spelling is not knowable at authoring time:
+the same entity answered `Tags` through the Data Fabric records API and its schema field name
+through the ontology's own read. So a required row field is a guess, and a wrong guess faults the
+job with no log line of yours ever appearing:
+
+```
+ErrorCode: JsCodedFunction.ValidationFailed
+Info:      Input validation failed
+           ticket.0.Tags: must have required property 'Tags'
+```
+
+Optional keeps the documentation — the manifest still lists the properties, so a reader sees the
+shape the job expects — while letting a differently-spelled column arrive as `undefined` instead of
+a rejection. Then pick columns in the handler, tolerating the spellings one might arrive under:
+
+```typescript
+function column(row: {Entity}Row, ...names: string[]): string {
+  for (const name of names) {
+    const value = row[name];
+    if (value !== undefined && value !== null) return String(value);
+  }
+  return '';
+}
+
+const due = Date.parse(column(row, 'DueAt', 'dueAt'));
+```
+
+A field the job genuinely cannot proceed without is checked in the handler, where the failure can
+say which column was missing and what the row did carry. That is a diagnosable error; a manifest
+rejection is not.
 
 **The index signature is load-bearing, and it points in two directions.** A row interface ends with `[column: string]: unknown`, which lowers to a permissive `additionalProperties` on that object: reads are `SELECT *`, so rows carry arbitrary extra physical columns, and those columns are legal. `Input` itself has no index signature, and lowers to `additionalProperties: false`, which is what faults a drifted, renamed, or extra input field before the handler runs. Open on rows makes the extra columns legal; closed at the top is the drift detection.
 

@@ -257,7 +257,7 @@ class CodedActionPreflightTests(unittest.TestCase):
         """A contract the deriver cannot lower would fail at pack time with nothing written, so it
         has to fail here instead."""
         workdir = self.workdir()
-        self.edit(workdir / "jobs" / f"{ACTION}.ts", "  CreatedAt: string;", "  CreatedAt: Date;")
+        self.edit(workdir / "jobs" / f"{ACTION}.ts", "  CreatedAt?: string;", "  CreatedAt?: Date;")
         payload = self.assert_only_gate_fails(workdir, "input-strictness")
         self.assertIn("cannot be lowered", payload["errors"]["input-strictness"][0])
 

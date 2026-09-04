@@ -66,14 +66,14 @@ Why the notable lines look like this:
 import { defineFunction, type } from '@uipath/coded-functions-js-sdk';
 
 interface TicketRow {
-  TicketId: string;
-  TicketNumber: string;
-  Subject: string;
-  Sev: string;
-  Status: string;
-  CreatedAt: string;
-  DueAt: string;
-  Labels: string;
+  TicketId?: string;
+  TicketNumber?: string;
+  Subject?: string;
+  Sev?: string;
+  Status?: string;
+  CreatedAt?: string;
+  DueAt?: string;
+  Labels?: string;
   [column: string]: unknown;
 }
 
