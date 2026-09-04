@@ -67,6 +67,8 @@ Body:
 | `OVR-PROCESS_OWNER` | `ah-section-ovr-0-0` | `"<email>"` (direct string) |
 | `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) |
 
+**Studio Web link** (optional): the schema's `OVR-OVERVIEW_STUDIO_WEB_LINK` question links the process to a Studio Web solution. Its `value` is a JSON **string** — `{"url": "<{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={id}>", "name": "<solution name>", "hasProcessMap": <bool>}` (`url` required; `hasProcessMap: true` only when the solution's orchestration project has a `.bpmn` — it drives AH's Maestro diagram preview). Settable at create or via the update path; empty string unlinks.
+
 When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — usually the un-flagged owner/submitter, but **tenant admins can mark additional questions required** (commonly "Applications used"/"Thin applications used"); diff the payload against every `required`-flagged question in the live schema.
 
 **Response 201** — the standard envelope with the created process **nested under `data`**: `{ "message": "Resource Created", "statusCode": 201, "data": { "process_id": …, "process_uuid": …, "process_name": … } }`. Read **`data.process_id`** — it is NOT at the top level. If you received a 201 the process WAS created — never re-POST because a field read came back undefined; re-read the response instead. *(Used by the publish flow.)*
