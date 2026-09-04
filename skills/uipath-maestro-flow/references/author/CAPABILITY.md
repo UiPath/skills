@@ -160,7 +160,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [planning-arch.md](planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](plugins/) — per-node-type planning + impl docs:
-  - [connector](plugins/connector/) — IS connector nodes (incl. the `uipath-uipath-dataservice` entity activities; the native [data-fabric](plugins/data-fabric/) nodes are the lighter path where the tenant has them enabled — their flags default to off, so confirm with `registry get` before choosing)
+  - [connector](plugins/connector/) — IS connector nodes (incl. the `uipath-uipath-dataservice` entity activities; cf. [data-fabric](plugins/data-fabric/))
   - [connector-trigger](plugins/connector-trigger/)
   - [script](plugins/script/) — Jint ES2020 JavaScript
   - [http](plugins/http/) — `core.action.http.v2` (Managed HTTP Request)
@@ -186,7 +186,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [inline-voice-agent](plugins/inline-voice-agent/) — voice agent on a live phone call (inbound/outbound) + the trigger, create-call, and end-call nodes
   - [ixp](plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](plugins/queue/) — Orchestrator queue item creation
-  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`), no Integration Service connection
+  - [data-fabric](plugins/data-fabric/) — native Data Fabric entity record CRUD (`core.datafabric.*`); tenant flags default to off
 
 ### Cross-capability (shared)
 

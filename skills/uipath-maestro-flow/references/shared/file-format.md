@@ -514,6 +514,8 @@ The packaging/debug step derives `entry-points.json` from these variable declara
 
 The top-level `bindings` array (a sibling of `nodes`, `edges`, `definitions`, `variables`, `layout`) holds resource-reference indirections for **Orchestrator resource nodes** — RPA workflows, agents, flows, agentic processes, API workflows, and HITL apps.
 
+Folder-scoped Data Fabric entities also write rows into this same array, but resolve them by a **different rule**. Everything in this section describes the Orchestrator-resource form; see [Data Fabric entity bindings](#data-fabric-entity-bindings) below for how the `Entity` kind differs.
+
 Each resource node needs two binding entries (one for `name`, one for `folderPath`). The node instance itself has no binding or context data — just `inputs`. The definition (copied verbatim from the registry) carries `model.context[]` templates like `<bindings.name>` and `<bindings.folderPath>`. At BPMN emit time the runtime rewrites those placeholders to `=bindings.<id>` by matching the placeholder name against a workflow-level binding, scoped by the definition's `model.bindings.resourceKey`.
 
 ```json
@@ -555,6 +557,24 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [author/CAPABILITY.md](../author/CAPABILITY.md).
 
 See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/plugins/rpa/impl.md), [agent](../author/plugins/agent/impl.md), [flow](../author/plugins/flow/impl.md), [agentic-process](../author/plugins/agentic-process/impl.md), [api-workflow](../author/plugins/api-workflow/impl.md), [hitl](../author/plugins/hitl/impl.md).
+
+### Data Fabric entity bindings
+
+A **folder-scoped** Data Fabric entity (`core.datafabric.*` nodes) writes two rows into this same `bindings[]` array, but they are not Orchestrator resource bindings and four of the rules above do not carry over:
+
+| Aspect | Orchestrator resource nodes | Data Fabric `Entity` |
+| --- | --- | --- |
+| `resource` | `process`, `agent`, … | `Entity` — capitalized; a lowercase row is ignored by packaging, so deploy emits no override |
+| Matched by | `(resourceKey, name)` | `(resourceKey, propertyAttribute)`, falling back to `name` only when `propertyAttribute` is absent |
+| `name` holds | the placeholder name (`name` / `folderPath`) | a **display label** — the entity name, and `<entityName>Folder` for the folder row |
+| `propertyAttribute` | `name` / `folderPath` | `name` / **`folderKey`** — never `folderPath` |
+| `resourceSubType` | required, mirrors the definition | **absent** — Entity bindings have no definition-side `model.bindings` |
+
+The value is in `default` for both forms. There is also no `<bindings.{name}>` placeholder to rewrite: the entity has no definition-side `model.context[]`, and the serializer emits `bindings.<id>` tokens directly into the `=datafabric[...]` expression it builds.
+
+`folderKey` rather than `folderPath` is load-bearing. The platform's deploy-time override for an `Entity` resource carries `{ name, folderPath, folderKey }` and rewrites binding defaults by `propertyAttribute`; a `folderPath` row receives the Orchestrator FQN, which the Data Fabric query rejects even in the source org.
+
+Tenant-scoped entities need no bindings at all — they serialize as a dotted literal. See [data-fabric/impl.md — Folder-scoped entities and bindings](../author/plugins/data-fabric/impl.md#folder-scoped-entities-and-bindings) for the full JSON and when to hand-author it.
 
 **Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 

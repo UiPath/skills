@@ -61,7 +61,7 @@ Where the tenant *does* have them, the native node is the better build, because 
 
 - needs **no Integration Service connection** — nothing to create, bind, or keep healthy, and no `bindings[]` connection row;
 - is **user-owned** — author it with `Edit`/`Write` instead of the CLI's `node add` + `node configure` envelope (see [Author capability — Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node));
-- gives downstream expressions the **record shape** (`$vars.readOrder1.output.Status`) with autocomplete, because the picked entity's schema is merged into the node's output definition;
+- gives downstream expressions the **record shape** (`$vars.readOrder.output.Status`) with autocomplete, because the picked entity's schema is merged into the node's output definition;
 - carries **portable entity bindings**, so a folder-scoped entity survives export to another org.
 
 Whichever way the check sends you, record it in **Open Questions** rather than leaving the reader to guess why the flow took that path.
@@ -91,7 +91,7 @@ Delete's `output` port exists for **sequencing only** — it carries no data (se
 
 | Node Type | `$vars.{nodeId}.output` |
 | --- | --- |
-| `core.datafabric.read` (`single`) | The record itself — address columns directly: `$vars.readOrder1.output.Status` |
+| `core.datafabric.read` (`single`) | The record itself — address columns directly: `$vars.readOrder.output.Status` |
 | `core.datafabric.read` (`multiple`) | `{ results: [...] }` — the rows are under `output.results`, never `output` itself |
 | `core.datafabric.create` | The **stored** record, including the generated `Id` and server-applied defaults |
 | `core.datafabric.update` | The record **after** the write |
@@ -99,7 +99,7 @@ Delete's `output` port exists for **sequencing only** — it carries no data (se
 
 Three consequences worth planning around:
 
-- **A multi-record read is not an array.** `=js:$vars.listOrders1.output` is an object; the collection is `=js:$vars.listOrders1.output.results`. Wiring the former into a Loop iterates nothing.
+- **A multi-record read is not an array.** `=js:$vars.listOpenOrders.output` is an object; the collection is `=js:$vars.listOpenOrders.output.results`. Wiring the former into a Loop iterates nothing.
 - **Update's output is a re-read, not the write's response.** The engine discards the write response; the serializer rewrites each downstream `$vars.<updateId>.output` reference into its own query for the record just written. That is why it cannot be consumed as a Loop or Transform collection — those are excluded from the rewriting and have no snapshot to fall back on.
 - **A read that matches nothing does not fault.** Only an *over*-match faults a single-record read. Zero matches completes normally and leaves `$vars.<readId>.output` unresolved, so a downstream Decision silently takes its falsy branch. If "not found" is a real business case, branch on it explicitly.
 
@@ -140,7 +140,7 @@ The canvas also persists schema snapshots (`_entityFields`, `_relatedFields`, `_
 
 | Key | Required | Description |
 | --- | --- | --- |
-| `recordSource` | Yes | `"byId"` or `"fromRead"` — how the target record is identified |
+| `recordSource` | Always author it | `"byId"` or `"fromRead"`. **The validator does not require it on Update** (unlike Delete) — the serializer infers the mode from whichever selector is populated, so leaving it out is silent |
 | `recordId` | `byId` | The record's `Id` — a literal or a `=js:` reference |
 | `readEntityNodeId` | `fromRead` | The upstream Read node whose query identifies the record |
 | `fieldUpdates` | Yes | `[{ field, value }]`. An **empty `value` writes an explicit null**, which a non-nullable column rejects |

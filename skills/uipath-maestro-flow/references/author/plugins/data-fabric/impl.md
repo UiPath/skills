@@ -7,7 +7,7 @@ Four OOTB nodes that read and write records in a UiPath Data Fabric entity: `cor
 
 That split matters when reading generated BPMN: a Read node with no `<uipath:output>` action target is correct, not a serialization failure.
 
-Shared action-node boilerplate — skeleton, ports, add/edit mechanics — is in [shared/action-nodes.md](../../../shared/action-nodes.md), with one exception noted under [No error port](#no-error-port). This file covers only what is specific to the entity nodes.
+Shared action-node boilerplate — skeleton, ports, add/edit mechanics — is in [shared/action-nodes.md](../../../shared/action-nodes.md), which these nodes diverge from in **two** ways, both recorded in its Exceptions note: they have no `error` port (see [No error port](#no-error-port)), and they carry no instance `outputs` block at all (see [JSON structure](#json-structure)). This file covers only what is specific to the entity nodes.
 
 ## Registry validation
 
@@ -182,7 +182,7 @@ At least one row must carry a non-blank `value`. A blank value is **omitted** fr
       "readEntityNodeId": "readOrder",
       "fieldUpdates": [
         { "field": "Notes", "value": "Shipped by flow" },
-        { "field": "ShippedAt", "value": "=js:new Date().toISOString()" }
+        { "field": "ShippedAt", "value": "=js:$vars.start.output.shippedAt" }
       ]
     }
   }
@@ -190,6 +190,8 @@ At least one row must carry a non-blank `value`. A blank value is **omitted** fr
 ```
 
 `readEntityNodeId` must match the Read node's `id` exactly — see [Record selection](#record-selection) for what happens when it does not.
+
+Timestamps come in as ISO 8601 strings from a variable or an upstream [Script](../script/impl.md) node, as above. Do not reach for `new Date()` in a `=js:` value — the Jint runtime's `Date` support is limited ([variables-and-expressions.md](../../../shared/variables-and-expressions.md)), and here a value the serializer cannot coerce is rejected by Data Fabric and the rejection is swallowed, so the column simply stays unchanged.
 
 ### Delete
 
@@ -219,7 +221,7 @@ Both write editors take `[{ field, value }]` rows, but what a value means differ
 | Integer / number | A clean numeric literal. `42.5` in an integer column is not coerced and is rejected |
 | Boolean | `true` or `false` |
 | **Choice set (single)** | The choice's numeric **`numberId`**, not its label — the column's SQL type is `INT` |
-| **Choice set (multi)** | A JSON array of those numeric ids |
+| **Choice set (multi)** | A JSON array of those numeric ids, as a **string**: `{ "field": "Tags", "value": "[1,2]" }`. The column is `NVARCHAR`, so the text is written through uncoerced and Data Fabric parses the array itself — not a real JSON array in the `value` slot |
 | **System columns** | Never writable — see below |
 | **Attachment columns** | Never writable |
 
@@ -306,7 +308,7 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
 ```json
 "bindings": [
   {
-    "id": "<bindingId1>",
+    "id": "bOrdersEntityName",
     "name": "Orders",
     "type": "string",
     "resource": "Entity",
@@ -315,7 +317,7 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
     "propertyAttribute": "name"
   },
   {
-    "id": "<bindingId2>",
+    "id": "bOrdersEntityFolder",
     "name": "OrdersFolder",
     "type": "string",
     "resource": "Entity",
@@ -326,12 +328,14 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
 ]
 ```
 
-Field-by-field, because three of these are easy to get wrong:
+**Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`, but there is no CLI that mints one for a flow you are hand-authoring. **If you cannot resolve a `_resourceKey`, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
 
-- **The value lives in `default`, never in `name`.** `name` is a display label: the entity-name row uses the entity name for both, but the folder row's `name` is the literal convention `<entityName>Folder` while its `default` carries the folder GUID.
-- **`type` is `"string"` and is required** — the binding schema rejects a row without it.
+Field-by-field, because four of these differ from the Orchestrator-resource bindings documented in [file-format.md — Bindings](../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings). That section's rules describe resource nodes; the `Entity` kind resolves differently, and the differences are tabulated in [file-format.md — Data Fabric entity bindings](../../../shared/file-format.md#data-fabric-entity-bindings):
+
+- **The value lives in `default`, never in `name`.** For a resource node `name` is the placeholder name (`name` / `folderPath`); for an entity it is a **display label** — the entity name, and `<entityName>Folder` for the folder row.
+- **`propertyAttribute` is what the serializer matches on**, not `name`. Entity bindings resolve by `(resourceKey, propertyAttribute)`, not the `(resourceKey, name)` rule resource nodes use, and there is no `<bindings.{name}>` placeholder to rewrite — the token is emitted straight into the `=datafabric[...]` expression.
 - **`resource` must be the capitalized `"Entity"`.** The BPMN engine matches it case-insensitively, but packaging requires the capital form; a lowercase row never becomes a binding resource, so the deploy side gets no override at all.
-- **`propertyAttribute` is what the serializer matches on**, not `name`.
+- **`type` is `"string"` and is required** — the binding schema rejects a row without it. There is no `resourceSubType`: an entity has no definition-side `model.bindings` to mirror.
 
 The folder token must come from the **`folderKey`** attribute, not `folderPath`: the platform's deploy-time override rewrites `folderPath` with the Orchestrator FQN, which breaks the query even in the source org.
 
@@ -386,6 +390,7 @@ What it does **not** check — every one of these validates clean and fails sile
 
 - whether a column name exists, or is writable, or has the type the value implies;
 - whether the entity is native (writes) or federated (write is rejected and swallowed);
+- whether an **Update** names a `recordSource` — only Delete's is in the required list, so an Update without one validates clean and the serializer infers the mode from whichever selector is populated;
 - whether `readEntityNodeId` names a real node, or names a multi-record read;
 - whether a `byId` record id matches any record.
 
