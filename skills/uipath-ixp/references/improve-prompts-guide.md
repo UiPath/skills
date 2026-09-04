@@ -87,10 +87,11 @@ Note the `ModelVersion` from this baseline read — later iterations check that 
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
-**Field names:** each `Fields` entry carries both `FieldId` and `Name`, so report and compare fields straight from the metrics — do NOT fetch the taxonomy to build an id→name map. Two rules:
+**Field names:** each `Fields` entry carries both `FieldId` and `Name`, so report and compare fields straight from the metrics — do NOT fetch the taxonomy to build an id→name map. Three rules:
 
 - **Compare on `FieldId`, report on `Name`.** `FieldId` is stable; `Name` reflects the taxonomy as it is now, so a field renamed since an older version was scored reads back under its current name.
 - **`Name` is null** when the service could not resolve it (e.g. the field was deleted after that version was scored). Fall back to `FieldId` — never skip the field.
+- **When two fields share a `Name`, qualify it with `FieldGroup`.** Display names are unique only *within* a group, so the same label can sit under two of them — print those rows as `<FieldGroup> / <Name>` or the reader cannot tell which one a score belongs to. This changes how you print the row, nothing else: the comparison still keys on `FieldId`.
 
 ### 1b. Check model configuration
 
