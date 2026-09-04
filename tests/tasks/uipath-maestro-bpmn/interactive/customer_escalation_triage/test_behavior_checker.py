@@ -24,6 +24,28 @@ checker = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = checker
 SPEC.loader.exec_module(checker)
 
+# Prime the scenario matrix the way pre_run does. The grader reads seed.json at
+# grade time rather than import time, so these tests generate one in-process
+# from seed.py -- which also keeps the two in lockstep: a change to the seed's
+# shape that the loader cannot parse fails here, not in a live run.
+_SEED_SPEC = importlib.util.spec_from_file_location(
+    "escalation_seed", Path(__file__).with_name("seed.py")
+)
+assert _SEED_SPEC and _SEED_SPEC.loader
+seed_module = importlib.util.module_from_spec(_SEED_SPEC)
+# Register before exec: seed.py defines a @dataclass, and dataclasses resolves
+# the owning module through sys.modules while processing the class.
+sys.modules[_SEED_SPEC.name] = seed_module
+_SEED_SPEC.loader.exec_module(seed_module)
+
+_SEED_DIR = tempfile.TemporaryDirectory()
+atexit.register(_SEED_DIR.cleanup)
+_SEED_PATH = Path(_SEED_DIR.name) / "seed.json"
+_SEED_PATH.write_text(
+    json.dumps(seed_module.build_seed()), encoding="utf-8"
+)
+checker.load_scenarios(_SEED_PATH)
+
 # Leases journal every created id to CLEANUP_JOURNAL, which is relative to the
 # CWD by design (the sandbox root in a real run). Redirect the default for the
 # whole test session so unit tests never drop a journal in the repo. Tests that
@@ -1996,10 +2018,25 @@ class PostRunConformanceTests(unittest.TestCase):
             .with_name("customer_escalation_triage.yaml")
             .read_text(encoding="utf-8")
         )
-        commands = re.findall(r"^  - command: \"(.+?)\"", text, re.M)
+        # Only the post_run block; pre_run also declares a command.
+        post = text[text.index("\npost_run:") :]
+        commands = re.findall(r"^  - command: \"(.+?)\"", post, re.M)
         self.assertEqual(len(commands), 2, commands)
         self.assertIn("_shared/cleanup_solutions.py", commands[0])
         self.assertIn("cleanup_customer_escalation.py", commands[1])
+
+    def test_pre_run_seeds_the_hidden_matrix(self) -> None:
+        text = (
+            Path(__file__)
+            .with_name("customer_escalation_triage.yaml")
+            .read_text(encoding="utf-8")
+        )
+        pre = text[text.index("\npre_run:") : text.index("\npost_run:")]
+        commands = re.findall(r"^  - command: \"(.+?)\"", pre, re.M)
+        self.assertEqual(len(commands), 1, commands)
+        self.assertIn("seed.py", commands[0])
+        # $TASK_DIR is not expanded in pre_run/post_run.
+        self.assertNotIn("$TASK_DIR", commands[0])
 
     def test_solution_lives_under_the_sandbox_cwd(self) -> None:
         """A tempdir would be gone before the shared sweep could glob it."""

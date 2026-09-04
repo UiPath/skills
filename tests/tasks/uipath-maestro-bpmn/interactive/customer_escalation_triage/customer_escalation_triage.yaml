@@ -341,6 +341,15 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+# Seeds the 12 hidden cases into seed.json before the agent starts, the
+# contract every business-outcome e2e in this repo follows. The matrix is
+# data the task owns rather than a table inside the grader, and the fresh
+# per-run id keeps every created Jira issue, Drive copy, Slack message, and
+# caseKey assertion isolated across runs.
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/interactive/customer_escalation_triage/seed.py"
+    timeout: 30
+
 # Cleanup runs here, not in-band, matching every other cloud task in the repo.
 # A `finally` block inside the graded command does not survive coder_eval
 # SIGKILLing it on timeout; post_run does.
