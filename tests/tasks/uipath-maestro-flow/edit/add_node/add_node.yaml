@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-add-node
 description: >
   Add a script node to an existing BellevueWeather flow that converts the
@@ -16,6 +19,8 @@ sandbox:
 
 initial_prompt: |
   Add a script node called "convertToCelsius" between getWeather and formatSummary that converts the temp from F to C. Return both values. Also update formatSummary to include the Celsius value in its summary string.
+
+  Keep the Flow inside a solution of the same name.
 
   Validate the flow.
 
@@ -43,7 +48,7 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow debug runs and output contains Celsius conversion"
-    command: "python3 $TASK_DIR/check_add_node.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/add_node/check_add_node.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

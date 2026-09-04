@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-bellevue-weather-simulated
 description: >
   Bellevue weather flow (HTTP → script → decision), but driven by a simulated
@@ -36,10 +39,10 @@ simulation:
     or below 60 should say 'bring a jacket'; and you want a short written
     summary of the weather rather than raw numbers. Say that it has to be
     built as a UiPath Maestro Flow — not an API workflow, not a standalone
-    script — and that you want it validated before you sign off. Do not name
-    files or paths and do not use technical wording. Close by inviting the
-    agent to ask you anything it needs before it starts building. Keep the
-    withheld items below to yourself until it asks.
+    script — inside a solution of the same name, and that you want it validated
+    before you sign off. Do not name files or paths and do not use technical
+    wording. Close by inviting the agent to ask you anything it needs before it
+    starts building. Keep the withheld items below to yourself until it asks.
 
     WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "BellevueWeather".
@@ -62,12 +65,11 @@ simulation:
   n_trials: 1
 
 success_criteria:
-  # Name-agnostic: any .flow the agent built must validate. The exact project
-  # name is scored separately below so a working-but-misnamed flow still earns
-  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  # Name-agnostic: any unambiguous generated .flow must validate. The exact
+  # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -76,7 +78,7 @@ success_criteria:
   # Runtime check:
   - type: run_command
     description: "Flow debug runs; weather-API node executed and output contains a verdict"
-    command: "python3 $TASK_DIR/check_weather_flow.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/bellevue_weather_simulated/check_weather_flow.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
@@ -89,7 +91,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named BellevueWeather (elicited from the user)"
-    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/BellevueWeather.flow',recursive=True) else 'expected a flow named BellevueWeather.flow')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name BellevueWeather"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

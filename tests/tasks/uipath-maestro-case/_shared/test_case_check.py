@@ -10,6 +10,7 @@ opt-out). A checker must not depend on which CLI build the eval image runs.
 """
 
 import os
+import json
 import subprocess
 import sys
 
@@ -20,10 +21,132 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
+    find_caseplan,
+    find_project_dir,
+    find_solution_dir,
+    is_non_required,
     partition_return_to_origin_conditions,
+    registry_audit_entries,
     run_debug,
 )
 import case_check  # noqa: E402
+
+
+def _write_caseplan(path, nodes):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"nodes": nodes}), encoding="utf-8")
+
+
+def _write_case_project(root, solution, project, nodes):
+    project_dir = root / solution / project
+    _write_caseplan(project_dir / "caseplan.json", nodes)
+    (project_dir / "project.uiproj").write_text(
+        json.dumps({"ProjectType": "CaseManagement"}), encoding="utf-8"
+    )
+    (root / solution / f"{solution}.uipx").write_text("{}", encoding="utf-8")
+    return project_dir
+
+
+def test_find_caseplan_prefers_one_substantive_plan_over_scaffold_husk(tmp_path, monkeypatch):
+    authored = tmp_path / "Case" / "Case" / "caseplan.json"
+    husk = tmp_path / "CaseSolution" / "Case" / "caseplan.json"
+    _write_caseplan(authored, [{"id": "trigger"}, {"id": "stage"}])
+    _write_caseplan(husk, [{"id": "trigger"}])
+    monkeypatch.chdir(tmp_path)
+
+    assert find_caseplan() == os.path.join("Case", "Case", "caseplan.json")
+
+
+def test_find_caseplan_accepts_identical_packaging_copy(tmp_path, monkeypatch):
+    authored = tmp_path / "caseplan.json"
+    packaged = tmp_path / "CaseSolution" / "Case" / "caseplan.json"
+    nodes = [{"id": "trigger"}, {"id": "stage"}]
+    _write_caseplan(authored, nodes)
+    _write_caseplan(packaged, nodes)
+    monkeypatch.chdir(tmp_path)
+
+    assert find_caseplan() == "caseplan.json"
+
+
+def test_find_caseplan_rejects_distinct_substantive_plans(tmp_path, monkeypatch):
+    _write_caseplan(tmp_path / "First" / "caseplan.json", [{"id": "trigger"}, {"id": "first"}])
+    _write_caseplan(tmp_path / "Second" / "caseplan.json", [{"id": "trigger"}, {"id": "second"}])
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit, match="Multiple distinct caseplan.json"):
+        find_caseplan()
+
+
+def test_project_and_solution_discovery_prefer_substantive_case_over_husk(
+    tmp_path, monkeypatch, capsys
+):
+    substantive = _write_case_project(
+        tmp_path,
+        "Case",
+        "Case",
+        [{"id": "trigger"}, {"id": "stage"}],
+    )
+    _write_case_project(
+        tmp_path,
+        "CaseSolution",
+        "Case",
+        [{"id": "trigger"}],
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert find_project_dir() == os.path.relpath(substantive, tmp_path)
+    assert find_solution_dir() == "Case"
+    notes = capsys.readouterr().out
+    assert "ignoring 1 abandoned Case project scaffold(s)" in notes
+    assert "ignoring 1 abandoned Case solution scaffold(s)" in notes
+
+
+def test_project_discovery_still_refuses_distinct_substantive_cases(
+    tmp_path, monkeypatch
+):
+    _write_case_project(
+        tmp_path,
+        "FirstSolution",
+        "First",
+        [{"id": "trigger"}, {"id": "first"}],
+    )
+    _write_case_project(
+        tmp_path,
+        "SecondSolution",
+        "Second",
+        [{"id": "trigger"}, {"id": "second"}],
+    )
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit, match="Multiple Case projects match"):
+        find_project_dir()
+    with pytest.raises(SystemExit, match="Multiple solution manifests match"):
+        find_solution_dir()
+
+
+def test_non_required_accepts_omitted_or_explicit_false():
+    assert is_non_required({})
+    assert is_non_required({"isRequired": False})
+
+
+def test_non_required_rejects_required_or_invalid_values():
+    assert not is_non_required({"isRequired": True})
+    assert not is_non_required({"isRequired": "false"})
+
+
+def test_registry_audit_entries_accepts_flat_and_named_envelopes():
+    entries = [{"task": "Post Invoice"}]
+
+    assert registry_audit_entries(entries) == entries
+    assert registry_audit_entries({"resolutions": entries}) == entries
+    assert registry_audit_entries({"resources": entries}) == entries
+
+
+def test_registry_audit_entries_rejects_missing_or_non_object_entries():
+    with pytest.raises(SystemExit, match="no resolutions/resources list"):
+        registry_audit_entries({"status": "resolved"})
+    with pytest.raises(SystemExit, match="entries must be objects"):
+        registry_audit_entries({"resources": ["Post Invoice"]})
 
 
 def test_get_ci_reads_camelcase_and_pascalcase():

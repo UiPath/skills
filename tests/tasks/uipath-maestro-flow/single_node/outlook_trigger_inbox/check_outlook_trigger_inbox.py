@@ -4,6 +4,8 @@
 Two checks:
 
   check_trigger_node      Structural — flow contains the email-received trigger.
+  check_folder_binding    Structural — trigger binds both an Outlook connection
+                          and a non-empty MailFolder reference.
   check_folder_id_fresh   Regression — parentFolderId written into the flow is
                           a live MailFolder ID on the currently-bound Outlook
                           connection. Catches "agent resolved-but-reused a
@@ -19,11 +21,13 @@ Privacy: never logs folder display names, nor the configured reference value
 (which may itself be a name). Only counts and lengths.
 """
 
-import glob
 import json
-import os
 import subprocess
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 CONNECTOR_KEY = "uipath-microsoft-outlook365"
 TRIGGER_TYPE_MARKER = "uipath.connector.trigger.uipath-microsoft-outlook365.email-received"
@@ -118,11 +122,9 @@ def _uip_resources_run(tail_args: list[str]) -> dict:
 
 
 def _read_flow() -> tuple[dict, str]:
-    flows = glob.glob("**/OutlookTriggerInbox*.flow", recursive=True)
-    if not flows:
-        sys.exit("FAIL: no OutlookTriggerInbox*.flow found under cwd")
-    with open(flows[0]) as f:
-        return json.load(f), flows[0]
+    path = find_flow_file(flow_glob="OutlookTriggerInbox*.flow")
+    with open(path) as f:
+        return json.load(f), path
 
 
 def _find_test_folder_key() -> str:
@@ -192,6 +194,19 @@ def check_trigger_node():
     print("OK: Outlook email-received trigger node present")
 
 
+def check_folder_binding():
+    flow, _ = _read_flow()
+    trigger = _find_trigger_node(flow)
+    detail = trigger.get("inputs", {}).get("detail", {}) or {}
+    connection_id = detail.get("connectionId")
+    parent_folder_id = (detail.get("eventParameters") or {}).get("parentFolderId")
+    if not connection_id:
+        sys.exit("FAIL: trigger.inputs.detail.connectionId is missing")
+    if not parent_folder_id:
+        sys.exit("FAIL: trigger.inputs.detail.eventParameters.parentFolderId is missing")
+    print("OK: Outlook connection and MailFolder reference are both bound")
+
+
 # ── subcommand: check_folder_id_fresh ──────────────────────────────────
 def check_folder_id_fresh():
     flow, _ = _read_flow()
@@ -256,6 +271,7 @@ def check_folder_id_fresh():
 
 DISPATCH = {
     "check_trigger_node": check_trigger_node,
+    "check_folder_binding": check_folder_binding,
     "check_folder_id_fresh": check_folder_id_fresh,
 }
 

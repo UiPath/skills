@@ -1,13 +1,13 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-eval-evaluator-type-choice
 description: >
   Smoke test: agent is given three evaluation goals and must pick the correct
-  `--type` value for each, then actually create the evaluators via
-  `uip maestro flow eval evaluator add` so the skill is genuinely invoked
-  (not just self-reported). Tests that the evaluator taxonomy is internalized
+  evaluator type for each, then persist all three evaluator artifacts rather
+  than merely self-reporting the choices. Tests that the taxonomy is internalized
   — natural-language similarity → llm-judge-output, deterministic JSON shape
-  similarity → json-similarity, substring presence → contains. The
-  `command_executed` regexes pin each `--type` value, so the agent has to
-  both pick correctly and run the CLI to pass.
+  similarity → json-similarity, substring presence → contains.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, feature:eval]
 
 run_limits:
@@ -15,19 +15,9 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  Scaffold a
-  project and add three evaluators — one per goal — picking the correct
-  `--type` for each.
-
-  Step 1 — scaffold the project so `--path` resolves:
-    Solution `EvalTypeChoice`, Flow project `EvalTypeChoice`, double-nested
-    layout `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Link via
-    `uip solution project add`.
-
-  Step 2 — for each goal, decide the right `--type` (kebab-case, from the
-  seven valid values: `exact-match`, `json-similarity`, `contains`,
-  `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`,
-  `llm-judge-trajectory-simulation`) and add the evaluator with that type:
+  Create a UiPath Flow project named `EvalTypeChoice` inside a solution of the
+  same name. Add three evaluators — one per goal — choosing the supported
+  evaluator type that matches each scoring need:
 
     Goal A — `goal-a-evaluator`: score a chatbot's free-text reply against
       an expected greeting, allowing for paraphrasing (e.g. "Hi Alice!"
@@ -43,22 +33,19 @@ initial_prompt: |
       contains the literal substring "deployment succeeded" anywhere in
       the output.
 
-  Step 3 — save your reasoning to `report.json` in the working directory:
+  Use model `gpt-4.1-2025-04-14` for any LLM-based evaluator. Keep all work
+  local: do not authenticate, upload the solution, or start an evaluation run.
+
+  Save your reasoning to `report.json` in the working directory:
 
     {
-      "goal_a_type": "<the --type you used for goal A>",
+      "goal_a_type": "<the evaluator type used for goal A>",
       "goal_a_reason": "<one short sentence>",
-      "goal_b_type": "<the --type you used for goal B>",
+      "goal_b_type": "<the evaluator type used for goal B>",
       "goal_b_reason": "<one short sentence>",
-      "goal_c_type": "<the --type you used for goal C>",
+      "goal_c_type": "<the evaluator type used for goal C>",
       "goal_c_reason": "<one short sentence>"
     }
-
-  Important:
-  - Use `--output json` on every `uip maestro flow eval ...` command.
-  - For LLM-judge evaluators, pass `--model gpt-4.1-2025-04-14`.
-  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
-    `uip maestro flow eval run *`. Local CRUD only.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -80,35 +67,35 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
-  - type: command_executed
-    description: "Agent initialized the Flow project"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
-    min_count: 1
+  - type: run_command
+    description: "EvalTypeChoice Flow artifact exists"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EvalTypeChoice"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Goal A — agent ran evaluator add with --type llm-judge-output"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-output'
-    min_count: 1
+  - type: run_command
+    description: "Goal A evaluator artifact uses llm-judge-output"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_type_choice.py --artifact goal-a"
+    timeout: 10
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Goal B — agent ran evaluator add with --type json-similarity"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+json-similarity'
-    min_count: 1
+  - type: run_command
+    description: "Goal B evaluator artifact uses json-similarity"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_type_choice.py --artifact goal-b"
+    timeout: 10
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Goal C — agent ran evaluator add with --type contains"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+contains'
-    min_count: 1
+  - type: run_command
+    description: "Goal C evaluator artifact uses contains"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_type_choice.py --artifact goal-c"
+    timeout: 10
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
@@ -120,7 +107,7 @@ success_criteria:
 
   - type: run_command
     description: "report.json reasoning matches the chosen types"
-    command: "python3 $TASK_DIR/check_type_choice.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_type_choice.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

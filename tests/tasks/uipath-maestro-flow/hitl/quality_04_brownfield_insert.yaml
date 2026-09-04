@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-hitl-quality-brownfield-insert
 description: >
   Quality test: agent inserts a HITL node into an existing flow without
@@ -60,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inserted HITL node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py quick-form"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -81,4 +84,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
-

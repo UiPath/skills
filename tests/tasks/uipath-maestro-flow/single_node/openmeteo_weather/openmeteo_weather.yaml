@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-openmeteo-weather
 description: >
   End-to-end: build a Flow whose process fetches the CURRENT weather in Bellevue
@@ -24,13 +27,15 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a UiPath Flow project named "OpenMeteoWeather".
   The process must fetch the CURRENT weather in Bellevue using the Open-Meteo
   connector, then surface the current temperature as a flow output variable.
 
   Use the Open-Meteo Integration Service connector. Validate the flow.
 
-  The task is not complete until `uip maestro flow validate` passes.
+  The task is not complete until the flow validates.
 
   Do NOT substitute a mock or a manual
   HTTP request for the connector.

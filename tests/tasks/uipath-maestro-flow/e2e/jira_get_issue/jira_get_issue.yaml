@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-ipe-jira-get-issue
 description: >
   E2E live Jira coverage — builds a Flow with a manual trigger and an Atlassian
@@ -29,7 +32,8 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  Create a new Flow project called "JiraGetIssue" with a manual trigger.
+  Create a new Flow project called "JiraGetIssue" with a manual trigger,
+  inside a solution of the same name.
   It should read a single Jira issue using the Atlassian Jira "Get Issue"
   connector activity, and expose the retrieved issue's summary (and status) as
   flow outputs.
@@ -55,17 +59,17 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
+  - type: run_command
+    description: "Flow validates successfully"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary"
-    command: "python3 $TASK_DIR/check_jira_get_issue.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_get_issue/check_jira_get_issue.py"
     timeout: 1080
     expected_exit_code: 0
     weight: 5.0

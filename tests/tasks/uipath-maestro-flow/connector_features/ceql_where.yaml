@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-ipe-ceql-where
 description: >
   Tests the CEQL where query IS feature — agent plans a structured filter
@@ -5,8 +8,10 @@ description: >
   operation with a `displayName = "active"` filter, following the canonical
   shape documented in the Filter Trees (CEQL) section of the
   uipath-platform skill. The flow must reference the registered connector
-  key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate
-  for routing, and pass `uip maestro flow validate`.
+  key (`uipath-microsoft-azureactivedirectory`) and use Decision + Terminate
+  for routing. This is an offline structure test: product validation is not
+  graded because the two authoring loops persist an unconfigured connector
+  differently.
 tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe, mode:build]
 
 run_limits:
@@ -26,7 +31,9 @@ initial_prompt: |
 
   Branch on the result: if the call fails, stop the flow immediately;
   if it succeeds, log "CeqlWhere test passed".
-  Validate the final flow file.
+  Produce the final flow file. Do not fabricate a tenant connection merely to
+  make product validation pass; the generated structure and the separately
+  reviewable filter are the deliverables in this offline task.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -42,18 +49,8 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Terminate nodes"
-    command: "python3 $TASK_DIR/check_ceql_where_flow.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_ceql_where_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 8.0
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
-    require_success: true
-    weight: 2.0
-    pass_threshold: 1.0
-

@@ -49,11 +49,11 @@ jobs:
           # verbs exactly like `skills/` ones, and a retired verb rots the same
           # way in either place.
           if echo "$CHANGED" | grep -qE '^(assets/uip-catalog-snapshot\.json|scripts/check-skill-verbs\.py|\.github/workflows/verb-gate\.yml)$'; then
-            SKILLS=$(ls -d skills/*/ preview/*/ 2>/dev/null | sed 's|/$||' | sort -u)
+            SKILLS=$(ls -d skills/*/ preview/skills/*/ 2>/dev/null | sed 's|/$||' | sort -u)
           else
             SKILLS=$(echo "$CHANGED" \
-              | grep -E '^(skills|preview)/[^/]+/.*\.md$' \
-              | sed -E 's#^((skills|preview)/[^/]+)/.*#\1#' \
+              | grep -E '^(skills|preview/skills)/[^/]+/.*\.md$' \
+              | sed -E 's#^((skills|preview/skills)/[^/]+)/.*#\1#' \
               | sort -u || true)
           fi
 

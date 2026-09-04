@@ -39,8 +39,9 @@ initial_prompt: |
   This sandbox has no UiPath tenant and is not logged in, so:
   - Use placeholder E.164 numbers for the calling and destination numbers —
     do not look up or provision real ones.
-  - Do NOT run anything that needs a live connection, and do NOT pack, deploy,
-    or place a real call. In particular, do not run `uip maestro flow debug`.
+  - Keep the work fully offline: stop after local validation without packing,
+    deploying, or placing a real call. `uip maestro flow debug` is outside this
+    task because it can place a real call.
 
   The task is NOT complete until `uip maestro flow validate` passes on the
   generated flow.

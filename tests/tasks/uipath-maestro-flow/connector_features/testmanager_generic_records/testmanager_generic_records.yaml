@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 # skip:true, tenant-gated. CONFIRMED available in Maestro Flow (2026-06-16):
 # `uip maestro flow registry pull` then search returns the
 # uipath.connector.uipath-uipath-testmanager.<op> nodes for this object group. A stale manifest
@@ -8,9 +11,9 @@ description: >
   Coverage (Maestro Flow connector): agent uses the uipath-maestro-flow skill to
   build a Flow that uses every UiPath Test Manager connector node for the
   generic record group — adding one connector node per operation. Drives
-  `registry pull` -> `registry search`/`get` -> `node add` -> `flow validate`.
-  Graded on those commands plus the produced .flow referencing each
-  uipath.connector.uipath-uipath-testmanager.* node type.
+  connector discovery, authoring, and validation. Graded on the produced .flow
+  referencing each uipath.connector.uipath-uipath-testmanager.* node type and
+  validating successfully; registry-refresh telemetry is advisory.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector]
 skip: true
 
@@ -43,32 +46,32 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Agent refreshed the node manifest (`uip maestro flow registry pull`) before searching"
+    description: "Advisory: live-v1 agent refreshed the node manifest before searching"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+pull'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
-  - type: command_executed
-    description: "Agent added connector nodes to the flow (`uip maestro flow node add`)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add'
-    min_count: 1
+  - type: run_command
+    description: "The flow contains Test Manager connector nodes"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'uipath-uipath-testmanager.'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent validated the flow (`uip maestro flow validate`)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
-    min_count: 1
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "Produced .flow references every generic record connector node type (5 nodes)"
-    command: 'for n in insert-record get-record update-record delete-record list-records; do grep -rqsF "uipath-uipath-testmanager.$n" --include="*.flow" . || { echo "missing node $n"; exit 1; }; done'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'uipath-uipath-testmanager.insert-record' 'uipath-uipath-testmanager.get-record' 'uipath-uipath-testmanager.update-record' 'uipath-uipath-testmanager.delete-record' 'uipath-uipath-testmanager.list-records'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

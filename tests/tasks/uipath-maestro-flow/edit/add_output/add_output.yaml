@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-add-output
 description: >
   Add a "location" field to the end node outputs in the BellevueWeather flow.
@@ -15,6 +18,8 @@ sandbox:
 
 initial_prompt: |
   Add a "location" field with value "Bellevue, WA" to the summary output of both end nodes.
+
+  Keep the Flow inside a solution of the same name.
 
   Validate the flow.
 
@@ -40,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow debug runs and output contains 'Bellevue, WA'"
-    command: "python3 $TASK_DIR/check_add_output.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/add_output/check_add_output.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

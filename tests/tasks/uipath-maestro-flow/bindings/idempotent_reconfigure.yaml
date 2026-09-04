@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-bindings-idempotent-reconfigure
 description: >
   Step 1 of the DAPField-mirrored upsert in `upsertConnectionResourceBinding`
@@ -15,18 +18,16 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow named "BindingsIdempotent" — Manual Trigger → IS connector
-  node → End — saved as `BindingsIdempotent/flow_files/BindingsIdempotent.flow`
-  with `BindingsIdempotent/project.uiproj`.
+  Build a flow named "BindingsIdempotent" with a Manual Trigger, an Integration
+  Service connector node, and an End node.
 
-  Snapshot the .flow after the first configure:
-      cp BindingsIdempotent/flow_files/BindingsIdempotent.flow after_first_configure.flow
+  Configure the connector node with an available connection. Save a copy of the
+  resulting flow at the sandbox root as `after_first_configure.flow`.
 
-  Then run the EXACT SAME `node configure` invocation a second time (same
-  node id, same --detail JSON). Snapshot again:
-      cp BindingsIdempotent/flow_files/BindingsIdempotent.flow after_second_configure.flow
+  Configure the exact same node a second time with the exact same connection
+  details. Save that result at the sandbox root as `after_second_configure.flow`.
 
-  Both snapshots go at the sandbox root.
+  Both snapshots must contain the configured connector bindings.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -40,17 +41,17 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "Agent called `node configure` at least twice"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 2
+  - type: run_command
+    description: "Both saved configure snapshots retain the same ConnectionId binding"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py same_connection_id 'after_first_configure.flow' 'after_second_configure.flow'"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "Both snapshots exist, valid JSON with bindings"
-    command: "python3 $TASK_DIR/check_bindings.py structure 'after_first_configure.flow' && python3 $TASK_DIR/check_bindings.py structure 'after_second_configure.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py structure 'after_first_configure.flow' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py structure 'after_second_configure.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -58,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "Bindings count did not grow on second configure (idempotent)"
-    command: "python3 $TASK_DIR/check_bindings.py count_equal 'after_first_configure.flow' 'after_second_configure.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py count_equal 'after_first_configure.flow' 'after_second_configure.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 4.0
@@ -66,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "No empty-keyed Connection bindings in final snapshot"
-    command: "python3 $TASK_DIR/check_bindings.py no_empty_stubs 'after_second_configure.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_empty_stubs 'after_second_configure.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -74,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "ConnectionId resourceKey stable across both snapshots"
-    command: "python3 $TASK_DIR/check_bindings.py same_connection_id 'after_first_configure.flow' 'after_second_configure.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py same_connection_id 'after_first_configure.flow' 'after_second_configure.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

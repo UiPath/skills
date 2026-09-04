@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-loop-multiply
 description: >
   Create a UiPath Flow that uses a Loop node to multiply the numbers
@@ -10,6 +13,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a UiPath Flow project named "LoopMultiply" that multiplies the
   numbers [13, 15, 17] together using a Loop node and returns the product.
 

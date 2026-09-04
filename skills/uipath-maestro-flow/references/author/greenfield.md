@@ -18,6 +18,8 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 - The flow is a straightforward linear pipeline (trigger → action → action → end)
 - The user has already described the exact topology they want
 
+**Skipping the plan never skips the node choice.** Two outcomes (*if … otherwise …*) = a `core.logic.decision` node with both `true`/`false` ports wired — never a Script ternary ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`; a named external service → the Step 3 registry ladder below.
+
 ### Examples
 
 **Plan:** "Build a flow that receives a Jira ticket, classifies it with an AI agent, routes urgent tickets to Slack and non-urgent to a queue, and logs everything to a Google Sheet."
@@ -245,6 +247,8 @@ Then pick the first match down this ladder:
 4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../SKILL.md#critical-rules-universal).
+
+**Branching is a node, not a Script.** A requirement phrased as *if … otherwise …* (two outcomes) is a `core.logic.decision` node with both `true`/`false` ports wired ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`. Do not fold the branch into a Script ternary — the branch must exist as a node in the graph.
 
 ### Document-extraction step — route it to IxP (runs even when full planning is skipped)
 

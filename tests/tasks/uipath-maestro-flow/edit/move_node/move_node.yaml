@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-move-node
 description: >
   Move the decision node before formatSummary so both branches merge back into
@@ -15,6 +18,8 @@ sandbox:
 
 initial_prompt: |
   Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message ('nice day' or 'bring a jacket') based on which branch the decision took.
+
+  Keep the Flow inside a solution of the same name.
 
   Validate the flow.
 
@@ -40,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow debug runs with merged branches, output contains branch message"
-    command: "python3 $TASK_DIR/check_move_node.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/move_node/check_move_node.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

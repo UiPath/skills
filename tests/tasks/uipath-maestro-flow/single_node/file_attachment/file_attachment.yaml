@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-file-attachment-debug
 description: >
   Build a Flow whose trigger exposes a file-typed input variable, read the
@@ -21,13 +24,15 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a UiPath Flow project named "AttachmentEcho" that accepts a file as
   input and echoes the uploaded file's name back as a flow output. Use a
   file-typed input variable named `inputDoc` and surface the name as an output
   variable named `fileName`.
 
-  Validate the flow, then run it with `uip maestro flow debug`, binding a local
-  file to the input. The task is not complete until the debug run reports
+  Validate the flow, then run it with a local file bound to the input. The
+  task is not complete until the run reports
   `finalStatus: "Completed"` and the output reflects the attached file's name.
 
   Before starting, follow the documented

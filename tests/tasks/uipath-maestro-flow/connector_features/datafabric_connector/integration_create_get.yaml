@@ -29,7 +29,7 @@ initial_prompt: |
     * active: true
     * releaseDate: '2023-08-20'
     * lastUpdated: '2023-08-20T14:00:00'
-    * externalId: 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff'
+    * externalId: any valid UUID value of your choice
   Retrieve it by Id and delete when done.
 
   C-02 — Expansion depth:
@@ -52,28 +52,28 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Create Entity Record node added at least twice (one per scenario)"
+    description: "Advisory: live-v1 agent added Create Entity Record nodes"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Get Entity Record By Id node added at least 4 times (1 for C-01 + 3 expansionLevels for C-02)"
+    description: "Advisory: live-v1 agent added Get Entity Record By Id nodes"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.get-entity-record-by-id'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Delete Entity Record node added at least twice"
+    description: "Advisory: live-v1 agent added Delete Entity Record nodes"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Flow file was validated"

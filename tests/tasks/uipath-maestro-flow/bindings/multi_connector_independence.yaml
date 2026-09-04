@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-bindings-multi-connector-independence
 description: >
   Two distinct connector nodes (different connector keys) in the same flow,
@@ -19,10 +22,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a flow named "BindingsMulti" with TWO IS connector nodes backed
-  by DIFFERENT connector keys, saved as
-  `BindingsMulti/flow_files/BindingsMulti.flow` with
-  `BindingsMulti/project.uiproj`.
+  Build a flow named "BindingsMulti" with TWO Integration Service connector
+  nodes backed by DIFFERENT connector keys.
 
   Configure each node with its own distinct connection. Record the
   connection ids and connector keys at the sandbox root:
@@ -41,23 +42,19 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  # min_count: 1 (not 2) — agents commonly chain two `uip ... node add` calls
-  # into a single Bash invocation with `&&`, which the checker counts as one
-  # match (re.search returns the first hit). Behavioral checks below verify
-  # both nodes actually exist in the flow.
-  - type: command_executed
-    description: "Agent used `uip flow node add` at least once"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+add"
-    min_count: 1
+  - type: run_command
+    description: "The flow contains at least two connector nodes"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py connector_node_count '**/BindingsMulti*.flow' 2"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used `uip flow node configure` at least once"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 1
+  - type: run_command
+    description: "Both recorded connection ids appear in the flow bindings"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -71,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file exists and is valid JSON"
-    command: "python3 $TASK_DIR/check_bindings.py structure '**/BindingsMulti*.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py structure '**/BindingsMulti*.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -79,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Both connection ids appear in Connection bindings, each on its own ConnectionId row"
-    command: "python3 $TASK_DIR/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "No empty-keyed Connection bindings (cross-node aliasing surface)"
-    command: "python3 $TASK_DIR/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 4.0
@@ -95,7 +92,7 @@ success_criteria:
 
   - type: run_command
     description: "No (name, propertyAttribute, resourceKey) triplet duplicates"
-    command: "python3 $TASK_DIR/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

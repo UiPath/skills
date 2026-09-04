@@ -190,10 +190,16 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
-`flow-v2-preview.yaml` runs the three `preview/uipath-maestro-{flow,case,bpmn}`
-builder-SDK skills as the ONLY skill catalog, shadowing the shipped v1 skills of
-the same name, so a run measures the Flow v2 authoring path rather than a mix of
-both generations. Narrowing `plugins.path` to `preview/` drops the automatic
+`flow-v2-preview.yaml` runs the three `preview/skills/uipath-maestro-{flow,case,bpmn}`
+builder-SDK skills as the ONLY skill catalog, so a run measures the Flow v2
+authoring path rather than a mix of both generations. `preview/` is a Claude Code
+**plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
+which is the one layout every harness loads: Claude Code requires it, the
+Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
+as `uipath-preview:uipath-maestro-flow` (the repo-root catalog is `uipath:`). Never
+point `plugins.path` at a bare directory of skill folders: Claude Code loads
+nothing from it and says so only as a per-task WARNING in task.log (every v2 run
+08-20 → 09-03 ran that way). Narrowing `plugins.path` to `preview/` drops the automatic
 repo-root bind mount, so the root is remounted explicitly; the image also needs
 runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
 identical to `nightly.yaml`. Confirm that mount resolves before a full run, or

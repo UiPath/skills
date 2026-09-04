@@ -83,9 +83,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(TASK_DIR, "..", "..", "_shared"))
+sys.path.insert(0, os.path.join(TASK_DIR, "..", ".."))
 
-from flow_check import find_project_dir  # noqa: E402
+from _shared.flow_check import find_project_dir  # noqa: E402
 
 # ── shared helpers ────────────────────────────────────────────────────────────
 

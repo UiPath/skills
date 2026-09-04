@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-registry-discovery
 description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore
@@ -10,18 +13,10 @@ run_limits:
   max_turns: 28
 
 initial_prompt: |
-  I want to build a UiPath Flow that makes an HTTP request and processes the
-  response with a script. Before building anything, explore what node types
-  are available in the Flow registry and find the right ones for this task.
-
-  Important:
-  - The `uip` CLI is already available in the environment.
-  - Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.
-  - After list/search identifies the candidates, inspect the exact schemas with
-    `uip maestro flow registry get core.action.http --output json` and
-    `uip maestro flow registry get core.action.script --output json`.
-  - Use `--output json` on all uip commands.
-  - Do not build the flow — just explore.
+  Explore the available Flow authoring capabilities for a flow that makes an
+  HTTP request and processes the response with a script. Identify the exact
+  HTTP and Script node types and inspect their input and output schemas.
+  Do not build the flow; report what you find.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -35,34 +30,36 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
+  # This task deliberately produces no artifact. Under ratified ruling D-2,
+  # v1-only registry telemetry remains report-only rather than gating the SDK arm.
   - type: command_executed
-    description: "Agent pulled registry data"
+    description: "Advisory: live-v1 agent refreshed registry data"
     tool_name: "Bash"
     command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+pull'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent listed or searched registry nodes"
+    description: "Advisory: live-v1 agent listed or searched registry nodes"
     tool_name: "Bash"
     command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+(list|search)'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent retrieved details on the HTTP node type via registry get"
+    description: "Advisory: live-v1 agent retrieved details on the HTTP node type"
     tool_name: "Bash"
     command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+get\s+.*core\.action\.http'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Agent retrieved details on the script node type via registry get"
+    description: "Advisory: live-v1 agent retrieved details on the Script node type"
     tool_name: "Bash"
     command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+get\s+.*core\.action\.script'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
