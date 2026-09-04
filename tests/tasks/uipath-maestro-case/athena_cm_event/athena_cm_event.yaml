@@ -70,6 +70,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    command: >-
+      uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "staged sdd.md retains the Athena caseplan topology contract"
     command: "python3 $TASK_DIR/check_athena_cm_event_sdd.py"
     timeout: 30
@@ -85,15 +95,6 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "caseplan covers every declaration in the staged sdd.md — no dropped stage, task, variable, condition or SLA row, and every task carries an entry rule (validate only warns; a miss hangs debug)"
-    command: >-
-      python3 $SKILLS_REPO_PATH/skills/uipath-maestro-case/scripts/audit_caseplan.py
-      AthenaCMEventCase/AthenaCMEventCase/caseplan.json --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1)
-    timeout: 60
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
 
   - type: run_command
     description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"

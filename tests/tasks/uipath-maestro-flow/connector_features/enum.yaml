@@ -6,7 +6,7 @@ description: >
   Tests the enum IS feature — configures a connector node with an enum
   importance field on the Gmail "Send Mail" activity. Recipient, subject, and
   body are fixed so the test can verify the enum value wiring.
-tags: [uipath-maestro-flow, integration, lifecycle-generate, shape-multi-node, connector, uipath-google-gmail, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, uipath-google-gmail, ipe, mode:build]
 
 run_limits:
   expected_turns: 46
@@ -17,13 +17,10 @@ initial_prompt: |
   Create a new Flow project called "EnumTest" with a manual trigger.
   Build a flow that sends an email via the Gmail "Send Mail" connector
   activity. Use these exact values:
-    - to:        "baishali13@gmail.com"
+    - to:        "is-test@uipath.com"
     - subject:   "weather today"
     - body:      "Weather update for today."
     - importance: "high"
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "Enum test failed".
-  Route success to a final action that logs "Enum test passed".
   Validate the final flow file.
   Use the connection present in Shared/uipath-maestro-flow.
 
@@ -63,14 +60,6 @@ success_criteria:
   - type: run_command
     description: "Connector node has inputs.detail.bodyParameters with to and importance"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_enum_flow.py '**/EnumTest*.flow' body_params"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/check_enum_flow.py '**/EnumTest*.flow' control"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

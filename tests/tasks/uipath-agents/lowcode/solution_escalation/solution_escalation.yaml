@@ -6,10 +6,12 @@ description: >
   The agent must add a NEW `ModerationAgent` project and wire the
   pre-existing `HumanReviewEscalation` app in as an escalation channel — reusing it,
   NOT re-creating it and NOT re-initializing the solution. Verifies the
-  `$resourceType: "escalation"` resource.json shape, the ActionCenter
-  channel bound to the solution-internal app (`folderName:
-  "solution_folder"`), and that `uip agent validate` accepts the
-  escalation after refresh regenerates derived files.
+  `$resourceType: "escalation"` resource.json shape (located by content —
+  the escalation folder name is the agent's choice, as in
+  `external_escalation`), the ActionCenter channel bound to the
+  solution-internal app (`folderName: "solution_folder"`), and that
+  `uip agent validate` accepts the escalation after refresh regenerates
+  derived files.
 tags: [uipath-agents, e2e, mode:build, low-code, feature:escalation]
 
 run_limits:
@@ -106,12 +108,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "HumanReviewEscalation escalation resource.json was created"
-    path: "ReviewSol/ModerationAgent/resources/HumanReviewEscalation/resource.json"
-    weight: 2.5
-    pass_threshold: 1.0
-
+  # Locates resources/*/resource.json with $resourceType=="escalation" by
+  # content (folder name is the agent's choice), then asserts the ActionCenter
+  # binding and schema sync. Absorbs the weight of the former hardcoded
+  # file_exists on resources/HumanReviewEscalation/resource.json.
   - type: run_command
     description: "Solution escalation resource shape: ActionCenter channel wired to solution-internal HumanReviewEscalation app"
     command: "python3 $TASK_DIR/check_solution_escalation.py"
