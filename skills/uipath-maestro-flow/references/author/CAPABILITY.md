@@ -160,7 +160,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [planning-arch.md](planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](plugins/) — per-node-type planning + impl docs:
-  - [connector](plugins/connector/) — IS connector nodes (incl. the `uipath-uipath-dataservice` entity activities; cf. [data-fabric](plugins/data-fabric/))
+  - [connector](plugins/connector/) — IS connector nodes (incl. the `uipath-uipath-dataservice` entity activities; see [data-fabric](plugins/data-fabric/))
   - [connector-trigger](plugins/connector-trigger/)
   - [script](plugins/script/) — Jint ES2020 JavaScript
   - [http](plugins/http/) — `core.action.http.v2` (Managed HTTP Request)

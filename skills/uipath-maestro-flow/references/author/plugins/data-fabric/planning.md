@@ -55,7 +55,7 @@ Use these nodes when the record lives in **Data Fabric** and the flow itself is 
 
 The `uipath-uipath-dataservice` Integration Service connector also exposes entity operations (`query-entity-records`, `create-entity-record`, `update-entity-record`, `get-entity-record-by-id`, `delete-entity-record`, …), and `registry search` surfaces both families.
 
-**Check availability before you choose — do not default to the native node.** All four tenant flags default to off, so on a tenant that has not enabled them the connector activities are the only working path. Run `uip maestro flow registry get core.datafabric.<op>` for the operation you need: if it answers "Node not found", or search reports `AvailableOnTenant: false`, build with the [connector](../connector/planning.md) and stop pursuing the native node. Use the connector too when the entity is federated, since the native writes require a native entity.
+**Check availability before you choose — do not default to the native node.** All four tenant flags default to off, so the connector is the working path until `registry get core.datafabric.<op>` proves otherwise. On "Node not found" or `AvailableOnTenant: false`, build with the [connector](../connector/planning.md) and stop pursuing the native path — as you should when the entity is federated, since the native writes require a native entity.
 
 Where the tenant *does* have them, the native node is the better build, because it:
 
@@ -140,7 +140,7 @@ The canvas also persists schema snapshots (`_entityFields`, `_relatedFields`, `_
 
 | Key | Required | Description |
 | --- | --- | --- |
-| `recordSource` | Always author it | `"byId"` or `"fromRead"`. **The validator does not require it on Update** (unlike Delete) — the serializer infers the mode from whichever selector is populated, so leaving it out is silent |
+| `recordSource` | Yes (not enforced) | `"byId"` or `"fromRead"`. **The validator does not require it on Update** (unlike Delete) — the serializer infers the mode from whichever selector is populated, so leaving it out is silent |
 | `recordId` | `byId` | The record's `Id` — a literal or a `=js:` reference |
 | `readEntityNodeId` | `fromRead` | The upstream Read node whose query identifies the record |
 | `fieldUpdates` | Yes | `[{ field, value }]`. An **empty `value` writes an explicit null**, which a non-nullable column rejects |

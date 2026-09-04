@@ -16,6 +16,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 - [Minimal working example — dice roller](#minimal-working-example--dice-roller)
 - [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
 - [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+- [Bindings — Data Fabric entity bindings](#bindings--data-fabric-entity-bindings)
 - [Bindings — connector connection binding](#bindings--connector-connection-binding)
 
 ## Top-level structure
@@ -294,7 +295,7 @@ uip maestro flow registry search <keyword>
 | `core.control.end` | — | `input` |
 | `core.logic.terminate` | — | `input` |
 
-Connector activities, agent nodes, and RPA nodes follow the same pattern as the generic action nodes above: a primary source port plus an implicit `error` port.
+Connector activities, agent nodes, and RPA nodes follow the same pattern as the generic action nodes above: a primary source port plus an implicit `error` port. The `core.datafabric.*` nodes are the exception — `input` and `output` only.
 
 Verify exact ports for any node type:
 ```bash
@@ -305,7 +306,7 @@ uip maestro flow registry get <node-type> --output json
 
 ## Implicit error port on action nodes
 
-Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — essentially every action node.
+Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — most action nodes, but not all: the `core.datafabric.*` family does not declare it and has no `error` port ([data-fabric/impl.md](../author/plugins/data-fabric/impl.md#no-error-port)). Check the registry rather than assuming.
 
 The port is **not** listed in the registry's `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: "error"` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: "error"` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
 
@@ -514,7 +515,7 @@ The packaging/debug step derives `entry-points.json` from these variable declara
 
 The top-level `bindings` array (a sibling of `nodes`, `edges`, `definitions`, `variables`, `layout`) holds resource-reference indirections for **Orchestrator resource nodes** — RPA workflows, agents, flows, agentic processes, API workflows, and HITL apps.
 
-Folder-scoped Data Fabric entities also write rows into this same array, but resolve them by a **different rule**. Everything in this section describes the Orchestrator-resource form; see [Data Fabric entity bindings](#data-fabric-entity-bindings) below for how the `Entity` kind differs.
+Folder-scoped Data Fabric entities also write rows into this same array, but resolve them by a **different rule**. Everything in this section describes the Orchestrator-resource form; see [Bindings — Data Fabric entity bindings](#bindings--data-fabric-entity-bindings) below for how the `Entity` kind differs.
 
 Each resource node needs two binding entries (one for `name`, one for `folderPath`). The node instance itself has no binding or context data — just `inputs`. The definition (copied verbatim from the registry) carries `model.context[]` templates like `<bindings.name>` and `<bindings.folderPath>`. At BPMN emit time the runtime rewrites those placeholders to `=bindings.<id>` by matching the placeholder name against a workflow-level binding, scoped by the definition's `model.bindings.resourceKey`.
 
@@ -558,9 +559,11 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 
 See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/plugins/rpa/impl.md), [agent](../author/plugins/agent/impl.md), [flow](../author/plugins/flow/impl.md), [agentic-process](../author/plugins/agentic-process/impl.md), [api-workflow](../author/plugins/api-workflow/impl.md), [hitl](../author/plugins/hitl/impl.md).
 
-### Data Fabric entity bindings
+**Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 
-A **folder-scoped** Data Fabric entity (`core.datafabric.*` nodes) writes two rows into this same `bindings[]` array, but they are not Orchestrator resource bindings and four of the rules above do not carry over:
+## Bindings — Data Fabric entity bindings
+
+A **folder-scoped** Data Fabric entity (`core.datafabric.*` nodes) writes two rows into the same top-level `bindings[]` array, but they are not Orchestrator resource bindings and most of the rules in the section above do not carry over:
 
 | Aspect | Orchestrator resource nodes | Data Fabric `Entity` |
 | --- | --- | --- |
@@ -575,8 +578,6 @@ The value is in `default` for both forms. There is also no `<bindings.{name}>` p
 `folderKey` rather than `folderPath` is load-bearing. The platform's deploy-time override for an `Entity` resource carries `{ name, folderPath, folderKey }` and rewrites binding defaults by `propertyAttribute`; a `folderPath` row receives the Orchestrator FQN, which the Data Fabric query rejects even in the source org.
 
 Tenant-scoped entities need no bindings at all — they serialize as a dotted literal. See [data-fabric/impl.md — Folder-scoped entities and bindings](../author/plugins/data-fabric/impl.md#folder-scoped-entities-and-bindings) for the full JSON and when to hand-author it.
-
-**Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 
 ## Bindings — connector connection binding
 

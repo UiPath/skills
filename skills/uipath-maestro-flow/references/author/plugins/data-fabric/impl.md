@@ -330,14 +330,12 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
 
 **Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`, but there is no CLI that mints one for a flow you are hand-authoring. **If you cannot resolve a `_resourceKey`, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
 
-Field-by-field, because four of these differ from the Orchestrator-resource bindings documented in [file-format.md — Bindings](../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings). That section's rules describe resource nodes; the `Entity` kind resolves differently, and the differences are tabulated in [file-format.md — Data Fabric entity bindings](../../../shared/file-format.md#data-fabric-entity-bindings):
+Two values are easy to get wrong, and both are things you type by hand:
 
-- **The value lives in `default`, never in `name`.** For a resource node `name` is the placeholder name (`name` / `folderPath`); for an entity it is a **display label** — the entity name, and `<entityName>Folder` for the folder row.
-- **`propertyAttribute` is what the serializer matches on**, not `name`. Entity bindings resolve by `(resourceKey, propertyAttribute)`, not the `(resourceKey, name)` rule resource nodes use, and there is no `<bindings.{name}>` placeholder to rewrite — the token is emitted straight into the `=datafabric[...]` expression.
-- **`resource` must be the capitalized `"Entity"`.** The BPMN engine matches it case-insensitively, but packaging requires the capital form; a lowercase row never becomes a binding resource, so the deploy side gets no override at all.
-- **`type` is `"string"` and is required** — the binding schema rejects a row without it. There is no `resourceSubType`: an entity has no definition-side `model.bindings` to mirror.
+- **`resource` is the capitalized `"Entity"`.** The BPMN engine matches case-insensitively, but packaging requires the capital form; a lowercase row never becomes a binding resource, so the deploy side gets no override at all.
+- **`propertyAttribute` is `name` and `folderKey`** — never `folderPath`, and it is what the serializer matches on rather than the row's `name`.
 
-The folder token must come from the **`folderKey`** attribute, not `folderPath`: the platform's deploy-time override rewrites `folderPath` with the Orchestrator FQN, which breaks the query even in the source org.
+Entity bindings differ from the Orchestrator-resource form in several other ways — what `name` holds, the matching key, the absent `resourceSubType`. Those are tabulated once in [file-format.md — Bindings — Data Fabric entity bindings](../../../shared/file-format.md#bindings--data-fabric-entity-bindings); read it before hand-authoring a pair.
 
 When `_folderKey` is set but a binding is missing, serialization still succeeds — it falls back to a source-org literal and logs a warning. That partial state (name token + literal folder GUID) looks portable and breaks on cross-org deploy, so treat the warning as a defect rather than noise.
 

@@ -169,9 +169,7 @@ Prefer, in order:
 2. `core.action.http.v2` connector mode when the connector lacks the activity, or manual mode for APIs without connectors ([http](plugins/http/planning.md)).
 3. An RPA workflow only when there is no API, such as a desktop app or terminal ([rpa](plugins/rpa/planning.md)).
 
-**Data Fabric has two paths, and availability decides which.** Entity records can be reached either through the `uipath-uipath-dataservice` connector activities ([connector](plugins/connector/planning.md)) or through the native `core.datafabric.*` nodes ([data-fabric](plugins/data-fabric/planning.md)).
-
-The native nodes are nicer when they are there — no Integration Service connection, no `node configure` — but **all four tenant flags default to off**, so on most tenants they do not exist. Decide by checking, not by preference: run `uip maestro flow registry get core.datafabric.read` (and the sibling type for the operation you need). If it returns the node, use the native node. If it answers "Node not found" or search reports `AvailableOnTenant: false`, **use the connector activities** and do not spend further turns on the native path. Also use the connector when the entity is federated — the native writes require a native entity — or when you need an operation the four nodes do not cover.
+**Data Fabric is not on this ladder.** Entity records have two paths — the `uipath-uipath-dataservice` connector activities and the native `core.datafabric.*` nodes — and availability decides, not preference. See [data-fabric/planning.md — Native node vs Data Service connector](plugins/data-fabric/planning.md#native-node-vs-data-service-connector--availability-decides).
 
 ## Standard Port Reference
 
