@@ -269,7 +269,7 @@ Required sections, in order:
 
 ### Step 6 — Record the Agent Grade
 
-Agent projects only, after the report. For each agent project, persist its per-agent final grade (Step 4.5) into the project's `review-history.json`:
+Low-code agent projects only (`uip agent` verbs do not apply to coded agents), after the report. For each low-code agent project, persist its per-agent final grade (Step 4.5) into the project's `review-history.json`:
 
 ```bash
 uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <CRITICAL_COUNT> --warnings <WARNING_COUNT> --output json
