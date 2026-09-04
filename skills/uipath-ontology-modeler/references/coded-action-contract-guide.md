@@ -2,7 +2,9 @@
 
 A coded action is a write operation whose new values are computed by a job at invoke time instead of being spelled out as SQL ahead of time. The action definition still lives in the ontology as a W3C FnO TTL artifact; what changes is that `ont:statements` names a job rather than carrying the SQL, and the platform compiles the edits the job returns into single-row writes.
 
-Use this guide when the classification rubric returns CODED for an operation, and [`action-table-contract-guide.md`](action-table-contract-guide.md) when it returns SQL.
+**[`action-table-contract-guide.md`](action-table-contract-guide.md) is the base contract and this
+is the delta.** Its envelope, type mapping and validation rules all hold; what follows is only what
+a coded action adds. Use the base alone when the rubric returns SQL.
 
 Each coded action pairs two files: the TTL definition `{name}-{actionName}.ttl` and the job source `{workdir}/jobs/{actionName}.ts`. They are one contract in two places, and the contract check compares them.
 
@@ -57,7 +59,7 @@ Coded action: {Human-readable title}
 
 ## Generated TTL structure
 
-**Two prefixes required.** `ont:` = platform namespace (`https://ontology.uipath.com/ont#`), carrying every platform predicate: `kind`, `language`, `statements`, `reads`, `bindsTo`, `statement`, `writes`, `process`, `processType`, `paramName`, `paramType`, `paramMultiple`, `required`, and the `ont:Read` class. A separate `{ns}:` prefix carries the ontology's own terms: the action node and its read, param, and output nodes. The parser resolves platform predicates by full URI, so the wrong namespace silently drops the action.
+**The two-prefix rule is the base guide's, unchanged** — platform predicates resolve by full URI, so the wrong namespace silently drops the action. A coded action adds six platform predicates (`reads`, `bindsTo`, `statement`, `writes`, `process`, `processType`) and the `ont:Read` class, and adds read nodes to the `{ns}:` terms.
 
 `func:` in the marker is not a declared prefix. The marker is app-level syntax matched by regex inside the string literal, and no `@prefix func:` line belongs in the file.
 
@@ -229,22 +231,24 @@ The SDK also accepts a Standard Schema (zod, arktype, valibot) or a JSON Schema 
 
 ## Validation rules
 
-Resolve every entity and field against the local `{name}.ofn` schema. No live service is involved at generation time.
+**Every base-guide rule applies**, including input types matching the field's XSD type, the
+mandatory `fno:returns` `rowsAffected`, and param/output nodes resolving through the platform `ont:`
+namespace. Resolve every entity and field against the local `{name}.ofn` schema; no live service is
+involved at generation time. Rules 1 and 2 widen because a coded action is not single-entity, and
+the rest are additions:
 
 1. Every entity named in a read's `{{Entity}}` template, and every entity a job edit targets, must match a `Declaration(Class(:...))` in `{name}.ofn`.
 2. Every field reference, in a read's WHERE clause and in each `ont:writes` value, must match a `Declaration(DataProperty(:Entity.field))` in `{name}.ofn`.
 3. Every logical field name the job puts in an edit's `properties`, other than `id`, must match a declared DataProperty on that edit's entity and must appear in `ont:writes`.
 4. Every marker argument must resolve by name to either a declared `fno:expects` param or a read's `ont:bindsTo`. An argument matching neither is a contract break.
 5. Every read's `ont:bindsTo` value must appear as a marker argument, otherwise the read runs and its rows go nowhere.
-6. Every `:paramName` used in a read's SQL must be a declared `fno:expects` param. The reverse does not hold: a param consumed only by a read is legal and never reaches the job.
-7. Input types must match the field's XSD type from `{name}.ofn`. A multi-valued input declares `ont:paramMultiple true` and binds with `IN :param`.
+6. A multi-valued input declares `ont:paramMultiple true` and binds with `IN :param` in the read.
+7. Every `:paramName` used in a read's SQL must be a declared `fno:expects` param. The reverse does not hold: a param consumed only by a read is legal and never reaches the job.
 8. `ont:writes` must be repeated triples, never an RDF list.
 9. `ont:statements` must hold exactly one `func:` marker.
 10. `ont:language` must be the literal `"CODED"`, and `ont:kind` the literal `"ACTION"`.
 11. `ont:process` must be present. `ont:processFolderId` and `ont:processUrl` are **not part of the vocabulary** and must not be emitted.
-11a. `ont:processType` must be present and must be `"CODED_FUNCTION"`.
-12. `fno:returns` with the `rowsAffected` output is mandatory and constant.
-13. Param/output nodes use `ont:paramName`/`ont:paramType`/`ont:required`, resolved via the shared platform `ont:` namespace (`https://ontology.uipath.com/ont#`).
+12. `ont:processType` must be present and must be `"CODED_FUNCTION"`.
 
 ## What a read can and cannot do
 

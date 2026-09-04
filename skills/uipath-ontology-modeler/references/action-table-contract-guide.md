@@ -4,6 +4,12 @@ Actions document what write operations are allowed on the ontology data. They gi
 
 Each action targets one entity and one record (single-entity, single-record scope). Actions work on both native and federated entities. The skill extracts these semantic concepts from the PDD (structured table or prose) and generates a W3C FnO TTL artifact per action.
 
+**This is the base contract for every action kind**: the envelope below — prefixes, the
+`fno:Function` node, param blocks, the `rowsAffected` output, type mapping, validation rules — is
+shared. Only `ont:language` and what `ont:statements` carries vary: `"SQL"` plus the statement here,
+`"CODED"` plus a job marker in [`coded-action-contract-guide.md`](coded-action-contract-guide.md),
+which documents only its additions.
+
 ## What the skill needs to know
 
 | Question | TTL construct | Notes |

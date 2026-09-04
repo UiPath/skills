@@ -327,16 +327,27 @@ Actions keep the platform `ont:` namespace for predicates (required for `ont:kin
         ont:kind        "ACTION" ;
         ont:language    "SQL" ;
         ont:statements  ( "{SQL statement 1}" "{SQL statement 2}" ) ;
-        fno:expects     ( {ns}:param.{actionName}.{param1} {ns}:param.{actionName}.{param2} ) .
+        fno:expects     ( {ns}:param.{actionName}.{param1} {ns}:param.{actionName}.{param2} ) ;
+        fno:returns     ( {ns}:out.{actionName}.rowsAffected ) .
 
 {ns}:param.{actionName}.{param1}
         a              fno:Parameter ;
         ont:paramName  "{param1}" ;
         ont:paramType  "xsd:{type}" ;
         ont:required   true .
+
+{ns}:out.{actionName}.rowsAffected
+        a              fno:Output ;
+        ont:paramName  "rowsAffected" ;
+        ont:paramType  "xsd:integer" .
 ```
 
 Note: the property is `ont:statements` (plural, a list) — not `ont:statement` (singular used for functions).
+
+`fno:returns` with the `rowsAffected` output is **mandatory** — an action without it is rejected with
+`function declares no outputs`. [`action-table-contract-guide.md`](action-table-contract-guide.md)
+is the authority on this envelope and on the validation rules; what follows here is the SQL
+statement syntax, which is this guide's own.
 
 ---
 
