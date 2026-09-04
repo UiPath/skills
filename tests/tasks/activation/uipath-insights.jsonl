@@ -31,3 +31,7 @@
 {"id": "uipath-insights-031", "prompt": "Is this tenant entitled to Insights real-time alerting?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-032", "prompt": "Did any Insights alert fire in the last 24 hours?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-033", "prompt": "Which delivery is attached to my Insights alert?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-034", "prompt": "Who has access to Insights on this tenant?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-035", "prompt": "Which Insights roles exist and what do they permit?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-036", "prompt": "Which groups have been given Insights roles?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-037", "prompt": "Which Insights roles is this user assigned?", "expected_skill": "uipath-insights"}
