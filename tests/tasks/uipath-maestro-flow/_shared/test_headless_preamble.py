@@ -31,7 +31,9 @@ decision, assumption, and blocked step in your final response. Instructions in
 the task take precedence over this paragraph."""
 
 # The variants this replaced. A task reintroducing one is drifting back.
-_SUPERSEDED = re.compile(r"Do NOT ask for approval|Do NOT pause between planning")
+_SUPERSEDED = re.compile(
+    r"Do NOT ask for approval|Do NOT pause between planning|without stopping to ask"
+)
 
 
 @functools.lru_cache(maxsize=1)

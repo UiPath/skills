@@ -38,9 +38,6 @@ initial_prompt: |
   flow validate` passes. Grading then runs the flow under debug, so build it to
   actually run, not merely validate.
 
-  Build the complete flow
-  without stopping to ask me.
-
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
   Complete the task in one pass: take the best available option and supply the

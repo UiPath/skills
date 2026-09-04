@@ -104,9 +104,6 @@ initial_prompt: |
   and re-run — stop after 3 debug attempts and report the last incident instead
   of looping. Grading then runs debug against live tenant data.
 
-  Build the complete flow
-  without stopping to ask me.
-
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
   Complete the task in one pass: take the best available option and supply the
