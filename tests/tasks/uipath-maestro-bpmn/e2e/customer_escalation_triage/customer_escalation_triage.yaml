@@ -1,0 +1,137 @@
+task_id: skill-bpmn-e2e-customer-escalation-triage
+description: >
+  E2E live Jira + Slack coverage for the BPMN escalation triage — the agent
+  builds a fully-specified straight-line Process Orchestration project that
+  classifies severity in a ScriptTask, creates a real Jira issue, and posts a
+  real Slack alert. The grader imports the exact submitted project (sha256
+  pinned) into an ephemeral solution, runs one seeded Sev1 case (unique
+  correlationId) via `uip maestro bpmn debug`, reads the runtime evidence via
+  `debug-instance variables-all`/`incidents`, and verifies the OUTCOME by
+  re-reading the created key from Jira: the issue exists and its summary
+  carries the seeded correlationId — proof the process created THIS run's
+  records, not fabricated identifiers. Created records are cleaned up from a
+  flat journal in post_run.
+
+  Tenant prerequisite: enabled `uipath-atlassian-jira`
+  (is-sandboxes-test@uipath.com-uipath-sandbox-380) and
+  `uipath-salesforce-slack` (is-sandboxes) connections in folder
+  `Shared/uipath-maestro-flow`, reaching the `CE` / "Coder Eval" Jira project
+  (issue type Task) and Slack channel C01H4SPS77W. Targets live in the task's
+  `escalation_is.py`.
+tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
+
+run_limits:
+  expected_turns: 55
+  max_turns: 120
+  task_timeout: 2400
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/customer_escalation_triage/seed.py"
+    timeout: 60
+
+post_run:
+  # Repo-standard solution sweep: the grader keeps its ephemeral solution
+  # under the sandbox CWD precisely so this glob finds the .uipx.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/_shared/cleanup_solutions.py"
+    timeout: 120
+  # Connector records the solution sweep cannot reach: replays the flat
+  # journal of created Jira/Slack ids (teardown_jira.py precedent).
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/e2e/customer_escalation_triage/teardown_escalation.py"
+    timeout: 120
+
+initial_prompt: |
+  Create a UiPath Maestro BPMN Process Orchestration project named
+  "CustomerEscalationTriage" at
+  CustomerEscalationTriageSolution/CustomerEscalationTriage/ with the process
+  in CustomerEscalationTriage.bpmn. It triages a customer escalation, creates
+  a real Jira issue for it, and alerts a Slack channel.
+
+  Read `seed.json` in the current directory. Declare process inputs matching
+  the keys under its `inputs`: customerTier (string), serviceState (string),
+  workaroundAvailable (boolean), correlationId (string), jiraProjectKey
+  (string), jiraIssueTypeId (string), slackChannelId (string).
+
+  Steps, in one straight line (no gateways needed):
+  1. A ScriptTask classifies severity from the inputs (Sev1 = customerTier is
+     "Enterprise" AND serviceState is "Unavailable" AND NOT
+     workaroundAvailable; Sev2 = any other "Unavailable" or "Degraded"
+     serviceState; Sev3 otherwise).
+  2. Create a Jira issue using the Atlassian Jira "Create Issue" connector
+     activity (registry path curated_create_issue). The request fields must
+     use project.key = jiraProjectKey and issuetype.id = jiraIssueTypeId, and
+     the summary MUST include the correlationId verbatim (e.g. "[<severity>]
+     <correlationId> customer escalation"). Use the Atlassian Jira connection
+     named "is-sandboxes-test@uipath.com-uipath-sandbox-380" in the
+     `Shared/uipath-maestro-flow` folder. If the Atlassian Jira connector
+     isn't in your registry, STOP rather than falling back to a generic HTTP
+     request.
+  3. Send exactly one Slack message using the Slack "Send Message to Channel"
+     connector activity (registry path send_message_to_channel_v2) to
+     slackChannelId; the message text MUST include the correlationId and the
+     computed severity. Use the Slack connection named "is-sandboxes" in the
+     same folder.
+  4. End the process, exposing these three PUBLIC OUTPUTS: severity (string),
+     caseKey (string, = the incoming correlationId), and jiraIssueKey
+     (string, the created issue's key). Declare each one as a
+     `<uipath:output name= id= type= elementId=/>` inside the root process
+     `<uipath:variables>`, with elementId bound to the end event — that
+     declaration is what makes the value readable at runtime. A process that
+     computes the right values but never declares them as public outputs
+     exposes nothing and fails.
+
+  Bind both connector activities to the real connections — the packed
+  bindings_v2.json must carry real connection ids, not all-zero stubs.
+  Validate the BPMN and pack the project. Do NOT upload, publish, run, or
+  debug the process — the grader executes it with the seeded inputs. Do NOT
+  ask for approval and do NOT pause; build end-to-end in a single pass.
+  Before starting, load the uipath-maestro-bpmn skill and follow its
+  workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-maestro-bpmn skill"
+    skill_name: "uipath-maestro-bpmn"
+    expected_skill: "uipath-maestro-bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the generated BPMN itself before finishing"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The prompt states the exact project layout, so the pinned path grades a
+  # stated requirement (unlike the flow suite, whose prompt names only the
+  # flow and therefore discovers the file).
+  - type: run_command
+    description: "The UiPath CLI validator independently accepts the generated BPMN"
+    command: "uip maestro bpmn validate CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project independently packs with real (non-stub) Jira and Slack connection bindings"
+    command: "python3 $TASK_DIR/check_customer_escalation_package.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Seeded Sev1 debug run creates a real Jira ticket and Slack alert carrying the seeded correlationId (verified by re-reading the tenant)"
+    command: "python3 $TASK_DIR/check_customer_escalation_behavior.py"
+    timeout: 1200
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

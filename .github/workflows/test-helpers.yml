@@ -3,6 +3,7 @@ name: Test Helpers
 on:
   pull_request:
     paths:
+      - 'tests/tasks/uipath-maestro-bpmn/**'
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/tasks/uipath-maestro-bpmn/**'
