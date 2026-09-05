@@ -19,7 +19,9 @@ The CLI already classifies this for you — read its `Instructions` field:
 - `Instructions` mentioning **"not provisioned on this tenant"** → AH is not enabled. Report: *"Please contact your administrator to enable Automation Hub on this tenant."*
 - `Instructions` mentioning **"no tenant record of its own yet"** → reachable but not onboarded. Report: *"Automation Hub is reachable for this tenant but has not finished setup. Open Automation Hub in the browser once to complete it, then retry."*
 
-Either way **stop** — don't retry and don't try another tenant unless asked. Full detail (and the raw signals behind each) in [`api-endpoints.md`](api-endpoints.md) → **Automation Hub not available on this tenant**.
+Either way **stop** — don't retry and don't try another tenant unless asked, and quote the message verbatim rather than paraphrasing it.
+
+> This section is the **canonical wording for the CLI path**; the CLI flows reference it instead of restating it, so each message exists in exactly one place per transport (raw-API twin: [`api-endpoints.md`](api-endpoints.md) → **Automation Hub not available on this tenant**, which also carries the raw signals behind each case). The two homes exist because the CLI files stay self-contained for the day the raw-API fallback retires — keep them in sync if the wording ever changes.
 
 ## Output envelope (every command)
 
