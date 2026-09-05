@@ -119,8 +119,6 @@ Otherwise this is a **fresh deploy**: ask the two SHORT structured-choice questi
 
 > **When an interactive user is present, ALWAYS present Question 1 (mode) on a fresh deploy.** The Step-2 inference only decides which option is pre-marked "(Recommended)" — with a human present it does **NOT** let you silently auto-pick a mode. Deploying as *standalone* without asking is a bug: an agent-health / jobs / KPI dashboard is merely *recommended* standalone, but the user may deliberately want it as a governance dashboard, so show all three and let them choose. A bare "deploy" / "confirm" / "yes" does **not** settle the mode — ask.
 >
-> **These carve-outs decide HOW to deploy, never WHETHER to.** Reaching this step at all requires that the user asked for a deployment. A bare build request ("build me a dashboard", "show me X this week") ends at a working local dashboard — report it and offer to deploy. "Non-interactive" or "automated" means do not stop to ask questions; it is not standing permission to publish into the user's tenant and consume a folder.
->
 > **Skip Question 1 ONLY when:** (a) the user's wording already named the mode ("deploy as a governance dashboard, pinned" / "just deploy as a standalone app"); or (b) the user told you not to ask / to proceed without confirmation, or the run is non-interactive / automated (e.g. CI) — then use the **recommended** mode and proceed without asking (never block a headless deploy on a question). The **same two carve-outs** govern Question 2 (folder): ask when interactive, otherwise use the recommended folder.
 
 **Question 1 — mode** (ask when a human is present; skip per carve-outs (a)/(b) above):

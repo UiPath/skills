@@ -33,8 +33,8 @@ initial_prompt: |
   Build me a governance dashboard: policy denials this week and an allow vs
   deny enforcement verdict breakdown.
 
-  This is a non-interactive automated test — there is NO user to approve the plan.
-  Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
+  This is a non-interactive automated test — there is NO user to approve the build plan.
+  Treat the build plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the build plan, do
   NOT wait for confirmation, and do NOT ask any question.
 
 success_criteria:
