@@ -122,6 +122,8 @@ uip maestro case pack <project-path> <output-path> --output json
 | `<output-path>` | **(required)** Output directory for the `.nupkg` — use `<SolutionDir>/dist`, never a path inside the case project directory |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
+| `--author <author>` | Package author (default: `UiPath`) |
+| `--description <text>` | Package description (default: `Created by UiPath`) |
 
 > **Required before every `uip solution pack`.** Run it on every Phase 7 pass, including runs that skipped Phase 5 / Phase 6, and including runs where a `.bpmn` already exists (it may be stale). See [phased-execution.md § Why `case pack` is mandatory](phased-execution.md#why-case-pack-is-mandatory).
 
