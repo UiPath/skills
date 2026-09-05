@@ -566,6 +566,35 @@ def _sdd_variables(sdd: str) -> dict[str, tuple[str, str, str]]:
     }
 
 
+_RATIONALE_RE = re.compile(r"^\*\*Design Rationale:\*\*\s*(.+)$", re.M)
+_ENVELOPE_RE = re.compile(r"^\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*([^|]*?)\s*\|", re.M)
+
+
+def _sdd_task_envelopes(sdd: str) -> tuple[set[str], dict[str, str]]:
+    """Task name -> whether the SDD writes a Design Rationale, and its Skip Condition.
+
+    The skill copies each task's Design Rationale into the element's `description`
+    (`implementation.md` Completeness principle), so a task with a rationale and no
+    description in the plan lost it.
+    """
+    rationale: set[str] = set()
+    skips: dict[str, str] = {}
+    name = None
+    for line in sdd.split("\n"):
+        head = re.match(r"^#{4,5} Task [\d.A-Z]+: (.+)$", line)
+        if head:
+            name = head.group(1).strip()
+            continue
+        if not name:
+            continue
+        if _RATIONALE_RE.match(line):
+            rationale.add(name)
+        row = _ENVELOPE_RE.match(line)
+        if row and row.group(3) not in ("\u2014", "-", ""):
+            skips[name] = row.group(3)
+    return rationale, skips
+
+
 def sdd_facts() -> dict:
     """Re-derive the volatile facts from the fixture, and refuse a thin parse.
 
@@ -640,6 +669,14 @@ def sdd_facts() -> dict:
             f"expression; got {sorted(bound_inputs)}"
         )
 
+    rationale_tasks, skip_conditions = _sdd_task_envelopes(sdd)
+    if len(rationale_tasks) < 30 or not skip_conditions:
+        _fail(
+            "fixture parse error: expected >=30 tasks with a Design Rationale and at "
+            f"least one Skip Condition; got {len(rationale_tasks)} and "
+            f"{len(skip_conditions)}"
+        )
+
     variables = _sdd_variables(sdd)
     if len(variables) < 40:
         _fail(
@@ -656,4 +693,6 @@ def sdd_facts() -> dict:
         "recipients": recipients,
         "custom_outputs": custom_outputs,
         "variables": variables,
+        "rationale_tasks": rationale_tasks,
+        "skip_conditions": skip_conditions,
     }

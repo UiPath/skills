@@ -367,6 +367,33 @@ def main() -> int:
             "starts them, the stage never completes, and the run hangs instead of faulting"
         )
 
+    # ---- 11. the SDD's rationale and skip conditions survive ---------------
+    # The skill's completeness principle copies each task's Design Rationale into the
+    # element's `description`, and maps every SDD declaration one to one. A whole
+    # field can go missing on every task at once and `validate` still reports Valid.
+    no_description = sorted(
+        P.task_name(task)
+        for _stage, task in P.all_tasks(caseplan)
+        if P.task_name(task) in facts["rationale_tasks"] and not task.get("description")
+    )
+    if no_description:
+        problems.append(
+            f"{len(no_description)} task(s) carry no `description`, and the SDD gives "
+            f"each a Design Rationale the skill copies there: {no_description[:6]}"
+        )
+
+    for name, wanted in sorted(facts["skip_conditions"].items()):
+        task = names_to_task.get(name)
+        if task is None:
+            continue
+        actual = P.task_skip_condition(task)
+        if actual != wanted:
+            problems.append(
+                f"task {name!r} carries skip condition {actual!r}; the SDD writes "
+                f"{wanted!r}, and without it the task runs on every case that reaches "
+                f"it rather than only the ones that need it"
+            )
+
     # ---- 10. every connector task runs the same Outlook operation ----------
     # `uiPathActivityTypeId` names WHICH operation of the connector runs. A task
     # carrying a different one calls a different Outlook endpoint with this task's

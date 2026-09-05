@@ -160,6 +160,8 @@ def T(
         "id": task_id,
         "type": task_type,
         "displayName": display_name,
+        # A real build copies the SDD's Design Rationale here, on every task.
+        "description": f"Design rationale for {display_name}.",
         "isRequired": req,
         "shouldRunOnlyOnce": once,
         "entryConditions": [
@@ -1389,3 +1391,22 @@ def P_all_tasks(plan: dict):
         for row in (node.get("data") or {}).get("tasks") or []:
             for task in row:
                 yield node, task
+
+
+class TaskEnvelopeTests(CheckerBase):
+    checker = "tasks_io"
+
+    def test_rejects_descriptions_dropped_case_wide(self):
+        plan = baseline_plan()
+        for _stage, task in P_all_tasks(plan):
+            task.pop("description", None)
+        self.rejects(plan, "carry no `description`")
+
+    def test_rejects_a_dropped_skip_condition(self):
+        # Without it the director sign-off runs on every application, including the
+        # ones below the threshold that need no signature.
+        plan = baseline_plan()
+        for _stage, task in P_all_tasks(plan):
+            if task.get("displayName") == "Obtain procurement director sign-off":
+                task.pop("skipCondition", None)
+        self.rejects(plan, "runs on every case that reaches it")
