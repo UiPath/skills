@@ -16,16 +16,21 @@ Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, 
 - **`Data.NextCursor` is an object `{ "Value": "<base64-string>" }`, not a flat string.** Pass `Data.NextCursor.Value` to `--cursor` on the next call (unwrap one level). Passing the whole `NextCursor` object errors out.
 - Use `Data.HasNextPage` to check if more records exist. Stop when it's `false`.
 
-## MULTILINE_MAX Fields — Marker vs Full Content
+## MULTILINE_MAX Fields — Preview vs Full Content
 
-`records list` and `records query` do NOT return `MULTILINE_MAX` content. Each such field comes back as a size marker string starting `HasValue=true Length=N` — live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`. Only single-record read returns the full content:
+`records list` and `records query` do NOT reliably return `MULTILINE_MAX` content. Each such field comes back as a **preview**, and which form you get depends on the tenant:
+
+- the value truncated to 10,000 characters with a `...[Truncated]` suffix (a value at or under 10,000 characters can come back whole), or
+- a size marker starting `HasValue=true Length=N`, sometimes with a trailing hint such as `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`.
+
+An encrypted `MULTILINE_MAX` field always reads back as `HasValue=true Encrypted=true` and never returns content. Do not branch on which form you got; treat any of them as a preview. Only the single-record read returns the full value:
 
 ```bash
 uip df records get <entity-id> <record-id> --output json
 ```
 
-1. **Never treat the marker as the value.** Don't display, compare, or persist `"HasValue=true Length=N"` as field content — fetch via `records get` first.
-2. **Never write the marker back.** A `records update` body built by echoing a record from `list` / `query` overwrites the real content with the literal marker string — verified: the server accepts it as a normal value, `Result: Success`, content silently destroyed. Omit `MULTILINE_MAX` keys from update bodies unless intentionally replacing the content.
+1. **Never treat a preview as the value.** Don't display, compare, or persist what `list` / `query` returned for the field; fetch via `records get` first. A truncated preview is the more dangerous form because it looks like ordinary content.
+2. **Never write a preview back.** A `records update` body built by echoing a record from `list` / `query` overwrites the real content with the preview — verified: the server accepts it as a normal value, `Result: Success`, content silently destroyed. With a truncated preview the stored value keeps its first 10,000 characters and loses the rest, which is far harder to notice than a marker string. Omit `MULTILINE_MAX` keys from update bodies unless intentionally replacing the content.
 3. **No filter, no sort.** `queryFilters` / `sortOptions` naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Surface verbatim (data-fabric.md Rule 18); don't retry with other operators. Full type contract: [entity-schema.md → MULTILINE_MAX fields](entity-schema.md#multiline_max-fields).
 
 ## Pagination
