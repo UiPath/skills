@@ -87,6 +87,8 @@ A deployed coded app is auto-scoped to the folder it was deployed into: the plat
 
 > **Invisible in the type surface.** `folderKey` is deliberately kept off the public `UiPathConfig`, so reading the `.d.ts` will not reveal this fallback mechanism — it is exactly the kind of behavior this file exists to record.
 
+> **The fallback only reaches a call that CAN omit the folder.** The mutating service methods take it as a required positional — `jobs.stop(jobKeys, folderId)`, `jobs.getById(id, folderId)`, `tasks.complete(options, folderId)`, `processInstances.cancel(instanceId, folderKey)`, `processInstances.getById(id, folderKey)` — so there is nothing to omit and omitting it is a compile error, not a default. Either fetch the entity and use its attached method (`job.stop()`, `task.complete()`, `instance.cancel()` take no folder), or hold the folder in module config and pass it. Only `tasks.getById(id, options?, folderId?)` has an optional folder, so Tasks is the one family reachable with no folder anywhere; Jobs and ProcessInstances need one just to fetch the entity. Do not search `dist/**` for a no-folder overload — there isn't one.
+
 ## Bridging folderKey ↔ folderId
 
 Maestro services return `folderKey` (GUID string), but Orchestrator services like `Processes.start()` require `folderId` (number). These are **completely different identifiers** — `parseInt(folderKey)` gives `NaN`.

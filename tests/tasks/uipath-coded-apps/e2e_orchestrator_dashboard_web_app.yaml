@@ -65,20 +65,10 @@ initial_prompt: |
   run is graded incomplete without `report.json`, no matter how well the
   deployment went.
 
-  `report.json` is the finish line — end your turn as soon as it is written.
-  Do NOT poll or curl the app URL waiting for it to serve traffic: activation
-  lags the deploy by minutes, nothing grades reachability, and the run is
-  killed on wall-clock, so the wait only costs you the run.
-
   Use `--output json` on every `uip` command. Do not prompt for
   confirmation — this is an automated test. Do NOT use task-tracking
   tools (TaskCreate/TaskUpdate) — execute the steps directly; every
   turn spent on bookkeeping is budget taken from the build.
-
-  Keep dependencies minimal. Do NOT install a CSS framework (Tailwind or
-  otherwise) — nothing here grades styling, plain CSS is fine, and `npm
-  install` is the slowest thing in this sandbox. Install only what the app
-  needs to build and call the SDK.
 
 success_criteria:
   - type: command_executed

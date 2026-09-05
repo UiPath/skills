@@ -54,14 +54,6 @@ initial_prompt: |
   exported functions take ONLY the data arguments shown above; do NOT
   accept service instances as parameters.
 
-  Folder context: `Jobs.stop`, `Tasks.complete` and `ProcessInstances.cancel`
-  take the folder as a REQUIRED argument. The deploy-time meta-tag fallback
-  only reaches calls whose folder parameter is optional, so there is no
-  no-folder overload to find. Source the folder from module-level config (add
-  a `VITE_UIPATH_FOLDER_ID` var and read it inside the module) rather than
-  adding a parameter to the exported signatures above. Do NOT read the SDK's
-  compiled `dist/**` sources looking for a way around this.
-
   Do NOT run `uip` or `npm` commands — this environment is not
   authenticated; the test grades the code shape, not runtime execution.
 

@@ -37,12 +37,6 @@ initial_prompt: |
   Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
   NOT wait for confirmation, and do NOT ask any question.
 
-  Scope: BUILD ONLY. Stop once the dashboard builds. Do NOT pack, publish, or
-  deploy, and do NOT create Orchestrator folders — this test grades the
-  generated metric modules, not a deployment. Do NOT use task-tracking tools
-  (TaskCreate/TaskUpdate); execute the steps directly, since every turn spent
-  on bookkeeping is budget taken from the build.
-
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-coded-apps skill"
