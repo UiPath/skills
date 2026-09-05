@@ -20,3 +20,9 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 <!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `/solution/<AgentName>/` sibling to `/solution/<FlowName>/`.
 <!--skill-flavor:agent-scaffold-result-paths:end-->
+
+<!--skill-flavor:delivery-option-b-row:start-->
+<!--skill-flavor:delivery-option-b-row:end-->
+
+<!--skill-flavor:delivery-option-b:start-->
+<!--skill-flavor:delivery-option-b:end-->

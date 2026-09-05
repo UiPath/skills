@@ -92,9 +92,13 @@ Execution order: 6 → 6.1 → 6.2 → 6.3 → 7 → 9 → 9.4 → 11 → 10 →
 
 ## Step 6 — Create the Case project structure
 
+<!--skill-flavor:step-six-intro:start-->
 The case file must live inside a solution + project. The case plugin owns project scaffolding **and** the root caseplan write. Solution setup and project registration are the only CLI calls. **Never use `uip maestro case cases add` (or another case mutation command) to create the root caseplan** — execute the T01 direct-JSON recipe so required root metadata such as `caseDirectlyPassTaskOutputs` is emitted. **Never use `uip maestro case init`** — T01 writes the same 5 files, and run outside `<SolutionDir>` (which includes the `solution init && case init` chain) it auto-creates a second solution and forks the working root — see [`case-commands.md` § uip maestro case init](case-commands.md#uip-maestro-case-init).
+<!--skill-flavor:step-six-intro:end-->
 
+<!--skill-flavor:step-six-zero:start-->
 1. **Step 6.0 (CLI)** — `uip solution init <SolutionName>` — creates the solution directory + `.uipx`. **Idempotent w.r.t. a Phase 1 Create:** if the Rule 17 **Create** flow already scaffolded the solution in Phase 1 (per [registry-discovery.md § Create-on-Missing → 0 Prerequisite](registry-discovery.md#create-on-missing-build-and-rediscovery)), the `.uipx` already exists — **skip this call iff that exact `<SolutionDir>/<SolutionName>.uipx` is present** (same canonical name + working-root location — [plugins/case/planning.md § Naming](plugins/case/planning.md#project-structure-prerequisites)). Re-running `init` over an existing solution errors, and a differently-named or -located `init` would fork the solution.
+<!--skill-flavor:step-six-zero:end-->
 2. **T01 (plugin)** — execute [`plugins/case/impl-json.md`](plugins/case/impl-json.md) in full:
    - § Scaffold writes 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly into `<SolutionDir>/<ProjectName>/`.
    - § Write caseplan.json writes the root skeleton (`root` + empty `nodes: []` + empty `edges: []`).

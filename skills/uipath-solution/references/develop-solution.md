@@ -32,6 +32,7 @@ graph LR
 
 ---
 
+<!--skill-flavor:step-create-solution:start-->
 ## Step 1: Create a New Solution
 
 ```bash
@@ -41,6 +42,7 @@ uip solution init "InvoiceAutomation" --output json
 Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
 
 > If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
+<!--skill-flavor:step-create-solution:end-->
 
 ## Step 2: Add Existing Projects
 
@@ -456,6 +458,7 @@ Deletes the Studio Web copy only -- local files and published packages are not a
 
 Create a solution with two projects, sync resources, and verify:
 
+<!--skill-flavor:e2e-create-and-add:start-->
 ```bash
 # 1. Create the solution
 uip solution init "InvoiceAutomation" --output json
@@ -463,6 +466,7 @@ uip solution init "InvoiceAutomation" --output json
 # 2. Add projects (already inside the solution directory)
 uip solution projects add ./InvoiceAutomation/Processor --output json
 uip solution projects add ./InvoiceAutomation/Reporter --output json
+<!--skill-flavor:e2e-create-and-add:end-->
 
 # 3. Move into the solution dir so subsequent commands default --solution-folder
 cd ./InvoiceAutomation
@@ -578,7 +582,9 @@ The `SolutionId` in `.uipx` determines identity. Before uploading, the CLI probe
 
 A direct `.uis` upload has no local `.uipx` to read, so the CLI takes the `SolutionId` out of the archive (`SolutionStorage.json`, root `.uipx` as fallback, GUID-shaped values only). Re-uploading a `.uis` produced by `uip solution download` therefore updates the solution it came from instead of minting a `"<name> 1"` copy each time. An archive carrying no usable id imports as new.
 
+<!--skill-flavor:upload-as-new:start-->
 To upload as an unrelated new cloud solution rather than overwriting, scaffold a fresh solution with `uip solution init`, or replace the `SolutionId` in the local `.uipx` with a fresh GUID and re-run `upload` — removing the field entirely fails `.uipx` validation.
+<!--skill-flavor:upload-as-new:end-->
 
 ### `delete` uses the solution UUID, not the name
 
@@ -606,7 +612,9 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 
 | Want to... | Command | Watch for |
 |---|---|---|
+<!--skill-flavor:cheat-create-row:start-->
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
+<!--skill-flavor:cheat-create-row:end-->
 | Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
 | Pull in an external project | `uip solution projects import <path>` | Rename source folder first to avoid 3-name divergence |
 | Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
