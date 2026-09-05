@@ -50,6 +50,7 @@ The **authoritative** list of supported types/formats and structural rules lives
 | `array` | Must specify `items` (element type). Nested arrays not supported |
 | `object` | Must specify nested `properties` (record of further fields, each following the same rules) |
 | `file` | A file reference from the automation. In task data the field's value is an **object whose root member is `ID`** (the attachment id), i.e. `formData.<field>.ID`. Fetch the file with the TypeScript SDK `AttachmentsService.getById(formData.<field>.ID)` |
+| `ContentValidationData` | A Document Understanding validation payload. Use this type, **not** `object` with the members inlined. See [widgets/validation-station.md](widgets/validation-station.md) |
 
 Every field also supports an optional `description` string.
 
@@ -375,6 +376,10 @@ const handle<OutcomeName> = async () => {
   await codedActionAppService.completeTask('<OutcomeName>', formData);
 };
 ```
+
+> **The 2nd argument replaces the task's data — always pass the full current task data.** `{}` or a
+> partial object wipes the record. Pass `formData`, which starts as the payload from `getTask()` and
+> carries the reviewer's edits; fields the app never edits must still be in there, unchanged.
 
 **JSX rendering rules:**
 | Field type | Renders as |
