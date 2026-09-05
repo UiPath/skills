@@ -7,8 +7,13 @@ description: >
   the skill teaches but no other test exercises. Closes the operate-mode
   coverage gap identified in tests/reports/uipath-coded-apps.md.
 tags: [uipath-coded-apps, integration, mode:operate, lifecycle:generate]
+# turn_timeout is the agent's real budget — a larger task_timeout cannot extend a
+# single iteration. Without it this task inherited the experiment's 900s turn cap
+# under a 1200s task_timeout and the harness warned about the mismatch on every
+# run, silently costing 25% of the intended budget.
 run_limits:
   expected_turns: 10
+  turn_timeout: 1200
 
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
