@@ -58,29 +58,22 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: json_check
+  - type: run_command
     description: "Agent set conversational flavor + did NOT populate inputSchema/outputSchema despite Q&A framing"
-    path: "QASol/QAAgent/agent.json"
-    assertions:
-      - expression: "metadata.isConversational"
-        operator: "equals"
-        expected: true
-      - expression: "settings.engine"
-        operator: "equals"
-        expected: "conversational-v1"
-      - expression: "length(inputSchema.properties)"
-        operator: "equals"
-        expected: 0
-      - expression: "length(outputSchema.properties)"
-        operator: "equals"
-        expected: 0
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py assert-json QASol QAAgent agent.json
+      'metadata.isConversational=true' 'settings.engine="conversational-v1"' 'length(inputSchema.properties)=0' 'length(outputSchema.properties)=0'
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: run_command
     description: "messages[1] does NOT use {{input.*}} variable template (§ Messages guidance)"
-    path: "QASol/QAAgent/agent.json"
-    excludes:
-      - "{{input"
+    command: >-
+      f="$(python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py locate QASol QAAgent agent.json)" && test -f "$f"
+      && ! grep -qF '{{input' "$f"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

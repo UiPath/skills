@@ -7,9 +7,11 @@ Two authoring surfaces leave two trees in the sandbox:
   ``<Solution>/<Project>/agent.json``, ``<Solution>/<Project>/<Project>.flow``,
   plus a ``<Solution>/<Solution>.uipx`` manifest listing the projects.
 - Studio Web (the ``studioweb`` skill flavor; the agent authors in-product and
-  the studioweb-stdio bridge mirrors ``/solution/<project>/...`` into the
-  sandbox): ``<Project>/agent.json``, ``<Project>/new.flow``, no solution
-  directory and no ``.uipx``.
+  the studioweb-stdio bridge mirrors the store into the sandbox): the open
+  Studio Web solution — named by the host, not by the task — as
+  ``<OpenSolution>/<OpenSolution>.uipx`` plus ``<OpenSolution>/<Project>/...``
+  (bridge >= 0.0.1-alpha.15), or the flat ``<Project>/agent.json``,
+  ``<Project>/new.flow`` with no ``.uipx`` at all (older bridges).
 
 Graders and task YAMLs used to hardcode the CLI shape, so every Studio Web run
 failed on paths before a single assertion ran (nightly 13266324). This module
@@ -29,11 +31,22 @@ Task-YAML use (``run_command`` criteria, cwd = sandbox root)::
         exists IPSol IPAgent agent.json
     python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py \\
         registered IPSol --min-projects 1 [--project-type Agent]
+    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py \\
+        locate IPSol IPAgent agent.json            # prints the resolved path
+    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py \\
+        assert-json IPSol IPAgent agent.json 'metadata.isConversational=true' \\
+        'settings.engine="conversational-v1"' 'length(inputSchema.properties)=0'
 
 ``registered`` keeps the CLI check strict — when ``<Solution>.uipx`` exists its
-``Projects[]`` is what is asserted — and only under the Studio Web layout (no
-``.uipx`` anywhere) counts the exported ``<Project>/project.uiproj`` manifests
-instead, since there registration is implicit in the active solution.
+``Projects[]`` is what is asserted. Under the Studio Web layout the manifest is
+named after the open Studio Web solution, so a lone differently-named ``.uipx``
+stands in for ``<Solution>.uipx``; with no ``.uipx`` anywhere the exported
+``project.uiproj`` manifests are counted instead, since there registration is
+implicit in the active solution.
+
+``assert-json`` replaces a ``json_check`` criterion whose ``path`` would have to
+name one layout: each ``EXPR=JSON`` pair is a dotted path (or ``length(path)``)
+compared for equality against a JSON literal.
 """
 
 from __future__ import annotations
@@ -115,35 +128,72 @@ def solution_registration_error(
 ) -> str | None:
     """None when ``solution`` registers between ``min_projects`` and ``max_projects``
     projects (the first of type ``project_type`` when given); otherwise the failure text."""
-    uipx_paths = _walk(f"**/{solution}.uipx")
+    uipx_paths = _walk(f"**/{solution}.uipx") or _walk("**/*.uipx")
+    if len(uipx_paths) == 1:
+        # Either the task's own manifest or, under Studio Web, the one the bridge
+        # exports for the open solution (named by the host, not by the task).
+        return _manifest_error(uipx_paths[0], min_projects, max_projects, project_type)
     if uipx_paths:
-        try:
-            with open(uipx_paths[0], encoding="utf-8") as f:
-                manifest = json.load(f)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
-            return f"{uipx_paths[0]} is not readable JSON: {exc}"
-        projects = manifest.get("Projects") if isinstance(manifest, dict) else None
-        if not isinstance(projects, list):
-            return f"{uipx_paths[0]} has no Projects[] list"
-        error = _count_error(len(projects), min_projects, max_projects, uipx_paths[0])
-        if error:
-            return error
-        if project_type is not None:
-            first = projects[0].get("Type") if projects and isinstance(projects[0], dict) else None
-            if first != project_type:
-                return f"{uipx_paths[0]} Projects[0].Type is {first!r}; expected {project_type!r}"
-        return None
-    if _walk("**/*.uipx"):
-        return f"no {solution}.uipx found (other solution manifests exist: {', '.join(_walk('**/*.uipx'))})"
-    # Studio Web layout: projects are exported as <Project>/project.uiproj at the
-    # sandbox root and belong to the active solution by construction.
-    manifests = sorted(glob.glob("*/project.uiproj"))
+        return f"no {solution}.uipx found (other solution manifests exist: {', '.join(uipx_paths)})"
+    # Studio Web layout without a manifest (older bridges): the exported projects
+    # belong to the active solution by construction.
+    manifests = _walk("**/project.uiproj")
     error = _count_error(len(manifests), min_projects, max_projects, f"the sandbox root (no {solution}.uipx)")
     if error:
         return error
     if project_type is not None and not any(_manifest_type(m) == project_type for m in manifests):
         return f"no exported project.uiproj declares ProjectType {project_type!r}"
     return None
+
+
+def _manifest_error(
+    uipx_path: str, min_projects: int, max_projects: int | None, project_type: str | None
+) -> str | None:
+    try:
+        with open(uipx_path, encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return f"{uipx_path} is not readable JSON: {exc}"
+    projects = manifest.get("Projects") if isinstance(manifest, dict) else None
+    if not isinstance(projects, list):
+        return f"{uipx_path} has no Projects[] list"
+    error = _count_error(len(projects), min_projects, max_projects, uipx_path)
+    if error:
+        return error
+    if project_type is not None:
+        first = projects[0].get("Type") if projects and isinstance(projects[0], dict) else None
+        if first != project_type:
+            return f"{uipx_path} Projects[0].Type is {first!r}; expected {project_type!r}"
+    return None
+
+
+def json_assertion_error(document: object, expression: str, expected_json: str) -> str | None:
+    """None when ``expression`` evaluates to the JSON literal ``expected_json``.
+
+    ``expression`` is a dotted path (``metadata.isConversational``) or
+    ``length(<dotted path>)``; a missing segment evaluates to ``null`` so the
+    mismatch is reported instead of raising.
+    """
+    try:
+        expected = json.loads(expected_json)
+    except json.JSONDecodeError as exc:
+        return f"{expression}: expected value {expected_json!r} is not JSON ({exc})"
+    actual = _evaluate(document, expression)
+    if actual == expected and type(actual) is type(expected):
+        return None
+    return f"{expression}: expected {json.dumps(expected)}, got {json.dumps(actual)}"
+
+
+def _evaluate(document: object, expression: str) -> object:
+    if expression.startswith("length(") and expression.endswith(")"):
+        value = _evaluate(document, expression[len("length(") : -1])
+        return len(value) if isinstance(value, (list, dict, str)) else None
+    current = document
+    for segment in expression.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(segment)
+    return current
 
 
 class _chdir:
@@ -161,13 +211,16 @@ class _chdir:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) == 4 and argv[0] == "exists":
+    if len(argv) == 4 and argv[0] in ("exists", "locate"):
         path = find_project_file(argv[1], argv[2], argv[3])
         if path.exists():
-            print(f"OK: {path.relative_to(os.getcwd()) if path.is_absolute() else path}")
+            shown = path.relative_to(os.getcwd()) if path.is_absolute() else path
+            print(shown if argv[0] == "locate" else f"OK: {shown}")
             return 0
         print(f"FAIL: Missing {argv[1]}/{argv[2]}/{argv[3]} (looked under {path.parent})", file=sys.stderr)
         return 1
+    if len(argv) >= 5 and argv[0] == "assert-json":
+        return _assert_json(argv[1], argv[2], argv[3], argv[4:])
     if len(argv) >= 2 and argv[0] == "registered":
         solution, min_projects, max_projects, project_type = argv[1], 1, None, None
         rest = iter(argv[2:])
@@ -192,11 +245,43 @@ def main(argv: list[str]) -> int:
             return 0
         print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"usage: project_files.py exists SOLUTION PROJECT RELATIVE_PATH | {_REGISTERED_USAGE}", file=sys.stderr)
+    print(
+        f"usage: project_files.py exists|locate SOLUTION PROJECT RELATIVE_PATH | {_REGISTERED_USAGE} | "
+        f"{_ASSERT_JSON_USAGE}",
+        file=sys.stderr,
+    )
     return 2
 
 
+def _assert_json(solution: str, project: str, relative: str, assertions: list[str]) -> int:
+    path = find_project_file(solution, project, relative)
+    if not path.exists():
+        print(f"FAIL: Missing {solution}/{project}/{relative} (looked under {path.parent})", file=sys.stderr)
+        return 1
+    try:
+        with open(path, encoding="utf-8") as f:
+            document = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        print(f"FAIL: {path} is not readable JSON: {exc}", file=sys.stderr)
+        return 1
+    failures = []
+    for assertion in assertions:
+        expression, separator, expected_json = assertion.partition("=")
+        if not separator:
+            print(f"usage: {_ASSERT_JSON_USAGE} (bad assertion {assertion!r})", file=sys.stderr)
+            return 2
+        error = json_assertion_error(document, expression, expected_json)
+        if error:
+            failures.append(error)
+    if failures:
+        print("FAIL: " + "; ".join(failures), file=sys.stderr)
+        return 1
+    print(f"OK: {path} satisfies {len(assertions)} assertion(s)")
+    return 0
+
+
 _REGISTERED_USAGE = "registered SOLUTION [--min-projects N] [--max-projects N] [--project-type T]"
+_ASSERT_JSON_USAGE = "assert-json SOLUTION PROJECT RELATIVE_PATH EXPR=JSON [EXPR=JSON ...]"
 
 
 if __name__ == "__main__":

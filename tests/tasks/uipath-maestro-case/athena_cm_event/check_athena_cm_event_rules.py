@@ -15,10 +15,7 @@ import sys
 
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check_athena_cm_event_case import (  # noqa: E402
-    CASEPLAN_PATH,
-    stage_task,
-)
+from check_athena_cm_event_case import stage_task  # noqa: E402
 _shared_root = (
     os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-case")
     if os.environ.get("SKILLS_REPO_PATH")
@@ -64,9 +61,7 @@ def entry_rules(task: dict) -> list[dict]:
 
 
 def main() -> None:
-    if not os.path.isfile(CASEPLAN_PATH):
-        fail(f"expected generated caseplan at {CASEPLAN_PATH}")
-    plan = read_caseplan(CASEPLAN_PATH)
+    plan = read_caseplan()  # discovers the plan under either the CLI or the Studio Web layout
 
     stages = {label: find_node_by_label(plan, label) for label in ("StageA", "StageB", "StageC")}
     tasks = {

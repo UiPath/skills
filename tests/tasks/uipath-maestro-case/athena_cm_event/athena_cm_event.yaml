@@ -72,7 +72,7 @@ success_criteria:
   - type: run_command
     description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
     command: >-
-      uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
+      uip maestro case validate "$(python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/case_check.py locate)"
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0

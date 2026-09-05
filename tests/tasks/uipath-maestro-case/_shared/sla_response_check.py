@@ -27,6 +27,16 @@ import os
 import sys
 from typing import Iterator
 
+# Re-exported for the SLA graders, which import it from here; the helper itself
+# lives in case_check (skills #2756 added it there without updating the graders,
+# so 7 graders raised ImportError on every run). Both import styles are served:
+# graders load this module as ``_shared.sla_response_check``, the _shared unit
+# tests as a top-level module.
+try:
+    from _shared.case_check import is_non_required  # noqa: F401
+except ImportError:
+    from case_check import is_non_required
+
 SLA_RULE = "sla-status-change"
 
 # The battery edits a staged solution, so the caseplan is always at this path.

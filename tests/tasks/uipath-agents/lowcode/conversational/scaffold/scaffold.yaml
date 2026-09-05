@@ -67,16 +67,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
+  - type: run_command
     description: "agent.json has the two core conversational fields set"
-    path: "ChatSol/ChatAgent/agent.json"
-    assertions:
-      - expression: "metadata.isConversational"
-        operator: "equals"
-        expected: true
-      - expression: "settings.engine"
-        operator: "equals"
-        expected: "conversational-v1"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py assert-json ChatSol ChatAgent agent.json
+      'metadata.isConversational=true' 'settings.engine="conversational-v1"'
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

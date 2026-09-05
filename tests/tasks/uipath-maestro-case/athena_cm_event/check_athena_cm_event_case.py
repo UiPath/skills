@@ -26,7 +26,6 @@ from _shared.case_check import (  # noqa: E402
 )
 
 
-CASEPLAN_PATH = os.path.join("AthenaCMEventCase", "AthenaCMEventCase", "caseplan.json")
 TASK_FLAGS = {
     "StageATask1": (True, False),
     "StageATask2": (True, True),
@@ -138,9 +137,7 @@ def assert_task_flags(task: dict, task_name: str) -> None:
 
 
 def main() -> None:
-    if not os.path.isfile(CASEPLAN_PATH):
-        fail(f"expected generated caseplan at {CASEPLAN_PATH}")
-    plan = read_caseplan(CASEPLAN_PATH)
+    plan = read_caseplan()  # discovers the plan under either the CLI or the Studio Web layout
     assert_tasks_nested(plan)
 
     triggers = find_triggers(plan)

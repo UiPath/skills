@@ -68,16 +68,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
-    path: "DocGuardSol/DocGuardBot/agent.json"
-    assertions:
-      - expression: "metadata.isConversational"
-        operator: "equals"
-        expected: true
-      - expression: "settings.engine"
-        operator: "equals"
-        expected: "conversational-v1"
+  - type: run_command
+    description: "agent.json has conversational shape \u2014 isConversational true + engine conversational-v1"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py assert-json DocGuardSol DocGuardBot agent.json
+      'metadata.isConversational=true' 'settings.engine="conversational-v1"'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

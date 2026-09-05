@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from project_files import (  # noqa: E402
     find_project_dir,
     find_project_file,
+    json_assertion_error,
     main,
     solution_registration_error,
 )
@@ -108,14 +109,75 @@ def test_registered_accepts_exported_manifests_only_without_any_uipx(tmp_path, m
     assert "ProjectType" in solution_registration_error("IPSol", project_type="Flow")
 
 
-def test_registered_fails_when_a_different_uipx_exists(tmp_path, monkeypatch):
+def _bridge_layout(root, *, solution="E2E Solution", project="IPAgent", ptype="Agent"):
+    """studioweb-stdio >= 0.0.1-alpha.15: the open solution's manifest, named by the host."""
+    proj = root / solution / project
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": ptype}))
+    (proj / "agent.json").write_text(json.dumps({"metadata": {"isConversational": True}, "inputSchema": {}}))
+    (root / solution / f"{solution}.uipx").write_text(
+        json.dumps({"Projects": [{"Type": ptype, "ProjectRelativePath": f"{project}/project.uiproj"}]})
+    )
+    return proj
+
+
+def test_registered_reads_the_lone_open_solution_manifest_named_by_the_host(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    other = tmp_path / "OtherSol"
-    other.mkdir()
-    (other / "OtherSol.uipx").write_text(json.dumps({"Projects": [{"Name": "X"}]}))
+    _bridge_layout(tmp_path)
+
+    assert solution_registration_error("IPSol") is None
+    assert solution_registration_error("IPSol", project_type="Agent") is None
+    assert "expected at least 2" in solution_registration_error("IPSol", min_projects=2)
+    assert "Projects[0].Type" in solution_registration_error("IPSol", project_type="Flow")
+
+
+def test_registered_fails_when_several_other_uipx_exist(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    for name in ("OtherSol", "ThirdSol"):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / f"{name}.uipx").write_text(json.dumps({"Projects": [{"Name": "X"}]}))
     _studio_web_layout(tmp_path)
 
     assert "no IPSol.uipx found" in solution_registration_error("IPSol")
+
+
+def test_nested_bridge_layout_resolves_project_and_files(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    proj = _bridge_layout(tmp_path)
+
+    assert find_project_dir("IPSol", "IPAgent") == proj
+    assert find_project_file("IPSol", "IPAgent", "agent.json") == proj / "agent.json"
+
+
+def test_json_assertion_compares_dotted_paths_and_lengths():
+    document = {"metadata": {"isConversational": True}, "settings": {"engine": "conversational-v1"}, "inputSchema": {}}
+
+    assert json_assertion_error(document, "metadata.isConversational", "true") is None
+    assert json_assertion_error(document, 'settings.engine', '"conversational-v1"') is None
+    assert json_assertion_error(document, "length(inputSchema.properties)", "0") == (
+        "length(inputSchema.properties): expected 0, got null"
+    )
+    assert json_assertion_error(document, "length(inputSchema)", "0") is None
+    assert "expected false, got true" in json_assertion_error(document, "metadata.isConversational", "false")
+    assert "is not JSON" in json_assertion_error(document, "metadata.isConversational", "tru")
+
+
+def test_json_assertion_does_not_conflate_types():
+    assert json_assertion_error({"n": 1}, "n", "true") is not None
+    assert json_assertion_error({"n": 1.0}, "n", "1") is not None
+
+
+def test_cli_locate_and_assert_json(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    proj = _bridge_layout(tmp_path)
+
+    assert main(["locate", "IPSol", "IPAgent", "agent.json"]) == 0
+    assert capsys.readouterr().out.strip() == str((proj / "agent.json").relative_to(tmp_path))
+    assert main(["assert-json", "IPSol", "IPAgent", "agent.json", "metadata.isConversational=true"]) == 0
+    assert main(["assert-json", "IPSol", "IPAgent", "agent.json", "metadata.isConversational=false"]) == 1
+    assert "expected false, got true" in capsys.readouterr().err
+    assert main(["assert-json", "IPSol", "IPAgent", "missing.json", "a=1"]) == 1
+    assert main(["assert-json", "IPSol", "IPAgent", "agent.json", "no-equals-sign"]) == 2
 
 
 def test_registered_fails_on_an_empty_sandbox(tmp_path, monkeypatch):
