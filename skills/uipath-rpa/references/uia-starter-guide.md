@@ -48,7 +48,7 @@ Omit `,version=<MIN_VERSION>` to resolve the latest compatible build (at or abov
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
 1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Procedure: the package guide's § Window Baseline (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`).
-2. **Run the workflow** — no `--output-filter`; the envelope is the verdict and the workflow's own `Log Message` lines stream above it ([cli-reference.md § Capturing the verdict](cli-reference.md#capturing-the-verdict)):
+2. **Run the workflow** — no `--output-filter`; the envelope is the verdict, and the workflow's own `Log Message` output streams above it (Helm) or sits in `Data.logEntries` (Studio Desktop) — shapes and verdict rules in [cli-reference.md § Capturing the verdict](cli-reference.md#capturing-the-verdict):
    ```bash
    uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
    ```

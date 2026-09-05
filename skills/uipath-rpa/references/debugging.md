@@ -88,7 +88,7 @@ On the headless backend, debugging is a synchronous request/response loop: **eve
 |---|---|---|
 | `Paused` | Stopped at a breakpoint or after a step/break. `DebugDetails` carries the current activity (name, id, workflow file) and a snapshot of in-scope variables, arguments, and properties | Inspect `DebugDetails`, then `step-over` / `step-into` / `step-out` / `continue`, or `execution cancel` |
 | `Suspended` | Stopped on an unhandled exception; the session is still alive. `DebugDetails` carries the exception type, message, faulting activity, and locals | `continue` to propagate the exception, `continue-retry` to re-run the faulted activity, `continue-ignore` to skip it, or `execution cancel` |
-| `Completed` | The run finished. The response is the normal run result (`output`, `hasErrors`, `errorMessage`) | Read the run result; the session is gone |
+| `Completed` | The run finished. The response is the normal run result (§ Output Format) | Read the run result; the session is gone |
 | `Running` | The wait timed out before a stable state was reached — execution is still going | Poll with `debug state`, send `debug break` to pause at the next activity, or `execution cancel` |
 | `None` | No debug session is active | Start one with `debug start` |
 
@@ -178,7 +178,11 @@ For `debug test-activity` and `debug start-from-here`, both `--input-arguments` 
 
 ## Output Format
 
-`run` and `debug start` both return `{Result, Code, Data}`. A clean `run`, then the same workflow under `debug start`:
+`run` and `debug start` both return `{Result, Code, Data}`. **`Data`'s shape is set by the backend that ran the workflow** — Headless Studio (Helm) when no Studio Desktop instance has the project open, Studio Desktop when one does ([cli-reference.md § Headless Studio (Helm) vs Studio Desktop](cli-reference.md#headless-studio-helm-vs-studio-desktop)). Identify the shape by the keys present.
+
+### Helm shape
+
+A clean `run`, then the same workflow under `debug start`:
 
 ```text
 [Information] Starting execution...
@@ -203,15 +207,15 @@ For `debug test-activity` and `debug start-from-here`, both `--input-arguments` 
 | `debugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — `Activity`, `ActivityId`, `WorkflowFile`, `CurrentActivity` and locals when `Paused`; `ExceptionType`, `Message`, `Activity`, `CurrentActivity` and locals when `Suspended`; `""` while `Running`; `null` otherwise. |
 | `profiling` | `object?` | `null` unless `--profiling` was passed on a start command; then `{"outputDirectory": "<absolute path>"}` — the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
-**The workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
+**On Helm the workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
 
-> **The outer `Result` reports the CLI invocation, NOT the workflow.** It is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an unhandled exception. **Never treat `Result: "Success"` as a passing run.**
+> **The outer `Result` reports the CLI invocation, NOT the workflow.** On Helm it is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an unhandled exception. **Never treat `Result: "Success"` as a passing run.**
 >
-> **A run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** All three are required: a suspended debug session reports `hasErrors: false` with `debugState: "Suspended"` and guidance in `errorMessage`; a completed failure reports `hasErrors: true` with the chain in `errorMessage`.
+> **Helm verdict: a run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** All three are required: a suspended debug session reports `hasErrors: false` with `debugState: "Suspended"` and guidance in `errorMessage`; a completed failure reports `hasErrors: true` with the chain in `errorMessage`.
 >
 > **Do NOT use a log line's level as a failure signal** — workflow `Log Message` activities emit at any level, and a clean run that logs at `Error` still returns `hasErrors: false`. Treating log levels as a verdict flips green runs to "failed". Conversely, when a run has failed, `errorMessage` and the `[Error]` lines above the envelope carry the most specific diagnosis — read them for the root cause after the verdict is already established.
 
-Examples:
+Helm examples:
 
 ```jsonc
 // Successful completed run — workflow logged a warning, but hasErrors is false
@@ -230,6 +234,30 @@ Examples:
   "debugState": "Suspended",
   "debugDetails": "{\"ExceptionType\":\"System.InvalidOperationException\",\"Message\":\"...\",\"Activity\":\"Throw\",\"Locals\":{...}}" }
 ```
+
+### Studio Desktop shape
+
+The same clean `run` (or `debug start`) with the project open in Studio Desktop:
+
+```json
+{ "Result": "Success", "Code": "ToolResult",
+  "Data": { "output": "Session ended", "errors": [],
+            "logEntries": [ { "source": "Compile", "level": "Information", "message": "Restoring nuget packages" },
+                            { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution started" },
+                            { "source": "Debug", "level": "Trace", "message": "Unregistered service requested: UiPath.UIAutomationNext.Contracts.IStudioService)" },
+                            { "source": "Debug", "level": "Information", "message": "Sum: 10" },
+                            { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution ended in: 00:00:06" } ],
+            "debugState": "Completed" } }
+```
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `output` | `string` | Status string: `"Session ended"` when the run completed; `"Failed to open the file <absolute path>"` when the entry point does not exist. Not the output arguments. |
+| `errors` | `array` | Empty on a passing run and on a missing entry point. |
+| `logEntries` | `array` | `{source, level, message}` per entry, `source` = `Compile` (restore/build phase) or `Debug` (execution). **The workflow's `Log Message` output lands here**, among `Trace`-level runtime entries (`Unregistered service requested …`, `Audit: …`). Nothing streams above the envelope. Empty when the file could not be opened. |
+| `debugState` | `string` | `"Completed"` on a completed `run` or `debug start`. Absent when the file could not be opened. |
+
+> **Studio Desktop verdict: a run passed only when `Data.errors` is empty AND `Data.output` is `"Session ended"`.** Both are required: a missing entry point returns outer `Result: "Success"` with `errors: []`, `logEntries: []` and `output: "Failed to open the file <path>"`. An `--input-arguments` key the workflow does not declare is accepted silently and the run completes. Log-entry `level` is not a failure signal here either.
 
 ---
 
@@ -367,7 +395,8 @@ uip rpa debug start --file-path "MyWorkflow.xaml" --output json
 uip rpa debug continue --output json
 
 # 4. Check the response for:
-#    - Data.hasErrors false AND Data.errorMessage null AND Data.debugState null/"Completed" —
+#    - Helm: Data.hasErrors false AND Data.errorMessage null AND Data.debugState null/"Completed";
+#      Studio Desktop: Data.errors empty AND Data.output == "Session ended" —
 #      the pass/fail signal; the outer Result stays "Success" for a suspended debug session
 #    - Data.output (workflow's serialized output args) carries the expected values
 #    - Streamed [Level] log lines above the envelope are diagnostic context, NOT a failure signal —
@@ -462,7 +491,7 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ## Reading Debug Output Effectively
 
-Read the response in this order (fields per § Output Format). **Verdict comes from `Data.hasErrors`, `Data.errorMessage` and `Data.debugState` together — never from the outer `Result` alone, and never from log-line levels.**
+Read the response in this order (fields per § Output Format; the Helm shape is described — on the Studio Desktop shape the verdict is `errors` empty AND `output == "Session ended"`, and the log lines are the `logEntries` array). **Verdict comes from `Data` — never from the outer `Result` alone, and never from log-line levels.**
 
 1. **`hasErrors` + `errorMessage` + `debugState`** — the success/failure signal. Passed only when `hasErrors` is `false`, `errorMessage` is `null`, and `debugState` is `null` or `"Completed"`. The outer `Result` qualifies the CLI call, not the run: `Failure` for a faulted `run` (fields JSON-encoded in `Message`), `Success` for a suspended debug session.
 2. **`errorMessage` (when `hasErrors: true`)** — formatted chain with the source activity, exception type, message, and stack trace. This is the canonical failure diagnostic. With `hasErrors: false` and `debugState: "Suspended"` it carries command guidance instead; the exception is in `debugDetails`.
