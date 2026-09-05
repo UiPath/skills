@@ -88,7 +88,7 @@ On the headless backend, debugging is a synchronous request/response loop: **eve
 |---|---|---|
 | `Paused` | Stopped at a breakpoint or after a step/break. `DebugDetails` carries the current activity (name, id, workflow file) and a snapshot of in-scope variables, arguments, and properties | Inspect `DebugDetails`, then `step-over` / `step-into` / `step-out` / `continue`, or `execution cancel` |
 | `Suspended` | Stopped on an unhandled exception; the session is still alive. `DebugDetails` carries the exception type, message, faulting activity, and locals | `continue` to propagate the exception, `continue-retry` to re-run the faulted activity, `continue-ignore` to skip it, or `execution cancel` |
-| `Completed` | The run finished. The response is the normal run result (`Output`, `HasErrors`, `ErrorMessage`) | Read the run result; the session is gone |
+| `Completed` | The run finished. The response is the normal run result (`output`, `hasErrors`, `errorMessage`) | Read the run result; the session is gone |
 | `Running` | The wait timed out before a stable state was reached — execution is still going | Poll with `debug state`, send `debug break` to pause at the next activity, or `execution cancel` |
 | `None` | No debug session is active | Start one with `debug start` |
 
@@ -178,9 +178,7 @@ For `debug test-activity` and `debug start-from-here`, both `--input-arguments` 
 
 ## Output Format
 
-`run` and `debug start` both return `{Result, Code, Data}`. **`Data`'s inner shape varies by CLI build and run state — read it by key presence, never by assumed schema.**
-
-Every build verified to date (uip 1.200.x and 1.202.x) returns `Data` flat. A clean `run` and the same workflow under `debug start`:
+`run` and `debug start` both return `{Result, Code, Data}`. A clean `run`, then the same workflow under `debug start`:
 
 ```text
 [Information] Starting execution...
@@ -205,9 +203,7 @@ Every build verified to date (uip 1.200.x and 1.202.x) returns `Data` flat. A cl
 | `debugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — current activity + locals when `Paused`; exception type/message/activity + locals when `Suspended`; `null` otherwise. |
 | `profiling` | `object?` | Present only when `--profiling` was passed on a start command and collection succeeded. Single field `OutputDirectory` — absolute path to the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). `null` / omitted otherwise. See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
-**The workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines and do not expect a `logEntries` key. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
-
-Some builds nest the same six fields as a JSON-encoded string on `Data.runResult`, PascalCase (`Output`, `HasErrors`, `ErrorMessage`, `DebugState`, `DebugDetails`, `Profiling`). When that key is present, parse it and read the same fields with the same meaning. If a build ever returns `errors` / `logEntries` keys instead, read by key presence: `errors` empty AND `output == "Session ended"` is that shape's pass condition.
+**The workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
 
 > **The outer `Result` reports the CLI invocation, NOT the workflow.** It is `ValidationError` for an unknown flag or a filter that failed to evaluate, `Failure` for an unopenable project directory **and for a `run` whose workflow faulted** (the `Data` fields arrive JSON-encoded in `Message`), and `Success` for every `debug start` that reached the runtime — including one suspended on an unhandled exception. **Never treat `Result: "Success"` as a passing run.**
 >
@@ -300,7 +296,7 @@ uip rpa debug test-activity \
   --output json
 
 # 3. Check the output:
-#    - HasErrors / ErrorMessage → compile/validation issues, unhandled exceptions
+#    - hasErrors / errorMessage → compile/validation issues, unhandled exceptions
 #    - Streamed log entries → runtime messages from the activity (observability, not a verdict)
 #    - Output → workflow's serialized output args on success
 ```
@@ -399,7 +395,7 @@ uip rpa debug start --file-path "ProcessOrder.xaml" \
 
 ## Profiling Workflow Performance
 
-Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `Profiling.OutputDirectory` — flat on `Data`, or inside the parsed string when the response nests `runResult` (§ Output Format).
+Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `Data.profiling.OutputDirectory` (§ Output Format).
 
 ### When to enable profiling
 
@@ -432,7 +428,7 @@ Only start verbs collect profiling — `--profiling` is silently ignored on step
 uip rpa run --file-path "ProcessOrders.xaml" --profiling --output json
 ```
 
-Read `Data.Profiling.OutputDirectory` — flat on `Data` when the response is flat, inside the parsed string when the response nests `runResult` (§ Output Format):
+Read `Data.profiling.OutputDirectory`:
 
 ```jsonc
 {
@@ -454,7 +450,7 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ### Caveats
 
-- `Profiling` field is **absent** if the run did not reach the executor (compile failure surfaces in `ErrorMessage` instead) or if the active Studio profile does not support profiling (non-Develop profiles register a no-op profiling service). Treat the field as optional — never assume it is populated.
+- `profiling` field is **absent** if the run did not reach the executor (compile failure surfaces in `errorMessage` instead) or if the active Studio profile does not support profiling (non-Develop profiles register a no-op profiling service). Treat the field as optional — never assume it is populated.
 - Numbers from a `debug start` profile run differ from a `run` profile run — the debugger adds tracking overhead. For perf comparisons, always use `run`.
 - Files are not auto-cleaned. After an investigation, manually clear `%LOCALAPPDATA%\UiPath\ProfiledRuns\` if disk usage matters.
 - Profiling is per run, not aggregated across runs. To compare two implementations, run each with `--profiling` separately and diff the `*.uistat` reports.
@@ -466,7 +462,7 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ## Reading Debug Output Effectively
 
-Read the response in this order, resolving each field by key presence per § Output Format. **Verdict comes from `Data.hasErrors`, `Data.errorMessage` and `Data.debugState` together — never from the outer `Result` alone, and never from log-line levels.**
+Read the response in this order (fields per § Output Format). **Verdict comes from `Data.hasErrors`, `Data.errorMessage` and `Data.debugState` together — never from the outer `Result` alone, and never from log-line levels.**
 
 1. **`hasErrors` + `errorMessage` + `debugState`** — the success/failure signal. Passed only when `hasErrors` is `false`, `errorMessage` is `null`, and `debugState` is `null` or `"Completed"`. The outer `Result` qualifies the CLI call, not the run: `Failure` for a faulted `run` (fields JSON-encoded in `Message`), `Success` for a suspended debug session.
 2. **`errorMessage` (when `hasErrors: true`)** — formatted chain with the source activity, exception type, message, and stack trace. This is the canonical failure diagnostic. With `hasErrors: false` and `debugState: "Suspended"` it carries command guidance instead; the exception is in `debugDetails`.
@@ -477,7 +473,7 @@ Read the response in this order, resolving each field by key presence per § Out
 
 A practical example — a workflow makes an HTTP request and tries to deserialize the response as JSON, but fails:
 
-- **`HasErrors: true`** with `ErrorMessage` carrying `JsonReaderException: Unexpected character encountered while parsing value: T` — the deserializer tried to parse a non-JSON response
+- **`hasErrors: true`** with `errorMessage` carrying `JsonReaderException: Unexpected character encountered while parsing value: T` — the deserializer tried to parse a non-JSON response
 - **Streamed log entries** (or workflow `Log Message` activities) reveal the HTTP response variable had `StatusCode: "TooManyRequests"` and `TextContent: "Too Many Requests\r\n"` — the API returned a 429, not JSON
 - **Fix**: Add status code checking before deserialization, or add retry logic with backoff to the HTTP request
 

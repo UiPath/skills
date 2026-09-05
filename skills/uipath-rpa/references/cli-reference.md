@@ -93,17 +93,17 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 `uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
-Both wrap the result in `{Result, Code, Data}`. **`Data`'s inner shape varies by CLI build and run state — read it by key presence, never by assumed schema.** Every build verified to date (uip 1.200.x and 1.202.x) returns `Data` flat as `{output, hasErrors, errorMessage, profiling, debugState, debugDetails}`: `output` is the workflow's serialized output arguments (`"{}"` when it declares none), and the workflow's own `Log Message` lines stream to stdout as `[Information] …` lines **above** the JSON envelope — they are not inside `Data`. Some builds nest the same fields as a JSON-encoded string on `Data.runResult` (`HasErrors`, `ErrorMessage`, `DebugState`, `DebugDetails`, `Profiling`). Field-by-field meaning: [debugging.md § Output Format](debugging.md#output-format).
+Both wrap the result in `{Result, Code, Data}`. `Data` is `{output, hasErrors, errorMessage, profiling, debugState, debugDetails}`: `output` is the workflow's serialized output arguments (`"{}"` when it declares none), and the workflow's own `Log Message` lines stream to stdout as `[Information] …` lines **above** the JSON envelope — they are not inside `Data`. Field-by-field meaning: [debugging.md § Output Format](debugging.md#output-format).
 
 > **A run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** A faulted `run` returns outer `Result: "Failure"` with the same field set JSON-encoded in `Message` (`hasErrors: true`, `errorMessage` = source activity, exception type, stack). A faulted `debug start` returns `Result: "Success"` with `hasErrors: false`, `debugState: "Suspended"`, the exception in `debugDetails` and command guidance in `errorMessage` — the session is still alive; cancel or continue it. **Never read the outer `Result: "Success"` as a passing run, and never infer failure from a `[Warning]` / `[Error]` log line** — `Log Message` activities emit at any level, and treating log levels as a verdict flips green runs to "failed" and burns retries.
 
 ### Capturing the verdict
 
-**Always pass `--output-filter` on `run` / `debug start`, and always this filter.** It names every verdict field and stays valid on every payload shape because a missing key evaluates to `null`. **Never write a filter that calls `length()`, `keys()`, or any function on a key that may be absent** (`length(errors)`, `keys(Data)`): the CLI rejects the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run, so the retry re-drives the application and costs a turn.
+**Always pass `--output-filter` on `run` / `debug start`, and always this filter.** It selects the five verdict fields and drops `profiling`. **Never write a filter that calls `length()`, `keys()`, or any function on a key that is not in `Data`** (`length(errors)`, `keys(Data)`): the CLI rejects the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run, so the retry re-drives the application and costs a turn.
 
 ```bash
 uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json \
-  --output-filter "{output: output, hasErrors: hasErrors, errorMessage: errorMessage, debugState: debugState, debugDetails: debugDetails, errors: errors, logEntries: logEntries[?level!='Trace'].message | [-8:]}"
+  --output-filter "{output: output, hasErrors: hasErrors, errorMessage: errorMessage, debugState: debugState, debugDetails: debugDetails}"
 ```
 
 ```text
@@ -112,18 +112,14 @@ uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --ou
 [Information] 5 + 5 = 10
 [Information] SumDemo execution ended in: 00:00:00
 { "Result": "Success", "Code": "ToolResult", "Data": {
-    "output": "{}", "hasErrors": false, "errorMessage": null, "debugState": null, "debugDetails": null,
-    "errors": null, "logEntries": null } }
+    "output": "{}", "hasErrors": false, "errorMessage": null, "debugState": null, "debugDetails": null } }
 ```
 
-Adjudicate off `hasErrors`, `errorMessage` and `debugState` per the rule above. The workflow's logged values are the `[Information]` lines above the envelope — read them there; do not strip them (`grep -v '^\['`) and do not look for them inside `Data`. The same filter on `debug start` returns `debugState` / `debugDetails` for the suspended-state exception that selector recovery needs. The trailing `errors` / `logEntries` keys are `null` on current builds and only populate on a build that emits them.
+Adjudicate off `hasErrors`, `errorMessage` and `debugState` per the rule above. The workflow's logged values are the `[Information]` lines above the envelope — read them there; do not strip them (`grep -v '^\['`) and do not look for them inside `Data`. The same filter on `debug start` returns `debugState` / `debugDetails` for the suspended-state exception that selector recovery needs.
 
 **Never `| tail -N` or `| head -N` the payload.** The log lines precede the envelope, so either cut drops one of the two things you need, and recovering it means re-running — which re-drives the application; a workflow that is not re-run-safe behaves differently the second time. The filter already keeps the response to a dozen lines. On a `Result: "Failure"` envelope the filter has nothing to apply to (there is no `Data`): read `Message`, the same fields JSON-encoded.
 
 When a failure needs more than the envelope shows (compile-phase error, a stack older than the visible lines), redirect the whole stdout — `> run.log` — and read the `[Error]` lines plus the envelope's `errorMessage` from the file. `jq` is absent on a standard Windows agent host; the envelope is the last JSON object in the file.
-
-> **A style diagnostic can fail the verdict.** `hasErrors: true` with an `errorMessage` naming an analyzer/IDE diagnostic ID (e.g. `IDE0063`, "'using' statement can be simplified") rather than an exception means the body ran and logged normally but the run was aborted on the diagnostic. Fix the code style and re-run; do not hunt for a runtime failure that did not happen.
-
 ---
 
 ## Passing structured inputs
