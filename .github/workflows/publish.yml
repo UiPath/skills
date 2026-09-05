@@ -53,7 +53,12 @@ permissions:
 
 jobs:
   guard:
-    name: Validate version sync
+    # Deliberately NOT `Validate version sync` — that is the name of the
+    # required PR check produced by validate-version-sync.yml. This job runs on
+    # `push` and can land a same-named check on the merge commit, which makes
+    # the required context ambiguous about which run satisfied it. Same
+    # assertion, distinct check name.
+    name: Validate version sync (publish guard)
     runs-on: uipath-ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
