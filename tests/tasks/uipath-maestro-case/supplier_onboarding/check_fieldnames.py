@@ -66,12 +66,30 @@ def main() -> int:
             )
             continue
         if E.CONNECTOR_OUTPUT_PATH not in status_wires:
-            problems.append(
-                f"{stage}/{name!r}: the status wire path is {sorted(status_wires)}; the "
-                f"connector's contract is the lowercase {E.CONNECTOR_OUTPUT_PATH!r}. "
-                "Casing here is load-bearing at runtime and `validate` cannot see it — "
-                "the run dies with `Status not found, did you mean status`."
-            )
+            # Two different builds reach this line. One re-cases the path, and the run
+            # dies with `Status not found, did you mean status`. The other reads a
+            # `vars.` name, which means the row was written in the `=` custom-output
+            # shape rather than the `->` extract shape, and the read yields undefined.
+            # Naming only the first sends the reader to look at casing that is correct.
+            through_vars = sorted(w for w in status_wires if w.startswith("js:vars."))
+            if through_vars:
+                problems.append(
+                    f"{stage}/{name!r}: the status wire reads {through_vars}, which "
+                    f"dereferences the output slot's own name as if it were a case "
+                    f"variable; the connector's contract is "
+                    f"{E.CONNECTOR_OUTPUT_PATH!r}, read straight off the payload. A "
+                    f"row shaped this way carries `custom: true`, no `id`, no "
+                    f"`originalVar` and an empty `target`, which is the `=` "
+                    f"custom-output shape on a row the SDD writes with `->`"
+                )
+            else:
+                problems.append(
+                    f"{stage}/{name!r}: the status wire path is {sorted(status_wires)}; "
+                    f"the connector's contract is the lowercase "
+                    f"{E.CONNECTOR_OUTPUT_PATH!r}. Casing here is load-bearing at "
+                    f"runtime and `validate` cannot see it: the run dies with "
+                    f"`Status not found, did you mean status`."
+                )
             continue
         targets = {
             entry.get("var")

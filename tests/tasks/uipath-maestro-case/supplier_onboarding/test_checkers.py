@@ -1196,6 +1196,18 @@ class FieldNameTests(CheckerBase):
                         out["source"] = "=Response.Status"
         self.rejects(plan, "re-cased variant")
 
+    def test_rejects_a_status_wire_read_through_vars(self):
+        # The `=` custom-output shape on a row the SDD writes with `->`: the wire
+        # dereferences the output slot's own name, and the read yields undefined.
+        plan = baseline_plan()
+        for node in plan["nodes"]:
+            for row in (node.get("data") or {}).get("tasks") or []:
+                for task in row:
+                    for out in (task.get("data") or {}).get("outputs") or []:
+                        if out.get("source") == "=" + E.CONNECTOR_OUTPUT_PATH:
+                            out["source"] = "=js:vars.response2.status"
+        self.rejects(plan, "as if it were a case variable")
+
     def test_rejects_status_landing_in_the_wrong_slot(self):
         plan = baseline_plan()
         for node in plan["nodes"]:
