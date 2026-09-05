@@ -35,11 +35,11 @@ initial_prompt: |
   implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution with uip solution new/init"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+(new|init)\b'
-    min_count: 1
+  - type: run_command
+    description: "Solution SupportSol exists (SupportSol.uipx from uip solution init; in Studio Web the open solution)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered SupportSol --min-projects 0"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
