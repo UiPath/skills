@@ -99,11 +99,10 @@ Both wrap the result in `{Result, Code, Data}`. `Data` is `{output, hasErrors, e
 
 ### Capturing the verdict
 
-**Always pass `--output-filter` on `run` / `debug start`, and always this filter.** It selects the five verdict fields and drops `profiling`. **Never write a filter that calls `length()`, `keys()`, or any function on a key that is not in `Data`** (`length(errors)`, `keys(Data)`): the CLI rejects the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run, so the retry re-drives the application and costs a turn.
+**Run `run` / `debug start` with no `--output-filter` and read the envelope as printed.** `Data` is six short fields — it already is the verdict — and the filter cannot reach the log lines, which stream above the envelope. A filter that names a key outside `Data` (`length(errors)`, `keys(Data)`) makes the CLI reject the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run, so the retry re-drives the application and costs a turn.
 
 ```bash
-uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json \
-  --output-filter "{output: output, hasErrors: hasErrors, errorMessage: errorMessage, debugState: debugState, debugDetails: debugDetails}"
+uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
 ```
 
 ```text
@@ -112,12 +111,12 @@ uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --ou
 [Information] 5 + 5 = 10
 [Information] SumDemo execution ended in: 00:00:00
 { "Result": "Success", "Code": "ToolResult", "Data": {
-    "output": "{}", "hasErrors": false, "errorMessage": null, "debugState": null, "debugDetails": null } }
+    "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
 ```
 
-Adjudicate off `hasErrors`, `errorMessage` and `debugState` per the rule above. The workflow's logged values are the `[Information]` lines above the envelope — read them there; do not strip them (`grep -v '^\['`) and do not look for them inside `Data`. The same filter on `debug start` returns `debugState` / `debugDetails` for the suspended-state exception that selector recovery needs.
+Adjudicate off `hasErrors`, `errorMessage` and `debugState` per the rule above. The workflow's logged values are the `[Information]` lines above the envelope — read them there; do not strip them (`grep -v '^\['`) and do not look for them inside `Data`. On `debug start`, `debugState` / `debugDetails` carry the suspended-state exception that selector recovery needs.
 
-**Never `| tail -N` or `| head -N` the payload.** The log lines precede the envelope, so either cut drops one of the two things you need, and recovering it means re-running — which re-drives the application; a workflow that is not re-run-safe behaves differently the second time. The filter already keeps the response to a dozen lines. On a `Result: "Failure"` envelope the filter has nothing to apply to (there is no `Data`): read `Message`, the same fields JSON-encoded.
+**Never `| tail -N` or `| head -N` the payload.** The log lines precede the envelope, so either cut drops one of the two things you need, and recovering it means re-running — which re-drives the application; a workflow that is not re-run-safe behaves differently the second time. On a `Result: "Failure"` envelope there is no `Data`: read `Message`, the same fields JSON-encoded.
 
 When a failure needs more than the envelope shows (compile-phase error, a stack older than the visible lines), redirect the whole stdout — `> run.log` — and read the `[Error]` lines plus the envelope's `errorMessage` from the file. `jq` is absent on a standard Windows agent host; the envelope is the last JSON object in the file.
 ---
