@@ -87,7 +87,9 @@ A deployed coded app is auto-scoped to the folder it was deployed into: the plat
 
 > **Invisible in the type surface.** `folderKey` is deliberately kept off the public `UiPathConfig`, so reading the `.d.ts` will not reveal this fallback mechanism — it is exactly the kind of behavior this file exists to record.
 
-> **The fallback only reaches a call that CAN omit the folder.** The mutating service methods take it as a required positional — `jobs.stop(jobKeys, folderId)`, `jobs.getById(id, folderId)`, `tasks.complete(options, folderId)`, `processInstances.cancel(instanceId, folderKey)`, `processInstances.getById(id, folderKey)` — so there is nothing to omit and omitting it is a compile error, not a default. Either fetch the entity and use its attached method (`job.stop()`, `task.complete()`, `instance.cancel()` take no folder), or hold the folder in module config and pass it. Only `tasks.getById(id, options?, folderId?)` has an optional folder, so Tasks is the one family reachable with no folder anywhere; Jobs and ProcessInstances need one just to fetch the entity. Do not search `dist/**` for a no-folder overload — there isn't one.
+> **The fallback only reaches a call that CAN omit the folder — check the signature first.** An optional folder parameter (`folderId?`) gets the fallback. A **required positional** does not: there is nothing to omit, and omitting it is a compile error rather than a default. `jobs.stop(jobKeys, folderId)` is the usual shape — mutating operations tend to require it, list/get calls tend not to — but read the method's own signature in `dist/<service>/index.d.ts` and take it at face value. There is no hidden no-folder overload to find, so do not go looking for one.
+>
+> When it is required, either fetch the entity and use its attached method (`job.stop()`, `task.complete()`, `instance.cancel()` take no folder, though the fetch itself may still need one), or hold the folder in module config and pass it.
 
 ## Bridging folderKey ↔ folderId
 
