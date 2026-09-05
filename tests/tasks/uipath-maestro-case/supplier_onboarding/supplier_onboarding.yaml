@@ -170,6 +170,32 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: >
+      every case variable reaches the plan in the group its Category selects, keeps the
+      SDD's declared type and Default, carries a string `default` where its category
+      puts one, and every file slot defaults empty. A non-string default is dropped
+      silently on the way to BPMN, so the slot starts undefined and the first route to
+      read it faults
+    command: "python3 $TASK_DIR/check_variables.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      the case shell carries the settings the SDD asks for: the case name, the constant
+      `SUP` identifier prefix, the case app enabled, task outputs passed directly, and
+      three exit conditions on the stages the SDD names of which only the onboarded one
+      marks the case complete. A rejection that marks the case complete reports an
+      onboarding that never happened
+    command: "python3 $TASK_DIR/check_metadata.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: command_not_executed
     description: "Agent did not use mutating case-authoring CLI commands : caseplan.json is authored directly per the skill's invariant"
     tool_name: "Bash"

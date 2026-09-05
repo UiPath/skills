@@ -127,6 +127,7 @@ def main() -> int:
         )
 
     # ---- 3. every declared output target is actually written ---------------
+    names_to_task = {P.task_name(t): t for _s, t in P.all_tasks(caseplan)}
     writers: dict[str, set[str]] = {}
     for _stage, task in P.all_tasks(caseplan):
         for target in P.output_targets(task):
@@ -148,13 +149,23 @@ def main() -> int:
             continue
         dropped = sorted(set(expected_tasks) - actual)
         if dropped:
+            # What each dropped task wrote instead separates the three ways this
+            # fails: the reassign entry is missing, it is present under a suffixed
+            # `var`, or the task itself is absent and prints nothing at all.
+            # `io-binding/impl-json.md` line 47 puts the SDD name on `var` verbatim and
+            # sends only `id` / `originalVar` / `target` through the uniqueness suffix.
+            instead = {
+                name: sorted(P.output_targets(names_to_task[name]))
+                for name in dropped
+                if name in names_to_task
+            }
             problems.append(
                 f"task(s) {dropped} do not write {target!r}; the SDD's Output table gives "
-                f"them that reassign. Written instead by {sorted(actual)}"
+                f"them that reassign. Written instead by {sorted(actual)}. "
+                f"Those tasks' own output vars: {instead}"
             )
 
     # ---- 4. expression recipients ------------------------------------------
-    names_to_task = {P.task_name(t): t for _s, t in P.all_tasks(caseplan)}
     for name in sorted(E.EXPRESSION_RECIPIENT_TASKS):
         task = names_to_task.get(name)
         if task is None:
@@ -356,6 +367,26 @@ def main() -> int:
             "starts them, the stage never completes, and the run hangs instead of faulting"
         )
 
+    # ---- 10. every connector task runs the same Outlook operation ----------
+    # `uiPathActivityTypeId` names WHICH operation of the connector runs. A task
+    # carrying a different one calls a different Outlook endpoint with this task's
+    # payload, and the plan still validates.
+    for _stage, task in P.all_tasks(caseplan):
+        if P.task_type(task) != "execute-connector-activity":
+            continue
+        ids = P.activity_type_ids(task)
+        if not ids:
+            problems.append(
+                f"connector task {P.task_name(task)!r} names no activity type; the "
+                f"task then has no operation to run"
+            )
+        elif ids != {E.OUTLOOK_ACTIVITY_TYPE_ID}:
+            problems.append(
+                f"connector task {P.task_name(task)!r} runs activity type(s) "
+                f"{sorted(ids)}; every send in this case runs "
+                f"{E.OUTLOOK_ACTIVITY_TYPE_ID!r}"
+            )
+
     print(f"checked {P.find_caseplan()}")
     print(f"tasks: {total}  types: {dict(sorted(types.items()))}")
     print(f"resource keys bound: {len(found)}/{len(E.RESOURCE_KEYS)}")
@@ -365,7 +396,9 @@ def main() -> int:
             f"{len(E.RESOURCE_KEYS)} resource keys bound with no skeletons, every "
             "output landing in a declared slot, the three expression recipients carrying "
             f"the {{Type,Value}} object, {len(E.RUN_ONCE_TASKS)} run-once tasks, a "
-            "non-blocking child case, and four on-demand tasks each locked to its own stage"
+            "non-blocking child case, four on-demand tasks each locked to its own stage, "
+            f"and {E.CONNECTOR_TASK_COUNT} connector tasks all running the same Outlook "
+            "operation"
         )
         return 0
 

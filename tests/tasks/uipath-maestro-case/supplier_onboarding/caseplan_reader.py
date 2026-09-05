@@ -351,6 +351,29 @@ def task_input_expressions(task: dict) -> list[tuple[str, str]]:
     return found
 
 
+
+def activity_type_ids(task: dict) -> set[str]:
+    """Every `uiPathActivityTypeId` a connector task carries.
+
+    The id names which operation of the connector the task runs, and it sits several
+    levels down inside `data.context[].body`, under a different parent per context
+    entry. Walking for the key is what keeps this independent of that nesting.
+    """
+    found: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "uiPathActivityTypeId" and isinstance(value, str) and value:
+                    found.add(value)
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk((task.get("data") or {}).get("context"))
+    return found
+
 def output_targets(task: dict) -> set[str]:
     """The case variables a task's outputs are reassigned into.
 

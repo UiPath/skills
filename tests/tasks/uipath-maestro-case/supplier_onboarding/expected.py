@@ -229,7 +229,6 @@ COMPLIANCE_DECISION_VALUES = {"approve", "reject"}
 BANK_VERIFIED_VALUE = "verified"
 
 DIRECTOR_THRESHOLD = "500000"
-AUTO_THRESHOLD = "50000"
 
 # --- Case-level ---------------------------------------------------------------
 
@@ -252,7 +251,6 @@ CASE_INPUTS = [
 ]
 CASE_OUTPUTS = ["supplierId", "caseOutcome"]
 
-OFFERING_CATEGORIES = {"Raw materials", "Components", "Services", "Logistics", "Other"}
 
 # --- Resource identities (tenant) ---------------------------------------------
 
@@ -547,6 +545,27 @@ def _sdd_custom_outputs(sdd: str) -> dict[str, list[str]]:
     return out
 
 
+_VAR_ROW_RE = re.compile(
+    r"^\|\s*([A-Za-z][\w]*)\s*\|\s*(In|Out|Variable)\s*\|\s*(\w+)\s*\|"
+    r"[^|]*\|[^|]*\|\s*([^|]*?)\s*\|",
+    re.M,
+)
+
+# Category tells the build which of the three variable groups a row lands in, per
+# `global-vars/impl-json.md` § Dispatcher. An `In` row is written twice: the formal
+# slot under `inputs` and its companion under `inputOutputs`.
+VAR_GROUP = {"In": "inputs", "Out": "outputs", "Variable": "inputOutputs"}
+
+
+def _sdd_variables(sdd: str) -> dict[str, tuple[str, str, str]]:
+    """Case Variables rows as name -> (category, type, default)."""
+    body = sdd.split("### Case Variables", 1)[-1].split("\n## ", 1)[0]
+    return {
+        m.group(1): (m.group(2), m.group(3), m.group(4))
+        for m in _VAR_ROW_RE.finditer(body)
+    }
+
+
 def sdd_facts() -> dict:
     """Re-derive the volatile facts from the fixture, and refuse a thin parse.
 
@@ -621,6 +640,13 @@ def sdd_facts() -> dict:
             f"expression; got {sorted(bound_inputs)}"
         )
 
+    variables = _sdd_variables(sdd)
+    if len(variables) < 40:
+        _fail(
+            "fixture parse error: expected >=40 Case Variables rows carrying a name, "
+            f"category and type; got {len(variables)}"
+        )
+
     return {
         "xrefs": xrefs,
         "guard_literals": literals,
@@ -629,4 +655,5 @@ def sdd_facts() -> dict:
         "bound_inputs": bound_inputs,
         "recipients": recipients,
         "custom_outputs": custom_outputs,
+        "variables": variables,
     }

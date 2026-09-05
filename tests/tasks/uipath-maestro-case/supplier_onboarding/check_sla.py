@@ -195,11 +195,24 @@ def main() -> int:
                 f"{E.SLA_REVIEW!r} has {len(lane_rules)} `sla-status-change` entry rule(s); "
                 "the SDD keys the lane on exactly one, against the root SLA"
             )
-        for cond, _rule in lane_rules:
+        # The lane opens on the CASE target, so its rule names a root SLA. Pointed at
+        # a stage's SLA instead, the lane opens the first time any single phase runs
+        # late, and a case still inside its overall target gets reviewed.
+        root_sla_ids = {
+            str(rule.get("id")) for rule in P.sla_rules(caseplan) if rule.get("id")
+        }
+        for cond, rule in lane_rules:
             if cond.get("isInterrupting"):
                 problems.append(
                     f"{E.SLA_REVIEW!r} entry interrupts; the review runs alongside the "
                     "application, which must still reach its own disposition"
+                )
+            sla_id = str(rule.get("slaId") or "")
+            if sla_id not in root_sla_ids:
+                problems.append(
+                    f"{E.SLA_REVIEW!r} opens on SLA {sla_id!r}, which is not one of the "
+                    f"case's own {sorted(root_sla_ids)}; the lane must open on the "
+                    f"overall target, not on a single phase running late"
                 )
 
     # ---- 5. wrap-up phases notify and start nothing ------------------------

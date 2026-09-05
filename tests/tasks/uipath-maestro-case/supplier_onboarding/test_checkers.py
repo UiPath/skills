@@ -34,6 +34,8 @@ CHECKERS = {
     "sla": HERE / "check_sla.py",
     "tasks_io": HERE / "check_tasks_io.py",
     "fieldnames": HERE / "check_fieldnames.py",
+    "variables": HERE / "check_variables.py",
+    "metadata": HERE / "check_metadata.py",
 }
 
 sys.path.insert(0, str(HERE))
@@ -140,8 +142,15 @@ def T(
     if recipient is not None:
         data["recipient"] = recipient
     if task_type in ("execute-connector-activity", "wait-for-connector"):
-        # `task_is_skeleton` reads a non-empty `context` for this class.
-        data["context"] = [{"name": "connectionId", "type": "string", "value": "conn"}]
+        # `task_is_skeleton` reads a non-empty `context` for this class, and the
+        # activity type names which operation of the connector the task runs. A real
+        # build nests that id inside a context entry's `body`.
+        data["context"] = [
+            {"name": "connectionId", "type": "string", "value": "conn"},
+            {"name": "activity", "type": "jsonSchema", "body": {
+                "activityMetadata": {"activity": {
+                    "uiPathActivityTypeId": E.OUTLOOK_ACTIVITY_TYPE_ID}}}},
+        ]
         data["serviceType"] = "Intsvc.ActivityExecution"
     else:
         data["name"] = "=bindings.b" + task_id[:6]
@@ -443,7 +452,7 @@ INPUTS = [   # (id, name, type, default)
     ('vOfc5eBq6', 'offeringCategory', 'string', 'Components'),
     ('vExs6fCr7', 'expectedAnnualSpend', 'double', '120000'),
     ('vSpc7gDs8', 'spendCurrency', 'string', 'USD'),
-    ('vOfd8hEt9', 'offeringDescription', 'string', 'Precision machined components for industrial pumps'),
+    ('vOfd8hEt9', 'offeringDescription', 'string', 'precision machined components for industrial pumps'),
     ('vSbd9jFu1', 'submittedDate', 'date', '2026-08-26'),
     ('vRgc1kGv2', 'registrationCertificate', 'file', ''),
     ('vIns2mHw3', 'insuranceDocument', 'file', ''),
@@ -564,6 +573,10 @@ BINDINGS = [   # (id, name, resource, resourceSubType, resourceKey, default, pro
 METADATA = {
     "caseIdentifier": "SUP",
     "caseIdentifierType": "constant",
+    # Both read off a real build. The case app is what the people this case routes to
+    # open, and direct passing is what carries a task's result into the next input.
+    "caseAppEnabled": True,
+    "caseDirectlyPassTaskOutputs": True,
     "slaRules": [
         _sla(
             (
@@ -638,7 +651,7 @@ def build() -> dict:
                 for vid, name, vtype, var in OUTPUTS
             ],
             "inputOutputs": [
-                {"id": name, "name": name, "type": vtype}
+                _companion(name, vtype)
                 for name, vtype in INPUT_OUTPUTS
             ],
         },
@@ -661,6 +674,29 @@ def build() -> dict:
     }
 
 
+
+
+# A companion's own fields come from its SDD Category, the way a real build writes
+# them: case state is marked `custom` and carries its Default, an Out companion
+# carries a default and no mark, and an In companion carries neither.
+_TRIGGER_ID = "trigger_r2lbym"
+
+
+def _companion(name: str, vtype: str) -> dict:
+    category, _sdd_type, default = E.sdd_facts()["variables"].get(
+        name, ("Variable", vtype, "")
+    )
+    if category == "In":
+        return {"id": name, "name": name, "type": vtype, "elementId": _TRIGGER_ID}
+    entry = {"id": name, "name": name, "type": vtype}
+    if category == "Variable":
+        entry["custom"] = True
+    entry["elementId"] = "root"
+    if category == "Out":
+        entry["default"] = default
+    elif default:
+        entry["default"] = default
+    return entry
 
 
 def baseline_plan() -> dict:
@@ -1110,6 +1146,31 @@ class TasksIoTests(CheckerBase):
         self.rejects(plan, "bound nowhere in the plan")
 
 
+class SlaLaneTargetTests(CheckerBase):
+    checker = "sla"
+
+    def test_rejects_the_lane_opening_on_a_stage_sla(self):
+        # Pointed at a phase's SLA, the oversight lane opens the first time any single
+        # phase runs late, while the case is still inside its overall target.
+        plan = baseline_plan()
+        stage_sla_id = None
+        for node in plan["nodes"]:
+            rules = (node.get("data") or {}).get("slaRules") or []
+            if rules and (node.get("data") or {}).get("label") != E.SLA_REVIEW:
+                stage_sla_id = rules[0]["id"]
+                break
+        self.assertIsNotNone(stage_sla_id, "the baseline carries no stage SLA to point at")
+        lane = next(
+            n for n in plan["nodes"] if (n.get("data") or {}).get("label") == E.SLA_REVIEW
+        )
+        for cond in (lane.get("data") or {}).get("entryConditions") or []:
+            for row in cond.get("rules") or []:
+                for rule in row:
+                    if rule.get("slaId"):
+                        rule["slaId"] = stage_sla_id
+        self.rejects(plan, "not on a single phase running late")
+
+
 class FieldNameTests(CheckerBase):
     checker = "fieldnames"
 
@@ -1177,3 +1238,142 @@ class FieldNameTests(CheckerBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VariableTests(CheckerBase):
+    checker = "variables"
+
+    def test_accepts_baseline(self):
+        self.accepts(baseline_plan())
+
+    def test_rejects_a_dropped_case_variable(self):
+        plan = baseline_plan()
+        plan["variables"]["inputOutputs"] = [
+            e for e in plan["variables"]["inputOutputs"] if e["name"] != "riskRating"
+        ]
+        self.rejects(plan, "'riskRating'")
+
+    def test_rejects_a_retyped_variable(self):
+        # `expectedAnnualSpend` written as a string compares as text, so 90000 sorts
+        # above 500000 and the sign-off tier inverts.
+        plan = baseline_plan()
+        for entry in plan["variables"]["inputs"]:
+            if entry["name"] == "expectedAnnualSpend":
+                entry["type"] = "string"
+        self.rejects(plan, "the SDD declares 'double'")
+
+    def test_rejects_a_non_string_default(self):
+        plan = baseline_plan()
+        for entry in plan["variables"]["inputs"]:
+            if entry["name"] == "expectedAnnualSpend":
+                entry["default"] = 120000
+        self.rejects(plan, "dropped\n    silently" .replace("\n    ", " "))
+
+    def test_rejects_a_file_variable_with_a_default(self):
+        plan = baseline_plan()
+        for entry in plan["variables"]["inputs"]:
+            if entry["name"] == "registrationCertificate":
+                entry["default"] = "certificate.pdf"
+        self.rejects(plan, "a file default must be the empty string")
+
+    def test_rejects_a_default_the_sdd_does_not_give(self):
+        plan = baseline_plan()
+        for entry in plan["variables"]["inputs"]:
+            if entry["name"] == "contactEmail":
+                entry["default"] = "someone.else@example.com"
+        self.rejects(plan, "the SDD gives it")
+
+    def test_rejects_case_state_left_unmarked(self):
+        plan = baseline_plan()
+        for entry in plan["variables"]["inputOutputs"]:
+            if entry["name"] == "riskRating":
+                entry.pop("custom", None)
+        self.rejects(plan, "not marked `custom: true`")
+
+
+class MetadataTests(CheckerBase):
+    checker = "metadata"
+
+    def test_accepts_baseline(self):
+        self.accepts(baseline_plan())
+
+    def test_rejects_a_generated_case_identifier(self):
+        plan = baseline_plan()
+        plan["metadata"]["caseIdentifierType"] = "generated"
+        self.rejects(plan, "the SDD asks for 'constant'")
+
+    def test_rejects_a_different_identifier_prefix(self):
+        plan = baseline_plan()
+        plan["metadata"]["caseIdentifier"] = "SO"
+        self.rejects(plan, "reference numbers")
+
+    def test_rejects_a_disabled_case_app(self):
+        plan = baseline_plan()
+        plan["metadata"]["caseAppEnabled"] = False
+        self.rejects(plan, "nobody this case routes to can open it")
+
+    def test_rejects_task_outputs_not_passed_directly(self):
+        # Off, a task's result never reaches the next task's input, and every
+        # downstream expression reads an empty slot while the plan stays Valid.
+        plan = baseline_plan()
+        plan["metadata"]["caseDirectlyPassTaskOutputs"] = False
+        self.rejects(plan, "never reaches the next input")
+
+    def test_rejects_a_rejection_that_marks_the_case_complete(self):
+        plan = baseline_plan()
+        for condition in plan["metadata"]["caseExitRules"]:
+            if condition.get("displayName") == "Application rejected":
+                condition["marksCaseComplete"] = True
+        self.rejects(plan, "must not report the case complete")
+
+    def test_rejects_an_exit_pointed_at_the_wrong_stage(self):
+        plan = baseline_plan()
+        for condition in plan["metadata"]["caseExitRules"]:
+            if condition.get("displayName") == "Application withdrawn":
+                for row in condition["rules"]:
+                    for rule in row:
+                        if rule.get("selectedStageId"):
+                            rule["selectedStageId"] = P_stage_id(plan, E.REJECTED)
+        self.rejects(plan, "no case exit condition runs")
+
+    def test_rejects_a_dropped_exit_condition(self):
+        plan = baseline_plan()
+        plan["metadata"]["caseExitRules"] = plan["metadata"]["caseExitRules"][:2]
+        self.rejects(plan, "exit condition(s); the SDD writes")
+
+
+def P_stage_id(plan: dict, wanted: str) -> str:
+    for node in plan["nodes"]:
+        if (node.get("data") or {}).get("label") == wanted:
+            return node["id"]
+    raise AssertionError(f"no stage {wanted!r} in the baseline")
+
+
+class ConnectorActivityTypeTests(CheckerBase):
+    checker = "tasks_io"
+
+    def test_rejects_a_connector_task_running_another_operation(self):
+        # A different activity type calls a different Outlook endpoint with this
+        # task's payload, and the plan still validates.
+        plan = baseline_plan()
+        for _stage, task in P_all_tasks(plan):
+            if task.get("type") == "execute-connector-activity":
+                task["data"]["context"][1]["body"]["activityMetadata"]["activity"][
+                    "uiPathActivityTypeId"] = "00000000-0000-0000-0000-000000000000"
+                break
+        self.rejects(plan, "every send in this case runs")
+
+    def test_rejects_a_connector_task_naming_no_operation(self):
+        plan = baseline_plan()
+        for _stage, task in P_all_tasks(plan):
+            if task.get("type") == "execute-connector-activity":
+                task["data"]["context"] = task["data"]["context"][:1]
+                break
+        self.rejects(plan, "names no activity type")
+
+
+def P_all_tasks(plan: dict):
+    for node in plan["nodes"]:
+        for row in (node.get("data") or {}).get("tasks") or []:
+            for task in row:
+                yield node, task
