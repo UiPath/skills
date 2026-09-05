@@ -276,6 +276,7 @@ The CLI runs the deterministic static checks its registry ships — structural/s
 | `agent.json.type == "lowCode"` | Agent (low-code) | `references/agents/agents-lowcode-rules.md` |
 | Python coded-agent signals or `agent.json.type == "coded"` | Agent (coded) | `references/agents/agents-coded-rules.md` |
 | `pyproject.toml` + `main.py` + `uipath.json[functions]` only (no framework config) | Agent (coded — Simple Function) | same as Agent (coded) |
+| `package.json` + `uipath.json[functions]` (no `pyproject.toml`) | Coded Function (JS/TS) | *(phase 2)* |
 | `project.json` + `.xaml` / `.cs` | RPA | *(phase 2)* |
 | `*.flow` | Flow | *(phase 2)* |
 | `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |

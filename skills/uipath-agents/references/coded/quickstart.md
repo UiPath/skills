@@ -327,7 +327,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
 ## Framework Selection
 
-> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Python Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill instead of this one. Coded Functions use typed I/O (`@dataclass`, Pydantic `BaseModel`, or a thin Python class with typed annotations) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
+> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill (Python or TypeScript/JavaScript) instead of this one. Coded Functions use typed I/O (Pydantic `BaseModel` in Python, `defineSchema<T>()` in TS) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
 
 If the task needs LLM reasoning, infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
 
