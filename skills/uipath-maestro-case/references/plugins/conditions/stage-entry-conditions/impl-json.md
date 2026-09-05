@@ -36,7 +36,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
 5. Read the rule type and interrupting flag from the SDD's Stage Entry Conditions row; pick the recipe below
-6. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+6. Set `displayName`: use the SDD row's `Display Name` if present; else default to `Entry Rule {N}`. `N` counts **case-wide**, not within this stage: scan the whole `caseplan.json` for existing `Entry Rule <number>` names across every stage's `data.entryConditions[]` and every task's `entryConditions[]`, then `N` = highest + 1 (`1` when none). A per-stage counter collides with the identically-defaulted task entry conditions — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.entryConditions[]`. **When the table has multiple rows, repeat steps 1–7 once per row** — append one condition object per row. Never fold multiple rows into a single condition's `rules` group.
 
 ## Rule Types
