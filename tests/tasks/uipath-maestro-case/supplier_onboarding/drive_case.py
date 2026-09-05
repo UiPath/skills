@@ -204,19 +204,41 @@ def envelope_detail(reply: dict) -> str:
     ) or str(reply)
 
 
+# A refusal is permanent and must surface at once; the service being briefly away is
+# not. One 503 inside a breach poll cost a whole route and the two checks after it.
+TRANSIENT_RETRIES = 3
+TRANSIENT_PAUSE = 10
+_TRANSIENT_MARKERS = (
+    "service unavailable",
+    "bad gateway",
+    "gateway timeout",
+    "temporarily",
+    "too many requests",
+)
+
+
+def _is_transient(detail: str) -> bool:
+    return any(marker in detail.lower() for marker in _TRANSIENT_MARKERS)
+
+
 def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
     """`run_list`, but a failed CLI call raises instead of reading as an empty result.
 
     A polling loop cannot tell "no task yet" from "the call failed" when both answer with an
     empty list, so a broken lookup burns the whole gate budget and then reports the wrong cause.
     """
-    reply = envelope(args, timeout=timeout)
-    if reply.get("Result") != "Success":
-        # `Message` is the generic one-liner (`Error listing tasks`); the reason the call was
-        # refused rides in `Instructions`. Reporting only `Message` cost a route its whole
-        # budget and named nothing actionable.
-        raise RuntimeError(f"`{' '.join(args[:3])}` failed: {envelope_detail(reply)}")
-    return _rows_of(reply.get("Data") or {})
+    for attempt in range(TRANSIENT_RETRIES + 1):
+        reply = envelope(args, timeout=timeout)
+        if reply.get("Result") == "Success":
+            return _rows_of(reply.get("Data") or {})
+        detail = envelope_detail(reply)
+        if attempt == TRANSIENT_RETRIES or not _is_transient(detail):
+            # `Message` is the generic one-liner (`Error listing tasks`); the reason the call was
+            # refused rides in `Instructions`. Reporting only `Message` cost a route its whole
+            # budget and named nothing actionable.
+            raise RuntimeError(f"`{' '.join(args[:3])}` failed: {detail}")
+        print(f"  `{' '.join(args[:3])}` came back {detail}; retrying in {TRANSIENT_PAUSE}s")
+        time.sleep(TRANSIENT_PAUSE)
 
 
 def _rows_of(data) -> list:
