@@ -19,7 +19,7 @@ Fetches one process (by id or search) and its documents, and downloads document 
 uip ah automations get $PROCESS_ID --output json
 ```
 
-If the command fails with `Instructions` about AH **not being provisioned** on the tenant, or about the tenant having **no AH record yet**, report the matching message from [`cli-commands.md`](cli-commands.md) (**Automation Hub not available on this tenant**) — for the not-enabled case: *"Please contact your administrator to enable Automation Hub on this tenant."* — and stop.
+If the command fails with `Instructions` about AH **not being provisioned** on the tenant, or about the tenant having **no AH record yet**, report the message for the matching case, verbatim, from [`cli-commands.md`](cli-commands.md) → **Automation Hub not available on this tenant**, and stop.
 
 `Data` is the projected record (`Id`, `Name`, `Phase`, `PhaseStatus`, `Tags`, …). Add `--all-fields` only when you need the raw record (e.g. `process_slug` for the deep link). `Failure` with not-found → no such process; auth error → `uip login`.
 
