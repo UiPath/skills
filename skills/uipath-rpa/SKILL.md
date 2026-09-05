@@ -292,7 +292,7 @@ UIA references live in two locations. Always cite by location so the reader know
 3. If unchecked boxes remain because a Stop condition was hit, name the exact stop-condition item in the report.
 4. If the plan is fully checked off, or execution autonomy is `interactive`, proceed to the report format below.
 
-Then, if the harness provides persistent memory, save the patterns that [execution-maps-guide.md § Cross-session memory](references/execution-maps-guide.md#cross-session-memory) qualifies (a first-try clean gate on card-covered activities qualifies none) — as parallel `Write`s in the same message as the report and the context files, never as their own turns. The journey map's report row fixes this shape: the output check rides in the gate chain, the report message carries the context-file writes, the memory writes and the text below, and nothing runs after it.
+Then, if the harness provides persistent memory, save the patterns that [execution-maps-guide.md § Cross-session memory](references/execution-maps-guide.md#cross-session-memory) qualifies (a first-try clean gate on card-covered activities qualifies none) — as parallel `Write`s in the same message as the report and the context files, never as their own turns. The output check is a link of the gate chain; the report is one message carrying the context-file writes, the memory writes and the text below; nothing runs after it.
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
