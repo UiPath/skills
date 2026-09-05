@@ -196,16 +196,16 @@ For `debug test-activity` and `debug start-from-here`, both `--input-arguments` 
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `output` | `string` | Workflow's serialized output arguments JSON (`"{}"` when the entry point declares none), populated when the run completes; `""` on failure and on debug-command responses. **Carries the workflow's data, not a verdict.** |
-| `hasErrors` | `bool` | `true` iff execution finished without `Succeeded` (compile failure, validation failure, unhandled exception that ended the run, cancellation, timeout). `false` otherwise — including while `Suspended` on an exception, because the session is still alive and the outcome undecided. |
-| `errorMessage` | `string?` | Formatted error chain when `hasErrors: true` (`Source: <activity>`, `Message:`, `Exception Type:`, stack). On debug responses it may instead carry **guidance** (which commands apply in a `Suspended` state) with `hasErrors: false`. `null` otherwise. |
-| `debugState` | `string?` | Debug sessions only (`null` on plain `run`): `Paused`, `Suspended`, `Running`, `Completed`, or `None`. See [The stable-state debug loop](#the-stable-state-debug-loop-headless). |
-| `debugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — current activity + locals when `Paused`; exception type/message/activity + locals when `Suspended`; `null` otherwise. |
-| `profiling` | `object?` | Present only when `--profiling` was passed on a start command and collection succeeded. Single field `OutputDirectory` — absolute path to the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). `null` / omitted otherwise. See [Profiling Workflow Performance](#profiling-workflow-performance). |
+| `output` | `string` | Workflow's serialized output arguments JSON once the run ends — `{"out_Sum":10}` for an entry point with `out_Sum`, `"{}"` for one that declares none, also on a run that faulted inside an activity. `""` while a session is `Paused`, `Suspended` or `Running`, on `debug state`, and when the run never started (validation failure, missing entry point). **Carries the workflow's data, not a verdict.** |
+| `hasErrors` | `bool` | `true` when the run ended without succeeding: an unhandled exception that ended a `run`, a compile/validation failure, a missing entry point. `false` otherwise — including while `Suspended` on an exception, because the session is still alive and the outcome undecided. |
+| `errorMessage` | `string?` | The failure text when `hasErrors: true`: an activity fault gives `Source: <activity>`, `Message: …`, `Exception Type: …` and the stack; a compile/validation failure gives `Validation failed with N error(s):` and the diagnostics; a missing entry point gives `Message: The <file> workflow cannot be found …`. On the response that reports a `Suspended` session it carries **guidance** (which commands apply) with `hasErrors: false`. `null` otherwise. |
+| `debugState` | `string?` | Debug sessions only (`null` on plain `run`): `Paused` (breakpoint), `Suspended` (unhandled exception), `Running` (`debug state` polled mid-run), `Completed`, or `None` (`debug state` with no session). See [The stable-state debug loop](#the-stable-state-debug-loop-headless). |
+| `debugDetails` | `string?` | Debug sessions only: JSON snapshot for the state — `Activity`, `ActivityId`, `WorkflowFile`, `CurrentActivity` and locals when `Paused`; `ExceptionType`, `Message`, `Activity`, `CurrentActivity` and locals when `Suspended`; `""` while `Running`; `null` otherwise. |
+| `profiling` | `object?` | `null` unless `--profiling` was passed on a start command; then `{"outputDirectory": "<absolute path>"}` — the run's `*.uistat` and screenshot folder (verifies UI automation correctness and workflow performance). See [Profiling Workflow Performance](#profiling-workflow-performance). |
 
 **The workflow's log output is not in the envelope.** `Log Message` activities and system traces stream to stdout as `[Level] message` lines *above* the JSON envelope, live, while the run executes. That is where a logged value is read back to confirm runtime behavior — do not strip those lines. Output arguments are read from `output`, from the workflow's own log lines, or from artifacts the workflow wrote.
 
-> **The outer `Result` reports the CLI invocation, NOT the workflow.** It is `ValidationError` for an unknown flag or a filter that failed to evaluate, `Failure` for an unopenable project directory **and for a `run` whose workflow faulted** (the `Data` fields arrive JSON-encoded in `Message`), and `Success` for every `debug start` that reached the runtime — including one suspended on an unhandled exception. **Never treat `Result: "Success"` as a passing run.**
+> **The outer `Result` reports the CLI invocation, NOT the workflow.** It is `ValidationError` for an unknown flag or a filter that failed to evaluate; `Failure` **for a `run` whose workflow faulted, failed validation, or named a missing entry point** (`Message` holds the `Data` fields JSON-encoded, `hasErrors: true`) and for a project directory that cannot be opened or an executor that is still busy (`Message` holds `{"success": false, "errorMessage": "…"}`); and `Success` for every `debug start` that reached the runtime — including one suspended on an unhandled exception. **Never treat `Result: "Success"` as a passing run.**
 >
 > **A run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** All three are required: a suspended debug session reports `hasErrors: false` with `debugState: "Suspended"` and guidance in `errorMessage`; a completed failure reports `hasErrors: true` with the chain in `errorMessage`.
 >
@@ -395,7 +395,7 @@ uip rpa debug start --file-path "ProcessOrder.xaml" \
 
 ## Profiling Workflow Performance
 
-Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `Data.profiling.OutputDirectory` (§ Output Format).
+Use `--profiling` on a start verb to collect per-activity timings **and runtime screenshots** — the same data Studio's **Profile Execution** tool surfaces. Profiling serves two purposes that can be addressed in a single run: **verifying UI automation correctness** (via the captured screenshots — confirm clicks landed on the right element, forms filled as expected, screens transitioned correctly) **and verifying workflow performance** (via the per-activity timings). The executor writes `*.uistat` files plus screenshots into `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` and the response carries the absolute path on `Data.profiling.outputDirectory` (§ Output Format).
 
 ### When to enable profiling
 
@@ -428,7 +428,7 @@ Only start verbs collect profiling — `--profiling` is silently ignored on step
 uip rpa run --file-path "ProcessOrders.xaml" --profiling --output json
 ```
 
-Read `Data.profiling.OutputDirectory`:
+Read `Data.profiling.outputDirectory`:
 
 ```jsonc
 {
@@ -450,11 +450,11 @@ The directory contains `*.uistat` files — one per workflow file executed in th
 
 ### Caveats
 
-- `profiling` field is **absent** if the run did not reach the executor (compile failure surfaces in `errorMessage` instead) or if the active Studio profile does not support profiling (non-Develop profiles register a no-op profiling service). Treat the field as optional — never assume it is populated.
+- `profiling` is `null` when the run did not reach the executor (compile failure surfaces in `errorMessage` instead) or when the active Studio profile does not support profiling (non-Develop profiles register a no-op profiling service). Check it before reading `outputDirectory`.
 - Numbers from a `debug start` profile run differ from a `run` profile run — the debugger adds tracking overhead. For perf comparisons, always use `run`.
 - Files are not auto-cleaned. After an investigation, manually clear `%LOCALAPPDATA%\UiPath\ProfiledRuns\` if disk usage matters.
 - Profiling is per run, not aggregated across runs. To compare two implementations, run each with `--profiling` separately and diff the `*.uistat` reports.
-- Studio's profiling tool window does **not** auto-focus on agent-triggered runs (intentional — profiling panel and Autopilot pane share a dock slot). Direct the user to `Profiling.OutputDirectory` on disk; do not tell them "open the profiling panel".
+- Studio's profiling tool window does **not** auto-focus on agent-triggered runs (intentional — profiling panel and Autopilot pane share a dock slot). Direct the user to `profiling.outputDirectory` on disk; do not tell them "open the profiling panel".
 
 > **Activity-targeted profiling needs Studio Desktop.** `debug test-activity` and `debug start-from-here` collect profiling fine, but they depend on `focus-activity` — which only runs against Studio Desktop. `run` and `debug start` profile on both Studio Desktop and headless (Helm). See [Studio Desktop vs headless](#studio-desktop-vs-headless).
 
@@ -494,4 +494,4 @@ A practical example — a workflow makes an HTTP request and tries to deserializ
 - **Cancel the session when done** — always issue `execution cancel` to cleanly end the run or debug session.
 - **Use `--log-level Verbose`** when you need maximum detail about what the workflow is doing between steps.
 - **Remember expression syntax for variables** — when using `debug test-activity` or `debug start-from-here`, string values need VB/C# string literal quotes inside the JSON value (e.g., `"\"hello\""` not `"hello"`).
-- **Reach for `--profiling` when investigating performance or verifying UI automation correctness** — pair it with `run` for production-like numbers (the debugger adds overhead). Read the response's `Profiling.OutputDirectory`: open the `*.uistat` files starting with activities holding the largest cumulative percentage, and inspect the captured screenshots to confirm each UI interaction landed on the expected screen / element. See [Profiling Workflow Performance](#profiling-workflow-performance).
+- **Reach for `--profiling` when investigating performance or verifying UI automation correctness** — pair it with `run` for production-like numbers (the debugger adds overhead). Read the response's `profiling.outputDirectory`: open the `*.uistat` files starting with activities holding the largest cumulative percentage, and inspect the captured screenshots to confirm each UI interaction landed on the expected screen / element. See [Profiling Workflow Performance](#profiling-workflow-performance).
