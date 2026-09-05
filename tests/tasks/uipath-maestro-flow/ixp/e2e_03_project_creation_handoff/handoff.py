@@ -83,7 +83,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 TASK_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(TASK_DIR, "..", ".."))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.join(TASK_DIR, "..", "..")
+)
+sys.path.insert(0, _shared_root)
 
 from _shared.flow_check import find_project_dir  # noqa: E402
 

@@ -25,7 +25,12 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-agents")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+sys.path.insert(0, _shared_root)
 from _shared.bindings_assertions import load_bindings  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402

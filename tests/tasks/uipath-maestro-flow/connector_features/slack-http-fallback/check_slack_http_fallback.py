@@ -35,7 +35,12 @@ for _ in range(6):
     if os.path.isdir(os.path.join(_ROOT, "_shared")):
         break
     _ROOT = os.path.dirname(_ROOT)
-sys.path.insert(0, _ROOT)
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else _ROOT
+)
+sys.path.insert(0, _shared_root)
 from _shared.flow_check import find_flow_file, run_debug  # noqa: E402
 
 FLOW_GLOB = "**/SlackEmojiListTest*.flow"

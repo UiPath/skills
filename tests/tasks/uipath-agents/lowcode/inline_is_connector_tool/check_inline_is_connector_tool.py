@@ -29,7 +29,12 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-agents")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+sys.path.insert(0, _shared_root)
 from _shared.inline_wiring import find_inline_resource  # noqa: E402
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"

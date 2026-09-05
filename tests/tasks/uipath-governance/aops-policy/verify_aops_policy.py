@@ -29,7 +29,12 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-governance", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared')
+)
+sys.path.insert(0, _shared_root)
 from gov_helpers import aops_get, aops_search, fail, ok, poll, seed_entry
 
 logging.basicConfig(level=logging.INFO, format="verify_aops_policy: %(message)s")

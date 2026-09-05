@@ -20,11 +20,17 @@ live engine). Verifies:
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import NoReturn
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parents[2])
+)
+sys.path.insert(0, _shared_root)
 from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "core.logic.delay"

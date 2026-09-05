@@ -22,11 +22,17 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import NoReturn
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parents[2])
+)
+sys.path.insert(0, _shared_root)
 from _shared.advisory_flow_utils import unwrap  # noqa: E402
 from _shared.flow_check import find_flow_file  # noqa: E402
 

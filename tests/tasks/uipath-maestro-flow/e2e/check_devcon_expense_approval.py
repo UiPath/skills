@@ -10,11 +10,17 @@ outcomes.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 SHARED_DIR = Path(__file__).resolve().parents[1] / "_shared"
-sys.path.insert(0, str(SHARED_DIR))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(SHARED_DIR)
+)
+sys.path.insert(0, _shared_root)
 try:
     from flow_check import find_flow_file  # noqa: E402
 except ModuleNotFoundError as exc:

@@ -21,7 +21,12 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
     os.path.join(_directory, "_shared")
 ):
     _directory = os.path.dirname(_directory)
-sys.path.insert(0, _directory)
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else _directory
+)
+sys.path.insert(0, _shared_root)
 
 from _shared.flow_check import (  # noqa: E402
     assert_connector_error_handlers,

@@ -16,7 +16,12 @@ import sys
 _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
     _d = os.path.dirname(_d)
-sys.path.insert(0, _d)
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-bpmn")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else _d
+)
+sys.path.insert(0, _shared_root)
 
 from _shared.bpmn_check import (  # noqa: E402
     NS,

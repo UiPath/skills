@@ -3,10 +3,16 @@
 from the scaffold and computes the sum) and must NOT create an evals/ folder."""
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-api-workflow", "evals", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parent.parent / "_shared")
+)
+sys.path.insert(0, _shared_root)
 from eval_scoring import deep_equal, run_row, wrap_output  # noqa: E402
 
 project = Path("AddNumbers")

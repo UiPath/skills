@@ -60,7 +60,12 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-admin", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_shared")
+)
+sys.path.insert(0, _shared_root)
 from audit_helpers import (  # noqa: E402  (path set above)
     LTS_SIGNATURE,
     env_flag,

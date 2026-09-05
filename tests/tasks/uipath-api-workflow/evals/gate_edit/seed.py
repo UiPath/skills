@@ -2,10 +2,16 @@
 """Seed a VALID project (PASS when score >= 60) with a correct 4-row dataset. The task
 then asks for a behaviour change that would make the `score 55` row stale; the agent
 must ask before editing (rule 22, reference §3 step 5)."""
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-api-workflow", "evals", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parent.parent / "_shared")
+)
+sys.path.insert(0, _shared_root)
 from eval_fixtures import build_workflow, seed_project  # noqa: E402
 
 ROWS = [

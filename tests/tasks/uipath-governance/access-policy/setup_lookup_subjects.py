@@ -16,7 +16,12 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-governance", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared')
+)
+sys.path.insert(0, _shared_root)
 from gov_helpers import run_cli, run_id, scoped, update_seed
 
 logging.basicConfig(level=logging.INFO, format="setup_lookup_subjects: %(message)s")

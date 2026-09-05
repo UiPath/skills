@@ -76,7 +76,12 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parents[1])
+)
+sys.path.insert(0, _shared_root)
 from _shared.flow_check import find_flow_files  # noqa: E402
 
 

@@ -6,7 +6,12 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+)
+sys.path.insert(0, _shared_root)
 from _shared.flow_check import (  # noqa: E402
     _get_ci,
     assert_flow_has_node_type,

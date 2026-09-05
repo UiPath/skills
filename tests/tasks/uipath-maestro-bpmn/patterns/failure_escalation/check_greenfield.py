@@ -4,10 +4,16 @@ classifies on the engine-seeded error context, and names every outcome."""
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-bpmn", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parents[2] / "_shared")
+)
+sys.path.insert(0, _shared_root)
 
 from bpmn_assertions import BPMN_NS, elements, fail, load_bpmn  # noqa: E402
 

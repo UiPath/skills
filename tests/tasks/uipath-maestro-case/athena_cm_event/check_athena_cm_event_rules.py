@@ -19,7 +19,12 @@ from check_athena_cm_event_case import (  # noqa: E402
     CASEPLAN_PATH,
     stage_task,
 )
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-case")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+sys.path.insert(0, _shared_root)
 from _shared.case_check import find_node_by_label, read_caseplan  # noqa: E402
 
 

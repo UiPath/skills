@@ -4,10 +4,16 @@ questions — nothing authored yet. Graded deterministically: Workflow.json is s
 scaffold, the panel-seeded eval set still has zero rows, and the evaluator is unchanged."""
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-api-workflow", "evals", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parent.parent / "_shared")
+)
+sys.path.insert(0, _shared_root)
 from eval_fixtures import build_eval_set, build_evaluator, eval_set_path, evaluator_path  # noqa: E402
 
 project = Path("AddNumbers")

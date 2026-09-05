@@ -5,10 +5,16 @@ the seeded exact-match evaluator and an eval set with ZERO rows. Records the sca
 Workflow.json hash outside the project so the check can prove the agent stopped at the
 TDD gate (rule 22) instead of authoring."""
 import hashlib
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-api-workflow", "evals", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parent.parent / "_shared")
+)
+sys.path.insert(0, _shared_root)
 from eval_fixtures import build_eval_set, build_evaluator, eval_set_path, evaluator_path, scaffold_project, write_json  # noqa: E402
 
 project = Path("AddNumbers")

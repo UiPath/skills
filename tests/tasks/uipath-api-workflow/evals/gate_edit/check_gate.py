@@ -2,10 +2,16 @@
 """Rule 22 on an EDIT that changes behaviour: the agent must ask before editing, so
 Workflow.json, the eval set and the evaluator must all be exactly the seeded files."""
 import json
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-api-workflow", "evals", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parent.parent / "_shared")
+)
+sys.path.insert(0, _shared_root)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from eval_fixtures import PROJECT_NAME, build_eval_set, build_evaluator, build_workflow, eval_set_path, evaluator_path  # noqa: E402
 from seed import ROWS  # noqa: E402

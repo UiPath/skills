@@ -23,7 +23,12 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+sys.path.insert(0, _shared_root)
 from _shared.flow_check import (  # noqa: E402
     assert_flow_uses_connector_target,
     find_flow_file,

@@ -9,10 +9,16 @@
               tests, not to change behaviour.
 """
 import json
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-api-workflow", "evals", "_shared")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parent.parent / "_shared")
+)
+sys.path.insert(0, _shared_root)
 from eval_fixtures import PROJECT_NAME, build_workflow  # noqa: E402
 from eval_scoring import exact_match, load_eval_sets, load_evaluators, parse_expected  # noqa: E402
 

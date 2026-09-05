@@ -16,10 +16,16 @@ from __future__ import annotations
 
 import argparse
 import re
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-planner")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else str(Path(__file__).resolve().parents[2])
+)
+sys.path.insert(0, _shared_root)
 
 from _shared.entry_rule_check import (  # noqa: E402
     column,

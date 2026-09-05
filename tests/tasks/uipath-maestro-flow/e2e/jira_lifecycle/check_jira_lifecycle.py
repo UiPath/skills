@@ -32,7 +32,12 @@ from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # local jira_is
-sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro-flow (for _shared)
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-maestro-flow")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.dirname(os.path.dirname(HERE))
+)
+sys.path.insert(0, _shared_root)  # …/uipath-maestro-flow (for _shared)
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_any_node_type,
     assert_flow_has_node_type,
