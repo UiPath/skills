@@ -67,13 +67,11 @@ success_criteria:
 
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).
-  - type: json_check
+  - type: run_command
     description: "Project is registered in the parent solution .uipx"
-    path: "DocsFlowSol/DocsFlowSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered DocsFlowSol --min-projects 1"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -93,9 +91,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "DocsFlowSol/DocsFlow/DocsFlow.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists DocsFlowSol DocsFlow DocsFlow.flow"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

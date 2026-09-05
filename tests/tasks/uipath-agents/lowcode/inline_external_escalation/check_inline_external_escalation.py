@@ -49,8 +49,9 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
     resolve_resource_source,
 )
+from _shared.project_files import find_project_file  # noqa: E402
 
-FLOW_PATH = Path(os.getcwd()) / "FraudFlowSol" / "FraudFlow" / "FraudFlow.flow"
+FLOW_PATH = find_project_file("FraudFlowSol", "FraudFlow", "FraudFlow.flow")
 # Escalation nodes are registered as concrete variants (e.g.
 # `uipath.agent.resource.escalation.coded-action-app`,
 # `...escalation.quick-form`); there is no bare `...escalation` node. Match by

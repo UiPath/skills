@@ -26,11 +26,18 @@ input/output schema:
 import json
 import os
 import sys
-from pathlib import Path
+
+_shared_root = (
+    os.path.join(os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-agents")
+    if os.environ.get("SKILLS_REPO_PATH")
+    else os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+sys.path.insert(0, _shared_root)
+from _shared.project_files import find_project_dir  # noqa: E402
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
-FLOW_PROJECT = Path(os.getcwd()) / "GreetingSol" / "GreetingFlow"
+FLOW_PROJECT = find_project_dir("GreetingSol", "GreetingFlow")
 FLOW_PATH = FLOW_PROJECT / "GreetingFlow.flow"
 
 

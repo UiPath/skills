@@ -75,13 +75,11 @@ success_criteria:
   # registered; auto-registration via `uip agent init` (or the
   # `uip solution project add` fallback) must add ShippingAgent, bringing
   # Projects[] to 2.
-  - type: json_check
+  - type: run_command
     description: "ShippingAgent is registered alongside CalculateShippingRate in the parent solution .uipx"
-    path: "ShippingSol/ShippingSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 2
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered ShippingSol --min-projects 2"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -101,15 +99,19 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "ShippingAgent/agent.json was created"
-    path: "ShippingSol/ShippingAgent/agent.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists ShippingSol ShippingAgent agent.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "CalculateShippingRate API workflow tool resource.json was created"
-    path: "ShippingSol/ShippingAgent/resources/CalculateShippingRate/resource.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists ShippingSol ShippingAgent resources/CalculateShippingRate/resource.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 

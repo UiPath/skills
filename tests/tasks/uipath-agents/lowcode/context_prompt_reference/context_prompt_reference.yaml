@@ -62,15 +62,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
-  - type: file_exists
+  - type: run_command
     description: "DocAssistant/agent.json was created"
-    path: "DocSol/DocAssistant/agent.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists DocSol DocAssistant agent.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Knowledge context resource.json was created at the agent level"
-    path: "DocSol/DocAssistant/resources/Knowledge/resource.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists DocSol DocAssistant resources/Knowledge/resource.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

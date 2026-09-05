@@ -37,8 +37,9 @@ from _shared.inline_wiring import (  # noqa: E402
     load_json,
     resolve_inline_agent_dir,
 )
+from _shared.project_files import find_project_file  # noqa: E402
 
-FLOW_PATH = Path(os.getcwd()) / "DevToolsFlowSol" / "DevToolsFlow" / "DevToolsFlow.flow"
+FLOW_PATH = find_project_file("DevToolsFlowSol", "DevToolsFlow", "DevToolsFlow.flow")
 MCP_NODE_PREFIX = "uipath.agent.resource.mcp."
 
 

@@ -48,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate still passes after the repair"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/case_check.py validate"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5

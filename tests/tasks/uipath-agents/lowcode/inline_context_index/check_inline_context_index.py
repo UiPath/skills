@@ -40,8 +40,9 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
     resolve_resource_source,
 )
+from _shared.project_files import find_project_file  # noqa: E402
 
-FLOW_PATH = Path(os.getcwd()) / "KnowledgeFlowSol" / "KnowledgeFlow" / "KnowledgeFlow.flow"
+FLOW_PATH = find_project_file("KnowledgeFlowSol", "KnowledgeFlow", "KnowledgeFlow.flow")
 CONTEXT_INDEX_NODE_TYPE_PREFIX = "uipath.agent.resource.context.index."
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 

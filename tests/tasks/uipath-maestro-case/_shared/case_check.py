@@ -25,10 +25,19 @@ import sys
 from typing import Any, Iterable, NoReturn, Sequence
 
 
-def find_caseplan(pattern: str = "**/caseplan.json") -> str:
-    matches = sorted(
+def _caseplan_matches(pattern: str) -> list[str]:
+    return sorted(
         p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
     )
+
+
+def find_caseplan(pattern: str = "**/caseplan.json") -> str:
+    matches = _caseplan_matches(pattern)
+    if not matches and pattern == "**/caseplan.json":
+        # Studio Web scaffolds the plan as ``<Project>/caseplan.case`` — the same
+        # JSON body the CLI writes to ``caseplan.json`` — and the bridge mirrors
+        # that tree into the sandbox.
+        matches = _caseplan_matches("**/caseplan.case")
     if not matches:
         _fail(f"No caseplan.json found matching {pattern}")
     if len(matches) == 1:
@@ -846,3 +855,34 @@ def _is_case_project(path: str) -> bool:
     except (OSError, json.JSONDecodeError):
         return False
     return manifest.get("ProjectType") == "CaseManagement"
+
+
+def main(argv: Sequence[str]) -> int:
+    """Task-YAML entry point — discovers the caseplan instead of hardcoding its path.
+
+    ``validate``  run ``uip maestro case validate`` on the discovered plan (exit 0
+                  iff it passes; the CLI's output is echoed on failure).
+    ``locate``    print the discovered plan's path.
+
+    A ``run_command`` criterion with a hardcoded ``<Name>/<Name>/caseplan.json``
+    only matches one authoring layout: ``uip maestro case init`` writes
+    ``<Solution>/<Project>/caseplan.json``, Studio Web ``<Project>/caseplan.case``.
+    """
+    if len(argv) != 1 or argv[0] not in ("validate", "locate"):
+        print("usage: case_check.py validate | locate", file=sys.stderr)
+        return 2
+    try:
+        path = find_caseplan()
+        if argv[0] == "validate":
+            assert_validate_passes(path)
+            print(f"OK: uip maestro case validate passed on {path}")
+        else:
+            print(path)
+    except SystemExit as exc:
+        print(str(exc), file=sys.stderr)
+        return exc.code if isinstance(exc.code, int) else 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

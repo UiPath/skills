@@ -68,9 +68,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "ProbeSol solution manifest was created"
-    path: "ProbeSol/ProbeSol.uipx"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered ProbeSol --min-projects 1"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -86,9 +88,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "ProbeAgent project was scaffolded inside the solution"
-    path: "ProbeSol/ProbeAgent/agent.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists ProbeSol ProbeAgent agent.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -96,15 +100,10 @@ success_criteria:
   # the folder, or scaffolding it outside the solution, leaves Projects empty.
   # Graded on the manifest because that registration — not the folder on disk —
   # is what makes the agent part of the solution.
-  - type: json_check
+  - type: run_command
     description: "Solution manifest registers the scaffolded agent project"
-    path: "ProbeSol/ProbeSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "equals"
-        expected: 1
-      - expression: "Projects[0].Type"
-        operator: "equals"
-        expected: "Agent"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered ProbeSol --min-projects 1 --max-projects 1 --project-type Agent"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

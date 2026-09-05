@@ -114,7 +114,7 @@ success_criteria:
   # that validates while notifying nobody has not achieved anything.
   - type: run_command
     description: "ADVISORY — uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate OutcomeExpenseApproval/OutcomeExpenseApproval/caseplan.json --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/case_check.py validate"
     timeout: 60
     weight: 1.0
     pass_threshold: 0

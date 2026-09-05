@@ -37,13 +37,11 @@ success_criteria:
 
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).
-  - type: json_check
+  - type: run_command
     description: "Project is registered in the parent solution .uipx"
-    path: "GreetSol/GreetSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered GreetSol --min-projects 1"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -63,45 +61,59 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "GreeterAgent/agent.json was created"
-    path: "GreetSol/GreeterAgent/agent.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent agent.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "entry-points.json was created inside the agent project"
-    path: "GreetSol/GreeterAgent/entry-points.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent entry-points.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "flow-layout.json was created inside the agent project"
-    path: "GreetSol/GreeterAgent/flow-layout.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent flow-layout.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "project.uiproj was created inside the agent project"
-    path: "GreetSol/GreeterAgent/project.uiproj"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent project.uiproj"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Default evaluation set scaffolded (evaluation-set-default.json)"
-    path: "GreetSol/GreeterAgent/evals/eval-sets/evaluation-set-default.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent evals/eval-sets/evaluation-set-default.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Default evaluator scaffolded (evaluator-default.json)"
-    path: "GreetSol/GreeterAgent/evals/evaluators/evaluator-default.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent evals/evaluators/evaluator-default.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Default trajectory evaluator scaffolded (evaluator-default-trajectory.json)"
-    path: "GreetSol/GreeterAgent/evals/evaluators/evaluator-default-trajectory.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists GreetSol GreeterAgent evals/evaluators/evaluator-default-trajectory.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

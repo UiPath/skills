@@ -14,10 +14,12 @@ Arguments:
     --regex PATTERN      Python regex that must match the same single file as
                          the plain args (repeatable) — the path-agnostic
                          replacement for ``file_matches_regex``
-    --flow-name NAME     restrict assertions to files named ``NAME.flow``;
-                         fails when no discovered file has that basename.
+    --flow-name NAME     restrict assertions to files named ``NAME.flow`` or
+                         living in a project directory named ``NAME`` (Studio
+                         Web scaffolds the entry point as ``<NAME>/new.flow``);
+                         fails when no discovered file matches either.
                          Restores the name enforcement the literal paths had,
-                         while staying wrapper-agnostic
+                         while staying wrapper- and layout-agnostic
     --absent-regex PAT   negative assertion: exits 0 only when discovery
                          succeeded, every target file was read, and NO target
                          file matches PAT (repeatable). Use this (with
@@ -102,10 +104,18 @@ def main(argv: list[str]) -> int:
     print(f"Found {len(flows)} .flow file(s): {', '.join(flows)}")
 
     if flow_name is not None:
-        targets = [p for p in flows if os.path.basename(p) == f"{flow_name}.flow"]
+        # CLI layout names the file after the project; Studio Web scaffolds the
+        # entry point as ``new.flow`` inside a directory named after the project.
+        targets = [
+            p
+            for p in flows
+            if os.path.basename(p) == f"{flow_name}.flow"
+            or os.path.basename(os.path.dirname(os.path.abspath(p))) == flow_name
+        ]
         if not targets:
             print(
-                f"FAIL: no discovered .flow file is named {flow_name}.flow",
+                f"FAIL: no discovered .flow file is named {flow_name}.flow "
+                f"or lives in a project directory named {flow_name}",
                 file=sys.stderr,
             )
             return 1

@@ -35,8 +35,9 @@ from _shared.inline_wiring import (  # noqa: E402
     load_json,
     resolve_inline_agent_dir,
 )
+from _shared.project_files import find_project_file  # noqa: E402
 
-FLOW_PATH = Path(os.getcwd()) / "PayrollFlowSol" / "PayrollFlow" / "PayrollFlow.flow"
+FLOW_PATH = find_project_file("PayrollFlowSol", "PayrollFlow", "PayrollFlow.flow")
 RPA_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.process."
 
 

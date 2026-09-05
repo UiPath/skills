@@ -38,13 +38,11 @@ success_criteria:
 
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).
-  - type: json_check
+  - type: run_command
     description: "Project is registered in the parent solution .uipx"
-    path: "UPASol/UPASol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py registered UPASol --min-projects 1"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -64,9 +62,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "UPAAgent/agent.json was created"
-    path: "UPASol/UPAAgent/agent.json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/project_files.py exists UPASol UPAAgent agent.json"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

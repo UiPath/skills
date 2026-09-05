@@ -33,6 +33,7 @@ Two distinct sources with two casings:
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import hashlib
 import json
@@ -1778,6 +1779,8 @@ def find_flow_files(
             )
         )
         if not matches:
+            matches = _studio_web_flow_files(project_dir, flow_glob)
+        if not matches:
             _fail(
                 f"No .flow file matching {flow_glob!r} under selected Flow "
                 f"project {project_dir}"
@@ -1796,6 +1799,23 @@ def find_flow_files(
             f"guess:\n  - {joined}"
         )
     return root_matches
+
+
+def _studio_web_flow_files(project_dir: str, flow_glob: str) -> list[str]:
+    """Flow files of a project authored in Studio Web, for a name-prefixed glob.
+
+    Studio Web scaffolds every Flow project's entry point as ``new.flow`` — the
+    sandbox holds ``<Project>/new.flow`` (the bridge mirrors the in-product
+    ``/solution/<project>/`` tree), where the CLI writes
+    ``<Solution>/<Project>/<Project>.flow``. A grader's ``flow_glob`` such as
+    ``SummarizeDemo*.flow`` therefore names the PROJECT under Studio Web, not the
+    file: when the project directory's own name satisfies the glob, its flow
+    files are the ones the grader meant.
+    """
+    name_pattern = os.path.basename(flow_glob)
+    if not fnmatch.fnmatch(os.path.basename(os.path.abspath(project_dir)) + ".flow", name_pattern):
+        return []
+    return sorted(glob.glob(os.path.join(project_dir, "**", "*.flow"), recursive=True))
 
 
 def find_flow_file(

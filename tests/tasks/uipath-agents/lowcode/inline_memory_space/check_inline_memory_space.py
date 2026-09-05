@@ -29,9 +29,10 @@ from _shared.inline_wiring import (  # noqa: E402
     load_json,
     resolve_inline_agent_dir,
 )
+from _shared.project_files import find_project_file  # noqa: E402
 
-FLOW_PATH = Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "MemoryFlow.flow"
-FLOW_BINDINGS = Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "bindings_v2.json"
+FLOW_PATH = find_project_file("MemoryFlowSol", "MemoryFlow", "MemoryFlow.flow")
+FLOW_BINDINGS = find_project_file("MemoryFlowSol", "MemoryFlow", "bindings_v2.json")
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 EXPECTED_FEATURE_NAME = "SupportRecall"

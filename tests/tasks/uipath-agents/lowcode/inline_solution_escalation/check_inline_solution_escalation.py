@@ -26,7 +26,6 @@ Validates:
 
 import os
 import sys
-from pathlib import Path
 
 EXPECTED_APP_NAME = "HumanReviewEscalation"
 EXPECTED_FOLDER_NAME = "solution_folder"
@@ -45,8 +44,9 @@ from _shared.inline_wiring import (  # noqa: E402
     load_json,
     resolve_inline_agent_dir,
 )
+from _shared.project_files import find_project_file  # noqa: E402
 
-FLOW_PATH = Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow"
+FLOW_PATH = find_project_file("ReviewFlowSol", "ReviewFlow", "ReviewFlow.flow")
 ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation."
 
 
