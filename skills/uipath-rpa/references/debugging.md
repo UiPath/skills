@@ -466,7 +466,7 @@ Read the response in this order (fields per § Output Format). **Verdict comes f
 
 1. **`hasErrors` + `errorMessage` + `debugState`** — the success/failure signal. Passed only when `hasErrors` is `false`, `errorMessage` is `null`, and `debugState` is `null` or `"Completed"`. The outer `Result` qualifies the CLI call, not the run: `Failure` for a faulted `run` (fields JSON-encoded in `Message`), `Success` for a suspended debug session.
 2. **`errorMessage` (when `hasErrors: true`)** — formatted chain with the source activity, exception type, message, and stack trace. This is the canonical failure diagnostic. With `hasErrors: false` and `debugState: "Suspended"` it carries command guidance instead; the exception is in `debugDetails`.
-3. **`output` (when `hasErrors: false`)** — workflow's serialized output arguments JSON for `run` / `debug start` completions (`"{}"` when none are declared). Empty string `""` for debug-command responses (step / continue / cancel) and on failure.
+3. **`output` (when `hasErrors: false`)** — workflow's serialized output arguments JSON for `run` / `debug start` completions (`"{}"` when none are declared). `""` while a session is `Paused` / `Suspended` / `Running`, on `debug state`, and when the run never started (validation failure, missing entry point); `"{}"` on a run that faulted inside an activity.
 4. **Log lines** — diagnostic context, streamed live as `[Level] message` lines above the envelope. Use them to read variable values the workflow logged, trace ordering, or correlate context with an `errorMessage` that already failed the run. **Do NOT use a log line's level as a failure signal.**
 
 ### Identifying the Root Cause from Debug Output
