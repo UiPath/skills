@@ -83,11 +83,9 @@ npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.
 # uipath.json so `new UiPath()` (no config) works in local dev
 npm install -D @uipath/coded-apps-dev --@uipath:registry=https://registry.npmjs.org
 
-# Tailwind — shared across both Q6 paths (skippable, see below)
+# Tailwind — shared across both Q6 paths
 npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
 ```
-
-> **Skip the Tailwind step when nothing needs styling.** It is by far the slowest install here (minutes on a constrained runner, and the largest single cost in an automated build) and it is purely presentational — the SDK, the build, and pack/publish/deploy do not depend on it. In a headless or automated run whose goal is a working, deployable app rather than a styled one, install only the SDK and `@uipath/coded-apps-dev` above and write plain CSS. Install it when the user asked for a styled UI or picked a Q6 default-styling path.
 
 > **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/*` packages to install from the public npm registry.
 
