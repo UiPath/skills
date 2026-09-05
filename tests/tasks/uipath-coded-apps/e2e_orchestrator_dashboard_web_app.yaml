@@ -75,6 +75,11 @@ initial_prompt: |
   tools (TaskCreate/TaskUpdate) — execute the steps directly; every
   turn spent on bookkeeping is budget taken from the build.
 
+  Keep dependencies minimal. Do NOT install a CSS framework (Tailwind or
+  otherwise) — nothing here grades styling, plain CSS is fine, and `npm
+  install` is the slowest thing in this sandbox. Install only what the app
+  needs to build and call the SDK.
+
 success_criteria:
   - type: command_executed
     description: "Agent verified login status before cloud commands"
