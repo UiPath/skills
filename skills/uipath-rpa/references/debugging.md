@@ -182,9 +182,9 @@ For `debug test-activity` and `debug start-from-here`, both `--input-arguments` 
 
 ```text
 [Information] Starting execution...
-[Information] SumDemo execution started
-[Information] 5 + 5 = 10
-[Information] SumDemo execution ended in: 00:00:00
+[Information] <PROJECT_NAME> execution started
+[Information] Sum: 10
+[Information] <PROJECT_NAME> execution ended in: 00:00:00
 { "Result": "Success", "Code": "ToolResult",
   "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
 ```
