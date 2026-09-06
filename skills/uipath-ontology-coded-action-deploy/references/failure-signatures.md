@@ -47,6 +47,24 @@ registered the project, so a separate `uip solution projects add` is redundant a
 not drop it as a rule: read the manifest first and add only what is missing, per SKILL.md Phase 1.
 Seeing this error means the entry was already there, which is the good case.
 
+## `400 MALFORMED_REQUEST` / `"URI with undefined scheme"` / `module: orchestrator` on invoke
+
+```json
+{"code":"MALFORMED_REQUEST","detail":"URI with undefined scheme","module":"orchestrator"}
+```
+
+**An environment gap, not a bad request.** It reads like a malformed payload and sends you looking
+for a missing header first; adding `X-Uipath-Folderkey` changes nothing. The ontology service could
+not build the Orchestrator URL to start the job because `ONTOLOGY_ORCHESTRATOR_BASE_URL` is unset on
+that deployment — `application.yml` defaults it to empty and a Helm values file has to supply it.
+
+Everything upstream is fine, which is what makes this confusing: the release is `ready`, the
+ontology is `DEPLOYED`, and `GET` on the same action path returns its tool schema. Confirm by
+starting the process directly in its folder with the payload the platform would have sent — if the
+job runs and returns its edits, the pipeline is sound and only the service's Orchestrator base URL
+is missing. Report it as an environment gap and stop; nothing in the artifacts or the deploy can fix
+it.
+
 ## `Entity 'X' has no identity property` on `Preparing write statement`
 
 The write is refused **after the job has already run**, and reports `rowsAffected: 0` — which in a

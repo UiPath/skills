@@ -65,6 +65,19 @@ python3 <TOOLS_DIR>/ontology_preflight.py \
   --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
 ```
 
+`FIELD_METADATA` is keyed by class, then by the property name **after** the dot — `Ticket.dueAt` is
+`{"Ticket": {"dueAt": {}}}` — and every data property the schema declares for that class must
+appear, with exactly one marked `"identifier": true`. `CLASS_MAP` carries the Data Fabric binding
+per class. In full, for a one-class ontology:
+
+```json
+{
+  "CLASS_MAP":      {"Ticket": {"entityName": "Ticket", "entityId": "<guid>", "folderId": "<guid>"}},
+  "FIELD_METADATA": {"Ticket": {"id": {"identifier": true}, "sev": {}, "dueAt": {}, "labels": {}}},
+  "RELATIONSHIPS":  []
+}
+```
+
 Require JSON `status: PASS`, no failed `gate_results`, and mapping status `PRESENT_VALID` after the mapping file exists; consume its exact `artifact_inventory` as the only upload set. If the mapping is missing and metadata is sufficient, pass `MAPPING_STATUS: generate` plus the handoff JSON to the modeler and rerun preflight after generation. Repair every failure and rerun preflight after each repair; do not merely report a failed gate. Only after this local gate passes may authoring create the ontology stub and call backend artifact validation.
 
 ---
@@ -444,15 +457,19 @@ Using the confirmed classes from Phase 3, extract all properties and relationshi
 
 **XSD types:**
 
-| User says | XSD type |
-|---|---|
-| text, name, string, code, ID | `xsd:string` |
-| price, amount, cost, rate | `xsd:decimal` |
-| count, quantity, integer | `xsd:integer` |
-| date + time / timestamp | `xsd:dateTime` |
-| date only | `xsd:date` |
-| true/false, flag, boolean | `xsd:string` with `ont:datatype "category"` |
-| URL, link | `xsd:string`, with the format in `rdfs:comment` |
+The third column is what Phase 2's `uip df entities create --body` must say for the same field.
+The two vocabularies are not the same and the Data Fabric one is not guessable — `TEXT` is rejected
+outright, and `DATETIME` is accepted and then cannot be rendered by the Data Fabric UI.
+
+| User says | XSD type | Data Fabric field type |
+|---|---|---|
+| text, name, string, code, ID | `xsd:string` | `STRING` |
+| price, amount, cost, rate | `xsd:decimal` | `DECIMAL` |
+| count, quantity, integer | `xsd:integer` | `DECIMAL` with `decimalPrecision: 0` |
+| date + time / timestamp | `xsd:dateTime` | `DATETIME_WITH_TZ` — never `DATETIME` |
+| date only | `xsd:date` | `DATE` |
+| true/false, flag, boolean | `xsd:string` with `ont:datatype "category"` | `STRING` |
+| URL, link | `xsd:string`, with the format in `rdfs:comment` | `STRING` |
 
 > **Wait for explicit user confirmation before moving to Phase 5.**
 
@@ -537,9 +554,12 @@ Update any Phase 5 annotation that differs from what the actual data shows. Reco
 `folderId` read from `uip df entities list`, and on Path B the entities do not exist yet — Phase 2
 deferred creating them until Step 2b has the folder. So Path B's `CLASS_MAP` carries no ids, and
 generating a mapping from it would write placeholders that preflight cannot detect and upload
-would bind to nothing. Pass `MAPPING_STATUS: defer` instead: the modeler generates every other
-artifact, and its preflight reports `mapping_status: GENERATE_MAPPING` under `--mapping-mode auto`,
-which is a pass. The mapping is generated in Step 2b, from real ids. On Path A the entities already
+would bind to nothing. Pass `MAPPING_STATUS: defer`, and have the modeler run its preflight with
+**`--mapping-mode defer`**, which reports `mapping_status: DEFERRED` and passes with every other
+gate still enforced. Do not run it with `--mapping-mode auto` here: auto treats an absent mapping as
+one to generate, so it demands `entityId` and `folderId` in `CLASS_MAP` and fails
+`MAPPING_TERMS: BLOCKED_AMBIGUITY` — which is correct of it, and is exactly the state Path B is in.
+The mapping is generated in Step 2b from real ids and checked there. On Path A the entities already
 exist, so nothing changes.
 
 > If the `uipath-ontology-modeler` skill is not available, stop before deployment and return: "Artifact generation requires the uipath-ontology-modeler sibling skill. The domain model and setup are prepared; activate that skill and retry the delegation."
@@ -601,10 +621,10 @@ That skill publishes the `{name}-jobs` Solution, deploys it — **which is what 
 2. **set `PRIMARY_FOLDER_KEY` to the key of the folder it created.** Everything downstream reads that one variable, so from here on both paths are identical
 3. run the `uip df entities create` calls Phase 2 deferred, against `PRIMARY_FOLDER_KEY`
 4. **read the new entities' ids** — `uip df entities list --folder-key {PRIMARY_FOLDER_KEY} --output json` — and complete `CLASS_MAP` with each class's `Data[].ID` and `Data[].FolderKey`
-5. **now generate the mapping**, by delegating to the modeler again with the completed `CLASS_MAP` and `MAPPING_STATUS: generate`, then rerun `ontology_preflight.py` and require `mapping_status: PRESENT_VALID`. This is the step Step 2 deferred; a mapping written before item 4 would carry ids that do not exist
+5. **now generate the mapping**, by delegating to the modeler again with the completed `CLASS_MAP` and `MAPPING_STATUS: generate`, then rerun `ontology_preflight.py` — with `--mapping-mode auto` this time, not `defer` — and require `mapping_status: PRESENT_VALID`. This is the step Step 2 deferred; a mapping written before item 4 would carry ids that do not exist
 6. `uip ont create {name} --folder-key {PRIMARY_FOLDER_KEY}` (Step 3a)
 7. validate and upload the artifacts (Steps 3b, 3c), mapping last
-8. invoke
+8. invoke (Step 4)
 
 Phase 1 Path B already collected the folder's name and parent. Do not ask for an existing folder here, and do not create the folder yourself with `uip or folders create` — the deploy creates it, and a folder that already exists makes the CLI create `"{FOLDER_NAME} 1"` beside it and deploy the processes there, leaving the ontology bound to a folder holding zero processes.
 
@@ -706,6 +726,36 @@ uip ont get {name}
 After `DEPLOYED`, run `uip ont artifact list {name} --output json`. Confirm that every file in the preflight upload set is present and no unintended artifact was uploaded. If the state or inventory is wrong, stop and report the exact mismatch; do not claim deployment success.
 
 ---
+
+## Step 4 — Invoke an action
+
+**There is no `uip` verb for this.** `uip ont` covers `artifact|create|delete|export|get|list|update`
+and nothing else, so an invoke is a plain HTTP call against the ontology service:
+
+```bash
+curl -sS -X POST \
+  "{baseUrl}/{org}/{tenant}/ontology_/api/ontology/{name}/actions/{actionName}/invoke" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"params": {"{p1}": "{value}"}}'
+```
+
+`{baseUrl}`, `{org}` and `{tenant}` come from `uip login status --output json` — `Data.BaseUrl`,
+`Data.Organization`, `Data.Tenant` — and from nowhere else, the same rule as everywhere in this
+skill. The service segment is `ontology_`; `datafabric_` returns 404. `GET` the same path without
+`/invoke` to read the action's tool schema, which is a cheap way to confirm the action is live
+before sending a payload.
+
+The response carries the step trace this skill's error guidance refers to by name — `Resolving
+ontology`, `Loading action definition`, `Reading context`, `Running job`, `Preparing write
+statement`, `Executing write` — plus `rowsAffected`. A coded action that decided nothing needed
+changing reports `rowsAffected: 0` with no failed step, and that is a success, not a no-op to
+investigate.
+
+**A 400 `MALFORMED_REQUEST` / `"URI with undefined scheme"` / `module: orchestrator` is an
+environment gap, not a bad request.** The service could not build the Orchestrator URL to start the
+job because `ONTOLOGY_ORCHESTRATOR_BASE_URL` is unset on that deployment. The artifacts and the
+release are fine; adding a header will not help. Report it and stop.
 
 ## Artifact reference
 

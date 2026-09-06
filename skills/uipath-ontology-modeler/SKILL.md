@@ -131,6 +131,19 @@ python3 <TOOLS_DIR>/ontology_preflight.py \
   --handoff '{"CLASS_MAP": {...}, "FIELD_METADATA": {...}, "RELATIONSHIPS": []}'
 ```
 
+`FIELD_METADATA` is keyed by class, then by the property name **after** the dot — `Ticket.dueAt` is
+`{"Ticket": {"dueAt": {}}}` — and every data property the schema declares for that class must
+appear, with exactly one marked `"identifier": true`. `CLASS_MAP` carries the Data Fabric binding
+per class. In full, for a one-class ontology:
+
+```json
+{
+  "CLASS_MAP":      {"Ticket": {"entityName": "Ticket", "entityId": "<guid>", "folderId": "<guid>"}},
+  "FIELD_METADATA": {"Ticket": {"id": {"identifier": true}, "sev": {}, "dueAt": {}, "labels": {}}},
+  "RELATIONSHIPS":  []
+}
+```
+
 Read its JSON `status`, `gate_results`, `mapping_status`, `artifact_inventory`, `errors`, and `warnings`. In delegated mode, return `artifact_inventory` to authoring as its exact backend validation/upload set; in standalone mode, use it locally. Repair every failed gate and rerun preflight; reporting a failure without repairing it is not completion. If mapping is `GENERATE_MAPPING`, generate it from the handoff metadata, then rerun preflight. Stop with `BLOCKED_AMBIGUITY` before any backend call when the metadata cannot determine a safe mapping.
 
 Run all gates against the exact files that will be uploaded:

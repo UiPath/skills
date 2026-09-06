@@ -268,5 +268,26 @@ class OntologyPreflightTests(unittest.TestCase):
         self.assertNotEqual(code, 0, payload)
         self.assertIn("oldname", payload["errors"]["IRI_CONSISTENCY"][0])
 
+    def test_defer_mode_passes_a_missing_mapping_without_entity_ids(self):
+        """The coded path deploys before it creates entities, because the deployment makes the
+        folder -- so at first preflight there are no ids to bind and the mapping cannot exist yet.
+
+        `auto` is right to fail that state: it treats an absent mapping as one to generate and so
+        demands entityId/folderId. `defer` says the absence is expected. Without it the skill had
+        to tell readers to ignore a red gate, which is worse than having no gate.
+        """
+        workdir = self.copy_fixture("missing-mapping")
+        handoff = {"CLASS_MAP": {"Order": {"entityName": "Orders"}},
+                   "FIELD_METADATA": COMPLETE_HANDOFF["FIELD_METADATA"], "RELATIONSHIPS": []}
+        code, payload = run_preflight_at(workdir, "defer", handoff)
+        self.assertEqual(code, 0, payload)
+        self.assertEqual(payload["mapping_status"], "DEFERRED")
+        self.assertEqual([g["id"] for g in payload["gate_results"] if not g["passed"]], [], payload)
+
+        # and the same state under auto must still fail, or defer is hiding a real problem
+        code, payload = run_preflight_at(workdir, "auto", handoff)
+        self.assertNotEqual(code, 0, payload)
+        self.assertEqual(payload["mapping_status"], "BLOCKED_AMBIGUITY")
+
 if __name__ == "__main__":
     unittest.main()

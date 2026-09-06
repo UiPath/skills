@@ -247,7 +247,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workdir", required=True, type=Path)
     parser.add_argument("--ontology-name", required=True)
-    parser.add_argument("--mapping-mode", choices=("auto", "required"), default="auto")
+    parser.add_argument("--mapping-mode", choices=("auto", "required", "defer"), default="auto",
+                        help="auto: a missing mapping may be generated from --handoff. "
+                             "required: a missing mapping fails. "
+                             "defer: a missing mapping is expected and passes -- the coded "
+                             "path cannot know its entity ids until the deployment has made "
+                             "the folder, so the mapping is generated later and checked then.")
     parser.add_argument("--handoff", help="Machine-readable JSON containing CLASS_MAP and FIELD_METADATA for mapping generation.")
     args = parser.parse_args(argv)
 
@@ -335,6 +340,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.mapping_mode == "required":
             mapping_status = "BLOCKED_AMBIGUITY"
             errors["MAPPING_TERMS"] = ["Mapping is required but missing."]
+        elif args.mapping_mode == "defer":
+            # The coded path deploys before it creates entities, because the deployment is what
+            # makes the folder -- so at this point there are no entity ids to bind and generating
+            # a mapping could only write placeholders. Absent is the correct state, and the real
+            # check is the rerun after the ids exist. Every other gate still runs.
+            mapping_status = "DEFERRED"
+            warnings.append(
+                "Mapping is deferred; generate it once the entities exist and rerun with "
+                "--mapping-mode auto, which will validate its bindings against --handoff.CLASS_MAP."
+            )
         else:
             handoff, handoff_errors = parse_handoff(args.handoff)
             metadata_errors = handoff_errors or generation_metadata_errors(handoff, classes, data_props)
