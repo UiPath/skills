@@ -825,7 +825,12 @@ def main() -> int:
           f"{COMPLIANCE_DECISION}={compliance!r}")
 
     if status not in {"Completed", "Successful"}:
-        fail(f"the case ended {status!r}; every route in this test must run to completion")
+        # A Faulted case records why it faulted, and post_run deletes the instance with
+        # the solution, so the reason has to be read here or it is gone.
+        fail_with_diagnosis(
+            instance_id,
+            f"the case ended {status!r}; every route in this test must run to completion",
+        )
 
     if args.route == "sla":
         own = REVISED_DATE[CHECKING]
