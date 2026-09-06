@@ -390,15 +390,30 @@ def main() -> int:
     # The skill's completeness principle copies each task's Design Rationale into the
     # element's `description`, and maps every SDD declaration one to one. A whole
     # field can go missing on every task at once and `validate` still reports Valid.
-    no_description = sorted(
-        P.task_name(task)
-        for _stage, task in P.all_tasks(caseplan)
-        if P.task_name(task) in facts["rationale_tasks"] and not task.get("description")
-    )
+    def _flat(text: str) -> str:
+        return " ".join(str(text or "").split())
+
+    no_description, partial = [], []
+    for _stage, task in P.all_tasks(caseplan):
+        name = P.task_name(task)
+        wanted = facts["rationale_tasks"].get(name)
+        if not wanted:
+            continue
+        written = _flat(task.get("description"))
+        if not written:
+            no_description.append(name)
+        elif _flat(wanted) not in written:
+            partial.append(name)
     if no_description:
         problems.append(
             f"{len(no_description)} task(s) carry no `description`, and the SDD gives "
-            f"each a Design Rationale the skill copies there: {no_description[:6]}"
+            f"each a Design Rationale the skill copies there: {sorted(no_description)[:6]}"
+        )
+    if partial:
+        problems.append(
+            f"{len(partial)} task(s) carry a `description` that is not their whole "
+            f"Design Rationale; the skill copies it across, and a fragment drops the "
+            f"reason the task is shaped the way it is: {sorted(partial)[:6]}"
         )
 
     for name, wanted in sorted(facts["skip_conditions"].items()):

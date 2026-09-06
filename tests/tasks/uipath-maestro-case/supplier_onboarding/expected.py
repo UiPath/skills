@@ -570,14 +570,14 @@ _RATIONALE_RE = re.compile(r"^\*\*Design Rationale:\*\*\s*(.+)$", re.M)
 _ENVELOPE_RE = re.compile(r"^\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*([^|]*?)\s*\|", re.M)
 
 
-def _sdd_task_envelopes(sdd: str) -> tuple[set[str], dict[str, str]]:
+def _sdd_task_envelopes(sdd: str) -> tuple[dict[str, str], dict[str, str]]:
     """Task name -> whether the SDD writes a Design Rationale, and its Skip Condition.
 
     The skill copies each task's Design Rationale into the element's `description`
     (`implementation.md` Completeness principle), so a task with a rationale and no
     description in the plan lost it.
     """
-    rationale: set[str] = set()
+    rationale: dict[str, str] = {}
     skips: dict[str, str] = {}
     name = None
     for line in sdd.split("\n"):
@@ -587,8 +587,9 @@ def _sdd_task_envelopes(sdd: str) -> tuple[set[str], dict[str, str]]:
             continue
         if not name:
             continue
-        if _RATIONALE_RE.match(line):
-            rationale.add(name)
+        hit = _RATIONALE_RE.match(line)
+        if hit:
+            rationale[name] = hit.group(1).strip()
         row = _ENVELOPE_RE.match(line)
         if row and row.group(3) not in ("\u2014", "-", ""):
             skips[name] = row.group(3)

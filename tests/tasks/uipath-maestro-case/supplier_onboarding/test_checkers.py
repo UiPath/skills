@@ -160,8 +160,8 @@ def T(
         "id": task_id,
         "type": task_type,
         "displayName": display_name,
-        # A real build copies the SDD's Design Rationale here, on every task.
-        "description": f"Design rationale for {display_name}.",
+        # A real build copies the SDD's Design Rationale here verbatim, on every task.
+        "description": E.sdd_facts()["rationale_tasks"].get(display_name, ""),
         "isRequired": req,
         "shouldRunOnlyOnce": once,
         "entryConditions": [
