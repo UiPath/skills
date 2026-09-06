@@ -185,7 +185,7 @@ uip gov aops-policy template list --output-dir "<SESSION_DIR>/products" --output
 | File | Purpose |
 |------|---------|
 | `form-template.json` | Raw form.io DTO returned by the governance API. Top-level `.product` object `{name, label}` is the catalog entry. |
-| `form-data.json` | Fillable blueprint — a flat key/value object generated from the template. Display-only components (`hidden`, `button`, `submit`, `htmlelement`, `content`) are omitted. Fields without an explicit default get a type-appropriate default: `false` for checkbox, `[]` for editgrid, `{}` for selectboxes, and `null` for text/select. |
+| `form-data.json` | Fillable blueprint — a flat key/value object generated from the template. Display-only components (`hidden`, `button`, `submit`, `htmlelement`, `content`) are omitted. Fields without an explicit default get a type-appropriate default: `false` for checkbox; `null` for text, select, radio, number, currency, time, and datetime; `[]` for editgrid, datagrid, and tags; `{}` for selectboxes, survey, and container. |
 | `form-template-locale-resource.json` | Locale-resolved reference. Every product-scoped locale key is replaced with its English string; a sibling `<prop>-key` preserves the original key for traceability. `defaultData.data` is replaced with a flat, annotated per-field map `{ value, type, label, description?, tooltip? }`. Select and selectboxes option labels appear under `template.components[...].values[].label`. Cross-product keys (e.g. `AutomationOps.submit`) are left unresolved. |
 
 Per-product failures are collected and do not abort; the command exits non-zero only if every product fails. Do NOT create a separate `products.json` — enumerate products with `Glob` on `<output-dir>/*/form-template.json`.
