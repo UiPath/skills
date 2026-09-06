@@ -196,6 +196,21 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: >
+      PROBE: the case can be started with input arguments rather than through the debug
+      entry point. Four questions in one pass: publishing puts a runnable process on the
+      tenant, that process exposes the SDD's In arguments, a job started with
+      `--input-arguments` creates a case instance the Maestro commands see, and a value
+      passed that way reaches the case variable it names. The debug entry point supplies
+      no arguments, so `bankDetailsDocument` is always empty and the primary scenario
+      cannot run at all
+    command: "python3 $TASK_DIR/probe_input_start.py"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_not_executed
     description: "Agent did not use mutating case-authoring CLI commands : caseplan.json is authored directly per the skill's invariant"
     tool_name: "Bash"
