@@ -36,6 +36,7 @@ Read-only. Exit 0 clean, 1 on findings.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from collections import Counter
 
@@ -366,6 +367,24 @@ def main() -> int:
             f"{len(ruleless)} task(s) carry no entry rule: {ruleless}. The runtime never "
             "starts them, the stage never completes, and the run hangs instead of faulting"
         )
+
+    # ---- 10b. a computed output does not read its own target ---------------
+    # The SDD computes these through `$xref` against the producing task's own output,
+    # and the resolution pass turns that into `vars.<the producer's slot>`. Resolved
+    # to the row's own `var` instead, nothing produces the name, so the expression
+    # evaluates to empty on every run and the value never lands.
+    for _stage, task in P.all_tasks(caseplan):
+        for entry in P.task_outputs(task):
+            target = entry.get("var")
+            expression = str(entry.get("value") or "")
+            if not target or not entry.get("custom"):
+                continue
+            if re.search(rf"\bvars\.{re.escape(target)}\b", expression):
+                problems.append(
+                    f"task {P.task_name(task)!r} computes {target!r} from "
+                    f"{expression!r}, which reads the slot it writes; no output "
+                    f"produces that name, so it stays empty however the task ends"
+                )
 
     # ---- 11. the SDD's rationale and skip conditions survive ---------------
     # The skill's completeness principle copies each task's Design Rationale into the

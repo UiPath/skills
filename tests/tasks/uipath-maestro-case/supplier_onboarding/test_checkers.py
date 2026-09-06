@@ -1410,3 +1410,19 @@ class TaskEnvelopeTests(CheckerBase):
             if task.get("displayName") == "Obtain procurement director sign-off":
                 task.pop("skipCondition", None)
         self.rejects(plan, "runs on every case that reaches it")
+
+    def test_rejects_a_computed_output_reading_its_own_target(self):
+        # `$xref` resolved to the row's own target instead of the producing output's
+        # slot, so nothing produces the name and the value never lands. The row below
+        # is the shape a real build emits, with `vars.buyerDecision` where the working
+        # build writes `vars.action`.
+        plan = baseline_plan()
+        for _stage, task in P_all_tasks(plan):
+            if task.get("displayName") == "Record buyer review decision":
+                task["data"]["outputs"].append({
+                    "name": "buyerDecision", "type": "string", "custom": True,
+                    "var": "buyerDecision", "value": "=js:vars.buyerDecision",
+                    "source": "=js:vars.buyerDecision", "target": "", "body": "",
+                    "elementId": "root",
+                })
+        self.rejects(plan, "reads the slot it writes")
