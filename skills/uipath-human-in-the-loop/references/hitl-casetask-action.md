@@ -4,7 +4,7 @@ The agent writes an `action` task into a stage of `caseplan.json`. **Direct JSON
 
 > If the stage or case predates required entry/exit/completion rules (see the checklist below), `uip maestro case` does have CLI mutation commands for those (`stage-entry-conditions`, `stage-exit-conditions`, `case-exit-conditions`, `task-entry-conditions` — each with an `add` subcommand). Prefer them over hand-writing that JSON when the case project already exists as a file you can pass to the CLI. If you're editing a caseplan.json given to you directly (not one you scaffolded yourself with these commands), it's simplest to just include the correct rule shapes directly per the examples below.
 
-Two paths exist. **Present both to the user and confirm before writing:**
+Two paths exist. **Never block on choosing — infer the path from the business description using the table below (§ Common business descriptions → path selection) and proceed. Do not wait for the user to pick.**
 
 | Path | When to use | Requires |
 |---|---|---|
@@ -23,14 +23,14 @@ Two paths exist. **Present both to the user and confirm before writing:**
 
 ## Step 1 — Extract the Task Configuration Through Conversation
 
-Ask these questions before designing any path. Ask all missing ones in a single message.
+**Never block on this.** Infer each answer below from the business description; only ask if the user is actually present and it would help. Defaults when nothing in the description settles it: recipient → a group named after the relevant team (e.g. "finance-team", "data-enrichment-team" — infer the team name from context); priority → Low, per Step 4.
 
-| What you need to know | Question to ask |
+| What you need to know | Where to infer it from |
 |---|---|
-| What the reviewer sees | "What information does the reviewer need to make their decision?" |
-| What they decide or fill in | "Does the reviewer just approve/reject, or do they need to enter data?" |
-| Who receives the task | "Who should receive this task — a specific user (email) or a group?" |
-| Priority | "What priority should this task have? Low, Medium, or High?" |
+| What the reviewer sees | Data the automation already extracted or produced upstream |
+| What they decide or fill in | Whether the description says "approve/reject" (decision only) or "fill in", "correct", "enrich" (data entry) |
+| Who receives the task | A named person/email or team/group mentioned in the description; otherwise infer a sensible team name from the business context |
+| Priority | Any urgency language in the description ("urgent", "high priority") → High/Medium; otherwise Low |
 
 **Common business descriptions → path selection:**
 
@@ -78,7 +78,7 @@ Use these roles to plan the fields before writing:
 - `outcomes[]`: use domain-specific names (Approve/Reject, not just Submit)
 - Keep it focused — don't add fields the case won't use
 
-**Show the designed schema to the user and confirm before writing.**
+**Never block on this — write the schema, per Critical Rule 1 in SKILL.md, and record it in the final report so the user can adjust it afterward.**
 
 ### Step 2 — Write the `.hitl.json` File
 
@@ -224,13 +224,15 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 | `assignmentCriteria` | `"user"` when assigning to a specific email. Omit the `value` (or omit the entry) for group rules. |
 | `recipient` | `{ "Type": 2, "Value": "<email>" }` for email; `{ "Type": 1, "Value": "<group>" }` for group; `{ "Type": 3, "Value": "=vars.<varId>" }` for runtime-resolved assignee. |
 
-> **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** Confirmed by direct reproduction against Studio Web: a placeholder UUID here makes "Edit Schema" fail with a `404` on `FileOperations/File/Rename` (the fileId in that failed request is whatever placeholder was written) — Studio Web does **not** silently reconcile it on upload, contrary to what an earlier draft of this doc claimed. There is currently no `uip` CLI command that resolves this. The only known working procedure:
+> **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** Confirmed by direct reproduction against Studio Web: a placeholder UUID here makes "Edit Schema" fail with a `404` on `FileOperations/File/Rename` (the fileId in that failed request is whatever placeholder was written) — Studio Web does **not** silently reconcile it on upload, contrary to what an earlier draft of this doc claimed. There is currently no `uip` CLI command that resolves this.
+>
+> **Never block on this.** Write a fresh placeholder UUID v4, finish the task, validate, and move on — do not attempt the reconciliation below yourself, and do not stop to ask about it. State plainly in the final report that this task's schema won't be editable in Studio Web until the real file ID is reconciled, and offer to do it if asked:
 > 1. Upload the project once with any placeholder value in `_schemaFileId` (`uip solution upload`).
 > 2. Look up the real ID Studio Web assigned to the `.hitl.json` file via `GET /api/Project/{projectId}/FileOperations/Structure` (find the entry whose `name` matches the `.hitl.json` filename — an internal Studio Web REST endpoint, not a `uip` CLI verb).
 > 3. Patch `_schemaFileId` in `caseplan.json` to that real ID.
 > 4. Push the corrected `caseplan.json` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-imports everything and mints a **new** random file ID for every file, including `.hitl.json`, immediately invalidating whatever you just patched.
 >
-> This is a real gap, not just a documentation gap: today there is no supported CLI path to make a freshly-authored QuickForm task's schema editable in Studio Web without dropping to this undocumented internal API. Flag this to the user rather than silently attempting it, unless they've explicitly asked for the schema to be Studio-Web-editable.
+> This is a real gap, not just a documentation gap: today there is no supported CLI path to make a freshly-authored QuickForm task's schema editable in Studio Web without dropping to this undocumented internal API. It's a follow-up the user can request, never a mid-task blocker.
 
 ### Step 4 — Discover Upstream Variables
 
