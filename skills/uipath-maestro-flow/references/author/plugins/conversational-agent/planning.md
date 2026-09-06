@@ -2,7 +2,7 @@
 
 Build a conversational flow whose job is to model a **text-based chat**: a user types, the Flow responds through AI or deterministic answers, and waits for the next message or eventually terminates. For a chat that happens over a **phone call**, use [inline-voice-agent](../inline-voice-agent/planning.md) instead — same idea, different medium, different node types.
 
-The flow is **surface-agnostic**. One conversational flow is consumed from many channels. once deployed, a common SDK lists every conversational flow on the tenant, and every OOTB integration built on that SDK — e.g. web-chat, iframe embedding, UiPath Assistant, Microsoft Teams, Slack — plus any customer's custom UI is able to converse with the chat experience. Author for the conversation, not for a channel.
+The flow is **surface-agnostic**; one conversational flow is consumed from many channels. Once deployed, the common UiPath TypeScript SDK can list every conversational flow on the tenant, and every OOTB integration built on that SDK — e.g. web-chat, iframe embedding, UiPath Assistant, Microsoft Teams, Slack — plus any customer's custom UI is able to converse with the chat experience. Author for the conversation, not for a channel.
 
 ## Node Types
 
