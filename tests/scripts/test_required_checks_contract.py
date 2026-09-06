@@ -256,3 +256,35 @@ def test_no_two_jobs_share_a_required_context():
         f"required context(s) produced by more than one workflow: {collisions}. "
         f"Qualify one of the job names."
     )
+
+
+def test_every_test_helpers_job_is_required():
+    """The reverse direction: a job added to test-helpers.yml must reach the table.
+
+    Every other test here reads the doc and checks it against the workflows, so
+    a job that exists but is missing from the table is invisible — the table
+    stays internally consistent and the check simply never becomes required.
+
+    That is not hypothetical. `maestro-bpmn checker unit tests` was added to
+    this workflow on main, added to the table in a merge commit, and then
+    silently dropped when that merge was rebased away: 24 contexts became 23,
+    every test still passed.
+
+    test-helpers.yml is the one workflow where the rule is unconditional —
+    it exists to hold cheap, deterministic, always-run guards, and each is a
+    checkout plus a sub-30s pytest. Anything nondeterministic or advisory
+    belongs in another workflow (Rule 4), so there is no legitimate reason for
+    a job here to sit outside the required set.
+    """
+    data, _ = load_workflow("test-helpers.yml")
+    names = {job.get("name") for job in (data.get("jobs") or {}).values()}
+    required = {c for c, _ in TARGET_SET}
+
+    unregistered = sorted(n for n in names if n and n not in required)
+    assert not unregistered, (
+        f"test-helpers.yml defines job(s) {unregistered} that are absent from "
+        f"docs/REQUIRED-CHECKS.md § Current target set. Every job in this "
+        f"workflow is meant to be a required check; add the row in the same PR "
+        f"that adds the job, or move the job to another workflow if it is "
+        f"advisory (Rule 4)."
+    )
