@@ -140,9 +140,15 @@ jobs:
     # required context would never report.
     #
     # `!cancelled()` rather than `always()`: `always()` also runs during RUN
-    # cancellation, so a run superseded by `cancel-in-progress` reported the
+    # cancellation, so a superseded run executed this job and reported the
     # required context FAILED off a `detect: cancelled` it was never meant to
-    # judge. See the same block in activation-gate.yml for the full account.
+    # judge. `!cancelled()` does not make such a run pass — GitHub reports the
+    # skipped job as `cancelled` — it just resolves it immediately and without
+    # a misleading error. See the same block in activation-gate.yml.
+    #
+    # No `ready_for_review` in this workflow's triggers, so it has no event that
+    # starts a second run on a SHA already in flight; the conditional
+    # `cancel-in-progress` activation-gate.yml needs has nothing to do here.
     # The `${{ }}` wrapper is required: bare `!` starts a YAML tag.
     if: ${{ !cancelled() }}
     runs-on: uipath-ubuntu-latest

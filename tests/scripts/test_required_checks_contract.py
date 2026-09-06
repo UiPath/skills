@@ -10,9 +10,10 @@ break it, and both block EVERY open PR until someone edits the ruleset:
     `branches:`, `branches-ignore:`, or a `types:` list missing `synchronize`
     (the workflow doesn't run on excluded PRs, so no check is reported).
 
-A third breaks it loudly instead: guarding a rollup job with `always()` makes a
-run cancelled by `cancel-in-progress` report the context as FAILED on a SHA that
-also has a passing run.
+A third breaks it loudly instead: a run cancelled by `cancel-in-progress` still
+reports its jobs, and `cancelled` is not a pass — so a required context can go
+red purely because its run was superseded on a SHA that also has a passing run.
+Rule 3a covers keeping the two apart.
 
 Neither of the first two is visible from the repo: the ruleset lives in the
 GitHub API, and nothing in the build reads docs/REQUIRED-CHECKS.md. These
@@ -191,19 +192,20 @@ def test_required_job_needs_are_covered(context, workflow):
     condition = str(job.get("if", ""))
 
     if "always()" in condition:
-        # `always()` also runs during RUN cancellation. A run superseded by
-        # `cancel-in-progress` then executes the aggregator, reads
-        # `needs.detect.result == "cancelled"`, and reports the required context
-        # FAILED — on the same head SHA as the run that actually passed, so
-        # merge turns on which finished last. Use `${{ !cancelled() }}`, which
-        # skips the aggregator when the run is cancelled (a skipped job counts
-        # as a pass, and the newer run reports the real answer) while still
-        # running on failure and on a leg timeout.
+        # `always()` also runs during RUN cancellation: the aggregator of a
+        # superseded run executes, reads `needs.detect.result == "cancelled"`,
+        # and reports the required context FAILED with an error message about a
+        # gate that was never actually asked to decide anything.
+        #
+        # `${{ !cancelled() }}` does not make such a run PASS — GitHub reports
+        # the skipped job as `cancelled`, which is non-passing too; keeping two
+        # runs off one SHA is the concurrency block's job (Rule 3a). It does
+        # resolve the aggregator immediately rather than after a runner
+        # acquisition, and drops the misleading error.
         pytest.fail(
             f"{workflow}: required job {context!r} guards its rollup with "
-            f"`always()`. That runs during run cancellation too, so a run "
-            f"superseded by `cancel-in-progress` reports this required context "
-            f"as FAILED. Use `if: ${{{{ !cancelled() }}}}` instead — see "
+            f"`always()`, which also runs during run cancellation. Use "
+            f"`if: ${{{{ !cancelled() }}}}` instead — see "
             f"docs/REQUIRED-CHECKS.md Rule 3."
         )
 

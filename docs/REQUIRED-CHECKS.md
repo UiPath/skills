@@ -51,30 +51,57 @@ So a required job needs one of:
 the rollup job actually reads each `needs.<job>.result`, since a job that runs
 regardless and ignores its needs reports green whatever they did.
 
+### Rule 3a — two runs must never race on one SHA
+
+A cancelled run still reports its jobs, and `cancelled` is **not** a pass. So a
+required context can go red purely because its run was superseded.
+
+`activation-gate.yml` triggers on `ready_for_review` and grouped its concurrency
+by `head_ref` with `cancel-in-progress: true`. Taking a PR out of draft
+therefore started a second run that cancelled the first **on the same head
+SHA**. GitHub keeps the latest check run per context name, so merge turned on
+which of the two recorded its result last. PR #3100 hit this: commit
+`1056e6c56` carried a red `Skill activation gate` beside a green one (runs
+`34055252280` and `34055306035`, ~70s apart).
+
+The fix is in the concurrency block, not the job:
+
+```yaml
+cancel-in-progress: ${{ github.event.action != 'ready_for_review' }}
+```
+
+`ready_for_review` is the only event that fires on a commit a run is already in
+flight for, so it is the only one that must not cancel. Every other event
+arrives with a new SHA, where cancelling is free — the superseded run's red
+lands on a commit nobody is merging.
+
+`verb-gate.yml` needs none of this: it has no `ready_for_review` trigger.
+
 ### Why `!cancelled()` and not `always()`
 
-`always()` runs the job during **run** cancellation too. `activation-gate.yml`
-and `verb-gate.yml` both set `cancel-in-progress: true`, and
-`activation-gate.yml` also triggers on `ready_for_review` — so taking a PR out
-of draft starts a second run that cancels the first **on the same head SHA**.
-Under `always()` the cancelled run's aggregator still executed, read
-`needs.detect.result == "cancelled"`, and reported the required context FAILED.
-PR #3100 carried a red `Skill activation gate` next to a green one on commit
-`1056e6c56`; merge would then have turned on which run finished last.
+Both aggregators use `if: ${{ !cancelled() }}`. The `${{ }}` wrapper is not
+optional — a bare `!` starts a YAML tag.
 
-`${{ !cancelled() }}` skips the aggregator when the run is cancelled. A skipped
-job counts as a pass, and the newer run on that SHA reports the real answer. It
-still runs — and fails — when a needed job fails, and when a leg hits
-`timeout-minutes` (a timed-out job does not cancel the run, so the result
-arrives as `cancelled` and the explicit check fires).
+Be clear about what this does **not** do. It does not make a cancelled run
+pass. A job skipped by `if:` during run cancellation is reported `cancelled`,
+not `skipped` — measured by dispatching `activation-gate.yml` and cancelling it
+mid-flight (run `34067126301`: `cancelled  Skill activation gate`). Rule 3a
+above is what keeps such a run off a SHA that also has a passing one.
 
-The `${{ }}` wrapper is not optional: a bare `!` starts a YAML tag.
+What it buys, against `always()`:
 
-The trade: **manually** cancelling a run now leaves the aggregator `skipped`,
-which counts as a pass, where `always()` left it failed. Anyone with write
-access can therefore skip these two gates by cancelling the run. That is
-accepted — both are quality gates sitting behind CODEOWNERS approval, and the
-alternative was a gate that blocks merge at random on superseded runs.
+- The aggregator resolves the instant the run is cancelled, instead of queueing
+  for a runner and taking ~10s to decide. That shrinks the window in which it
+  can record its check *after* the superseding run recorded its own.
+- No `::error::activation gate could not determine which skills to gate` in the
+  log of a run that was merely superseded.
+
+It still runs, and still fails, when a needed job fails and when a leg hits
+`timeout-minutes` — a timed-out job does not cancel the run, so the result
+arrives as `cancelled` and the explicit check fires.
+
+Because a cancelled run stays non-passing, cancelling a run is not a way to
+skip these gates.
 
 > This is the one place the 2026-09-03 audit was wrong. It recommended dropping
 > `Detect changed RPA skills` as "a detect job, not a gate … it only guards its
