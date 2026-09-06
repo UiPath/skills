@@ -422,8 +422,19 @@ def incidents(instance_id: str) -> list:
 
 
 def describe_incident(item: dict) -> str:
-    detail = str(item.get("ErrorDetails") or item.get("ErrorMessage") or item.get("Message") or "")
-    return f"{item.get('ElementId')!r} ({item.get('ErrorCode')}): {detail[:400]}"
+    """One incident, keeping both ends of its message.
+
+    A rules-evaluation failure reads `Failed to evaluate expression <the whole rule as
+    JSON>: <the reason>`, so the reason sits at the end. Printing only the head shows
+    several hundred characters of the rule and cuts off the one sentence that says what
+    went wrong.
+    """
+    detail = " ".join(
+        str(item.get("ErrorDetails") or item.get("ErrorMessage") or item.get("Message") or "").split()
+    )
+    if len(detail) > 700:
+        detail = f"{detail[:300]} ...[{len(detail) - 700} chars]... {detail[-400:]}"
+    return f"{item.get('ElementId')!r} ({item.get('ErrorCode')}): {detail}"
 
 
 def fail_with_diagnosis(instance_id: str, msg: str):
