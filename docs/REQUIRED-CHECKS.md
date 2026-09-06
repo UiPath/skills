@@ -43,13 +43,38 @@ So a required job needs one of:
 
 - every job in its `needs:` also required (what `detect` is for in the two smoke
   workflows), or
-- `if: always()` plus an explicit check of each `needs.<job>.result` (what the
-  two `gate-summary` aggregators do).
+- `if: ${{ !cancelled() }}` plus an explicit check of each `needs.<job>.result`
+  (what the two `gate-summary` aggregators do).
 
 `test_required_job_needs_are_covered` in
-`tests/scripts/test_required_checks_contract.py` enforces this — including that an
-`always()` job actually reads each `needs.<job>.result`, since a job that always
-runs and ignores its needs reports green whatever they did.
+`tests/scripts/test_required_checks_contract.py` enforces this — including that
+the rollup job actually reads each `needs.<job>.result`, since a job that runs
+regardless and ignores its needs reports green whatever they did.
+
+### Why `!cancelled()` and not `always()`
+
+`always()` runs the job during **run** cancellation too. `activation-gate.yml`
+and `verb-gate.yml` both set `cancel-in-progress: true`, and
+`activation-gate.yml` also triggers on `ready_for_review` — so taking a PR out
+of draft starts a second run that cancels the first **on the same head SHA**.
+Under `always()` the cancelled run's aggregator still executed, read
+`needs.detect.result == "cancelled"`, and reported the required context FAILED.
+PR #3100 carried a red `Skill activation gate` next to a green one on commit
+`1056e6c56`; merge would then have turned on which run finished last.
+
+`${{ !cancelled() }}` skips the aggregator when the run is cancelled. A skipped
+job counts as a pass, and the newer run on that SHA reports the real answer. It
+still runs — and fails — when a needed job fails, and when a leg hits
+`timeout-minutes` (a timed-out job does not cancel the run, so the result
+arrives as `cancelled` and the explicit check fires).
+
+The `${{ }}` wrapper is not optional: a bare `!` starts a YAML tag.
+
+The trade: **manually** cancelling a run now leaves the aggregator `skipped`,
+which counts as a pass, where `always()` left it failed. Anyone with write
+access can therefore skip these two gates by cancelling the run. That is
+accepted — both are quality gates sitting behind CODEOWNERS approval, and the
+alternative was a gate that blocks merge at random on superseded runs.
 
 > This is the one place the 2026-09-03 audit was wrong. It recommended dropping
 > `Detect changed RPA skills` as "a detect job, not a gate … it only guards its

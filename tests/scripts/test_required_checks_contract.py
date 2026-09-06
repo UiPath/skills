@@ -10,9 +10,13 @@ break it, and both block EVERY open PR until someone edits the ruleset:
     `branches:`, `branches-ignore:`, or a `types:` list missing `synchronize`
     (the workflow doesn't run on excluded PRs, so no check is reported).
 
-Neither is visible from the repo: the ruleset lives in the GitHub API, and
-nothing in the build reads docs/REQUIRED-CHECKS.md. These tests make the doc's
-"Current target set" table the checked source of truth. It is parsed by
+A third breaks it loudly instead: guarding a rollup job with `always()` makes a
+run cancelled by `cancel-in-progress` report the context as FAILED on a SHA that
+also has a passing run.
+
+Neither of the first two is visible from the repo: the ruleset lives in the
+GitHub API, and nothing in the build reads docs/REQUIRED-CHECKS.md. These
+tests make the doc's "Current target set" table the checked source of truth. It is parsed by
 scripts/parse-required-checks.py — the SAME parser scripts/apply-required-checks.sh
 uses, so what is applied is by construction what was validated.
 
@@ -172,7 +176,7 @@ def test_required_job_needs_are_covered(context, workflow):
     `needs: detect` + `if: needs.detect.outputs.skip != 'true'` skips the gated
     job when detect FAILS (its outputs are empty) — and GitHub counts a skipped
     job as a pass. Either the needed job is required too, or the required job
-    rolls the results up itself under `if: always()`.
+    rolls the results up itself under `if: ${{ !cancelled() }}`.
     """
     data, _ = load_workflow(workflow)
     jobs = data.get("jobs") or {}
@@ -184,8 +188,27 @@ def test_required_job_needs_are_covered(context, workflow):
     if not needs:
         return
 
-    if "always()" in str(job.get("if", "")):
-        # `if: always()` alone proves nothing — a job that always runs and never
+    condition = str(job.get("if", ""))
+
+    if "always()" in condition:
+        # `always()` also runs during RUN cancellation. A run superseded by
+        # `cancel-in-progress` then executes the aggregator, reads
+        # `needs.detect.result == "cancelled"`, and reports the required context
+        # FAILED — on the same head SHA as the run that actually passed, so
+        # merge turns on which finished last. Use `${{ !cancelled() }}`, which
+        # skips the aggregator when the run is cancelled (a skipped job counts
+        # as a pass, and the newer run reports the real answer) while still
+        # running on failure and on a leg timeout.
+        pytest.fail(
+            f"{workflow}: required job {context!r} guards its rollup with "
+            f"`always()`. That runs during run cancellation too, so a run "
+            f"superseded by `cancel-in-progress` reports this required context "
+            f"as FAILED. Use `if: ${{{{ !cancelled() }}}}` instead — see "
+            f"docs/REQUIRED-CHECKS.md Rule 3."
+        )
+
+    if "cancelled()" in condition:
+        # `!cancelled()` alone proves nothing — a job that runs and never
         # inspects its needs reports green whatever they did, which is the exact
         # Rule 3 failure. Demand that the job actually reads each one's result.
         body = " ".join(
@@ -194,12 +217,13 @@ def test_required_job_needs_are_covered(context, workflow):
         )
         unread = [key for key in needs if f"needs.{key}.result" not in body]
         assert not unread, (
-            f"{workflow}: required job {context!r} runs under `if: always()` "
-            f"but never reads {[f'needs.{k}.result' for k in unread]}. An "
-            f"always-running job that ignores its needs reports success no "
-            f"matter what they did — the Rule 3 failure this test exists to "
-            f"catch. Either roll each result up explicitly, or drop "
-            f"`always()` and require the needed job instead."
+            f"{workflow}: required job {context!r} runs under "
+            f"`if: ${{{{ !cancelled() }}}}` but never reads "
+            f"{[f'needs.{k}.result' for k in unread]}. A job that runs "
+            f"regardless and ignores its needs reports success no matter what "
+            f"they did — the Rule 3 failure this test exists to catch. Either "
+            f"roll each result up explicitly, or drop the condition and require "
+            f"the needed job instead."
         )
         return
 

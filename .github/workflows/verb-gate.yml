@@ -135,9 +135,16 @@ jobs:
   gate-summary:
     name: CLI verb gate
     needs: [detect, gate]
-    # Always run: without this the summary is skipped whenever `gate` is skipped
-    # (no skill markdown changed) and the required context would never report.
-    if: always()
+    # Run regardless of what `detect` and `gate` did — without this the summary
+    # is skipped whenever `gate` is skipped (no skill markdown changed) and the
+    # required context would never report.
+    #
+    # `!cancelled()` rather than `always()`: `always()` also runs during RUN
+    # cancellation, so a run superseded by `cancel-in-progress` reported the
+    # required context FAILED off a `detect: cancelled` it was never meant to
+    # judge. See the same block in activation-gate.yml for the full account.
+    # The `${{ }}` wrapper is required: bare `!` starts a YAML tag.
+    if: ${{ !cancelled() }}
     runs-on: uipath-ubuntu-latest
     timeout-minutes: 5
     steps:

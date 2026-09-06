@@ -125,10 +125,25 @@ jobs:
   gate-summary:
     name: Skill activation gate
     needs: [detect, gate]
-    # Always run: without this the summary is skipped whenever `gate` is skipped
-    # (no frontmatter changed, or the PR is a draft) and the required context
-    # would never report.
-    if: always()
+    # Run regardless of what `detect` and `gate` did — without this the summary
+    # is skipped whenever `gate` is skipped (no frontmatter changed, or the PR
+    # is a draft) and the required context would never report.
+    #
+    # `!cancelled()` rather than `always()`, and the difference is not cosmetic.
+    # `always()` also runs during RUN cancellation, so a run superseded by
+    # `cancel-in-progress` still executed this job, read `detect: cancelled`,
+    # and reported the required context FAILED. That happens on the same head
+    # SHA whenever a PR leaves draft (`ready_for_review` starts a second run
+    # that cancels the first), so merge then turned on which of the two runs
+    # finished last. Observed on PR #3100: a red `Skill activation gate` beside
+    # a green one, same commit.
+    #
+    # `!cancelled()` skips this job when the RUN is cancelled — the newer run on
+    # that SHA reports the real answer — while still running, and failing, when
+    # a needed job fails or a leg times out (a timed-out job does not cancel the
+    # run, so `GATE_RESULT` arrives as `cancelled` and the check below fires).
+    # The `${{ }}` wrapper is required: bare `!` starts a YAML tag.
+    if: ${{ !cancelled() }}
     runs-on: uipath-ubuntu-latest
     timeout-minutes: 5
     steps:
