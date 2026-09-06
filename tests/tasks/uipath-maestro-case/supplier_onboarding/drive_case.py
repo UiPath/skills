@@ -601,7 +601,13 @@ def drive_sla(instance_id: str, watermark: int, who: str, done: set, answered: s
         task = pending_task(watermark, escalation, done, instance_id)
         if task is None:
             if run_status(instance_id) in FINISHED:
-                fail("the case finished before the intake phase breached; its SLA never fired")
+                # Which stages it did reach says whether the SLA was never armed or
+                # the case left the intake phase by another route.
+                fail_with_diagnosis(
+                    instance_id,
+                    "the case finished before the intake phase breached; its SLA never "
+                    "fired",
+                )
             time.sleep(POLL_SLEEP)
     if task is None:
         fail_with_diagnosis(instance_id,
