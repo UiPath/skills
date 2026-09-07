@@ -83,14 +83,20 @@ initial_prompt: |
      connector operations live in the Integration Service catalogue above, so
      do not conclude the connector is unavailable.
 
-     `is resources describe --operation Create` lists request fields as
-     DOT-PATHS (`fields.project.key`, `fields.issuetype.id`). Those are paths
-     into the JSON body, NOT literal keys -- send a nested body or the
-     connector rejects it with "Integration Services bad request":
+     Pass request fields as SEPARATE inputs, one per field, exactly as the
+     template's InputNotes says ("add each request field from the selected
+     operation as its own uipath:input; keep the field's type and target").
+     `is resources describe --operation Create` gives the field names; use
+     them verbatim, dots included, and let the connector assemble the body:
 
-       {"fields": {"project": {"key": <jiraProjectKey>},
-                   "issuetype": {"id": <jiraIssueTypeId>},
-                   "summary": <summary>}}
+       <uipath:input target="body" name="fields.project.key"   type="string" value="=vars.<id>" />
+       <uipath:input target="body" name="fields.issuetype.id"  type="string" value="=vars.<id>" />
+       <uipath:input target="body" name="fields.summary"       type="string" value="=vars.<id>" />
+
+     Do NOT send one `body` input containing a hand-built JSON object: a
+     literal blob does not resolve `=vars.` references inside it and the
+     connector answers "Integration Services bad request" without naming a
+     field.
 
      The summary MUST include the correlationId verbatim (e.g. "[<severity>]
      <correlationId> customer escalation"). Use the Atlassian Jira connection
