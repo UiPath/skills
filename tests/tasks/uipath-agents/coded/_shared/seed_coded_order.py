@@ -137,10 +137,10 @@ def create_entity(choice_set_id: str) -> str | None:
         "displayName": "Coded Order",
         "description": "Order entity for coded-agent Data Fabric evaluation",
         "fields": [
-            {"fieldName": "OrderNumber", "type": "STRING", "isRequired": True, "lengthLimit": 50},
-            {"fieldName": "CustomerName", "type": "STRING", "isRequired": True, "lengthLimit": 200},
-            {"fieldName": "TotalAmount", "type": "DECIMAL", "decimalPrecision": 2, "minValue": 0, "maxValue": 1000000},
-            {"fieldName": "Status", "type": "CHOICE_SET_SINGLE", "choiceSetId": choice_set_id},
+            {"name": "OrderNumber", "type": "STRING", "isRequired": True, "lengthLimit": 50},
+            {"name": "CustomerName", "type": "STRING", "isRequired": True, "lengthLimit": 200},
+            {"name": "TotalAmount", "type": "DECIMAL", "decimalPrecision": 2, "minValue": 0, "maxValue": 1000000},
+            {"name": "Status", "type": "CHOICE_SET_SINGLE", "choiceSetId": choice_set_id},
         ],
     }
     body = json.dumps(schema)

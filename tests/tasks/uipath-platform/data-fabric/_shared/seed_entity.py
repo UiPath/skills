@@ -135,32 +135,13 @@ def find_entity_id(entities: list[dict], name: str) -> str | None:
     return None
 
 
-def _normalize_field_names(schema: dict) -> dict:
-    """Ensure fields carry ``fieldName`` (required by current CLI).
-
-    Copies ``name`` → ``fieldName`` when ``fieldName`` is absent.
-    Keeps ``name`` intact — removing it would break callers that read it later.
-    """
-    schema = dict(schema)
-    fields = schema.get("fields")
-    if isinstance(fields, list):
-        normalized = []
-        for f in fields:
-            f = dict(f)
-            if "fieldName" not in f and "name" in f:
-                f["fieldName"] = f["name"]
-            normalized.append(f)
-        schema["fields"] = normalized
-    return schema
-
-
 def create_entity(name: str, schema: dict) -> str | None:
     """Create the entity and return its new ID, or None on failure.
 
     `entities create` can fail locally even though the entity was created
     server-side. After any nonzero result, re-list and look up by name.
     """
-    body = json.dumps(_normalize_field_names(schema))
+    body = json.dumps(schema)
     code, out, err = run_uip(
         "df", "entities", "create", name, "--body", body,
         timeout=UIP_LONG_TIMEOUT_SECONDS,
