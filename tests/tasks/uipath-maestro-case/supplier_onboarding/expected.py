@@ -67,12 +67,7 @@ TOTAL_TASKS = 0                     # both recomputed once STAGE_TASKS is filled
 TASK_TYPE_COUNTS: dict[str, int] = {}
 
 # Optional tasks a person launches on their own judgement, each locked to one stage.
-ADHOC_TASKS = {
-    "Attach supporting documents": CHECKING,
-    "Request more information from supplier": BUYER,
-    "Order reference check": BUYER,
-    "Obtain legal opinion": COMPLIANCE,
-}
+ADHOC_TASKS: dict[str, str] = {}    # on-demand task -> its one stage, from the fixture below
 
 # --- SLAs ---------------------------------------------------------------------
 
@@ -486,6 +481,39 @@ if len(OUTPUT_TARGETS) < 15:
     _fail(
         "fixture parse error: expected >=15 distinct `->` output targets across the task "
         f"Outputs tables; got {sorted(OUTPUT_TARGETS)}"
+    )
+
+_ACTIVATION_RE = re.compile(r"^\*\*Activation Mode:\*\*\s*(.+?)\s*$")
+
+
+def _sdd_adhoc_tasks(sdd: str) -> dict:
+    """The manually launched tasks, each mapped to the one stage that offers it.
+
+    Read off `**Activation Mode:** adhoc` inside each stage's own span, so a task the
+    SDD moves to another phase moves here with it.
+    """
+    found: dict = {}
+    marks = [(m.start(), m.group(1).strip()) for m in _STAGE_HEADING_RE.finditer(sdd)]
+    for index, (start, label) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(sdd)
+        name = None
+        for line in sdd[start:end].split("\n"):
+            heading = _TASK_LINE_RE.match(line)
+            if heading:
+                name = heading.group(1).strip()
+                continue
+            hit = name and _ACTIVATION_RE.match(line)
+            if hit and hit.group(1) == "adhoc":
+                found[name] = label
+                name = None
+    return found
+
+
+ADHOC_TASKS.update(_sdd_adhoc_tasks(read_fixture()))
+if len(ADHOC_TASKS) < 3:
+    _fail(
+        "fixture parse error: expected >=3 tasks on `**Activation Mode:** adhoc`; got "
+        f"{sorted(ADHOC_TASKS)}"
     )
 if TOTAL_TASKS < 20 or len(STAGE_TASKS) < 5:
     _fail(

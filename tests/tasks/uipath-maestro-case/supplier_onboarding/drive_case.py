@@ -65,6 +65,18 @@ ROUTES = {
     # bank details a debug run collects in-case are enough for ERP to verify them. The
     # 750000 default puts it over the director threshold, so the sign-off gate opens on
     # this route and is answered here rather than needing a route of its own.
+    # Withdrawal is offered by a stage that waits for a user to pick what follows it, and
+    # `Setting up the supplier` is not one: its exit rows are all exit-only. This route walks
+    # into setup and then checks that nothing is asking, which is the only way to test that
+    # an option is absent rather than that one is present.
+    "no-withdraw-in-setup": [
+        ("Validate application details", "approve"),
+        ("Record buyer review decision", "approve"),
+        ("Obtain procurement director sign-off", "approve"),
+        ("Record compliance review decision", "approve"),
+        ("Provide bank details for payment setup", "approve"),
+        ("Confirm supplier portal access", "approve"),
+    ],
     # The compliance reviewer rejects after the director has already signed off. The only
     # route that reaches `Application rejected` from the compliance stage rather than the
     # buyer's, and the only proof that a sign-off does not override the later decision.
@@ -123,6 +135,7 @@ REVISED_DATE = {
 # PascalCased, so `buyerDecision` reads back as `BuyerDecision`.
 BUYER_DECISION = "BuyerDecision"
 COMPLIANCE_DECISION = "ComplianceDecision"
+BANK_STATUS = "BankVerificationStatus"
 
 FINISHED = {"Completed", "Successful", "Faulted", "Cancelled"}
 
@@ -914,9 +927,56 @@ def main() -> int:
         if buyer != "approve":
             fail(f"the second buyer decision never landed: {BUYER_DECISION}={buyer!r}, expected 'approve'")
 
-    # Applies to every route, not one of them. A conformant build always emits an empty file
-    # default, so ERP reports `failed` and the setup stage exits to rejection. A run that reports
-    # verified and still rejects, or the reverse, is routing on something the SDD does not describe.
+    elif args.route == "onboard":
+        if outcome != "Onboarded":
+            fail(f"every gate was approved but CaseOutcome={outcome!r}; this route must reach {ONBOARDED!r}")
+        if bank != "verified":
+            fail(f"the setup stage completed with {BANK_STATUS}={bank!r}; the portal gate only opens on 'verified'")
+        if not g.get("SupplierId"):
+            fail("the case onboarded a supplier and recorded no SupplierId; the ERP task wrote nothing back")
+        if compliance != "approve":
+            fail(f"{COMPLIANCE_DECISION}={compliance!r} on a route that approved every gate")
+    elif args.route == "no-withdraw-in-setup":
+        # Every stage the case passed through, and which of them offered a choice. The
+        # three review stages must; setup must not, or a supplier could pull out after
+        # the ERP record exists.
+        offered = {
+            stage_label(row.get("ElementId", "").split("CaseWaitForUser_StageSelection_")[-1])
+            for row in executions(instance_id)
+            if (row.get("ElementId") or "").startswith("CaseWaitForUser_StageSelection_")
+        }
+        if SETUP in offered:
+            fail(f"{SETUP!r} offered a stage picker; the source allows withdrawal only before setup begins")
+        if not offered & {CHECKING, BUYER, COMPLIANCE}:
+            fail(f"no review stage offered a picker at all, so this route proves nothing; saw {sorted(offered)}")
+        print(f"  stage pickers offered by: {sorted(offered)}; {SETUP!r} offered none")
+    elif args.route == "compliance-reject":
+        # A closed case must not be movable. The picker message is the only way anything
+        # moves a case between stages, so sending one after the case has closed is the
+        # test: nothing may match it. Checked here rather than on its own route, because
+        # this is the shortest way to a terminal outcome.
+        before = {label: stage_entries(instance_id, label) for label in E.TERMINAL_STAGES}
+        send_stage_selection(instance_id, REJECTED, ONBOARDED)
+        time.sleep(POLL_SLEEP * 2)
+        after = {label: stage_entries(instance_id, label) for label in E.TERMINAL_STAGES}
+        moved = {k: (before[k], after[k]) for k in before if before[k] != after[k]}
+        if moved:
+            fail(f"a closed case moved when sent a stage selection: {moved}")
+        again = run_status(instance_id)
+        if again != status:
+            fail(f"a closed case changed run status from {status!r} to {again!r} on a stage selection")
+        print(f"  closed case ignored a stage selection; still {again!r}")
+        if compliance != "reject":
+            fail(f"the compliance decision never reached the case: {COMPLIANCE_DECISION}={compliance!r}")
+        if buyer != "approve":
+            fail(f"{BUYER_DECISION}={buyer!r}; this route proves a later reject stands over an earlier approve")
+        if outcome != "Rejected":
+            fail(f"compliance rejected but CaseOutcome={outcome!r}; the reject row did not route the case")
+
+    # Applies to every route, not one of them. The two readings the case can end on are tied
+    # to where the route stopped: `verified` belongs to a route that completed setup, and a
+    # rejection alongside it means the setup stage routed on something the SDD does not
+    # describe. `pending` is the variable's own default and means the ERP task never ran.
     if bank == "verified" and outcome == "Rejected":
         fail(f"bank verification passed but CaseOutcome={outcome!r}; setup should have completed to {ONBOARDED!r}")
     if bank == "failed" and outcome not in ("Rejected", "Withdrawn"):
