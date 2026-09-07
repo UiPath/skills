@@ -6,8 +6,25 @@
             "filePath": "/content/caseplan.json.bpmn#trigger_1",
             "uniqueId": "d48f410c-d60d-4ff6-aefd-7c29bee96d39",
             "type": "CaseManagement",
-            "input": { "type": "object", "properties": {} },
-            "output": { "type": "object", "properties": {} },
+            "input": {
+                "type": "object",
+                "properties": {
+                    "caseRef": {
+                        "type": "string",
+                        "title": "caseRef",
+                        "default": ""
+                    }
+                }
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "finalDecision": {
+                        "type": "string",
+                        "title": "finalDecision"
+                    }
+                }
+            },
             "displayName": "Start Manually"
         }
     ]
