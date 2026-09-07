@@ -167,7 +167,7 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--package-version` takes a NuGet/SemVer-style version — three numeric parts, optional prerelease suffix (`1.0.0`, `1.0.1-beta.1`); `1.0` or a non-numeric string is rejected. `--project-key` targets the Test Manager project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
+| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--package-version` takes a NuGet/SemVer-style version — three or four numeric parts, optional prerelease/build suffix (`1.0.0`, `1.0.0.0`, `1.0.1-beta.1`); `1.0` or a non-numeric string is rejected. `--project-key` targets the Test Manager project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
 
 > Packing is offline — no auth needed. The upload → ingestion → label-fill → run pipeline is in [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
