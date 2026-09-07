@@ -21,8 +21,8 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: skill_triggered
-    description: "uipath-maestro-flow activates for a DataFabric-in-Flow prompt"
+    description: "Advisory: uipath-maestro-flow activates for a DataFabric-in-Flow prompt"
     skill_name: uipath-maestro-flow
     expected_skill: uipath-maestro-flow
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0

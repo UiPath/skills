@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-slack-http-fallback
 description: >
   E2E test: a catalog connector (Slack, uipath-salesforce-slack) has no native
@@ -16,15 +19,14 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a new Flow project called "SlackEmojiListTest" with a manual trigger
-  that lists the custom emoji for a team. Wire the manual trigger to the node that 
+  Create a new Flow project called "SlackEmojiListTest" inside a solution of the
+  same name, with a manual trigger that lists the custom emoji for a team. Wire
+  the manual trigger to the node that
   lists the emoji.
 
   Use the Slack connection in the `Shared/uipath-maestro-flow` folder.
 
   Validate the final flow file. Once it validates, debug it.
-
-  Use `--output json` on every `uip` command whose output you parse.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -38,25 +40,25 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "uip maestro flow validate was called"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
-    min_count: 1
+  - type: run_command
+    description: "The completed flow validates"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent debugged the flow with uip maestro flow debug"
+    description: "Advisory: live-v1 agent invoked flow debug"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+debug"
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "Emoji list falls back to an HTTP-request node bound to the Slack connector (no native activity exists for it) and targets the emoji.list endpoint"
-    command: "python3 $TASK_DIR/check_slack_http_fallback.py check_fallback"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/slack-http-fallback/check_slack_http_fallback.py check_fallback"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -64,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow debug finishes with finalStatus Completed against the live Slack connection"
-    command: "python3 $TASK_DIR/check_slack_http_fallback.py check_debug"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/slack-http-fallback/check_slack_http_fallback.py check_debug"
     timeout: 720
     expected_exit_code: 0
     weight: 6.0

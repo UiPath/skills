@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-calculator
 description: >
   Create a UiPath Flow that takes two number inputs and calculates their product
@@ -9,6 +12,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a UiPath Flow project named "Calculator" that takes two numbers as
   input and calculates their product using a Script node. The result should be
   returned as an output variable.

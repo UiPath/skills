@@ -44,8 +44,19 @@ def main() -> None:
         fail(f"no gateway is reachable from {sub_id} — the block never reaches a verdict")
 
     verdict = verdicts[0]
+    # A BPMN message throw is the native way to send a summary. Count it as
+    # work on the path alongside task-shaped activities; requiring a sendTask
+    # would grade an implementation detail rather than the requested behavior.
+    message_throws = [
+        event
+        for event in elements(root, "intermediateThrowEvent")
+        if event.find(f"./{{{BPMN_NS}}}messageEventDefinition") is not None
+    ]
     work_ids = ids(
-        elements(root, "serviceTask") + elements(root, "scriptTask") + elements(root, "sendTask")
+        elements(root, "serviceTask")
+        + elements(root, "scriptTask")
+        + elements(root, "sendTask")
+        + message_throws
     )
     on_path = {
         n for n in downstream & work_ids

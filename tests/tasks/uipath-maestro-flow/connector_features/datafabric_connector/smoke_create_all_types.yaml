@@ -28,7 +28,7 @@ initial_prompt: |
   * active: true (BOOLEAN)
   * releaseDate: "2024-03-10" (DATE)
   * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
-  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (UUID)
+  * externalId: any valid UUID value of your choice
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

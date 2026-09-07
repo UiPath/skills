@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-remove-node
 description: >
   Remove the formatSummary script node from the BellevueWeather flow and rewire
@@ -16,6 +19,8 @@ sandbox:
 
 initial_prompt: |
   Remove the formatSummary script node. The decision and end nodes should read temperature directly from the HTTP response instead.
+
+  Keep the Flow inside a solution of the same name.
 
   Validate the flow.
 
@@ -43,7 +48,7 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow debug runs, formatSummary removed, output contains branch message"
-    command: "python3 $TASK_DIR/check_remove_node.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/remove_node/check_remove_node.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

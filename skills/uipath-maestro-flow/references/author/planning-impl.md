@@ -48,6 +48,7 @@ Use these plugin mappings:
 | `core.trigger.scheduled` | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
 | `core.trigger.voice` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `core.action.queue.*` | [queue/impl.md](plugins/queue/impl.md) |
+| `core.datafabric.*` | [data-fabric/impl.md](plugins/data-fabric/impl.md) |
 | `uipath.agent.autonomous` | [inline-agent/impl.md](plugins/inline-agent/impl.md) |
 | `uipath.agent.voice` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |
 | `uipath.conversational.voice.create-outgoing-call` | [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) |

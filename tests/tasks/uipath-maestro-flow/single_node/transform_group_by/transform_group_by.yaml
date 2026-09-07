@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-transform-group-by
 description: >
   Create a UiPath Flow with a single Group By transform node
@@ -35,12 +38,10 @@ initial_prompt: |
       `average`) and a non-empty `alias` for the output field.
     - The node's `outputs.output.source` must be `=result.response` and
       `outputs.error.source` must be `=Error`.
-    - Set the node's `typeVersion` from the node registry for
-      `core.action.transform.group-by` — do NOT hardcode a guessed version.
+    - Set the node's `typeVersion` from the authoritative definition for
+      `core.action.transform.group-by`.
 
-  Validate the flow. Do NOT run flow debug — just validate.
-  Before starting, follow the documented workflow steps exactly — in particular, the transform plugin's Group By JSON
-  shape and the collection-input contract.
+  Validate the flow.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.

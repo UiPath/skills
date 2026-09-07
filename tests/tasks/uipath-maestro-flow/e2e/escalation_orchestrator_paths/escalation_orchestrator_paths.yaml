@@ -104,9 +104,14 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # ── The delivered flow validates ────────────────────────────────────────
+  # Discovered, not hardcoded: the SDK loop scaffolds `<Name>Sol/<Name>/<Name>.flow`
+  # (its SKILL.md says `uip solution init <Name>Sol`), so a fixed
+  # `<Name>/<Name>/<Name>.flow` path failed "File not found" on flows that were
+  # otherwise green (adhoc 2026-08-31 22:43 v2: seeded paths passed, validate 0.0).
   - type: run_command
-    description: "Generated CustomerEscalationOrchestrator Flow validates without errors"
-    command: "uip maestro flow validate CustomerEscalationOrchestrator/CustomerEscalationOrchestrator/CustomerEscalationOrchestrator.flow --output json"
+    description: "Generated CustomerEscalationOrchestrator Flow validates without errors, independent of solution layout"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

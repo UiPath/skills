@@ -1,3 +1,6 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
 task_id: skill-flow-delay
 description: >
   Create a UiPath Flow with a single OOTB Delay node (`core.logic.delay`)
@@ -20,16 +23,14 @@ initial_prompt: |
     - `inputs.timerType` must be `"timeDuration"`.
     - `inputs.timerPreset` must be a fixed ISO 8601 duration preset such as
       `"PT15M"` (15 minutes). Do NOT use `"custom"` for this smoke test.
-    - Set `typeVersion` from the node registry for `core.logic.delay` —
-      do NOT hardcode a guessed version.
+    - Set `typeVersion` from the authoritative definition for
+      `core.logic.delay`.
 
   Wire the Delay node so that it has an incoming edge from the trigger and an
   outgoing edge to the End node (an `edges[]` entry whose `targetNodeId` is
   the delay node id, and one whose `sourceNodeId` is the delay node id).
 
-  Do NOT run flow debug — just validate the flow.
-  Before starting, follow the documented workflow steps exactly — in particular, the delay plugin's `inputs` shape
-  (`timerType` + `timerPreset`).
+  Validate the flow.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
