@@ -167,7 +167,12 @@ def T(
         "entryConditions": [
             {
                 "id": f"c_{task_id}",
-                "displayName": "entry",
+                # A real build gives each rule its own name, and the CLI requires it:
+                # two rules sharing one inside a stage answer
+                # CASE_MGMT_RULE_NAME_DUPLICATE. Observed on a real caseplan, where a
+                # task whose SDD row said `Stage enters` was written
+                # `Stage enters - category match`.
+                "displayName": f"entry {task_id} {i}",
                 "rules": [[{"id": f"r_{task_id}_{i}", "rule": rule, **(fields or {})}]],
             }
             for i, (rule, fields) in enumerate(entry or [])
@@ -790,6 +795,21 @@ class CheckerBase(unittest.TestCase):
 
 class TopologyTests(CheckerBase):
     checker = "topology"
+
+    def test_rejects_two_rules_sharing_a_name_in_one_stage(self):
+        # The CLI answers CASE_MGMT_RULE_NAME_DUPLICATE with the stage node in its Path,
+        # so the scope is per-stage. Two tasks in one stage reusing a name is the shape
+        # the second fixture shipped with, four times over.
+        plan = baseline_plan()
+        stage = next(n for n in plan["nodes"] if (n.get("data") or {}).get("label") == E.SETUP)
+        renamed = 0
+        for row in (stage.get("data") or {}).get("tasks") or []:
+            for task in row:
+                for condition in task.get("entryConditions") or []:
+                    condition["displayName"] = "After ERP registration"
+                    renamed += 1
+        self.assertGreater(renamed, 1, "the baseline's setup stage needs two task entry rules")
+        self.rejects(plan, "unique inside a stage")
 
     def test_accepts_baseline(self):
         self.accepts(baseline_plan())
