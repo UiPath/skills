@@ -5,3 +5,11 @@
 <!--skill-flavor:capability-probe:start-->
 **Capability probe.** Confirm the CLI supports local discovery: run `uip maestro case registry list --local --output json`. Distinguish the failure modes: an **unknown-option** error → `--local` is unsupported → **suppress the Create option entirely** (the gate stays Force pull / Use placeholders for all), use placeholders. A **`No solution found for --local`** error is NOT a suppress signal — it confirms `--local` IS supported (a missing-solution error, not unknown-option). **Do NOT scaffold at probe time.** At the pre-gate in-solution sibling check (which fires before Create is offered), "No solution found" simply means no sibling exists yet — a solution holds no siblings before it exists — so record "no local sibling" and proceed to the gate. Project creation (`uip maestro case init "<ProjectName>"` from `/solution`, the Solution prerequisite above) happens **only inside the Create flow, after the user selects Create** — never during the probe or the pre-gate sibling check. Offer Create unless the probe returns the unknown-option (unsupported) case. Run the probe **at first need and cache the result for the rest of the run** — whichever comes first: the pre-gate in-solution sibling check ([agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution) / [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution), which also gates on `--local`) or this gate.
 <!--skill-flavor:capability-probe:end-->
+
+<!--skill-flavor:register-step:start-->
+In Studio Web there is nothing to register: each sibling was created with `uip <family> init <Name>` inside the open solution, and the host registered it at creation. `uip solution projects add` and `uip solution resources refresh` are Node-CLI-only here — the host keeps solution-level resources in sync, so continue straight to §4.
+<!--skill-flavor:register-step:end-->
+
+<!--skill-flavor:adopt-register:start-->
+2. **Register.** Nothing to do — the host registered the sibling when it was created; there is no `.uipx` and no stale declaration file to clear.
+<!--skill-flavor:adopt-register:end-->

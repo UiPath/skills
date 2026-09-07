@@ -4,9 +4,13 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 ## Purpose
 
+<!--skill-flavor:purpose-intro:start-->
 Create the full project on disk in a single plugin invocation — 5 scaffold files + `caseplan.json`. Runs exactly once per project, as the first build step. Two sections:
+<!--skill-flavor:purpose-intro:end-->
 
+<!--skill-flavor:purpose-scaffold-item:start-->
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
+<!--skill-flavor:purpose-scaffold-item:end-->
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
 <!--skill-flavor:cli-bookends:start-->
@@ -31,7 +35,9 @@ See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
 
 ## § Scaffold — write project boilerplate
 
+<!--skill-flavor:scaffold-intro:start-->
 Runs before § Write caseplan.json. Writes 5 static JSON files directly. All substitution is name-for-name — no subprocess.
+<!--skill-flavor:scaffold-intro:end-->
 
 ### Pre-flight
 
@@ -39,11 +45,13 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
 <!--skill-flavor:preflight-solution-exists:end-->
 2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
+<!--skill-flavor:preflight-target-clean:start-->
 3. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
    ```
    Do not overwrite. Do not merge.
+<!--skill-flavor:preflight-target-clean:end-->
 4. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
 
 ### Generate one UUID for `operate.json.projectId`

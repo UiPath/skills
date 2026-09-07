@@ -7,9 +7,9 @@
 <!--skill-flavor:phase-two-step-six:end-->
 
 <!--skill-flavor:design-handoff-next-step:start-->
-project creation in the open Studio Web solution (`uip maestro case init "<ProjectName>"` from `/solution`),
+Phase 1 (the open Studio Web solution already exists; project creation happens at Step 6.0),
 <!--skill-flavor:design-handoff-next-step:end-->
 
 <!--skill-flavor:design-handoff-rule-next-step:start-->
-project creation in the open Studio Web solution (`uip maestro case init "<ProjectName>"` from `/solution`)
+Phase 1 (the open Studio Web solution already exists; project creation happens at Step 6.0)
 <!--skill-flavor:design-handoff-rule-next-step:end-->

@@ -67,11 +67,10 @@ case file "<name>"
 The case file lives inside a solution + project structure. After T01 completes, the layout is:
 
 ```
+<!--skill-flavor:project-tree:start-->
 <directory>/
   <SolutionName>/
-<!--skill-flavor:tree-uipx-line:start-->
     <SolutionName>.uipx            ← created by `uip solution init` (Step 6.0, CLI)
-<!--skill-flavor:tree-uipx-line:end-->
     <ProjectName>/                 ← created + populated by T01 (case plugin)
       project.uiproj               ← § Scaffold writes
       operate.json                 ← § Scaffold writes
@@ -79,13 +78,16 @@ The case file lives inside a solution + project structure. After T01 completes, 
       bindings_v2.json             ← § Scaffold writes
       package-descriptor.json      ← § Scaffold writes
       caseplan.json                ← § Write caseplan.json writes
+<!--skill-flavor:project-tree:end-->
 ```
 
 <!--skill-flavor:planning-contract:start-->
 Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution init` and `uip solution projects add` bookend T01 as Step 6.0 and Step 6.0b.
 <!--skill-flavor:planning-contract:end-->
 
+<!--skill-flavor:naming-canonical:start-->
 **Naming (canonical) — the solution identity is derived ONCE and reused by every step that scaffolds or references the solution.** `<SolutionName>` = the case Name (SDD §1 Metadata), sanitized to a valid directory name; `<SolutionDir>` = `<workingRoot>/<SolutionName>` (the working root adjacent to `sdd.md`). **Step 6.0 AND the Rule-17 Create prerequisite ([registry-discovery.md § Create-on-Missing → 0](../../registry-discovery.md#create-on-missing-build-and-rediscovery)) MUST derive `<SolutionName>` + `<SolutionDir>` identically** — so a solution scaffolded early by a Phase-1 Create is the *same* `.uipx` Step 6.0 then finds and skips. A divergent name or location forks the solution: the built agent sibling registers in one `.uipx`, the case project lands in another, and the case cannot resolve its own agent at runtime. (`<ProjectName>` is T01's to choose under `<SolutionDir>/`.)
+<!--skill-flavor:naming-canonical:end-->
 
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.
 

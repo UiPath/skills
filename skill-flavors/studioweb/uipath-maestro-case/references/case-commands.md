@@ -1,5 +1,4 @@
 <!--skill-flavor:solution-commands-row:start-->
-| `solution resources refresh` | Resource sync for the open Studio Web solution (never create a solution — there is only the open one) | Yes |
 <!--skill-flavor:solution-commands-row:end-->
 
 <!--skill-flavor:solution-init-section:start-->
@@ -25,3 +24,15 @@ uip maestro case init <ProjectName>   # from the solution root, /solution
 <!--skill-flavor:projects-add-scenarios:start-->
 Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project registration — `uip maestro case init` already places the project in the open solution.
 <!--skill-flavor:projects-add-scenarios:end-->
+
+<!--skill-flavor:phase-seven-row:start-->
+| `solution publish` | Phase 7 Publish (consent-gated) — Studio Web packages and publishes the open solution; `maestro case pack` / `solution pack` are Node-CLI-only | Host-injected |
+<!--skill-flavor:phase-seven-row:end-->
+
+<!--skill-flavor:resources-row:start-->
+| `solution resources list [--source local]`, `solution resources get <key>`, `solution resources add --source local\|remote`, `solution resources edit <key>` | Inventory read (`list`/`get`) + atomic single-resource mutations (local stub or remote import; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution). `refresh` and `remove` are Node-CLI-only; the host keeps resources in sync | Host-injected |
+<!--skill-flavor:resources-row:end-->
+
+<!--skill-flavor:auth-column-note:start-->
+> **Auth column — not applicable in Studio Web.** The host injects your session on every call; `uip login` / `logout` / `auth` / `config` are no-ops.
+<!--skill-flavor:auth-column-note:end-->
