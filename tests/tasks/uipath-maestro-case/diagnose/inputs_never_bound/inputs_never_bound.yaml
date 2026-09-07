@@ -1,0 +1,81 @@
+task_id: skill-case-diagnose-inputs-never-bound
+description: >
+  Diagnose mode. The staged case PASSES `uip maestro case validate` with zero
+  findings and the action task in Review receives nothing. Its three inputs each
+  have a minted slot, an `id`, a `var` and an `elementId`, and an empty `value`.
+  Inputs are written empty when the task is created and bound in a later step,
+  and that step never ran. The validator does not check that a bound input
+  carries a value, even though the skill's own I/O binding reference states the
+  check. Grades the traps: inventing a literal, referencing a variable nothing
+  declares, deleting an input rather than binding it, and dropping a slot's
+  minted fields.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:write-back, feature:approval-gate]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate` cleanly. Review's action task opens with none of
+  the values the case is supposed to hand it, so the reviewer sees an empty
+  form.
+
+  Find out why and fix it. Keep the intended design: three stages,
+  Intake to Review to Decision, the action task asking a reviewer for a
+  decision, and Decision gated on what that task writes.
+
+  - A clean validate is NOT evidence the case is healthy here. The defect is
+    something validate cannot see.
+  - Every input the task declares stays declared. Deleting an input is not the
+    same as binding it.
+  - Bind each input to what the case actually supplies. Do NOT invent a literal
+    and do NOT reference a variable nothing declares or produces.
+  - The minted slot on each input stays as it is.
+  - Do NOT delete the task title, the gate, the stages, or the trigger.
+  - Do NOT retype the action task.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end and finish with validate passing.
+
+  Scope: this is a targeted repair of input values, not a build.
+
+  - The defect and its fix are both inside
+    LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
+  - Read the case definition and the skill's I/O binding rules only. You do NOT
+    need to read the reference set exhaustively; the read-to-EOF rule is lifted
+    for this repair.
+  - If you are on your third edit, stop editing and re-read which field on an
+    input carries its binding.
+
+  Load the uipath-maestro-case skill and follow its validate to fix loop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every declared input carries an expression the case can resolve, no input was deleted or given an invented literal, the minted slots survive, and the task title and gate are untouched"
+    command: "python3 $TASK_DIR/check_inputs_never_bound.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
