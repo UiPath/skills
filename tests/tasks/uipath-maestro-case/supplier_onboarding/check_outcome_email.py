@@ -50,7 +50,18 @@ SENT_FOLDER = "SentItems"
 # first sequential task in 'Buyer review', so the count is the number of times the case entered
 # that phase: once normally, twice when a sendback returns it there, never when the supplier
 # withdraws before the phase is reached.
-EXPECTED_SENDS = {"reject": 1, "sendback": 2, "sla": 1, "withdraw": 0}
+# The three routes this fixture adds all pass through 'Buyer review' exactly once, so
+# the same rule gives each of them one. A route absent from this table fails the check
+# outright rather than being skipped, which is why they are listed rather than left out.
+EXPECTED_SENDS = {
+    "reject": 1,
+    "sendback": 2,
+    "sla": 1,
+    "withdraw": 0,
+    "onboard": 1,
+    "compliance-reject": 1,
+    "no-withdraw-in-setup": 1,
+}
 
 # Delivery lags the connector's own Completed status, so the mailbox is polled.
 POLL_ATTEMPTS = 10

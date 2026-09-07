@@ -98,7 +98,7 @@ success_criteria:
     description: >
       sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
       that edits its own input has moved the goalposts rather than met them
-    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 627dff9538196fbe7cd2ece7dbb662e7c53c5b6af42ce47f078f2493f07df32d"
+    command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 82b8cdb1ff26b6498ae15139659c388cb5c7550e6da14e2a1d8f3f455a09dee3"
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -223,6 +223,45 @@ success_criteria:
   # ---- Execution: three routes through the case, driven by the harness ----
   # `reject` is the cheapest route and the one a broken build fails first, so it runs before
   # the two long ones and their tenant time is not spent on a build that cannot open a gate.
+
+  - type: run_command
+    description: >
+      EXECUTION: the application is carried all the way to onboarding. The harness answers
+      six gates, including the director sign-off this fixture's 750000 default opens, and
+      the case must reach CaseOutcome=Onboarded with BankVerificationStatus=verified and a
+      SupplierId written back. The only route that completes the setup stage, so the only
+      one that proves the bank details a debug run collects in-case are enough to get past
+      the portal gate.
+    command: "python3 $TASK_DIR/drive_case.py --route onboard"
+    timeout: 2100
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      EXECUTION: the compliance reviewer rejects after the director has already signed off.
+      The case must reach CaseOutcome=Rejected on the stage's exit-only reject row, which
+      proves a sign-off does not override the decision that follows it. The same route then
+      sends a stage selection to the closed case and it must not move.
+    command: "python3 $TASK_DIR/drive_case.py --route compliance-reject"
+    timeout: 2100
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      EXECUTION: withdrawal is not offered once setup begins. The harness walks into the
+      setup stage and reads which stages offered a stage picker at all: the three review
+      stages must, and `Setting up the supplier` must not, or a supplier could pull out
+      after the ERP record exists. Fails too when no review stage offered one, because
+      then the absence in setup proves nothing.
+    command: "python3 $TASK_DIR/drive_case.py --route no-withdraw-in-setup"
+    timeout: 2100
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
 
   - type: run_command
     description: >

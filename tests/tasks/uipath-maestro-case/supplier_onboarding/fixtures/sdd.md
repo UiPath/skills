@@ -213,7 +213,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 > `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
 > `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
 
-**Bank details are produced inside the case, not supplied at start.** A `file` argument's default must be blank, so any `file` the case needs in order to reach its happy ending is a value a case started with no caller data can never hold. Payment data is exactly such a value: ERP registration cannot verify a bank details document that is not there, and a phase whose completion waits on that verification would never complete. So the bank details are asked for where they are used: `Provide bank details for payment setup` is the first, required task of `Setting up the supplier`, the supplier fills it in on the deployed document-upload form, and the file name, the document type and the content it captures are what `Register supplier in ERP` sends to the ERP. Nothing about the outcome depends on a start argument. Asking only at that point is also the better control: the supplier hands over payment data once the application has actually been approved, so an application that is declined or withdrawn never causes payment data to be collected at all.
+**Bank details are produced inside the case, not supplied at start.** A `file` argument's default must be blank, so any `file` the case needs in order to reach its happy ending is a value a case started with no caller data can never hold. Payment data is exactly such a value: a phase whose completion waits on a document that a start argument can never carry would stall for good. So the bank details are asked for where they are used: `Provide bank details for payment setup` is the first, required task of `Setting up the supplier`, the supplier fills it in on the deployed document-upload form, and the file name, the document type and the content it captures are what `Register supplier in ERP` sends to the ERP. Nothing about the outcome depends on a start argument. Asking only at that point is also the better control: the supplier hands over payment data once the application has actually been approved, so an application that is declined or withdrawn never causes payment data to be collected at all.
 
 **The three remaining `file` arguments are evidence, not gates.** Registration certificate, insurance and tax forms still arrive with a real caller's application, and they stay blank on a case started with no caller data. The only reader is `Confirm offering category match`, whose binding lists the documents that are actually attached and reads `None attached` when there are none, so a missing document is a normal state that the intake check reports rather than a fault. No condition anywhere reads them.
 
@@ -1272,7 +1272,7 @@ row is exit-only, and neither alternate disposition marks the case complete. -->
 
 **Type:** action
 **Activation Mode:** sequential
-**Design Rationale:** A person, the supplier, hands over a document, and the tenant carries a deployed upload form for exactly that, so `action`. It is required and it runs first in the sequential run because ERP registration cannot create a payment record, or verify anything, without it. Collecting the bank details here rather than as a start argument is the decision that makes the happy path reachable at all: a `file` start argument must default to blank, so a case started with no caller data would carry no bank details and the verification that gates this phase could never pass. Producing the value inside the case removes that dependency and also narrows exposure, because payment data is never collected for an application that is declined or withdrawn before setup. `Run Only Once` is No so a re-entered phase can ask again; the ERP write immediately after it is the step that must not repeat. It shares the deployed upload form with `Attach supporting documents` in `Checking the application` (`checking_application`) and is code-switched by its own `actionType`, so one form serves both collections without either borrowing the other's dispatch.
+**Design Rationale:** A person, the supplier, hands over a document, and the tenant carries a deployed upload form for exactly that, so `action`. It is required and it runs first in the sequential run because ERP registration cannot create a payment record, or verify anything, without it. Collecting the bank details here rather than as a start argument is what makes this phase completable on a case started with no caller data: a `file` start argument must default to blank, so payment data supplied at start is a value such a case can never hold, and a phase whose gate waits on it would stall. Producing the value inside the case removes that dependency and also narrows exposure, because payment data is never collected for an application that is declined or withdrawn before setup. `Run Only Once` is No so a re-entered phase can ask again; the ERP write immediately after it is the step that must not repeat. It shares the deployed upload form with `Attach supporting documents` in `Checking the application` (`checking_application`) and is code-switched by its own `actionType`, so one form serves both collections without either borrowing the other's dispatch.
 **Description:** Asks the supplier to upload the bank details the payment record needs, now that their application has been approved.
 
 **Entry Condition:**
@@ -1323,8 +1323,8 @@ payload. -->
 
 **Type:** api-workflow
 **Activation Mode:** sequential
-**Design Rationale:** Writing a supplier record and payment details into the company's ERP is a system call with no judgement in it, packaged by a deployed API workflow, so `api-workflow`. It runs after the bank details task because that is where its payment input comes from, and before the portal confirmation and the contract-negotiation case because both depend on the supplier ID it mints. The bank details it receives are assembled from what the upload task captured into the attachment-shaped record the workflow's `bankDetailsDocument` input has always taken, a file name, its metadata and the content, so the deployed contract is unchanged and only the source of the value moved. `Run Only Once` is Yes so a re-entered stage can never mint a second supplier record.
-**Description:** Creates the supplier's record and payment details in the company's ERP system and verifies the bank details the supplier provided.
+**Design Rationale:** Writing a supplier record and payment details into the company's ERP is a system call with no judgement in it, packaged by a deployed API workflow, so `api-workflow`. It runs after the bank details task because that is where its payment input comes from, and before the portal confirmation and the contract-negotiation case because both depend on the supplier ID it mints. The bank details it receives are assembled from what the upload task captured into the attachment-shaped record the workflow's `bankDetailsDocument` input has always taken, a file name, its metadata and the content, so the deployed contract is unchanged and only the source of the value moved. `Run Only Once` is Yes so a re-entered stage can never mint a second supplier record. What the status it returns proves is narrower than the word suggests, and the limit is worth stating: on a run that reached `Supplier onboarded`, the collected file name, document type and content were all empty and this workflow still answered `verified`. It does not inspect the document it is given. So the status shows that the registration call succeeded, not that the bank details arrived in the ERP, and nothing on this path demonstrates that the document was delivered. Making delivery provable would mean the workflow returning what it actually stored, which is a change to its own contract rather than to this case plan.
+**Description:** Creates the supplier's record and payment details in the company's ERP system and returns the verification status that decides whether the phase can continue.
 
 **Entry Condition:**
 
@@ -1375,7 +1375,7 @@ payload. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| runs-sequentially | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') === "verified" | After ERP registration |
+| runs-sequentially | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') === "verified" | Negotiation case after registration |
 
 **Task envelope**
 
@@ -1411,7 +1411,7 @@ payload. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| runs-sequentially | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') === "verified" | After ERP registration |
+| runs-sequentially | =js:vars.$xref('Setting up the supplier','Register supplier in ERP','bankVerificationStatus') === "verified" | Portal confirmation after registration |
 
 **Task envelope**
 
@@ -1585,7 +1585,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| current-stage-entered | — | Stage enters |
+| current-stage-entered | — | Welcome message on stage entry |
 
 **Task envelope**
 
@@ -1630,7 +1630,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| current-stage-entered | — | Stage enters |
+| current-stage-entered | — | Register update on stage entry |
 
 **Task envelope**
 
@@ -1712,7 +1712,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| current-stage-entered | — | Stage enters |
+| current-stage-entered | — | Rejection notice on stage entry |
 
 **Task envelope**
 
@@ -1757,7 +1757,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| current-stage-entered | — | Stage enters |
+| current-stage-entered | — | Audit log on stage entry |
 
 **Task envelope**
 
@@ -1840,7 +1840,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| current-stage-entered | — | Stage enters |
+| current-stage-entered | — | Withdrawal confirmation on stage entry |
 
 **Task envelope**
 
@@ -1885,7 +1885,7 @@ task IS the confirmation and there is no second outcome to route. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| current-stage-entered | — | Stage enters |
+| current-stage-entered | — | Clean-up on stage entry |
 
 **Task envelope**
 
@@ -2108,16 +2108,16 @@ review. Every task's declared fields are a subset of its app's schema. -->
 | Scalability | Every human task routes to a role rather than a single named user, so throughput is not bounded by one person; the buyer is the exception and is resolved per category by the intake lookup. |
 | Availability / Resilience | ERP registration and the contract-negotiation child case are marked `Run Only Once`, so a re-entered setup phase cannot mint a second supplier record or a second negotiation case. The bank details request is re-runnable so a re-entered phase can ask again. Stage-1 tasks are re-runnable because a send-back for corrections is a genuine new attempt. |
 | Logging & Monitoring | Case SLA plus a per-phase SLA on all seven primary and terminal stages; at-risk warnings at 70% (75% at case level) and breach responses that create real work on the four in-flight phases. Every rejection is written to the company's audit records with what, who, why and when. |
-| Compliance | The compliance reviewer's decision is the only way out of compliance and risk review, because the stage carries no unguarded completion, so the application never advances on its own. Sign-off above 500000 requires the procurement director. Bank details are verified before the phase can complete, and a failed verification rejects the application rather than leaving an unusable payment record in place. Every rejection is auditable. |
+| Compliance | The compliance reviewer's decision is the only way out of compliance and risk review, because the stage carries no unguarded completion, so the application never advances on its own. Sign-off above 500000 requires the procurement director. The phase cannot complete until ERP registration answers with a verified status, and any other status rejects the application. That status reports the call rather than the document, so nothing in this design proves the bank details reached the ERP. Every rejection is auditable. |
 
 ## Testing Strategy
 
 | Scenario | Setup | Expected Outcome |
 |---|---|---|
-| Happy path with director sign-off | Start with the `In` defaults, which describe the representative high-value application at 750000 USD; approve the intake check, buyer approves, director signs off, compliance sends to setup, the supplier provides bank details, ERP verifies them, the supplier confirms portal access | `Obtain procurement director sign-off` activates and the compliance decision waits for it; the case reaches `Supplier onboarded`, the welcome message carries the supplier ID, the register is updated, `caseOutcome` is `Onboarded` and the case is marked complete and closed |
-| Bank details collected in-case | Start with no caller arguments and walk to setup | `Provide bank details for payment setup` is the first task of the phase and is required; `Register supplier in ERP` receives the file name, type and content from that task and verifies them; nothing in the phase reads a start argument |
+| Happy path with director sign-off | Start with the `In` defaults, which describe the representative high-value application at 750000 USD; approve the intake check, buyer approves, director signs off, compliance sends to setup, the supplier provides bank details, ERP registration answers verified, the supplier confirms portal access | `Obtain procurement director sign-off` activates and the compliance decision waits for it; the case reaches `Supplier onboarded`, the welcome message carries the supplier ID, the register is updated, `caseOutcome` is `Onboarded` and the case is marked complete and closed |
+| Bank details collected in-case | Start with no caller arguments and walk to setup | `Provide bank details for payment setup` is the first task of the phase and is required; `Register supplier in ERP` is bound to the file name, document type and content that task captured and answers with the status the phase gate reads; nothing in the phase reads a start argument |
 | Bank details never collected on a rejected application | Buyer declines, or the compliance reviewer rejects | `Setting up the supplier` is never entered, so the supplier is never asked for bank details and no payment data exists on the case |
-| Bank verification fails | Force `SupplierErpRegistration` to return a `bankVerificationStatus` other than `verified` for the details provided | Setup exits without completing, the portal confirmation and the contract-negotiation case never start, `Application rejected` enters on the verification guard, the rejection notice names the bank details document, and the case closes **not** marked complete |
+| Bank verification fails | Not reachable from the debug entry point. Completing the collection task with nothing in it does not force a failure: on a measured run the collected file name, document type and content were all empty and `SupplierErpRegistration` still answered `verified`. The branch needs a caller, or a workflow, that produces a non-verified status | Setup exits without completing, the portal confirmation and the contract-negotiation case never start, `Application rejected` enters on the verification guard, the rejection notice names the bank details document, and the case closes **not** marked complete |
 | Below-threshold path, no director step | Requires a caller-supplied `expectedAnnualSpend` below 500000; a case started with no caller arguments reads 750000 and always takes the director route, so this route is covered by the companion sub-threshold SDD | `Obtain procurement director sign-off` does not activate; `Record compliance review decision` starts directly off the tier task's inverse guard and the stage still completes |
 | Buyer declines | Buyer picks Decline | Buyer review exits without completing, `Application rejected` enters on the decline guard, rejection notice sent and audit logged, case closed **not** marked complete |
 | Compliance rejects | Compliance reviewer picks Reject | Compliance and risk review exits without completing, `Application rejected` enters on the reject guard, case closed not marked complete |

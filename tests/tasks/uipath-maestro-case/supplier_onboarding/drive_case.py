@@ -121,7 +121,17 @@ ROUTES = {
         ("Record buyer review decision", "sendback"),
         ("Validate application details", "approve"),
         ("Record buyer review decision", "approve"),
+        # This fixture's representative application is the high-value one, so the
+        # director gate opens on every route that reaches the compliance stage, not
+        # only on the one written to exercise it. A route that walks past it without
+        # an answer waits until its budget runs out.
+        ("Obtain procurement director sign-off", "approve"),
         ("Record compliance review decision", "approve"),
+        # The setup stage's two required gates. This fixture put them on the path, so a
+        # route that stops at compliance leaves the case parked and can never show that
+        # a sent-back application still finishes.
+        ("Provide bank details for payment setup", "approve"),
+        ("Confirm supplier portal access", "approve"),
     ],
 }
 
