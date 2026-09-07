@@ -63,11 +63,18 @@ initial_prompt: |
      workaroundAvailable; Sev2 = any other "Unavailable" or "Degraded"
      serviceState; Sev3 otherwise).
   2. Create a Jira issue using the Atlassian Jira "Create Issue" connector
-     activity (Integration Service activity ObjectName
-     `curated_create_issue`; discover it with
-     `uip is activities list uipath-atlassian-jira --output json`, NOT with
-     `uip maestro bpmn registry list`, which reports 0 activities for
-     connector packages). The request fields must
+     activity. Author it from the registry template, do not hand-write it:
+
+       uip maestro bpmn registry get Intsvc.ActivityExecution --output json
+       uip is activities list uipath-atlassian-jira --output json
+       uip is resources describe uipath-atlassian-jira curated_create_issue --output json
+
+     The first returns the `XmlTemplate` for a connector sendTask with
+     {connectorKey}/{operation}/{objectName}/{method}/{path} placeholders; the
+     other two give the values to fill them with. `uip maestro bpmn registry
+     list` reports 0 activities for connector packages -- that is expected,
+     connector operations live in the Integration Service catalogue above, so
+     do not conclude the connector is unavailable. The request fields must
      use project.key = jiraProjectKey and issuetype.id = jiraIssueTypeId, and
      the summary MUST include the correlationId verbatim (e.g. "[<severity>]
      <correlationId> customer escalation"). Use the Atlassian Jira connection
@@ -77,8 +84,9 @@ initial_prompt: |
      `/rest/api/3/issue` is the generic-HTTP fallback and is NOT acceptable:
      if you cannot find the curated activity, STOP and say so.
   3. Send exactly one Slack message using the Slack "Send Message to Channel"
-     connector activity (Integration Service activity ObjectName
-     `send_message_to_channel_v2`, discoverable the same way) to
+     connector activity, authored from the same registry template and
+     discovered the same way (`uip is resources describe
+     uipath-salesforce-slack send_message_to_channel_v2`), sending to
      slackChannelId; the message text MUST include the correlationId and the
      computed severity. Use the Slack connection named "is-sandboxes" in the
      same folder.
