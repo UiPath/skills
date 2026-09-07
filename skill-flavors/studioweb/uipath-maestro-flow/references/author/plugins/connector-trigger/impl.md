@@ -98,7 +98,7 @@ If it prints `TimedOut after 300s` with `(no run logs emitted)`, ask the user to
 | `polling` | Supported | Pulls recent events via debug API, executes immediately |
 | `webhooks` | **Not supported** | Webhook triggers cannot be tested in debug — publish and fire a real event |
 
-> **If the trigger uses `webhooks` event mode**, tell the user that debug is not available for webhook triggers. Publish the open solution (`uip flow publish --location "<FolderPathOrKey>"`; destination from `uip solution publish --help` PublishLocations) and test with a real webhook event.
+> **If the trigger uses `webhooks` event mode**, tell the user that debug is not available for webhook triggers. Publish the open solution (`uip solution publish --location "<FolderPathOrKey>"`; destination from `uip solution publish --help` PublishLocations) and test with a real webhook event.
 
 ### Key differences from manual-trigger debug
 

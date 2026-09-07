@@ -24,7 +24,7 @@ uip maestro flow validate /solution/<FlowProject>/new.flow --output json
 
 Voice flows get extra validation on top of the standard checks: the agent directory must exist with a conversational `agent.json` carrying `settings.voice`, both `callContext` bindings must be present, and no voice agent node may sit inside a subflow. Failure modes and fixes are in § Debug.
 
-There is no local pack step in Studio Web (`uip flow pack` is a no-op). The package built on publish (`uip flow publish --location "<FolderPathOrKey>"`) serializes the voice agent to an `Orchestrator.StartInlineAgentJob` serviceTask that **embeds the complete built agent definition** (`agentDefinition` in the BPMN context: agent.json + resources + features), and sets `runtimeOptions.isConversational: true` in the generated `operate.json`. That embedding is why publish and debug fail early when the agent directory is missing — a package without it would deploy and then drop every call, so this never ships silently.
+There is no local pack step in Studio Web (`uip flow pack` is a no-op). The package built on publish (`uip solution publish --location "<FolderPathOrKey>"`) serializes the voice agent to an `Orchestrator.StartInlineAgentJob` serviceTask that **embeds the complete built agent definition** (`agentDefinition` in the BPMN context: agent.json + resources + features), and sets `runtimeOptions.isConversational: true` in the generated `operate.json`. That embedding is why publish and debug fail early when the agent directory is missing — a package without it would deploy and then drop every call, so this never ships silently.
 
 ### Debug covers outbound only
 
@@ -43,7 +43,7 @@ An inbound flow does nothing until a trunk points at its deployed process. Nothi
 ```bash
 # 1. publish the open solution — nothing to pack or upload, the flow is already in Studio Web
 #    (a personal-workspace destination auto-deploys)
-uip flow publish --location "<FolderPathOrKey>" --output json
+uip solution publish --location "<FolderPathOrKey>" --output json
 
 # 2. read the release key + folder key back
 uip or processes list --folder-path "<FolderPath>" --output json   # Key, FolderKey
@@ -62,7 +62,7 @@ uip conversational trunks assign <E164-number> \
 
 ### Shipping an outbound flow
 
-Outbound needs no binding step — `inputs.from` names the trunk directly, so the flow is complete once `flow debug` places its call. To run it on a schedule or trigger it as a process, publish the open solution the same way (`uip flow publish --location "<FolderPathOrKey>"`, consent gate per SKILL.md rule #2) — there is nothing to upload; the flow is already in Studio Web.
+Outbound needs no binding step — `inputs.from` names the trunk directly, so the flow is complete once `flow debug` places its call. To run it on a schedule or trigger it as a process, publish the open solution the same way (`uip solution publish --location "<FolderPathOrKey>"`, consent gate per SKILL.md rule #2) — there is nothing to upload; the flow is already in Studio Web.
 <!--skill-flavor:voice-bind-inbound-number:end-->
 
 <!--skill-flavor:voice-impl-debug-table:start-->

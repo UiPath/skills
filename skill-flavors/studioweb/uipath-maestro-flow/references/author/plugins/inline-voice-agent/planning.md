@@ -3,7 +3,7 @@
 <!--skill-flavor:voice-portal-url-source:end-->
 
 <!--skill-flavor:voice-topology-testing:start-->
-Only a real inbound call can raise a `core.trigger.voice`, so **an inbound flow cannot be debugged** — `uip flow debug` has no call to answer and the run never advances. Testing it means the full publish path — `uip flow publish --location "<FolderPathOrKey>"`, bind a number, then dial it — while an outbound flow runs under `uip flow debug` directly and places its call from the host debug.
+Only a real inbound call can raise a `core.trigger.voice`, so **an inbound flow cannot be debugged** — `uip flow debug` has no call to answer and the run never advances. Testing it means the full publish path — `uip solution publish --location "<FolderPathOrKey>"`, bind a number, then dial it — while an outbound flow runs under `uip flow debug` directly and places its call from the host debug.
 
 | | Inbound | Outbound |
 | --- | --- | --- |
