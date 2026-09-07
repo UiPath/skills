@@ -81,9 +81,18 @@ initial_prompt: |
      operation faults the process at runtime. `uip maestro bpmn registry
      list` reports 0 activities for connector packages -- that is expected,
      connector operations live in the Integration Service catalogue above, so
-     do not conclude the connector is unavailable. The request fields must
-     use project.key = jiraProjectKey and issuetype.id = jiraIssueTypeId, and
-     the summary MUST include the correlationId verbatim (e.g. "[<severity>]
+     do not conclude the connector is unavailable.
+
+     `is resources describe --operation Create` lists request fields as
+     DOT-PATHS (`fields.project.key`, `fields.issuetype.id`). Those are paths
+     into the JSON body, NOT literal keys -- send a nested body or the
+     connector rejects it with "Integration Services bad request":
+
+       {"fields": {"project": {"key": <jiraProjectKey>},
+                   "issuetype": {"id": <jiraIssueTypeId>},
+                   "summary": <summary>}}
+
+     The summary MUST include the correlationId verbatim (e.g. "[<severity>]
      <correlationId> customer escalation"). Use the Atlassian Jira connection
      named "is-sandboxes-test@uipath.com-uipath-sandbox-380" in the
      `Shared/uipath-maestro-flow` folder. Author the activity from its
