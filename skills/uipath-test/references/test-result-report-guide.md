@@ -36,7 +36,7 @@ Generate persona-tailored test reports from UiPath Test Manager.
 
 Use `test-report-<PERSONA>-<YYYY-MM-DD>.md`, with `<PERSONA>` `qa`, `dev`, or `release` (use `custom` otherwise) and `<YYYY-MM-DD>` today's date. Ask:
 
-- "Where should the repory be saved? (default: current directory)"
+- "Where should the report be saved? (default: current directory)"
 - "What should the report be named? (default: `<DEFAULT_FILENAME>`)"
 
 Write to `<OUTPUT_DIR>/<FILENAME>`. Create the directories if not present.
