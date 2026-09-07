@@ -448,6 +448,67 @@ def main() -> int:
                 f"{E.OUTLOOK_ACTIVITY_TYPE_ID!r}"
             )
 
+    # ---- every declared input carries its binding expression ----------------
+    # The build writes inputs with an empty value when it creates the task and fills each
+    # one in a later step. Two runs skipped that step on every task at once, and the case
+    # faulted in its first stage because the activities received nothing.
+    OPTIONAL_CONNECTOR_INPUTS = {"body", "file", "pathParameters", "queryParameters"}
+    unbound: list[str] = []
+    for _stage, task in P.all_tasks(caseplan):
+        blank = [
+            i.get("name")
+            for i in ((task.get("data") or {}).get("inputs") or [])
+            if i.get("name") not in OPTIONAL_CONNECTOR_INPUTS and not i.get("value")
+        ]
+        if blank:
+            unbound.append(f"{P.task_name(task)!r} {sorted(blank)}")
+    if unbound:
+        problems.append(
+            f"{len(unbound)} task(s) declare an input with no value: {unbound[:6]}"
+            + (" ..." if len(unbound) > 6 else "")
+            + ". An input's binding is its `value`, and a slot minted with an empty value "
+            "reaches the activity as nothing"
+        )
+
+    # ---- an optional connector `file` is null, never an empty string --------
+    # Integration Services reads a blank string there as a multipart attachment with no
+    # content and refuses the request with 400 `Unable to parse multipart body`, which
+    # stops the stage on its first sequential task.
+    blank_file = [
+        P.task_name(task)
+        for _stage, task in P.all_tasks(caseplan)
+        if any(
+            i.get("name") == "file" and i.get("value") == ""
+            for i in ((task.get("data") or {}).get("inputs") or [])
+        )
+    ]
+    if blank_file:
+        problems.append(
+            f"{len(blank_file)} task(s) carry an empty-string `file` input: {sorted(blank_file)[:6]}"
+            + (" ..." if len(blank_file) > 6 else "")
+            + ". An unused optional input must be null"
+        )
+
+    # ---- actionCatalogName binds a catalog, or is absent --------------------
+    # The SDD names an action type inside an app. That name is not a catalog, and a task
+    # carrying it faults on first open with `No task catalog exists with name ...`.
+    bound_names = {str(b.get("default") or "") for b in (caseplan.get("bindings") or [])}
+    bound_keys = {str(b.get("resourceKey") or "") for b in (caseplan.get("bindings") or [])}
+    bad_catalog: list[str] = []
+    for _stage, task in P.all_tasks(caseplan):
+        catalog = (task.get("data") or {}).get("actionCatalogName")
+        if catalog is None:
+            continue
+        if catalog not in bound_names and not any(str(catalog) in k for k in bound_keys):
+            bad_catalog.append(f"{P.task_name(task)!r}={catalog!r}")
+    if bad_catalog:
+        problems.append(
+            f"{len(bad_catalog)} task(s) set actionCatalogName to a name no bound resource "
+            f"declares: {sorted(bad_catalog)[:6]}"
+            + (" ..." if len(bad_catalog) > 6 else "")
+            + ". The field is optional and an action type inside an app is not a catalog"
+        )
+
     print(f"checked {P.find_caseplan()}")
     print(f"tasks: {total}  types: {dict(sorted(types.items()))}")
     print(f"resource keys bound: {len(found)}/{len(E.RESOURCE_KEYS)}")
