@@ -8,6 +8,8 @@
   AOPS_EXPECT_JSON  (payload mode) JSON object of key->value the created policy's
                     payload must carry exactly, proving distinctive values (not
                     just CLI defaults) round-tripped with the right JSON type.
+  AOPS_EXPECT_MIN_ROWS (payload mode) JSON object of grid-key->min-row-count the
+                    payload must meet, e.g. {"dataGrid": 2} to grade "add a row".
   AOPS_BYSTANDER_KEY  seed.json key of a policy the agent must NOT touch. Set on
                       destructive scenarios so an agent that over-deletes fails
                       instead of scoring full marks for removing everything.
@@ -155,25 +157,63 @@ def main():
                 return "object"
             return "null"
 
-        missing, mism, badrows = [], [], []
+        def shape_mismatch(dv, pv, path):
+            """Recursively compare a payload value to its blueprint default,
+            returning the first (path, expected_kind, got_kind, value) that
+            diverges — so container/survey children dropped to {} or grid-row
+            child values omitted/coerced are caught, not just the top level."""
+            kd = jtype(dv)
+            kp = jtype(pv)
+            if kd != kp:
+                return (path, kd, kp, pv)
+            if kd == "object":
+                for ck, cdv in dv.items():
+                    if ck not in pv:
+                        return (f"{path}.{ck}", jtype(cdv), "missing", None)
+                    bad = shape_mismatch(cdv, pv[ck], f"{path}.{ck}")
+                    if bad:
+                        return bad
+            elif kd == "array" and dv and all(isinstance(x, dict) for x in dv):
+                row_tpl = dv[0]
+                for i, row in enumerate(pv):
+                    if not isinstance(row, dict):
+                        return (f"{path}[{i}]", "object", jtype(row), row)
+                    for ck, cdv in row_tpl.items():
+                        if ck not in row:
+                            return (f"{path}[{i}].{ck}", jtype(cdv), "missing", None)
+                        bad = shape_mismatch(cdv, row[ck], f"{path}[{i}].{ck}")
+                        if bad:
+                            return bad
+            return None
+
+        missing, mism = [], []
         for k, dv in defaults.items():
             if k not in payload:
                 missing.append(k)
                 continue
-            pv = payload[k]
             if jtype(dv) == "null":
-                continue  # blueprint had no typed default; the agent set a value of any shape
-            if jtype(pv) != jtype(dv):
-                mism.append((k, jtype(dv), jtype(pv), pv))
-            elif jtype(dv) == "array" and dv and all(isinstance(x, dict) for x in dv):
-                if not all(isinstance(x, dict) for x in pv):
-                    badrows.append(k)
+                continue  # blueprint had no typed default; a distinctive value is pinned via AOPS_EXPECT_JSON
+            bad = shape_mismatch(dv, payload[k], k)
+            if bad:
+                mism.append(bad)
         if missing:
             fail(f"policy '{name}' payload dropped keys present in the blueprint: {missing}")
         if mism:
-            fail(f"policy '{name}' payload changed field JSON types (round-trip coercion): {mism}")
-        if badrows:
-            fail(f"policy '{name}' grid field(s) lost their row-object shape: {badrows}")
+            fail(f"policy '{name}' payload changed field JSON types (round-trip coercion), "
+                 f"(path, expected, got, value): {mism}")
+
+        # Grid/array row-count expectations, e.g. AOPS_EXPECT_MIN_ROWS='{"dataGrid": 2}'
+        expect_min_rows = (os.environ.get("AOPS_EXPECT_MIN_ROWS") or "").strip()
+        if expect_min_rows:
+            try:
+                min_rows = json.loads(expect_min_rows)
+            except ValueError as exc:
+                fail(f"AOPS_EXPECT_MIN_ROWS is not valid JSON: {exc}")
+            for k, n in min_rows.items():
+                rows = payload.get(k)
+                if not isinstance(rows, list) or len(rows) < n:
+                    fail(f"policy '{name}' field '{k}' has "
+                         f"{len(rows) if isinstance(rows, list) else 'no'} row(s), expected >= {n}")
 
         expect_json = (os.environ.get("AOPS_EXPECT_JSON") or "").strip()
         if expect_json:

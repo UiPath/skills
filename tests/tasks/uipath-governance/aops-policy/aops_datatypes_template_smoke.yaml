@@ -74,22 +74,25 @@ success_criteria:
       }
       EXCLUDED = {'file', 'signature', 'address', 'datamap'}
 
-      present = {}
+      # Coverage and unsupported-leak are judged against ALL types in the raw
+      # template — not just those the CLI emitted into form-data — so an
+      # unsupported component the CLI drops from the blueprint cannot slip past.
+      template_types = {}
+      for key, t in ktype.items():
+          template_types.setdefault(t, []).append(key)
+
+      leaked = EXCLUDED & set(template_types)
+      assert not leaked, f'unsupported type(s) still in E2E template: {sorted(leaked)} -> {[template_types[t] for t in leaked]}'
+      missing = [t for t in SHAPE if t not in template_types]
+      assert not missing, f'supported types not represented in E2E template: {missing}'
+
+      # Shape is checked against the CLI-generated default for each blueprint field.
       bad_shape = []
       for key, value in data.items():
-          t = ktype.get(key)
-          if not t:
-              continue
-          present.setdefault(t, []).append(key)
-          chk = SHAPE.get(t)
+          chk = SHAPE.get(ktype.get(key))
           if chk and not chk(value):
-              bad_shape.append((key, t, value))
-
-      leaked = EXCLUDED & set(present)
-      assert not leaked, f'unsupported type(s) still in E2E template: {sorted(leaked)} -> {[present[t] for t in leaked]}'
+              bad_shape.append((key, ktype.get(key), value))
       assert not bad_shape, f'default value shape wrong for: {bad_shape}'
-      missing = [t for t in SHAPE if t not in present]
-      assert not missing, f'supported types not represented in E2E template: {missing}'
       print(f'OK: {len(SHAPE)} supported types verified across {len(data)} fields, 0 unsupported types')
       "
     timeout: 25

@@ -44,7 +44,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "every field round-tripped with its JSON type intact and the distinctive values landed"
-    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="payload" AOPS_EXPECT_JSON="{\"number\": 42, \"checkbox\": false, \"textField\": \"e2e-roundtrip\"}" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
+    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="payload" AOPS_EXPECT_JSON="{\"number\": 42, \"checkbox\": false, \"textField\": \"e2e-roundtrip\"}" AOPS_EXPECT_MIN_ROWS="{\"dataGrid\": 2}" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

@@ -12,8 +12,9 @@ The agent is then asked to author a policy from the staged product. The
 (`file`, `signature`, `address`, `datamap`) and surface a "not supported"
 warning instead of serializing them into policy data or calling `create`.
 
-Always exits 0: a failed stage leaves no product folder, so the scenario's own
-checks fail rather than passing for free.
+Fails loudly (exit 1) if the fixture cannot be staged: this scenario's success
+criteria are all absence checks, so an empty/partial workspace would otherwise
+score a false green. A non-zero pre_run aborts the run instead.
 """
 
 import os
@@ -37,6 +38,11 @@ try:
     for flat_name, product_name in FILES.items():
         shutil.copyfile(os.path.join(FIXTURE_DIR, flat_name),
                         os.path.join(dst_dir, product_name))
-    print(f"staged UnsupportedTypes fixture -> {dst_dir}")
-except Exception as exc:  # noqa: BLE001 - report and exit 0 so the check fails, not the run
-    print(f"stage failed: {exc}", file=sys.stderr)
+except Exception as exc:  # noqa: BLE001
+    sys.exit(f"stage failed: {exc}")
+
+# Verify every expected file landed, else the absence checks would false-green.
+missing = [n for n in FILES.values() if not os.path.exists(os.path.join(dst_dir, n))]
+if missing:
+    sys.exit(f"stage incomplete, missing: {missing}")
+print(f"staged UnsupportedTypes fixture -> {dst_dir}")
