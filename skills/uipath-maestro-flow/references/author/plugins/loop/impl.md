@@ -177,7 +177,9 @@ return { product: $vars.multiplyNumbers.output.reduce((p, item) => p * item.numb
 
 With multiple body nodes, every node that ran in that iteration appears as a sibling key (`{ "fetchData1": { "output": … }, "processItem1": { "output": … } }`), alongside `<bodyNodeId>.error`.
 
+<!--skill-flavor:loop-validate-cannot-catch:start-->
 > **`flow validate` cannot catch this.** The wrong accessor is valid JS over an `any`-typed array — it validates clean and silently produces `NaN`/`undefined` at runtime. Confirm the shape with one `uip maestro flow debug` run before wiring downstream consumers.
+<!--skill-flavor:loop-validate-cannot-catch:end-->
 
 ## State Accumulation with variableUpdates
 

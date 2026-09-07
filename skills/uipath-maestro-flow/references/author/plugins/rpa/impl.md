@@ -15,19 +15,23 @@ Run `registry pull --force` first. Search the **node-type token** `uipath.core.r
 
 Treat an empty result as non-authoritative until you confirm that you searched the node-type token, refreshed the registry, and scanned returned folder paths and descriptions rather than only display names. Do not use the local-scaffold fallback after only a name-search miss.
 
+<!--skill-flavor:rpa-impl-local-discovery:start-->
 **In-solution (local, no login required):** Run these inside the flow project directory to discover sibling RPA projects in the same `.uipx` solution:
 
 ```bash
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:rpa-impl-local-discovery:end-->
 
 ## Registry Validation
 
+<!--skill-flavor:rpa-impl-registry-get:start-->
 ```bash
 uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json
 uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
 ```
+<!--skill-flavor:rpa-impl-registry-get:end-->
 
 Confirm:
 
@@ -103,15 +107,19 @@ For resolution mechanics and why these entries are required, see [file-format.md
 
 ## If the RPA Process Is Genuinely Not Published
 
+<!--skill-flavor:rpa-impl-not-published:start-->
 Use this path only after completing the empty-result confirmation in [Discovery](#discovery) and only when no sibling RPA project provides the process. Tell the user to create the RPA project inside the same solution using `uipath-rpa`. After it exists as a sibling in the `.uipx` solution, run `uip maestro flow registry list --local --output json` and wire it directly; publishing is not required.
+<!--skill-flavor:rpa-impl-not-published:end-->
 
 A freshly scaffolded RPA project has no implementation. The wired flow may pass `flow validate` but fault during debug or execution (`Robot.JobUnexpectedExitCode`) until `uipath-rpa` fills in the workflow. A validated flow is not necessarily a working one.
 
 ## Debug
 
+<!--skill-flavor:rpa-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Searched by process name (matches release name, not folder), process not published, or registry stale | Search the `uipath.core.rpa-workflow` token and match on folder path — not a name keyword. If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |
+<!--skill-flavor:rpa-impl-debug-table:end-->

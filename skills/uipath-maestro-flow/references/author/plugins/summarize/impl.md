@@ -19,7 +19,9 @@ Confirm:
 - `outputDefinition.output.schema`: top-level `id` (string) and `content` (object|null), with `content.Text` (string) and `content.Citations` (array|null) containing `{ Ordinal: integer, PageNumber: integer, Source: string, Reference: string }`.
 - `outputDefinition.error.schema.required`: `code`, `message`, `detail`, `category`, `status`.
 
+<!--skill-flavor:sum-node-not-found:start-->
 If the command returns **"Node type not found: uipath.pattern.deep-rag"**, run `uip tools update` and `uip maestro flow registry pull --force`. If it still fails, confirm with a UiPath admin that the tenant's `canvas.nodes.summarize` server flag is enabled.
+<!--skill-flavor:sum-node-not-found:end-->
 
 ## Authoring and attachment wiring
 
@@ -45,7 +47,9 @@ Declare a flow `in` variable with `type: "file"`, bound to the trigger with `tri
 }
 ```
 
+<!--skill-flavor:sum-attachment-populate:start-->
 Populate it by running `uip maestro flow debug --attachment <variableId>=<localPath>`, for example, `--attachment documentFile=./path/to/doc.pdf`. The CLI uploads the file and binds `{ ID, FullName, MimeType, Metadata }`. The flag is repeatable, and `<variableId>` must match a `variables.globals[]` `id`; see [cli-commands.md — Pre-flight](../../../shared/cli-commands.md#pre-flight---attachment-binding).
+<!--skill-flavor:sum-attachment-populate:end-->
 
 Do not declare the variable as `type: "object"`; reference it without the trigger output path; or pass a bare GUID, URL, path, `.ID`, or `.FullName`.
 
@@ -131,6 +135,7 @@ Without `=js:`, the runtime stores the literal expression string. Use only `.Tex
 
 The `uip maestro flow node add` / `edge add` CLI is not canonical for OOTB pattern nodes; use it only when scripting where Edit/Write is unavailable. Run:
 
+<!--skill-flavor:sum-node-add-cli:start-->
 ```bash
 uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   --label "<LABEL>" \
@@ -141,6 +146,7 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   }' \
   --output json
 ```
+<!--skill-flavor:sum-node-add-cli:end-->
 
 `attachment` must resolve to `{ ID, FullName, MimeType, Metadata }` through `$vars.<triggerId>.output.<fileVarId>`. Do not pass a bare GUID, URL, byte stream, or path. Set `returnCitations: false` or omit it when provenance is unnecessary.
 
@@ -160,14 +166,17 @@ Use PascalCase: `Text`, `Citations`, `Ordinal`, `PageNumber`, `Source`, and `Ref
 
 Run:
 
+<!--skill-flavor:sum-validate-command:start-->
 ```bash
 uip maestro flow validate <FlowName>.flow --output json
 ```
+<!--skill-flavor:sum-validate-command:end-->
 
 The validator checks that required inputs (`attachment`, `prompt`) are present and non-empty. A bare attachment id can pass validation but fail at runtime.
 
 ## Debug
 
+<!--skill-flavor:sum-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `Node type not found: uipath.pattern.deep-rag` | CLI predates Summarize support, or tenant flag `canvas.nodes.summarize` is off | Run `uip tools update` and `uip maestro flow registry pull --force`; if still missing, check with an admin that `canvas.nodes.summarize` is enabled |
@@ -175,6 +184,7 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 | `content.Citations` missing despite `returnCitations: true` | A downstream consumer read `inputDefaults` before runtime output existed | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Lowercase field names were used | Use `result.content.Text` / `result.content.Citations` |
 | Large documents time out | Synthesis cost scales with document size and one call is bounded | Split upstream into per-section Summarize calls plus a final merge, or use a published [Agent](../agent/impl.md) with a context-grounding resource |
+<!--skill-flavor:sum-debug-table:end-->
 | Wrong citations, such as pages off by one or wrong source | Document page numbering differs from displayed page ordinal | Treat `Ordinal` and `PageNumber` as advisory; present `Source`/`Reference` and let the reader verify |
 
 ## What not to do

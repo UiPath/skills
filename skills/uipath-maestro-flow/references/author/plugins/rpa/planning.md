@@ -1,6 +1,8 @@
 # RPA Node — Planning
 
+<!--skill-flavor:rpa-intro:start-->
 RPA nodes invoke RPA processes (XAML or coded C# workflows) from within a flow. Published processes appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
+<!--skill-flavor:rpa-intro:end-->
 
 ## Node Type Pattern
 
@@ -12,6 +14,7 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 
 ### Selection Heuristics
 
+<!--skill-flavor:rpa-selection-table:start-->
 | Situation | Use RPA? |
 | --- | --- |
 | Desktop/browser automation via a published RPA process | Yes |
@@ -19,6 +22,7 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 | RPA process in the same solution but not yet published | Yes — use `--local` discovery (see below) |
 | RPA process does not exist yet | Create it in the same solution with `uipath-rpa`, then use `--local` discovery |
 | Need AI reasoning, not desktop automation | No — use [Agent](../agent/planning.md) |
+<!--skill-flavor:rpa-selection-table:end-->
 
 ## Ports
 
@@ -35,6 +39,7 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
+<!--skill-flavor:rpa-discovery:start-->
 **Published (tenant registry):**
 
 ```bash
@@ -52,6 +57,7 @@ uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.
+<!--skill-flavor:rpa-discovery:end-->
 
 ## Planning Annotation
 

@@ -18,7 +18,9 @@ The flow needs to pause for a human to review, approve, or fill in data. Two nod
 ## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
 Node type: `uipath.human-in-the-loop.quick-form`
+<!--skill-flavor:hitl-quickform-availability:start-->
 Available: always — no `uip login` or registry pull required.
+<!--skill-flavor:hitl-quickform-availability:end-->
 
 ### When to Select
 
@@ -116,7 +118,9 @@ In the node table:
 ## Option 2 — `uipath.core.human-task.{key}` (App-Based)
 
 Node type: `uipath.core.human-task.{key}`
+<!--skill-flavor:hitl-apptask-availability:start-->
 Available: tenant-specific resource — requires `uip login` + `uip maestro flow registry pull`.
+<!--skill-flavor:hitl-apptask-availability:end-->
 
 ### When to Select
 
@@ -135,6 +139,7 @@ Use when there is an existing coded app or Action Center app that should be the 
 
 ### Discovery
 
+<!--skill-flavor:hitl-apptask-discovery:start-->
 **Published (tenant registry):**
 
 ```bash
@@ -150,6 +155,7 @@ uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
+<!--skill-flavor:hitl-apptask-discovery:end-->
 
 ### Planning Annotation
 

@@ -4,6 +4,7 @@ Flow nodes invoke other flows as subprocesses. Pattern: `uipath.core.flow.{key}`
 
 ## Discovery
 
+<!--skill-flavor:flow-impl-discovery:start-->
 ### Published (tenant registry)
 
 ```bash
@@ -17,9 +18,11 @@ uip maestro flow registry search "uipath.core.flow" --output json
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:flow-impl-discovery:end-->
 
 ## Registry Validation
 
+<!--skill-flavor:flow-impl-registry-get:start-->
 ```bash
 # Published
 uip maestro flow registry get "uipath.core.flow.{key}" --output json
@@ -27,6 +30,7 @@ uip maestro flow registry get "uipath.core.flow.{key}" --output json
 # In-solution
 uip maestro flow registry get "uipath.core.flow.{key}" --local --output json
 ```
+<!--skill-flavor:flow-impl-registry-get:end-->
 
 Confirm:
 
@@ -101,7 +105,9 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 ## Debug
 
+<!--skill-flavor:flow-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Flow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution flows use `--local` |
 | Flow execution failed | Underlying flow errored | Check `$vars.{nodeId}.error` for details |
+<!--skill-flavor:flow-impl-debug-table:end-->

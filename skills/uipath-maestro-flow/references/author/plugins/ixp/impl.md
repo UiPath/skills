@@ -23,7 +23,9 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
 
+<!--skill-flavor:ixp-impl-discovery-note:start-->
 Requires `uip login`. Only models with a folder deployment on your tenant appear — publishing alone does not surface a model here (example `nodeType` in the response below).
+<!--skill-flavor:ixp-impl-discovery-note:end-->
 
 ### Response shape
 
@@ -66,11 +68,13 @@ None of those will find an extraction node. At most run one broader `registry se
 
 When the user is working with a Maestro flow and asks what IxP models are available — "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "list published extractors", "what extraction nodes are in the registry?" — answer with the same registry search **from the `uipath-maestro-flow` Skill**, not by switching to the `uipath-ixp` Skill (`uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro). Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
 
+<!--skill-flavor:ixp-impl-listing-commands:start-->
 ```bash
 uip login status --output json                              # confirm auth — without login, tenant IxP nodes are hidden
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.ixp" --output json
 ```
+<!--skill-flavor:ixp-impl-listing-commands:end-->
 
 Parse `Data[].DisplayName`, `Data[].NodeType`, and `Data[].Version` and present them as a table. Example:
 
@@ -80,12 +84,14 @@ Parse `Data[].DisplayName`, `Data[].NodeType`, and `Data[].Version` and present 
 
 Rules for the listing path:
 
+<!--skill-flavor:ixp-impl-listing-rules:start-->
 - **Do NOT scaffold a solution, run `uip maestro flow init`, or write a `.flow` file.** Listing is read-only Q&A.
 - **Do NOT mock.** If `Data: []`, answer directly: no IxP models are published on this tenant. The `core.logic.mock` fallback is for build-time planning, not for listing-time Q&A.
 - **Do NOT log in for the user.** If `uip login status` shows logged-out, tell the user to run `uip login` and stop — listing without auth returns OOTB-only results and is misleading.
 - **Do NOT search by `"runtime"`, `"document extractor"`, `"extractor"`, or `"IXP"` (uppercase).** These return empty results or agent-tool variants — not extraction nodes. Use `"uipath.ixp"` (lowercase) only.
 - **Do NOT use `uip maestro flow process list` or any Orchestrator folder iteration.** `flow process list` enumerates *deployed flow process instances* (with `--folder-key`), not published models. Listing published IxP models always goes through `registry search "uipath.ixp"`.
 - **Do NOT guess `uip maestro flow list-*` or `uip maestro ixp list-*` subcommands.** None exist. The CLI returns `unknown command 'list-...'` and there is no fallback path to pursue. <!-- uip-check-skip -->
+<!--skill-flavor:ixp-impl-listing-rules:end-->
 
 ## Registry Validation
 
@@ -245,7 +251,9 @@ Then on the IxP node:
 }
 ```
 
+<!--skill-flavor:ixp-impl-fileref-runtime:start-->
 Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment disputedInvoice=./path/to/invoice.pdf`). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
+<!--skill-flavor:ixp-impl-fileref-runtime:end-->
 
 ### Optional `attachment` input (Orchestrator job attachments)
 
@@ -304,7 +312,9 @@ The `FieldName` values present in `ResultsDocument.Fields[]` depend on the train
 uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json
 ```
 
+<!--skill-flavor:ixp-impl-taxonomy-auth:start-->
 The positional is a project name from `uip ixp projects list`, and `--version` is required — get it from `uip ixp projects list-models "<project-name>"`. `Data.Node.inputDefaults.modelName` is frequently NOT a project name; passing it returns 404 `ProjectNotFoundError`, which is an ordinary outcome, not a problem to debug. Requires `uip login`; the command uses the user Bearer to call the same DU-App route that Studio Web's "Schema definition" panel uses.
+<!--skill-flavor:ixp-impl-taxonomy-auth:end-->
 
 Response shape:
 
@@ -338,7 +348,9 @@ Agent call sequence:
 3. `uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 
+<!--skill-flavor:ixp-impl-taxonomy-fallback:start-->
 If the command fails (no matching project, login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. **One attempt** — a 404 or validation error will not resolve by reissuing the lookup under another spelling of the name, so do not iterate on name variants. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
+<!--skill-flavor:ixp-impl-taxonomy-fallback:end-->
 
 ## Landing the node when you cannot fully configure it
 
@@ -371,7 +383,9 @@ Mock procedure:
 3. Add a `layout.nodes` entry at `position: { x: 400, y: 144 }`, size `96x96`.
 4. Wire edges per the parent [editing-operations.md](../../editing-operations.md) guide. `core.logic.mock` is a no-op pass-through — no `inputs`, no `outputs` block, no `bindings_v2.json` changes.
 5. **Wire downstream consumers against the mock with `$vars` references, not static values.** Scripts, decisions, and end-node mappings that follow the mock MUST reference `$vars.{mockNodeId}.output` (the mock's only port) instead of hard-coded returns. Example: a script that summarises the (future) extraction writes `return { vendor: $vars.extractInvoiceFieldsMock.output.vendorName };`, not `return { ok: "OK" };`. This keeps the **node-graph** swap-ready — node IDs, edge shapes, and the `output` port name stay intact when the mock is replaced. **Field-access paths inside downstream scripts WILL need rewriting at swap time** — the real IxP `output` is shaped as `{ ExtractionResult: { ResultsDocument: { Fields: [...] } } }` (see [Accessing Output](#accessing-output)), so flat-field accessors against the mock become structured `Fields.find(f => f.FieldName === '<name>')?.Values?.[0]` lookups against the real node. Surface the post-swap rewrite as a follow-up under **Open Questions**.
+<!--skill-flavor:ixp-impl-mock-validate-step:start-->
 6. Run `uip maestro flow validate <ProjectName>.flow --output json` once after all edits complete.
+<!--skill-flavor:ixp-impl-mock-validate-step:end-->
 
 Surface the missing model in the **Open Questions** section of the architectural plan: the user must train the IxP extraction model and deploy it to an Orchestrator folder before the flow can run — the flow registry lists folder deployments only. After deploying, follow the [mock replacement procedure](../../editing-operations-json.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real IxP node.
 
@@ -381,6 +395,7 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 
 ## Debug
 
+<!--skill-flavor:ixp-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Model not folder-deployed, or registry cache stale | Run `uip login` then `uip maestro flow registry pull --force` |
@@ -392,4 +407,5 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | Extraction failed | Underlying IxP model errored (unsupported MIME type, corrupted file, service-side failure) | Check `$vars.{nodeId}.error.detail` for the IxP service response |
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
 | Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob missing/undefined | Copy `inputDefaults.model` verbatim into `inputs.model` (Authoring rule #1, [JSON Structure](#json-structure)). |
+<!--skill-flavor:ixp-impl-debug-table:end-->
 | `flow validate` error `inputs.model must be an object with non-empty string modelName and folderKey` | `inputDefaults.model.modelName` was `null` and copied verbatim | Set `inputs.model.modelName` from `inputDefaults.model.modelDisplayName` (Authoring rule #1); if `folderKey` empty too, take flat `inputDefaults.folderKey`. |

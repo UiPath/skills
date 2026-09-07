@@ -35,10 +35,12 @@ Confirm `Data.Node.handleConfiguration` has target port `input` and source ports
 
 Run:
 
+<!--skill-flavor:http-impl-node-add:start-->
 ```bash
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
   --label "<HTTP node label>" --output json
 ```
+<!--skill-flavor:http-impl-node-add:end-->
 
 Save the returned node ID. The CLI copies the manifest into `definitions[]`, adds the node to `nodes[]`, registers `variables.nodes`, inserts a `layout.nodes` placeholder byte-for-byte from the registry, and obtains `typeVersion` from the manifest's `version`; do not hardcode it.
 
@@ -56,6 +58,7 @@ The CLI initializes:
 
 Set `branches`, `timeout`, and `retryCount` during `node add` with `--input`; populate `inputs.detail` only with `node configure --detail`:
 
+<!--skill-flavor:http-impl-node-add-inputs:start-->
 ```bash
 uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
   --label "<HTTP node label>" \
@@ -68,6 +71,7 @@ uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
     ]
   }' --output json
 ```
+<!--skill-flavor:http-impl-node-add-inputs:end-->
 
 `timeout` is an ISO 8601 duration such as `PT15M`, `PT1H`, or `P1D` and defaults to `PT15M`. `retryCount` is an integer and defaults to `0`. `branches` is optional and belongs at `inputs.branches`, not `inputs.detail.branches`. Do not edit `inputs.*` afterward or hand-author the definition; run `uip maestro flow node add` and `uip maestro flow node configure`.
 
@@ -93,6 +97,7 @@ Use `=js:` expressions for dynamic URL, header, body, and query values. `$vars` 
 
 Pass the expression string verbatim to `node configure`:
 
+<!--skill-flavor:http-impl-configure-dynamic:start-->
 ```bash
 uip maestro flow node configure <Project>.flow <nodeId> \
   --detail '{
@@ -101,6 +106,7 @@ uip maestro flow node configure <Project>.flow <nodeId> \
     "url": "=js:`https://api.example.com/users/${$vars.userId}`"
   }' --output json
 ```
+<!--skill-flavor:http-impl-configure-dynamic:end-->
 
 ## Conditional branches
 

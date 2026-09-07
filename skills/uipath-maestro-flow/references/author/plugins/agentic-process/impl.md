@@ -4,6 +4,7 @@ Agentic process nodes invoke orchestration processes. Pattern: `uipath.core.agen
 
 ## Discovery
 
+<!--skill-flavor:agentic-process-impl-discovery:start-->
 ### Published (tenant registry)
 
 ```bash
@@ -17,9 +18,11 @@ uip maestro flow registry search "uipath.core.agentic-process" --output json
 uip maestro flow registry list --local --output json
 uip maestro flow registry get "<node-type>" --local --output json
 ```
+<!--skill-flavor:agentic-process-impl-discovery:end-->
 
 ## Registry Validation
 
+<!--skill-flavor:agentic-process-impl-registry-get:start-->
 ```bash
 # Published
 uip maestro flow registry get "uipath.core.agentic-process.{key}" --output json
@@ -27,6 +30,7 @@ uip maestro flow registry get "uipath.core.agentic-process.{key}" --output json
 # In-solution
 uip maestro flow registry get "uipath.core.agentic-process.{key}" --local --output json
 ```
+<!--skill-flavor:agentic-process-impl-registry-get:end-->
 
 Confirm:
 
@@ -101,7 +105,9 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 ## Debug
 
+<!--skill-flavor:agentic-process-impl-debug-table:start-->
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution processes use `--local` |
 | Process execution failed | Underlying orchestration errored | Check `$vars.{nodeId}.error` for details |
+<!--skill-flavor:agentic-process-impl-debug-table:end-->

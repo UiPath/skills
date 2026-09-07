@@ -71,10 +71,12 @@ For agent.json configuration (prompts, model, schemas) and resource file authori
 
 The autonomous agent attaches resource nodes to its three artifact ports: tools (external or built-in) on `tool` (bottom), context on `context` (bottom), escalation on `escalation` (top). Decide which the agent needs at planning time. Full wiring — node JSON, edges, refresh, a single matrix covering all kinds — is in [impl.md § Adding Resource Nodes](impl.md#adding-resource-nodes); `resource.json` bodies are owned by the `uipath-agents` skill (`lowcode/capabilities/`).
 
+<!--skill-flavor:inline-agent-resource-kinds:start-->
 - **External tool** (`tool` port) — agent calls a deployed automation. Four kinds; discover via the registry below. Needs `uip solution resources refresh`.
 - **Built-in tool** (`tool` port) — platform-shipped tool, e.g. analyze-attachments. `registry get uipath.agent.resource.tool.builtin.<toolType>`. Self-contained — no bindings, no solution-level files, no `uip solution resources refresh`.
 - **Context** (`context` port) — RAG retrieval from a Context Grounding index. `registry search "uipath.agent.resource.context"`, then `get` the matching `NodeType`. Needs `uip solution resources refresh`.
 - **Escalation** (`escalation` port) — human-in-the-loop approval/review mid-run via a deployed Action Center app. `registry get uipath.agent.resource.escalation`. Needs `uip solution resources refresh`.
+<!--skill-flavor:inline-agent-resource-kinds:end-->
 
 ### External tools — registry discovery
 
@@ -97,11 +99,15 @@ Filter rows where `NodeType` starts with `<prefix>.` and `DisplayName` matches. 
 uip maestro flow registry get "<NodeType>" --output json
 ```
 
+<!--skill-flavor:inline-agent-tool-folderpath:start-->
 For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resources get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resources refresh` from resolving the tool at runtime.
+<!--skill-flavor:inline-agent-tool-folderpath:end-->
 
 ### Anti-pattern
 
+<!--skill-flavor:inline-agent-tool-add-antipattern:start-->
 Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resources refresh` materialize the solution-level files.
+<!--skill-flavor:inline-agent-tool-add-antipattern:end-->
 
 ## Planning Annotation
 

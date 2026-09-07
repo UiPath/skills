@@ -1,6 +1,8 @@
 # API Workflow Node — Planning
 
+<!--skill-flavor:api-workflow-intro:start-->
 API workflow nodes invoke API functions from within a flow. Published API workflows appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) API workflows in sibling projects are discovered via `--local` — no login or publish required.
+<!--skill-flavor:api-workflow-intro:end-->
 
 ## Node Type Pattern
 
@@ -12,6 +14,7 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 
 ### Selection Heuristics
 
+<!--skill-flavor:api-workflow-selection-table:start-->
 | Situation | Use API Workflow? |
 | --- | --- |
 | Call a published UiPath API function | Yes |
@@ -19,6 +22,7 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 | Invoke a published RPA process | No — use [RPA Workflow](../rpa/planning.md) |
 | API workflow not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
 | API workflow does not exist yet | Create it in the same solution, then use `--local` discovery |
+<!--skill-flavor:api-workflow-selection-table:end-->
 
 ## Ports
 
@@ -34,6 +38,7 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
+<!--skill-flavor:api-workflow-discovery:start-->
 ### Published (tenant registry)
 
 ```bash
@@ -51,6 +56,7 @@ uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished API workflows in sibling projects within the same solution.
+<!--skill-flavor:api-workflow-discovery:end-->
 
 ## Planning Annotation
 

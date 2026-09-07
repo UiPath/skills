@@ -201,6 +201,7 @@ Follow the [CLI: Replace manual trigger with connector trigger](../../editing-op
 
 Use `node configure` with trigger-specific `--detail` fields:
 
+<!--skill-flavor:ct-configure-command:start-->
 ```bash
 uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '{
   "connectionId": "<CONNECTION_ID>",
@@ -221,6 +222,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
   }
 }'
 ```
+<!--skill-flavor:ct-configure-command:end-->
 
 **`--detail` fields for triggers:**
 
@@ -268,10 +270,12 @@ A **Wait for events** node waits for an external event **mid-flow** instead of s
 
 Add and wire:
 
+<!--skill-flavor:ct-event-node-add:start-->
 ```bash
 uip maestro flow node add <PROJECT>.flow uipath.connector.event.<key>.<event> \
   --label "<LABEL>" --position 400,144 --output json
 ```
+<!--skill-flavor:ct-event-node-add:end-->
 
 Wire an incoming edge into `input` and an outgoing edge from `output` per [editing-operations-json.md — Insert a node between two existing nodes](../../editing-operations-json.md#insert-a-node-between-two-existing-nodes). Downstream reads `$vars.{eventNodeId}.output` (payload) and `$vars.{eventNodeId}.error`. Wire `error` only when the requirements say what an event-wait failure should do — otherwise leave it unwired and let the failure fault the flow ([file-format.md — Default: off](../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles)).
 
@@ -396,17 +400,20 @@ Then follow [/uipath:uipath-platform — triggers.md > Building Filter Trees fro
 
 ## Bindings
 
+<!--skill-flavor:ct-bindings:start-->
 Trigger nodes require more binding resources than activity nodes: `Connection` + `EventTrigger` + `Property` resources. **`node configure` and the packaging pipeline handle all of these automatically:**
 
 - **Connection bindings** — created in the `.flow` file by `node configure` (Step 6)
 - **EventTrigger + Property bindings** — generated into `bindings_v2.json` during `flow debug` or packaging from the trigger node's `inputs.detail`
 
 You do **not** need to manually create or edit `bindings_v2.json` for trigger nodes.
+<!--skill-flavor:ct-bindings:end-->
 
 ---
 
 ## CLI Commands
 
+<!--skill-flavor:ct-cli-commands:start-->
 ```bash
 # Discovery
 uip maestro flow registry search trigger --output json               # find trigger node types
@@ -438,11 +445,13 @@ uip is webhooks config "<connector-key>" \
   --connection-id "<connection-guid>" \
   --element-instance-id <number> --output json
 ```
+<!--skill-flavor:ct-cli-commands:end-->
 
 ---
 
 ## Testing Trigger Flows
 
+<!--skill-flavor:ct-testing:start-->
 `uip maestro flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
 
 ### How debug works for triggers
@@ -481,6 +490,7 @@ uip maestro flow debug . --output json
 1. **Verify the connection is healthy** — `uip is connections ping "<id>"`
 2. **Confirm a matching event exists** — the user should have produced the event (e.g., sent an email, created a Jira issue) within the past hour
 3. **Check event mode** — if `webhooks`, debug is not supported; inform the user
+<!--skill-flavor:ct-testing:end-->
 
 ---
 
@@ -488,6 +498,7 @@ uip maestro flow debug . --output json
 
 ### Common Errors
 
+<!--skill-flavor:ct-debug-table:start-->
 | Error | Cause | Fix |
 |---|---|---|
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
@@ -503,6 +514,7 @@ uip maestro flow debug . --output json
 | Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list "<connector-key>" --byoa --output json`. If no BYOA connections exist, user must create one. |
 | `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list "<connector-key>" --refresh --output json` |
 | `ElementInstanceId` is empty on the selected connection | Connection is not a BYOA connection, or connector does not support webhooks on this connection type | Verify the trigger requires BYOA (Step 1b `byoaConnection` flag). If `true`, switch to a BYOA connection. |
+<!--skill-flavor:ct-debug-table:end-->
 
 ### Debug Tips
 
@@ -510,7 +522,9 @@ uip maestro flow debug . --output json
 2. **`flow validate` does NOT catch trigger-specific issues** — missing event parameters, wrong reference IDs, and expired connections are caught only at runtime
 3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
 4. **Filters are optional** — omit `filter` from `--detail` if the user wants all events to trigger the flow. Do not invent an "empty" expression.
+<!--skill-flavor:ct-debug-tip-bindings:start-->
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
+<!--skill-flavor:ct-debug-tip-bindings:end-->
 6. **Use `uip maestro flow node remove` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
 8. **Validate filter field names against `filterFields` yourself** — only field names returned in `filterFields.fields[].name` are valid leaf `id`s in the filter tree, and matching is case-sensitive. The CLI no longer rejects an unknown field at configure time: it drops that leaf from the compiled `filterExpression` and reports Success. A guessed name therefore surfaces as a trigger that fires on events the filter should exclude, not as an error.

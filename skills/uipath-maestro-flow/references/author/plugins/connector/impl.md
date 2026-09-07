@@ -2,11 +2,15 @@
 
 Configure connector activity nodes after the generic node-add operation in [editing-operations.md](../../editing-operations.md). Configuration covers connection binding, metadata, object and operation discovery, references, custom fields, filters, input wiring, and debugging.
 
+<!--skill-flavor:connector-impl-bindings-intro:start-->
 `uip maestro flow node configure` authors top-level `bindings[]` and `inputs.detail`. `bindings_v2.json` is regenerated from `bindings[]` at debug/pack time; never hand-edit it.
+<!--skill-flavor:connector-impl-bindings-intro:end-->
 
 ## Requirements and data model
 
+<!--skill-flavor:connector-impl-registry-get-flags:start-->
 Every connector node requires an Integration Service connection in top-level `bindings[]`. Run `registry get` with `--connection-id`; otherwise custom fields, dynamic enums, and reference metadata are absent. `registry get` accepts only `--connection-id` and `--local` — no `--activity-version` (it reads the node's own `configuration.version` and self-routes `4.0.0` activities; anything else fails `error: unknown option`). For `4.0.0` nodes `--connection-id` adds nothing (metadata not connection-scoped — see [§ 4.0.0 Activities](#400-activities)).
+<!--skill-flavor:connector-impl-registry-get-flags:end-->
 
 Connector configuration is stored in `inputs.detail`:
 
@@ -207,7 +211,9 @@ A filter is authored as a tree under the `filter` key of `--detail`. The CLI com
 
    Tree shape and operator tokens: [uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
+<!--skill-flavor:connector-impl-configure-step:start-->
 4. **Configure** — `uip maestro flow node configure <ProjectName>.flow <NODE_ID> --detail "$(cat /tmp/detail.json)" --output json` (Step 6b).
+<!--skill-flavor:connector-impl-configure-step:end-->
 
 5. **Verify the compile** — read the node back. `queryParameters.<name>` must hold the compiled query with a placeholder, `accountNumber = '{var_<hash>}'`, and `filterVariables` must have that `var_<hash>` key. The CLI also writes `configuration.essentialConfiguration.savedFilterTrees.<name>`. An **empty** `queryParameters.<name>` means the tree was mis-shaped (step 3): the CLI found no `filters` at the top level and compiled an empty query with no error, so the flow would fetch the whole entity.
 
@@ -377,7 +383,9 @@ Run `uip is connections --help` or `uip is resources --help` for all options.
 
 ## Bindings
 
+<!--skill-flavor:connector-impl-bindings-file:start-->
 Bindings belong in flow top-level `bindings[]`, alongside `nodes`, `edges`, and `definitions`. At debug/pack time the CLI regenerates `content/bindings_v2.json`; never edit that generated file.
+<!--skill-flavor:connector-impl-bindings-file:end-->
 
 Leave the registry definition's `model.context[]` unchanged. Connector definitions typically contain `<bindings.<connector-key> connection>` and `<bindings.FolderKey>` placeholders. Do not author `model.context[]` on the node instance. Connector binding matching is name-only within `resource: "Connection"` because `model.bindings.resourceKey` is typically unset. Resource nodes instead match `(name, resourceKey)`.
 

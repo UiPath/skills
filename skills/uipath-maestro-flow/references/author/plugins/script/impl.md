@@ -73,7 +73,9 @@ return { hasError: false, data: $vars.httpCall.output.body };
 
 ### Reading a file-typed variable
 
+<!--skill-flavor:script-file-variable-note:start-->
 A `file` variable (bound via `uip maestro flow debug --attachment <id>=<path>`) hydrates as an **object**, not a string. Read the uploaded file's name from `.FullName`:
+<!--skill-flavor:script-file-variable-note:end-->
 
 ```javascript
 const doc = $vars.start.output.inputDoc; // file variable → object
