@@ -33,12 +33,16 @@ success_criteria:
       tpl = load('form-template.json')
       form = load('form-data.json')
 
-      # key -> component type, from the form template tree (authoritative)
+      # key -> component type, from the form template tree (authoritative).
+      # The CLI returns a UiPath-wrapped envelope with PascalCase component
+      # fields (Key/Type); tolerate both casings.
       ktype = {}
       def walk(o):
           if isinstance(o, dict):
-              if o.get('key') and o.get('type'):
-                  ktype[o['key']] = o['type']
+              k = o.get('key') or o.get('Key')
+              t = o.get('type') or o.get('Type')
+              if k and t:
+                  ktype[k] = t
               for v in o.values():
                   walk(v)
           elif isinstance(o, list):
