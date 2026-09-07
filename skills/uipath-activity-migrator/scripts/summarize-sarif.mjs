@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 // summarize-sarif.mjs — classify a UiPath Activity Migrator SARIF log.
 //
-// Usage: node summarize-sarif.mjs <file.sarif | folder> [--json]
-//   folder  → the newest *.sarif inside it is used
-//   --json  → full classification as JSON instead of the Markdown summary
+// Usage: node summarize-sarif.mjs <file.sarif | folder> [--out <file.md>] [--json]
+//   folder      → the newest *.sarif inside it is used
+//   --out FILE  → write the full per-item report (every list, rule counts) to FILE; stdout stays short
+//   --json      → full classification as JSON instead of the Markdown summary
+// stdout is a short summary: status, counts, blockers, and what needs attention grouped by reason
+// and by file. Items are listed inline only when there are few (INLINE_LIMIT).
 // Input may be UTF-8 (with or without BOM) or UTF-16 (PowerShell 5.1 redirection).
 // No dependencies. Node 18+.
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 // Core (tool-owned) rule prefixes, used only to label the family in the output.
@@ -27,14 +30,20 @@ const TYPE_ISSUES = new Set([
 const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) || id.endsWith('-ACTIVITY-MIGRATION');
 const isCritical = (id, lvl) => lvl === 'error' && !isActivityScoped(id) && !TYPE_ISSUES.has(id);
 const ACTION_TAG = '[PostMigration Action Required]';
-const LIST_LIMIT = 60;
+const INLINE_LIMIT = 10;
 const MSG_LIMIT = 220;
 
 const args = process.argv.slice(2);
 const wantJson = args.includes('--json');
-const target = args.find((a) => !a.startsWith('--'));
+let outFile = null;
+let target = null;
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--out') { outFile = args[++i] || null; continue; }
+  if (args[i] === '--json') continue;
+  if (!args[i].startsWith('--') && !target) target = args[i];
+}
 if (!target) {
-  console.error('usage: node summarize-sarif.mjs <file.sarif | folder> [--json]');
+  console.error('usage: node summarize-sarif.mjs <file.sarif | folder> [--out <file.md>] [--json]');
   process.exit(2);
 }
 
@@ -102,6 +111,7 @@ const familyOf = (id) => {
   if (!id) return 'other';
   if (id.startsWith('UIAUTOMATION-')) return 'uia';
   if (id.endsWith('-ACTIVITY-MIGRATION')) return 'productivity';
+  if (id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')) return 'package';
   if (CORE_PREFIXES.some((p) => id.startsWith(p))) return 'core';
   return 'other';
 };
@@ -131,7 +141,9 @@ for (const r of results) {
   byFamily[fam] = byFamily[fam] || { error: 0, warning: 0, note: 0 };
   byFamily[fam][lvl] = (byFamily[fam][lvl] || 0) + 1;
 
-  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', message: msgOf(r) };
+  // Reason suffix of an extension rule id, e.g. UIAUTOMATION-ACTIVITY-MIGRATION-WARNING-VariableSelector → VariableSelector.
+  const reasonMatch = id.match(/-(?:ERROR|WARNING|INFO)-(.+)$/);
+  const entry = { rule: id, level: lvl, file: fileOf(r), activity: activityOf(r), destination: propsOf(r).destinationActivity || '', property: propsOf(r).propertyName || '', reason: reasonMatch ? reasonMatch[1] : '', message: msgOf(r) };
 
   const critical = isCritical(id, lvl);
   if (critical) hasCriticalError = true;
@@ -184,20 +196,34 @@ else if (!sawValidation && !results.some((r) => (r.ruleId || '') === 'PROJECT-CO
 else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';
 else status = 'success';
 
+// Everything that needs a human decision or hand, grouped for the short summary.
+const attention = [...uia.notMigrated, ...uia.partial, ...productivity.notMigrated, ...actionRequired, ...typeIssues];
+const countBy = (items, keyFn) => {
+  const m = new Map();
+  for (const it of items) { const k = keyFn(it); m.set(k, (m.get(k) || 0) + 1); }
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+};
+const attentionByReason = countBy(attention, (e) => e.reason || e.rule);
+const attentionByFile = countBy(attention, (e) => e.file || '(project)');
+const migratedTotal = uia.migrated + productivity.migrated;
+const unknownRules = Object.entries(byRule).filter(([id]) => familyOf(id) === 'other');
+
 const summary = {
   file,
   status,
   outputPath: (run.properties && run.properties.outputPath) || null,
-  totals: { results: results.length, ...byLevel },
+  totals: { results: results.length, ...byLevel, migrated: migratedTotal, attention: attention.length },
   frameworkChanged,
   packages,
   effectiveVersions,
   blockers,
+  attention: { total: attention.length, byReason: Object.fromEntries(attentionByReason), byFile: Object.fromEntries(attentionByFile) },
   byFamily,
   uia,
   productivity,
   typeIssues,
   actionRequired,
+  unknownRules: Object.fromEntries(unknownRules),
   byRule,
   files: [...new Set(results.map(fileOf).filter(Boolean))].sort(),
 };
@@ -207,44 +233,57 @@ if (wantJson) {
   process.exit(0);
 }
 
-const md = [];
-// A section is printed only when it has entries; empty checks are not worth a line.
-const section = (title, items, fmt) => {
-  if (!items.length) return;
-  md.push('', `## ${title}`);
-  const shown = items.slice(0, LIST_LIMIT);
-  for (const it of shown) md.push(`- ${fmt(it)}`);
-  if (items.length > shown.length) md.push(`- … and ${items.length - shown.length} more`);
-};
 const loc = (e) => `${e.file || '(project)'}${e.activity ? ': ' + e.activity : ''}${e.property ? ' / ' + e.property : ''}`;
+const itemLine = (e) => `- ${loc(e)} — ${e.reason || e.rule}${e.message ? ': ' + e.message : ''}`;
+const pkgLine = Object.entries(effectiveVersions).map(([p, v]) => `${p} ${v.from} → ${v.to}`).join('; ') || packages.join('; ');
 
-md.push(`# Migration SARIF summary — ${basename(file)}`);
-md.push('');
-md.push(`Status: **${status}** | Results: ${results.length} (errors ${byLevel.error || 0}, warnings ${byLevel.warning || 0}, notes ${byLevel.note || 0})${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
-md.push('');
-md.push('| Area | Count | Detail |');
-md.push('|---|---|---|');
-md.push(`| Framework | ${frameworkChanged ? 1 : 0} | ${frameworkChanged ? 'Legacy → Windows' : 'unchanged'} |`);
-md.push(`| Package versions | ${packages.length} | ${Object.entries(effectiveVersions).map(([p, v]) => `${p} ${v.from} → ${v.to}`).slice(0, 8).join('; ') || packages.slice(0, 6).join('; ')} |`);
-md.push(`| UIA activities migrated | ${uia.migrated} | ${Object.entries(uia.migratedByType).map(([t, n]) => `${t} ×${n}`).slice(0, 12).join(', ')} |`);
-md.push(`| UIA activities not migrated | ${uia.notMigrated.length} | see list |`);
-md.push(`| UIA partial / warnings | ${uia.partial.length} / ${uia.warnings.length} | see lists |`);
-md.push(`| Productivity migrated / not migrated / warnings | ${productivity.migrated} / ${productivity.notMigrated.length} / ${productivity.warnings.length} | Mail, GSuite, Office 365 |`);
-md.push(`| Manual action required | ${actionRequired.length} | messages tagged ${ACTION_TAG} |`);
-md.push(`| Type / compile issues | ${typeIssues.length} | TYPE-MISSING, compilation, validation |`);
-md.push(`| Blockers | ${blockers.length} | ${blockers.map((b) => b.rule).filter((v, i, a) => a.indexOf(v) === i).join(', ')} |`);
-section('Blockers', blockers, (e) => `**${e.rule}** — ${e.message}${e.file ? ` (${e.file})` : ''}`);
-section('UIA not migrated', uia.notMigrated, (e) => `${loc(e)} — ${e.reason || e.rule}`);
-section('UIA partial', uia.partial, (e) => `${loc(e)} — ${e.message}`);
-section('UIA warnings (activity and property)', uia.warnings, (e) => `${loc(e)} — ${e.reason || e.rule}${e.message ? ': ' + e.message : ''}`);
-section('UIA workflow-level', uia.workflow, (e) => `${e.file || '(project)'} — ${e.rule}: ${e.message}`);
-section('Productivity not migrated', productivity.notMigrated, (e) => `${loc(e)} — ${e.rule}: ${e.message}`);
-section('Productivity warnings', productivity.warnings, (e) => `${loc(e)} — ${e.rule}: ${e.message}`);
-section('Manual action required', actionRequired, (e) => `${loc(e)} — ${e.message}`);
-section('Type / compile issues', typeIssues, (e) => `${e.file || '(project)'} — ${e.rule}: ${e.message}`);
-md.push('');
-md.push('## Rule counts');
-md.push('| Rule | Level | Count |');
-md.push('|---|---|---|');
-for (const [id, v] of Object.entries(byRule).sort((a, b) => b[1].count - a[1].count)) md.push(`| ${id} | ${v.level} | ${v.count} |`);
-console.log(md.join('\n'));
+// --- short summary (stdout) --------------------------------------------------
+const out = [];
+out.push(`# Migration summary — ${basename(file)}`);
+out.push('');
+out.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
+if (frameworkChanged) out.push('Framework: Legacy → Windows');
+if (pkgLine) out.push(`Packages: ${pkgLine}`);
+if (blockers.length) {
+  out.push('', `## Blockers (${blockers.length})`);
+  for (const b of blockers) out.push(`- **${b.rule}** — ${b.message}${b.file ? ` (${b.file})` : ''}`);
+}
+if (attention.length) {
+  out.push('', `## Needs attention (${attention.length})`);
+  out.push(`- By reason: ${attentionByReason.map(([k, n]) => `${k} ×${n}`).join(', ')}`);
+  out.push(`- By file: ${attentionByFile.slice(0, 5).map(([k, n]) => `${k} (${n})`).join(', ')}${attentionByFile.length > 5 ? `, … ${attentionByFile.length - 5} more files` : ''}`);
+  if (attention.length <= INLINE_LIMIT) { for (const e of attention) out.push(itemLine(e)); }
+  else out.push(outFile ? `- Full list: ${outFile}` : '- Full list: rerun with --out <file.md>');
+}
+if (unknownRules.length) {
+  out.push('', '## Rules outside the known families (read their descriptions in tool.driver.rules)');
+  for (const [id, v] of unknownRules) out.push(`- ${id} [${v.level}] ×${v.count}`);
+}
+console.log(out.join('\n'));
+
+// --- full report (file) --------------------------------------------------------
+if (outFile) {
+  const md = [];
+  const section = (title, items, fmt) => {
+    if (!items.length) return;
+    md.push('', `## ${title} (${items.length})`);
+    for (const it of items) md.push(fmt(it));
+  };
+  md.push(`# Migration report — ${basename(file)}`, '');
+  md.push(`Status: **${status}** | ${migratedTotal} activities migrated | ${attention.length} need attention | ${blockers.length} blockers${summary.outputPath ? ` | Output: ${summary.outputPath}` : ''}`);
+  if (frameworkChanged) md.push('Framework: Legacy → Windows');
+  if (pkgLine) md.push(`Packages: ${pkgLine}`);
+  if (Object.keys(uia.migratedByType).length) md.push(`Migrated by classic type: ${Object.entries(uia.migratedByType).map(([t, n]) => `${t} ×${n}`).join(', ')}`);
+  section('Blockers', blockers, (e) => `- **${e.rule}** — ${e.message}${e.file ? ` (${e.file})` : ''}`);
+  section('UIA not migrated', uia.notMigrated, itemLine);
+  section('UIA partial', uia.partial, itemLine);
+  section('Manual action required', actionRequired, itemLine);
+  section('Type / compile issues', typeIssues, itemLine);
+  section('Productivity not migrated', productivity.notMigrated, itemLine);
+  section('Productivity warnings', productivity.warnings, itemLine);
+  section('UIA warnings (activity and property), informational', uia.warnings.filter((e) => !e.message.includes(ACTION_TAG)), itemLine);
+  section('UIA workflow-level', uia.workflow, (e) => `- ${e.file || '(project)'} — ${e.rule}: ${e.message}`);
+  md.push('', '## Rule counts', '| Rule | Level | Count |', '|---|---|---|');
+  for (const [id, v] of Object.entries(byRule).sort((a, b) => b[1].count - a[1].count)) md.push(`| ${id} | ${v.level} | ${v.count} |`);
+  writeFileSync(outFile, md.join('\n') + '\n', 'utf8');
+}

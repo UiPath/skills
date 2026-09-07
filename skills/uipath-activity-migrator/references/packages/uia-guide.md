@@ -89,7 +89,7 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
      ```
 
      Known failing shapes: a generated Use Application/Browser card whose selector is the marker expression and whose variable holds an element-only selector; a Check App State with `IsLoose="True"` and a marker scope selector inside a real card. Full values (window plus element) work.
-4. **Leftover classic activities** compile and run on the Windows framework; they are not broken. Report them as "not migrated" with their reason so the user can plan the manual work.
+4. **Leftover classic activities** compile and run on the Windows framework; they are not broken. The summarizer's "UIA not migrated" list is the complete inventory; report it with each reason. Do not count `<ui:` elements in the XAML to cross-check it: that prefix also covers classic System and Excel activities, and a naive pattern counts property elements such as `<ui:Highlight.Target>` as activities.
 5. **What the output now contains.** Count the modern activity elements the run produced (opening tags only; property elements such as `<uix:NClick.Target>` are excluded), and look a specific activity up by the display name the SARIF reported; the nearest opening tag above it is its modern type:
 
    ```bash
@@ -98,4 +98,4 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
    ```
 
    Generated Use Application/Browser cards appear in this count too, so it can exceed the number of migrated activities.
-5. **Runtime prerequisites for the report.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Modern UIA needs the browser extensions installed on the robot machines for web targets.
+5. **Runtime prerequisites for the report.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Only when the project automates a browser: the UiPath browser extension must be installed on the robot machines.

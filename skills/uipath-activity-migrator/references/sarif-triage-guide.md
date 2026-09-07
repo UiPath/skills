@@ -5,14 +5,15 @@ How to turn a migrator SARIF log into a status, a summary table, and stop decisi
 ## Run the summarizer
 
 ```bash
-node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" --out "<PROJECT_DIR>/.upgrade/analyze-latest.md"
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade" --json
 ```
 
 - Accepts a `.sarif` file or a folder; for a folder it picks the newest `*.sarif`.
 - Handles UTF-8 and UTF-16 input (PowerShell 5.1 redirection writes UTF-16) and skips stray log lines the tool prints before the JSON.
-- `--json` output carries `effectiveVersions`: per package, the version the tool moved from and to. Compare `UiPath.UIAutomation.Activities` with the requested `<UIA_VERSION>`.
-- Default output is a Markdown summary; `--json` prints the full classification for programmatic use.
+- stdout is short by design: status, counts, blockers, and what needs attention grouped by reason and by file. Items appear inline only when there are ten or fewer. It scales to hundreds of workflows because it never prints one line per activity.
+- `--out <file>` writes the full per-item report (every list, rule counts). That file and the tool's own HTML report are the drill-down; the chat report points at them.
+- `--json` prints the full classification, including `effectiveVersions` (per package, from → to; compare `UiPath.UIAutomation.Activities` with `<UIA_VERSION>`) and `attention.byReason` / `attention.byFile`.
 - Node is always present where `uip` is installed.
 
 ## SARIF shape the tool produces
@@ -70,23 +71,9 @@ Apply after `analyze`, in this order:
 
 After `upgrade`, `failed` means stop and report. `partial` and `success` continue to verification.
 
-## Summary table
+## What goes into the report
 
-Present this after every run. Fill from the summarizer output.
-
-```markdown
-| Area | Count | Detail |
-|---|---|---|
-| Framework | 1 | Legacy → Windows |
-| Package versions | N | UiPath.UIAutomation.Activities 21.10.6 → 25.10.40; UiPath.Excel.Activities 2.12.3 → 2.24.4 |
-| Activities migrated | N | per extension |
-| Activities not migrated | N | per file: activity, reason |
-| Manual action required | N | per file: activity, message |
-| Type or compile issues | N | per file |
-| Missing packages | N | package ids |
-```
-
-For each not-migrated or action-required item keep `file`, `sourceActivity` (or `activityType`), and the reason suffix of the rule ID or the message text. That list becomes the "Manual work" section of the final report.
+Success is a single line with counts. Detail exists only for what needs attention, and only grouped: by reason (`MigrationNotImplemented ×18, VariableSelector ×9`) and by file (the few files with most items). The full per-item list lives in the `--out` file; the tool's HTML report is the per-activity drill-down. Never paste per-activity lists into the chat for a project of any size; list items inline only when there are ten or fewer.
 
 ## Reading results by hand
 

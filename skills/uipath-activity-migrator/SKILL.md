@@ -103,10 +103,10 @@ Assemble `<PACKAGE_FLAGS>` from every package guide read in Step 1 (Hook 1 secti
 ```bash
 mkdir -p "<PROJECT_DIR>/.upgrade"
 "<MIGRATOR_EXE>" analyze --project-path "<PROJECT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
-node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" --out "<PROJECT_DIR>/.upgrade/analyze-latest.md"
 ```
 
-Omit `--uia-package-version` when the project has no UIAutomation dependency. The summarizer prints status, package changes, per-family counts, blockers, and per-file lists. Show the user the summary table.
+Omit `--uia-package-version` when the project has no UIAutomation dependency. The summarizer prints a short summary (status, counts, blockers, what needs attention grouped by reason and by file) and writes the full per-item report to the `--out` file. Show the user the short summary as is.
 
 Check the effective UIAutomation version in the "Package versions" row against `<UIA_VERSION>`. When they differ, the flag did not bind. The usual cause is the space-separated form (`--uia-package-version 25.10.39`), which the tool accepts and ignores; fix the command to the `=` form and rerun analyze. If the effective version still differs, stop and ask the user whether to proceed on the effective version or abort. Do not compensate by editing package versions on the output afterwards. Then apply the stop conditions from [sarif-triage-guide.md § Stop conditions](references/sarif-triage-guide.md#stop-conditions):
 
@@ -124,7 +124,7 @@ Same flags as the analyze run, plus the output path:
 
 ```bash
 "<MIGRATOR_EXE>" upgrade --project-path "<PROJECT_DIR>" --output-path "<OUTPUT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif"
-node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif"
+node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" --out "<PROJECT_DIR>/.upgrade/upgrade-latest.md"
 ```
 
 Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows`. If the summary status is `failed`, report and stop; do not retry with different flags unless a package guide says so.
@@ -142,20 +142,17 @@ Build passes: continue. Build fails: validate the offending files, fix per the g
 ### Step 6 — Post-migration and report
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
-2. Report only what the reader must act on or decide. Omit any section, row, or line with nothing in it; never list checks that found nothing. Shape:
+2. Report only what the reader must act on or decide. Success is one line with counts; detail exists only for what needs attention, grouped, never one line per activity. Report only what the tool reported or the build showed: no speculation about how migrated activities will behave at runtime, no description of the migration mechanics, no table of what changed. Shape:
 
 ```markdown
 ## Migration result: <status>
-- Output: <OUTPUT_DIR> — build <passed|failed|not verified>
-- Target UIAutomation version: <UIA_VERSION>
-- Report: <PROJECT_DIR>/.upgrade/<name>-<id>.html
+<N> activities migrated, <M> need attention, build <passed|failed|not verified>. Output: <OUTPUT_DIR>. UIAutomation <from> → <UIA_VERSION>.
 
-| Area | Migrated | Not migrated | Needs manual action |
-|---|---|---|---|
-<one row per area with a non-zero count>
-
-### Manual work            <- only when there is any
-- <file>: <activity> — <what to do>
+### Needs attention (<M>)            <- only when M > 0
+- By reason: <reason> ×<n>, <reason> ×<n>
+- By file: <file> (<n>), <file> (<n>), … <k> more files
+- Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR>/.upgrade/<name>-<id>.html
+<items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
 ### Next steps
 - Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.
@@ -204,3 +201,4 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
+- Padding the report with checks that found nothing, a classic-to-modern mapping table, or guesses about how the migrated activities will behave at runtime
