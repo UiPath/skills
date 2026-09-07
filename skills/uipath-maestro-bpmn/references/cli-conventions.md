@@ -26,8 +26,10 @@ Validation uses `uip maestro bpmn validate <file>` — see
 
 ## Validation order
 
-For file-based authoring, complete coherent BPMN DI before the first final
-`validate` call — see [Validation](structural-bpmn.md#validation). Then run:
+For file-based authoring, generate the diagram with
+`uip maestro bpmn format <file.bpmn>` — do not hand-author it. Complete coherent
+BPMN DI before the first final `validate` call — see
+[Validation](structural-bpmn.md#validation). Then run:
 
 ```bash
 uip maestro bpmn validate <file.bpmn> --output json
