@@ -73,9 +73,19 @@ def fail(msg: str):
     sys.exit(1)
 
 
+# The named login `drive_case.py` drives with, so this check reads the same tenant it
+# drove. Unset in CI, where the runner has one login and a profile name it never
+# authenticated would turn every call into `Not logged in`. Left out here, the lookups
+# run as the default login and a case in a folder that identity cannot see answers
+# `403 PIMS-150007 Unauthorized`, which reads as a missing ExternalId rather than as
+# the wrong credentials.
+UIP_PROFILE = os.environ.get("UIP_PROFILE", "").strip()
+PROFILE_ARGS = ["--profile", UIP_PROFILE] if UIP_PROFILE else []
+
+
 def uip(args: list[str], timeout: int = 120) -> dict:
     try:
-        proc = subprocess.run(["uip", *args, "--output", "json"],
+        proc = subprocess.run(["uip", *args, "--output", "json", *PROFILE_ARGS],
                               capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         return {"Result": "Failure", "Message": f"timed out after {timeout}s"}
