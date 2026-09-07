@@ -28,8 +28,10 @@ SEEDS_DIR = Path(__file__).resolve().parent / "seeds"
 CHOICE_SET_SPEC = SEEDS_DIR / "coded_order_status.choice_set.json"
 RECORDS_FILE = SEEDS_DIR / "coded_order.records.json"
 
-ENTITY_NAME = "CE_CodedOrder"
+DEFAULT_ENTITY_NAME = "CE_CodedOrder"
 CHOICE_SET_NAME = "CE_CodedOrderStatus"
+# Overridden by --entity-name CLI arg to avoid parallel-run conflicts
+ENTITY_NAME = DEFAULT_ENTITY_NAME
 
 # Status NumberId map matching the choice_set.json values list order (0-indexed)
 STATUS_MAP = {"Open": 0, "Processing": 1, "Shipped": 2, "Delivered": 3, "Closed": 4}
@@ -175,14 +177,22 @@ def insert_records(entity_id: str) -> bool:
         return False
     data = parse_json(out)
     result = data.get("Result", "")
-    if result == "Success":
-        print(f"OK: inserted {len(raw_records)} records into {ENTITY_NAME}")
-        return True
-    print(f"WARN: records insert result={result}")
-    return True  # non-fatal
+    if result != "Success":
+        print(f"FAIL: records insert result={result} (expected Success)", file=sys.stderr)
+        return False
+    print(f"OK: inserted {len(raw_records)} records into {ENTITY_NAME}")
+    return True
 
 
 def main() -> int:
+    global ENTITY_NAME
+    import argparse
+    parser = argparse.ArgumentParser(description="Seed CE_CodedOrder-like entity with CHOICE_SET Status.")
+    parser.add_argument("--entity-name", default=DEFAULT_ENTITY_NAME,
+                        help=f"Entity name (default: {DEFAULT_ENTITY_NAME}). Use distinct names for parallel tasks.")
+    args = parser.parse_args()
+    ENTITY_NAME = args.entity_name
+
     # Phase 1: seed choice set
     cs_id = seed_choice_set()
     if not cs_id:
@@ -197,7 +207,8 @@ def main() -> int:
         if not eid:
             return 1
         # Phase 3: insert seed records (only on fresh entity)
-        insert_records(eid)
+        if not insert_records(eid):
+            return 1
 
     return 0
 

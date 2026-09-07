@@ -12,11 +12,11 @@ run_limits:
 
 pre_run:
   # Clean up leftover state from prior crashed runs
-  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrder --include-folders"
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrderCombined --include-folders"
     timeout: 60
     fail_on_error: false
   # Seed choice set + entity (two-phase: choice set → get ID → create entity with bound Status field)
-  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seed_coded_order.py"
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seed_coded_order.py --entity-name CE_CodedOrderCombined"
     timeout: 300
     fail_on_error: true
 
@@ -33,7 +33,7 @@ initial_prompt: |
   Scaffold and init only — don't run or deploy.
 
 post_run:
-  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrder --include-folders"
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrderCombined --include-folders"
     timeout: 60
 
 success_criteria:
