@@ -1,4 +1,17 @@
 {
     "version": "2.0",
-    "resources": []
+    "resources": [
+        {
+            "resource": "app",
+            "key": "Shared/linear-three-stages.reviewer-decision-app",
+            "value": {
+                "folderPath": {
+                    "defaultValue": "Shared/linear-three-stages"
+                },
+                "name": {
+                    "defaultValue": "reviewer-decision-app"
+                }
+            }
+        }
+    ]
 }
