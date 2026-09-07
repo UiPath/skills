@@ -80,7 +80,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testcases unlink-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Unlink the automation from a test case. |
 | `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
 | `uip tm testcases list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
-| `uip tm testcases steps list --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List manual test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** `uip tm testcases list-steps` is a supported alias. |
+| `uip tm testcases steps list --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List manual test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** |
 | `uip tm testcases steps get --project-key <PROJECT_KEY> --step-id <UUID>` | Get a single test step by its UUID. |
 | `uip tm testcases steps add --project-key <PROJECT_KEY> --test-case-id <UUID> --description <text>` | Add a step using flags (`--description` required). |
 | `uip tm testcases steps add --project-key <PROJECT_KEY> --test-case-id <UUID> --step '<json>' [--step '<json>' ...]` | Add multiple steps by repeating `--step '<json>'`. Mutually exclusive with flag mode. **Not atomic** — earlier steps persist if a later one fails. |

@@ -102,7 +102,7 @@ For result download, attachment download, and report generation: see [/uipath:ui
 
 ## Common pitfalls
 
-- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `list-steps`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
+- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `steps list`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
 - **Wrong folder identifier.** `link-automation` requires the UUID. A folder name or path passed in `--folder-key` fails silently with "folder not found" or links to the wrong folder.
 - **Re-uploading the same package version.** Orchestrator rejects duplicates. Bump `--package-version` (or `project.json` `projectVersion`) on every change.
 - **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at run time. A stale `--package-name` value silently links to nothing and the next run fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.
