@@ -42,18 +42,9 @@ REJECTED = "Application rejected"
 WITHDRAWN = "Application withdrawn"
 SLA_REVIEW = "Overall SLA review"
 
-STAGES = [
-    (CHECKING, "checking_application", "primary"),
-    (BUYER, "buyer_review", "primary"),
-    (COMPLIANCE, "compliance_risk_review", "primary"),
-    (SETUP, "supplier_setup", "primary"),
-    (ONBOARDED, "supplier_onboarded", "primary"),
-    (REJECTED, "application_rejected", "secondary"),
-    (WITHDRAWN, "application_withdrawn", "secondary"),
-    (SLA_REVIEW, "overall_sla_review", "secondary"),
-]
-PRIMARY_STAGES = {label for label, _, kind in STAGES if kind == "primary"}
-SECONDARY_STAGES = {label for label, _, kind in STAGES if kind == "secondary"}
+STAGES: list[tuple[str, str, str]] = []  # filled from the fixture at the bottom of this file
+PRIMARY_STAGES: set[str] = set()   # both filled from the fixture, below
+SECONDARY_STAGES: set[str] = set()
 
 # The three stages whose completion is user-routed, which is what exposes the
 # withdrawal lane. `Setting up the supplier` deliberately is NOT one of them: the
@@ -148,15 +139,8 @@ CASE_SLA = (120, "min")
 CASE_AT_RISK_PERCENT = 75          # 120 min is under 3 days, so the 75% band applies
 STAGE_AT_RISK_PERCENT = 70         # stated by the source, so it is not re-derived from the band
 
-STAGE_SLA = {                       # label -> (count, unit)
-    CHECKING: (16, "min"),
-    BUYER: (32, "min"),
-    COMPLIANCE: (32, "min"),
-    SETUP: (24, "min"),
-    ONBOARDED: (16, "min"),
-    REJECTED: (16, "min"),
-    WITHDRAWN: (16, "min"),
-}
+STAGE_SLA: dict[str, tuple[int, str]] = {}   # label -> (count, unit), from the fixture below
+STAGE_SLA_TITLE: dict[str, str] = {}         # label -> the SLA rule title the SDD names
 # The oversight lane is the one stage with no SLA of its own.
 NO_SLA_STAGES = {SLA_REVIEW}
 
@@ -461,6 +445,72 @@ _INPUT_ROW_RE = re.compile(
 _NO_BINDING = {"", "—", "-", "n/a"}
 
 
+
+
+_STAGE_HEADING_RE = re.compile(
+    r"^### (?:Stage \d+|Secondary Stage): (.+?) \(`([a-z0-9_]+)`\)\s*$", re.M
+)
+
+
+def _sdd_stages(sdd: str) -> list[tuple[str, str, str]]:
+    """(label, stage id, kind) for every stage the SDD declares, in document order.
+
+    Read rather than listed, so a second fixture describing the same process with
+    different stages needs no edit here. The floor below is what stops a regex that
+    stopped matching from handing the checkers an empty case.
+    """
+    out = []
+    for match in _STAGE_HEADING_RE.finditer(sdd):
+        label, stage_id = match.group(1).strip(), match.group(2)
+        kind = "secondary" if match.group(0).startswith("### Secondary") else "primary"
+        out.append((label, stage_id, kind))
+    return out
+
+
+STAGES[:] = _sdd_stages(read_fixture())
+if len(STAGES) < 5 or not any(k == "secondary" for _l, _i, k in STAGES):
+    _fail(
+        "fixture parse error: expected >=5 stage headings including at least one "
+        f"secondary; got {STAGES}"
+    )
+PRIMARY_STAGES.update(label for label, _i, kind in STAGES if kind == "primary")
+SECONDARY_STAGES.update(label for label, _i, kind in STAGES if kind == "secondary")
+
+_SLA_TITLE_RE = re.compile(r"^\*\*SLA Title:\*\*\s*(.+?)\s*$", re.M)
+_SLA_ROW_RE = re.compile(r"^\|\s*(\d+)\s*\|\s*(min|hour|day|days|hours)\s*\|", re.M)
+
+
+def _sdd_stage_slas(sdd: str) -> tuple[dict, dict]:
+    """Each stage's SLA duration and rule title, read off its own `#### Stage SLA` block.
+
+    Scoped to the text between one stage heading and the next, so a stage with no SLA
+    block contributes nothing rather than borrowing its neighbour's.
+    """
+    durations, titles = {}, {}
+    marks = [(m.start(), m.group(1).strip()) for m in _STAGE_HEADING_RE.finditer(sdd)]
+    for index, (start, label) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(sdd)
+        body = sdd[start:end]
+        if "#### Stage SLA" not in body:
+            continue
+        block = body.split("#### Stage SLA", 1)[1].split("\n#### ", 1)[0]
+        title = _SLA_TITLE_RE.search(block)
+        row = _SLA_ROW_RE.search(block)
+        if title:
+            titles[label] = title.group(1)
+        if row:
+            durations[label] = (int(row.group(1)), row.group(2))
+    return durations, titles
+
+
+_durations, _titles = _sdd_stage_slas(read_fixture())
+if len(_durations) < 4:
+    _fail(
+        "fixture parse error: expected >=4 stages carrying a Stage SLA block with a "
+        f"duration row; got {_durations}"
+    )
+STAGE_SLA.update(_durations)
+STAGE_SLA_TITLE.update(_titles)
 def _bound_inputs(sdd: str) -> dict[str, set[str]]:
     """Which inputs each task binds to an expression, read off the fixture's own tables."""
     headings = [(m.start(), m.group(1).strip()) for m in _TASK_HEADING_RE.finditer(sdd)]
