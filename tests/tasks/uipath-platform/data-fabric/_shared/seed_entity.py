@@ -136,7 +136,11 @@ def find_entity_id(entities: list[dict], name: str) -> str | None:
 
 
 def _normalize_field_names(schema: dict) -> dict:
-    """Ensure fields use ``fieldName`` (current CLI) instead of ``name``."""
+    """Ensure fields carry ``fieldName`` (required by current CLI).
+
+    Copies ``name`` → ``fieldName`` when ``fieldName`` is absent.
+    Keeps ``name`` intact — removing it would break callers that read it later.
+    """
     schema = dict(schema)
     fields = schema.get("fields")
     if isinstance(fields, list):
@@ -144,7 +148,7 @@ def _normalize_field_names(schema: dict) -> dict:
         for f in fields:
             f = dict(f)
             if "fieldName" not in f and "name" in f:
-                f["fieldName"] = f.pop("name")
+                f["fieldName"] = f["name"]
             normalized.append(f)
         schema["fields"] = normalized
     return schema
