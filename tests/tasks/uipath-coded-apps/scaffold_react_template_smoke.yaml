@@ -1,0 +1,79 @@
+task_id: skill-coded-apps-scaffold-react-template-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to scaffold the Vite +
+  React + TypeScript project for a Coded Web App. Verifies Rule #20 —
+  `create-vite` exits `0` and silently scaffolds its **vanilla** TypeScript
+  template whenever the template flag never reaches it (a lost `--`
+  separator in the `npm create vite` form, an en dash, a typo), and prompts
+  for a linter and creates nothing at all under a TTY without
+  `--no-interactive`. Neither failure is visible in the exit code or the
+  output, so this task grades the artifacts actually on disk.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Scaffold the Vite + React + TypeScript project for a new UiPath Coded Web
+  App named `intake-report`, in the sandbox root.
+
+  Scaffold the project only — do NOT install the UiPath SDK, Tailwind, or any
+  other dependency, do NOT write project files from the templates, and do NOT
+  run `uip`; this environment is not authenticated.
+
+  Stop as soon as the scaffold gate prints `SCAFFOLD_OK` — do not continue into
+  Step 3.3 (dependency installs) or Step 3.4 (deleting the Vite defaults).
+
+  This is a non-interactive automated test with no user to consult: do not ask
+  setup questions.
+
+success_criteria:
+  - type: file_exists
+    description: "React entrypoint exists — the react-ts template landed"
+    path: "intake-report/src/main.tsx"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "package.json declares react (vanilla-ts has no dependencies key at all)"
+    command: "grep -q '\"react\":' intake-report/package.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no vanilla-TypeScript leftovers"
+    command: "sh -c 'test ! -f intake-report/src/main.ts && test ! -f intake-report/src/counter.ts'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Rule #20: agent did NOT use an `npm create vite` form (its bare `--` separator is the APPS-37265 failure)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+create\s+vite'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "React root component exists"
+    path: "intake-report/src/App.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "(advisory, non-gating) the scaffold command carried `--no-interactive` and `--template react-ts` in one segment"
+    tool_name: "Bash"
+    command_pattern: 'create-vite@latest(?:(?!\n|&&|\|\||;|\|).)*--no-interactive(?:(?!\n|&&|\|\||;|\|).)*--template\s+react-ts'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: `--no-interactive` only changes behaviour under a TTY, so it is outcome-invisible in this sandbox
+
+  - type: command_executed
+    description: "(advisory, non-gating) the scaffold ran through the Rule #20 assertion gate, not bare `create-vite`"
+    tool_name: "Bash"
+    command_pattern: 'SCAFFOLD_NOT_REACT'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: the gate changes nothing a correct scaffold leaves on disk

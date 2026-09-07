@@ -212,10 +212,13 @@ After collecting all answers, scaffold the project. **[assets/templates/action-a
 The sections below describe the schema-driven adaptations; copy the CSS files verbatim (per rules 4–5) and copy the small TS scaffolding (`main.tsx`, `vite.config.ts`, `App.tsx`) from the template for the parts they don't override.
 
 ```bash
-npm create vite@latest <app-name> -- --template react-ts
-cd <app-name>
-npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
-npm install
+npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && node -e "require('fs').existsSync('<app-name>/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
+```
+
+Run that as one command — `SCAFFOLD_OK` is the scaffold gate (Critical Rule 20). Do not install anything until it prints `SCAFFOLD_OK`; on failure follow the recovery in [create-web-app.md](create-web-app.md) Step 3.2. The install below `cd`s into `<app-name>`; every step after it runs from inside that directory.
+
+```bash
+cd <app-name> && npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
 ```
 
 If SDK services are needed:

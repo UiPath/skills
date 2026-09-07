@@ -55,7 +55,7 @@ If the user typed their org name, use it. If they said "find from browser", navi
 
 Once you have the answers (app name, environment, org, tenant, styling), execute the steps below in order. All steps after Step 3.2 run from inside the new project directory.
 
-> **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install` or `npm create vite` — these can take several minutes and the default 2-minute timeout is not enough.
+> **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install`, `create-vite`, or `npm run build` — these can take several minutes and the default 2-minute timeout is not enough.
 
 ### 3.1 — Resolve the base URL
 
@@ -64,8 +64,10 @@ Map the `<environment>` answer from Step 1 to a base URL using the table in [SKI
 ### 3.2 — Create the Vite project
 
 ```bash
-npx --yes create-vite@latest <app-name> --template react-ts
+npx --yes create-vite@latest <app-name> --no-interactive --template react-ts && node -e "require('fs').existsSync('<app-name>/src/main.tsx')||(console.error('SCAFFOLD_NOT_REACT'),process.exit(1))" && echo SCAFFOLD_OK
 ```
+
+Run that as **one** command — `SCAFFOLD_OK` is the only signal that the scaffold is really React (Critical Rule 20). On `SCAFFOLD_NOT_REACT`, or any non-zero exit, re-run the same line with `--overwrite` added immediately after `--no-interactive`; a bare re-run exits `0` and changes nothing. Stop after two failed attempts and report the output to the user rather than continuing past this step.
 
 Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 
@@ -110,13 +112,13 @@ npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
 - **`default styling = yes`** — also overwrites `src/main.tsx` to wrap `<App>` in the theme provider:
 
   ```bash
-  rm vite.config.ts src/App.tsx src/index.css src/main.tsx
+  rm -f vite.config.ts src/App.tsx src/index.css src/main.tsx
   ```
 
 - **`default styling = no`**:
 
   ```bash
-  rm vite.config.ts src/App.tsx src/index.css
+  rm -f vite.config.ts src/App.tsx src/index.css
   ```
 
 ---
@@ -174,7 +176,7 @@ All file content lives in [../assets/templates/web-app-template.md](../assets/te
 
 ### 5.2 — `.gitignore`
 
-Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored — it is covered by `npx create-vite`'s default plus `uip codedapp`'s conventions. Verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
+Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored. Verify with `grep -i uipath .gitignore` and add `.uipath/` if absent — `create-vite` does not add it.
 
 ### 5.3 — Verify the scaffold
 
