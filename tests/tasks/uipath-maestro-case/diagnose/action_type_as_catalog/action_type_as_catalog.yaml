@@ -1,0 +1,82 @@
+task_id: skill-case-diagnose-action-type-as-catalog
+description: >
+  Diagnose mode. The staged case PASSES `uip maestro case validate` with zero
+  findings and the action task in Review faults the first time it tries to open,
+  with `No task catalog exists with name review-decision`. Its app bindings are
+  correct; the defect is `data.actionCatalogName`, which carries the action type
+  the SDD names inside the app rather than a catalog resource. The validator
+  never resolves that name against the tenant, so nothing catches it before the
+  task runs. The skill's own action reference calls the field optional and says
+  to omit it unless the SDD references a known catalog. Grades both correct
+  outcomes, omitting the field or binding it to the resolved app, and the traps:
+  unbinding the app, dropping the task title or recipient, or touching the
+  outputs and the gate.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:approval-gate, feature:registry]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The LinearThreeStages case under LinearThreeStages/ passes
+  `uip maestro case validate` cleanly. The first time Review's action task
+  tries to open, the case faults:
+
+    No task catalog exists with name review-decision
+
+  Find out why and fix it. Keep the intended design: three stages,
+  Intake to Review to Decision, the action task asking a reviewer for a
+  decision, and Decision gated on what that task writes.
+
+  - A clean validate is NOT evidence the case is healthy here. The defect is
+    something validate cannot see, because it never resolves that name against
+    the tenant.
+  - The app this task runs is already resolved. Its bindings stay as they are.
+  - Do NOT delete the task title, the recipient, the outputs, the gate, the
+    stages, or the trigger.
+  - Do NOT retype the action task.
+  - Do NOT run `uip maestro case debug`.
+  - Do NOT ask for approval. Work end-to-end and finish with validate passing.
+
+  Scope: this is a targeted repair of one field, not a build.
+
+  - The defect and its fix are both inside
+    LinearThreeStages/LinearThreeStages/caseplan.json. Nothing else changes.
+  - Read the case definition and the skill's action task rules only. You do NOT
+    need to read the reference set exhaustively; the read-to-EOF rule is lifted
+    for this repair.
+  - If you are on your third edit, stop editing and re-read what the skill says
+    that field must bind to and when it should be present at all.
+
+  Load the uipath-maestro-case skill and follow its validate to fix loop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate still passes after the repair"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "actionCatalogName is either omitted or names a bound resource, the app bindings and task title and recipient survive, and the outputs and gate are untouched"
+    command: "python3 $TASK_DIR/check_action_type_as_catalog.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
