@@ -66,6 +66,14 @@ PDD uses business-friendly types. Map to XSD:
 
 ## Generated TTL structure
 
+**`ont:` means something different here than in the constraints and mapping artifacts, and
+that is deliberate.** In `{name}-constraints.ttl` and `{name}-mapping.yarrrml.yml`, `ont:` is
+bound to the *ontology's own* namespace. In an action (and a function) it is the *platform*
+namespace, with a separate `{ns}:` prefix for the ontology's terms. Writing constraints and
+actions in one sitting means flipping the meaning of the same prefix, and getting it wrong
+here is silent — the parser resolves platform predicates by full URI and simply drops the
+action.
+
 **Two prefixes required.** `ont:` = platform namespace (predicates: `kind`, `language`, `statements`, `paramName`, `paramType`, `required`). A separate prefix for the ontology's own namespace (entity-specific terms: action name, param/output resource IRIs). The parser resolves platform predicates by full URI — using the wrong namespace silently drops the action.
 
 ```turtle

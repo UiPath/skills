@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-authoring
-description: "Use when a user provides an SDD, PDD, domain specification, or ontology artifact files and asks to create, validate, clone, map, wire the domain to Data Fabric entities, or deploy a new UiPath Ontology. Use for missing mapping generation, unresolved class/field/relationship ambiguity, and deployment sequencing. Do not use for plain domain prompts or CRUD operations on an existing ontology."
+description: "Use when a user provides an SDD, PDD, domain specification, or ontology artifact files and asks to create, validate, clone, map, wire the domain to Data Fabric entities, or deploy a new UiPath Ontology. Use for missing mapping generation, unresolved class/field/relationship ambiguity, and deployment sequencing. Do not use for plain domain prompts that ask only for reads, or CRUD operations on an existing ontology; a plain prompt that asks for any write operation does belong here."
 when_to_use: "User provides an SDD or domain spec and wants to author/publish an ontology end-to-end; user says 'create an ontology from this SDD', 'generate ontology artifacts', 'deploy ontology', 'wire ontology to Data Fabric', 'generate mapping'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Skill
 user-invocable: true
@@ -12,7 +12,7 @@ user-invocable: true
 
 - SDD, PDD, design document, or domain specification → this skill.
 - Artifact folder intended for a new deployment or clone → this skill.
-- Plain-language domain description with no files → `uipath-ontology-modeler`.
+- Plain-language domain description with no files **and no write operations** → `uipath-ontology-modeler`. **Any request that asks for a write — update, set, create, delete, recompute, escalate, flag — belongs here even with no files**, because the SQL/CODED rubric below is the only one in the plugin and a CODED verdict forces Phase 1's Path B ordering, which the modeler does not carry.
 - Existing ontology CRUD, API, SDK, or artifact operations → `uipath-ontologies`.
 - Write operations needing computation the write surface cannot express route through this skill's classification; the coded leg's Orchestrator work belongs to `uipath-ontology-coded-action-deploy`.
 
@@ -99,6 +99,8 @@ Trigger: user points to a folder of already-generated artifact files (`{oldName}
 
 Everything below is a failure someone has already paid for. Each line is enforced by a gate, a
 guide rule, or a refusal further down; this is the short form to check a run against.
+
+**Running without a user present.** Several phases below wait for explicit confirmation. Two of those are load-bearing and must not be auto-accepted: the folder decision (Phase 1, either path) and the publish/deploy plan in Step 2b, because both mutate a live tenant and neither is reversible. The domain-model, property, annotation and fact-verification confirmations may be auto-accepted when no user is reachable — say in the final report which ones you decided yourself, and on what basis.
 
 **Before generating anything**
 

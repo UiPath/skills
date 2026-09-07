@@ -206,6 +206,20 @@ A field the job genuinely cannot proceed without is checked in the handler, wher
 say which column was missing and what the row did carry. That is a diagnosable error; a manifest
 rejection is not.
 
+**Declare only string-typed columns; read numeric and boolean ones through the index signature.**
+A column's *type* is as much a guess as its spelling. `escalationLevel?: number` looks safer than
+leaving it out, but if the read returns it as a string the manifest and the row disagree and the job
+faults the same way a misspelled required field does — before the handler runs. The index signature
+already makes the column legal, so read it and coerce:
+
+```typescript
+const level = Number(column(row, 'escalationLevel', 'EscalationLevel')) || 0;
+```
+
+Verified against a live tenant: the same entity answered `Severity`/`OpenedAt`/`EscalationLevel` in
+PascalCase through the records API while its schema declared `severity`/`openedAt`/`escalationLevel`.
+The tolerant accessor handles the spelling; keeping the declaration to `string` handles the type.
+
 **The index signature is load-bearing, and it points in two directions.** A row interface ends with `[column: string]: unknown`, which lowers to a permissive `additionalProperties` on that object: reads are `SELECT *`, so rows carry arbitrary extra physical columns, and those columns are legal. `Input` itself has no index signature, and lowers to `additionalProperties: false`, which is what faults a drifted, renamed, or extra input field before the handler runs. Open on rows makes the extra columns legal; closed at the top is the drift detection.
 
 Build edits through an annotated array, not an inline object literal:

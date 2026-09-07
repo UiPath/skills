@@ -133,8 +133,20 @@ def main(argv: list[str] | None = None) -> int:
         "action": payload.get("action", args.action),
         "outcome": payload.get("outcome"),
         "rowsAffected": payload.get("rowsAffected"),
+        # `error` is the only diagnostic a failed invoke carries -- the step that failed says why,
+        # e.g. "Data Fabric rejected the query: HTTP 400 ... recordId was not found". Dropping it
+        # left a caller with "Executing write / failed" and nothing to act on.
         "steps": [
-            {"label": s.get("label"), "status": s.get("status"), "durationMs": s.get("durationMs")}
+            {
+                key: value
+                for key, value in (
+                    ("label", s.get("label")),
+                    ("status", s.get("status")),
+                    ("durationMs", s.get("durationMs")),
+                    ("error", s.get("error")),
+                )
+                if value is not None
+            }
             for s in steps
         ],
     }

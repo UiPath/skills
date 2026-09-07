@@ -155,7 +155,10 @@ Run all gates against the exact files that will be uploaded:
 5. **Class deployability gate:** every class is the domain of at least one property and is instantiated in the mapping.
 6. **Relationship gate:** every FK-shaped relationship has an object property and mapping join, or an explicit packed-FK exemption.
 7. **Semantic gate:** check domain completeness, constraint coverage, column alignment, policy coherence, and function/action consistency.
-8. **Coded-action contract gate:** run `<TOOLS_DIR>/coded_action_preflight.py` against every coded action's TTL+job pair.
+8. **Coded-action contract gate:** a **separate** command, not one of `ontology_preflight.py`'s
+   gates — its `gate_results` contain no coded-action gate, so passing it proves nothing about
+   a coded pair. Run `python3 <TOOLS_DIR>/coded_action_preflight.py` against every coded
+   action's TTL+job pair as well.
 
 Fix failures before backend calls. A `DEPLOYED` state does not prove that relationships were modeled.
 
@@ -193,7 +196,8 @@ After deployment, verify both `uip ont get {name}` reports `DEPLOYED` and `uip o
 ## Routing boundary
 
 - SDD/PDD/design document → `uipath-ontology-authoring`.
-- Plain domain description → this skill.
+- Plain domain description asking only for reads (classes, properties, queries) → this skill.
+- Plain domain description asking for **any write operation** → `uipath-ontology-authoring`, even with no files. It owns the SQL/CODED rubric and the Path A/Path B folder ordering a CODED action forces; this skill's standalone Step 1 picks a folder up front, which is the wrong order for a coded inventory.
 - Existing ontology/artifact CRUD or SDK operations → `uipath-ontologies`.
 - Deploying already-generated files → `uipath-ontology-authoring`, which owns the deployment gates.
 - Getting a coded action's job into Orchestrator → `uipath-ontology-coded-action-deploy`. This skill
