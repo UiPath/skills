@@ -62,9 +62,13 @@ def fail(msg: str):
     sys.exit(1)
 
 
+UIP_PROFILE = os.environ.get("UIP_PROFILE", "").strip()
+PROFILE_ARGS = ["--profile", UIP_PROFILE] if UIP_PROFILE else []
+
+
 def uip(args: list[str], timeout: int = 120) -> dict:
     try:
-        proc = subprocess.run(["uip", *args, "--output", "json"],
+        proc = subprocess.run(["uip", *args, "--output", "json", *PROFILE_ARGS],
                               capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         return {"Result": "Failure", "Message": f"timed out after {timeout}s"}

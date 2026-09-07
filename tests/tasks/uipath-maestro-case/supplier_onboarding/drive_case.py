@@ -221,6 +221,24 @@ def _is_transient(detail: str) -> bool:
     return any(marker in detail.lower() for marker in _TRANSIENT_MARKERS)
 
 
+def envelope_retrying(args: list[str], *, timeout: int = 120) -> dict:
+    """`envelope`, but a service that is briefly away gets another chance.
+
+    Writes are the calls that cost a whole route when they fail: a gate answered twice
+    is harmless, an unanswered gate ends the run. A refusal still comes back on the
+    first attempt, because only the markers that mean "could not answer yet" retry.
+    """
+    for attempt in range(TRANSIENT_RETRIES + 1):
+        reply = envelope(args, timeout=timeout)
+        if reply.get("Result") == "Success":
+            return reply
+        detail = envelope_detail(reply)
+        if attempt == TRANSIENT_RETRIES or not _is_transient(detail):
+            return reply
+        print(f"  `{' '.join(args[:5])}` came back {detail}; retrying in {TRANSIENT_PAUSE}s")
+        time.sleep(TRANSIENT_PAUSE)
+    return reply
+
 def run_list_checked(args: list[str], *, timeout: int = 120) -> list:
     """`run_list`, but a failed CLI call raises instead of reading as an empty result.
 
@@ -373,7 +391,7 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
              f"to {who!r} cannot take effect and `tasks complete` then reports the action is no "
              f"longer assigned to you")
     by_id = ["--user-id", str(mine["Id"])] if mine.get("Id") else ["--user", who]
-    assigned = envelope(["uip", "tasks", "assign", task_id, *by_id, "--output", "json"])
+    assigned = envelope_retrying(["uip", "tasks", "assign", task_id, *by_id, "--output", "json"])
     if assigned.get("Result") != "Success":
         fail(f"assigning task {task_id} to {who} failed: "
              f"{envelope_detail(assigned)}")
@@ -398,7 +416,7 @@ def complete_gate(task: dict, action: str, who: str, data: dict | None = None) -
              f"AssignedToUserId. Orchestrator answers a refused assignment with HTTP 200 and an "
              f"error body, so the envelope is not evidence. assign returned: "
              f"{str(assigned.get('Data'))[:300]}")
-    reply = envelope([
+    reply = envelope_retrying([
         "uip", "tasks", "complete", task_id,
         "--type", "AppTask",
         "--folder-id", folder_id,
@@ -488,7 +506,7 @@ def send_stage_selection(instance_id: str, from_stage: str, to_stage: str) -> No
         "reference": f"case-{instance_id}-CaseEntered:Wait for User to Select Next Stage for {from_stage}",
         "itemData": {"stageName": to_stage},
     }
-    reply = envelope([
+    reply = envelope_retrying([
         "uip", "maestro", "case", "instance", "message", "send",
         "-f", CASE_FOLDER_KEY, "--inputs", json.dumps(message), "--output", "json",
     ])
@@ -567,8 +585,15 @@ def stage_label(stage_id: str) -> str:
     return stage_id
 
 
-def stage_entries(instance_id: str, display_name: str) -> int:
-    """How many times the case entered this stage, counted from the stage element's own `ElementRuns`. One row is reported per element however many times it is visited, so the row count is always 1 and only the runs distinguish a sendback's second pass."""
+def stage_runs(instance_id: str, display_name: str) -> int:
+    """How many `ElementRun` records this stage carries.
+
+    NOT the number of visits. One visit writes two records, `InProgress` then
+    `Completed`, measured on every stage of three finished instances. So 0 means the
+    case never reached the stage, 2 means one visit, and 4 means it came back.
+    Reading this as a visit count is how the sendback assertion came to pass on a
+    case that was never sent back.
+    """
     target = next((n["id"] for n in plan_nodes()
                    if n.get("type") == "case-management:Stage"
                    and ((n.get("data") or {}).get("label")) == display_name), None)
@@ -863,7 +888,7 @@ def main() -> int:
     elif args.route == "withdraw":
         if outcome != "Withdrawn":
             fail(f"the supplier withdrew but CaseOutcome={outcome!r}; {WITHDRAWN!r} must close the case as withdrawn")
-        if not stage_entries(instance_id, WITHDRAWN):
+        if not stage_runs(instance_id, WITHDRAWN):
             fail(f"the case never entered {WITHDRAWN!r}; a review stage must offer it as a choice")
     elif args.route == "reject":
         if buyer != "reject":
@@ -871,9 +896,12 @@ def main() -> int:
         if outcome != "Rejected":
             fail(f"the buyer declined but CaseOutcome={outcome!r}; the decline guard did not route the case")
     elif args.route == "sendback":
-        entries = stage_entries(instance_id, CHECKING)
-        if entries < 2:
-            fail(f"{CHECKING!r} was entered {entries} time(s); a sendback must send the case back into it")
+        # Two records per visit, so a second visit is four. `< 2` only caught a case
+        # that never reached the stage at all, which let every un-sent-back run pass.
+        runs = stage_runs(instance_id, CHECKING)
+        if runs < 4:
+            fail(f"{CHECKING!r} was visited {runs // 2} time(s) ({runs} run records); "
+                 "a sendback must send the case back into it")
         if buyer != "approve":
             fail(f"the second buyer decision never landed: {BUYER_DECISION}={buyer!r}, expected 'approve'")
 
