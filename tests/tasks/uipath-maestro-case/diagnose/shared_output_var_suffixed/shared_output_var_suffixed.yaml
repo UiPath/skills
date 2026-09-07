@@ -36,7 +36,6 @@ initial_prompt: |
 
   - A clean validate is NOT evidence the case is healthy here. The defect is
     something validate cannot see.
-  - Compare the two send tasks' output rows with each other.
   - Both tasks report into ONE case variable. Do not give the second task a
     variable of its own, and do not declare one for it.
   - Do NOT delete or retype either send task, the gate, the stages, or the

@@ -36,8 +36,6 @@ initial_prompt: |
 
   - A clean validate is NOT evidence the case is healthy here. The defect is
     something validate cannot see.
-  - Compare that task's output rows with each other. One of them is shaped
-    unlike the rest.
   - The connector task must keep writing its result into the case variable the
     gate reads.
   - Do NOT give the variable a default that opens the gate on its own.
