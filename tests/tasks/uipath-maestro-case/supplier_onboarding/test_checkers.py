@@ -1084,6 +1084,42 @@ class TasksIoTests(CheckerBase):
     def test_accepts_a_task_whose_entry_rule_is_present(self):
         self.accepts(baseline_plan())
 
+    def test_rejects_an_empty_string_file_input(self):
+        # Integration Services reads a blank string there as a multipart attachment with no
+        # content and refuses the request with 400 `Unable to parse multipart body`. Three of
+        # six runs wrote it on all eight send tasks at once, and it stops the stage on its
+        # first sequential task. validate reports Valid either way.
+        plan = baseline_plan()
+        item = task(plan, "Notify buyer of application")
+        item["data"].setdefault("inputs", []).append(
+            {"name": "file", "type": "string", "id": "vFile01", "var": "vFile01", "value": ""}
+        )
+        self.rejects(plan, "empty-string `file` input")
+
+    def test_accepts_a_file_input_left_null(self):
+        plan = baseline_plan()
+        item = task(plan, "Notify buyer of application")
+        item["data"].setdefault("inputs", []).append(
+            {"name": "file", "type": "string", "id": "vFile01", "var": "vFile01", "value": None}
+        )
+        self.accepts(plan)
+
+    def test_rejects_an_action_type_written_into_the_catalog_field(self):
+        # The SDD names an action type inside an app. That is not a catalog, and a task
+        # carrying it faults on first open with `No task catalog exists with name ...`.
+        # validate never resolves the name against the tenant.
+        plan = baseline_plan()
+        task(plan, "Escalate delayed buyer review")["data"]["actionCatalogName"] = "phase-escalation"
+        self.rejects(plan, "actionCatalogName to a name no bound resource declares")
+
+    def test_accepts_a_catalog_field_that_names_a_bound_resource(self):
+        plan = baseline_plan()
+        names = [str(b.get("default") or "") for b in (plan.get("bindings") or []) if b.get("default")]
+        if not names:
+            self.skipTest("the baseline declares no bound resource name to point at")
+        task(plan, "Escalate delayed buyer review")["data"]["actionCatalogName"] = names[0]
+        self.accepts(plan)
+
     def test_rejects_an_input_the_sdd_binds_but_the_plan_leaves_empty(self):
         # The shape an agent shipped: the fields are declared, every binding dropped. The
         # runtime reads that as a missing field, not as an empty string, and the agent job
