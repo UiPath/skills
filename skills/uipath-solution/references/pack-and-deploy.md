@@ -147,7 +147,9 @@ uip solution upload ./MySolution --output json
 
 This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` overwrites that solution in place; otherwise it imports as new — see [develop-solution.md § `upload` decides import or overwrite from what the cloud holds](develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds) for the decision rules and snapshot recording.
 
+<!--skill-flavor:upload-tabs:start-->
 `upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
+<!--skill-flavor:upload-tabs:end-->
 
 ## Step 4: Deploy to Orchestrator
 

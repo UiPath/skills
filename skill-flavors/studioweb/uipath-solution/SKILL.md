@@ -22,3 +22,32 @@
 
 > **Deploy is asynchronous in two phases.** `deploy run` installs, polls to a terminal status, then activates unless `--skip-activate`; success is `Status: DeploymentSucceeded` with `ActivationStatus: SuccessfulActivate`. If activation fails the deployment still exists — fix the config and run `uip solution deploy activate <name>` rather than redeploying. Check state with `uip solution deploy status` / `deploy list`.
 <!--skill-flavor:solution-lifecycle-steps:end-->
+
+<!--skill-flavor:when-to-use-uipx:start-->
+- User wants to publish the open Studio Web solution (`uip solution publish`; `pack`/`upload`/`deploy` are unavailable in the browser — publishing to the personal workspace auto-deploys)
+<!--skill-flavor:when-to-use-uipx:end-->
+
+<!--skill-flavor:when-to-use-detected-uipx:start-->
+<!--skill-flavor:when-to-use-detected-uipx:end-->
+
+<!--skill-flavor:when-to-use-create:start-->
+- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>`, never with `solution init` or `projects add`
+<!--skill-flavor:when-to-use-create:end-->
+
+<!--skill-flavor:cli-surface-probe:start-->
+Studio Web runs the post-rename CLI — use the commands and flags as documented in the references, with no probe.
+<!--skill-flavor:cli-surface-probe:end-->
+<!--skill-flavor:cli-unavailable:start-->
+- `unknown command` / `command not found` on a documented verb → the host did not expose it. Do NOT `npm install` (the CLI is bundled by the host, not globally installed) and do not fall back to a pre-rename spelling. Report the exact command and error to the user and stop.
+<!--skill-flavor:cli-unavailable:end-->
+
+<!--skill-flavor:rename-table:start-->
+<!--skill-flavor:rename-table:end-->
+
+<!--skill-flavor:probe-rule:start-->
+1. **Studio Web runs the post-rename CLI.** Use the documented commands directly; there is no pre-rename fallback.
+<!--skill-flavor:probe-rule:end-->
+
+<!--skill-flavor:develop-solution-row:start-->
+| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init`; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
+<!--skill-flavor:develop-solution-row:end-->
