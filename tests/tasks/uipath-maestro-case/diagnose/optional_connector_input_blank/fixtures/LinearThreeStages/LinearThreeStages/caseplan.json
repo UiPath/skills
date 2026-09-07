@@ -462,6 +462,28 @@
                     "source": "=response.status",
                     "target": "=lastEmailStatus",
                     "elementId": "Stage_Qn7tBz-tVw2hJcR5b"
+                  },
+                  {
+                    "name": "Error",
+                    "displayName": "Error",
+                    "type": "jsonSchema",
+                    "source": "=Error",
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "Code": {
+                          "type": "string"
+                        },
+                        "Message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "id": "mailError",
+                    "var": "mailError",
+                    "value": "mailError",
+                    "target": "=mailError",
+                    "elementId": "Stage_Qn7tBz-tVw2hJcR5b"
                   }
                 ]
               }
