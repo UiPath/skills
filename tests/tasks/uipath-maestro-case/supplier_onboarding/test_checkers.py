@@ -1242,8 +1242,6 @@ class FieldNameTests(CheckerBase):
         self.accepts(baseline_plan())
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class VariableTests(CheckerBase):
@@ -1437,3 +1435,7 @@ class RuleNameUniquenessTests(CheckerBase):
                     renamed += 1
         self.assertGreater(renamed, 1, "the baseline's setup stage needs two task entry rules")
         self.rejects(plan, "unique inside a stage")
+
+
+if __name__ == "__main__":
+    unittest.main()
