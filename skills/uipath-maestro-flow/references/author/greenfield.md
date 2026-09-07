@@ -56,9 +56,11 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 - **`Edit` in the same turn as a `Bash` that mutates the same file.** Parallel tool calls race — separate them across turns.
 - **Two parallel `Edit`s anchored to the same byte range.** Same-file Edits serialize in execution order; if Edit N's `old_string` overlaps text that Edit N-1's substitution removed or shifted, Edit N fails with "string not found." Use the [per-array anchor pattern](#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order) — anchor each Edit on its target array's own opening key, never on key order or a shared boundary.
 
+<!--skill-flavor:greenfield-step-zero-heading:start-->
 ## Step 0 — Resolve the `uip` binary and detect command prefix **[T1]**
 
 See [shared/cli-conventions.md](../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form. <!-- uip-check-skip -->
+<!--skill-flavor:greenfield-step-zero-heading:end-->
 
 <!--skill-flavor:greenfield-step-zero-concurrency:start-->
 This probe is read-only — emit as a parallel `Bash` alongside the Step 2 scaffold chain. It does not need its own turn.
@@ -229,7 +231,9 @@ uip maestro flow registry pull                          # refresh local cache (e
 uip maestro flow registry get core.control.end --output json
 ```
 
+<!--skill-flavor:greenfield-registry-auth-note:start-->
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. **In-solution sibling projects** are always available via `--local` without login — see below.
+<!--skill-flavor:greenfield-registry-auth-note:end-->
 
 ### Select the node type for each external service (runs even when full planning is skipped)
 
@@ -259,6 +263,7 @@ Pulling **named fields out of documents** (PDFs, scans, receipts, invoices, cont
 
 See [plugins/ixp/impl.md — Landing the node when you cannot fully configure it](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it).
 
+<!--skill-flavor:greenfield-local-discovery:start-->
 **In-solution discovery (no login required):**
 
 ```bash
@@ -268,6 +273,7 @@ uip maestro flow registry get "<node-type>" --local --output json  # get full ma
 ```
 
 Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first. `search --local` omits `AvailableOnTenant` — drop it from `--output-filter` projections.
+<!--skill-flavor:greenfield-local-discovery:end-->
 
 ## Step 4 — Build the flow **[T2]**
 
@@ -317,7 +323,9 @@ See [shared/file-format.md — Top-level structure](../shared/file-format.md#top
 
 > **Before each node, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only — use `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`.**
 
+<!--skill-flavor:greenfield-edit-target-file:start-->
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
+<!--skill-flavor:greenfield-edit-target-file:end-->
 
 > **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change **and the flow has no CLI-owned nodes** (a full-file `Write` over connector / managed-HTTP nodes clobbers their `bindings[]` — see the Step 4 `Write` note above). For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
 
@@ -331,11 +339,13 @@ For each node type, follow the relevant plugin's `impl.md` for node-specific inp
 
 ### Canonical T3 chain — issue this as ONE `Bash` call
 
+<!--skill-flavor:greenfield-t3-chain:start-->
 ```bash
 uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<DETAIL_JSON>' --output json \
   && uip maestro flow validate "<ProjectName>.flow" --output json \
   && uip maestro flow format "<ProjectName>.flow" --output json
 ```
+<!--skill-flavor:greenfield-t3-chain:end-->
 
 `<DETAIL_JSON>` is node-type-specific — the schema is owned by each CLI-owned node's plugin, not duplicated here: HTTP → [http/impl.md](plugins/http/impl.md#critical-use-node-configure), connectors → [connector/impl.md](plugins/connector/impl.md), connector triggers → [connector-trigger/impl.md](plugins/connector-trigger/impl.md). Tail-append one `node configure` per CLI-owned node added in T1, using the node IDs captured from T1's chained output. Drop the entire `node configure` segment if no CLI-owned nodes exist.
 
@@ -363,9 +373,11 @@ This is the last segment of the [canonical T3 chain](#canonical-t3-chain--issue-
 
 Standalone (only if not chained from Step 5):
 
+<!--skill-flavor:greenfield-format-standalone:start-->
 ```bash
 uip maestro flow format <ProjectName>.flow --output json
 ```
+<!--skill-flavor:greenfield-format-standalone:end-->
 
 ## Completion Output
 
@@ -383,11 +395,13 @@ When you finish building the flow, report to the user:
 
 Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../operate/CAPABILITY.md) for the command sequence.
 
+<!--skill-flavor:greenfield-whats-next-dropdown:start-->
 | Option | What it does |
 | --- | --- |
 | **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
 | **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
+<!--skill-flavor:greenfield-whats-next-dropdown:end-->
 
 When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any of these actions without explicit user selection. Once the option is settled, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.

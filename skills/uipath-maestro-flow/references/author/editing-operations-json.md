@@ -31,19 +31,24 @@ Before editing, complete all applicable items:
 6. **Node variables.** Add one `variables.nodes[]` entry for every data-producing node output: `output` for action/trigger nodes and `error` for action nodes. Use `{ "id": "<nodeId>.<outputId>", "type": "object", "binding": { "nodeId": "<nodeId>", "outputId": "<outputId>" } }`. The BPMN emitter uses these declarations; validation may pass while runtime resolves `undefined`. `uip maestro flow format` regenerates this block from `nodes[]` + `definitions[]`.
 7. **Delete cascade.** Remove the node, every edge whose `sourceNodeId` or `targetNodeId` matches it, unused definitions, its `variables.nodes` and `variableUpdates` entries, and connector bindings only when no remaining node uses that connector.
 
+<!--skill-flavor:json-colocation-antipattern:start-->
 > **Anti-pattern:** editing a `.flow` not colocated with `project.uiproj`. It is invisible to `uip maestro flow debug`, Studio, and discovery via `**/project.uiproj`; `uip maestro flow validate <PATH>.flow` can still pass. Always edit the sibling `.flow`.
+<!--skill-flavor:json-colocation-antipattern:end-->
 
 ## Edit Tooling
 
+<!--skill-flavor:json-edit-tooling-table:start-->
 | Operation | Mechanic | Rule |
 |---|---|---|
 | Surgical leaf string/number/bool | `Edit` | Use one unique substring; re-`Read` after rewrites because matching is whitespace-sensitive. |
 | New node, edge, definition, or variable | `Read` whole file → reconstruct in chat → `Write` whole file | Preserve field order; avoid dropping fields on files >1000 lines. |
 | Nested replacement, field insertion, idempotent splice | `Edit` / `Write`; `python3` heredoc only after explicit user approval | Prefer direct authoring; scripts bypass safeguards and require diff review. |
 | One-shot extraction/single-field CLI JSON mutation | `jq` | Use only when `--output-filter` cannot express it. |
+<!--skill-flavor:json-edit-tooling-table:end-->
 
 The CLI has no `node update`; directly author node `inputs`, definition swaps, and array splices. For several same-file `Edit`s, anchor each on its target array's opening key, never top-level key order; beware recurring `"nodes": [` / `"edges": [` inside `definitions[]` and `subflows.<id>`. See [editing-operations.md — Parallel same-file Edits](editing-operations.md#parallel-same-file-edits).
 
+<!--skill-flavor:json-scripted-rewrite:start-->
 ### Scripted structural rewrite
 
 Use only after explicit approval:
@@ -63,17 +68,20 @@ uip maestro flow validate <FILE>.flow --output json
 ```
 
 Preserve canonical 2-space indent. `flow format` normalizes layout but does not re-indent unrelated structure. Whole-file `Write` is lossy and risks clobbering CLI-owned `bindings[]` / `inputs.detail`, especially on files >500 lines or containing connector/managed-HTTP nodes; prefer `Edit` in place.
+<!--skill-flavor:json-scripted-rewrite:end-->
 
 ### `--output-filter` for CLI JSON
 
 Run the CLI's JMESPath filter for read-only extraction; expressions start at the `Data` envelope and omit `Data.`. See [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
 
+<!--skill-flavor:json-output-filter-examples:start-->
 ```bash
 uip solution upload --output json --output-filter "DesignerUrl"
 uip maestro flow registry get <node-type> --output json --output-filter "Node"
 ```
 
 Use `jq` / `python3` only when JMESPath cannot express multi-step joins, format conversion, or conditional output computed from multiple fields.
+<!--skill-flavor:json-output-filter-examples:end-->
 
 ## Primitive Operations
 
@@ -139,7 +147,9 @@ Orchestrator-job nodes (`api-workflow`, `rpa-workflow`, `agent`, `agentic-proces
 }
 ```
 
+<!--skill-flavor:json-add-node-format:start-->
 Run `uip maestro flow format <ProjectName>.flow` after structural edits. It regenerates `variables.nodes[]`, arranges nodes horizontally, sets canvas sizes (inline agents 288×96, containers 560×320, others 96×96), and recurses into subflows. Do not calculate coordinates manually.
+<!--skill-flavor:json-add-node-format:end-->
 
 ### Delete a node
 
@@ -263,13 +273,17 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 
 **Tool:** `Edit` multiple calls.
 
+<!--skill-flavor:json-replace-mock-discovery:start-->
 1. Check in-solution first and run `uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --local --output json`; if unavailable, run `uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --output json`.
+<!--skill-flavor:json-replace-mock-discovery:end-->
 2. Record mock connections; remove the mock and incident edges.
 3. Add the real node with correct `type`, exact `typeVersion`, resolved `inputs`, action-node `outputs` (`output` + `error`), and no `model` block.
 4. Copy its registry definition verbatim.
 5. Add two top-level `bindings[]` entries per resource (`name` + `folderPath`) with matching `resourceKey`.
 6. Re-create edges with the new ID and add `variables.nodes` entries.
+<!--skill-flavor:json-replace-mock-validate:start-->
 7. Run `uip maestro flow validate <ProjectName>.flow --output json`.
+<!--skill-flavor:json-replace-mock-validate:end-->
 
 ### Replace manual trigger with scheduled trigger
 
@@ -286,7 +300,9 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 ```
 
 2. Replace the manual definition with the exact definition from `uip maestro flow registry get core.trigger.scheduled --output json`.
+<!--skill-flavor:json-replace-trigger-validate:start-->
 3. Run `uip maestro flow validate <ProjectName>.flow --output json`.
+<!--skill-flavor:json-replace-trigger-validate:end-->
 
 ### Create a subflow
 
@@ -319,7 +335,9 @@ Only `inout` variables can be updated; `in` variables are read-only. `expression
 
 ## Connector Node Configuration (Edit / Write fallback)
 
+<!--skill-flavor:json-bindings-v2-fallback:start-->
 Prefer `uip maestro flow node configure`. If using the fallback, use `Edit` for node configuration and `Edit` (or `Write` for a fresh file) for `bindings_v2.json`.
+<!--skill-flavor:json-bindings-v2-fallback:end-->
 
 ### 1. `inputs.detail` on the node
 

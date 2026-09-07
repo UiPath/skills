@@ -1,10 +1,12 @@
 # Flow Editing Operations — CLI Carve-Outs
 
+<!--skill-flavor:cli-carveouts-scope-note:start-->
 This is **not** a structural editing guide. Use direct `.flow` authoring via [editing-operations-json.md](editing-operations-json.md) for OOTB node/edge/variable CRUD, trigger swaps, output mapping, subflows, inline-agent node/wiring, non-connector resources, and in-place updates.
 
 > **When to use this file:** only for CLI-managed carve-outs documented by a plugin: connector activities, connector triggers, and managed HTTP nodes (both `node add` and `node configure`). If you landed here while adding/removing/wiring OOTB nodes, inline-agent nodes, non-connector resources, or other structural graph elements, go back to the Edit / Write guide.
 
 The primitive commands below are support commands for carve-out workflows only. They are not an opt-in path for non-carve-out structural edits.
+<!--skill-flavor:cli-carveouts-scope-note:end-->
 
 ---
 
@@ -97,10 +99,12 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
   --detail '<DETAIL_JSON>'
 ```
 
+<!--skill-flavor:cli-configure-connector-effects:start-->
 **What the CLI handles automatically:**
 - Populates `inputs.detail` (connectionId, method, endpoint, bodyParameters, etc.)
 - Creates connection binding entries in `bindings_v2.json`
 - Creates connection resource files under `resources/solution_folder/connection/`
+<!--skill-flavor:cli-configure-connector-effects:end-->
 
 The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/impl.md](plugins/connector/impl.md), [connector-trigger/impl.md](plugins/connector-trigger/impl.md), and [http/impl.md](plugins/http/impl.md) for the exact fields.
 
@@ -132,10 +136,12 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
   }'
 ```
 
+<!--skill-flavor:cli-configure-http-effects:start-->
 **What the CLI handles automatically:**
 - Wraps your fields into the full `inputs.detail` structure (connector: `uipath-uipath-http`, bodyParameters, configuration)
 - Generates `bindings_v2.json` with the target connector's connection
 - Creates a connection resource file under `resources/solution_folder/connection/`
+<!--skill-flavor:cli-configure-http-effects:end-->
 
 See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and JSON structure.
 

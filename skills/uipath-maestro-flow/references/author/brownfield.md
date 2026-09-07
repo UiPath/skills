@@ -11,7 +11,9 @@ There is no automatic project-to-flow conversion. Re-host only orchestration:
 1. Keep coded/RPA components and agents as resource nodes; do not rewrite them into Maestro. Use `uipath.core.rpa-workflow.*` and `uipath.core.agent.*`; see the relevant plugin's `planning.md`.
 2. Lift ordering, waits, and branches into explicit trigger → steps → decisions → end topology.
 3. Make sleeps, polling, and "check again later" first-class Maestro wait, delay, HITL, or `create-and-wait` nodes.
+<!--skill-flavor:brownfield-convert-resolve-executors:start-->
 4. Publish executors or keep them in-solution, then resolve them with `registry list --local` for in-solution projects.
+<!--skill-flavor:brownfield-convert-resolve-executors:end-->
 
 The result should be a thin flow delegating work to existing artifacts. Author it as greenfield ([greenfield.md](greenfield.md)), discovering artifacts during [planning-arch.md](planning-arch.md). Apply [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home): migrate for long waits, human approvals, parallel branches, or per-case visibility; do not migrate short, fully automated, fire-once scripts when orchestration overhead is not worthwhile.
 
@@ -29,6 +31,7 @@ Make all edits first. Then run `uip maestro flow validate` once, followed by `ui
 
 For edits touching multiple top-level arrays, follow [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits): anchor each Edit on its array's opening key, never on top-level key order.
 
+<!--skill-flavor:brownfield-common-edits-table:start-->
 | Edit | Required operation and guide |
 |---|---|
 | **Change a script body or node inputs** | Use `Edit` on `inputs`; do not delete/re-add because node IDs and `$vars` expressions must remain stable. Script nodes must return an object (`return { key: value }`). See [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs). |
@@ -46,16 +49,20 @@ For edits touching multiple top-level arrays, follow [parallel same-file Edit ru
 | **Add an inline agent node** | Embed `uipath.agent.autonomous` with an inline agent definition in the flow project. See [inline-agent/planning.md](plugins/inline-agent/planning.md) for inline versus published selection and [inline-agent/impl.md](plugins/inline-agent/impl.md) for scaffolding, JSON, and validation. |
 | **Add voice nodes** | Turn a flow into a phone conversation: a `uipath.agent.voice` inline conversational agent wired to a live call, plus the trigger, create-call, and end-call nodes. Binding an inbound number happens at deploy time, not in the `.flow`. See [inline-voice-agent/planning.md](plugins/inline-voice-agent/planning.md) for the two topologies and trunk requirements, and [inline-voice-agent/impl.md](plugins/inline-voice-agent/impl.md) for node JSON, `callContext` wiring, and number binding. |
 | **Add a HITL QuickForm node** | Insert the human approval/review/enrichment checkpoint and wire its `completed` port. See [Edit/Write: Add a node](editing-operations-json.md) and [hitl/impl.md](plugins/hitl/impl.md). |
+<!--skill-flavor:brownfield-common-edits-table:end-->
 
 OOTB structural CRUD uses Edit/Write only; there is no CLI opt-in path for other flow-graph edits.
 
 ## After edits
 
+<!--skill-flavor:brownfield-after-edits:start-->
 1. Run `uip maestro flow validate <ProjectName>.flow --output json`. Fix errors and re-validate.
 2. Run `uip maestro flow format <ProjectName>.flow --output json`. Run it before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](CAPABILITY.md)); without it, stale or hand-edited `layout` data renders as misshapen rectangles in Studio Web.
+<!--skill-flavor:brownfield-after-edits:end-->
 
 ## "Refusing to serialize a vX workflow" — migrate first
 
+<!--skill-flavor:brownfield-migrate-section:start-->
 If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v<current> file format`, run:
 
 ```bash
@@ -63,6 +70,7 @@ uip maestro flow migrate <ProjectName>.flow --output json
 ```
 
 `migrate` is lossless, walks the per-version migration chain (for example, `=js:` expression strings become rich expression objects), and bumps the file to the current version. Then run `flow format` and `flow validate`; both should pass. `flow validate` does not re-serialize and therefore does not check the version guard enforced by `format`/`debug`/`pack`. When this refusal appears, always migrate; do not assume the edit was wrong.
+<!--skill-flavor:brownfield-migrate-section:end-->
 
 ## Completion Output
 
@@ -80,11 +88,13 @@ When editing finishes, report:
 
 Authoring ends here. For any selected option, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow; do not run operate commands from this document.
 
+<!--skill-flavor:brownfield-whats-next-dropdown:start-->
 | Option | What it does |
 |---|---|
 | **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
 | **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen; see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it. |
+<!--skill-flavor:brownfield-whats-next-dropdown:end-->
 
 When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any option without explicit user selection.
