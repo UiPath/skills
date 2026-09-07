@@ -36,6 +36,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 ## Common tasks
 
+<!--skill-flavor:single-nested-task-row:start-->
 | Need | Read |
 | --- | --- |
 | Triage a failed flow run | [troubleshooting-guide.md](troubleshooting-guide.md) |
@@ -48,12 +49,11 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | Identify misshapen Studio Web nodes | [failure-modes.md — misshapen nodes](failure-modes.md#misshapen-rectangle-nodes-in-studio-web) |
 | Diagnose a hung HITL node | [failure-modes.md — HITL `completed` port unwired](failure-modes.md#hitl-completed-port-unwired) |
 | Diagnose a connector silent fault | [failure-modes.md — Reused reference ID](failure-modes.md#reused-reference-id--cross-connection-id-leakage) |
-<!--skill-flavor:single-nested-task-row:start-->
 | Diagnose a publish/upload structural error | [failure-modes.md — Single-nested layout](failure-modes.md#single-nested-layout) |
-<!--skill-flavor:single-nested-task-row:end-->
 | Diagnose `Folder does not exist` on a resource node | [failure-modes.md — Missing `bindings[]` on resource node](failure-modes.md#missing-bindings-on-resource-node) |
 | Triage "validate passes, debug faults" | [failure-modes.md — `flow validate` passes, `flow debug` faults](failure-modes.md#flow-validate-passes-flow-debug-faults) |
 | Look up `instance` / `incident` CLI syntax | [shared/cli-commands.md](../shared/cli-commands.md) + [troubleshooting-guide.md — CLI command reference](troubleshooting-guide.md#cli-command-reference) |
+<!--skill-flavor:single-nested-task-row:end-->
 
 ## Anti-patterns
 

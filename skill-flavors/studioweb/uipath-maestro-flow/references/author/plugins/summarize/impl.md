@@ -33,4 +33,5 @@ uip maestro flow validate /solution/<FlowProject>/new.flow --output json
 | `content.Citations` missing despite `returnCitations: true` | A downstream consumer read `inputDefaults` before runtime output existed | Reference `$vars.{nodeId}.output.content.Citations` only in nodes downstream of Summarize; do not precompute |
 | Downstream `result.content.text` / `result.content.citations` is `undefined` | Lowercase field names were used | Use `result.content.Text` / `result.content.Citations` |
 | Large documents time out | Synthesis cost scales with document size and one call is bounded | Split upstream into per-section Summarize calls plus a final merge, or use a published [Agent](../agent/impl.md) with a context-grounding resource |
+| Wrong citations, such as pages off by one or wrong source | Document page numbering differs from displayed page ordinal | Treat `Ordinal` and `PageNumber` as advisory; present `Source`/`Reference` and let the reader verify |
 <!--skill-flavor:sum-debug-table:end-->

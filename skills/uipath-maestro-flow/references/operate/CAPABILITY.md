@@ -35,19 +35,19 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 ## Workflow
 
+<!--skill-flavor:ship-journey-row:start-->
 | Journey | Read |
 | --- | --- |
-<!--skill-flavor:ship-journey-row:start-->
 | Publish a flow (Studio Web default, Orchestrator on request) | [ship.md](ship.md) |
-<!--skill-flavor:ship-journey-row:end-->
 | Run a flow on demand or check progress | [run.md](run.md) |
 | Intervene in a running instance | [manage.md](manage.md) |
+<!--skill-flavor:ship-journey-row:end-->
 
 ## Common tasks
 
+<!--skill-flavor:ship-common-tasks-rows:start-->
 | I need to... | Read these |
 | --- | --- |
-<!--skill-flavor:ship-common-tasks-rows:start-->
 | **Publish a flow to Studio Web** | [ship.md — Path 1](ship.md#path-1--studio-web-upload-default) |
 | **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Sync solution resource declarations** | [ship.md — Pre-flight](ship.md#pre-flight) (the `uip solution resources refresh` step) |
@@ -62,8 +62,8 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Cancel an instance** | [manage.md](manage.md) |
 | **Retry a faulted instance** | [manage.md](manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
 | **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
-<!--skill-flavor:ship-common-tasks-rows:end-->
 | **My flow run failed** | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
+<!--skill-flavor:ship-common-tasks-rows:end-->
 
 ## Anti-patterns
 

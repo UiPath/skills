@@ -407,5 +407,5 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | Extraction failed | Underlying IxP model errored (unsupported MIME type, corrupted file, service-side failure) | Check `$vars.{nodeId}.error.detail` for the IxP service response |
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
 | Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob missing/undefined | Copy `inputDefaults.model` verbatim into `inputs.model` (Authoring rule #1, [JSON Structure](#json-structure)). |
-<!--skill-flavor:ixp-impl-debug-table:end-->
 | `flow validate` error `inputs.model must be an object with non-empty string modelName and folderKey` | `inputDefaults.model.modelName` was `null` and copied verbatim | Set `inputs.model.modelName` from `inputDefaults.model.modelDisplayName` (Authoring rule #1); if `folderKey` empty too, take flat `inputDefaults.folderKey`. |
+<!--skill-flavor:ixp-impl-debug-table:end-->

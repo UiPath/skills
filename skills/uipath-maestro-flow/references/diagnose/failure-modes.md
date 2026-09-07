@@ -6,9 +6,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 
 ## Index
 
+<!--skill-flavor:project-creation-recovery-index:start-->
 | Pattern | Symptom | Cause |
 |---|---|---|
-<!--skill-flavor:project-creation-recovery-index:start-->
 | [`=js:` prefix missing](#js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
 | [`variables.nodes[]` missing](#variablesnodes-missing--varsxoutput-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [Misshapen nodes in Studio Web](#misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |

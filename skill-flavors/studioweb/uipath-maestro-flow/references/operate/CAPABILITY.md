@@ -22,9 +22,15 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:debug-summary-rule:end-->
 
 <!--skill-flavor:ship-journey-row:start-->
+| Journey | Read |
+| --- | --- |
+| Run a flow on demand or check progress | [run.md](run.md) |
+| Intervene in a running instance | [manage.md](manage.md) |
 <!--skill-flavor:ship-journey-row:end-->
 
 <!--skill-flavor:ship-common-tasks-rows:start-->
+| I need to... | Read these |
+| --- | --- |
 | **Debug a flow end-to-end** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) |
 | **Pass input arguments to `flow debug`** | [run.md — Debug](run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
 | **Bind local files to file-typed inputs** | Not possible from `uip flow debug` in Studio Web (`--attachment` is ignored). For deployed processes see [run.md — Process run](run.md#process-run--trigger-a-deployed-process) (`--attachment <variableId>=<localPath>`, repeatable; overrides `--inputs` on key collisions) |
@@ -36,6 +42,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Cancel an instance** | [manage.md](manage.md) |
 | **Retry a faulted instance** | [manage.md](manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
 | **Look up `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
+| **My flow run failed** | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 <!--skill-flavor:ship-common-tasks-rows:end-->
 
 <!--skill-flavor:upload-antipatterns:start-->

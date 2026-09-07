@@ -5,13 +5,10 @@ Steps 0–6 are **logical phases**, not separate turns. In Studio Web project cr
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-<!--skill-flavor:greenfield-execution-map-intro:end-->
-
-<!--skill-flavor:greenfield-t1-execution:start-->
 | **T1 — Create + discover** | 0, 2, 3 | One chained `Bash` (`uip flow init <ProjectName> && cd /solution/<ProjectName> && uip maestro flow registry pull && uip maestro flow node add new.flow <type> …` — one `node add` per CLI-owned node; drop the `flow init` segment when the user already has the Flow project open) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s). |
 | **T2 — Read + author** | 4 | One `Read` of `/solution/<ProjectName>/new.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Same-file Edits must not overlap — anchor each on its own top-level array (see the anchor table below); when in doubt, serialize them across two turns |
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
-<!--skill-flavor:greenfield-t1-execution:end-->
+<!--skill-flavor:greenfield-execution-map-intro:end-->
 
 <!--skill-flavor:greenfield-init-batching:start-->
 - **One CLI per turn.** Never issue `flow init`, then `cd`, then `registry pull` as three separate Bash calls — chain with `&&`, the `cd` included as its own segment. Same for `node configure && validate && format`.
