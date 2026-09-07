@@ -617,8 +617,15 @@ def stage_label(stage_id: str) -> str:
     return stage_id
 
 
-def stage_entries(instance_id: str, display_name: str) -> int:
-    """How many times the case entered this stage, counted from the stage element's own `ElementRuns`. One row is reported per element however many times it is visited, so the row count is always 1 and only the runs distinguish a sendback's second pass."""
+def stage_runs(instance_id: str, display_name: str) -> int:
+    """How many `ElementRun` records this stage carries.
+
+    NOT the number of visits. One visit writes two records, `InProgress` then
+    `Completed`, measured on every stage of three finished instances. So 0 means the
+    case never reached the stage, 2 means one visit, and 4 means it came back.
+    Reading this as a visit count is how the sendback assertion came to pass on a
+    case that was never sent back.
+    """
     target = next((n["id"] for n in plan_nodes()
                    if n.get("type") == "case-management:Stage"
                    and ((n.get("data") or {}).get("label")) == display_name), None)
@@ -913,7 +920,7 @@ def main() -> int:
     elif args.route == "withdraw":
         if outcome != "Withdrawn":
             fail(f"the supplier withdrew but CaseOutcome={outcome!r}; {WITHDRAWN!r} must close the case as withdrawn")
-        if not stage_entries(instance_id, WITHDRAWN):
+        if not stage_runs(instance_id, WITHDRAWN):
             fail(f"the case never entered {WITHDRAWN!r}; a review stage must offer it as a choice")
     elif args.route == "reject":
         if buyer != "reject":
@@ -921,9 +928,12 @@ def main() -> int:
         if outcome != "Rejected":
             fail(f"the buyer declined but CaseOutcome={outcome!r}; the decline guard did not route the case")
     elif args.route == "sendback":
-        entries = stage_entries(instance_id, CHECKING)
-        if entries < 2:
-            fail(f"{CHECKING!r} was entered {entries} time(s); a sendback must send the case back into it")
+        # Two records per visit, so a second visit is four. `< 2` only caught a case
+        # that never reached the stage at all, which let every un-sent-back run pass.
+        runs = stage_runs(instance_id, CHECKING)
+        if runs < 4:
+            fail(f"{CHECKING!r} was visited {runs // 2} time(s) ({runs} run records); "
+                 "a sendback must send the case back into it")
         if buyer != "approve":
             fail(f"the second buyer decision never landed: {BUYER_DECISION}={buyer!r}, expected 'approve'")
 
@@ -956,10 +966,10 @@ def main() -> int:
         # test: nothing may match it. Checked here rather than on its own route, because
         # this is the shortest way to a terminal outcome.
         terminals = (ONBOARDED, REJECTED, WITHDRAWN)
-        before = {label: stage_entries(instance_id, label) for label in terminals}
+        before = {label: stage_runs(instance_id, label) for label in terminals}
         send_stage_selection(instance_id, REJECTED, ONBOARDED)
         time.sleep(POLL_SLEEP * 2)
-        after = {label: stage_entries(instance_id, label) for label in terminals}
+        after = {label: stage_runs(instance_id, label) for label in terminals}
         moved = {k: (before[k], after[k]) for k in before if before[k] != after[k]}
         if moved:
             fail(f"a closed case moved when sent a stage selection: {moved}")
