@@ -13,9 +13,11 @@ from _shared.case_check import (  # noqa: E402
     find_stages,
     first_rule_of_condition,
     get_case_exit_conditions,
+    is_non_required,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
     read_caseplan,
+    selected_stage_ids,
     start_debug,
 )
 
@@ -46,7 +48,8 @@ def main():
     }
     for name, (stage, want) in expected_required.items():
         got = _is_required(stage)
-        if got is not want:
+        matches = got is True if want else is_non_required(stage.get("data") or {})
+        if not matches:
             sys.exit(
                 f"FAIL: stage {name!r} isRequired should be {want}; got {got!r}"
             )
@@ -122,9 +125,7 @@ def main():
         elif marks is False:
             non_completing_rules.add(rname)
         if rname in ("selected-stage-exited", "selected-stage-completed"):
-            sid = rule.get("selectedStageId")
-            if sid:
-                selected_stage_by_rule.setdefault(rname, set()).add(sid)
+            selected_stage_by_rule.setdefault(rname, set()).update(selected_stage_ids(rule))
 
     if "required-stages-completed" not in completing_rules:
         sys.exit(

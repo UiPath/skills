@@ -1,44 +1,40 @@
 # Grant Permission(s) to a Principal
 
-Workflow for the ad-hoc **"grant me X"** / **"give <PRINCIPAL> permissions Y, Z"** request — a shortcut over the full Create-Role + Create-Assignment pair, optimized for the common case where the user names *permissions*, not a role shape.
+Workflow for ad-hoc **"grant me X"** / **"give <PRINCIPAL> permissions Y, Z"** requests: a shortcut over Create-Role + Create-Assignment when the user names permissions rather than a role shape.
 
 For per-command flag tables and output codes, see [authorization-commands.md](authorization-commands.md). For shared role-shape concepts (Centralized Access, service-inference rules, scope modes), see [role-management.md](role-management.md).
 
 ## When to Use This Workflow
 
-The user names **one or more permissions** without naming a role or a scope. Examples:
+Use when the user names permissions without naming a role or scope, such as *"grant me DOCUMENTUNDERSTANDING.PROJECTS.READ"*, *"give alice DU projects read and update"*, or *"what's the minimal grant for licensing reads?"* If the user names a role shape first, use [role-management.md — Workflow: Create a Custom Role](role-management.md#workflow-create-a-custom-role); its Step 1a-1d substeps cover the role-first path.
 
-- *"grant me DOCUMENTUNDERSTANDING.PROJECTS.READ"*
-- *"give alice DU projects read and update"*
-- *"what's the minimal grant for licensing reads?"*
-
-If the user names a **role shape first** (e.g., *"create a tenant role for DU"*, *"make a custom role with DU permissions"*), use [role-management.md — Workflow: Create a Custom Role](role-management.md#workflow-create-a-custom-role) instead — those Step 1a-1d substeps cover the role-first entry path.
-
-> **Sibling workflow.** [Step 1b of Workflow: Create a Custom Role](role-management.md#step-1b--hoist-check-prefer-the-umbrella-when-permissions-overlap) is the binary (service vs. umbrella) form of the same scope-selection problem this workflow solves with a full N-scope intersection (Steps G2-G3). Keep them in sync if either changes.
-
-> **Never skip the scope menu.** The same permission name (e.g., `DOCUMENTUNDERSTANDING.PROJECTS.UPDATE`) almost always appears in *both* the service catalog *and* the Tenant / TenantGlobal umbrella catalogs. Defaulting to `--service <svc>` silently locks the role to one service and loses the multi-service reuse the umbrella offers. Always probe every applicable scope and let the user pick.
+> **Sibling workflow.** [Step 1b of Workflow: Create a Custom Role](role-management.md#step-1b--hoist-overlapping-permissions-to-the-umbrella) is the binary service-versus-umbrella form of the scope-selection problem solved here with a full N-scope intersection (Steps G2-G3). Keep them synchronized.
+>
+> **Never skip the scope menu.** A permission may appear in both service and Tenant / TenantGlobal umbrella catalogs. Do not default to `--service <svc>`; probe every applicable scope and let the user choose.
 
 ## Step G1 — Identify the permission(s)
 
-Resolve the user's wording to one or more concrete permission `name` values (e.g., "DU projects update" → `DOCUMENTUNDERSTANDING.PROJECTS.UPDATE`; "DU projects read and update" → `[…PROJECTS.READ, …PROJECTS.UPDATE]`). If any token is ambiguous (no exact match), grep the catalog:
+Resolve the wording to exact permission `name` values. If any token is ambiguous or has no exact match, run:
 
 ```bash
 uip admin authorization permissions list --output json \
   --output-filter "Data[?contains(name, '<TOKEN>')].{name:name,resourceType:resourceType,scopeType:scopeType}"
 ```
 
-If multiple candidates remain for any token, render a numbered Markdown menu and stop until disambiguated. End of this step: a confirmed list of one or more permission `name` strings.
+If multiple candidates remain for any token, render a numbered Markdown menu and stop until the user disambiguates. End with one or more confirmed permission `name` strings.
 
 ## Step G2 — Probe which scopes admit each permission
 
-Always run the Tenant and TenantGlobal probes; gate the other two on the permission set. The CLI tells you which scopes each permission is valid in:
+Run the Tenant and TenantGlobal probes always; run the other probes conditionally:
 
 | Probe | Run when |
 |---|---|
 | `permissions list --scope Tenant` | Always |
 | `permissions list --scope TenantGlobal` | Always |
-| `permissions list --service <SERVICE>` | Every selected permission shares the same service prefix (one probe per distinct prefix) |
-| `permissions list --scope Organization` | Any selected permission has an org-scope service prefix (e.g., `APPS.*`, `IDENTITY.*`) |
+| `permissions list --service <SERVICE>` | Every selected permission shares one service prefix; run one per distinct prefix |
+| `permissions list --scope Organization` | Any selected permission has an org-scope service prefix, such as `APPS.*` or `IDENTITY.*` |
+
+Run:
 
 ```bash
 uip admin authorization permissions list --scope Tenant --output json > tenant.json
@@ -47,44 +43,37 @@ uip admin authorization permissions list --service <SERVICE> --output json > svc
 uip admin authorization permissions list --scope Organization --output json > org.json            # conditional
 ```
 
-Membership rule: a permission is "valid in scope X" iff its `name` appears in the catalog returned for that scope. Many tenant-services share the same catalog between `--scope Tenant` and `--scope TenantGlobal` — treat them as two distinct menu options.
+A permission is valid in scope X iff its `name` appears in that scope's catalog. Treat Tenant and TenantGlobal as distinct menu options even when their catalogs match.
 
-## Step G2.5 — Compute the intersection of valid scopes/services across all selected permissions
+## Step G2.5 — Compute the intersection of valid scopes/services
 
-A role can hold a permission only if **every** permission in the set is valid at that role shape. Build the intersection across **five** candidate shapes — four umbrella scopes (Tenant, TenantGlobal, Organization, Project) **plus** the Service shape (`--service <SERVICE>`, scope inferred). The Service shape is always a row in the matrix when every selected permission shares one service prefix — never drop it silently just because an umbrella also admits the perm.
-
-1. For each candidate permission, record the set of shapes where it appears: e.g., `DOCUMENTUNDERSTANDING.PROJECTS.UPDATE = {Tenant, TenantGlobal, Service:documentunderstanding}`.
-2. **Intersect** the shape-sets across all candidates. The result is the set of role shapes the role can take.
-
-Branch on the intersection:
+Build each permission's shape-set and intersect the five candidate shapes: Tenant, TenantGlobal, Organization, Project, and Service (`--service <SERVICE>`, scope inferred). Include Service whenever all selected permissions share one service prefix, even if an umbrella also admits them. Record shapes such as `{Tenant, TenantGlobal, Service:documentunderstanding}`; the intersection is the permissible role-shape set.
 
 | Intersection | Action |
-|--------------|--------|
-| **Empty** (no shape holds all candidates) | The permissions cannot live on one role. Surface the per-permission scope matrix to the user and offer: (a) split into multiple roles by scope group, (b) drop the outliers, (c) reconsider the set. Do not silently downshift to a single role that omits permissions. |
-| **One shape** | Skip the menu — proceed to Step G4 with that shape. State the resolution in the summary. |
+|---|---|
+| **Empty** | Show the per-permission scope matrix and offer (a) split into multiple roles by scope group, (b) drop outliers, or (c) reconsider the set. Never silently omit permissions or downshift to one incomplete role. |
+| **One shape** | Skip the menu, proceed to Step G4, and state the resolved shape. |
 | **≥2 shapes** | Render the matrix and menu in Step G3. |
 
-> **Project-scope-only permissions** (e.g., `DOCUMENTUNDERSTANDING.DOCUMENTTYPE.*`) have **no umbrella** — they appear *only* in `permissions list --scope Project --service <svc>`. If every candidate is Project-scope and they share the same service, the intersection is `{Project:<service>}`; skip the menu and use `--scope Project --service <svc>`. If the set mixes Project with Tenant/Org, the intersection is empty — apply the split rule above.
+**Project-scope-only permissions** (for example, `DOCUMENTUNDERSTANDING.DOCUMENTTYPE.*`) have no umbrella and appear only in `permissions list --scope Project --service <svc>`. If all candidates are Project-scope and share a service, the intersection is `{Project:<service>}`; skip the menu and use `--scope Project --service <svc>`. If Project is mixed with Tenant or Organization, the intersection is empty and the split rule applies.
 
-## Step G3 — Render the intersection matrix and scope menu (Tenant Recommended when present)
+## Step G3 — Render the intersection matrix and scope menu
 
-When the intersection has ≥2 shapes, render **two artifacts**: a presence matrix (so the user sees why each option is offered) followed by a numbered menu (so the user replies with a digit). Mark **Tenant** as Recommended when present. Show only shapes that survived the intersection — never list an option the role can't take.
-
-**Decide which rows to render before drafting either artifact:**
+When the intersection has ≥2 shapes, render the presence matrix first, then a numbered menu. Show only intersection survivors; never offer an invalid shape. Mark Tenant **Recommended** when present. Decide rows as follows:
 
 | Row in `Scope/Service` column | Owning service for the created role | Render when |
 |---|---|---|
-| Tenant | `CentralizedAccess` | Intersection includes `Tenant`. Mark **Recommended**. |
-| TenantGlobal | `CentralizedAccess` | Intersection includes `TenantGlobal`. |
-| Organization | `CentralizedAccess` | Intersection includes `Organization` (i.e., every selected permission has an org-scope service prefix). |
-| Service | `<SERVICE>` (e.g., `DocumentUnderstanding`) | Intersection includes the service catalog AND every selected permission shares one service prefix. Omit when permissions span multiple services or are cross-cutting (e.g., `AUTHZ.*`). |
-| Project | `<SERVICE>` | Intersection is `{Project:<service>}` only — handled by the project-only branch in Step G2.5; usually not shown alongside umbrella rows. |
+| Tenant | `CentralizedAccess` | Intersection includes `Tenant`; mark **Recommended** |
+| TenantGlobal | `CentralizedAccess` | Intersection includes `TenantGlobal` |
+| Organization | `CentralizedAccess` | Intersection includes `Organization`, meaning every selected permission has an org-scope service prefix |
+| Service | `<SERVICE>` (for example, `DocumentUnderstanding`) | Intersection includes the service catalog and every selected permission shares one service prefix; omit for multi-service or cross-cutting permissions such as `AUTHZ.*` |
+| Project | `<SERVICE>` | Intersection is `{Project:<service>}` only; normally handled by the Project-only branch in Step G2.5 rather than shown with umbrella rows |
 
-> **Owning Service** is the value `roles get` will return as `ownerServiceName` after creation — umbrella scopes (no `--service`) resolve to `CentralizedAccess`; a service-shape role resolves to the named service. See [role-management.md — Step 6](role-management.md#step-6--summarize-highlight-the-resolved-service).
+**Owning Service** is the `ownerServiceName` returned by `roles get`: umbrella scopes without `--service` resolve to `CentralizedAccess`; service-shape roles resolve to the named service. See [role-management.md — Step 6](role-management.md#step-6--summarize-the-resolved-service).
 
-**Artifact 1 — Intersection matrix.** First column is `Scope/Service`; second column is `Owning Service`; third column is presence (✅ for shapes in the intersection, ❌ for shapes that were probed but excluded). Always include the **Service** row when every selected permission shares one service prefix — its absence was the gap that motivated this column layout. Example for `DOCUMENTUNDERSTANDING.PROJECTS.UPDATE` (single perm, single service):
+**Artifact 1 — Intersection matrix.** Use columns `Scope/Service`, `Owning Service`, and `Perm present?`; use ✅ for intersection shapes and ❌ for probed but excluded shapes. Always include the Service row when all selected permissions share one service prefix:
 
-```
+```markdown
 | Scope/Service | Owning Service        | Perm present? |
 |---------------|-----------------------|---------------|
 | Tenant        | CentralizedAccess     | ✅            |
@@ -94,9 +83,9 @@ When the intersection has ≥2 shapes, render **two artifacts**: a presence matr
 | Project       | DocumentUnderstanding | ❌            |
 ```
 
-**Artifact 2 — Numbered menu** built from the ✅ rows above, renumbered from `1`:
+**Artifact 2 — Numbered menu.** Build it from the ✅ rows and renumber from `1`. Identify the permission(s), explain that they are valid in multiple role shapes, state each shape's binding, owning service, and create flags, and end with “Reply with the digit of your choice.” Use this structure:
 
-```
+```markdown
 `<PERMISSION_NAME_1>` (+ N more) are valid in multiple role shapes. Pick:
 
 1. **Tenant** (Recommended) — multi-service role bound to one tenant. Owning service: `CentralizedAccess`. Built with `--scope Tenant` and no `--service`. Reusable across every tenant-service in this tenant.
@@ -107,26 +96,26 @@ When the intersection has ≥2 shapes, render **two artifacts**: a presence matr
 Reply with the digit of your choice.
 ```
 
-**Why Tenant is the default recommendation:** the Tenant-shape role can bundle additional tenant-scope permissions from any other service later (`LICENSING.*`, `IDENTITY.*`, etc.) without re-authoring; the service-shape role cannot. The Service option is still listed (with its `Owning Service` made explicit) so the user can deliberately pick strict service isolation when that's what they want.
+Recommend Tenant because it can later bundle tenant-scope permissions from other services (`LICENSING.*`, `IDENTITY.*`, etc.) without re-authoring; still list Service for deliberate isolation.
 
 ## Step G4 — Map the pick to the create-call shape
 
 | Pick | `roles create` flags |
-|------|----------------------|
+|---|---|
 | Tenant | `--scope Tenant` (no `--service`; `--tenant-id` defaults to login) |
 | TenantGlobal | `--scope TenantGlobal` (no `--service`) |
 | Organization | `--scope Organization` (no `--service`) |
 | Service | `--service <SERVICE>` (no `--scope`; registry infers) |
 | Project | `--scope Project --service <SERVICE>` |
 
-Author `actions.json` as a JSON array containing **every** permission `name` confirmed in Step G1 — not just one. Then run [Steps 2-5 of Workflow: Create a Custom Role](role-management.md#step-2--suggest-a-role-name) (name suggestion, action-file authoring, create, verify). After the role exists, run [Workflow: Create a Single Assignment](role-assignment-management.md#workflow-create-a-single-assignment) — including the [Echo-before-mutate protocol](role-assignment-management.md#echo-before-mutate-protocol) for the principal.
+Author `actions.json` as a JSON array containing **every** permission `name` confirmed in Step G1. Then run [Steps 2-5 of Workflow: Create a Custom Role](role-management.md#step-2--suggest-a-role-name): name suggestion, action-file authoring, create, and verify. After the role exists, run [Workflow: Create a Single Assignment](role-assignment-management.md#create-one-assignment), including the [Echo-before-mutate protocol](role-assignment-management.md#echo-before-mutate-protocol) for the principal.
 
 ## Step G5 — Summarize: state the resolved scope, service, and full permission list
 
 In the post-create / post-assign summary, include:
 
-- The scope path the assignment landed on.
-- The resolved `--service` value (or "no `--service` — multi-service <scope> role" when omitted).
-- The **full list of permissions** in the role — not just the one the user named first. This matters when the role bundles several permissions; silently omitting some from the summary hides the actual grant scope.
+- The scope path where the assignment landed.
+- The resolved `--service` value, or “no `--service` — multi-service <scope> role” when omitted.
+- The **full list of permissions** in the role, not only the first named permission.
 
-Same rule as [Step 6 of Workflow: Create a Custom Role](role-management.md#step-6--summarize-highlight-the-resolved-service).
+Apply the same rule as [Step 6 of Workflow: Create a Custom Role](role-management.md#step-6--summarize-the-resolved-service).

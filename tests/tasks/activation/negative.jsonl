@@ -61,3 +61,5 @@
 {"id": "negative-062", "prompt": "Generate a Postman collection for the vendor's REST endpoints", "expected_skill": ""}
 {"id": "negative-063", "prompt": "Write a Python client wrapper around the Stripe REST API", "expected_skill": ""}
 {"id": "negative-064", "prompt": "Build a Boomi connector for our billing system", "expected_skill": ""}
+{"id": "negative-065", "prompt": "Write an Azure Function in TypeScript with an HTTP trigger", "expected_skill": ""}
+{"id": "negative-066", "prompt": "Deploy a TypeScript AWS Lambda with the Serverless Framework", "expected_skill": ""}

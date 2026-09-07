@@ -206,6 +206,10 @@ Returns one row per `(group, bundle)` pair:
 
 ### Drill into One Group
 
+One command answers "who in group X holds which bundle". Do not reconstruct that answer from
+`uip admin groups members list` plus a `users licenses get` per member: that returns each member's
+*direct* leases, loses the `orphan` and `quota` fields entirely, and costs one call per user.
+
 ```bash
 uip platform groups rules details "<GROUP_NAME_PREFIX>" --output json
 
@@ -311,6 +315,7 @@ Both mechanisms can co-exist for the same user; rows appear with separate `sourc
 - **Sort order is case-sensitive.** `Asc`/`Desc` only. `asc`, `ASC`, or `ascending` are all rejected.
 - **`orphan: true` rows** still consume a lease until the rule is re-applied or the user is fully removed.
 - **`useExternalLicense`** in `groups rules get` is informational — set externally, not via these commands.
+- **`uip admin groups` does not answer licensing questions.** It lists group membership; it knows nothing about bundles or leases. Any question of the form "who in this group holds which bundle" is `groups rules details`.
 - **Group rule summary goes to stderr.** When piping `groups rules details` output, the rule header (entitled bundles, quotas) is on `stderr` so the JSON on `stdout` stays clean for `jq`.
 
 ---

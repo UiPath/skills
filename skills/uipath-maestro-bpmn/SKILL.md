@@ -159,8 +159,11 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    every selection with the user (use AskUserQuestion). Never fabricate an identifier.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
-   each chosen registry-owned node only. Enrich `Intsvc.*` connector nodes with
-   `--connection-id`/`--object-name`. Do not call `registry get` for structural
+   each chosen registry-owned node only. Fetch every chosen template in **one**
+   Bash call, not one command per turn — each shell round-trip is a model turn
+   and dozens of them exhaust the run's time budget before authoring finishes:
+   `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
+   Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams. If a registry template's BPMN host tag is PascalCase (for example
@@ -171,8 +174,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not
-   reverse-engineer authoring patterns from task fixtures or generated package
-   files** — fixture spelunking is the top reason authoring runs out of time.
+   reverse-engineer authoring patterns from task fixtures, generated package
+   files, or the CLI's compiled bundle (`@uipath/cli/dist/*.js`)** — such
+   spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
@@ -285,10 +289,14 @@ and honestly surfaced to the user as gaps when asked.
    and the process structure with the user (AskUserQuestion).
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
-6. **Node type is a child element, never an attribute.** Every `uipath:activity`
-   / `uipath:event` / `uipath:mapping` declares its type as
-   `<uipath:type value="<Type>" version="v1" />` inside the wrapper. Never write
-   `<uipath:activity type="…">` — the canvas will not recognize the node.
+6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
+   `uipath:event` / `uipath:mapping` templates declare their type as a nested
+   `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
+   templates use the payload's `type` attribute instead; notably,
+   `Orchestrator.StartAgentJob` is a direct child of `bpmn:ServiceTask` with
+   `<uipath:activity type="Orchestrator.StartAgentJob" version="v1">`. Both
+   declarations are supported. Paste the selected registry template literally
+   and do not normalize one form into the other.
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as

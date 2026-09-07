@@ -190,6 +190,114 @@ exit 0
 ;;
 esac
 ;;
+"invoices_dup-3e8b52c7-ixp")
+# Fixture — the DUPLICATE-NAME trap. Two versions, 20 (baseline) -> 21 (after an
+# instructions edit), and four fields across two groups:
+#
+#   FieldId     Name          Group                 v20    v21   | verdict
+#   dddd…0001   Description   Invoice               0.700  0.700 | unchanged
+#   dddd…0002   Description   Invoice > Line Items  0.900  0.500 | REGRESSED
+#   dddd…0003   (null)        Invoice               0.800  0.800 | unchanged
+#   dddd…0004   Tax Amount    Invoice               0.900  0.900 | unchanged
+#
+# Two fields share the display name "Description" in DIFFERENT groups — legal in
+# a real taxonomy, and exactly why improve-prompts-guide says to compare on
+# FieldId and only report on Name. The two paths differ in the graded ARTIFACT:
+#
+#   * keyed on FieldId (correct): 4 fields, one regression (…0002)
+#   * keyed on Name   (wrong):    3 fields — the two Descriptions collapse
+#
+# The baselines differ on purpose (0.700 vs 0.900). An agent that iterates rows
+# but looks the baseline up BY NAME does emit four rows, yet reads …0001's
+# baseline as 0.900 and reports it regressed too — so that variant fails on the
+# verdict even though it survives the length check.
+#
+# dddd…0003 carries `"Name": null` because it was deleted from the taxonomy after
+# version 20 was scored. The served get-taxonomy omits it accordingly, so the
+# fixture stays internally consistent: the OLD taxonomy-join path cannot name it
+# either. The rule is to fall back to FieldId, never to drop the field.
+#
+# Every row derives from a confusion matrix; errors = max(FP, FN) so a wrong
+# value counts once, and ProjectScore is the unweighted mean of per-field F1:
+#
+#              TP  FP  FN | F1     P     R     Err   Ann
+#   …0001      14   6   6 | 0.700 0.700 0.700 0.300   20
+#   …0002 v20  36   4   4 | 0.900 0.900 0.900 0.100   40
+#   …0002 v21  20  20  20 | 0.500 0.500 0.500 0.500   40
+#   …0003      16   4   4 | 0.800 0.800 0.800 0.200   20
+#   …0004      18   2   2 | 0.900 0.900 0.900 0.100   20
+#
+# Group `Invoice` (…0001+…0003+…0004): TP 48, FP 12, FN 12 -> F1 0.800.
+# ProjectScore: v20 (0.700+0.800+0.900+0.900)/4 = 0.825; v21 = 0.725.
+#
+# Scores are served the way the live API serves them since DU-App#35961: the
+# backend's float32 arithmetic widened to double, so 0.900 arrives as
+# 0.8999999761581421 and ProjectScore is the float32 running-sum mean of the
+# per-field F1 values (verified bit-exact against a real get-metrics payload).
+# Fields are listed grouped by FieldGroup, as the live API lists them.
+METRICS_V20='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":20,"ValidatedDocuments":20,"ProjectScore":0.8250000476837158,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Invoice","F1":0.800000011920929,"Precision":0.800000011920929,"Recall":0.800000011920929,"ErrorRate":0.20000000298023224,"Documents":20},{"FieldGroup":"Invoice > Line Items","F1":0.8999999761581421,"Precision":0.8999999761581421,"Recall":0.8999999761581421,"ErrorRate":0.10000000149011612,"Documents":20}],"Fields":[{"FieldGroup":"Invoice","FieldId":"dddd000000000001","Name":"Description","F1":0.699999988079071,"Precision":0.699999988079071,"Recall":0.699999988079071,"ErrorRate":0.30000001192092896,"Documents":20,"Annotations":20,"Quality":"good"},{"FieldGroup":"Invoice","FieldId":"dddd000000000003","Name":null,"F1":0.800000011920929,"Precision":0.800000011920929,"Recall":0.800000011920929,"ErrorRate":0.20000000298023224,"Documents":20,"Annotations":20,"Quality":"good"},{"FieldGroup":"Invoice","FieldId":"dddd000000000004","Name":"Tax Amount","F1":0.8999999761581421,"Precision":0.8999999761581421,"Recall":0.8999999761581421,"ErrorRate":0.10000000149011612,"Documents":20,"Annotations":20,"Quality":"good"},{"FieldGroup":"Invoice > Line Items","FieldId":"dddd000000000002","Name":"Description","F1":0.8999999761581421,"Precision":0.8999999761581421,"Recall":0.8999999761581421,"ErrorRate":0.10000000149011612,"Documents":20,"Annotations":40,"Quality":"good"}]}}'
+
+METRICS_V21='{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":21,"ValidatedDocuments":20,"ProjectScore":0.7250000238418579,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Invoice","F1":0.800000011920929,"Precision":0.800000011920929,"Recall":0.800000011920929,"ErrorRate":0.20000000298023224,"Documents":20},{"FieldGroup":"Invoice > Line Items","F1":0.5,"Precision":0.5,"Recall":0.5,"ErrorRate":0.5,"Documents":20}],"Fields":[{"FieldGroup":"Invoice","FieldId":"dddd000000000001","Name":"Description","F1":0.699999988079071,"Precision":0.699999988079071,"Recall":0.699999988079071,"ErrorRate":0.30000001192092896,"Documents":20,"Annotations":20,"Quality":"good"},{"FieldGroup":"Invoice","FieldId":"dddd000000000003","Name":null,"F1":0.800000011920929,"Precision":0.800000011920929,"Recall":0.800000011920929,"ErrorRate":0.20000000298023224,"Documents":20,"Annotations":20,"Quality":"good"},{"FieldGroup":"Invoice","FieldId":"dddd000000000004","Name":"Tax Amount","F1":0.8999999761581421,"Precision":0.8999999761581421,"Recall":0.8999999761581421,"ErrorRate":0.10000000149011612,"Documents":20,"Annotations":20,"Quality":"good"},{"FieldGroup":"Invoice > Line Items","FieldId":"dddd000000000002","Name":"Description","F1":0.5,"Precision":0.5,"Recall":0.5,"ErrorRate":0.5,"Documents":20,"Annotations":40,"Quality":"average"}]}}'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"3e8b52c7-9d14-4f60-b8a3-5c7e21f0d488","Name":"invoices_dup-3e8b52c7-ixp","Title":"Invoices_Dup","CreatedAt":"2026-08-28T07:41:00Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"invoices_dup-3e8b52c7-ixp","Title":"Invoices_Dup","Description":"Invoices with a repeated field label","CreatedTime":"2026-08-28T07:41:00Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":21,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-28T10:22:41.115000+00:00","Description":""},{"Version":20,"ModelName":"gemini_ixp","Pinned":false,"TrainedTime":"2026-08-28T08:03:19.442000+00:00","Description":""}],"Tags":[],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+# dddd…0003 is absent on purpose: it was deleted after version 20 was scored,
+# which is WHY the metrics payload reports its Name as null. The old
+# taxonomy-join path finds no name for it either.
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"id":"44750d40ee944a2f","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":3,"instructions":""},{"id":"01363b5950ff1733","name":"Monetary Quantity","title":"","inherits_from":["0000000000000006"],"trainable":true,"color":5,"instructions":""}],"label_groups":[{"name":"default","label_defs":[{"name":"Invoice","id":"c1a70f6b93e4d215","instructions":"Header fields printed at the top of the invoice.","moon_form":[{"field_id":"dddd000000000001","id":"44750d40ee944a2f","field_type_id":"44750d40ee944a2f","kind":"Exact Text","name":"Description","instructions":"The invoice-level description line.","rule_set":null},{"field_id":"dddd000000000004","id":"01363b5950ff1733","field_type_id":"01363b5950ff1733","kind":"Monetary Quantity","name":"Tax Amount","instructions":"The total tax amount.","rule_set":null}]},{"name":"Invoice > Line Items","id":"7f2e48c05ab6193d","instructions":"One row per line item on the invoice.","moon_form":[{"field_id":"dddd000000000002","id":"44750d40ee944a2f","field_type_id":"44750d40ee944a2f","kind":"Exact Text","name":"Description","instructions":"The description of the service or item.","rule_set":null}]}]}]}}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+    version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m|--model-version)
+            version="$2"
+            shift
+            ;;
+        --model-version=*)
+            version="${1#--model-version=}"
+            ;;
+        esac
+        shift
+    done
+    case "$version" in
+    20)
+        printf '%s\n' "$METRICS_V20"
+        ;;
+    ""|latest|21)
+        # No selector, or an explicit latest — the iteration's result.
+        printf '%s\n' "$METRICS_V21"
+        ;;
+    *)
+        printf '%s\n' '{"Result":"Failure","ErrorCode":"not_found","Message":"Model version not found."}'
+        exit 1
+        ;;
+    esac
+    exit 0
+;;
+esac
+;;
 esac
 
 # Everything else fails like the base mock: offline, no network call.

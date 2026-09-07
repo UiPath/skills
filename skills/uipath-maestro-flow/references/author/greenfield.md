@@ -18,6 +18,8 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 - The flow is a straightforward linear pipeline (trigger → action → action → end)
 - The user has already described the exact topology they want
 
+**Skipping the plan never skips the node choice.** Two outcomes (*if … otherwise …*) = a `core.logic.decision` node with both `true`/`false` ports wired — never a Script ternary ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`; a named external service → the Step 3 registry ladder below.
+
 ### Examples
 
 **Plan:** "Build a flow that receives a Jira ticket, classifies it with an AI agent, routes urgent tickets to Slack and non-urgent to a queue, and logs everything to a Google Sheet."
@@ -198,6 +200,14 @@ Equivalent: use the absolute project dir reported by `flow init` in `Data.Path` 
 
 If the file does not exist at the absolute double-nested path, Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
 
+**Then assert it is the only one.** `cd` does not persist between tool calls, so a later `uip maestro flow init` issued outside the solution auto-scaffolds `<Project>Solution/` beside the real project rather than failing. Nothing warns you: `flow validate` passes on either file, and the duplicate surfaces only when something globs and resolves to two.
+
+```bash
+find . -name project.uiproj -o -name '*.flow' | sort   # expect exactly one of each
+```
+
+More than one → **delete the stray scaffold.** Do not `mv` it into place — that leaves the original where it was, so you end up with two.
+
 See [shared/file-format.md](../shared/file-format.md) for the full project structure.
 <!--skill-flavor:project-creation:end-->
 
@@ -237,6 +247,8 @@ Then pick the first match down this ladder:
 4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../SKILL.md#critical-rules-universal).
+
+**Branching is a node, not a Script.** A requirement phrased as *if … otherwise …* (two outcomes) is a `core.logic.decision` node with both `true`/`false` ports wired ([decision/planning.md](plugins/decision/planning.md)); three or more outcomes → `core.logic.switch`. Do not fold the branch into a Script ternary — the branch must exist as a node in the graph.
 
 ### Document-extraction step — route it to IxP (runs even when full planning is skipped)
 
@@ -373,9 +385,9 @@ Authoring terminates here. Each option below hands off to Operate — read [oper
 
 | Option | What it does |
 | --- | --- |
-| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
-| **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first — debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../SKILL.md)). |
+| **Publish to Studio Web** | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
+| **Debug the solution** | Execute the flow end-to-end against real systems. Consent comes from the mandate, not from this menu — see the `flow debug` rule in [SKILL.md](../../SKILL.md). Selecting it here is the user asking for a run. |
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
-Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+When the original request already named the next step ("publish it", "deploy to Orchestrator", "run debug and iterate"), that instruction **is** the selection — act on it and skip the menu. Show the menu only when the next step was left unspecified, and then do not run any of these actions without explicit user selection. Once the option is settled, read [operate/CAPABILITY.md](../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.

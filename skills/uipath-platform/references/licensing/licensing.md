@@ -22,6 +22,8 @@ All `uip platform` licensing commands share a set of cross-cutting options:
 
 **Response envelope.** All commands emit `{Result, Code, Data, ...}`. `Code` identifies the payload (`TenantLicenses`, `UserLicensesSet`, `GroupRules`, `LicensesConsumablesSummary`, etc.). Paginated commands add a `Pagination` block — increment `--offset` by `--limit` until `Returned < Limit`.
 
+**Saving a response to a file.** When asked to save command output, write the raw envelope and nothing else — `uip platform ... --output json > available.json`. Never prepend a heading, summary table, or commentary to the file, and never hand-assemble it from what you read: the artifact must parse as JSON on its own. Put the human-readable narrative in your reply or report file, not in the JSON artifact.
+
 ---
 
 ## Workflow References

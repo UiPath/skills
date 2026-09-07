@@ -89,7 +89,7 @@ initial_prompt: |
   | Duration | 1 m |
   ```
 
-  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  Treat all build gates as pre-approved — do NOT block on the
   HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
   debug`. Do NOT ask for approval, confirmation, or feedback. Build
   end-to-end in a single pass and finish with `uip maestro case validate`

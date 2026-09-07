@@ -53,10 +53,15 @@ $vars.lookupUser.output.user !== null
 
 Output ports: `true` and `false`. Both branches must be wired. See [editing-operations.md](../../editing-operations.md) for edge add procedures.
 
+## Outputs
+
+A Decision has **no `.output`**. Downstream nodes read which branch ran as `$vars.<decisionId>.matchedCaseId` (`"true"` or `"false"`) or `$vars.<decisionId>.matchedCase` (the branch label) — e.g. `$vars.checkStatus.matchedCaseId === "true"`. `$vars.<decisionId>.output.matchedCaseId` is undefined and faults the reader at runtime (`[300501]`).
+
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Expression does not evaluate to boolean | Expression returns non-boolean value | Ensure expression uses comparison operators (`===`, `>`, etc.) |
 | `$vars.nodeId` is undefined | Upstream node not connected or wrong ID | Check edges and node IDs |
+| `[400302] Error evaluating outgoing flow expression from gateway` | `expression` reads a node that runs *after* the Decision (typical after moving the Decision earlier in the flow) | Point `expression` at a node that still runs before the Decision (e.g. the HTTP node's `$vars.<node>.output…`), not at the node the branches lead to |
 | Only one branch wired | Missing true or false edge | Add the missing edge — both branches are required |

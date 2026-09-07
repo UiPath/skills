@@ -41,12 +41,12 @@ sandbox:
 initial_prompt: |
   This approved `sdd.md` is authoritative. Its staged
   `tasks/registry-resolved.json` came from an earlier SDD revision and is stale.
-  Run Phase 1 planning only, replacing mismatched task entries by resolving the
-  Action App references and child-case reference from the current SDD names.
+  Run Phase 1 resolution only, replacing mismatched task entries by resolving
+  the Action App references and child-case reference from the current SDD names.
 
   If a referenced resource is unavailable, use the normal placeholder path.
-  Produce `tasks/tasks.md` and a fresh `tasks/registry-resolved.json`, then stop
-  at the Phase 1 plan-approval gate. Do not create a solution or caseplan.
+  Write a fresh `tasks/registry-resolved.json`, then stop at the end of Phase 1.
+  Do not create a solution or caseplan.
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
 success_criteria:
@@ -56,12 +56,6 @@ success_criteria:
     command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+registry\s+pull\b'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Phase 1 produced tasks.md from the authoritative SDD"
-    path: "tasks/tasks.md"
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists
@@ -98,15 +92,15 @@ simulation:
   persona: |
     You are a solution designer testing a handoff whose registry audit was
     generated before the approved SDD was edited. You only need Phase 1
-    planning regenerated from the authoritative SDD.
+    resolution regenerated from the authoritative SDD.
   goal: |
-    Produce tasks/tasks.md and a corrected registry audit from the staged
-    sdd.md, replacing stale selections and stopping before Phase 2.
+    Produce a corrected registry audit from the staged sdd.md, replacing stale
+    selections and stopping before Phase 2.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "For purchaseorderapp-1782974854, choose the exact Shared-folder match and do not use a placeholder."
     - "For PortableReviewActionProbeQ91 and PortableChildCaseProbeQ91, choose Use placeholders for all; neither resource should be built inline."
-    - "When shown tasks.md for approval, say the plan is sufficient and ask the agent to stop before Phase 2."
+    - "When shown the resolution summary, say it is sufficient and ask the agent to stop before Phase 2."
     - "Do not request Phase 0 or any design changes."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 10

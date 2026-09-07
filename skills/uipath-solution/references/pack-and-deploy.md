@@ -85,6 +85,7 @@ uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --outpu
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
 
+<!--skill-flavor:publish-feed-discovery:start-->
 ### Publishing to a non-tenant feed
 
 By default everything targets the **tenant** feed. A package can instead go to your
@@ -111,13 +112,16 @@ uip solution publish ./output/MySolution_2.0.0.zip --feed "Finance" --output jso
 # Publish into your own Personal Workspace
 uip solution publish ./output/MySolution_2.0.0.zip --personal-workspace --output json
 ```
+<!--skill-flavor:publish-feed-discovery:end-->
 
 The same two flags scope the rest of the lifecycle, and they are **mutually
 exclusive** everywhere:
 
 | Command | What the flag scopes |
 |---|---|
+<!--skill-flavor:publish-feed-scope-row:start-->
 | `uip solution publish --feed / --personal-workspace` | Which feed the package is uploaded to |
+<!--skill-flavor:publish-feed-scope-row:end-->
 | `uip solution deploy run --feed / --personal-workspace` | Which feed the package is deployed **from** |
 | `uip solution deploy list --feed / --personal-workspace` | Which feed's deployments are listed |
 | `uip solution packages list --feed / --personal-workspace` | Which feed's packages are listed |
@@ -141,7 +145,7 @@ If the goal is browser-based editing rather than deployment, use `upload` instea
 uip solution upload ./MySolution --output json
 ```
 
-This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
+This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` overwrites that solution in place; otherwise it imports as new — see [develop-solution.md § `upload` decides import or overwrite from what the cloud holds](develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds) for the decision rules and snapshot recording.
 
 `upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
 

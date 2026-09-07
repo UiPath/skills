@@ -1,0 +1,10 @@
+{
+  "displayName": "Coded Product Catalog",
+  "description": "Product catalog for coded-agent NL-to-SQL evaluation",
+  "fields": [
+    {"fieldName": "ProductName", "type": "STRING", "isRequired": true, "lengthLimit": 200},
+    {"fieldName": "Category", "type": "STRING", "lengthLimit": 100},
+    {"fieldName": "Price", "type": "DECIMAL", "decimalPrecision": 2, "minValue": 0, "maxValue": 100000},
+    {"fieldName": "InStock", "type": "BOOLEAN"}
+  ]
+}

@@ -21,10 +21,14 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      pin a specific version string here).
 """
 
-import glob
 import json
 import sys
+from pathlib import Path
 from typing import NoReturn
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.advisory_flow_utils import unwrap  # noqa: E402
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "core.action.transform.map"
 EXPECTED_OUTPUT_SOURCE = "=result.response"
@@ -36,10 +40,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/TransformMapDemo*.flow", recursive=True)
-    if not flows:
-        _fail("no TransformMapDemo*.flow found under cwd")
-    with open(flows[0]) as f:
+    with open(find_flow_file(flow_glob="TransformMapDemo*.flow")) as f:
         return json.load(f)
 
 
@@ -105,12 +106,12 @@ def _check_operations(inputs: dict) -> None:
 
 def _check_output_sources(node: dict) -> None:
     outputs = node.get("outputs") or {}
-    out_src = ((outputs.get("output")) or {}).get("source")
+    out_src = unwrap(((outputs.get("output")) or {}).get("source"))
     if out_src != EXPECTED_OUTPUT_SOURCE:
         _fail(
             f"outputs.output.source={out_src!r}; must be {EXPECTED_OUTPUT_SOURCE!r}."
         )
-    err_src = ((outputs.get("error")) or {}).get("source")
+    err_src = unwrap(((outputs.get("error")) or {}).get("source"))
     if err_src != EXPECTED_ERROR_SOURCE:
         _fail(
             f"outputs.error.source={err_src!r}; must be {EXPECTED_ERROR_SOURCE!r}."

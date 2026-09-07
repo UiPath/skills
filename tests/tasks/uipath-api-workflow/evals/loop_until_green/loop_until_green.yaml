@@ -35,7 +35,9 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Behavioral: every row passes when run and scored as the panel scores it (raw output, strict deep-equal) — both bugs fixed"
-    command: python3 $TASK_DIR/../_shared/check_rows_pass.py GradeCheck --min-rows 3
+    # $SKILLS_REPO_PATH, not $TASK_DIR/..: the sandbox only mounts the task's own
+    # leaf directory, so ../_shared does not exist there and the check exits 2.
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_rows_pass.py GradeCheck --min-rows 3
     timeout: 300
     expected_exit_code: 0
     weight: 4.0
@@ -58,12 +60,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent drove the loop with the local runner (a shell loop over the rows counts once)"
+    # Advisory: the matcher only sees Bash command text. An agent that drives
+    # `uip api-workflow run` from inside its own Python scorer (subprocess) is
+    # invisible to it and equally valid; check_rows_pass.py carries the real signal.
+    description: "Advisory: agent drove the loop with the local runner visibly in Bash (not gated — a wrapper script that shells out to the runner is equally valid)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0
+    pass_threshold: 0
 
 run_limits:
   expected_turns: 16

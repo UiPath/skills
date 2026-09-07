@@ -43,9 +43,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "details.json captures a JSON response envelope"
-    path: "details.json"
-    includes: ['"Result"']
+  - type: run_command
+    description: "details.json is the raw CLI envelope — `Result` at the root, not envelopes nested inside a hand-built structure"
+    command: "python3 -c \"import json,sys; d=json.load(open('details.json')); sys.exit(0 if isinstance(d,dict) and 'Result' in d else 1)\""
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

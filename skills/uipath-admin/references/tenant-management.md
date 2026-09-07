@@ -248,7 +248,7 @@ Or, when you need a single service's status, filter the tenant record:
 uip admin tenants get <TENANT_ID> --output-filter "tenantServiceInstances[?serviceType=='<SVC>']" --output json
 ```
 
-Surface the resulting `status` to the user. For `disable`, confirm the row now reads `Disabled`; for `remove`, confirm it reads `Disabled` / `Deleted` rather than disappearing silently. See [tenants-commands.md — Concepts](tenants-commands.md#concepts) for the list of services where `disable` / `remove` is a no-op despite the Success code.
+Surface the resulting `status` to the user. For `disable`, confirm the row now reads `Disabled`; for `remove`, confirm it reads `Disabled` / `Deleted` rather than disappearing silently. See [tenants-commands.md — Concepts](tenants-commands.md#concepts-and-safety-rules) for the list of services where `disable` / `remove` is a no-op despite the Success code.
 
 ## Workflow: Soft-Remove Tenant Services
 

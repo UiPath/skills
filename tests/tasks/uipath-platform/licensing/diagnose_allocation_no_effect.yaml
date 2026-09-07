@@ -47,7 +47,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent did NOT re-run the allocation while diagnosing"
-    command: "test -f .uip-cmdlog && ! grep -Eq 'uip platform tenants licenses set' .uip-cmdlog"
+    command: "test -f .uip-cmdlog && ! grep -E '^ *uip platform tenants licenses set\\b' .uip-cmdlog | grep -qv -- '--help'"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

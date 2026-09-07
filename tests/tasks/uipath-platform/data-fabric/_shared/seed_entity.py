@@ -48,10 +48,13 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
 UIP_TIMEOUT_SECONDS = 120
+LIST_RETRY_ATTEMPTS = 3
+LIST_RETRY_DELAY_SECONDS = 5
 UIP_LONG_TIMEOUT_SECONDS = 180  # entities create can be slow server-side
 
 
@@ -84,7 +87,8 @@ def count_records(entity_id: str) -> int:
     return int(tc) if isinstance(tc, int) else -1
 
 
-def list_native_entities() -> list[dict] | None:
+def _list_native_entities_once() -> list[dict] | None:
+    """Single attempt at listing entities. Returns None on failure."""
     code, out, err = run_uip("df", "entities", "list", "--native-only")
     if code != 0 or not out.strip():
         print(f"WARN: uip df entities list failed (exit {code}): {err.strip()}", file=sys.stderr)
@@ -100,6 +104,23 @@ def list_native_entities() -> list[dict] | None:
     if isinstance(inner, list):
         return inner
     return []
+
+
+def list_native_entities() -> list[dict] | None:
+    """List entities with retry. Parallel pre_run tasks can race on the same
+    tenant endpoint; a transient 429/5xx or timeout should not kill the seed."""
+    for attempt in range(1, LIST_RETRY_ATTEMPTS + 1):
+        result = _list_native_entities_once()
+        if result is not None:
+            return result
+        if attempt < LIST_RETRY_ATTEMPTS:
+            print(
+                f"WARN: entities list attempt {attempt}/{LIST_RETRY_ATTEMPTS} failed; "
+                f"retrying in {LIST_RETRY_DELAY_SECONDS}s...",
+                file=sys.stderr,
+            )
+            time.sleep(LIST_RETRY_DELAY_SECONDS)
+    return None
 
 
 def find_entity_id(entities: list[dict], name: str) -> str | None:

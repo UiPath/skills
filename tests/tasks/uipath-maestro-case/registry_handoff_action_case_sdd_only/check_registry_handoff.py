@@ -1,5 +1,4 @@
 import json
-import re
 from pathlib import Path
 
 
@@ -50,7 +49,6 @@ EXPECTED = {
 
 
 registry_path = Path("tasks/registry-resolved.json")
-tasks_path = Path("tasks/tasks.md")
 
 entries = json.loads(registry_path.read_text(encoding="utf-8"))
 assert isinstance(entries, list), "registry-resolved.json must be a list"
@@ -140,33 +138,26 @@ for display_name in DISPLAY_NAMES:
         f"registry lookup incorrectly substituted task display name {display_name}"
     )
 
-tasks_text = tasks_path.read_text(encoding="utf-8")
-assert ACTION_RESOURCE in tasks_text, "action placeholder lost its Action App title"
-assert CASE_RESOURCE in tasks_text, "case placeholder lost its Child Case name"
-assert "action-app" in tasks_text.lower(), "action unresolved marker is missing"
-assert "case-management" in tasks_text.lower(), "case-management task is missing"
+# Rule 8: an empty lookup stays visibly unresolved in the audit rather than being
+# silently dropped or fabricated. The marker may sit on any field of the entry.
+audit_text = registry_path.read_text(encoding="utf-8")
+for resource_name in (ACTION_RESOURCE, CASE_RESOURCE):
+    entry = next(
+        e for e in entries if str(e.get("searchQuery", "")).strip() == resource_name
+    )
+    assert "<UNRESOLVED" in json.dumps(entry), (
+        f"{resource_name} resolved to nothing but carries no <UNRESOLVED> marker"
+    )
+assert ACTION_RESOURCE in audit_text, "action placeholder lost its Action App title"
+assert CASE_RESOURCE in audit_text, "case placeholder lost its Child Case name"
 
+# The resolved Action App keeps its full identity — name, deployment folder, and id —
+# so Phase 2 can bind it without re-resolving.
 assert resolved_entry is not None
 resolved_folder = resolved_entry.get("deploymentFolder", {}).get("fullyQualifiedName", "")
 resolved_id = resolved_entry.get("id")
-assert resolved_folder, "resolved Action App cache entry has no deployment folder"
-assert resolved_id, "resolved Action App cache entry has no id"
-
-heading = re.search(
-    rf'(?ms)^## T\d+: Add action task "{re.escape(RESOLVED_DISPLAY_NAME)}".*?(?=^## T\d+:|\Z)',
-    tasks_text,
-)
-assert heading, f"tasks.md omitted resolved action task {RESOLVED_DISPLAY_NAME}"
-resolved_body = heading.group(0)
-assert re.search(rf'(?m)^- name:\s*["\']?{re.escape(RESOLVED_ACTION)}["\']?\s*$', resolved_body), (
-    "resolved Action task omitted its selected name binding"
-)
-assert re.search(rf'(?m)^- folder-path:\s*["\']?{re.escape(resolved_folder)}["\']?\s*$', resolved_body), (
-    "resolved Action task omitted its selected folder-path binding"
-)
-assert re.search(rf'(?m)^- taskTypeId:\s*["\']?{re.escape(resolved_id)}["\']?\s*$', resolved_body), (
-    "resolved Action task did not retain the selected Action App id"
-)
+assert resolved_folder, "resolved Action App audit entry has no deployment folder"
+assert resolved_id, "resolved Action App audit entry has no id"
 
 assert not Path(ACTION_RESOURCE).exists(), "an Action App sibling directory was created"
 assert not Path(CASE_RESOURCE).exists(), "a child-case sibling directory was created"

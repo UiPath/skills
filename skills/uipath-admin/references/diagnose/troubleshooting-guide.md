@@ -9,7 +9,7 @@ Determine which area the symptom belongs to based on user description:
 | Symptom | Domain | Next step |
 |---------|--------|-----------|
 | "Can't log in", auth error, login rejected | Identity — login | Step 2 (resolve user) |
-| "403", "permission denied", "access denied" | Authorization — access | Step 3 (check-access) |
+| "403", "permission denied", "access denied", "the role I was assigned isn't working", "my <service> role doesn't work in <other service>" | Authorization — access | Step 3, then [failure-modes → Access denied](failure-modes.md#access-denied-http-403) |
 | "Token not working", "PAT rejected" | Identity — PAT | Step 2 (resolve user), then [failure-modes → PAT rejected](failure-modes.md#pat-rejected) |
 | "OAuth failing", "client_credentials error" | Identity — external app | [failure-modes → OAuth2 failing](failure-modes.md#external-app-oauth2-flow-failing) |
 | "Robot not authenticating" | Identity — robot account | [failure-modes → Robot account](failure-modes.md#robot-account-not-authenticating) |
@@ -40,23 +40,19 @@ If the principal is not found → they were never provisioned or were deleted. T
 
 ## Step 3: Check Effective Access
 
-For any permission-related symptom (403, "can't do X", role not working), the PDP is the primary diagnostic tool:
+Every permission symptom — 403, "can't do X", "the role isn't taking effect", "my Orchestrator role doesn't work in DU" — is the **same** investigation: compare what the principal effectively holds against what the denied action requires. The PDP answers the first half and is the primary diagnostic tool:
 
 ```bash
-uip admin authorization check-access "<USER_ID>" --output json
-```
-
-To narrow to a specific service:
-```bash
-uip admin authorization check-access "<USER_ID>" --service orchestrator --output json
+uip admin authorization check-access "<PRINCIPAL>" --output json
+uip admin authorization check-access "<PRINCIPAL>" --service orchestrator --output json
 ```
 
 Interpret the results:
-- Label each role as `direct` or `inherited from <Group>` by inspecting `roleAssignments[].securityPrincipalType`
-- Compare effective permissions against the required permission for the denied action
-- Check `ownerServiceName` on each role — cross-service grants don't apply (Orchestrator role ≠ DU access)
+- A permission reaches a principal by exactly two routes. Label each nested `roleAssignments[]` entry `direct` (role assigned to the principal) or `inherited from <Group>` (role assigned to a group the principal belongs to) by inspecting `securityPrincipalType`. The fix differs by route.
+- Record role name, `ownerServiceName`, `scopeType`, and the grant's scope path for every granted role — the Step 3c branch needs all four.
+- Cross-service grants do not apply: an Orchestrator role is not DU access.
 
-See [check-access.md](../authorization/check-access.md) for full interpretation guide.
+See [check-access.md](../authorization/check-access.md) for the full interpretation guide.
 
 ### Step 3b: Identify the Permission the Denied Action Requires
 
@@ -67,9 +63,20 @@ uip admin authorization permissions list --output json \
   --output-filter "[?contains(Name, 'ADMINISTRATION')]"
 ```
 
-`contains` is case-sensitive: `Name` is UPPERCASE, `Description` is lowercase. A guessed `--service` returns `Data: []` and an unfiltered list is ~210 KB that truncates — neither empty result proves the permission is absent. See [permission-catalog.md — Find the Permission Governing an Action](../authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action).
+`contains` is case-sensitive: `Name` is UPPERCASE, `Description` is lowercase. A guessed `--service` returns `Data: []`, an unfiltered list is ~210 KB that truncates, and a slice of only the 10 cross-cutting `AUTHZ` rows means the wrong slice — none of the three proves the permission is absent. Read `ScopeType` from the hit; it fixes the role shape any fix must use. See [permission-catalog.md — Find the Permission Governing an Action](../authorization/permission-catalog.md#workflow-find-the-permission-governing-an-action).
 
 State the diagnosis as: *principal holds `<roles>`, none of which carry `<PERMISSION.NAME>` (`ScopeType` `<SCOPE>`) → grant a `<SCOPE>`-shape role carrying it.* Never substitute a permission you did not find in the catalog.
+
+### Step 3c: Branch — Missing Permission or Wrong Scope
+
+With both halves in hand, exactly one of two causes holds. Follow the branch in [failure-modes → Access denied](failure-modes.md#step-3--branch-on-the-comparison):
+
+| Step 3 vs Step 3b | Cause |
+|---|---|
+| No effective role carries the permission | [The permission is not granted](failure-modes.md#cause-a--the-permission-is-not-granted) — find a role that carries it |
+| A role carries it, but the grant sits at another scope path | [The permission is granted at the wrong scope](failure-modes.md#cause-b--the-permission-is-granted-at-the-wrong-scope) — wrong or missing service segment, wrong scope level, or wrong tenant |
+
+A mis-scoped grant is **invisible** to the default `assignments list` shapes; never read an empty listing as "the grant does not exist" before re-querying with `--scope-path`.
 
 ## Step 4: Check Audit History
 

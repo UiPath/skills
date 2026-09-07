@@ -10,7 +10,7 @@
 > giving a deterministic linear happy path) so `uip maestro case debug` can run
 > the case to completion without human input; escalation timers use seconds; a manual
 > trigger starts the case so `uip maestro case debug` can run it headlessly. Task payloads are generic (bound to
-> `WeatherAPI`, `CountLetters`, `ProcurementProcess`, `ProjectEuler`,
+> `WeatherAPI`, `CountLetters`, `ProcurementProcess`, `HelpDeskLookup`,
 > `CaseTest`). The 7-stage topology, stage chaining, child case, and the
 > Rejected / Withdrawn terminal lanes are preserved; the reject / withdraw lanes
 > stay dormant at runtime (gated off by the default-`Approve` decision vars) but
@@ -465,9 +465,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** ProjectEuler
-**Folder Path:** Shared/uipath-maestro-flow/ProjectEuler RPA
-**Resource Identity:** 486edc26-0658-4ac1-92c9-1ef953927151
+**Resolved Resource:** HelpDeskLookup
+**Folder Path:** Shared/uipath-maestro-flow/HelpDeskLookup RPA
+**Resource Identity:** 4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8
 **Binding Sub-Type:** —
 **Dispatch / Operation:** —
 
@@ -475,7 +475,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| problemId | integer | 1 |
+| ticketId | integer | 123 |
 
 **Outputs:**
 
@@ -704,9 +704,9 @@
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** ProjectEuler
-**Folder Path:** Shared/uipath-maestro-flow/ProjectEuler RPA
-**Resource Identity:** 486edc26-0658-4ac1-92c9-1ef953927151
+**Resolved Resource:** HelpDeskLookup
+**Folder Path:** Shared/uipath-maestro-flow/HelpDeskLookup RPA
+**Resource Identity:** 4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8
 **Binding Sub-Type:** —
 **Dispatch / Operation:** —
 
@@ -714,7 +714,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| problemId | integer | 1 |
+| ticketId | integer | 123 |
 
 **Outputs:**
 
@@ -862,7 +862,7 @@
 | Resource | Type | Folder | Resource ID (+version) | Used By Tasks |
 |----------|------|--------|------------------------|---------------|
 | ProcurementProcess | process | Shared/uipath-agents/ProcurementProcess | 4fc450ab-89be-4462-8fc8-21ac4c1d6fb9 | Budget & GL Reconciliation, Update GL Records |
-| ProjectEuler | rpa | Shared/uipath-maestro-flow/ProjectEuler RPA | 486edc26-0658-4ac1-92c9-1ef953927151 | Process Reimbursement, Send Rejection Notification |
+| HelpDeskLookup | rpa | Shared/uipath-maestro-flow/HelpDeskLookup RPA | 4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8 | Process Reimbursement, Send Rejection Notification |
 
 ### Child Cases
 

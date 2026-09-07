@@ -9,14 +9,28 @@ run_limits:
   expected_turns: 55
   turn_timeout: 1200
 
+pre_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrder --include-folders"
+    timeout: 60
+    fail_on_error: false
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_shared/seed_coded_order.py"
+    timeout: 300
+    fail_on_error: true
+
 initial_prompt: |
   Build me a coded agent called `order-lookup` that can look up
   customer orders. The data lives in Data Fabric — find the right
-  entity by listing what's available. The agent should take a
-  customer name and return their open orders — the query is always
-  the same shape.
+  entity by listing what's available. Users ask in plain language
+  ("what's still open for Acme?", "any outstanding orders from the
+  O'Brien account?") — the agent should work out which customer they
+  mean, fetch that customer's open orders (that query is always the
+  same shape), and summarize the results conversationally.
 
   Scaffold and init only — don't run or deploy.
+
+post_run:
+  - command: "$(command -v python3.13 || command -v python3) $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_CodedOrder --include-folders"
+    timeout: 60
 
 success_criteria:
   - type: skill_triggered

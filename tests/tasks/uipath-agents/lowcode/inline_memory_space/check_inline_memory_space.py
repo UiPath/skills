@@ -32,6 +32,7 @@ UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]
 EXPECTED_FEATURE_NAME = "SupportRecall"
 EXPECTED_MEMORY_SPACE = "UiPathAgentsSupportMemory"
 EXPECTED_FOLDER_PATH = "Shared/uipath-agents"
+FLATTENED_FIELD_RE = re.compile(r"^[A-Za-z0-9_]+__output__userQuestion$")
 
 
 def load(path: Path) -> dict:
@@ -111,15 +112,23 @@ def assert_feature(agent_dir: Path) -> None:
     threshold = settings.get("threshold")
     if not isinstance(threshold, (int, float)) or abs(float(threshold) - 0.25) > 1e-9:
         sys.exit(f"FAIL: threshold should be 0.25, got {threshold!r}")
+    # Inline agents receive flow inputs under the flattened inputSchema key
+    # `<triggerNodeId>__output__<var>` (uipath-agents inline-in-flow guide), and
+    # `--field` must name that key — so the memory field is
+    # `<trigger>__output__userQuestion`, not the bare flow global.
     fields = settings.get("fieldSettings")
     if not isinstance(fields, list) or not any(
         isinstance(f, dict)
-        and f.get("name") == "userQuestion"
+        and isinstance(f.get("name"), str)
+        and FLATTENED_FIELD_RE.match(f["name"])
         and isinstance(f.get("weight"), (int, float))
         and abs(float(f["weight"]) - 1.0) < 1e-9
         for f in fields
     ):
-        sys.exit(f"FAIL: fieldSettings must contain userQuestion weight 1, got {fields!r}")
+        sys.exit(
+            "FAIL: fieldSettings must contain the flattened inline input key "
+            f"<trigger>__output__userQuestion with weight 1, got {fields!r}"
+        )
     print(
         f"OK: inline memory feature {EXPECTED_FEATURE_NAME!r} attaches "
         f"{EXPECTED_MEMORY_SPACE!r} in {EXPECTED_FOLDER_PATH!r}"

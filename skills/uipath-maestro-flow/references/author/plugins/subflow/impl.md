@@ -1,16 +1,16 @@
 # Subflow Node — Implementation
 
-## Node Type
+## Node Type and Registry Validation
 
 `core.subflow`
 
-## Registry Validation
+Run:
 
 ```bash
 uip maestro flow registry get core.subflow --output json
 ```
 
-Confirm: input port `input`, output ports `output` and `error`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm input port `input` and output ports `output` and `error`. Set the node instance `typeVersion` to the response's `version` field; do not hardcode it.
 
 ## Parent Node JSON
 
@@ -20,10 +20,7 @@ Confirm: input port `input`, output ports `output` and `error`. Set the node ins
   "type": "core.subflow",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Add Numbers", "icon": "layers" },
-  "inputs": {
-    "a": 2,
-    "b": 3
-  },
+  "inputs": { "a": 2, "b": 3 },
   "outputs": {
     "error": {
       "type": "object",
@@ -35,11 +32,11 @@ Confirm: input port `input`, output ports `output` and `error`. Set the node ins
 }
 ```
 
-**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
+Declare `error` only; `output` is derived. Do not author `output`: the converter copies its `source` verbatim, so `"=result.response"` resolves to null at runtime although `flow validate` passes. See [file-format.md § Node outputs](../../../shared/file-format.md#node-outputs).
 
 ## Subflow Definition
 
-Subflow contents are stored in a top-level `subflows` object keyed by the parent node's ID:
+Store definitions in a top-level `subflows` object keyed by the parent node ID. Each definition contains `nodes`, `edges`, `variables`, and `layout`:
 
 ```json
 {
@@ -51,10 +48,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "type": "core.trigger.manual",
           "typeVersion": "1.0",
           "display": { "label": "Start" },
-          "inputs": {
-            "entryPointId": "unique-uuid-here",
-            "isDefaultEntryPoint": true
-          },
+          "inputs": { "entryPointId": "<unique-uuid>", "isDefaultEntryPoint": true },
           "outputs": {
             "output": {
               "type": "object",
@@ -69,22 +63,10 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "type": "core.action.script",
           "typeVersion": "1.0",
           "display": { "label": "Add Numbers" },
-          "inputs": {
-            "script": "return { result: $vars.subflow1Start.output.a + $vars.subflow1Start.output.b };"
-          },
+          "inputs": { "script": "return { result: $vars.subflow1Start.output.a + $vars.subflow1Start.output.b };" },
           "outputs": {
-            "output": {
-              "type": "object",
-              "description": "The return value of the script",
-              "source": "=result.response",
-              "var": "output"
-            },
-            "error": {
-              "type": "object",
-              "description": "Error information if the script fails",
-              "source": "=Error",
-              "var": "error"
-            }
+            "output": { "type": "object", "description": "The return value of the script", "source": "=result.response", "var": "output" },
+            "error": { "type": "object", "description": "Error information if the script fails", "source": "=Error", "var": "error" }
           }
         },
         {
@@ -93,57 +75,26 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "typeVersion": "1.0",
           "display": { "label": "End" },
           "inputs": {},
-          "outputs": {
-            "result": { "source": "=js:$vars.script1.output.result" }
-          }
+          "outputs": { "result": { "source": "=js:$vars.script1.output.result" } }
         }
       ],
       "edges": [
-        {
-          "id": "sf-e1",
-          "sourceNodeId": "subflow1Start",
-          "sourcePort": "output",
-          "targetNodeId": "script1",
-          "targetPort": "input"
-        },
-        {
-          "id": "sf-e2",
-          "sourceNodeId": "script1",
-          "sourcePort": "success",
-          "targetNodeId": "subflow1End",
-          "targetPort": "input"
-        }
+        { "id": "sf-e1", "sourceNodeId": "subflow1Start", "sourcePort": "output", "targetNodeId": "script1", "targetPort": "input" },
+        { "id": "sf-e2", "sourceNodeId": "script1", "sourcePort": "success", "targetNodeId": "subflow1End", "targetPort": "input" }
       ],
       "variables": {
         "globals": [
-          {
-            "id": "a",
-            "direction": "in",
-            "type": "number",
-            "defaultValue": 0,
-            "triggerNodeId": "subflow1Start"
-          },
-          {
-            "id": "b",
-            "direction": "in",
-            "type": "number",
-            "defaultValue": 0,
-            "triggerNodeId": "subflow1Start"
-          },
-          {
-            "id": "result",
-            "direction": "out",
-            "type": "number",
-            "defaultValue": 0
-          }
+          { "id": "a", "direction": "in", "type": "number", "defaultValue": 0, "triggerNodeId": "subflow1Start" },
+          { "id": "b", "direction": "in", "type": "number", "defaultValue": 0, "triggerNodeId": "subflow1Start" },
+          { "id": "result", "direction": "out", "type": "number", "defaultValue": 0 }
         ],
         "nodes": []
       },
       "layout": {
         "nodes": {
           "subflow1Start": { "position": { "x": 200, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
-          "script1":       { "position": { "x": 400, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
-          "subflow1End":   { "position": { "x": 600, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false }
+          "script1": { "position": { "x": 400, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
+          "subflow1End": { "position": { "x": 600, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false }
         }
       }
     }
@@ -153,13 +104,8 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 
 ## Passing a Flow Input Into the Subflow
 
-A **parent flow** forwarding its own trigger input into a subflow must give the parent's `in`
-variable a `triggerNodeId` — same as a subflow `in` variable (rule #3), pointing at the
-parent's trigger node. Omit it and it's a silent trap: `uip maestro flow validate` still
-reports **Valid**, but at `flow debug` the trigger output is empty, the value arrives `null`,
-and the subflow script faults (e.g. `Cannot read property 'split' of null`).
+Set `triggerNodeId` on the parent's `in` variable when forwarding trigger input. Run `uip maestro flow validate`; do not treat **Valid** as proof that this is configured. Without `triggerNodeId`, `flow debug` shows an empty trigger output, forwards `null`, and may fault in the subflow (for example, `Cannot read property 'split' of null`).
 
-**Parent flow `variables.globals`** — note `triggerNodeId` on the `in` variable:
 ```json
 {
   "variables": {
@@ -167,14 +113,7 @@ and the subflow script faults (e.g. `Cannot read property 'split' of null`).
       { "id": "text", "direction": "in", "type": "string", "defaultValue": "", "triggerNodeId": "start" },
       { "id": "reversedText", "direction": "out", "type": "string", "defaultValue": "" }
     ]
-  }
-}
-```
-
-**Parent trigger + subflow node** — the subflow node reads the trigger output and maps it to
-the subflow's `in` variable:
-```json
-{
+  },
   "nodes": [
     {
       "id": "start",
@@ -193,38 +132,33 @@ the subflow's `in` variable:
 }
 ```
 
-Value flow: caller input `text` → (bound to `start` via the parent global's `triggerNodeId`)
-→ `$vars.start.output.text` → subflow node input `text` → the subflow's own `in` variable
-(with its **own** `triggerNodeId: "<subflowStart>"`) → `$vars.<subflowStart>.output.text`
-inside the subflow. The parent `in` var and the subflow `in` var are **independent variables
-in separate scopes**, joined only by the subflow node's `inputs` mapping; each needs its own
-`triggerNodeId` pointing at its respective Start node.
+Value flow is: caller input `text` → parent `start` through the parent's `triggerNodeId` → `$vars.start.output.text` → subflow input `text` → the subflow's `in` variable → `$vars.<subflowStart>.output.text`. Parent and subflow `in` variables are independent; set `triggerNodeId` for each.
 
 ## Subflow Rules
 
-1. Every subflow **must** have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
-2. Subflow `variables.globals` with `direction: "in"` map to the parent node's `inputs`
-3. Subflow `in` variables **must** have `triggerNodeId` set to the subflow's Start node ID — this makes them accessible via `$vars.{startNodeId}.output.{varId}`
-4. Subflow `variables.globals` with `direction: "out"` map to the parent node's outputs, accessible via `$vars.{subflowNodeId}.output` in the parent flow
-5. Parent-scope `$vars` are **not** visible inside the subflow — pass values explicitly via inputs
-6. Subflow nodes must have inline `outputs` defined on them (Start node needs `outputs.output`, Script nodes need `outputs.output` and `outputs.error`)
-7. Subflows can be nested (subflow inside subflow), up to 3 levels
-8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections
-9. Subflow node positions go in the subflow's own `layout.nodes` — NOT in the top-level `layout.nodes`. Each subflow scope is independent.
-10. Parent flow forwarding an external input to a subflow: the parent's `in` variable **must** also set `triggerNodeId` to the parent's trigger node ID — same as #3, one scope up. `uip maestro flow validate` still reports **Valid** (it does not fail on the omission); the value silently arrives `null` at runtime. See [Passing a Flow Input Into the Subflow](#passing-a-flow-input-into-the-subflow).
+1. Every subflow must have its own Start node (`core.trigger.manual`) and End node (`core.control.end`).
+2. Subflow `variables.globals` with `direction: "in"` map to parent node `inputs`.
+3. Subflow `in` variables must set `triggerNodeId` to the subflow Start node ID, enabling `$vars.{startNodeId}.output.{varId}`.
+4. Subflow `variables.globals` with `direction: "out"` map to parent node outputs and are accessible as `$vars.{subflowNodeId}.output` in the parent.
+5. Parent-scope `$vars` are not visible inside the subflow; pass values explicitly through inputs.
+6. Define inline `outputs` on every subflow node: Start needs `outputs.output`; Script nodes need `outputs.output` and `outputs.error`.
+7. Subflows may be nested up to 3 levels.
+8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections.
+9. Put subflow node positions in that subflow's `layout.nodes`, not the top-level `layout.nodes`; scopes are independent.
+10. When the parent forwards an external input, its `in` variable must also set `triggerNodeId` to the parent trigger node ID. `uip maestro flow validate` does not detect this omission; the value silently arrives `null`. See [Passing a Flow Input Into the Subflow](#passing-a-flow-input-into-the-subflow).
 
 ## Creating a Subflow
 
-For the step-by-step procedure, see [Edit/Write: Create a subflow](../../editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
+For the procedure, see [Edit/Write: Create a subflow](../../editing-operations-json.md#create-a-subflow). Use the structures above for node-specific fields.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `$vars.inputData` undefined inside subflow script | Missing `triggerNodeId` on subflow `in` variable, or using `$vars.{varId}` directly | Add `triggerNodeId: "{startNodeId}"` to each `in` variable and access via `$vars.{startNodeId}.output.{varId}` |
-| Subflow script sees `null` for a value forwarded from the parent (e.g. `Cannot read property 'split' of null`) | Parent flow's `in` variable is missing `triggerNodeId`, so the parent trigger output is empty and `null` is forwarded into the subflow | Add `triggerNodeId: "{parentStartNodeId}"` to the parent flow's `in` variable (same fix as the row above, but for the root flow) |
-| `$vars.parentNode` undefined inside subflow | Parent scope not accessible | Pass values via subflow `in` variables |
-| Subflow output is null | Missing output mapping on subflow's End node | Map all `out` variables in the End node's `outputs` |
-| Script output is null | Missing inline `outputs` on script node | Add `outputs.output` and `outputs.error` inline on the script node |
-| Missing Start/End node | Subflow lacks required trigger or end | Add `core.trigger.manual` (with `outputs` and `entryPointId`) and `core.control.end` to the subflow |
-| Nesting limit exceeded | Subflow nested more than 3 levels deep | Flatten the structure or use resource nodes for deeper composition |
+| `$vars.inputData` undefined inside subflow script | Missing `triggerNodeId` on a subflow `in` variable, or direct use of `$vars.{varId}` | Set `triggerNodeId: "{startNodeId}"` on each `in` variable and use `$vars.{startNodeId}.output.{varId}` |
+| Subflow script receives `null`, such as `Cannot read property 'split' of null` | Parent `in` variable lacks `triggerNodeId`, leaving parent trigger output empty | Set `triggerNodeId: "{parentStartNodeId}"` on the parent flow's `in` variable |
+| `$vars.parentNode` undefined inside subflow | Parent scope is inaccessible | Pass values through subflow `in` variables |
+| Subflow output is null | End node lacks output mapping | Map all `out` variables in the End node's `outputs` |
+| Script output is null | Script lacks inline `outputs` | Add `outputs.output` and `outputs.error` inline |
+| Missing Start/End node | Required trigger or end is absent | Add `core.trigger.manual` with `outputs` and `entryPointId`, plus `core.control.end` |
+| Nesting limit exceeded | More than 3 levels of nesting | Flatten the structure or use resource nodes for deeper composition |

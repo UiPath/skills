@@ -31,7 +31,7 @@ initial_prompt: |
   - description contains "sci-fi" (multiline text)
   - releaseDate is less than 2025-01-01 (date)
   - lastUpdated is greater than or equal to 2024-01-01T00:00:00 (datetime)
-  - externalId equals "11111111-1111-1111-1111-111111111111" (UUID)
+  - externalId equals any valid UUID value of your choice
   - description is null
 
   Query 1 must retrieve the first 2 records sorted by score ascending, with
@@ -39,19 +39,27 @@ initial_prompt: |
   tree, sort, and limit, but use offset/start 2 for the next page. Query 3 must
   filter active equals true, sort by score descending, and use a limit of 4.
 
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Build the complete flow end-to-end in a
-  single pass.
   The Flow is not complete until `uip maestro flow validate` passes.
 
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Query Entity Records node added"
+    description: "Advisory: live-v1 agent added a Query Entity Records node"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
   - type: command_executed
     description: "Flow validated"
     tool_name: "Bash"

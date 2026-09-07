@@ -12,6 +12,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 - Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*` types) for a Flow project
 - Create or remove eval sets, link them to evaluators, pin entry points
 - Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)
+- Add, list, or remove child tool simulations on agent nodes (`--parent` flag)
 - Start an eval run on Studio Web, poll its status, fetch detailed results
 - Compare two eval runs to verify a change improved scores without regressions
 
@@ -95,6 +96,7 @@ uip maestro flow eval run results <eval_set_run_id> \
 | **Add a data point with file attachments** | [eval-sets-guide.md — `--input-file`](eval-sets-guide.md#--input-file-keypath) |
 | **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](eval-sets-guide.md#--criteria) |
 | **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](commands-reference.md#simulations) |
+| **Add a child tool simulation to an agent node** | [eval-sets-guide.md — Child Simulations](eval-sets-guide.md#child-simulations-agent-tool-simulation) + [commands-reference.md — Simulations](commands-reference.md#simulations) |
 | **Start a Studio Web eval run** | [running-guide.md — Start a Run](running-guide.md#start-a-run) |
 | **Poll run status without `--wait`** | [running-guide.md — Check Status](running-guide.md#check-status) |
 | **Inspect only failed data points** | [running-guide.md — Detailed Results](running-guide.md#detailed-results) (`--only-failed --verbose`) |
