@@ -456,7 +456,9 @@ Deletes the Studio Web copy only -- local files and published packages are not a
 
 ## Complete Example
 
+<!--skill-flavor:e2e-lead-in:start-->
 Create a solution with two projects, sync resources, and verify:
+<!--skill-flavor:e2e-lead-in:end-->
 
 <!--skill-flavor:e2e-create-and-add:start-->
 ```bash
@@ -466,13 +468,13 @@ uip solution init "InvoiceAutomation" --output json
 # 2. Add projects (already inside the solution directory)
 uip solution projects add ./InvoiceAutomation/Processor --output json
 uip solution projects add ./InvoiceAutomation/Reporter --output json
-<!--skill-flavor:e2e-create-and-add:end-->
 
 # 3. Move into the solution dir so subsequent commands default --solution-folder
 cd ./InvoiceAutomation
 
 # 4. Sync resource declarations from project bindings
 uip solution resources refresh --output json
+<!--skill-flavor:e2e-create-and-add:end-->
 
 # 5. Verify resources are tracked (per kind)
 uip solution resources list --kind Process --source local --output json

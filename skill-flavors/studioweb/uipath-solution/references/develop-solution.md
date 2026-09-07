@@ -4,16 +4,18 @@
 Studio Web works on one open solution, already scaffolded as the workspace root (`/solution`); never create another. All projects live inside it.
 <!--skill-flavor:step-create-solution:end-->
 
+<!--skill-flavor:e2e-lead-in:start-->
+Add two projects to the open solution, sync resources, and verify:
+<!--skill-flavor:e2e-lead-in:end-->
+
 <!--skill-flavor:e2e-create-and-add:start-->
 ```bash
-# 1. The open Studio Web solution is the only solution — nothing to create.
-# 2. Add projects (already inside the solution directory)
-uip solution projects add ./InvoiceAutomation/Processor --output json
-uip solution projects add ./InvoiceAutomation/Reporter --output json
+# Projects are created with `uip <family> init <Name>` and registered
+# automatically; resources stay in sync in the host (`resources refresh`
+# is Node-CLI-only). Verify from /solution:
 <!--skill-flavor:e2e-create-and-add:end-->
 
 <!--skill-flavor:upload-as-new:start-->
-To upload as an unrelated new cloud solution rather than overwriting, replace the `SolutionId` in the local `.uipx` with a fresh GUID and re-run `upload` — removing the field entirely fails `.uipx` validation.
 <!--skill-flavor:upload-as-new:end-->
 
 <!--skill-flavor:cheat-create-row:start-->

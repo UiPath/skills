@@ -23,6 +23,13 @@
 > **Deploy is asynchronous in two phases.** `deploy run` installs, polls to a terminal status, then activates unless `--skip-activate`; success is `Status: DeploymentSucceeded` with `ActivationStatus: SuccessfulActivate`. If activation fails the deployment still exists — fix the config and run `uip solution deploy activate <name>` rather than redeploying. Check state with `uip solution deploy status` / `deploy list`.
 <!--skill-flavor:solution-lifecycle-steps:end-->
 
+<!--skill-flavor:when-to-use-uipx:start-->
+- User wants to publish the open Studio Web solution (`uip solution publish`; `pack`/`upload`/`deploy` are unavailable in the browser — publishing to the personal workspace auto-deploys)
+<!--skill-flavor:when-to-use-uipx:end-->
+
+<!--skill-flavor:when-to-use-detected-uipx:start-->
+<!--skill-flavor:when-to-use-detected-uipx:end-->
+
 <!--skill-flavor:when-to-use-create:start-->
 - User wants to add or remove projects in the open solution, or refresh solution resources (Studio Web works on one open solution; creating another is not possible here)
 <!--skill-flavor:when-to-use-create:end-->

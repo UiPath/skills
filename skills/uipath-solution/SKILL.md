@@ -14,13 +14,17 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 
 ## When to Use This Skill
 
+<!--skill-flavor:when-to-use-uipx:start-->
 - User has a `.uipx` solution and wants to pack / publish / deploy / activate / upload
+<!--skill-flavor:when-to-use-uipx:end-->
 <!--skill-flavor:when-to-use-create:start-->
 - User wants to create a new solution (`uip solution init`), add or remove projects, or refresh solution resources
 <!--skill-flavor:when-to-use-create:end-->
 - User asks to set up a CI/CD pipeline that builds, publishes, and deploys a UiPath solution
 - User mentions deploy configs, environment promotion, or activating a deployed solution
+<!--skill-flavor:when-to-use-detected-uipx:start-->
 - A skill or main agent detected a `.uipx` file and redirected the user here
+<!--skill-flavor:when-to-use-detected-uipx:end-->
 
 **Skip this skill** when:
 - The task is PDD → SDD architecture/design (sdd.md / pdd.md) — load `uipath-planner`.
