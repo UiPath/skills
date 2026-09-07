@@ -238,6 +238,36 @@ def main() -> int:
             f"on its first rules evaluation"
         )
 
+    # ---- rule display names are unique inside their stage --------------------
+    # `uip maestro case validate` answers CASE_MGMT_RULE_NAME_DUPLICATE with `Path:
+    # nodes[<stage id>]`, which is what pins the scope to per-stage rather than global.
+    # Asserted separately from the validate criterion because that one reports only an
+    # exit code: it says the plan is invalid without naming which rules collided.
+    for node in P.stages(caseplan):
+        label = P.label(node)
+        seen: dict[str, list[str]] = {}
+        for kind, conditions in (
+            ("stage entry", P.entry_conditions(node)),
+            ("stage exit", P.exit_conditions(node)),
+        ):
+            for condition in conditions:
+                name = str(condition.get("displayName") or "")
+                if name:
+                    seen.setdefault(name, []).append(kind)
+        for task in P.tasks(node):
+            for condition in P.task_entry_conditions(task):
+                name = str(condition.get("displayName") or "")
+                if name:
+                    seen.setdefault(name, []).append(f"task {P.task_name(task)!r} entry")
+        for name, owners in sorted(seen.items()):
+            if len(owners) > 1:
+                problems.append(
+                    f"stage {label!r} carries the rule name {name!r} on {len(owners)} "
+                    f"rules ({owners}); the CLI requires it to be unique inside a stage "
+                    f"and answers CASE_MGMT_RULE_NAME_DUPLICATE otherwise"
+                )
+
+
     print(f"checked {P.find_caseplan()}")
     print(f"stages: {sorted(by_label)}")
     if not problems:
