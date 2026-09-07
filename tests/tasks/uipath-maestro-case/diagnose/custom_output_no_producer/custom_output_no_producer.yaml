@@ -1,17 +1,16 @@
 task_id: skill-case-diagnose-custom-output-no-producer
 description: >
   Diagnose mode. The staged case PASSES `uip maestro case validate` with zero
-  findings, but the Decision stage never enters at runtime. Review's connector
-  task carries a custom output row that names `lastEmailStatus` in `var` and has
-  no `id`. A row registers its variable through `id`, so the row writes nowhere
-  and the gate reads the case variable's own default forever. Its `source` reads
-  `vars.response.status`, the sibling output slot's name read back as a case
-  variable, and its `elementId` is `root`. The validator sees nothing wrong: it
-  checks that every `vars.X` an expression reads resolves to a declaration, and
-  `lastEmailStatus` is declared. Nothing checks that something writes it. Grades
-  the traps: defaulting the variable, deleting the gate, repointing the gate at
-  another variable, or leaving `target` blank all keep validate green and leave
-  the connector's result unused.
+  findings. Review's connector task carries a custom output row that is the only
+  output on that task missing both `id` and `target`, while every sibling row
+  carries both. Its `source` reads `vars.response.status`, the sibling output
+  slot's own name read back as a case variable rather than the connector's
+  response, and its `elementId` is `root` rather than the stage and task that
+  produce it. The validator polices none of this: with the row's `id` and the
+  case-level declaration varied independently, all four combinations return
+  Valid, including no declaration at all. Grades the repair as matching the
+  sibling shape, and the traps: defaulting the variable, deleting or repointing
+  the gate, or naming a variable the row does not write.
 tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, connector, feature:write-back, feature:conditions]
 max_iterations: 1
 
@@ -27,8 +26,9 @@ sandbox:
 
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
-  `uip maestro case validate` cleanly. At runtime the Decision stage never
-  enters. Review completes, its connector task runs, and the case stalls.
+  `uip maestro case validate` cleanly. Review's connector task is supposed to
+  write its send status into the case variable Decision's gate reads, and that
+  variable never changes from its declared default.
 
   Find out why and fix it. Keep the intended design: three stages,
   Intake to Review to Decision, and Decision must still gate on the email
@@ -36,6 +36,8 @@ initial_prompt: |
 
   - A clean validate is NOT evidence the case is healthy here. The defect is
     something validate cannot see.
+  - Compare that task's output rows with each other. One of them is shaped
+    unlike the rest.
   - The connector task must keep writing its result into the case variable the
     gate reads.
   - Do NOT give the variable a default that opens the gate on its own.
@@ -73,7 +75,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The connector's output row registers and writes lastEmailStatus, reads the connector response rather than itself, names its producing element, and the gate still reads it with no default opening it"
+    description: "The connector's custom output row matches its siblings on id and target, names lastEmailStatus, reads the connector response rather than itself, names its producing element, and the gate still reads it with no default opening it"
     command: "python3 $TASK_DIR/check_custom_output_no_producer.py"
     timeout: 30
     expected_exit_code: 0

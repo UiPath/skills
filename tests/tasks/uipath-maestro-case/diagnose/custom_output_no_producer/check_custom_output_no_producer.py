@@ -31,10 +31,19 @@ rows = [o for o in outs if o.get("var") == GATE_VAR or o.get("id") == GATE_VAR]
 if not rows: fail(f"no output row carries {GATE_VAR}; the row that feeds the gate was removed")
 row = rows[0]
 
-if row.get("id") != GATE_VAR:
-    fail(f"the row's id is {row.get('id')!r}; a row registers its variable through `id`, so nothing writes vars.{GATE_VAR}")
-if row.get("target") != f"={GATE_VAR}":
-    fail(f"the row's target is {row.get('target')!r}; it must be '={GATE_VAR}' for the value to land")
+# Every other output row on this task carries `id` and `target`; the custom row is the only
+# one missing both. The shapes are documented side by side, so the repaired row must match
+# its siblings rather than stay the one exception.
+siblings = [o for o in outs if o is not row]
+if siblings and all(s.get("id") and s.get("target") for s in siblings):
+    if not row.get("id"):
+        fail(f"the row's id is {row.get('id')!r} while every other output row on this task carries one; "
+             f"the row must declare the variable it writes")
+    if row.get("target") != f"={GATE_VAR}":
+        fail(f"the row's target is {row.get('target')!r} while its siblings all carry one; "
+             f"it must be '={GATE_VAR}'")
+if row.get("id") and row.get("id") != GATE_VAR:
+    fail(f"the row's id is {row.get('id')!r}; it must name the variable the row writes, {GATE_VAR!r}")
 if "js:vars." in str(row.get("source") or ""):
     fail(f"the row's source is {row.get('source')!r}; it reads the case variable it is supposed to write. "
          f"It must read the connector response, e.g. '=response.status'")

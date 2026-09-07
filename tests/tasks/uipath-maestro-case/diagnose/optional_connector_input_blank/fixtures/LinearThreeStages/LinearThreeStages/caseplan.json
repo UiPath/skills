@@ -295,7 +295,20 @@
               "elementId": "Stage_Qn7tBz-tVw2hJcR5b",
               "isRequired": true,
               "shouldRunOnlyOnce": false,
-              "entryConditions": [],
+              "entryConditions": [
+                {
+                  "id": "cPk2Xh8Qr4",
+                  "displayName": "Entry Rule 4",
+                  "rules": [
+                    [
+                      {
+                        "id": "rDw7Mb3Vn6",
+                        "rule": "current-stage-entered"
+                      }
+                    ]
+                  ]
+                }
+              ],
               "data": {
                 "serviceType": "connector",
                 "context": [],
